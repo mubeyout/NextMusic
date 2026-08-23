@@ -1,6 +1,6 @@
 // Player state on top of react-native-audio-pro (New Arch native)
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
-import { Alert } from 'react-native';
+import {} from 'react-native';
 import { AudioPro, AudioProContentType, AudioProEventType, AudioProState } from 'react-native-audio-pro';
 import { createMMKV } from 'react-native-mmkv';
 import type { SongItem } from '../services/server';
@@ -13,6 +13,7 @@ import { settings } from '../services/settings';
 import { useApp } from './AppState';
 import { pushRecent } from './recent';
 import { navRef } from '../navRef';
+import { dialog, toast } from '../components/Dialog';
 
 const modeKv = createMMKV({ id: 'nextmusic-playmode' });
 
@@ -35,6 +36,7 @@ interface PlayerCtx {
   skipNext: () => Promise<void>;
   skipPrev: () => Promise<void>;
   seekTo: (sec: number) => Promise<void>;
+  clearQueue: () => void;
 }
 
 const Ctx = createContext<PlayerCtx>(null as unknown as PlayerCtx);
@@ -125,7 +127,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       // 播放门槛：登录服务器 或 已启用自定义音源（对齐 lx-music：浏览免费，播放需其一）
       if (!token && activeSources().length === 0) {
         setPlaying(false);
-        Alert.alert(
+        dialog.alert(
           '无法播放',
           '播放需要登录服务器，或添加自定义音源。浏览和搜索始终免费。',
           [
@@ -150,7 +152,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       setPlaying(false);
       // 取链失败：提示登录或设置音源（产品语义：只有播放才需要这些）
-      Alert.alert(
+      dialog.alert(
         '暂时无法播放',
         '该歌曲取链失败，可能需要登录或更换音源。',
         [
@@ -243,8 +245,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, [goTo, position]);
   const seekTo = useCallback(async (sec: number) => { AudioPro.seekTo(Math.round(sec * 1000)); }, []);
 
+  const clearQueue = useCallback(() => {
+    queueRef.current = [];
+    idxRef.current = 0;
+    setQueue([]);
+  }, []);
+
   return (
-    <Ctx.Provider value={{ queue, current, playing, position, duration, shuffle, repeat, setShuffle, cycleRepeat, playSong, toggle, skipNext, skipPrev, seekTo }}>
+    <Ctx.Provider value={{ queue, current, playing, position, duration, shuffle, repeat, setShuffle, cycleRepeat, playSong, toggle, skipNext, skipPrev, seekTo, clearQueue }}>
       {children}
     </Ctx.Provider>
   );

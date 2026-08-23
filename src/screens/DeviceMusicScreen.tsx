@@ -1,11 +1,12 @@
 // 设备本地音乐：权限申请 → 扫描 → 列表（播放 / 加入歌单 / 下载入口）
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { SongRow } from '../components/SongRow';
+import { PageHeader, EmptyState } from '../components/PageChrome';
 import { MiniPlayer } from '../components/MiniPlayer';
 import { usePlayer } from '../state/PlayerProvider';
 import { library } from '../state/library';
@@ -15,6 +16,7 @@ import {
   deviceSongsDetailed, deviceTrackCount,
   type ScanResult,
 } from '../services/devicelibrary';
+import { dialog, toast } from '../components/Dialog';
 
 export function DeviceMusicScreen() {
   const insets = useSafeAreaInsets();
@@ -51,7 +53,7 @@ export function DeviceMusicScreen() {
       if (!r || r.count === 0) {
         // scoped storage 拦截 → 引导用户选文件夹（SAF）
         setScanning(false);
-        Alert.alert(
+        dialog.alert(
           '未发现本地音乐',
           '可以尝试手动选择音乐文件夹（SAF）扫描，或确认设备上有音频文件。',
           [
@@ -64,7 +66,7 @@ export function DeviceMusicScreen() {
                 setScanning(false);
                 if (!r2) return; // 用户取消
                 refresh();
-                Alert.alert('扫描完成', `共发现 ${r2.count} 首本地音乐（${(r2.ms / 1000).toFixed(1)}s）`);
+                dialog.alert('扫描完成', `共发现 ${r2.count} 首本地音乐（${(r2.ms / 1000).toFixed(1)}s）`);
               },
             },
           ],
@@ -74,37 +76,31 @@ export function DeviceMusicScreen() {
       }
       refresh();
       const modeLabel = r.mode === 'mediastore' ? '系统媒体库' : r.mode === 'saf' ? '授权目录' : '设备目录';
-      Alert.alert('扫描完成', `共发现 ${r.count} 首本地音乐（${(r.ms / 1000).toFixed(1)}s，${modeLabel}）`);
+      dialog.alert('扫描完成', `共发现 ${r.count} 首本地音乐（${(r.ms / 1000).toFixed(1)}s，${modeLabel}）`);
     } catch (e) {
-      Alert.alert('扫描失败', (e as Error).message);
+      dialog.alert('扫描失败', (e as Error).message);
     } finally { setScanning(false); }
   };
 
 
   const addAllToPlaylist = () => {
-    if (!songs.length) { Alert.alert('没有本地音乐', '先扫描设备音乐'); return; }
-    Alert.alert('加入歌单', `把 ${songs.length} 首本地音乐加入新歌单？`, [
+    if (!songs.length) { dialog.alert('没有本地音乐', '先扫描设备音乐'); return; }
+    dialog.alert('加入歌单', `把 ${songs.length} 首本地音乐加入新歌单？`, [
       { text: '取消', style: 'cancel' },
-      { text: '创建歌单', onPress: () => { library.create('设备本地音乐', songs, { desc: '扫描自设备存储' }); Alert.alert('完成', '已创建「设备本地音乐」歌单'); } },
+      { text: '创建歌单', onPress: () => { library.create('设备本地音乐', songs, { desc: '扫描自设备存储' }); toast('已创建「设备本地音乐」歌单'); } },
     ]);
   };
 
   const addOne = (song: SongItem) => {
     const pls = library.all();
-    const options = pls.map(p => ({ label: `${p.name} (${p.songs.length})`, onPress: () => { library.addSongs(p.id, [song]); Alert.alert('已加入', p.name); } }));
-    options.push({ label: '＋ 新建歌单', onPress: () => { const pl = library.create(`本地歌单 ${new Date().getMonth() + 1}/${new Date().getDate()}`, [song]); Alert.alert('已创建', pl.name); } });
-    Alert.alert('加入歌单', song.name, [{ text: '取消', style: 'cancel' }, ...options]);
+    const options = pls.map(p => ({ text: `${p.name} (${p.songs.length})`, onPress: () => { library.addSongs(p.id, [song]); toast(`已加入 ${p.name}`); } }));
+    options.push({ text: '＋ 新建歌单', onPress: () => { const pl = library.create(`本地歌单 ${new Date().getMonth() + 1}/${new Date().getDate()}`, [song]); toast(`已创建 ${pl.name}`); } });
+    dialog.alert('加入歌单', song.name, [{ text: '取消', style: 'cancel' }, ...options]);
   };
 
   return (
     <View style={st.screen}>
-      <View style={[st.header, { paddingTop: insets.top + 20 }]}>
-        <TouchableOpacity onPress={() => nav.goBack()} hitSlop={6} style={{ width: 22 }}>
-          <Icon name="back" size={22} />
-        </TouchableOpacity>
-        <Text style={st.title}>本地音乐</Text>
-        <View style={{ width: 22 }} />
-      </View>
+      <PageHeader title="本地音乐" />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 120 }}>
         <View style={st.scanCard}>
           <View style={{ flex: 1 }}>
@@ -137,7 +133,7 @@ export function DeviceMusicScreen() {
             />
           ))}
         </View>
-        {!scanning && !count ? <Text style={st.empty}>未发现本地音乐{'\n'}点「开始扫描」导入设备上的音频文件</Text> : null}
+        {!scanning && !count ? <EmptyState icon="music" title="未发现本地音乐" sub="点「开始扫描」导入设备上的音频文件" /> : null}
       </ScrollView>
       <View style={st.miniDock} pointerEvents="box-none"><MiniPlayer /></View>
     </View>

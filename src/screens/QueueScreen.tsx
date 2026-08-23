@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -7,26 +7,37 @@ import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { SongRow } from '../components/SongRow';
 import { usePlayer } from '../state/PlayerProvider';
+import { PageHeader, EmptyState } from '../components/PageChrome';
+import { dialog, toast } from '../components/Dialog';
+import { enqueueDownload } from '../services/downloads';
 
-// Figma 03·播放队列: header + now playing card + two sections
+// Figma 03·播放队列: header + now playing card + list
 export function QueueScreen() {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void };
-  const { queue, current, playSong, position, duration } = usePlayer();
+  const { queue, current, playSong, position, duration, clearQueue } = usePlayer();
 
   const upcoming = current ? queue.filter(t => t.songmid !== current.songmid) : queue;
   const pct = duration > 0 ? Math.min(1, position / duration) : 0;
 
   return (
     <LinearGradient colors={[C.bgGradientTop, C.bg, C.bg]} locations={[0, 0.55, 1]} style={st.screen}>
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top + 28, paddingHorizontal: 20, paddingBottom: 24 }}>
-        <View style={st.header}>
-          <TouchableOpacity onPress={() => nav.goBack()} hitSlop={6} style={st.backBtn}>
-            <Icon name="back" size={22} />
-          </TouchableOpacity>
-          <Text style={st.title}>播放队列</Text>
-          <TouchableOpacity hitSlop={6}><Icon name="more" size={22} /></TouchableOpacity>
-        </View>
+      <ScrollView contentContainerStyle={{ paddingTop: insets.top + 20, paddingHorizontal: 20, paddingBottom: 24 }}>
+        <PageHeader
+          title="播放队列"
+          onBack={() => nav.goBack()}
+          right={(
+            <TouchableOpacity
+              hitSlop={6}
+              onPress={() => dialog.menu('队列操作', [
+                { label: `下载全部（${queue.length} 首）`, onPress: () => { const n = enqueueDownload(queue); toast(n ? `${n} 首加入下载队列` : '队列内均已下载'); } },
+                { label: '清空队列', danger: true, onPress: () => dialog.confirm('清空队列', `移除全部 ${queue.length} 首（不影响当前播放）`, () => { clearQueue(); toast('队列已清空'); }, '清空', '取消') },
+              ])}
+            >
+              <Icon name="more" size={22} />
+            </TouchableOpacity>
+          )}
+        />
 
         {current && (
           <View style={st.nowCard}>
@@ -41,7 +52,6 @@ export function QueueScreen() {
                   <View style={[st.nowBarValue, { width: `${Math.round(pct * 100)}%` }]} />
                 </View>
               </View>
-              <TouchableOpacity hitSlop={6}><Icon name="more" size={20} /></TouchableOpacity>
             </View>
           </View>
         )}
@@ -50,9 +60,11 @@ export function QueueScreen() {
           <Text style={st.sectionTitle}>当前列表</Text>
           <Text style={st.sectionMeta}>{queue.length} 首 · 点击切歌</Text>
         </View>
-        {upcoming.map((t, i) => (
+        {upcoming.length ? upcoming.map((t, i) => (
           <SongRow key={t.uid || i} song={t} onPress={() => playSong(t, queue)} />
-        ))}
+        )) : (
+          <EmptyState title={queue.length ? '没有下一首了' : '队列为空'} sub={queue.length ? undefined : '去首页或探索页添加歌曲'} />
+        )}
       </ScrollView>
     </LinearGradient>
   );
@@ -60,9 +72,6 @@ export function QueueScreen() {
 
 const st = StyleSheet.create({
   screen: { flex: 1 },
-  header: { height: 40, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  backBtn: { width: 22, height: 22 },
-  title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700' },
   nowCard: { borderRadius: 12, backgroundColor: '#1C1C1C', padding: 12, marginTop: 8 },
   nowRow: { flexDirection: 'row', gap: 10 },
   nowArtWrap: { width: 60, height: 60, borderRadius: 7, overflow: 'hidden' },

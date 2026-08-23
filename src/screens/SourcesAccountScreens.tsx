@@ -7,6 +7,7 @@ import { C } from '../theme/tokens';
 import { useApp } from '../state/AppState';
 import { SubPage } from '../components/SubPage';
 import { loadSources, addSourceByUrl, removeSource, toggleSource, activeSources, type CustomSource } from '../services/customSource';
+import { dialog, toast } from '../components/Dialog';
 
 // 自定义音源：LX 脚本本地沙箱运行，免登录即可播放
 export function SourcesScreen() {
@@ -25,15 +26,15 @@ export function SourcesScreen() {
     setBusy(true);
     try {
       const s = await addSourceByUrl(url.trim());
-      Alert.alert('已添加', `${s.name} v${s.version}\n支持：${Object.keys(s.sources).join('、')}`);
+      toast(`已添加 ${s.name} v${s.version}`);
       setUrl(''); setAdding(false); refresh();
     } catch (e) {
-      Alert.alert('添加失败', (e as Error).message);
+      dialog.alert('添加失败', (e as Error).message);
     } finally { setBusy(false); }
   };
 
   const del = (s: CustomSource) => {
-    Alert.alert('删除音源', `确定删除「${s.name}」？`, [
+    dialog.alert('删除音源', `确定删除「${s.name}」？`, [
       { text: '取消', style: 'cancel' },
       { text: '删除', style: 'destructive', onPress: () => { removeSource(s.id).then(refresh); } },
     ]);

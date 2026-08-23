@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
+import { PageHeader } from './PageChrome';
 import { C } from '../theme/tokens';
 
 // Shared settings sub-page scaffold (Figma 21/22/23 pattern)
@@ -21,14 +22,8 @@ export function SubPage({
   const nav = useNavigation() as { goBack: () => void };
 
   return (
-    <View style={[st.screen, { paddingTop: insets.top + 28 }]}>
-      <View style={st.header}>
-        <TouchableOpacity onPress={() => nav.goBack()} hitSlop={6} style={{ width: 22 }}>
-          <Icon name="back" size={22} />
-        </TouchableOpacity>
-        <Text style={st.title}>{title}</Text>
-        <View style={{ width: 22 }} />
-      </View>
+    <View style={[st.screen]}>
+      <PageHeader title={title} onBack={() => nav.goBack()} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 24 }}>
         {sections.map(sec => (
           <View key={sec.title} style={st.section}>

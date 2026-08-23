@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import { Icon } from '../theme/Icon';
+import { PageHeader } from './PageChrome';
 import { C } from '../theme/tokens';
 import { ActionSheet } from './ActionSheet';
 
@@ -98,13 +99,7 @@ export function Section({ title, children }: { title: string; children: React.Re
 export function PageShell({ title, onBack, children }: { title: string; onBack: () => void; children: React.ReactNode }) {
   return (
     <View style={s.screen}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={onBack} hitSlop={6} style={{ width: 22 }}>
-          <Icon name="back" size={22} />
-        </TouchableOpacity>
-        <Text style={s.title}>{title}</Text>
-        <View style={{ width: 22 }} />
-      </View>
+      <PageHeader title={title} onBack={onBack} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 48 }}>{children}</ScrollView>
     </View>
   );

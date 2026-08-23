@@ -1,15 +1,17 @@
 // 下载管理：列表 / 播放 / 删除 / 清空 / 存储统计
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { SongRow } from '../components/SongRow';
+import { PageHeader, EmptyState } from '../components/PageChrome';
 import { MiniPlayer } from '../components/MiniPlayer';
 import { usePlayer } from '../state/PlayerProvider';
 import { downloads as dlStore, subscribeDownloads, fmtBytes, downloadProgress } from '../services/downloads';
 import type { SongItem } from '../services/server';
+import { dialog, toast } from '../components/Dialog';
 
 export function DownloadsScreen() {
   const insets = useSafeAreaInsets();
@@ -23,7 +25,7 @@ export function DownloadsScreen() {
   const play = useCallback((s: SongItem) => { playSong(s, list.map(r => r.song)); }, [playSong, list]);
 
   const removeSong = (s: SongItem) => {
-    Alert.alert('删除下载', `确定删除「${s.name}」的下载？`, [
+    dialog.alert('删除下载', `确定删除「${s.name}」的下载？`, [
       { text: '取消', style: 'cancel' },
       { text: '删除', style: 'destructive', onPress: () => dlStore.remove(s) },
     ]);
@@ -31,7 +33,7 @@ export function DownloadsScreen() {
 
   const clear = () => {
     if (!list.length) return;
-    Alert.alert('清空下载', `共 ${list.length} 首 · ${fmtBytes(dlStore.totalBytes())}，确定全部删除？`, [
+    dialog.alert('清空下载', `共 ${list.length} 首 · ${fmtBytes(dlStore.totalBytes())}，确定全部删除？`, [
       { text: '取消', style: 'cancel' },
       { text: '全部删除', style: 'destructive', onPress: () => dlStore.clearAll() },
     ]);
@@ -39,15 +41,14 @@ export function DownloadsScreen() {
 
   return (
     <View style={st.screen}>
-      <View style={[st.header, { paddingTop: insets.top + 20 }]}>
-        <TouchableOpacity onPress={() => nav.goBack()} hitSlop={6} style={{ width: 22 }}>
-          <Icon name="back" size={22} />
-        </TouchableOpacity>
-        <Text style={st.title}>下载管理</Text>
-        <TouchableOpacity onPress={clear} hitSlop={6} style={{ width: 22, alignItems: 'flex-end' }}>
-          <Icon name="close" size={20} color={list.length ? C.text : C.text3} />
-        </TouchableOpacity>
-      </View>
+      <PageHeader
+        title="下载管理"
+        right={(
+          <TouchableOpacity onPress={clear} hitSlop={6}>
+            <Icon name="close" size={20} color={list.length ? C.text : C.text3} />
+          </TouchableOpacity>
+        )}
+      />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 120 }}>
         <Text style={st.stat}>{list.length} 首 · {fmtBytes(dlStore.totalBytes())} · 应用内部存储</Text>
         {list.map(r => {
@@ -70,7 +71,7 @@ export function DownloadsScreen() {
             </View>
           );
         })}
-        {!list.length ? <Text style={st.empty}>还没有下载{'\n'}在歌单或播放页点下载即可离线收听</Text> : null}
+        {!list.length ? <EmptyState icon="download" title="还没有下载" sub="在歌单或播放页点下载即可离线收听" /> : null}
       </ScrollView>
       <View style={st.miniDock} pointerEvents="box-none"><MiniPlayer /></View>
     </View>

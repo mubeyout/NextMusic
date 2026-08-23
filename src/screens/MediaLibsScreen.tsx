@@ -1,12 +1,13 @@
 // 第三方媒体库：Emby / Jellyfin / Subsonic(Navidrome·道理鱼) / WebDAV
 // 添加账号 → 浏览专辑/WebDAV 目录 → 播放 / 导入为歌单 / 下载
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, ActivityIndicator, } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { ActionSheet } from '../components/ActionSheet';
+import { PageHeader, EmptyState } from '../components/PageChrome';
 import { usePlayer } from '../state/PlayerProvider';
 import { library } from '../state/library';
 import { enqueueDownload } from '../services/downloads';
@@ -15,6 +16,7 @@ import {
   type ProviderAcct, type ProviderType,
 } from '../services/providers';
 import type { SongItem } from '../services/server';
+import { dialog, toast } from '../components/Dialog';
 
 const TYPE_ICON: Record<ProviderType, string> = { subsonic: 'music', navidrome: 'music', daoliyu: 'music', emby: 'tv', jellyfin: 'tv', webdav: 'cloud' };
 
@@ -36,19 +38,18 @@ export function MediaLibsScreen() {
 
   return (
     <View style={st.screen}>
-      <View style={[st.header, { paddingTop: insets.top + 20 }]}>
-        <TouchableOpacity onPress={() => nav.goBack()} hitSlop={6} style={{ width: 22 }}>
-          <Icon name="back" size={22} />
-        </TouchableOpacity>
-        <Text style={st.title}>媒体库</Text>
-        <TouchableOpacity onPress={addMenu} hitSlop={6} style={{ width: 22, alignItems: 'flex-end' }}>
-          <Icon name="add" size={22} />
-        </TouchableOpacity>
-      </View>
+      <PageHeader
+        title="媒体库"
+        right={(
+          <TouchableOpacity onPress={addMenu} hitSlop={6}>
+            <Icon name="add" size={22} />
+          </TouchableOpacity>
+        )}
+      />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 24 }}>
         <Text style={st.intro}>接入 Emby、Jellyfin、Navidrome、道理鱼（Subsonic 兼容）或 WebDAV，把私有音乐库变成歌单。</Text>
         {accts.length === 0 ? (
-          <Text style={st.empty}>还没有添加媒体库{'\n'}点右上角 ＋ 开始接入</Text>
+          <EmptyState icon="server" title="还没有添加媒体库" sub="点右上角 ＋ 接入 Emby / Jellyfin / Navidrome / WebDAV" />
         ) : (
           <View style={st.group}>
             {accts.map((a, i) => (
@@ -57,7 +58,7 @@ export function MediaLibsScreen() {
                 style={[st.row, i > 0 && st.rowDivide]}
                 activeOpacity={0.7}
                 onPress={() => nav.navigate('ProviderBrowse', { acctId: a.id })}
-                onLongPress={() => Alert.alert('删除媒体库', `确定删除「${a.name || PROVIDER_META[a.type].label}」？`, [
+                onLongPress={() => dialog.alert('删除媒体库', `确定删除「${a.name || PROVIDER_META[a.type].label}」？`, [
                   { text: '取消', style: 'cancel' },
                   { text: '删除', style: 'destructive', onPress: () => { providers.remove(a.id); refresh(); } },
                 ])}
@@ -89,14 +90,14 @@ function EditSheet({ acct, onClose, onSaved }: { acct: ProviderAcct; onClose: ()
   const [typePick, setTypePick] = useState(false);
 
   const connect = async () => {
-    if (!a.base.trim()) { Alert.alert('请填写服务器地址'); return; }
+    if (!a.base.trim()) { toast('请填写服务器地址'); return; }
     setBusy(true);
     try {
       const connected = await providerApi.connect({ ...a, base: a.base.trim(), name: a.name.trim() || PROVIDER_META[a.type].label.split(' / ')[0] });
       providers.save(connected);
       onSaved();
     } catch (e) {
-      Alert.alert('连接失败', (e as Error).message + '\n\n请检查地址、账号密码，以及服务器是否已在同一网络');
+      dialog.alert('连接失败', (e as Error).message + '\n\n请检查地址、账号密码，以及服务器是否已在同一网络');
     } finally { setBusy(false); }
   };
 
@@ -183,9 +184,9 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
   if (!acct) return <View style={st.screen}><Text style={st.empty}>账号不存在</Text></View>;
 
   const importAll = (name: string, songs: SongItem[]) => {
-    if (!songs.length) { Alert.alert('没有可导入的歌曲'); return; }
+    if (!songs.length) { toast('没有可导入的歌曲'); return; }
     library.create(name, songs, { desc: `来自 ${acct.name}` });
-    Alert.alert('已导入', `「${name}」已加入我的歌单（${songs.length} 首）`);
+    toast(`已导入「${name}」· ${songs.length} 首`);
   };
 
   const openAlbum = async (al: { id: string; name: string }) => {
@@ -193,16 +194,16 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
     try {
       const songs = await providerApi.albumSongs(acct, al.id);
       setLoading(false);
-      if (!songs.length) { Alert.alert('空专辑', '该专辑没有可播放曲目'); return; }
-      Alert.alert(al.name, `${songs.length} 首 · 播放还是导入歌单？`, [
+      if (!songs.length) { dialog.alert('空专辑', '该专辑没有可播放曲目'); return; }
+      dialog.alert(al.name, `${songs.length} 首 · 播放还是导入歌单？`, [
         { text: '取消', style: 'cancel' },
         { text: '导入歌单', onPress: () => importAll(al.name, songs) },
         { text: '立即播放', onPress: () => playSong(songs[0], songs) },
-        { text: '下载', onPress: () => { const n = enqueueDownload(songs); Alert.alert('开始下载', `${n} 首已加入下载队列`); } },
+        { text: '下载', onPress: () => { const n = enqueueDownload(songs); toast(`${n} 首加入下载队列`); } },
       ]);
     } catch (e) {
       setLoading(false);
-      Alert.alert('加载失败', (e as Error).message);
+      dialog.alert('加载失败', (e as Error).message);
     }
   };
 
@@ -215,13 +216,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
 
   return (
     <View style={st.screen}>
-      <View style={[st.header, { paddingTop: insets.top + 20 }]}>
-        <TouchableOpacity onPress={() => nav.goBack()} hitSlop={6} style={{ width: 22 }}>
-          <Icon name="back" size={22} />
-        </TouchableOpacity>
-        <Text style={st.title} numberOfLines={1}>{acct.name}</Text>
-        <View style={{ width: 22 }} />
-      </View>
+      <PageHeader title={acct.name} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 24 }}>
         {loading ? (
           <View style={st.center}><ActivityIndicator color={C.brand} size="large" /></View>
@@ -285,7 +280,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                 <TouchableOpacity
                   style={[st.davBtn, st.davBtnMain]}
                   disabled={!selSongs.length}
-                  onPress={() => { const n = enqueueDownload(selSongs); Alert.alert('开始下载', `${n} 首已加入下载队列`); }}
+                  onPress={() => { const n = enqueueDownload(selSongs); toast(`${n} 首加入下载队列`); }}
                 >
                   <Text style={[st.davBtnText, { color: C.onBrand }]}>下载</Text>
                 </TouchableOpacity>
@@ -295,7 +290,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
           </>
         ) : (
           <>
-            {albums.length === 0 ? <Text style={st.empty}>服务器上没有专辑{'\n'}先在媒体服务器里添加音乐库</Text> : null}
+            {albums.length === 0 ? <EmptyState icon="music" title="服务器上没有专辑" sub="先在媒体服务器里添加音乐库" /> : null}
             <View style={st.albumGrid}>
               {albums.map(al => (
                 <TouchableOpacity key={al.id} style={st.albumCell} activeOpacity={0.85} onPress={() => openAlbum(al)}>

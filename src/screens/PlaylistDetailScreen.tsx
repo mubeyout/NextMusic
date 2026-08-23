@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
@@ -7,6 +7,9 @@ import { C } from '../theme/tokens';
 import { SongRow } from '../components/SongRow';
 import { ActionSheet } from '../components/ActionSheet';
 import { CollectSheet } from '../components/CollectSheet';
+import { dialog, toast } from '../components/Dialog';
+import { PageHeader } from '../components/PageChrome';
+import { library } from '../state/library';
 import { usePlayer } from '../state/PlayerProvider';
 import { api, type SongItem, type SongListMeta } from '../services/server';
 import { enqueueDownload, downloads as dlStore, downloadProgress, subscribeDownloads } from '../services/downloads';
@@ -31,7 +34,7 @@ type Params = {
 // Figma 26·歌单详情: header (cover + title + stats + desc + play all), action row, song list
 export function PlaylistDetailScreen() {
   const insets = useSafeAreaInsets();
-  const nav = useNavigation() as { goBack: () => void };
+  const nav = useNavigation() as { goBack: () => void; navigate: (s: string, p?: object) => void };
   const route = useRoute();
   const p = route.params as Params;
   const { playSong, current } = usePlayer();
@@ -42,8 +45,18 @@ export function PlaylistDetailScreen() {
   const [total, setTotal] = useState(0);
   const [busy, setBusy] = useState(false);
   const [actSong, setActSong] = useState<SongItem | null>(null);
+  const [kw, setKw] = useState('');
+  const [searching, setSearching] = useState(false);
+  const localPl = p.localId ? library.get(p.localId) : null;
   const [collect, setCollect] = useState(false);
   const [, force] = useState(0);
+
+  const shown = React.useMemo(() => {
+    if (!songs) return [];
+    if (!kw.trim()) return songs;
+    const k = kw.trim().toLowerCase();
+    return songs.filter(x => x.name.toLowerCase().includes(k) || x.singer.toLowerCase().includes(k) || (x.albumName || '').toLowerCase().includes(k));
+  }, [songs, kw]);
   useEffect(() => subscribeDownloads(() => force(n => n + 1)), []);
 
   useEffect(() => {
@@ -89,13 +102,25 @@ export function PlaylistDetailScreen() {
         }}
         scrollEventThrottle={200}
       >
-        <View style={st.header}>
-          <TouchableOpacity style={st.hBtn} onPress={() => nav.goBack()} hitSlop={4}>
-            <Icon name="back" size={24} />
-          </TouchableOpacity>
-          <View style={{ flex: 1 }} />
-          <TouchableOpacity style={st.hBtn} hitSlop={4}><Icon name="more" size={24} /></TouchableOpacity>
-        </View>
+        <PageHeader
+          title=""
+          onBack={() => nav.goBack()}
+          right={(
+            <TouchableOpacity hitSlop={6} onPress={() => {
+              if (localPl) {
+                dialog.menu(localPl.name, [
+                  { label: '歌单内搜索', onPress: () => setSearching(true) },
+                  { label: '重命名歌单', onPress: () => renamePl() },
+                  { label: '删除歌单', danger: true, onPress: () => deletePl() },
+                ]);
+              } else {
+                setSearching(true);
+              }
+            }}>
+              <Icon name="more" size={22} />
+            </TouchableOpacity>
+          )}
+        />
 
         <View style={st.headCard}>
           {cover ? (
@@ -113,16 +138,35 @@ export function PlaylistDetailScreen() {
 
         <TouchableOpacity
           style={st.playAllBtn}
-          onPress={() => { if (songs && songs.length) playSong(songs[0], songs); }}
-          disabled={!songs || !songs.length}
+          onPress={() => { if (shown.length) playSong(shown[0], shown); }}
+          disabled={!songs?.length}
         >
           <Icon name="play" size={20} active color={C.onBrand} />
           <Text style={st.playAllText}>播放全部</Text>
           <Text style={st.playAllCount}>{total ? `(${total})` : ''}</Text>
         </TouchableOpacity>
 
+        {searching ? (
+          <View style={st.searchBar}>
+            <Icon name="search" size={16} color={C.text3} />
+            <TextInput
+              style={st.searchInput}
+              value={kw}
+              placeholder="搜索歌单内歌曲/歌手"
+              placeholderTextColor={C.text3}
+              autoFocus
+              onChangeText={setKw}
+            />
+            {kw ? (
+              <TouchableOpacity hitSlop={6} onPress={() => { setKw(''); setSearching(false); }}>
+                <Icon name="close" size={16} color={C.text3} />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        ) : null}
+
         <View style={st.actionRow}>
-          <TouchableOpacity style={st.action} onPress={() => { if (songs?.length) { const n = enqueueDownload(songs); Alert.alert(n ? '开始下载' : '无新任务', n ? `${n} 首已加入下载队列` : '歌内歌曲均已下载'); } }}>
+          <TouchableOpacity style={st.action} onPress={() => { if (songs?.length) { const n = enqueueDownload(songs); toast(n ? `${n} 首加入下载队列` : '歌内歌曲均已下载'); } }}>
             <Icon name="download" size={20} color={C.text2} /><Text style={st.actionText}>下载全部</Text>
           </TouchableOpacity>
           <TouchableOpacity style={st.action} onPress={() => setCollect(true)} disabled={!songs?.length}>
@@ -135,16 +179,16 @@ export function PlaylistDetailScreen() {
 
         {songs == null ? (
           <View style={st.center}><ActivityIndicator color={C.brand} /></View>
-        ) : songs.length === 0 ? (
-          <Text style={st.empty}>歌单为空</Text>
+        ) : !shown.length ? (
+          <Text style={st.empty}>{kw ? `没有匹配「${kw}」的歌曲` : '歌单为空'}</Text>
         ) : (
           <View style={st.songList}>
-            {songs.map((s, i) => (
+            {shown.map((s, i) => (
               <SongRow
                 key={`${s.source}-${s.songmid}-${i}`}
                 song={s}
                 playing={current?.songmid === s.songmid}
-                onPress={() => playSong(s, songs)}
+                onPress={() => playSong(s, shown)}
                 extra={renderSongAction(s)}
               />
             ))}
@@ -169,6 +213,29 @@ export function PlaylistDetailScreen() {
       <CollectSheet song={actSong} visible={collect} onClose={() => { setCollect(false); setActSong(null); }} />
     </View>
   );
+
+  function renamePl() {
+    if (!localPl) return;
+    dialog.prompt('重命名歌单', {
+      defaultValue: localPl.name,
+      onSubmit: (v) => {
+        if (!v) return;
+        library.update(localPl.id, { name: v });
+        toast('已重命名');
+        nav.goBack();
+        nav.navigate('PlaylistDetail', { localId: localPl.id, title: v, songs: library.get(localPl.id)?.songs });
+      },
+    });
+  }
+
+  function deletePl() {
+    if (!localPl) return;
+    dialog.confirm('删除歌单', `确定删除「${localPl.name}」？${localPl.songs.length} 首歌曲将从此歌单移除`, () => {
+      library.remove(localPl.id);
+      toast('歌单已删除');
+      nav.goBack();
+    }, '删除', '取消');
+  }
 
   function renderSongAction(s: SongItem) {
     const prog = downloadProgress(s);
@@ -206,6 +273,8 @@ const st = StyleSheet.create({
   playAllText: { color: C.onBrand, fontSize: 14, lineHeight: 17, fontWeight: '600' },
   playAllCount: { color: '#0E3B1F', fontSize: 12 },
   actionRow: { flexDirection: 'row', gap: 8, marginTop: 10, marginBottom: 6 },
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 38, borderRadius: 10, backgroundColor: '#1E1E1E', paddingHorizontal: 12, marginTop: 12 },
+  searchInput: { flex: 1, color: C.text, fontSize: 13, paddingVertical: 0 },
   action: {
     flex: 1, height: 40, borderRadius: 12, backgroundColor: '#1A1A1A',
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,

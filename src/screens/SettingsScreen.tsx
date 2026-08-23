@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Icon, type IconName } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { useApp } from '../state/AppState';
+import { PageHeader } from '../components/PageChrome';
 import { activeSources } from '../services/customSource';
 import { providers } from '../services/providers';
 import { downloads as dlStore } from '../services/downloads';
@@ -44,14 +45,8 @@ export function SettingsScreen() {
   };
 
   return (
-    <View style={[st.screen, { paddingTop: insets.top + 28 }]}>
-      <View style={st.header}>
-        <TouchableOpacity onPress={() => nav.goBack()} hitSlop={6} style={{ width: 22 }}>
-          <Icon name="back" size={22} />
-        </TouchableOpacity>
-        <Text style={st.title}>设置</Text>
-        <View style={{ width: 22 }} />
-      </View>
+    <View style={st.screen}>
+      <PageHeader title="设置" />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 24 }}>
         <View style={st.brandCard}>
           <View style={st.brandDot} />

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, PanResponder, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, PanResponder, } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Svg, { Circle } from 'react-native-svg';
@@ -16,6 +16,7 @@ import { isFav, setFav } from '../state/favorites';
 import { CollectSheet } from '../components/CollectSheet';
 import { ActionSheet } from '../components/ActionSheet';
 import { enqueueDownload, downloads as dlStore } from '../services/downloads';
+import { dialog, toast } from '../components/Dialog';
 
 // Figma 04·播放页: vinyl hero + synced lyrics + secondary tools + playback panel
 export function PlayerScreen() {
@@ -203,7 +204,7 @@ export function PlayerScreen() {
         items={[
           dlStore.isDownloaded(current)
             ? { label: '已下载 ✓', onPress: () => {} }
-            : { label: '下载这首歌', onPress: () => { enqueueDownload([current]); Alert.alert('已加入下载队列', current.name); } },
+            : { label: '下载这首歌', onPress: () => { enqueueDownload([current]); toast(`已加入下载队列 · ${current.name}`); } },
           { label: '收藏到歌单', onPress: openCollect },
           { label: '查看播放队列', onPress: () => nav.navigate('Queue') },
           { label: '均衡器与音效', onPress: () => nav.navigate('Fx') },

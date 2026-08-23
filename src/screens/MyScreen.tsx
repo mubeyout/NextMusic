@@ -6,6 +6,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { PillTabs } from '../components/PillTabs';
+import { EmptyState } from '../components/PageChrome';
 import { SongRow } from '../components/SongRow';
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
@@ -233,7 +234,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
               ))}
             </View>
           ) : (
-            <Text style={st.empty}>还没有下载{'\n'}在歌单页点「下载全部」，或在歌曲菜单里下载</Text>
+            <EmptyState icon="download" title="还没有下载" sub="在歌单页点「下载全部」，或在歌曲菜单里下载" />
           )}
         </View>
       )}

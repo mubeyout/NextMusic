@@ -10,6 +10,7 @@ import { PlayerProvider, setupPlayer } from './src/state/PlayerProvider';
 import { LxEngineHost, engine } from './src/lx-engine/engine';
 import { loadSources } from './src/services/customSource';
 import { RootNavigator } from './src/navigation';
+import { DialogHost } from './src/components/Dialog';
 
 function App() {
   useEffect(() => {
@@ -26,6 +27,7 @@ function App() {
           <PlayerProvider>
             <LxEngineHost />
             <RootNavigator />
+            <DialogHost />
           </PlayerProvider>
         </AppStateProvider>
       </SafeAreaProvider>

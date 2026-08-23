@@ -1,6 +1,6 @@
 // 设置子页（全部真实功能：持久化 + 可操作）
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import RNBlobUtil from 'react-native-blob-util';
@@ -43,7 +43,7 @@ export function BasicSettingsScreen() {
   useEffect(measure, []);
 
   const clearCache = () => {
-    Alert.alert('清除缓存', `当前缓存 ${cacheSize}，确定清除？`, [
+    dialog.alert('清除缓存', `当前缓存 ${cacheSize}，确定清除？`, [
       { text: '取消', style: 'cancel' },
       {
         text: '清除', style: 'destructive',
@@ -52,8 +52,8 @@ export function BasicSettingsScreen() {
             const names = await RNBlobUtil.fs.ls(RNBlobUtil.fs.dirs.CacheDir);
             for (const n of names) await RNBlobUtil.fs.unlink(`${RNBlobUtil.fs.dirs.CacheDir}/${n}`).catch(() => {});
             measure();
-            Alert.alert('完成', '缓存已清除');
-          } catch { Alert.alert('失败', '清除缓存时出错'); }
+            toast('缓存已清除');
+          } catch { dialog.alert('失败', '清除缓存时出错'); }
         },
       },
     ]);
@@ -67,7 +67,7 @@ export function BasicSettingsScreen() {
         <ToggleRow label="启动即播放" value={s.autoplay} onChange={v => settings.set('autoplay', v)} />
       </Section>
       <Section title="界面">
-        <ValueRow label="语言" value="system" options={[{ label: '跟随系统', value: 'system' }, { label: '简体中文', value: 'zh' }, { label: 'English', value: 'en' }]} onPick={() => Alert.alert('语言', '当前版本内置中文界面，多语言将随后续版本提供')} />
+        <ValueRow label="语言" value="system" options={[{ label: '跟随系统', value: 'system' }, { label: '简体中文', value: 'zh' }, { label: 'English', value: 'en' }]} onPick={() => dialog.alert('语言', '当前版本内置中文界面，多语言将随后续版本提供')} />
         <ToggleRow label="底栏显示标签" value={s.showTabLabels} onChange={v => settings.set('showTabLabels', v)} />
         <StaticRow label="圆角风格" value="标准" />
       </Section>
@@ -121,8 +121,8 @@ export function AboutScreen() {
     <PageShell title="关于与帮助" onBack={() => nav.goBack()}>
       <Section title="版本">
         <StaticRow label="当前版本" value={APP_VERSION} />
-        <ActionRow label="检查更新" onPress={() => Alert.alert('检查更新', '当前已是最新版本')} />
-        <ActionRow label="更新日志" onPress={() => Alert.alert('更新日志', '3.2.0-lx4\n· 我的页移除更多菜单\n\n3.2.0-lx3\n· 服务器账号强关联与创建账号流\n\n3.2.0\n· 净室重建：三 Tab + 排行榜 + 歌单 + 全屏播放器')} />
+        <ActionRow label="检查更新" onPress={() => dialog.alert('检查更新', '当前已是最新版本')} />
+        <ActionRow label="更新日志" onPress={() => dialog.alert('更新日志', '3.2.0-lx4\n· 我的页移除更多菜单\n\n3.2.0-lx3\n· 服务器账号强关联与创建账号流\n\n3.2.0\n· 净室重建：三 Tab + 排行榜 + 歌单 + 全屏播放器')} />
       </Section>
       <Section title="帮助">
         <StaticRow label="使用手册" value="整理中" />
@@ -172,6 +172,7 @@ function loadDav(): DavConf {
 }
 // 独立小 KV，避免与媒体库 WebDAV 账号混用
 import { createMMKV } from 'react-native-mmkv';
+import { dialog, toast } from '../components/Dialog';
 const davKv = createMMKV({ id: DAV_KEY });
 function kvGetString(k: string): string | undefined { return davKv.getString('conf'); }
 
@@ -188,18 +189,18 @@ export function BackupSettingsScreen() {
   };
 
   const test = async () => {
-    if (!dav.base) { Alert.alert('请先填写服务器地址'); return; }
+    if (!dav.base) { toast('请先填写服务器地址'); return; }
     setBusy(true);
     try {
       await providerApi.webdavTest(dav);
-      Alert.alert('连接成功', 'WebDAV 服务器可用');
+      dialog.alert('连接成功', 'WebDAV 服务器可用');
     } catch (e) {
-      Alert.alert('连接失败', (e as Error).message);
+      dialog.alert('连接失败', (e as Error).message);
     } finally { setBusy(false); }
   };
 
   const backupNow = async () => {
-    if (!dav.base) { Alert.alert('请先配置 WebDAV'); return; }
+    if (!dav.base) { toast('请先配置 WebDAV'); return; }
     setBusy(true);
     try {
       const payload = {
@@ -208,20 +209,20 @@ export function BackupSettingsScreen() {
         settings: s.backupSettings ? settings.get() : undefined,
       };
       await providerApi.webdavPut(dav, '/NextMusic/backup.json', JSON.stringify(payload));
-      Alert.alert('备份完成', '已上传到 /NextMusic/backup.json');
+      toast('备份完成 · 已上传到云端');
     } catch (e) {
-      Alert.alert('备份失败', (e as Error).message);
+      dialog.alert('备份失败', (e as Error).message);
     } finally { setBusy(false); }
   };
 
   const restore = async () => {
-    if (!dav.base) { Alert.alert('请先配置 WebDAV'); return; }
+    if (!dav.base) { toast('请先配置 WebDAV'); return; }
     setBusy(true);
     try {
       const text = await providerApi.webdavGet(dav, '/NextMusic/backup.json');
       const data = JSON.parse(text) as { playlists?: { id: string; name: string; songs: [] }[]; settings?: Record<string, unknown> };
       const n = data.playlists?.length || 0;
-      Alert.alert('恢复备份', `云端备份包含 ${n} 个歌单，是否覆盖本机歌单？`, [
+      dialog.alert('恢复备份', `云端备份包含 ${n} 个歌单，是否覆盖本机歌单？`, [
         { text: '取消', style: 'cancel' },
         {
           text: '恢复',
@@ -234,12 +235,12 @@ export function BackupSettingsScreen() {
               }
             }
             if (data.settings) settings.patch(data.settings as never);
-            Alert.alert('恢复完成', `已恢复 ${n} 个歌单`);
+            toast(`已恢复 ${n} 个歌单`);
           },
         },
       ]);
     } catch (e) {
-      Alert.alert('恢复失败', (e as Error).message);
+      dialog.alert('恢复失败', (e as Error).message);
     } finally { setBusy(false); }
   };
 
