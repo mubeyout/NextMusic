@@ -96,7 +96,7 @@ export function PlaylistDetailScreen() {
   return (
     <View style={st.screen}>
       <ScrollView
-        contentContainerStyle={{ paddingTop: insets.top + 8, paddingBottom: current ? 116 : 32 }}
+        contentContainerStyle={{ paddingTop: 8, paddingBottom: current ? 116 : 32 }}
         onScroll={({ nativeEvent }) => {
           if (nativeEvent.contentOffset.y + nativeEvent.layoutMeasurement.height > nativeEvent.contentSize.height - 300) loadMore();
         }}

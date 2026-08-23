@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
@@ -13,7 +12,6 @@ import { enqueueDownload } from '../services/downloads';
 
 // Figma 03·播放队列: header + now playing card + list
 export function QueueScreen() {
-  const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void };
   const { queue, current, playSong, position, duration, clearQueue } = usePlayer();
 
@@ -22,7 +20,7 @@ export function QueueScreen() {
 
   return (
     <LinearGradient colors={[C.bgGradientTop, C.bg, C.bg]} locations={[0, 0.55, 1]} style={st.screen}>
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top + 20, paddingHorizontal: 20, paddingBottom: 24 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}>
         <PageHeader
           title="播放队列"
           onBack={() => nav.goBack()}
