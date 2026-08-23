@@ -6,7 +6,13 @@ import type { SongItem } from './server';
 
 const kv = createMMKV({ id: 'nextmusic-providers' });
 
-export type ProviderType = 'subsonic' | 'emby' | 'jellyfin' | 'webdav';
+export type ProviderType = 'subsonic' | 'navidrome' | 'daoliyu' | 'emby' | 'jellyfin' | 'webdav';
+
+// 协议映射：navidrome / 道理鱼 走 Subsonic 协议
+export const PROTOCOL: Record<ProviderType, 'subsonic' | 'emby' | 'jellyfin' | 'webdav'> = {
+  subsonic: 'subsonic', navidrome: 'subsonic', daoliyu: 'subsonic',
+  emby: 'emby', jellyfin: 'jellyfin', webdav: 'webdav',
+};
 
 export interface ProviderAcct {
   id: string;
@@ -22,10 +28,12 @@ export interface ProviderAcct {
 }
 
 export const PROVIDER_META: Record<ProviderType, { label: string; hint: string; placeholder: string }> = {
-  subsonic: { label: 'Subsonic / Navidrome / 道理鱼', hint: '兼容 Subsonic API：Navidrome、道理鱼音乐、Subsonic 等', placeholder: 'http://192.168.1.10:4533' },
+  subsonic: { label: 'Subsonic', hint: 'Subsonic 服务器（原生）', placeholder: 'http://192.168.1.10:4040' },
+  navidrome: { label: 'Navidrome', hint: 'Navidrome 音乐服务器（Subsonic 兼容）', placeholder: 'http://192.168.1.10:4533' },
+  daoliyu: { label: '道理鱼音乐', hint: '道理鱼（Subsonic 兼容，NAS 自建音乐库）', placeholder: 'http://192.168.1.10:4533' },
   emby: { label: 'Emby', hint: 'Emby 媒体服务器（音乐库）', placeholder: 'http://192.168.1.10:8096' },
   jellyfin: { label: 'Jellyfin', hint: 'Jellyfin 媒体服务器（音乐库）', placeholder: 'http://192.168.1.10:8096' },
-  webdav: { label: 'WebDAV', hint: 'NAS / 飞牛等 WebDAV 共享目录，直接浏览音频文件', placeholder: 'http://192.168.1.10:5244/dav' },
+  webdav: { label: 'WebDAV', hint: 'NAS / 飞牛 fnOS / Alist 等 WebDAV 共享目录，直接浏览音频文件', placeholder: 'http://192.168.1.10:5244/dav' },
 };
 
 // ---------- accounts CRUD ----------
@@ -239,7 +247,7 @@ export const providerApi = {
   /** 连接测试 + 登录（成功返回更新后的账号，含 token/userId） */
   async connect(a: ProviderAcct): Promise<ProviderAcct> {
     const base = norm(a.base);
-    if (a.type === 'subsonic') {
+    if (PROTOCOL[a.type] === 'subsonic') {
       await subCall(a, 'ping'); // throws on failure
       return { ...a, base };
     }
@@ -271,7 +279,7 @@ export const providerApi = {
 
   /** 专辑/歌单列表 */
   async albums(a: ProviderAcct): Promise<{ id: string; name: string; artist?: string; songCount?: number; cover?: string }[]> {
-    if (a.type === 'subsonic') {
+    if (PROTOCOL[a.type] === 'subsonic') {
       const d = await subCall<{ albumList2?: { album?: Record<string, unknown>[] } }>(a, 'getAlbumList2', { type: 'alphabeticalByName', size: '200' });
       return (d.albumList2?.album || []).map(al => ({
         id: String(al.id), name: String(al.name || ''),
@@ -280,7 +288,7 @@ export const providerApi = {
         cover: al.coverArt ? subUrl(a, 'getCoverArt', { id: String(al.coverArt), size: '300' }) : undefined,
       }));
     }
-    if (a.type === 'emby' || a.type === 'jellyfin') {
+    if (PROTOCOL[a.type] === 'emby' || PROTOCOL[a.type] === 'jellyfin') {
       const d = (await embyFetch(a, `/Users/${a.userId}/Items?IncludeItemTypes=MusicAlbum&Recursive=true&SortBy=SortName&Limit=300&Fields=PrimaryImageAspectRatio`)) as { Items?: Record<string, unknown>[] };
       return (d.Items || []).map(it => ({
         id: String(it.Id), name: String(it.Name || ''),
@@ -296,7 +304,7 @@ export const providerApi = {
   /** 专辑内歌曲 */
   async albumSongs(a: ProviderAcct, albumId: string): Promise<SongItem[]> {
     const pid = a.id;
-    if (a.type === 'subsonic') {
+    if (PROTOCOL[a.type] === 'subsonic') {
       const d = await subCall<{ album?: { song?: Record<string, unknown>[] } }>(a, 'getAlbum', { id: albumId });
       return (d.album?.song || []).map(s => {
         const id = String(s.id);
@@ -312,7 +320,7 @@ export const providerApi = {
         } as SongItem;
       });
     }
-    if (a.type === 'emby' || a.type === 'jellyfin') {
+    if (PROTOCOL[a.type] === 'emby' || PROTOCOL[a.type] === 'jellyfin') {
       const d = (await embyFetch(a, `/Users/${a.userId}/Items?ParentId=${albumId}&IncludeItemTypes=Audio&SortBy=ParentIndexNumber,IndexNumber,SortName&Limit=500`)) as { Items?: Record<string, unknown>[] };
       return (d.Items || []).map(it => ({
         name: String(it.Name || '未知曲目'),
@@ -338,8 +346,9 @@ export const providerApi = {
     const [pid, itemId] = song.songmid.split(':');
     const a = providers.get(pid);
     if (!a || !itemId) return null;
-    if (src === 'subsonic') return { url: subUrl(a, 'stream', { id: itemId, maxBitRate: '0', format: 'raw' }) };
-    if (src === 'emby' || src === 'jellyfin') {
+    const proto = PROTOCOL[a.type];
+    if (proto === 'subsonic') return { url: subUrl(a, 'stream', { id: itemId, maxBitRate: '0', format: 'raw' }) };
+    if (proto === 'emby' || proto === 'jellyfin') {
       return { url: `${embyRoot(a)}/Audio/${itemId}/stream?static=true`, headers: embyHeaders(a) };
     }
     return null;

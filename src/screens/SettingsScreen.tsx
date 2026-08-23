@@ -15,8 +15,8 @@ import { APP_VERSION } from '../services/appversion';
 const GROUPS: { icon: IconName; title: string; sub: string; to?: string }[] = [
   { icon: 'sliders', title: '播放设置', sub: '音质、自动播放', to: 'PlayerSettings' },
   { icon: 'music', title: '音源管理', sub: '', to: 'Sources' },
-  { icon: 'server', title: '媒体库', sub: 'Emby / Jellyfin / Navidrome / 道理鱼 / WebDAV', to: 'MediaLibs' },
-  { icon: 'user', title: '使用方式与账号', sub: '本地/服务器/登录与同步', to: 'Account' },
+  { icon: 'devices', title: '媒体库', sub: 'Emby / Jellyfin / Navidrome / 道理鱼 / WebDAV', to: 'MediaLibs' },
+  { icon: 'my', title: '使用方式与账号', sub: '本地/服务器/登录与同步', to: 'Account' },
   { icon: 'palette', title: '主题外观', sub: '强调色 · 纯黑背景', to: 'Theme' },
   { icon: 'download', title: '下载设置', sub: '', to: 'DownloadsSettings' },
   { icon: 'cloud', title: '云备份', sub: 'WebDAV 同步歌单与设置', to: 'BackupSettings' },

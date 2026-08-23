@@ -16,7 +16,7 @@ import {
 } from '../services/providers';
 import type { SongItem } from '../services/server';
 
-const TYPE_ICON: Record<ProviderType, string> = { subsonic: 'music', emby: 'tv', jellyfin: 'tv', webdav: 'cloud' };
+const TYPE_ICON: Record<ProviderType, string> = { subsonic: 'music', navidrome: 'music', daoliyu: 'music', emby: 'tv', jellyfin: 'tv', webdav: 'cloud' };
 
 export function MediaLibsScreen() {
   const insets = useSafeAreaInsets();

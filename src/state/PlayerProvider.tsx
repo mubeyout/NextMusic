@@ -111,7 +111,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       // ③ 媒体库源（emby/jellyfin/subsonic/webdav）：直接出流地址 + 鉴权头
-      const isProvider = t.source === 'emby' || t.source === 'jellyfin' || t.source === 'subsonic' || t.source === 'webdav';
+      const isProvider = t.source === 'emby' || t.source === 'jellyfin' || t.source === 'subsonic'
+        || t.source === 'navidrome' || t.source === 'daoliyu' || t.source === 'webdav';
       if (isProvider) {
         const p = providerApi.streamFor(t);
         if (!p?.url) throw new Error('媒体库账号不存在，请重新添加');
