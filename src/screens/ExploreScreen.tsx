@@ -142,7 +142,6 @@ export function ExploreScreen() {
   // 推荐 tab：本周精选 = TOP500 前 8；hero 元数据用最近播放数；热门主题真实封面
   const [weekly, setWeekly] = useState<SongItem[]>([]);
   const [recentCount, setRecentCount] = useState(0);
-  const [menu, setMenu] = useState(false);
   const [filter, setFilter] = useState(false);
   const [source, setSource] = useState<'kw' | 'kg' | 'wy'>('kw');
   const [topicCovers, setTopicCovers] = useState<Record<string, SongListMeta[]>>({});
@@ -246,9 +245,6 @@ export function ExploreScreen() {
       >
         <View style={st.headerRow}>
           <Text style={[st.title, tab !== 0 && st.titleBig]}>探索</Text>
-          <TouchableOpacity style={st.moreBtn} hitSlop={6} onPress={() => setMenu(true)}>
-            <Icon name="more" size={22} />
-          </TouchableOpacity>
         </View>
 
         <PillTabs tabs={['推荐', '分类', '榜单']} active={tab} onChange={setTab} />
@@ -481,14 +477,6 @@ export function ExploreScreen() {
         )}
       </ScrollView>
       <ActionSheet
-        visible={menu} onClose={() => setMenu(false)} title="探索"
-        items={[
-          { label: '连接服务器', onPress: () => navigation.navigate('Server') },
-          { label: '设置', onPress: () => navigation.navigate('Settings') },
-          { label: '刷新数据', onPress: () => { setBoards([]); setWeekly([]); } },
-        ]}
-      />
-      <ActionSheet
         visible={filter} onClose={() => setFilter(false)} title="搜索音源"
         items={[
           { label: '酷我', sub: '资源丰富 · 推荐', selected: source === 'kw', onPress: () => setSource('kw') },
@@ -510,7 +498,6 @@ const st = StyleSheet.create({
   headerRow: { height: 40, flexDirection: 'row', alignItems: 'center', gap: 12 },
   title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700' },
   titleBig: { fontSize: 28, lineHeight: 34 },
-  moreBtn: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center' },
   searchBox: {
     height: 44, borderRadius: 22, backgroundColor: '#171717',
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, gap: 9,

@@ -1,15 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { navRef } from '../navRef';
 import { lxapi } from '../services/lxapi';
-const navRefNavigate = (s: string) => { navRef.current?.navigate(s as never); };
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { PillTabs } from '../components/PillTabs';
-import { ActionSheet } from '../components/ActionSheet';
 import { useApp } from '../state/AppState';
 import { usePlayer } from '../state/PlayerProvider';
 import { getRecents } from '../state/recent';
@@ -37,9 +34,7 @@ export function HomeScreen({ visible = true }: { visible?: boolean }) {
   const { username } = useApp();
   const hello = username ? `${greeting()}，${username}` : greeting();
   useEffect(() => { if (visible) setTabKey(k => k + 1); }, [visible]); // remount content on tab re-entry
-  const nav2 = (s: string) => navRefNavigate(s);
   const [tabKey, setTabKey] = useState(0);
-  const [menu, setMenu] = useState(false);
 
   return (
     <LinearGradient colors={[C.bgGradientTop, C.bg, C.bg]} locations={[0, 0.55, 1]} style={st.screen}>
@@ -49,9 +44,6 @@ export function HomeScreen({ visible = true }: { visible?: boolean }) {
       >
         <View style={st.headerRow}>
           <Text style={st.hello}>{hello}</Text>
-          <TouchableOpacity style={st.moreBtn} hitSlop={6} onPress={() => setMenu(true)}>
-            <Icon name="more" size={22} />
-          </TouchableOpacity>
         </View>
 
         <PillTabs tabs={['全部', '音乐', '播客']} active={tab} onChange={setTab} />
@@ -60,14 +52,6 @@ export function HomeScreen({ visible = true }: { visible?: boolean }) {
         {tab === 1 && <HomeMusic key={`m${tabKey}`} />}
         {tab === 2 && <Text style={st.empty}>播客内容 · 即将上线</Text>}
       </ScrollView>
-      <ActionSheet
-        visible={menu} onClose={() => setMenu(false)} title={hello}
-        items={[
-          { label: '设置', onPress: () => nav2('Settings') },
-          { label: '连接服务器', onPress: () => nav2('Server') },
-          { label: '登录同步歌单', onPress: () => nav2('AuthLogin') },
-        ]}
-      />
     </LinearGradient>
   );
 }
@@ -304,7 +288,6 @@ const st = StyleSheet.create({
   content: { paddingHorizontal: 20, paddingBottom: 24 },
   headerRow: { height: 40, flexDirection: 'row', alignItems: 'center', gap: 12 },
   hello: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700' },
-  moreBtn: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center' },
   body: { gap: 12, paddingTop: 12 },
   empty: { color: C.text2, fontSize: 13, lineHeight: 18, paddingTop: 40, textAlign: 'center' },
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
