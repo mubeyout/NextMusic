@@ -6,10 +6,14 @@ import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { PillTabs } from '../components/PillTabs';
+import { SongRow } from '../components/SongRow';
+import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
 import { library } from '../state/library';
 import { getRecents } from '../state/recent';
 import { sync, lxToApp, type UserListsSnapshot } from '../services/sync';
+import { downloads as dlStore, subscribeDownloads, fmtBytes } from '../services/downloads';
+import { deviceTrackCount } from '../services/devicelibrary';
 import type { SongItem } from '../services/server';
 
 // Figma 2154-702 我的·歌单: title 28 + settings btn(#2b2b2b round) + pills +
@@ -29,13 +33,20 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState(0);
   const { username, connected, token } = useApp();
+  const { playSong, current } = usePlayer();
   const nav = useNavigation() as { navigate: (s: string, p?: object) => void };
+  const currentDl = (s: SongItem) => current?.songmid === s.songmid && current?.source === s.source;
 
   const [snap, setSnap] = useState<UserListsSnapshot | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [artists, setArtists] = useState<{ name: string; id: string; img?: string; count?: number }[] | null>(null);
   const [albums, setAlbums] = useState<{ name: string; singer?: string; id: string; img?: string }[] | null>(null);
   const [recents, setRecents] = useState<SongItem[]>([]);
+  const [dlList, setDlList] = useState(dlStore.all());
+  const [dlTick, setDlTick] = useState(0);
+  useEffect(() => subscribeDownloads(() => { setDlList(dlStore.all()); setDlTick(t => t + 1); }), []);
+  const [localCount, setLocalCount] = useState(deviceTrackCount());
+  useEffect(() => { if (visible) setLocalCount(deviceTrackCount()); }, [visible]);
 
   const loggedIn = connected && !!token;
   const localPlaylists = library.all();
@@ -129,9 +140,9 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
               <Text style={st.quickTitle}>我喜欢的</Text>
               <Text style={st.quickMeta}>{loveSongs.length} 首</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={st.quickCard} activeOpacity={0.85} onPress={() => openSongs('本地音乐', localSongs.length ? localSongs : defaultSongs)}>
+            <TouchableOpacity style={st.quickCard} activeOpacity={0.85} onPress={() => nav.navigate('DeviceMusic')}>
               <Text style={st.quickTitle}>本地音乐</Text>
-              <Text style={st.quickMeta}>{localSongs.length ? `${localSongs.length} 首` : '待导入'}</Text>
+              <Text style={st.quickMeta}>{localCount ? `${localCount} 首` : '点此扫描'}</Text>
             </TouchableOpacity>
           </View>
 
@@ -199,8 +210,31 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
 
       {tab === 3 && (
         <View style={st.body}>
-          <View style={st.sectionRow}><Text style={st.sectionTitle}>已下载</Text><Text style={st.sectionMeta}>0 首</Text></View>
-          <Text style={st.empty}>下载功能即将上线</Text>
+          <View style={st.sectionRow}>
+            <Text style={st.sectionTitle}>已下载</Text>
+            <TouchableOpacity onPress={() => nav.navigate('Downloads')}>
+              <Text style={st.sectionMeta}>{dlList.length ? `${dlList.length} 首 · ${fmtBytes(dlStore.totalBytes())} · 管理 ›` : '0 首'}</Text>
+            </TouchableOpacity>
+          </View>
+          {dlList.length ? (
+            <View style={{ gap: 4 }} key={dlTick}>
+              {dlList.slice(0, 100).map(r => (
+                <SongRow
+                  key={r.key}
+                  song={r.song}
+                  playing={currentDl(r.song)}
+                  onPress={() => playSong(r.song, dlList.map(x => x.song))}
+                  extra={(
+                    <TouchableOpacity hitSlop={8} onPress={() => dlStore.remove(r.song)}>
+                      <Text style={st.delText}>删除</Text>
+                    </TouchableOpacity>
+                  )}
+                />
+              ))}
+            </View>
+          ) : (
+            <Text style={st.empty}>还没有下载{'\n'}在歌单页点「下载全部」，或在歌曲菜单里下载</Text>
+          )}
         </View>
       )}
     </ScrollView>
@@ -247,5 +281,6 @@ const st = StyleSheet.create({
   rowName: { color: C.text, fontSize: 14, lineHeight: 19, fontWeight: '500' },
   rowMeta: { color: C.text2, fontSize: 11, lineHeight: 15 },
   empty: { color: C.text2, fontSize: 12, lineHeight: 17, textAlign: 'center', paddingTop: 18, paddingBottom: 6 },
+  delText: { color: C.text3, fontSize: 11, lineHeight: 14 },
   center: { paddingVertical: 24 },
 });

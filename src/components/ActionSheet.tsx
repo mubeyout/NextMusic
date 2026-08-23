@@ -3,10 +3,11 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'rea
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C } from '../theme/tokens';
 
-// 通用底部菜单（右上角 ⋯ / 更多）
-export function ActionSheet({ visible, onClose, title, items }: {
+// 通用底部菜单（右上角 ⋯ / 更多）；extra 可插入自定义内容（表单等）
+export function ActionSheet({ visible, onClose, title, items, extra }: {
   visible: boolean; onClose: () => void; title?: string;
   items: { label: string; sub?: string; onPress?: () => void; danger?: boolean; selected?: boolean }[];
+  extra?: React.ReactNode;
 }) {
   const insets = useSafeAreaInsets();
   return (
@@ -15,7 +16,7 @@ export function ActionSheet({ visible, onClose, title, items }: {
         <View style={[s.sheet, { paddingBottom: insets.bottom + 16 }]} onStartShouldSetResponder={() => true}>
           <View style={s.handle} />
           {title ? <Text style={s.title}>{title}</Text> : null}
-          <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
+          <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
             {items.map(it => (
               <TouchableOpacity key={it.label} style={s.row} activeOpacity={0.7}
                 onPress={() => { onClose(); it.onPress?.(); }}>
@@ -26,6 +27,7 @@ export function ActionSheet({ visible, onClose, title, items }: {
                 {it.selected ? <View style={s.dot} /> : null}
               </TouchableOpacity>
             ))}
+            {extra}
           </ScrollView>
         </View>
       </TouchableOpacity>

@@ -28,6 +28,9 @@ import { SourcesScreen, AccountScreen } from './screens/SourcesAccountScreens';
 import { BasicSettingsScreen, ThemeScreen, AboutScreen, DownloadsSettingsScreen, BackupSettingsScreen, VizSettingsScreen, ProxySettingsScreen } from './screens/SettingSubScreens';
 import { ImportPlaylistScreen } from './screens/ImportPlaylistScreen';
 import { FxScreen } from './screens/FxScreen';
+import { MediaLibsScreen, ProviderBrowseRoute } from './screens/MediaLibsScreen';
+import { DownloadsScreen } from './screens/DownloadsScreen';
+import { DeviceMusicScreen } from './screens/DeviceMusicScreen';
 
 const navTheme = {
   ...DefaultTheme,
@@ -103,6 +106,10 @@ export function RootNavigator() {
         <Stack.Screen name="About" component={AboutScreen} />
         <Stack.Screen name="ImportPlaylist" component={ImportPlaylistScreen} />
         <Stack.Screen name="Fx" component={FxScreen} />
+        <Stack.Screen name="MediaLibs" component={MediaLibsScreen} />
+        <Stack.Screen name="ProviderBrowse" component={ProviderBrowseRoute} />
+        <Stack.Screen name="Downloads" component={DownloadsScreen} />
+        <Stack.Screen name="DeviceMusic" component={DeviceMusicScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

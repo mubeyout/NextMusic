@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { SongRow } from '../components/SongRow';
+import { ActionSheet } from '../components/ActionSheet';
+import { CollectSheet } from '../components/CollectSheet';
 import { usePlayer } from '../state/PlayerProvider';
 import { api, type SongItem, type SongListMeta } from '../services/server';
+import { enqueueDownload, downloads as dlStore, downloadProgress, subscribeDownloads } from '../services/downloads';
 import { MiniPlayer } from '../components/MiniPlayer';
 import { lxapi } from '../services/lxapi';
 
@@ -38,6 +41,10 @@ export function PlaylistDetailScreen() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [actSong, setActSong] = useState<SongItem | null>(null);
+  const [collect, setCollect] = useState(false);
+  const [, force] = useState(0);
+  useEffect(() => subscribeDownloads(() => force(n => n + 1)), []);
 
   useEffect(() => {
     let dead = false;
@@ -115,9 +122,15 @@ export function PlaylistDetailScreen() {
         </TouchableOpacity>
 
         <View style={st.actionRow}>
-          <TouchableOpacity style={st.action}><Icon name="search" size={20} color={C.text2} /><Text style={st.actionText}>搜索歌单</Text></TouchableOpacity>
-          <TouchableOpacity style={st.action}><Icon name="download" size={20} color={C.text2} /><Text style={st.actionText}>排序</Text></TouchableOpacity>
-          <TouchableOpacity style={st.action}><Icon name="more" size={20} color={C.text2} /><Text style={st.actionText}>批量操作</Text></TouchableOpacity>
+          <TouchableOpacity style={st.action} onPress={() => { if (songs?.length) { const n = enqueueDownload(songs); Alert.alert(n ? '开始下载' : '无新任务', n ? `${n} 首已加入下载队列` : '歌内歌曲均已下载'); } }}>
+            <Icon name="download" size={20} color={C.text2} /><Text style={st.actionText}>下载全部</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={st.action} onPress={() => setCollect(true)} disabled={!songs?.length}>
+            <Icon name="heart" size={20} color={C.text2} /><Text style={st.actionText}>收藏全部</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={st.action} onPress={() => { if (songs?.length) playSong(songs[Math.floor(Math.random() * songs.length)], songs); }}>
+            <Icon name="shuffle" size={20} color={C.text2} /><Text style={st.actionText}>随机播</Text>
+          </TouchableOpacity>
         </View>
 
         {songs == null ? (
@@ -132,6 +145,7 @@ export function PlaylistDetailScreen() {
                 song={s}
                 playing={current?.songmid === s.songmid}
                 onPress={() => playSong(s, songs)}
+                extra={renderSongAction(s)}
               />
             ))}
           </View>
@@ -142,8 +156,34 @@ export function PlaylistDetailScreen() {
       <View style={st.miniDock} pointerEvents="box-none">
         <MiniPlayer />
       </View>
+      <ActionSheet
+        visible={!!actSong} onClose={() => setActSong(null)}
+        title={actSong ? `${actSong.name} · ${actSong.singer}` : ''}
+        items={actSong ? [
+          dlStore.isDownloaded(actSong)
+            ? { label: '已下载 ✓', onPress: () => {} }
+            : { label: '下载', onPress: () => { enqueueDownload([actSong]); } },
+          { label: '收藏到歌单', onPress: () => setCollect(true) },
+        ] : []}
+      />
+      <CollectSheet song={actSong} visible={collect} onClose={() => { setCollect(false); setActSong(null); }} />
     </View>
   );
+
+  function renderSongAction(s: SongItem) {
+    const prog = downloadProgress(s);
+    const done = dlStore.isDownloaded(s);
+    if (prog != null) {
+      return <Text style={st.progText}>{Math.round(prog * 100)}%</Text>;
+    }
+    if (done) return <Icon name="check" size={18} active />;
+    if (s.source === 'device') return null;
+    return (
+      <TouchableOpacity hitSlop={8} onPress={() => setActSong(s)}>
+        <Icon name="more" size={20} color={C.text2} />
+      </TouchableOpacity>
+    );
+  }
 }
 
 const st = StyleSheet.create({
@@ -171,6 +211,7 @@ const st = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
   },
   actionText: { color: C.text2, fontSize: 11, lineHeight: 13, fontWeight: '500' },
+  progText: { color: C.brandSoft, fontSize: 11, lineHeight: 14, width: 36, textAlign: 'right' },
   center: { paddingVertical: 40, alignItems: 'center' },
   empty: { color: C.text2, fontSize: 12, textAlign: 'center', paddingVertical: 40 },
   songList: { gap: 8, marginTop: 4 },

@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Icon, type IconName } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { settings } from '../services/settings';
 
 // Figma Navigation/Bottom: 3 items (首页/探索/我的), icon 24 + label 11, active=brand green
 export function TabBar({ state, navigation }: {
@@ -32,7 +33,7 @@ export function TabBar({ state, navigation }: {
             }}
           >
             <Icon name={it.icon} size={24} active={on} />
-            <Text style={[st.label, on && st.labelOn]}>{it.label}</Text>
+            {settings.get().showTabLabels ? <Text style={[st.label, on && st.labelOn]}>{it.label}</Text> : null}
           </TouchableOpacity>
         );
       })}

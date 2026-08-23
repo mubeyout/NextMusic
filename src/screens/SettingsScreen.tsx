@@ -5,26 +5,43 @@ import { useNavigation } from '@react-navigation/native';
 import { Icon, type IconName } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { useApp } from '../state/AppState';
+import { activeSources } from '../services/customSource';
+import { providers } from '../services/providers';
+import { downloads as dlStore } from '../services/downloads';
+import { deviceTrackCount } from '../services/devicelibrary';
+import { APP_VERSION } from '../services/appversion';
 
-// Figma 12·设置: 11 rows with icons/titles/subtitles + chevron
-const GROUPS: { icon: IconName; title: string; sub: string; to?: string; badge?: string }[] = [
-  { icon: 'settings', title: '播放设置', sub: '音质、模式、自动切源', to: 'PlayerSettings' },
-  { icon: 'music', title: '音源管理', sub: '3 个已启用', to: 'Sources' },
+// 设置主页：图标语义修正（palette/cloud/globe/wave/info），全部入口可达
+const GROUPS: { icon: IconName; title: string; sub: string; to?: string }[] = [
+  { icon: 'sliders', title: '播放设置', sub: '音质、自动播放', to: 'PlayerSettings' },
+  { icon: 'music', title: '音源管理', sub: '', to: 'Sources' },
+  { icon: 'server', title: '媒体库', sub: 'Emby / Jellyfin / Navidrome / 道理鱼 / WebDAV', to: 'MediaLibs' },
   { icon: 'user', title: '使用方式与账号', sub: '本地/服务器/登录与同步', to: 'Account' },
-  { icon: 'check', title: '主题外观', sub: '深色 · 绿色', to: 'Theme' },
-  { icon: 'download', title: '下载设置', sub: '仅 Wi-Fi', to: 'DownloadsSettings' },
-  { icon: 'volume', title: '云备份', sub: 'WebDAV', to: 'BackupSettings' },
-  { icon: 'sliders', title: '音效设置', sub: '均衡器与空间音频', to: 'Fx' },
-  { icon: 'status', title: '可视化设置', sub: '波形 · 频谱', to: 'VizSettings' },
-  { icon: 'repeat', title: '代理设置', sub: '自动检测', to: 'ProxySettings' },
-  { icon: 'settings', title: '基本设置', sub: '启动、语言、缓存与底栏', to: 'BasicSettings' },
-  { icon: 'headphones', title: '关于与帮助', sub: '版本 3.0.0', to: 'About' },
+  { icon: 'palette', title: '主题外观', sub: '强调色 · 纯黑背景', to: 'Theme' },
+  { icon: 'download', title: '下载设置', sub: '', to: 'DownloadsSettings' },
+  { icon: 'cloud', title: '云备份', sub: 'WebDAV 同步歌单与设置', to: 'BackupSettings' },
+  { icon: 'headphones', title: '音效设置', sub: '均衡器与空间音频', to: 'Fx' },
+  { icon: 'wave', title: '可视化设置', sub: '波形 · 频谱', to: 'VizSettings' },
+  { icon: 'globe', title: '代理设置', sub: 'HTTP / SOCKS5', to: 'ProxySettings' },
+  { icon: 'settings', title: '基本设置', sub: '启动、缓存与存储', to: 'BasicSettings' },
+  { icon: 'info', title: '关于与帮助', sub: `版本 ${APP_VERSION}`, to: 'About' },
 ];
 
 export function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string) => void };
   const { connected, base, username } = useApp();
+  const nSources = activeSources().length;
+  const nDl = dlStore.all().length;
+  const nPv = providers.all().length;
+  const nLocal = deviceTrackCount();
+
+  const sub = (g: typeof GROUPS[number]): string => {
+    if (g.title === '音源管理') return `${nSources} 个已启用`;
+    if (g.title === '下载设置') return `${nDl} 首已下载`;
+    if (g.title === '媒体库') return nPv ? `${nPv} 个已连接` : g.sub;
+    return g.sub;
+  };
 
   return (
     <View style={[st.screen, { paddingTop: insets.top + 28 }]}>
@@ -40,7 +57,10 @@ export function SettingsScreen() {
           <View style={st.brandDot} />
           <View style={{ flex: 1 }}>
             <Text style={st.brandTitle}>无广告 · 无追踪</Text>
-            <Text style={st.brandSub}>数据仅保存在你的设备</Text>
+            <Text style={st.brandSub}>
+              {connected ? `已连接 ${username || '服务器'} · ${base}` : '本地模式 · 数据仅保存在设备'}
+              {nLocal ? ` · 本地音乐 ${nLocal} 首` : ''}
+            </Text>
           </View>
           <Icon name="check" size={22} active />
         </View>
@@ -56,7 +76,7 @@ export function SettingsScreen() {
               <View style={st.rowIconWrap}><Icon name={g.icon} size={20} color={C.text} /></View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={st.rowTitle}>{g.title}</Text>
-                <Text style={st.rowSub} numberOfLines={1}>{g.sub}</Text>
+                <Text style={st.rowSub} numberOfLines={1}>{sub(g)}</Text>
               </View>
               <Icon name="chevronright" size={20} color={C.text3} />
             </TouchableOpacity>

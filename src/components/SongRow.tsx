@@ -5,7 +5,8 @@ import { C } from '../theme/tokens';
 import type { SongItem } from '../services/server';
 
 // Figma Song Row: 350x46, art 46x46 r=6, title 13 w500 / sub 10, duration right, more icon 20
-export function SongRow({ song, onPress, playing }: { song: SongItem; onPress?: () => void; playing?: boolean }) {
+// extra: 右侧操作位（下载按钮等）；不传则显示 more 图标
+export function SongRow({ song, onPress, playing, extra }: { song: SongItem; onPress?: () => void; playing?: boolean; extra?: React.ReactNode }) {
   return (
     <TouchableOpacity activeOpacity={0.7} style={st.row} onPress={onPress} disabled={!onPress}>
       <View style={st.artWrap}>
@@ -19,7 +20,7 @@ export function SongRow({ song, onPress, playing }: { song: SongItem; onPress?: 
       </View>
       <Text style={st.dur}>{playing ? '正在播放' : song.interval}</Text>
       <View style={st.more}>
-        <Icon name="more" size={20} color={C.text2} />
+        {extra != null ? extra : <Icon name="more" size={20} color={C.text2} />}
       </View>
     </TouchableOpacity>
   );

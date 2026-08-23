@@ -1,0 +1,143 @@
+// 下载管理：解析取链（自定义音源/服务器/媒体库）→ 落盘到应用目录 → MMKV 索引
+// 队列串行 + 并发上限；UI 通过 subscribe() 刷新
+import RNBlobUtil from 'react-native-blob-util';
+import { createMMKV } from 'react-native-mmkv';
+import type { SongItem } from './server';
+import { api } from './server';
+import { customGetMusicUrl } from './customSource';
+import { providerApi } from './providers';
+import { settings, type Quality } from './settings';
+
+export interface DownloadRec {
+  key: string;
+  song: SongItem;
+  path: string;       // file:// 绝对路径
+  size: number;       // bytes
+  quality: Quality;
+  at: number;         // downloaded at
+}
+
+const kv = createMMKV({ id: 'nextmusic-downloads' });
+
+function readAll(): DownloadRec[] {
+  try { return JSON.parse(kv.getString('items') || '[]'); } catch { return []; }
+}
+function writeAll(list: DownloadRec[]) { kv.set('items', JSON.stringify(list)); }
+
+const listeners = new Set<() => void>();
+function emit() { listeners.forEach(fn => fn()); }
+
+export function subscribeDownloads(fn: () => void) { listeners.add(fn); return () => { listeners.delete(fn); }; }
+
+export const songKey = (s: SongItem) => `${s.source}:${s.songmid}`;
+
+export const downloads = {
+  all: readAll,
+  isDownloaded(s: SongItem): boolean { return readAll().some(r => r.key === songKey(s)); },
+  pathFor(s: SongItem): string | null { return readAll().find(r => r.key === songKey(s))?.path ?? null; },
+  totalBytes(): number { return readAll().reduce((n, r) => n + (r.size || 0), 0); },
+  remove(s: SongItem) {
+    const list = readAll();
+    const rec = list.find(r => r.key === songKey(s));
+    if (!rec) return;
+    writeAll(list.filter(r => r.key !== rec.key));
+    RNBlobUtil.fs.unlink(localPath(rec.path)).catch(() => {});
+    emit();
+  },
+  clearAll() {
+    const list = readAll();
+    writeAll([]);
+    list.forEach(r => RNBlobUtil.fs.unlink(localPath(r.path)).catch(() => {}));
+    emit();
+  },
+};
+
+function localPath(fileUrl: string): string { return fileUrl.replace(/^file:\/\//, ''); }
+
+function extFor(q: Quality): string { return q === 'flac' ? 'flac' : 'mp3'; }
+function sanitize(s: string): string { return s.replace(/[\\/:*?"<>|]/g, '_').slice(0, 80); }
+
+// ---------- 取链 ----------
+async function resolveUrl(song: SongItem, quality: Quality): Promise<{ url: string; headers?: Record<string, string> }> {
+  // 媒体库源（emby/jellyfin/subsonic/webdav）直接出流地址
+  const p = providerApi.streamFor(song);
+  if (p) return p;
+  // 设备本地文件无需下载
+  if (song.source === 'device') throw new Error('本地文件无需下载');
+  // 在线音源：自定义脚本优先，其次服务器
+  let url: string | null = null;
+  try { url = await customGetMusicUrl(song, quality); } catch { url = null; }
+  if (!url) url = (await api.musicUrl(song, quality)).url;
+  if (!url) throw new Error('取链失败');
+  return { url };
+}
+
+// ---------- 队列 ----------
+interface Job { song: SongItem; quality: Quality }
+const queue: Job[] = [];
+let active = 0;
+const progressMap = new Map<string, number>(); // key -> 0..1
+export function downloadProgress(s: SongItem): number | null {
+  const p = progressMap.get(songKey(s));
+  return p == null ? null : p;
+}
+
+function pump() {
+  const max = Math.max(1, Math.min(5, settings.get().maxConcurrent));
+  while (active < max && queue.length) {
+    const job = queue.shift()!;
+    active++;
+    runJob(job).catch(() => {}).finally(() => { active--; emit(); pump(); });
+  }
+}
+
+async function runJob(job: Job): Promise<void> {
+  const key = songKey(job.song);
+  progressMap.set(key, 0);
+  emit();
+  try {
+    const dir = `${RNBlobUtil.fs.dirs.DocumentDir}/downloads`;
+    await RNBlobUtil.fs.mkdir(dir).catch(() => {});
+    const file = `${dir}/${sanitize(job.song.name)}-${sanitize(job.song.singer)}-${job.song.songmid.slice(-24).replace(/[^a-zA-Z0-9_-]/g, '')}.${extFor(job.quality)}`;
+    const { url, headers } = await resolveUrl(job.song, job.quality);
+    const task = RNBlobUtil.config({ path: file }).fetch('GET', url, headers || {});
+    task.progress({ count: 10, interval: 300 }, (w, t) => { progressMap.set(key, t > 0 ? w / t : 0); emit(); });
+    const res = await task;
+    const info = await RNBlobUtil.fs.stat(file);
+    const list = readAll().filter(r => r.key !== key);
+    list.unshift({ key, song: job.song, path: 'file://' + file, size: info.size, quality: job.quality, at: Date.now() });
+    writeAll(list);
+  } finally {
+    progressMap.delete(key);
+  }
+}
+
+// 按歌曲可用音质降级（无损请求但无 flac → 320k → 128k）
+function bestQuality(s: SongItem, want: Quality): Quality {
+  if (want === 'flac' && !s._types?.flac) return s._types?.['320k'] ? '320k' : '128k';
+  if (want === '320k' && !s._types?.['320k'] && s._types && !s._types['320k']) {
+    // 在线歌曲无 320k 标记时仍尝试（部分源不回传 types）
+    return '320k';
+  }
+  return want;
+}
+
+export function enqueueDownload(songs: SongItem[]): number {
+  const exist = new Set(readAll().map(r => r.key));
+  let n = 0;
+  for (const s of songs) {
+    const key = songKey(s);
+    if (exist.has(key) || s.source === 'device' || queue.some(j => songKey(j.song) === key)) continue;
+    queue.push({ song: s, quality: bestQuality(s, settings.get().downloadQuality) });
+    n++;
+  }
+  pump();
+  return n;
+}
+
+export function fmtBytes(n: number): string {
+  if (n >= 1 << 30) return (n / (1 << 30)).toFixed(2) + ' GB';
+  if (n >= 1 << 20) return (n / (1 << 20)).toFixed(1) + ' MB';
+  if (n >= 1 << 10) return (n / (1 << 10)).toFixed(0) + ' KB';
+  return n + ' B';
+}

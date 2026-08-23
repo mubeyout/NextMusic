@@ -7,6 +7,9 @@ import type { SongItem } from '../services/server';
 import { api } from '../services/server';
 import { lxapi } from '../services/lxapi';
 import { customGetMusicUrl, activeSources } from '../services/customSource';
+import { providerApi } from '../services/providers';
+import { downloads as dlStore } from '../services/downloads';
+import { settings } from '../services/settings';
 import { useApp } from './AppState';
 import { pushRecent } from './recent';
 import { navRef } from '../navRef';
@@ -50,7 +53,7 @@ export async function setupPlayer() {
   });
 }
 
-function trackToAudioPro(t: QueueTrack, url: string) {
+function trackToAudioPro(t: QueueTrack, url: string, headers?: Record<string, string>) {
   return {
     id: t.uid,
     url,
@@ -64,8 +67,10 @@ function trackToAudioPro(t: QueueTrack, url: string) {
     singer: t.singer,
     _types: t._types,
     interval: t.interval,
+    ...(headers ? { headers } : {}),
   };
 }
+// 注：headers 通过 play(track, {headers}) 传入，track 内仅作存档
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const { token } = useApp();
@@ -92,6 +97,28 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const resolveAndPlay = useCallback(async (t: QueueTrack) => {
     try {
+      // ① 设备本地文件：直接播 file://
+      if (t.source === 'device') {
+        AudioPro.play(trackToAudioPro(t, 'file://' + t.songmid));
+        setCurrent(t);
+        return;
+      }
+      // ② 已下载：离线播放本地文件
+      const dlPath = dlStore.pathFor(t);
+      if (dlPath) {
+        AudioPro.play(trackToAudioPro(t, dlPath));
+        setCurrent(t);
+        return;
+      }
+      // ③ 媒体库源（emby/jellyfin/subsonic/webdav）：直接出流地址 + 鉴权头
+      const isProvider = t.source === 'emby' || t.source === 'jellyfin' || t.source === 'subsonic' || t.source === 'webdav';
+      if (isProvider) {
+        const p = providerApi.streamFor(t);
+        if (!p?.url) throw new Error('媒体库账号不存在，请重新添加');
+        AudioPro.play(trackToAudioPro(t, p.url, p.headers), p.headers ? { headers: p.headers } : undefined);
+        setCurrent(t);
+        return;
+      }
       const token = tokenRef.current;
       // 播放门槛：登录服务器 或 已启用自定义音源（对齐 lx-music：浏览免费，播放需其一）
       if (!token && activeSources().length === 0) {
@@ -222,8 +249,18 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 }
 
 function pickQuality(s: SongItem): string {
-  if (s._types?.flac) return 'flac';
-  if (s._types?.['320k']) return '320k';
+  const want = settings.get().playQuality;
+  if (want === 'flac') {
+    if (s._types?.flac) return 'flac';
+    if (s._types?.['320k']) return '320k';
+    if (s._types) return '128k'; // 源未提供类型标记时按默认音质请求
+    return 'flac';
+  }
+  if (want === '320k') {
+    if (s._types?.['320k']) return '320k';
+    if (s._types?.flac) return 'flac'; // 无 320k 有无损 → 取无损
+    return '320k';
+  }
   return '128k';
 }
 
