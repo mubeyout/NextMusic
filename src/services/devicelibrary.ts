@@ -2,11 +2,17 @@
 // ① 直接路径模式（旧 Android 或已授予原始读权限）
 // ② SAF 模式（Android 10+ scoped storage 主路径）：系统文件夹选择器授权 → listFiles 递归
 // 结果持久化 MMKV；SongItem.songmid = 文件绝对路径或 content:// uri（ExoPlayer 均可播）
-import { PermissionsAndroid, Platform } from 'react-native';
+import { PermissionsAndroid, Platform, NativeModules } from 'react-native';
 import RNBlobUtil from 'react-native-blob-util';
 import saf from 'react-native-saf-x';
 import { createMMKV } from 'react-native-mmkv';
 import type { SongItem } from './server';
+
+// 原生 MediaStore 扫描模块（MusicScannerModule.kt）
+const MusicScanner = NativeModules.MusicScanner as { scan(): Promise<{
+  uri: string; name: string; singer: string; album: string;
+  durationMs: number; size: number; mtime: number; path: string;
+}[]> } | undefined;
 
 const kv = createMMKV({ id: 'nextmusic-device-music' });
 
@@ -20,6 +26,8 @@ export interface DeviceTrack {
 
 const AUDIO_RE = /\.(mp3|flac|m4a|aac|ogg|wav|ape|wma|opus)$/i;
 const SCAN_ROOTS = [
+  '/sdcard/Music',
+  '/sdcard/Download',
   '/storage/emulated/0/Music',
   '/storage/emulated/0/Download',
 ];
@@ -91,7 +99,28 @@ async function walkSaf(uri: string, depth: number, out: DeviceTrack[], onProgres
   }
 }
 
-export interface ScanResult { count: number; ms: number; mode: 'path' | 'saf' }
+function fmtInterval(ms: number): string {
+  const s = Math.round(ms / 1000);
+  return `${Math.floor(s / 60)}:${s % 60 < 10 ? '0' : ''}${s % 60}`;
+}
+
+/** MediaStore 扫描（Android 推荐）：系统媒体库查询，元数据齐全，不受 scoped storage 限制 */
+export async function scanByMediaStore(): Promise<ScanResult | null> {
+  if (!MusicScanner) return null;
+  const t0 = Date.now();
+  const rows = await MusicScanner.scan();
+  const tracks: DeviceTrack[] = rows.map(r => ({
+    path: r.uri,
+    name: r.name || r.path.split('/').pop() || '未知曲目',
+    singer: r.singer || '本地音乐',
+    size: r.size,
+    mtime: r.mtime,
+  }));
+  writeAll(tracks); // MediaStore 已按 mtime 倒序
+  return { count: tracks.length, ms: Date.now() - t0, mode: 'mediastore' };
+}
+
+export interface ScanResult { count: number; ms: number; mode: 'path' | 'saf' | 'mediastore' }
 
 /** 直接路径扫描（可能因 scoped storage 返回 0） */
 export async function scanByPath(onProgress?: (n: number) => void): Promise<ScanResult> {
@@ -139,6 +168,24 @@ export function deviceSongs(): SongItem[] {
     albumId: '',
     interval: '',
     hash: t.path,
+  }));
+}
+
+// MediaStore 版（带时长）
+let msCache: { uri: string; name: string; singer: string; album: string; durationMs: number }[] | null = null;
+export async function deviceSongsDetailed(): Promise<SongItem[]> {
+  if (!MusicScanner) return deviceSongs();
+  const rows = await MusicScanner.scan();
+  msCache = rows;
+  return rows.map(r => ({
+    name: r.name || '未知曲目',
+    singer: r.singer || '本地音乐',
+    source: 'device',
+    songmid: r.uri,
+    albumId: '',
+    interval: fmtInterval(r.durationMs),
+    hash: r.uri,
+    albumName: r.album || undefined,
   }));
 }
 

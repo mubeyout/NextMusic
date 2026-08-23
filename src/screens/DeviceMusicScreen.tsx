@@ -9,9 +9,10 @@ import { SongRow } from '../components/SongRow';
 import { MiniPlayer } from '../components/MiniPlayer';
 import { usePlayer } from '../state/PlayerProvider';
 import { library } from '../state/library';
+import type { SongItem } from '../services/server';
 import {
-  ensurePermission, scanByPath, scanBySafFolder, scanSafTree, getSafTree, setSafTree,
-  deviceSongs, deviceTrackCount,
+  ensurePermission, scanByMediaStore, scanByPath, scanBySafFolder, scanSafTree, getSafTree,
+  deviceSongsDetailed, deviceTrackCount,
   type ScanResult,
 } from '../services/devicelibrary';
 
@@ -25,29 +26,34 @@ export function DeviceMusicScreen() {
   const [tick, setTick] = useState(0);
 
   const refresh = useCallback(() => setTick(t => t + 1), []);
-  useEffect(() => setCount(deviceTrackCount()), [tick]);
+  const [songs, setSongs] = useState<SongItem[]>([]);
+  const reload = useCallback(async () => { setSongs(await deviceSongsDetailed()); }, []);
+  useEffect(() => { setCount(deviceTrackCount()); reload(); }, [tick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const scan = async () => {
     setScanning(true); setFound(0);
     try {
-      // 优先：已授权的 SAF 目录（scoped storage 下最可靠）
-      const tree = getSafTree();
-      let r: ScanResult | null = null;
-      if (tree) {
-        r = await scanSafTree(tree, n => setFound(n));
-        if (r.count === 0) r = null; // 授权目录空了，回退重选
+      await ensurePermission();
+      // ① MediaStore 主路径（系统媒体库，元数据齐全）
+      let r: ScanResult | null = await scanByMediaStore();
+      // ② 已授权 SAF 目录
+      if (!r || r.count === 0) {
+        const tree = getSafTree();
+        if (tree) {
+          const r2 = await scanSafTree(tree, n => setFound(n));
+          if (r2.count > 0) r = r2;
+        }
       }
-      if (!r) {
-        // 直接路径模式（旧设备可用）
-        await ensurePermission();
+      // ③ 直接路径（旧设备）
+      if (!r || r.count === 0) {
         r = await scanByPath(n => setFound(n));
       }
-      if (r.count === 0) {
+      if (!r || r.count === 0) {
         // scoped storage 拦截 → 引导用户选文件夹（SAF）
         setScanning(false);
         Alert.alert(
-          '选择音乐文件夹',
-          '系统限制直接读取存储，请在弹出的窗口中选择存放音乐的文件夹（如 Music），授权后自动扫描。',
+          '未发现本地音乐',
+          '可以尝试手动选择音乐文件夹（SAF）扫描，或确认设备上有音频文件。',
           [
             { text: '取消', style: 'cancel' },
             {
@@ -67,13 +73,13 @@ export function DeviceMusicScreen() {
         return;
       }
       refresh();
-      Alert.alert('扫描完成', `共发现 ${r.count} 首本地音乐（${(r.ms / 1000).toFixed(1)}s）`);
+      const modeLabel = r.mode === 'mediastore' ? '系统媒体库' : r.mode === 'saf' ? '授权目录' : '设备目录';
+      Alert.alert('扫描完成', `共发现 ${r.count} 首本地音乐（${(r.ms / 1000).toFixed(1)}s，${modeLabel}）`);
     } catch (e) {
       Alert.alert('扫描失败', (e as Error).message);
     } finally { setScanning(false); }
   };
 
-  const songs = deviceSongs();
 
   const addAllToPlaylist = () => {
     if (!songs.length) { Alert.alert('没有本地音乐', '先扫描设备音乐'); return; }
@@ -83,11 +89,11 @@ export function DeviceMusicScreen() {
     ]);
   };
 
-  const addOne = (i: number) => {
+  const addOne = (song: SongItem) => {
     const pls = library.all();
-    const options = pls.map(p => ({ label: `${p.name} (${p.songs.length})`, onPress: () => { library.addSongs(p.id, [songs[i]]); Alert.alert('已加入', p.name); } }));
-    options.push({ label: '＋ 新建歌单', onPress: () => { const pl = library.create(`本地歌单 ${new Date().getMonth() + 1}/${new Date().getDate()}`, [songs[i]]); Alert.alert('已创建', pl.name); } });
-    Alert.alert('加入歌单', songs[i].name, [{ text: '取消', style: 'cancel' }, ...options]);
+    const options = pls.map(p => ({ label: `${p.name} (${p.songs.length})`, onPress: () => { library.addSongs(p.id, [song]); Alert.alert('已加入', p.name); } }));
+    options.push({ label: '＋ 新建歌单', onPress: () => { const pl = library.create(`本地歌单 ${new Date().getMonth() + 1}/${new Date().getDate()}`, [song]); Alert.alert('已创建', pl.name); } });
+    Alert.alert('加入歌单', song.name, [{ text: '取消', style: 'cancel' }, ...options]);
   };
 
   return (
@@ -103,7 +109,7 @@ export function DeviceMusicScreen() {
         <View style={st.scanCard}>
           <View style={{ flex: 1 }}>
             <Text style={st.scanTitle}>{scanning ? `扫描中… 已发现 ${found} 首` : `${count} 首设备音乐`}</Text>
-            <Text style={st.scanSub}>扫描设备音乐目录（需授权文件夹）</Text>
+            <Text style={st.scanSub}>扫描系统媒体库（含时长/专辑信息）</Text>
           </View>
           <TouchableOpacity style={st.scanBtn} onPress={scan} disabled={scanning}>
             {scanning ? <ActivityIndicator size="small" color={C.onBrand} /> : <Icon name="refresh" size={18} color={C.onBrand} />}
@@ -124,14 +130,14 @@ export function DeviceMusicScreen() {
               playing={current?.songmid === s.songmid}
               onPress={() => playSong(s, songs)}
               extra={(
-                <TouchableOpacity hitSlop={8} onPress={() => addOne(i)}>
+                <TouchableOpacity hitSlop={8} onPress={() => addOne(s)}>
                   <Icon name="add" size={18} color={C.text2} />
                 </TouchableOpacity>
               )}
             />
           ))}
         </View>
-        {!scanning && !count ? <Text style={st.empty}>未发现本地音乐{'\n'}点「开始扫描」授权音乐文件夹后自动导入</Text> : null}
+        {!scanning && !count ? <Text style={st.empty}>未发现本地音乐{'\n'}点「开始扫描」导入设备上的音频文件</Text> : null}
       </ScrollView>
       <View style={st.miniDock} pointerEvents="box-none"><MiniPlayer /></View>
     </View>
