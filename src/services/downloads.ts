@@ -1,6 +1,25 @@
 // 下载管理：解析取链（自定义音源/服务器/媒体库）→ 落盘到应用目录 → MMKV 索引
 // 队列串行 + 并发上限；UI 通过 subscribe() 刷新
 import RNBlobUtil from 'react-native-blob-util';
+import { NativeModules, NativeEventEmitter } from 'react-native';
+
+// 原生 OkHttp 下载模块（DownloaderModule.kt）；不可用时回退 blob-util
+const Downloader = NativeModules.Downloader as {
+  download(key: string, url: string, filePath: string, headers: Record<string, string> | null, ): Promise<number>;
+  cancelDownload(key: string): void;
+} | undefined;
+
+let progressSink: ((key: string, received: number, total: number) => void) | null = null;
+export function setProgressSink(fn: ((key: string, received: number, total: number) => void) | null) { progressSink = fn; }
+if (Downloader) {
+  try {
+    const emitter = new NativeEventEmitter(NativeModules.Downloader as never);
+    emitter.addListener('DownloaderProgress', ((e: unknown) => {
+      const ev = e as { key: string; received: number; total: number };
+      progressSink?.(ev.key, ev.received, ev.total);
+    }) as (...args: readonly object[]) => unknown);
+  } catch { /* 事件模块不可用时仅无进度 */ }
+}
 import { createMMKV } from 'react-native-mmkv';
 import type { SongItem } from './server';
 import { api } from './server';
@@ -124,17 +143,34 @@ async function runJob(job: Job): Promise<void> {
     await RNBlobUtil.fs.mkdir(dir).catch(() => {});
     const file = `${dir}/${sanitize(job.song.name)}-${sanitize(job.song.singer)}-${job.song.songmid.slice(-24).replace(/[^a-zA-Z0-9_-]/g, '')}.${extFor(job.quality)}`;
     const { url, headers } = await resolveUrl(job.song, job.quality);
-    const task = RNBlobUtil.config({ path: file }).fetch('GET', url, headers || {});
-    task.progress({ count: 10, interval: 300 }, (w, t) => { progressMap.set(key, t > 0 ? w / t : 0); emit(); });
-    const res = await task;
-    // HTTP 状态校验（blob-util 4xx/5xx 也 resolve）
-    const status = Number(res.respInfo?.status ?? (res as unknown as { respInfo?: { status?: number } }).respInfo?.status ?? 200);
-    const info = await RNBlobUtil.fs.stat(file);
-    const size = Number(info.size) || 0;
-    if (status >= 400 || size === 0) {
-      await RNBlobUtil.fs.unlink(file).catch(() => {});
-      throw new Error(`下载失败 HTTP ${status} · ${size}B`);
+    const hdrs = headers && Object.keys(headers).length ? headers : null;
+    let size = 0;
+    if (Downloader) {
+      // 原生 OkHttp 流式下载（New Arch 稳定路径）
+      await new Promise<void>((resolveP, rejectP) => {
+        const sink = (k: string, received: number, total: number) => {
+          if (k !== key) return;
+          progressMap.set(key, total > 0 ? received / total : 0);
+          emit();
+        };
+        progressSink = sink;
+        Downloader.download(key, url, file, hdrs)
+          .then(sz => { size = sz; progressSink = null; resolveP(); })
+          .catch(e => { progressSink = null; rejectP(e); });
+      });
+    } else {
+      const task = RNBlobUtil.config({ path: file }).fetch('GET', url, headers || {});
+      task.progress({ count: 10, interval: 300 }, (w, t) => { progressMap.set(key, t > 0 ? w / t : 0); emit(); });
+      const res = await task;
+      const status = Number(res.respInfo?.status ?? 200);
+      const info = await RNBlobUtil.fs.stat(file);
+      size = Number(info.size) || 0;
+      if (status >= 400 || size === 0) {
+        await RNBlobUtil.fs.unlink(file).catch(() => {});
+        throw new Error(`下载失败 HTTP ${status} · ${size}B`);
+      }
     }
+    if (size === 0) throw new Error('下载内容为空');
     const list = readAll().filter(r => r.key !== key);
     list.unshift({ key, song: job.song, path: 'file://' + file, size, quality: job.quality, at: Date.now() });
     writeAll(list);
