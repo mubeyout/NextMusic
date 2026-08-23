@@ -9,7 +9,7 @@ import { SongRow } from '../components/SongRow';
 import { PageHeader, EmptyState } from '../components/PageChrome';
 import { MiniPlayer } from '../components/MiniPlayer';
 import { usePlayer } from '../state/PlayerProvider';
-import { downloads as dlStore, subscribeDownloads, fmtBytes, downloadProgress } from '../services/downloads';
+import { downloads as dlStore, subscribeDownloads, fmtBytes, downloadProgress, downloadFails, clearFails } from '../services/downloads';
 import type { SongItem } from '../services/server';
 import { dialog, toast } from '../components/Dialog';
 
@@ -21,6 +21,8 @@ export function DownloadsScreen() {
   const [, force] = useState(0);
 
   useEffect(() => subscribeDownloads(() => { setList(dlStore.all()); force(n => n + 1); }), []);
+  const fails = downloadFails();
+  const lastFails = fails.slice(0, 5);
 
   const play = useCallback((s: SongItem) => { playSong(s, list.map(r => r.song)); }, [playSong, list]);
 
@@ -51,6 +53,14 @@ export function DownloadsScreen() {
       />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 120 }}>
         <Text style={st.stat}>{list.length} 首 · {fmtBytes(dlStore.totalBytes())} · 应用内部存储</Text>
+        {lastFails.length ? (
+          <View style={st.failCard}>
+            <Text style={st.failTitle} numberOfLines={1}>⚠ {fails.length} 首下载失败 · 最近：{lastFails[0].err}</Text>
+            <TouchableOpacity hitSlop={6} onPress={() => { clearFails(); }}>
+              <Text style={st.failClear}>清除</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
         {list.map(r => {
           const prog = downloadProgress(r.song);
           return (
@@ -83,6 +93,9 @@ const st = StyleSheet.create({
   header: { height: 64, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 6 },
   title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700', textAlign: 'center' },
   stat: { color: C.text2, fontSize: 11, lineHeight: 15, marginBottom: 12 },
+  failCard: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#2A1A1A', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 10 },
+  failTitle: { flex: 1, color: '#FF9B9B', fontSize: 11, lineHeight: 15 },
+  failClear: { color: C.text2, fontSize: 11 },
   empty: { color: C.text2, fontSize: 12, lineHeight: 18, textAlign: 'center', paddingVertical: 40 },
   progTrack: { flexDirection: 'row', height: 3, borderRadius: 2, backgroundColor: '#232323', marginTop: 2, marginBottom: 4 },
   progBar: { backgroundColor: C.brand, borderRadius: 2 },

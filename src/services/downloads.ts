@@ -24,8 +24,18 @@ function readAll(): DownloadRec[] {
 }
 function writeAll(list: DownloadRec[]) { kv.set('items', JSON.stringify(list)); }
 
+export interface DownloadFail { key: string; name: string; err: string; at: number }
+
 const listeners = new Set<() => void>();
 function emit() { listeners.forEach(fn => fn()); }
+
+function readFails(): DownloadFail[] {
+  try { return JSON.parse(kv.getString('fails') || '[]'); } catch { return []; }
+}
+function pushFail(f: DownloadFail) {
+  const list = [f, ...readFails().filter(x => x.key !== f.key)].slice(0, 50);
+  kv.set('fails', JSON.stringify(list));
+}
 
 export function subscribeDownloads(fn: () => void) { listeners.add(fn); return () => { listeners.delete(fn); }; }
 
@@ -94,9 +104,15 @@ function pump() {
   while (active < max && queue.length) {
     const job = queue.shift()!;
     active++;
-    runJob(job).catch(() => {}).finally(() => { active--; emit(); pump(); });
+    runJob(job).catch(e => {
+      pushFail({ key: songKey(job.song), name: job.song.name, err: (e as Error).message || '下载失败', at: Date.now() });
+    }).finally(() => { active--; emit(); pump(); });
   }
 }
+
+export function downloadFails(): DownloadFail[] { return readFails(); }
+export function activeCount(): number { return active; }
+export function clearFails() { kv.set('fails', '[]'); emit(); }
 
 async function runJob(job: Job): Promise<void> {
   const key = songKey(job.song);
