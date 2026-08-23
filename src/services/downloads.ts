@@ -58,6 +58,13 @@ function extFor(q: Quality): string { return q === 'flac' ? 'flac' : 'mp3'; }
 function sanitize(s: string): string { return s.replace(/[\\/:*?"<>|]/g, '_').slice(0, 80); }
 
 // ---------- 取链 ----------
+function withTimeout<T>(p: Promise<T>, ms: number, tag: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(tag + ' 超时')), ms);
+    p.then(v => { clearTimeout(t); resolve(v); }, e => { clearTimeout(t); reject(e); });
+  });
+}
+
 async function resolveUrl(song: SongItem, quality: Quality): Promise<{ url: string; headers?: Record<string, string> }> {
   // 媒体库源（emby/jellyfin/subsonic/webdav）直接出流地址
   const p = providerApi.streamFor(song);
@@ -66,8 +73,8 @@ async function resolveUrl(song: SongItem, quality: Quality): Promise<{ url: stri
   if (song.source === 'device') throw new Error('本地文件无需下载');
   // 在线音源：自定义脚本优先，其次服务器
   let url: string | null = null;
-  try { url = await customGetMusicUrl(song, quality); } catch { url = null; }
-  if (!url) url = (await api.musicUrl(song, quality)).url;
+  try { url = await withTimeout(customGetMusicUrl(song, quality), 20000, '音源取链'); } catch { url = null; }
+  if (!url) url = (await withTimeout(api.musicUrl(song, quality), 20000, '服务器取链')).url;
   if (!url) throw new Error('取链失败');
   return { url };
 }
@@ -96,6 +103,7 @@ async function runJob(job: Job): Promise<void> {
   progressMap.set(key, 0);
   emit();
   try {
+    await withTimeout((async () => {
     const dir = `${RNBlobUtil.fs.dirs.DocumentDir}/downloads`;
     await RNBlobUtil.fs.mkdir(dir).catch(() => {});
     const file = `${dir}/${sanitize(job.song.name)}-${sanitize(job.song.singer)}-${job.song.songmid.slice(-24).replace(/[^a-zA-Z0-9_-]/g, '')}.${extFor(job.quality)}`;
@@ -103,10 +111,18 @@ async function runJob(job: Job): Promise<void> {
     const task = RNBlobUtil.config({ path: file }).fetch('GET', url, headers || {});
     task.progress({ count: 10, interval: 300 }, (w, t) => { progressMap.set(key, t > 0 ? w / t : 0); emit(); });
     const res = await task;
+    // HTTP 状态校验（blob-util 4xx/5xx 也 resolve）
+    const status = Number(res.respInfo?.status ?? (res as unknown as { respInfo?: { status?: number } }).respInfo?.status ?? 200);
     const info = await RNBlobUtil.fs.stat(file);
+    const size = Number(info.size) || 0;
+    if (status >= 400 || size === 0) {
+      await RNBlobUtil.fs.unlink(file).catch(() => {});
+      throw new Error(`下载失败 HTTP ${status} · ${size}B`);
+    }
     const list = readAll().filter(r => r.key !== key);
-    list.unshift({ key, song: job.song, path: 'file://' + file, size: info.size, quality: job.quality, at: Date.now() });
+    list.unshift({ key, song: job.song, path: 'file://' + file, size, quality: job.quality, at: Date.now() });
     writeAll(list);
+    })(), 180000, '下载');
   } finally {
     progressMap.delete(key);
   }
