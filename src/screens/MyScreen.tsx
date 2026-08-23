@@ -6,7 +6,6 @@ import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { PillTabs } from '../components/PillTabs';
-import { ActionSheet } from '../components/ActionSheet';
 import { useApp } from '../state/AppState';
 import { library } from '../state/library';
 import { getRecents } from '../state/recent';
@@ -37,7 +36,6 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
   const [artists, setArtists] = useState<{ name: string; id: string; img?: string; count?: number }[] | null>(null);
   const [albums, setAlbums] = useState<{ name: string; singer?: string; id: string; img?: string }[] | null>(null);
   const [recents, setRecents] = useState<SongItem[]>([]);
-  const [menu, setMenu] = useState(false);
 
   const loggedIn = connected && !!token;
   const localPlaylists = library.all();
@@ -94,7 +92,6 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
   ];
 
   return (
-    <>
     <ScrollView
       contentContainerStyle={[st.content, { paddingTop: insets.top + 24, paddingBottom: 24 }]}
       showsVerticalScrollIndicator={false}
@@ -102,9 +99,6 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
     >
       <View style={st.headerRow}>
         <Text style={st.title}>我的音乐</Text>
-        <TouchableOpacity style={st.settingsBtn} hitSlop={4} onPress={() => setMenu(true)}>
-          <Icon name="more" size={20} />
-        </TouchableOpacity>
         <TouchableOpacity style={st.settingsBtn} hitSlop={4} onPress={() => nav.navigate('Settings')}>
           <Icon name="settings" size={20} />
         </TouchableOpacity>
@@ -210,16 +204,6 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
         </View>
       )}
     </ScrollView>
-    <ActionSheet
-      visible={menu} onClose={() => setMenu(false)} title="我的音乐"
-      items={[
-        { label: '设置', onPress: () => nav.navigate('Settings') },
-        { label: '连接服务器', onPress: () => nav.navigate('Server') },
-        { label: '导入歌单', onPress: () => nav.navigate('ImportPlaylist') },
-        { label: '刷新数据', onPress: () => { refresh(); } },
-      ]}
-    />
-    </>
   );
 }
 
