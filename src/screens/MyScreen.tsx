@@ -1,0 +1,267 @@
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, RefreshControl, Dimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import LinearGradient from 'react-native-linear-gradient';
+import { Icon } from '../theme/Icon';
+import { C } from '../theme/tokens';
+import { PillTabs } from '../components/PillTabs';
+import { ActionSheet } from '../components/ActionSheet';
+import { useApp } from '../state/AppState';
+import { library } from '../state/library';
+import { getRecents } from '../state/recent';
+import { sync, lxToApp, type UserListsSnapshot } from '../services/sync';
+import type { SongItem } from '../services/server';
+
+// Figma 2154-702 我的·歌单: title 28 + settings btn(#2b2b2b round) + pills +
+// Library Summary banner(#145938→#1f2e52 r14 h72, 我的收藏 + counts + ＋新建 #1FD661 r18) +
+// Quick row 3 cards (#2b2b2b r12 110x66: 最近播放/我喜欢的/本地音乐) +
+// 自建歌单 2-col grid (169x104 gradient covers + ♫ + 13px w700 + 9px meta)
+const COVER_GRADS: [string, string][] = [
+  ['#1f6b5c', '#142647'],
+  ['#80381f', '#381a2e'],
+  ['#5c297a', '#1f3861'],
+  ['#146b85', '#1f2e47'],
+  ['#1f6b5c', '#142647'],
+  ['#80381f', '#381a2e'],
+];
+
+export function MyScreen({ visible = true }: { visible?: boolean }) {
+  const insets = useSafeAreaInsets();
+  const [tab, setTab] = useState(0);
+  const { username, connected, token } = useApp();
+  const nav = useNavigation() as { navigate: (s: string, p?: object) => void };
+
+  const [snap, setSnap] = useState<UserListsSnapshot | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [artists, setArtists] = useState<{ name: string; id: string; img?: string; count?: number }[] | null>(null);
+  const [albums, setAlbums] = useState<{ name: string; singer?: string; id: string; img?: string }[] | null>(null);
+  const [recents, setRecents] = useState<SongItem[]>([]);
+  const [menu, setMenu] = useState(false);
+
+  const loggedIn = connected && !!token;
+  const localPlaylists = library.all();
+
+  const refresh = useCallback(async () => {
+    setRecents(getRecents());
+    if (!loggedIn) { setSnap(null); return; }
+    setSyncing(true);
+    const s = await sync.fetchLists();
+    setSnap(s);
+    setSyncing(false);
+  }, [loggedIn]);
+
+  useEffect(() => { if (visible) refresh(); }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (tab === 1 && artists == null && loggedIn) sync.libraryArtists().then(setArtists);
+    if (tab === 2 && albums == null && loggedIn) sync.libraryAlbums().then(setAlbums);
+  }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const openSongs = (title: string, songs: SongItem[], cover?: string) => {
+    if (!songs.length) return;
+    nav.navigate('PlaylistDetail', { title, songs, cover, meta: `${songs.length} 首` });
+  };
+
+  const openArtist = async (a: { name: string; id: string }) => {
+    const songs = await api.artistSongs(a.id, 'wy');
+    openSongs(a.name, songs);
+  };
+  const openAlbum = async (a: { name: string; id: string; singer?: string; img?: string }) => {
+    const songs = await api.albumSongs(a.id, 'wy');
+    openSongs(a.name, songs, a.img);
+  };
+
+  const loveSongs = snap ? snap.loveList.map(lxToApp) : [];
+  const defaultSongs = snap ? snap.defaultList.map(lxToApp) : [];
+  const syncPls = snap?.userList || [];
+  const localSongs = localPlaylists.flatMap(p => p.songs);
+  const totalPlaylists = syncPls.length + localPlaylists.length;
+  const totalSongs = (snap?.defaultList.length || 0) + (snap?.loveList.length || 0)
+    + syncPls.reduce((n, u) => n + (u.list?.length || 0), 0)
+    + localPlaylists.reduce((n, p) => n + p.songs.length, 0);
+
+  // 自建歌单 grid items: local playlists first, then synced remote lists
+  const gridItems = [
+    ...localPlaylists.map(p => ({
+      key: p.id, name: p.name, count: p.songs.length, img: p.cover || p.songs[0]?.img,
+      songs: p.songs,
+    })),
+    ...syncPls.map(u => {
+      const songs = (u.list || []).map(lxToApp);
+      return { key: u.id, name: u.name, count: songs.length, img: songs[0]?.img, songs };
+    }),
+  ];
+
+  return (
+    <>
+    <ScrollView
+      contentContainerStyle={[st.content, { paddingTop: insets.top + 24, paddingBottom: 24 }]}
+      showsVerticalScrollIndicator={false}
+      refreshControl={<RefreshControl refreshing={syncing} onRefresh={refresh} tintColor={C.brand} />}
+    >
+      <View style={st.headerRow}>
+        <Text style={st.title}>我的音乐</Text>
+        <TouchableOpacity style={st.settingsBtn} hitSlop={4} onPress={() => setMenu(true)}>
+          <Icon name="more" size={20} />
+        </TouchableOpacity>
+        <TouchableOpacity style={st.settingsBtn} hitSlop={4} onPress={() => nav.navigate('Settings')}>
+          <Icon name="settings" size={20} />
+        </TouchableOpacity>
+      </View>
+
+      <PillTabs tabs={['歌单', '歌手', '专辑', '已下载']} active={tab} onChange={setTab} />
+
+      {tab === 0 && (
+        <View style={st.body}>
+          {/* Library Summary banner */}
+          <LinearGradient colors={['#145938', '#1F2E52']} style={st.banner}>
+            <View style={{ flex: 1 }}>
+              <Text style={st.bannerTitle}>我的收藏</Text>
+              <Text style={st.bannerMeta}>{totalPlaylists} 个歌单 · {totalSongs} 首歌曲</Text>
+            </View>
+            <TouchableOpacity style={st.newBtn} onPress={() => nav.navigate('ImportPlaylist')}>
+              <Text style={st.newBtnText}>＋ 新建</Text>
+            </TouchableOpacity>
+          </LinearGradient>
+
+          {/* Quick row: 3 text cards */}
+          <View style={st.quickRow}>
+            <TouchableOpacity style={st.quickCard} activeOpacity={0.85} onPress={() => openSongs('最近播放', recents)}>
+              <Text style={st.quickTitle}>最近播放</Text>
+              <Text style={st.quickMeta}>{recents.length} 首</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={st.quickCard} activeOpacity={0.85} onPress={() => openSongs('我喜欢的', loveSongs)}>
+              <Text style={st.quickTitle}>我喜欢的</Text>
+              <Text style={st.quickMeta}>{loveSongs.length} 首</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={st.quickCard} activeOpacity={0.85} onPress={() => openSongs('本地音乐', localSongs.length ? localSongs : defaultSongs)}>
+              <Text style={st.quickTitle}>本地音乐</Text>
+              <Text style={st.quickMeta}>{localSongs.length ? `${localSongs.length} 首` : '待导入'}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* 自建歌单 grid */}
+          <View style={st.sectionRow}>
+            <Text style={st.sectionTitle}>自建歌单</Text>
+            <TouchableOpacity onPress={() => nav.navigate('ImportPlaylist')} hitSlop={4}>
+              <Text style={st.sectionMeta}>＋ 导入</Text>
+            </TouchableOpacity>
+          </View>
+          {gridItems.length ? (
+            <View style={st.plGrid}>
+              {gridItems.slice(0, 12).map((g, i) => (
+                <TouchableOpacity key={g.key} style={st.plCell} activeOpacity={0.85} onPress={() => openSongs(g.name, g.songs, g.img)}>
+                  {/* Figma 2154-730：自建歌单一律渐变抽象封面（不用歌曲专辑图） */}
+                  <LinearGradient colors={COVER_GRADS[i % COVER_GRADS.length]} style={st.plCover}>
+                    <Text style={st.plGlyph}>♫</Text>
+                  </LinearGradient>
+                  <Text style={st.plName} numberOfLines={1}>{g.name}</Text>
+                  <Text style={st.plMeta} numberOfLines={1}>{g.count} 首</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : (
+            <Text style={st.empty}>{loggedIn ? '还没有歌单，点右上导入' : '登录后同步服务器歌单'}</Text>
+          )}
+        </View>
+      )}
+
+      {tab === 1 && (
+        <View style={st.body}>
+          <View style={st.sectionRow}><Text style={st.sectionTitle}>收藏歌手</Text><Text style={st.sectionMeta}>{loggedIn ? `${artists?.length ?? 0} 位` : '登录后同步'}</Text></View>
+          {!loggedIn ? <Text style={st.empty}>登录后从服务器同步收藏的歌手</Text>
+            : artists == null ? <View style={st.center}><ActivityIndicator color={C.brand} /></View>
+            : artists.length ? artists.map(a => (
+              <TouchableOpacity key={a.id} style={st.row} activeOpacity={0.8} onPress={() => openArtist(a)}>
+                {a.img ? <Image source={{ uri: a.img }} style={st.roundArt} /> : <View style={[st.roundArt, st.artFallback]}><Text style={st.rowGlyph}>{a.name.slice(0, 1)}</Text></View>}
+                <View style={{ flex: 1 }}>
+                  <Text style={st.rowName} numberOfLines={1}>{a.name}</Text>
+                  <Text style={st.rowMeta}>{a.count != null ? `${a.count} 首歌曲` : '点击查看歌曲'}</Text>
+                </View>
+                <Icon name="next" size={18} color={C.text2} />
+              </TouchableOpacity>
+            )) : <Text style={st.empty}>暂无收藏歌手</Text>}
+        </View>
+      )}
+
+      {tab === 2 && (
+        <View style={st.body}>
+          <View style={st.sectionRow}><Text style={st.sectionTitle}>收藏专辑</Text><Text style={st.sectionMeta}>{loggedIn ? `${albums?.length ?? 0} 张` : '登录后同步'}</Text></View>
+          {!loggedIn ? <Text style={st.empty}>登录后从服务器同步收藏的专辑</Text>
+            : albums == null ? <View style={st.center}><ActivityIndicator color={C.brand} /></View>
+            : albums.length ? albums.map(a => (
+              <TouchableOpacity key={a.id} style={st.row} activeOpacity={0.8} onPress={() => openAlbum(a)}>
+                {a.img ? <Image source={{ uri: a.img }} style={st.art} /> : <View style={[st.art, st.artFallback]}><Text style={st.rowGlyph}>♫</Text></View>}
+                <View style={{ flex: 1 }}>
+                  <Text style={st.rowName} numberOfLines={1}>{a.name}</Text>
+                  <Text style={st.rowMeta} numberOfLines={1}>{a.singer || ''}</Text>
+                </View>
+                <Icon name="next" size={18} color={C.text2} />
+              </TouchableOpacity>
+            )) : <Text style={st.empty}>暂无收藏专辑</Text>}
+        </View>
+      )}
+
+      {tab === 3 && (
+        <View style={st.body}>
+          <View style={st.sectionRow}><Text style={st.sectionTitle}>已下载</Text><Text style={st.sectionMeta}>0 首</Text></View>
+          <Text style={st.empty}>下载功能即将上线</Text>
+        </View>
+      )}
+    </ScrollView>
+    <ActionSheet
+      visible={menu} onClose={() => setMenu(false)} title="我的音乐"
+      items={[
+        { label: '设置', onPress: () => nav.navigate('Settings') },
+        { label: '连接服务器', onPress: () => nav.navigate('Server') },
+        { label: '导入歌单', onPress: () => nav.navigate('ImportPlaylist') },
+        { label: '刷新数据', onPress: () => { refresh(); } },
+      ]}
+    />
+    </>
+  );
+}
+
+// api import placed at bottom to avoid circular-import cycle at module init
+import { api } from '../services/server';
+
+const COL = (Dimensions.get('window').width - 40 - 24) / 3; // 3 列自适应填满屏幕
+
+const st = StyleSheet.create({
+  content: { paddingHorizontal: 20 },
+  headerRow: { height: 44, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  title: { flex: 1, color: C.text, fontSize: 28, lineHeight: 34, fontWeight: '700' },
+  settingsBtn: { width: 44, height: 44, borderRadius: 999, backgroundColor: '#2B2B2B', alignItems: 'center', justifyContent: 'center' },
+  body: { gap: 8, paddingTop: 14 },
+  banner: {
+    height: 72, borderRadius: 14, marginTop: 12, flexDirection: 'row',
+    alignItems: 'center', paddingHorizontal: 16, gap: 12,
+  },
+  bannerTitle: { color: C.text, fontSize: 15, lineHeight: 18, fontWeight: '700' },
+  bannerMeta: { color: C.text2, fontSize: 11, lineHeight: 13, marginTop: 6 },
+  newBtn: { height: 36, borderRadius: 18, backgroundColor: '#1FD661', paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
+  newBtnText: { color: C.white, fontSize: 12, lineHeight: 14, fontWeight: '500' },
+  quickRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  quickCard: { flex: 1, height: 66, borderRadius: 12, backgroundColor: '#2B2B2B', padding: 12, justifyContent: 'center', gap: 6 },
+  quickTitle: { color: C.text, fontSize: 12, lineHeight: 14, fontWeight: '500' },
+  quickMeta: { color: C.text2, fontSize: 10, lineHeight: 12 },
+  sectionRow: { flexDirection: 'row', alignItems: 'center', height: 26, marginTop: 12 },
+  sectionTitle: { flex: 1, color: C.text, fontSize: 18, lineHeight: 22, fontWeight: '700' },
+  sectionMeta: { color: C.brandSoft, fontSize: 10, lineHeight: 12 },
+  plGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 4 },
+  plCell: { width: '31%', gap: 4 },
+  plCover: { width: '100%', aspectRatio: 1, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  plGlyph: { color: C.white, fontSize: 26, fontWeight: '700' },
+  plName: { color: C.text, fontSize: 13, lineHeight: 16, fontWeight: '700' },
+  plMeta: { color: C.text2, fontSize: 9, lineHeight: 11 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
+  art: { width: 50, height: 50, borderRadius: 8, backgroundColor: '#232323' },
+  roundArt: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#232323' },
+  artFallback: { alignItems: 'center', justifyContent: 'center' },
+  rowGlyph: { color: C.text2, fontSize: 20, fontWeight: '700' },
+  rowName: { color: C.text, fontSize: 14, lineHeight: 19, fontWeight: '500' },
+  rowMeta: { color: C.text2, fontSize: 11, lineHeight: 15 },
+  empty: { color: C.text2, fontSize: 12, lineHeight: 17, textAlign: 'center', paddingTop: 18, paddingBottom: 6 },
+  center: { paddingVertical: 24 },
+});

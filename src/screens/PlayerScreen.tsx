@@ -1,0 +1,306 @@
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, PanResponder } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import Svg, { Circle } from 'react-native-svg';
+import { Icon } from '../theme/Icon';
+import { C } from '../theme/tokens';
+import { usePlayer } from '../state/PlayerProvider';
+import { api } from '../services/server';
+import { lxapi } from '../services/lxapi';
+import { parseLrc, mergeTranslation, findActiveLine, type LyricLine } from '../services/lyric';
+import { sync, appToLx, lxToApp } from '../services/sync';
+import { useApp } from '../state/AppState';
+import { library } from '../state/library';
+import { isFav, setFav } from '../state/favorites';
+import { CollectSheet } from '../components/CollectSheet';
+import { ActionSheet } from '../components/ActionSheet';
+
+// Figma 04·播放页: vinyl hero + synced lyrics + secondary tools + playback panel
+export function PlayerScreen() {
+  const insets = useSafeAreaInsets();
+  const nav = useNavigation() as { goBack: () => void; navigate: (s: string) => void };
+  const { current, playing, position, duration, toggle, skipNext, skipPrev, seekTo, shuffle, repeat, setShuffle, cycleRepeat } = usePlayer();
+  const { connected, token } = useApp();
+  const [lyrics, setLyrics] = useState<LyricLine[] | null>(null);
+  const [faved, setFaved] = useState(false);
+  const [faving, setFaving] = useState(false);
+  const [collect, setCollect] = useState(false);
+  const [more, setMore] = useState(false);
+  const [seekPct, setSeekPct] = useState<number | null>(null); // 拖动中的进度
+
+  const openCollect = () => { if (current) setCollect(true); };
+  // CollectSheet 内部完成收藏/取消（同步服务器 + 本机歌单）
+
+  useEffect(() => {
+    let dead = false;
+    if (!current) return;
+    let base = isFav(current);
+    if (connected && token) {
+      sync.fetchLists().then(s => {
+        if (dead || !s) return;
+        const key = `${current.source}_${current.songmid}`;
+        const remote = s.loveList.some(x => x.id === key);
+        setFaved(base || remote);
+      });
+    } else setFaved(base);
+    return () => { dead = true; };
+  }, [current?.songmid, current?.source, connected, token, collect]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    setLyrics(null);
+    if (!current) return;
+    let dead = false;
+    (async () => {
+      const r = await lxapi.lyric(current);
+      if (dead) return;
+      const raw = r.lxlyric || r.lyric || r.lrc;
+      if (!raw) return;
+      let lines = parseLrc(raw);
+      if (r.tlyric) lines = mergeTranslation(lines, r.tlyric);
+      if (lines.length) setLyrics(lines);
+    })();
+    return () => { dead = true; };
+  }, [current?.songmid]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!current) {
+    return (
+      <View style={[st.screen, { paddingTop: insets.top + 60, alignItems: 'center' }]}>
+        <Text style={{ color: C.text2, fontSize: 13 }}>没有正在播放的歌曲</Text>
+      </View>
+    );
+  }
+
+  const activeIdx = lyrics ? findActiveLine(lyrics, position) : -1;
+
+  const pct = duration > 0 ? Math.min(1, position / duration) : 0;
+  const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
+  return (
+    <View style={st.screen}>
+      {/* Header */}
+      <View style={[st.header, { paddingTop: insets.top + 8 }]}>
+        <TouchableOpacity style={st.hBtn} onPress={() => nav.goBack()} hitSlop={4}>
+          <Icon name="back" size={24} />
+        </TouchableOpacity>
+        <Text style={st.hTitle}>正在播放</Text>
+        <TouchableOpacity style={st.hBtn} hitSlop={4} onPress={() => setMore(true)}>
+          <Icon name="more" size={24} />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+        {/* Vinyl hero */}
+        <View style={st.vinylWrap}>
+          <Svg width={270} height={270} style={st.vinylSvg}>
+            <Circle cx={135} cy={135} r={134} fill="#09090B" stroke="#00000085" strokeWidth={1} />
+            <Circle cx={135} cy={135} r={123} stroke="#FFFFFF14" strokeWidth={1} fill="none" />
+            <Circle cx={135} cy={135} r={110} stroke="#FFFFFF0D" strokeWidth={1} fill="none" />
+            <Circle cx={135} cy={135} r={97} stroke="#FFFFFF0A" strokeWidth={1} fill="none" />
+            <Circle cx={135} cy={135} r={79} fill={C.brand} />
+          </Svg>
+          {current.img ? (
+            <Image source={{ uri: current.img }} style={st.vinylLabel} />
+          ) : (
+            <View style={[st.vinylLabel, { backgroundColor: '#2A2A2A' }]} />
+          )}
+          <View style={st.spindle} />
+        </View>
+        <View style={st.modeRow}>
+          <View style={st.modeMarker} />
+          <View>
+            <Text style={st.modeTitle}>黑胶歌词</Text>
+            <Text style={st.modeCaption}>唱片与歌词同步</Text>
+          </View>
+        </View>
+
+        {/* Lyrics */}
+        <View style={st.lyrics}>
+          {lyrics ? lyrics.slice(Math.max(0, activeIdx - 2), activeIdx + 3).map((l, i) => {
+            const real = Math.max(0, activeIdx - 2) + i;
+            const state = real === activeIdx ? 'active' : real === activeIdx - 1 ? 'lead' : 'far';
+            return (
+              <View key={real}>
+                <Text style={state === 'active' ? st.lActive : state === 'lead' ? st.lLead : st.lFar}>
+                  {l.text}
+                </Text>
+                {state === 'active' && l.trans ? (
+                  <Text style={st.lTrans}>{l.trans}</Text>
+                ) : null}
+              </View>
+            );
+          }) : (
+            <>
+              <Text style={st.lFar}>{current.name}</Text>
+              <Text style={st.lLead}>{current.singer}</Text>
+              <Text style={st.lActive}>暂无歌词</Text>
+            </>
+          )}
+        </View>
+
+        {/* Secondary tools */}
+        <View style={st.tools}>
+          <TouchableOpacity style={st.tool} onPress={() => nav.navigate('Comments')}>
+            <Icon name="comments" size={20} color={C.text2} />
+            <Text style={st.toolLabel}>评论</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={st.tool} onPress={() => nav.navigate('Fx')}>
+            <Icon name="sliders" size={20} color={C.text2} />
+            <Text style={st.toolLabel}>音效</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={st.tool} onPress={() => nav.navigate('Route')}>
+            <Icon name="devices" size={20} color={C.text2} />
+            <Text style={st.toolLabel}>设备</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={st.tool} onPress={() => nav.navigate('PlayerSettings')}>
+            <Icon name="settings" size={20} color={C.text2} />
+            <Text style={st.toolLabel}>设置</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+
+      {/* Playback panel */}
+      <View style={[st.panel, { paddingBottom: insets.bottom + 12 }]}>
+        <View style={st.pTrackRow}>
+          {current.img ? <Image source={{ uri: current.img }} style={st.pArt} /> : <View style={[st.pArt, { backgroundColor: '#2A2A2A' }]} />}
+          <View style={st.pMeta}>
+            <Text style={st.pTitle} numberOfLines={1}>{current.name}</Text>
+            <Text style={st.pSub} numberOfLines={1}>{current.singer}  ·  {current._types?.flac ? 'SQ 无损' : '128k'}</Text>
+          </View>
+          <TouchableOpacity style={st.pIcon} hitSlop={6} onPress={openCollect}>
+            <Icon name="heart" size={20} active={faved} color={faved ? '#FF5A76' : C.text} />
+          </TouchableOpacity>
+          <TouchableOpacity style={st.pIcon}><Icon name="download" size={20} /></TouchableOpacity>
+          <TouchableOpacity style={st.pIcon} onPress={() => nav.navigate('Queue')}><Icon name="queue" size={20} /></TouchableOpacity>
+        </View>
+
+        <SeekBar pct={seekPct ?? pct} duration={duration} onSeek={p => { setSeekPct(null); seekTo(p * duration); }} onDrag={setSeekPct} />
+        <View style={st.timeRow}>
+          <Text style={st.time}>{fmt(seekPct != null ? seekPct * duration : position)}</Text>
+          <Text style={st.time}>{fmt(duration)}</Text>
+        </View>
+
+        <View style={st.controls}>
+          <TouchableOpacity style={st.cBtn} onPress={() => setShuffle(!shuffle)}>
+            <Icon name="shuffle" size={22} active={shuffle} />
+          </TouchableOpacity>
+          <TouchableOpacity style={st.cBtn} onPress={skipPrev}><Icon name="previous" size={24} /></TouchableOpacity>
+          <TouchableOpacity style={st.cMain} onPress={toggle}>
+            <Icon name={playing ? 'pause' : 'play'} size={30} color={C.onBrand} />
+          </TouchableOpacity>
+          <TouchableOpacity style={st.cBtn} onPress={skipNext}><Icon name="next" size={24} /></TouchableOpacity>
+          <TouchableOpacity style={st.cBtn} onPress={cycleRepeat}>
+            <Icon name="repeat" size={22} active={repeat !== 'off'} />
+            {repeat === 'one' ? <Text style={st.repeatOne}>1</Text> : null}
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <CollectSheet song={current} visible={collect} onClose={() => setCollect(false)} />
+      <ActionSheet
+        visible={more} onClose={() => setMore(false)} title={current.name}
+        items={[
+          { label: '收藏到歌单', onPress: openCollect },
+          { label: '查看播放队列', onPress: () => nav.navigate('Queue') },
+          { label: '均衡器与音效', onPress: () => nav.navigate('Fx') },
+          { label: '选择播放设备', onPress: () => nav.navigate('Route') },
+          { label: '播放器设置', onPress: () => nav.navigate('PlayerSettings') },
+        ]}
+      />
+    </View>
+  );
+}
+
+// 可拖动进度条：拖动实时预览，松手 seek
+function SeekBar({ pct, duration, onSeek, onDrag }: {
+  pct: number; duration: number; onSeek: (p: number) => void; onDrag: (p: number | null) => void;
+}) {
+  const w = useRef(1);
+  const pan = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderGrant: (e: any) => {
+      const p = Math.max(0, Math.min(1, e.nativeEvent.locationX / w.current));
+      onDrag(p);
+    },
+    onPanResponderMove: (e: any) => {
+      const p = Math.max(0, Math.min(1, e.nativeEvent.locationX / w.current));
+      onDrag(p);
+    },
+    onPanResponderRelease: (e: any) => {
+      const p = Math.max(0, Math.min(1, e.nativeEvent.locationX / w.current));
+      onSeek(p);
+    },
+    onPanResponderTerminate: () => onDrag(null),
+  }), [onDrag, onSeek]);
+  return (
+    <View
+      style={st.seekHit}
+      onLayout={e => { w.current = Math.max(e.nativeEvent.layout.width, 1); }}
+      {...pan.panHandlers}
+    >
+      <View style={st.bar}>
+        <View style={[st.barValue, { flex: Math.max(pct, 0.001) }]} />
+        <View style={{ flex: Math.max(1 - pct, 0.001) }} />
+      </View>
+      <View style={[st.barThumb, { left: `${pct * 100}%` }]} />
+      {duration > 0 ? null : null}
+    </View>
+  );
+}
+
+const st = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: C.bgDeep },
+  header: { height: 72, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20 },
+  hBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#1C1C1C', alignItems: 'center', justifyContent: 'center' },
+  hTitle: { flex: 1, textAlign: 'center', color: C.text, fontSize: 16, lineHeight: 19, fontWeight: '500' },
+  vinylWrap: { alignSelf: 'center', width: 270, height: 238, marginTop: 4 },
+  vinylSvg: { position: 'absolute', left: 0, top: -16 },
+  vinylLabel: {
+    position: 'absolute', left: 61, top: 45, width: 148, height: 148, borderRadius: 74,
+    overflow: 'hidden',
+  },
+  spindle: { position: 'absolute', left: 130, top: 114, width: 10, height: 10, borderRadius: 5, backgroundColor: '#0D0D0D' },
+  modeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 20, marginTop: 8 },
+  modeMarker: { width: 3, height: 38, borderRadius: 2, backgroundColor: C.brand },
+  modeTitle: { color: C.text, fontSize: 15, lineHeight: 18, fontWeight: '500' },
+  modeCaption: { color: C.text2, fontSize: 11, lineHeight: 13 },
+  lyrics: { paddingHorizontal: 30, paddingTop: 10, gap: 7, minHeight: 158 },
+  lActive: { color: C.brandSoft, fontSize: 26, lineHeight: 31, fontWeight: '700' },
+  lTrans: { color: C.text2, fontSize: 14, lineHeight: 18, marginTop: 2 },
+  lLead: { color: C.text, fontSize: 18, lineHeight: 22, opacity: 0.86 },
+  lFar: { color: C.text2, fontSize: 14, lineHeight: 17, opacity: 0.55 },
+  tools: { flexDirection: 'row', gap: 6, paddingHorizontal: 20, marginTop: 8 },
+  tool: {
+    flex: 1, height: 44, borderRadius: 14, backgroundColor: '#141414',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+  },
+  toolLabel: { color: C.text2, fontSize: 11, lineHeight: 13, fontWeight: '500' },
+  panel: {
+    borderRadius: 24, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    backgroundColor: '#1C1C1C', paddingTop: 18, paddingHorizontal: 20, gap: 7,
+  },
+  pTrackRow: { flexDirection: 'row', alignItems: 'center', height: 56 },
+  pArt: { width: 52, height: 52, borderRadius: 10 },
+  pMeta: { flex: 1, marginLeft: 13, gap: 2 },
+  pTitle: { color: C.text, fontSize: 18, lineHeight: 22, fontWeight: '700' },
+  pSub: { color: C.text2, fontSize: 12, lineHeight: 14 },
+  pIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#242424', alignItems: 'center', justifyContent: 'center' },
+  seekHit: { height: 28, justifyContent: 'center' },
+  bar: { height: 4, flexDirection: 'row', backgroundColor: '#2B2B2B' },
+  barValue: { backgroundColor: C.brand },
+  barThumb: {
+    position: 'absolute', top: 7, width: 14, height: 14, borderRadius: 7,
+    backgroundColor: C.white, marginLeft: -7,
+  },
+  timeRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  time: { color: C.text2, fontSize: 10, lineHeight: 12 },
+  controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 68 },
+  cBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  cMain: {
+    width: 72, height: 72, borderRadius: 36,
+    backgroundColor: C.brand,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  repeatOne: { position: 'absolute', right: 6, top: 6, color: C.brand, fontSize: 9, fontWeight: '700' },
+});

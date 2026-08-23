@@ -1,0 +1,202 @@
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { Icon } from '../theme/Icon';
+import { C } from '../theme/tokens';
+import { api, type SongItem } from '../services/server';
+import { library } from '../state/library';
+import { useApp } from '../state/AppState';
+
+// Figma NM-IMPORT-001 / 39 / 40 · 导入歌单三步流
+const PLATFORMS = [
+  { id: 'wy', name: '网易云音乐', color: '#C20C0C' },
+  { id: 'tx', name: 'QQ音乐', color: '#31C27C' },
+  { id: 'kg', name: '酷狗音乐', color: '#0C8ED9' },
+  { id: 'kw', name: '酷我音乐', color: '#FFA200' },
+  { id: 'mg', name: '咪咕音乐', color: '#00A0E9' },
+];
+
+function extractId(link: string): string | null {
+  const m = /[?&](?:id|playlistId)=(\d+)/.exec(link.trim());
+  if (m) return m[1];
+  if (/^\d+$/.test(link.trim())) return link.trim();
+  return null;
+}
+
+export function ImportPlaylistScreen() {
+  const insets = useSafeAreaInsets();
+  const nav = useNavigation() as { goBack: () => void };
+  const { connected } = useApp();
+  const [step, setStep] = useState<0 | 1 | 2>(0);
+  const [platform, setPlatform] = useState<string | null>(null);
+  const [link, setLink] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [preview, setPreview] = useState<{ name: string; songs: SongItem[]; total: number; img?: string; id: string } | null>(null);
+
+  const pick = (id: string) => { setPlatform(id); setStep(1); setErr(null); };
+
+  const fetchPreview = async () => {
+    if (!platform) return;
+    const id = extractId(link);
+    if (!id) { setErr('无法识别歌单链接或 ID'); return; }
+    setLoading(true); setErr(null);
+    try {
+      const first = await api.songListDetail(id, 1, platform);
+      const songs = first.list || [];
+      const total = first.info?.total || songs.length;
+      // 拉剩余页（最多 10 页，每页约 30-100 首）
+      let page = 1;
+      while (songs.length < total && page < 10) {
+        page++;
+        const r = await api.songListDetail(id, page, platform); // eslint-disable-line no-await-in-loop
+        const more = r.list || [];
+        if (!more.length) break;
+        songs.push(...more);
+      }
+      if (!songs.length) { setErr('歌单为空或无法读取（检查链接是否公开）'); return; }
+      setPreview({
+        name: first.info?.name || `导入歌单 ${id}`,
+        songs, total,
+        img: first.info?.img, id,
+      });
+      setStep(2);
+    } catch {
+      setErr('拉取歌单失败，请检查网络与链接');
+    } finally { setLoading(false); }
+  };
+
+  const save = () => {
+    if (!preview || !platform) return;
+    library.create(preview.name, preview.songs, {
+      source: platform, remoteId: preview.id, cover: preview.img,
+      desc: `从${PLATFORMS.find(p => p.id === platform)?.name || ''}导入`,
+    });
+    nav.goBack();
+  };
+
+  return (
+    <View style={[st.screen, { paddingTop: insets.top + 28 }]}>
+      <View style={st.header}>
+        <TouchableOpacity onPress={() => (step === 0 ? nav.goBack() : setStep(s => (s - 1) as 0 | 1))} hitSlop={6} style={{ width: 22 }}>
+          <Icon name="back" size={22} />
+        </TouchableOpacity>
+        <Text style={st.title}>导入歌单</Text>
+        <View style={{ width: 22 }} />
+      </View>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 24, gap: 14 }}>
+        {/* steps indicator */}
+        <View style={st.stepsRow}>
+          {['选择平台', '填写链接', '预览导入'].map((s, i) => (
+            <View key={s} style={[st.stepPill, i <= step && st.stepPillOn]}>
+              <Text style={[st.stepText, i <= step && st.stepTextOn]}>{i + 1}. {s}</Text>
+            </View>
+          ))}
+        </View>
+
+        {step === 0 && (
+          <>
+            <Text style={st.sectionTitle}>选择歌单所在平台</Text>
+            {PLATFORMS.map(pf => (
+              <TouchableOpacity key={pf.id} style={st.platformRow} activeOpacity={0.7} onPress={() => pick(pf.id)}>
+                <View style={[st.platformIcon, { backgroundColor: pf.color + '26', borderColor: pf.color }]}>
+                  <Text style={[st.platformIconText, { color: pf.color }]}>{pf.name[0]}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={st.platformName}>{pf.name}</Text>
+                  <Text style={st.platformSub}>支持歌单链接或歌单 ID</Text>
+                </View>
+                <Icon name="chevronright" size={20} color={C.text3} />
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={st.skipBtn} onPress={() => nav.goBack()}>
+              <Text style={st.skipText}>暂不导入</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
+        {step === 1 && (
+          <>
+            <Text style={st.sectionTitle}>
+              粘贴 {PLATFORMS.find(p => p.id === platform)?.name} 歌单链接
+            </Text>
+            <View style={st.card}>
+              <Text style={st.fieldLabel}>歌单链接或 ID</Text>
+              <View style={st.input}>
+                <TextInput
+                  style={st.inputText}
+                  placeholder="https://... 或纯数字 ID"
+                  placeholderTextColor={C.text3}
+                  value={link}
+                  onChangeText={setLink}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+              {err ? <Text style={st.err}>{err}</Text> : null}
+              <Text style={st.hint}>仅支持公开歌单；私密歌单请先设为公开</Text>
+            </View>
+            <TouchableOpacity style={st.primaryBtn} onPress={fetchPreview} disabled={loading}>
+              {loading ? <ActivityIndicator color={C.onBrand} /> : <Text style={st.primaryText}>预览歌单</Text>}
+            </TouchableOpacity>
+          </>
+        )}
+
+        {step === 2 && preview && (
+          <>
+            <View style={st.previewCard}>
+              <Text style={st.previewName} numberOfLines={2}>{preview.name}</Text>
+              <Text style={st.previewMeta}>{preview.total} 首 · 将导入到「我的音乐」</Text>
+            </View>
+            <Text style={st.sectionTitle}>歌曲预览（前 20 首）</Text>
+            {preview.songs.slice(0, 20).map((s, i) => (
+              <View key={`${s.songmid}-${i}`} style={st.songLine}>
+                <Text style={st.songName} numberOfLines={1}>{s.name}</Text>
+                <Text style={st.songArtist} numberOfLines={1}>{s.singer}</Text>
+              </View>
+            ))}
+            {preview.total > 20 ? <Text style={st.moreHint}>…以及另外 {preview.total - 20} 首</Text> : null}
+            <TouchableOpacity style={st.primaryBtn} onPress={save}>
+              <Text style={st.primaryText}>导入到我的音乐</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </ScrollView>
+    </View>
+  );
+}
+
+const st = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: C.bg },
+  header: { height: 40, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 10 },
+  title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700', textAlign: 'center' },
+  stepsRow: { flexDirection: 'row', gap: 6 },
+  stepPill: { flex: 1, height: 26, borderRadius: 13, backgroundColor: '#1A1A1A', alignItems: 'center', justifyContent: 'center' },
+  stepPillOn: { backgroundColor: '#233029' },
+  stepText: { color: C.text3, fontSize: 10 },
+  stepTextOn: { color: C.brand },
+  sectionTitle: { color: C.text, fontSize: 17, lineHeight: 25, fontWeight: '700' },
+  platformRow: { minHeight: 60, borderRadius: 14, backgroundColor: '#1A1A1A', flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14 },
+  platformIcon: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  platformIconText: { fontSize: 15, fontWeight: '700' },
+  platformName: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '500' },
+  platformSub: { color: C.text2, fontSize: 11, lineHeight: 15 },
+  skipBtn: { height: 44, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
+  skipText: { color: C.text2, fontSize: 14, fontWeight: '500' },
+  card: { borderRadius: 14, backgroundColor: '#1A1A1A', padding: 16, gap: 8 },
+  fieldLabel: { color: C.text, fontSize: 12, lineHeight: 14, fontWeight: '500' },
+  input: { height: 46, borderRadius: 12, backgroundColor: '#232323', paddingHorizontal: 14, justifyContent: 'center' },
+  inputText: { color: C.text, fontSize: 13, padding: 0 },
+  err: { color: '#FF6B6B', fontSize: 12, lineHeight: 15 },
+  hint: { color: C.text2, fontSize: 10, lineHeight: 12 },
+  primaryBtn: { height: 46, borderRadius: 12, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
+  primaryText: { color: C.onBrand, fontSize: 14, fontWeight: '600' },
+  previewCard: { borderRadius: 14, backgroundColor: '#1A1A1A', padding: 16, gap: 6 },
+  previewName: { color: C.text, fontSize: 16, lineHeight: 22, fontWeight: '700' },
+  previewMeta: { color: C.text2, fontSize: 11, lineHeight: 15 },
+  songLine: { minHeight: 40, justifyContent: 'center', gap: 1 },
+  songName: { color: C.text, fontSize: 13, lineHeight: 18, fontWeight: '500' },
+  songArtist: { color: C.text2, fontSize: 10, lineHeight: 13 },
+  moreHint: { color: C.text3, fontSize: 11, textAlign: 'center', paddingVertical: 8 },
+});
