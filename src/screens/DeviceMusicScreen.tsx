@@ -10,7 +10,8 @@ import { MiniPlayer } from '../components/MiniPlayer';
 import { usePlayer } from '../state/PlayerProvider';
 import { library } from '../state/library';
 import {
-  ensurePermission, scanDeviceMusic, deviceSongs, deviceTrackCount,
+  ensurePermission, scanByPath, scanBySafFolder, scanSafTree, getSafTree, setSafTree,
+  deviceSongs, deviceTrackCount,
   type ScanResult,
 } from '../services/devicelibrary';
 
@@ -27,13 +28,46 @@ export function DeviceMusicScreen() {
   useEffect(() => setCount(deviceTrackCount()), [tick]);
 
   const scan = async () => {
-    const ok = await ensurePermission();
-    if (!ok) { Alert.alert('权限被拒', '没有本地音乐读取权限，请在系统设置中允许'); return; }
     setScanning(true); setFound(0);
     try {
-      const r: ScanResult = await scanDeviceMusic(n => setFound(n));
+      // 优先：已授权的 SAF 目录（scoped storage 下最可靠）
+      const tree = getSafTree();
+      let r: ScanResult | null = null;
+      if (tree) {
+        r = await scanSafTree(tree, n => setFound(n));
+        if (r.count === 0) r = null; // 授权目录空了，回退重选
+      }
+      if (!r) {
+        // 直接路径模式（旧设备可用）
+        await ensurePermission();
+        r = await scanByPath(n => setFound(n));
+      }
+      if (r.count === 0) {
+        // scoped storage 拦截 → 引导用户选文件夹（SAF）
+        setScanning(false);
+        Alert.alert(
+          '选择音乐文件夹',
+          '系统限制直接读取存储，请在弹出的窗口中选择存放音乐的文件夹（如 Music），授权后自动扫描。',
+          [
+            { text: '取消', style: 'cancel' },
+            {
+              text: '选择文件夹',
+              onPress: async () => {
+                setScanning(true); setFound(0);
+                const r2 = await scanBySafFolder(n => setFound(n));
+                setScanning(false);
+                if (!r2) return; // 用户取消
+                refresh();
+                Alert.alert('扫描完成', `共发现 ${r2.count} 首本地音乐（${(r2.ms / 1000).toFixed(1)}s）`);
+              },
+            },
+          ],
+        );
+        setScanning(false);
+        return;
+      }
       refresh();
-      Alert.alert('扫描完成', `共发现 ${r.count} 首本地音乐（${(r.ms / 1000).toFixed(1)}s）\n目录：Music / Download / Recordings`);
+      Alert.alert('扫描完成', `共发现 ${r.count} 首本地音乐（${(r.ms / 1000).toFixed(1)}s）`);
     } catch (e) {
       Alert.alert('扫描失败', (e as Error).message);
     } finally { setScanning(false); }
@@ -69,7 +103,7 @@ export function DeviceMusicScreen() {
         <View style={st.scanCard}>
           <View style={{ flex: 1 }}>
             <Text style={st.scanTitle}>{scanning ? `扫描中… 已发现 ${found} 首` : `${count} 首设备音乐`}</Text>
-            <Text style={st.scanSub}>扫描 Music / Download / Recordings 目录</Text>
+            <Text style={st.scanSub}>扫描设备音乐目录（需授权文件夹）</Text>
           </View>
           <TouchableOpacity style={st.scanBtn} onPress={scan} disabled={scanning}>
             {scanning ? <ActivityIndicator size="small" color={C.onBrand} /> : <Icon name="refresh" size={18} color={C.onBrand} />}
@@ -97,7 +131,7 @@ export function DeviceMusicScreen() {
             />
           ))}
         </View>
-        {!scanning && !count ? <Text style={st.empty}>未发现本地音乐{'\n'}确认设备上有音频文件后重新扫描</Text> : null}
+        {!scanning && !count ? <Text style={st.empty}>未发现本地音乐{'\n'}点「开始扫描」授权音乐文件夹后自动导入</Text> : null}
       </ScrollView>
       <View style={st.miniDock} pointerEvents="box-none"><MiniPlayer /></View>
     </View>

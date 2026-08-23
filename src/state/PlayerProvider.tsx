@@ -97,9 +97,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const resolveAndPlay = useCallback(async (t: QueueTrack) => {
     try {
-      // ① 设备本地文件：直接播 file://
+      // ① 设备本地文件：直接播（file:// 路径或 content:// uri）
       if (t.source === 'device') {
-        AudioPro.play(trackToAudioPro(t, 'file://' + t.songmid));
+        const url = t.songmid.startsWith('content://') ? t.songmid : 'file://' + t.songmid;
+        AudioPro.play(trackToAudioPro(t, url));
         setCurrent(t);
         return;
       }
