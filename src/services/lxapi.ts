@@ -69,13 +69,15 @@ function cached<T>(key: string, ttlMs: number, fetcher: () => Promise<T>): Promi
 
 export const lxapi = {
   async search(name: string, source = 'kw', page = 1, limit = 20): Promise<SongItem[]> {
-    try {
-      const r = await engine.sdk<{ list?: any[] }>([source, 'musicSearch', 'search'], [name, page, limit]);
-      return (r?.list || []).map(normalize);
-    } catch (e) {
-      console.log('[lxapi] search fail', (e as Error).message);
-      return [];
-    }
+    return cached(`sr:${source}:${name}:${page}:${limit}`, 10 * 60_000, async () => {
+      try {
+        const r = await engine.sdk<{ list?: any[] }>([source, 'musicSearch', 'search'], [name, page, limit]);
+        return (r?.list || []).map(normalize);
+      } catch (e) {
+        console.log('[lxapi] search fail', (e as Error).message);
+        return [];
+      }
+    });
   },
 
   async tipSearch(name: string, source = 'kw'): Promise<string[]> {

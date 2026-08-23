@@ -11,6 +11,7 @@ import { useApp } from '../state/AppState';
 import { usePlayer } from '../state/PlayerProvider';
 import { getRecents } from '../state/recent';
 import { api, type SongItem, type SongListMeta } from '../services/server';
+import { SongRow } from '../components/SongRow';
 import { sync, lxToApp } from '../services/sync';
 
 import sky from '../assets/art/sky.jpg';
@@ -19,6 +20,12 @@ import warm from '../assets/art/warm.jpg';
 import night from '../assets/art/night.jpg';
 import portrait from '../assets/art/portrait.jpg';
 import city from '../assets/art/city.jpg';
+
+const POD_GRADS: string[][] = [
+  ['#1f4b5c', '#142647'], ['#5c297a', '#241a38'], ['#80381f', '#38201a'],
+  ['#145c4b', '#14262e'], ['#4b1f5c', '#241a38'], ['#1f5c85', '#142a47'],
+  ['#5c1f3a', '#381a2a'], ['#3a5c1f', '#1a2e14'],
+];
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -50,7 +57,7 @@ export function HomeScreen({ visible = true }: { visible?: boolean }) {
 
         {tab === 0 && <HomeAll key={`a${tabKey}`} />}
         {tab === 1 && <HomeMusic key={`m${tabKey}`} />}
-        {tab === 2 && <Text style={st.empty}>播客内容 · 即将上线</Text>}
+        {tab === 2 && <HomePodcast key={`p${tabKey}`} />}
       </ScrollView>
     </LinearGradient>
   );
@@ -207,6 +214,116 @@ function HomeAll() {
   );
 }
 
+/* ---------- 播客 tab：主题频道聚合（搜索长音频内容：电台/脱口秀/有声书/评书） ---------- */
+
+interface PodChannel {
+  id: string;
+  name: string;
+  query: string;
+  sub: string;
+  source: 'kw' | 'kg' | 'wy';
+}
+
+const POD_CHANNELS: PodChannel[] = [
+  { id: 'night', name: '晚安电台', query: '晚安电台 助眠', sub: '睡前陪伴 · 深夜频率', source: 'kw' },
+  { id: 'talk', name: '脱口秀', query: '脱口秀 精选', sub: '笑到最后', source: 'kw' },
+  { id: 'crosstalk', name: '相声评书', query: '郭德纲 相声', sub: '德云社 · 经典段子', source: 'kw' },
+  { id: 'pingshu', name: '评书连播', query: '单田芳 评书', sub: '白眉大侠 · 隋唐演义', source: 'kw' },
+  { id: 'audio', name: '有声书', query: '有声小说 精选', sub: '热门连载', source: 'kw' },
+  { id: 'calm', name: '白噪音', query: '白噪音 自然音', sub: '雨声 · 海浪 · 森林', source: 'kw' },
+  { id: 'emotion', name: '情感夜话', query: '情感电台 夜话', sub: '午夜情感树洞', source: 'kw' },
+  { id: 'kids', name: '儿童故事', query: '儿童故事 睡前', sub: '童话 · 寓言', source: 'kw' },
+];
+
+function HomePodcast() {
+  const nav = useNavigation() as { navigate: (s: string, p?: object) => void };
+  const { playSong, current } = usePlayer();
+  const [loading, setLoading] = useState(true);
+  const [feeds, setFeeds] = useState<Record<string, SongItem[]>>({});
+
+  useEffect(() => {
+    let dead = false;
+    (async () => {
+      // 逐频道取内容（kw 串行由引擎队列保证）
+      for (const ch of POD_CHANNELS) {
+        try {
+          const songs = await lxapi.search(ch.query, ch.source, 1, 20); // eslint-disable-line no-await-in-loop
+          if (dead) return;
+          setFeeds(p => ({ ...p, [ch.id]: songs }));
+        } catch { /* 单频道失败不阻塞 */ }
+      }
+      if (!dead) setLoading(false);
+    })();
+    return () => { dead = true; };
+  }, []);
+
+  const openChannel = (ch: PodChannel) => {
+    const songs = feeds[ch.id] || [];
+    if (!songs.length) return;
+    nav.navigate('PlaylistDetail', { title: ch.name, songs, meta: `${songs.length} 期 · ${ch.sub}` });
+  };
+  const playChannel = (ch: PodChannel) => {
+    const songs = feeds[ch.id] || [];
+    if (songs.length) playSong(songs[0], songs);
+  };
+
+  // 热门节目 = 各频道头条混合
+  const hotMix: SongItem[] = [];
+  for (let i = 0; i < 6; i++) {
+    for (const ch of POD_CHANNELS) {
+      const f = feeds[ch.id];
+      if (f && f[i]) hotMix.push(f[i]);
+    }
+  }
+
+  return (
+    <View style={st.body}>
+      {/* 频道横滑卡 */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.podRow}>
+        {POD_CHANNELS.map((ch, ci) => {
+          const f = feeds[ch.id] || [];
+          return (
+            <TouchableOpacity key={ch.id} style={st.podCard} activeOpacity={0.85} onPress={() => openChannel(ch)}>
+              <LinearGradient
+                colors={POD_GRADS[ci % POD_GRADS.length] as [string, string]}
+                style={st.podCover}
+              >
+                <Text style={st.podGlyph}>📻</Text>
+                <TouchableOpacity style={st.podPlay} hitSlop={4} onPress={() => playChannel(ch)}>
+                  <Icon name="play" size={18} active color={C.onBrand} />
+                </TouchableOpacity>
+              </LinearGradient>
+              <Text style={st.podName} numberOfLines={1}>{ch.name}</Text>
+              <Text style={st.podSub} numberOfLines={1}>{f.length ? `${f.length} 期 · ${f[0].name}` : ch.sub}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      <View style={st.sectionRow}>
+        <Text style={st.sectionTitle}>热门节目</Text>
+        <Text style={st.sectionMeta}>混合各频道</Text>
+      </View>
+      {loading && !hotMix.length ? (
+        <Text style={st.recentEmpty}>电台内容加载中…</Text>
+      ) : hotMix.length ? (
+        <View style={{ gap: 4 }}>
+          {hotMix.slice(0, 12).map((s, i) => (
+            <SongRow
+              key={`${s.source}-${s.songmid}-${i}`}
+              song={s}
+              playing={current?.songmid === s.songmid}
+              onPress={() => playSong(s, hotMix)}
+            />
+          ))}
+        </View>
+      ) : (
+        <Text style={st.recentEmpty}>暂时拉不到电台内容，稍后再试</Text>
+      )}
+    </View>
+  );
+}
+
 /* ---------- 音乐 tab：与「全部」同样设计，音乐向真实数据 ---------- */
 
 function HomeMusic() {
@@ -328,4 +445,14 @@ const st = StyleSheet.create({
   recentGlyph: { color: C.text2, fontSize: 26, fontWeight: '700' },
   recentTitle: { color: C.text, fontSize: 10, lineHeight: 13, fontWeight: '500' },
   recentEmpty: { color: C.text2, fontSize: 12, lineHeight: 17, textAlign: 'center', paddingVertical: 18 },
+  podRow: { gap: 10, paddingBottom: 4 },
+  podCard: { width: 128, gap: 5 },
+  podCover: { width: 128, height: 128, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  podGlyph: { fontSize: 34 },
+  podPlay: {
+    position: 'absolute', right: 8, bottom: 8, width: 34, height: 34, borderRadius: 17,
+    backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center',
+  },
+  podName: { color: C.text, fontSize: 13, lineHeight: 17, fontWeight: '700' },
+  podSub: { color: C.text2, fontSize: 9, lineHeight: 12 },
 });
