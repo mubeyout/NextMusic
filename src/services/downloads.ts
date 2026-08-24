@@ -97,14 +97,17 @@ function withTimeout<T>(p: Promise<T>, ms: number, tag: string): Promise<T> {
 async function resolveUrl(song: SongItem, quality: Quality): Promise<{ url: string; headers?: Record<string, string> }> {
   try {
   // 媒体库源（emby/jellyfin/subsonic/webdav）直接出流地址
-  const p = providerApi.streamFor(song);
+  let p: { url: string; headers?: Record<string, string> } | null;
+  try { p = providerApi.streamFor(song); } catch (e) { throw new Error('E1a:' + ((e as Error).message || 'streamFor')); }
   if (p) return p;
   // 设备本地文件无需下载
   if (song.source === 'device') throw new Error('本地文件无需下载');
   // 在线音源：自定义脚本优先，其次服务器
   let url: string | null = null;
   try { url = await withTimeout(customGetMusicUrl(song, quality), 20000, '音源取链'); } catch { url = null; }
+  try {
   if (!url) url = (await withTimeout(api.musicUrl(song, quality), 20000, '服务器取链')).url;
+  } catch (e) { throw new Error('E1d:' + ((e as Error).message || 'musicUrl')); }
   if (!url) throw new Error('取链失败');
   return { url };
   } catch (e) {
