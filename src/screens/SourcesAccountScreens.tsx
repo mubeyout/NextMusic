@@ -128,7 +128,7 @@ export function SourcesScreen() {
 // Figma 42·服务器与账号 + 退出登录确认
 export function AccountScreen() {
   const insets = useSafeAreaInsets();
-  const nav = useNavigation() as { goBack: () => void; reset: (o: unknown) => void };
+  const nav = useNavigation() as { goBack: () => void; navigate: (s: string) => void; reset: (o: unknown) => void };
   const { connected, base, username, token, setAuth, setMode } = useApp();
   const host = (base || '').replace(/^https?:\/\//, '');
 
@@ -163,6 +163,11 @@ export function AccountScreen() {
 
         <TouchableOpacity style={st.linkBtn} onPress={() => nav.reset({ index: 0, routes: [{ name: 'Auth' }] })}>
           <Text style={st.linkText}>{username ? '切换账号' : '登录服务器账号'}</Text>
+        </TouchableOpacity>
+
+        {/* 更换服务器地址：无需断开重走 Boot 流程，直达连接页（也修复 Server 页入口单一） */}
+        <TouchableOpacity style={st.linkBtn} onPress={() => nav.navigate('Server')}>
+          <Text style={st.linkText}>更换服务器地址</Text>
         </TouchableOpacity>
 
         {username ? (
