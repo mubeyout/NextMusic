@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, ActivityIndicator, } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { Icon } from '../theme/Icon';
+import { Icon, BrandIcon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { ActionSheet } from '../components/ActionSheet';
 import { PageHeader, EmptyState } from '../components/PageChrome';
@@ -18,6 +18,8 @@ import {
 import type { SongItem } from '../services/server';
 import { dialog, toast } from '../components/Dialog';
 
+// 有品牌 logo 的类型用 BrandIcon，其余回退语义图标
+const BRAND_ICON_TYPES: Set<ProviderType> = new Set(['emby', 'jellyfin', 'navidrome', 'subsonic', 'webdav']);
 const TYPE_ICON: Record<ProviderType, string> = { subsonic: 'music', navidrome: 'music', daoliyu: 'music', emby: 'tv', jellyfin: 'tv', webdav: 'cloud' };
 
 export function MediaLibsScreen() {
@@ -63,7 +65,7 @@ export function MediaLibsScreen() {
                   { text: '删除', style: 'destructive', onPress: () => { providers.remove(a.id); refresh(); } },
                 ])}
               >
-                <View style={st.rowIconWrap}><Icon name={TYPE_ICON[a.type] as never} size={20} color={C.text} /></View>
+                <View style={st.rowIconWrap}>{BRAND_ICON_TYPES.has(a.type) ? <BrandIcon name={a.type as any} size={20} /> : <Icon name={TYPE_ICON[a.type] as never} size={20} color={C.text} />}</View>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={st.rowTitle} numberOfLines={1}>{a.name || PROVIDER_META[a.type].label}</Text>
                   <Text style={st.rowSub} numberOfLines={1}>{a.base}</Text>

@@ -11,6 +11,7 @@ import { C } from '../theme/tokens';
 import { PillTabs } from '../components/PillTabs';
 import { ActionSheet } from '../components/ActionSheet';
 import { SongRow } from '../components/SongRow';
+import { StateOverlayCard } from '../components/StateOverlayCard';
 import { useApp } from '../state/AppState';
 import { usePlayer } from '../state/PlayerProvider';
 import { getRecents } from '../state/recent';
@@ -127,6 +128,8 @@ export function ExploreScreen() {
   const { } = useApp();
   const { playSong, current } = usePlayer();
   const navigation = useNavigation() as { navigate: (s: string, p?: object) => void };
+  // State: all sources failed after search
+  const [allFailed, setAllFailed] = useState(false);
 
   // 分类 tab：选中的标签（类型/场景/语言）+ 对应歌单
   const [activeTag, setActiveTag] = useState<string>('');
@@ -202,15 +205,27 @@ export function ExploreScreen() {
   const search = useCallback(async (text: string) => {
     const q = text.trim();
     if (!q) return;
-    setBusy(true); setErr(null); setSearched(true);
+    setBusy(true); setErr(null); setSearched(true); setAllFailed(false);
     try {
       const r = await lxapi.search(q, source);
+      if (r.length === 0) {
+        // 搜索返回空结果：尝试其他源确认是否全部失败
+        const sources = ['kw', 'kg', 'wy'].filter(s => s !== source);
+        let anyOk = false;
+        for (const s of sources) { // eslint-disable-line no-await-in-loop
+          try {
+            const alt = await lxapi.search(q, s);
+            if (alt.length > 0) { anyOk = true; break; }
+          } catch { /* ignore */ }
+        }
+        if (!anyOk) setAllFailed(true);
+      }
       setResults(r);
     } catch {
       setErr('搜索失败：无法连接服务器');
       setResults([]);
     } finally { setBusy(false); }
-  }, []);
+  }, [source]);
 
   useEffect(() => {
     const t = setTimeout(() => { if (kw.trim().length >= 2 && !searched) search(kw); }, 600);
@@ -475,7 +490,26 @@ export function ExploreScreen() {
             ) : null}
           </View>
         )}
+
       </ScrollView>
+
+      {/* 探索异常覆盖层 — 放在 ScrollView 外、LinearGradient 内以绝对定位生效 */}
+      {allFailed && (
+        <View style={st.overlay} pointerEvents="box-none">
+          <View style={st.overlayCard} pointerEvents="auto">
+            <StateOverlayCard
+              glyph="!"
+              glyphSize={34}
+              title="所有已启用音源均不可用"
+              body="可以重试搜索，或前往音源管理检查连接与脚本状态。"
+              primary="重新搜索"
+              secondary="前往音源管理"
+              onPrimary={() => search(kw)}
+              onSecondary={() => navigation.navigate('Sources' as never)}
+            />
+          </View>
+        </View>
+      )}
       <ActionSheet
         visible={filter} onClose={() => setFilter(false)} title="搜索音源"
         items={[
@@ -574,4 +608,6 @@ const st = StyleSheet.create({
   plGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   center: { paddingVertical: 32, alignItems: 'center' },
   errText: { color: C.text2, fontSize: 12, lineHeight: 18, textAlign: 'center', paddingVertical: 24 },
+  overlay: { position: 'absolute', top: 146, left: 20, right: 20, alignItems: 'center' },
+  overlayCard: { width: 350, maxWidth: '100%' },
 });

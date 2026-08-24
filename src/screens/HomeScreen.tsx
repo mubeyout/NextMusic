@@ -12,6 +12,7 @@ import { usePlayer } from '../state/PlayerProvider';
 import { getRecents } from '../state/recent';
 import { api, type SongItem, type SongListMeta } from '../services/server';
 import { SongRow } from '../components/SongRow';
+import { StateOverlayCard } from '../components/StateOverlayCard';
 import { sync, lxToApp } from '../services/sync';
 
 import sky from '../assets/art/sky.jpg';
@@ -38,10 +39,12 @@ function greeting(): string {
 export function HomeScreen({ visible = true }: { visible?: boolean }) {
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState(0);
-  const { username } = useApp();
+  const { username, connected } = useApp();
+  const nav = useNavigation() as { navigate: (s: string, p?: object) => void };
   const hello = username ? `${greeting()}，${username}` : greeting();
   useEffect(() => { if (visible) setTabKey(k => k + 1); }, [visible]); // remount content on tab re-entry
   const [tabKey, setTabKey] = useState(0);
+  const [homeEmpty, setHomeEmpty] = useState(false);
 
   return (
     <LinearGradient colors={[C.bgGradientTop, C.bg, C.bg]} locations={[0, 0.55, 1]} style={st.screen}>
@@ -55,10 +58,28 @@ export function HomeScreen({ visible = true }: { visible?: boolean }) {
 
         <PillTabs tabs={['全部', '音乐', '播客']} active={tab} onChange={setTab} />
 
-        {tab === 0 && <HomeAll key={`a${tabKey}`} />}
+        {tab === 0 && <HomeAll key={`a${tabKey}`} setHomeEmpty={setHomeEmpty} />}
         {tab === 1 && <HomeMusic key={`m${tabKey}`} />}
         {tab === 2 && <HomePodcast key={`p${tabKey}`} />}
       </ScrollView>
+
+      {/* 无音源空态覆盖 (Figma #2071:1988) */}
+      {tab === 0 && homeEmpty && (
+        <View style={st.homeOverlay} pointerEvents="box-none">
+          <View style={st.homeOverlayCard} pointerEvents="auto">
+            <StateOverlayCard
+              glyph="♪"
+              glyphSize={48}
+              title="从你的音乐开始"
+              body="当前没有可用音源或本地歌曲。你可以先导入音源，也可以直接扫描设备中的音乐。"
+              primary="导入音源"
+              secondary="从本地导入音乐"
+              onPrimary={() => nav.navigate('Sources' as never)}
+              onSecondary={() => nav.navigate('DeviceMusic')}
+            />
+          </View>
+        </View>
+      )}
     </LinearGradient>
   );
 }
@@ -110,7 +131,7 @@ function PlCard({ pl }: { pl: SongListMeta }) {
 
 /* ---------- 全部 tab ---------- */
 
-function HomeAll() {
+function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
   const nav = useNavigation() as { navigate: (s: string, p?: object) => void };
   const { connected, token } = useApp();
   const { playSong } = usePlayer();
@@ -118,6 +139,15 @@ function HomeAll() {
   const [loveSongs, setLoveSongs] = useState<SongItem[] | null>(null);
   const [hotBoard, setHotBoard] = useState<SongItem[]>([]);
   const [mixes, setMixes] = useState<SongListMeta[]>([]);
+  const [dataLoaded, setDataLoaded] = useState(false);
+  // Report empty state to parent for overlay rendering
+  useEffect(() => {
+    if (dataLoaded && connected && hotBoard.length === 0 && recents.length === 0) {
+      setHomeEmpty(true);
+    } else {
+      setHomeEmpty(false);
+    }
+  }, [dataLoaded, connected, hotBoard.length, recents.length, setHomeEmpty]);
 
   const reload = useCallback(() => { setRecents(getRecents()); }, []);
   useEffect(() => { reload(); }, [reload]);
@@ -128,8 +158,9 @@ function HomeAll() {
     if (token) sync.fetchLists().then(s => { if (s) setLoveSongs(s.loveList.map(lxToApp)); });
     lxapi.leaderboardBoards().then(boards => {
       const hot = boards.find(b => /热歌|TOP/i.test(b.name)) || boards[0];
-      if (hot) lxapi.leaderboardList(hot.bangid).then(list => setHotBoard(list.slice(0, 50)));
-    });
+      if (hot) lxapi.leaderboardList(hot.bangid).then(list => { setHotBoard(list.slice(0, 50)); setDataLoaded(true); });
+      else setDataLoaded(true);
+    }).catch(() => setDataLoaded(true));
   }, [token]);
 
   const playHot = () => { if (hotBoard.length) playSong(hotBoard[0], hotBoard); };
@@ -406,6 +437,8 @@ const st = StyleSheet.create({
   headerRow: { height: 40, flexDirection: 'row', alignItems: 'center', gap: 12 },
   hello: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700' },
   body: { gap: 12, paddingTop: 12 },
+  homeOverlay: { position: 'absolute', top: 82, left: 20, right: 20, alignItems: 'center' },
+  homeOverlayCard: { width: 350, maxWidth: '100%' },
   empty: { color: C.text2, fontSize: 13, lineHeight: 18, paddingTop: 40, textAlign: 'center' },
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   quickCard: {

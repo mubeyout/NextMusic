@@ -2,19 +2,20 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { Icon } from '../theme/Icon';
+import { Icon, BrandIcon, type BrandIconName } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { api, type SongItem } from '../services/server';
 import { library } from '../state/library';
 import { useApp } from '../state/AppState';
 
 // Figma NM-IMPORT-001 / 39 / 40 · 导入歌单三步流
+// hasCircleBg: SVG 自带圆形/满底色 → 裸渲染；否则保留品牌色容器
 const PLATFORMS = [
-  { id: 'wy', name: '网易云音乐', color: '#C20C0C' },
-  { id: 'tx', name: 'QQ音乐', color: '#31C27C' },
-  { id: 'kg', name: '酷狗音乐', color: '#0C8ED9' },
-  { id: 'kw', name: '酷我音乐', color: '#FFA200' },
-  { id: 'mg', name: '咪咕音乐', color: '#00A0E9' },
+  { id: 'wy', name: '网易云音乐', color: '#C20C0C', icon: 'netease' as BrandIconName, hasCircleBg: true },
+  { id: 'tx', name: 'QQ音乐', color: '#31C27C', icon: 'qqmusic' as BrandIconName, hasCircleBg: true },
+  { id: 'kg', name: '酷狗音乐', color: '#0C8ED9', icon: 'kugou' as BrandIconName, hasCircleBg: true },
+  { id: 'kw', name: '酷我音乐', color: '#FFA200', icon: 'kuwo' as BrandIconName, hasCircleBg: false },
+  { id: 'mg', name: '咪咕音乐', color: '#00A0E9', icon: 'migu' as BrandIconName, hasCircleBg: true },
 ];
 
 function extractId(link: string): string | null {
@@ -100,9 +101,15 @@ export function ImportPlaylistScreen() {
             <Text style={st.sectionTitle}>选择歌单所在平台</Text>
             {PLATFORMS.map(pf => (
               <TouchableOpacity key={pf.id} style={st.platformRow} activeOpacity={0.7} onPress={() => pick(pf.id)}>
-                <View style={[st.platformIcon, { backgroundColor: pf.color + '26', borderColor: pf.color }]}>
-                  <Text style={[st.platformIconText, { color: pf.color }]}>{pf.name[0]}</Text>
-                </View>
+                {pf.hasCircleBg ? (
+                  <View style={st.platformIconBare}>
+                    <BrandIcon name={pf.icon} size={28} />
+                  </View>
+                ) : (
+                  <View style={[st.platformIcon, { backgroundColor: pf.color + '26', borderColor: pf.color }]}>
+                    <BrandIcon name={pf.icon} size={20} />
+                  </View>
+                )}
                 <View style={{ flex: 1 }}>
                   <Text style={st.platformName}>{pf.name}</Text>
                   <Text style={st.platformSub}>支持歌单链接或歌单 ID</Text>
@@ -179,6 +186,7 @@ const st = StyleSheet.create({
   sectionTitle: { color: C.text, fontSize: 17, lineHeight: 25, fontWeight: '700' },
   platformRow: { minHeight: 60, borderRadius: 14, backgroundColor: '#1A1A1A', flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14 },
   platformIcon: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  platformIconBare: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
   platformIconText: { fontSize: 15, fontWeight: '700' },
   platformName: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '500' },
   platformSub: { color: C.text2, fontSize: 11, lineHeight: 15 },

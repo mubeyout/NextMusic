@@ -1,6 +1,7 @@
 import React from 'react';
 import { SvgXml } from 'react-native-svg';
 import { ICONS } from './icon-data';
+import { BRAND_ICONS } from './brand-icons';
 
 export type IconName =
   | 'home' | 'explore' | 'my' | 'search' | 'play' | 'pause' | 'more' | 'back'
@@ -33,5 +34,15 @@ export function Icon({
   let xml = ICONS[key] || ICONS[`${name}-default`];
   if (!xml) return null;
   xml = recolor(xml, color);
+  return <SvgXml xml={xml} width={size} height={size} />;
+}
+
+// ---- Brand icons (no recolor) ----
+
+export type BrandIconName = 'netease' | 'qqmusic' | 'kugou' | 'kuwo' | 'migu' | 'emby' | 'jellyfin' | 'navidrome' | 'subsonic' | 'webdav';
+
+export function BrandIcon({ name, size = 24 }: { name: BrandIconName; size?: number }) {
+  const xml = BRAND_ICONS[name];
+  if (!xml) return null;
   return <SvgXml xml={xml} width={size} height={size} />;
 }
