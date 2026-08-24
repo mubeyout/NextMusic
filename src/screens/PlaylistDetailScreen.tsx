@@ -12,6 +12,7 @@ import { PageHeader } from '../components/PageChrome';
 import { library } from '../state/library';
 import { usePlayer } from '../state/PlayerProvider';
 import { api, type SongItem, type SongListMeta } from '../services/server';
+import { useApp } from '../state/AppState';
 import { enqueueDownload, downloads as dlStore, downloadProgress, subscribeDownloads } from '../services/downloads';
 import { MiniPlayer } from '../components/MiniPlayer';
 import { lxapi } from '../services/lxapi';
@@ -38,6 +39,7 @@ export function PlaylistDetailScreen() {
   const route = useRoute();
   const p = route.params as Params;
   const { playSong, current } = usePlayer();
+  const { connected } = useApp();
 
   const [songs, setSongs] = useState<SongItem[] | null>(null);
   const [info, setInfo] = useState<SongListMeta | null>(null);
@@ -110,6 +112,7 @@ export function PlaylistDetailScreen() {
               if (localPl) {
                 dialog.menu(localPl.name, [
                   { label: '歌单内搜索', onPress: () => setSearching(true) },
+                  ...(localPl.remoteId ? [{ label: syncing ? '同步中…' : '重新同步歌单', onPress: () => resyncPl() }] : []),
                   { label: '重命名歌单', onPress: () => renamePl() },
                   { label: '删除歌单', danger: true, onPress: () => deletePl() },
                 ]);
@@ -208,6 +211,12 @@ export function PlaylistDetailScreen() {
             ? { label: '已下载 ✓', onPress: () => {} }
             : { label: '下载', onPress: () => { enqueueDownload([actSong]); } },
           { label: '收藏到歌单', onPress: () => setCollect(true) },
+          ...(localPl ? [{ label: '从本歌单移除', danger: true as const, onPress: () => {
+            library.removeSong(localPl.id, actSong);
+            setSongs(prev => (prev || []).filter(s => !(s.source === actSong.source && s.songmid === actSong.songmid)));
+            setTotal(t => Math.max(0, t - 1));
+            toast(`已移除「${actSong.name}」`);
+          } }] : []),
         ] : []}
       />
       <CollectSheet song={actSong} visible={collect} onClose={() => { setCollect(false); setActSong(null); }} />
@@ -235,6 +244,34 @@ export function PlaylistDetailScreen() {
       toast('歌单已删除');
       nav.goBack();
     }, '删除', '取消');
+  }
+
+  // 重新同步：从源平台全量拉取覆盖本地歌曲（导入时的 remoteId/source）
+  const [syncing, setSyncing] = useState(false);
+  async function resyncPl() {
+    if (!localPl?.remoteId || syncing) return;
+    setSyncing(true);
+    try {
+      const fetcher = connected ? api : lxapi;
+      const src = localPl.source || 'wy';
+      const first = await fetcher.songListDetail(localPl.remoteId, 1, src);
+      const all = first.list || [];
+      const total = first.info?.total || all.length;
+      let pg = 1;
+      while (all.length < total && pg < 10) {
+        pg++;
+        const r = await fetcher.songListDetail(localPl.remoteId, pg, src); // eslint-disable-line no-await-in-loop
+        const more = r.list || [];
+        if (!more.length) break;
+        all.push(...more);
+      }
+      if (!all.length) { toast('源歌单已空或无法读取'); setSyncing(false); return; }
+      library.replaceSongs(localPl.id, all);
+      setSongs(all); setTotal(all.length); setPage(1);
+      toast(`已同步 · ${all.length} 首`);
+    } catch {
+      toast('同步失败，请检查网络与音源');
+    } finally { setSyncing(false); }
   }
 
   function renderSongAction(s: SongItem) {

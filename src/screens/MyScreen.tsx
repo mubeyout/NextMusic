@@ -7,6 +7,7 @@ import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { PillTabs } from '../components/PillTabs';
 import { EmptyState } from '../components/PageChrome';
+import { dialog, toast } from '../components/Dialog';
 import { SongRow } from '../components/SongRow';
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
@@ -95,9 +96,9 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
     + localPlaylists.reduce((n, p) => n + p.songs.length, 0);
 
   // 自建歌单 grid items: local playlists first, then synced remote lists
-  const gridItems = [
+  const gridItems: { key: string; localId?: string; name: string; count: number; img?: string; songs: SongItem[] }[] = [
     ...localPlaylists.map(p => ({
-      key: p.id, name: p.name, count: p.songs.length, img: p.cover || p.songs[0]?.img,
+      key: p.id, localId: p.id, name: p.name, count: p.songs.length, img: p.cover || p.songs[0]?.img,
       songs: p.songs,
     })),
     ...syncPls.map(u => {
@@ -160,8 +161,36 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
           {gridItems.length ? (
             <View style={st.plGrid}>
               {gridItems.slice(0, 12).map((g, i) => (
-                <TouchableOpacity key={g.key} style={st.plCell} activeOpacity={0.85} onPress={() => openSongs(g.name, g.songs, g.img)}>
-                  {/* Figma 2154-730：自建歌单一律渐变抽象封面（不用歌曲专辑图） */}
+                <TouchableOpacity
+                  key={g.key}
+                  style={st.plCell}
+                  activeOpacity={0.85}
+                  onPress={() => g.localId
+                    ? nav.navigate('PlaylistDetail', { localId: g.localId, title: g.name, songs: g.songs, cover: g.img })
+                    : openSongs(g.name, g.songs, g.img)}
+                  onLongPress={g.localId ? () => {
+                    const pl = library.get(g.localId!);
+                    if (!pl) return;
+                    dialog.menu(pl.name, [
+                      { label: '重命名歌单', onPress: () => {
+                        dialog.prompt('重命名歌单', {
+                          defaultValue: pl.name,
+                          onSubmit: (v) => {
+                            if (!v || v === pl.name) return;
+                            library.update(pl.id, { name: v });
+                            toast('已重命名');
+                          },
+                        });
+                      } },
+                      { label: '删除歌单', danger: true, onPress: () => {
+                        dialog.confirm('删除歌单', `确定删除「${pl.name}」？${pl.songs.length} 首歌曲将从此歌单移除`, () => {
+                          library.remove(pl.id);
+                          toast('歌单已删除');
+                        }, '删除', '取消');
+                      } },
+                    ]);
+                  } : undefined}
+                >                  {/* Figma 2154-730：自建歌单一律渐变抽象封面（不用歌曲专辑图） */}
                   <LinearGradient colors={COVER_GRADS[i % COVER_GRADS.length]} style={st.plCover}>
                     <Text style={st.plGlyph}>♫</Text>
                   </LinearGradient>

@@ -58,4 +58,17 @@ export const library = {
     list[i].songs = [...list[i].songs, ...add];
     writeAll(list);
   },
+  // 从歌单移除单曲（按 source:songmid 匹配）
+  removeSong(id: string, song: SongItem) {
+    const list = readAll();
+    const i = list.findIndex(p => p.id === id);
+    if (i < 0) return;
+    const key = `${song.source}:${song.songmid}`;
+    list[i].songs = list[i].songs.filter(s => `${s.source}:${s.songmid}` !== key);
+    writeAll(list);
+  },
+  // 重新同步：全量覆盖歌曲（保留名称/封面等元数据）
+  replaceSongs(id: string, songs: SongItem[]) {
+    this.update(id, { songs });
+  },
 };
