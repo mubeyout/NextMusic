@@ -5,6 +5,8 @@ import { useNavigation } from '@react-navigation/native';
 import { Icon, BrandIcon, type BrandIconName } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { api, type SongItem } from '../services/server';
+import { lxapi } from '../services/lxapi';
+import { activeSources } from '../services/customSource';
 import { library } from '../state/library';
 import { useApp } from '../state/AppState';
 
@@ -42,21 +44,27 @@ export function ImportPlaylistScreen() {
     if (!platform) return;
     const id = extractId(link);
     if (!id) { setErr('无法识别歌单链接或 ID'); return; }
+    // 本地模式（未连接服务器）：走音源引擎直连平台，无需服务器账号
+    const useServer = connected;
+    if (!useServer && activeSources().length === 0) {
+      setErr('本地模式需要音源：请到 设置 → 音源管理 启用一个音源'); return;
+    }
+    const fetcher = useServer ? api : lxapi;
     setLoading(true); setErr(null);
     try {
-      const first = await api.songListDetail(id, 1, platform);
+      const first = await fetcher.songListDetail(id, 1, platform);
       const songs = first.list || [];
       const total = first.info?.total || songs.length;
       // 拉剩余页（最多 10 页，每页约 30-100 首）
       let page = 1;
       while (songs.length < total && page < 10) {
         page++;
-        const r = await api.songListDetail(id, page, platform); // eslint-disable-line no-await-in-loop
+        const r = await fetcher.songListDetail(id, page, platform); // eslint-disable-line no-await-in-loop
         const more = r.list || [];
         if (!more.length) break;
         songs.push(...more);
       }
-      if (!songs.length) { setErr('歌单为空或无法读取（检查链接是否公开）'); return; }
+      if (!songs.length) { setErr(useServer ? '歌单为空或无法读取（检查链接是否公开）' : '歌单为空或无法读取（检查链接是否公开、音源是否可用）'); return; }
       setPreview({
         name: first.info?.name || `导入歌单 ${id}`,
         songs, total,
