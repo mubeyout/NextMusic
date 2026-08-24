@@ -44,7 +44,7 @@ export function BootScreen() {
             <Text style={st.cardTitle}>连接服务器</Text>
           </View>
           <Text style={st.cardDesc}>登录服务器账号可同步收藏与歌单，并使用服务器端音源播放。</Text>
-          <TouchableOpacity style={st.btnGhost} onPress={() => nav.navigate('Server')}>
+          <TouchableOpacity style={st.btnGhost} hitSlop={{ top: 8, bottom: 8, left: 12, right: 12 }} onPress={() => nav.navigate('Server')}>
             <Text style={st.btnGhostText}>连接服务器</Text>
           </TouchableOpacity>
         </View>
