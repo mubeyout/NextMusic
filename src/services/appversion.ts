@@ -1,2 +1,8 @@
-// 版本常量（与 android/app/build.gradle versionName 保持同步）
-export const APP_VERSION = '3.3.0 (lx3, 30008)';
+// 版本信息：优先读原生 BuildConfig（build.gradle 唯一真源），调试/异常时回退硬编码
+import { NativeModules } from 'react-native';
+
+const native = NativeModules.AppVersionInfo as { versionName?: string; versionCode?: number } | undefined;
+
+export const APP_VERSION = native?.versionName
+  ? `${native.versionName} (${native.versionCode})`
+  : '3.4.0-lx5';
