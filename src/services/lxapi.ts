@@ -17,11 +17,11 @@ function normalize(songInfo: any): any {
   if (!songInfo.source && meta.source) songInfo.source = meta.source;
   if (!songInfo.interval && meta.interval) songInfo.interval = meta.interval;
   if (!songInfo.songmid) {
-    if (meta.songId) songInfo.songmid = meta.songId;
+    if (meta.songId) songInfo.songmid = String(meta.songId);
     else if (songInfo.id) {
       const pre = `${songInfo.source}_`;
       if (typeof songInfo.id === 'string' && songInfo.id.startsWith(pre)) songInfo.songmid = songInfo.id.slice(pre.length);
-      else songInfo.songmid = songInfo.id;
+      else songInfo.songmid = String(songInfo.id); // 部分源（如 kg 排行榜）id 是数字，统一转 string 防 .split/.startsWith 崩
     }
   }
   if (!songInfo.hash && meta.hash) songInfo.hash = meta.hash;

@@ -339,11 +339,12 @@ export const providerApi = {
   /** 播放/下载地址 + 请求头 */
   streamFor(song: SongItem): { url: string; headers?: Record<string, string> } | null {
     const src = song.source;
+    const mid = String(song.songmid ?? ''); // 历史数据 songmid 可能为 number，统一转 string
     if (src === 'webdav') {
-      const a = providers.all().find(p => p.type === 'webdav' && song.songmid.startsWith(norm(p.base)));
-      return { url: song.songmid, headers: a ? basicAuth(a) : undefined };
+      const a = providers.all().find(p => p.type === 'webdav' && mid.startsWith(norm(p.base)));
+      return { url: mid, headers: a ? basicAuth(a) : undefined };
     }
-    const [pid, itemId] = song.songmid.split(':');
+    const [pid, itemId] = mid.split(':');
     const a = providers.get(pid);
     if (!a || !itemId) return null;
     const proto = PROTOCOL[a.type];

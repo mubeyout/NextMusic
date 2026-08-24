@@ -95,25 +95,17 @@ function withTimeout<T>(p: Promise<T>, ms: number, tag: string): Promise<T> {
 }
 
 async function resolveUrl(song: SongItem, quality: Quality): Promise<{ url: string; headers?: Record<string, string> }> {
-  try {
   // 媒体库源（emby/jellyfin/subsonic/webdav）直接出流地址
-  let p: { url: string; headers?: Record<string, string> } | null;
-  try { p = providerApi.streamFor(song); } catch (e) { throw new Error('E1a:' + ((e as Error).message || 'streamFor')); }
+  const p = providerApi.streamFor(song);
   if (p) return p;
   // 设备本地文件无需下载
   if (song.source === 'device') throw new Error('本地文件无需下载');
   // 在线音源：自定义脚本优先，其次服务器
   let url: string | null = null;
   try { url = await withTimeout(customGetMusicUrl(song, quality), 20000, '音源取链'); } catch { url = null; }
-  try {
   if (!url) url = (await withTimeout(api.musicUrl(song, quality), 20000, '服务器取链')).url;
-  } catch (e) { throw new Error('E1d:' + ((e as Error).message || 'musicUrl')); }
   if (!url) throw new Error('取链失败');
   return { url };
-  } catch (e) {
-    const m = (e as Error).message || 'resolveUrl';
-    throw new Error(m.startsWith('E') ? m : 'E1:' + m);
-  }
 }
 
 // ---------- 队列 ----------
@@ -147,18 +139,14 @@ async function runJob(job: Job): Promise<void> {
   emit();
   try {
     await withTimeout((async () => {
-    let dir: string;
-    try {
-      dir = `${RNBlobUtil.fs.dirs.DocumentDir}/downloads`;
-      await RNBlobUtil.fs.mkdir(dir).catch(() => {});
-    } catch (e) { throw new Error('E2:' + ((e as Error).message || 'blob-util')); }
-    const file = `${dir}/${sanitize(job.song.name)}-${sanitize(job.song.singer)}-${String(job.song.songmid).slice(-24).replace(/[^a-zA-Z0-9_-]/g, '')}.${extFor(job.quality)}`;
+    const dir = `${RNBlobUtil.fs.dirs.DocumentDir}/downloads`;
+    await RNBlobUtil.fs.mkdir(dir).catch(() => {});
+    const file = `${dir}/${sanitize(job.song.name)}-${sanitize(job.song.singer)}-${String(job.song.songmid ?? '').slice(-24).replace(/[^a-zA-Z0-9_-]/g, '')}.${extFor(job.quality)}`;
     const { url, headers } = await resolveUrl(job.song, job.quality);
     const hdrs = headers && Object.keys(headers).length ? headers : null;
     let size = 0;
     if (Downloader) {
       // 原生 OkHttp 流式下载（New Arch 稳定路径）
-      try {
       await new Promise<void>((resolveP, rejectP) => {
         const sink = (k: string, received: number, total: number) => {
           if (k !== key) return;
@@ -170,7 +158,6 @@ async function runJob(job: Job): Promise<void> {
           .then(sz => { size = sz; progressSink = null; resolveP(); })
           .catch(e => { progressSink = null; rejectP(e); });
       });
-      } catch (e) { throw new Error('E3:' + ((e as Error).message || 'downloader')); }
     } else {
       const task = RNBlobUtil.config({ path: file }).fetch('GET', url, headers || {});
       task.progress({ count: 10, interval: 300 }, (w, t) => { progressMap.set(key, t > 0 ? w / t : 0); emit(); });
