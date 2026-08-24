@@ -55,9 +55,7 @@ export function FxScreen() {
           <Icon name="back" size={22} />
         </TouchableOpacity>
         <Text style={st.title}>均衡器与音效</Text>
-        <TouchableOpacity hitSlop={6} style={{ width: 22 }}>
-          <Icon name="more" size={22} />
-        </TouchableOpacity>
+        <View style={{ width: 22 }} />
       </View>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>

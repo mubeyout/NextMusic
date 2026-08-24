@@ -1,16 +1,24 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { createMMKV } from 'react-native-mmkv';
 import { C } from '../theme/tokens';
 import { useApp } from '../state/AppState';
 
 // Figma NM-SERVER-001: server address card + connect button + capabilities + back
+const recentKv = createMMKV({ id: 'nextmusic-server-history' });
+
 export function ServerScreen() {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { navigate: (s: string) => void; goBack: () => void; reset: (o: unknown) => void };
   const { connectServer } = useApp();
   const [addr, setAddr] = useState('');
+  const [history, setHistory] = useState<string[]>([]);
+  useEffect(() => {
+    try { setHistory(JSON.parse(recentKv.getString('list') || '[]')); } catch { /* ignore */ }
+    setAddr(recentKv.getString('last') || '');
+  }, []);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -18,7 +26,15 @@ export function ServerScreen() {
     if (!addr.trim()) { setErr('请输入服务器地址'); return; }
     setBusy(true); setErr(null);
     try {
-      await connectServer(addr.trim());
+      const norm = addr.trim();
+      await connectServer(norm);
+      // 记录连接历史
+      try {
+        const list: string[] = JSON.parse(recentKv.getString('list') || '[]');
+        const next = [norm, ...list.filter(x => x !== norm)].slice(0, 5);
+        recentKv.set('list', JSON.stringify(next));
+        recentKv.set('last', norm);
+      } catch { /* ignore */ }
       nav.reset({ index: 0, routes: [{ name: 'Auth' }] });
     } catch (e) {
       setErr('连接失败，请检查地址与网络后重试');
@@ -53,9 +69,11 @@ export function ServerScreen() {
             />
           </View>
           <Text style={st.fieldHint}>支持 http(s)://IP:端口 或域名；连接时检查 /api/music/config</Text>
-          <TouchableOpacity style={st.quickAction}>
-            <Text style={st.quickText}>最近服务器 · music.example.com  ›</Text>
-          </TouchableOpacity>
+          {history.length ? history.slice(0, 3).map(h => (
+            <TouchableOpacity key={h} style={st.quickAction} onPress={() => setAddr(h)}>
+              <Text style={st.quickText}>最近 · {h}  ›</Text>
+            </TouchableOpacity>
+          )) : null}
         </View>
 
         <TouchableOpacity style={st.btnPrimary} onPress={connect} disabled={busy}>

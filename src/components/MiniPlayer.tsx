@@ -25,7 +25,7 @@ export function MiniPlayer() {
           </View>
           <View style={st.meta}>
             <Text style={st.title} numberOfLines={1}>{current.name}</Text>
-            <Text style={st.sub} numberOfLines={1}>{current.singer} · SQ</Text>
+            <Text style={st.sub} numberOfLines={1}>{current.singer}{current._types?.flac ? ' · 无损' : ''}</Text>
           </View>
           <TouchableOpacity style={st.iconBtn} hitSlop={6} onPress={() => nav.navigate('Route')}>
             <Icon name="devices" size={20} color={C.text} />

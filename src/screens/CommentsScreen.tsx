@@ -7,6 +7,18 @@ import { C } from '../theme/tokens';
 import { usePlayer } from '../state/PlayerProvider';
 import { api } from '../services/server';
 import { lxapi } from '../services/lxapi';
+import { createMMKV } from 'react-native-mmkv';
+import { useApp } from '../state/AppState';
+import { toast } from '../components/Dialog';
+
+// 本地评论（按歌存储，不依赖平台账号）
+const localKv = createMMKV({ id: 'nextmusic-local-comments' });
+function loadLocal(songKey: string): CommentItem[] {
+  try { return JSON.parse(localKv.getString(songKey) || '[]'); } catch { return []; }
+}
+function saveLocal(songKey: string, list: CommentItem[]) {
+  localKv.set(songKey, JSON.stringify(list.slice(0, 100)));
+}
 
 interface CommentItem {
   id: string;
@@ -28,11 +40,16 @@ export function CommentsScreen() {
   const [total, setTotal] = useState<number>(0);
   const [page, setPage] = useState(1);
   const [busy, setBusy] = useState(false);
+  const [draft, setDraft] = useState('');
+  const { username } = useApp();
+  const songKey = current ? `${current.source}_${current.songmid}` : '';
+  const [mine, setMine] = useState<CommentItem[]>([]);
 
   useEffect(() => {
     if (!current) return;
     let dead = false;
     setComments(null); setPage(1);
+    setMine(loadLocal(songKey));
     (async () => {
       const r = await lxapi.comment(current, sort, 1, 20);
       if (dead) return;
@@ -41,6 +58,23 @@ export function CommentsScreen() {
     })();
     return () => { dead = true; };
   }, [current?.songmid, sort]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const send = () => {
+    const text = draft.trim();
+    if (!text || !current) return;
+    const cm: CommentItem = {
+      id: `local-${Date.now()}`,
+      text,
+      userName: username || '我',
+      timeStr: '刚刚',
+      likedCount: 0,
+    };
+    const next = [cm, ...mine];
+    setMine(next);
+    saveLocal(songKey, next);
+    setDraft('');
+    toast('已发布（本机）');
+  };
 
   const loadMore = async () => {
     if (!current || busy || !comments || comments.length >= total) return;
@@ -96,9 +130,35 @@ export function CommentsScreen() {
       }} scrollEventThrottle={200}>
         {comments == null ? (
           <View style={st.center}><ActivityIndicator color={C.brand} /></View>
-        ) : comments.length === 0 ? (
-          <Text style={st.empty}>暂无评论</Text>
-        ) : comments.map(cm => (
+        ) : (
+          <>
+          {mine.length ? (
+            <>
+              <Text style={st.localLabel}>我的评论（本机）</Text>
+              {mine.map(cm => (
+                <View key={cm.id} style={[st.card, st.cardMine]}>
+                  <View style={[st.avatar, st.avatarFallback]}><Text style={st.avatarInitial}>{(cm.userName || '我')[0]}</Text></View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <View style={st.cardTop}>
+                      <Text style={st.userName}>{cm.userName || '我'}</Text>
+                      <TouchableOpacity hitSlop={6} onPress={() => {
+                        const next = mine.filter(x => x.id !== cm.id);
+                        setMine(next); saveLocal(songKey, next);
+                      }}>
+                        <Text style={st.delText}>删除</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <Text style={st.cmText}>{cm.text}</Text>
+                    <Text style={st.cmTime}>{cm.timeStr || ''}</Text>
+                  </View>
+                </View>
+              ))}
+            </>
+          ) : null}
+          {comments.length === 0 && !mine.length ? (
+            <Text style={st.empty}>暂无评论，来抢沙发</Text>
+          ) : null}
+          {comments.map(cm => (
           <View key={cm.id} style={st.card}>
             {cm.avatar ? (
               <Image source={{ uri: cm.avatar }} style={st.avatar} />
@@ -119,15 +179,25 @@ export function CommentsScreen() {
               <Text style={st.cmTime}>{cm.timeStr || ''}</Text>
             </View>
           </View>
-        ))}
+          ))}
+          </>
+        )}
         {busy ? <View style={st.center}><ActivityIndicator color={C.brand} /></View> : null}
       </ScrollView>
 
       <View style={[st.inputBar, { paddingBottom: insets.bottom + 8 }]}>
         <View style={st.input}>
-          <TextInput style={st.inputText} placeholder="随乐而起，有感而发" placeholderTextColor={C.text3} />
+          <TextInput
+            style={st.inputText}
+            placeholder="随乐而起，有感而发"
+            placeholderTextColor={C.text3}
+            value={draft}
+            onChangeText={setDraft}
+            onSubmitEditing={send}
+            returnKeyType="send"
+          />
         </View>
-        <TouchableOpacity style={st.sendBtn}>
+        <TouchableOpacity style={st.sendBtn} onPress={send} disabled={!draft.trim()}>
           <Text style={st.sendText}>发送</Text>
         </TouchableOpacity>
       </View>
@@ -149,6 +219,9 @@ const st = StyleSheet.create({
   pillText: { color: C.text2, fontSize: 12, lineHeight: 14, fontWeight: '500' },
   pillTextOn: { color: C.onBrand },
   center: { paddingVertical: 40, alignItems: 'center' },
+  localLabel: { color: C.text3, fontSize: 11, lineHeight: 15, marginTop: 10, marginBottom: 4 },
+  cardMine: { borderColor: '#1ED76033', borderWidth: StyleSheet.hairlineWidth },
+  delText: { color: C.text3, fontSize: 11 },
   empty: { color: C.text2, fontSize: 12, textAlign: 'center', paddingVertical: 40 },
   card: { flexDirection: 'row', gap: 12, paddingHorizontal: 20, paddingVertical: 12 },
   avatar: { width: 36, height: 36, borderRadius: 18 },

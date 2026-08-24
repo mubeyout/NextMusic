@@ -15,7 +15,7 @@ import { library } from '../state/library';
 import { isFav, setFav } from '../state/favorites';
 import { CollectSheet } from '../components/CollectSheet';
 import { ActionSheet } from '../components/ActionSheet';
-import { enqueueDownload, downloads as dlStore } from '../services/downloads';
+import { enqueueDownload, downloads as dlStore, downloadProgress, subscribeDownloads } from '../services/downloads';
 import { dialog, toast } from '../components/Dialog';
 
 // Figma 04·播放页: vinyl hero + synced lyrics + secondary tools + playback panel
@@ -29,6 +29,9 @@ export function PlayerScreen() {
   const [faving, setFaving] = useState(false);
   const [collect, setCollect] = useState(false);
   const [more, setMore] = useState(false);
+  const [, forceDl] = useState(0);
+  useEffect(() => subscribeDownloads(() => forceDl(n => n + 1)), []);
+  const dlProg = current ? downloadProgress(current) : null;
   const [seekPct, setSeekPct] = useState<number | null>(null); // 拖动中的进度
 
   const openCollect = () => { if (current) setCollect(true); };
@@ -172,7 +175,23 @@ export function PlayerScreen() {
           <TouchableOpacity style={st.pIcon} hitSlop={6} onPress={openCollect}>
             <Icon name="heart" size={20} active={faved} color={faved ? '#FF5A76' : C.text} />
           </TouchableOpacity>
-          <TouchableOpacity style={st.pIcon}><Icon name="download" size={20} /></TouchableOpacity>
+          <TouchableOpacity
+            style={st.pIcon}
+            hitSlop={6}
+            onPress={() => {
+              if (dlStore.isDownloaded(current)) return;
+              const n = enqueueDownload([current]);
+              toast(n ? `已加入下载队列 · ${current.name}` : '该歌曲已在下载队列');
+            }}
+          >
+            {dlProg != null ? (
+              <Text style={st.pProg}>{Math.round(dlProg * 100)}%</Text>
+            ) : dlStore.isDownloaded(current) ? (
+              <Icon name="check" size={20} active />
+            ) : (
+              <Icon name="download" size={20} />
+            )}
+          </TouchableOpacity>
           <TouchableOpacity style={st.pIcon} onPress={() => nav.navigate('Queue')}><Icon name="queue" size={20} /></TouchableOpacity>
         </View>
 
@@ -290,6 +309,7 @@ const st = StyleSheet.create({
   pMeta: { flex: 1, marginLeft: 13, gap: 2 },
   pTitle: { color: C.text, fontSize: 18, lineHeight: 22, fontWeight: '700' },
   pSub: { color: C.text2, fontSize: 12, lineHeight: 14 },
+  pProg: { color: '#6BE88F', fontSize: 10, lineHeight: 14, fontWeight: '600' },
   pIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#242424', alignItems: 'center', justifyContent: 'center' },
   seekHit: { height: 28, justifyContent: 'center' },
   bar: { height: 4, flexDirection: 'row', backgroundColor: '#2B2B2B' },
