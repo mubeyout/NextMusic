@@ -50,6 +50,9 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
   useEffect(() => { if (visible) setLocalCount(deviceTrackCount()); }, [visible]);
 
   const loggedIn = connected && !!token;
+  // 订阅本地歌单变更：导入/新建/删除后实时刷新（否则需冷启动才能看到）
+  const [, setLibTick] = useState(0);
+  useEffect(() => library.subscribe(() => setLibTick(t => t + 1)), []);
   const localPlaylists = library.all();
 
   const refresh = useCallback(async () => {

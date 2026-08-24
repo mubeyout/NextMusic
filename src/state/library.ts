@@ -18,13 +18,19 @@ const kv = createMMKV({ id: 'nextmusic-library' });
 function readAll(): LocalPlaylist[] {
   try { return JSON.parse(kv.getString('playlists') || '[]'); } catch { return []; }
 }
+
+// 变更订阅：让「我的」页等界面在导入/新建/删除后实时刷新
+ type Sub = () => void;
+const subs = new Set<Sub>();
 function writeAll(list: LocalPlaylist[]) {
   kv.set('playlists', JSON.stringify(list));
+  subs.forEach(f => f());
 }
 
 let uid = Date.now();
 export const library = {
   all: readAll,
+  subscribe(f: Sub): () => void { subs.add(f); return () => { subs.delete(f); }; },
   get(id: string) { return readAll().find(p => p.id === id); },
   create(name: string, songs: SongItem[] = [], meta: Partial<LocalPlaylist> = {}): LocalPlaylist {
     const list = readAll();
