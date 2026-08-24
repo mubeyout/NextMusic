@@ -15,6 +15,7 @@ import { StateOverlayCard } from '../components/StateOverlayCard';
 import { useApp } from '../state/AppState';
 import { usePlayer } from '../state/PlayerProvider';
 import { getRecents } from '../state/recent';
+import { activeSources } from '../services/customSource';
 import { api, type SongItem, type SongListMeta } from '../services/server';
 import { lxapi } from '../services/lxapi';
 
@@ -207,6 +208,8 @@ export function ExploreScreen() {
     if (!q) return;
     setBusy(true); setErr(null); setSearched(true); setAllFailed(false);
     try {
+      // 无启用音源：直接进入全失败态，不等 3×20s 引擎超时
+      if (activeSources().length === 0) { setResults([]); setAllFailed(true); return; }
       const r = await lxapi.search(q, source);
       if (r.length === 0) {
         // 搜索返回空结果：尝试其他源确认是否全部失败
