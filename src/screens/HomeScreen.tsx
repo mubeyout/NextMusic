@@ -92,7 +92,7 @@ function MixCard({ pl, fallbackArt }: { pl: SongListMeta; fallbackArt: any }) {
     <TouchableOpacity
       style={st.mixCard} activeOpacity={0.85}
       onPress={() => nav.navigate('PlaylistDetail', {
-        remoteId: pl.id, title: pl.name, cover: pl.img,
+        remoteId: pl.id, remoteSource: pl.source || 'wy', title: pl.name, cover: pl.img,
         meta: `${pl.total ?? ''} 首 · ${pl.author || '歌单'}`,
       })}
     >
@@ -116,7 +116,7 @@ function PlCard({ pl }: { pl: SongListMeta }) {
     <TouchableOpacity
       style={st.plCell} activeOpacity={0.85}
       onPress={() => nav.navigate('PlaylistDetail', {
-        remoteId: pl.id, title: pl.name, cover: pl.img,
+        remoteId: pl.id, remoteSource: pl.source || 'wy', title: pl.name, cover: pl.img,
         meta: `${pl.total ?? ''} 首 · ${pl.author || '歌单'}`,
       })}
     >
