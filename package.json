@@ -8,7 +8,7 @@
     "lint": "eslint .",
     "start": "react-native start",
     "test": "jest",
-    "postinstall": "sed -i \"s/SafX_compileSdkVersion', 31/SafX_compileSdkVersion', 37/\" node_modules/react-native-saf-x/android/build.gradle || true"
+    "postinstall": "node scripts/patch-audiopro.mjs && sed -i \"s/SafX_compileSdkVersion', 31/SafX_compileSdkVersion', 37/\" node_modules/react-native-saf-x/android/build.gradle || true"
   },
   "dependencies": {
     "@react-navigation/native": "^7.3.17",

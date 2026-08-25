@@ -82,8 +82,8 @@ android {
         applicationId "com.mubeyworks.nextmusic"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 22
-        versionName "3.4.0-lx9"
+        versionCode 23
+        versionName "3.4.0-lx10"
     }
     signingConfigs {
         debug {
@@ -116,4 +116,7 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+
+    // 均衡器与音效 DSP：BaseAudioProcessor 需 media3-common（与 react-native-audio-pro 同版本）
+    implementation("androidx.media3:media3-common:1.6.0")
 }
