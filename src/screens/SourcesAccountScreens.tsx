@@ -176,13 +176,13 @@ export function AccountScreen() {
           </View>
           <View style={[st.row, st.rowDivide]}>
             <Icon name="user" size={20} />
-            <Text style={st.rowLabel}>{username ? `已登录：${username}` : '访客（未登录）'}</Text>
-            <Text style={st.rowMeta}>{username ? '同步开启' : '数据在本机'}</Text>
+            <Text style={st.rowLabel}>{token && username ? `已登录：${username}` : '访客（未登录）'}</Text>
+            <Text style={st.rowMeta}>{token && username ? '同步开启' : '数据在本机'}</Text>
           </View>
         </View>
 
         <TouchableOpacity style={st.linkBtn} onPress={() => nav.reset({ index: 0, routes: [{ name: 'Auth' }] })}>
-          <Text style={st.linkText}>{username ? '切换账号' : '登录服务器账号'}</Text>
+          <Text style={st.linkText}>{token && username ? '切换账号' : '登录服务器账号'}</Text>
         </TouchableOpacity>
 
         {/* 更换服务器地址：无需断开重走 Boot 流程，直达连接页（也修复 Server 页入口单一） */}

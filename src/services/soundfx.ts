@@ -77,10 +77,13 @@ function sanitize(v: unknown): FxSettings {
   }
   if (s.reverb) {
     const known = FX_REVERB_OPTIONS.some(r => r.id === s.reverb!.id);
+    // 注意：Number(x) || 1 会把合法的 0（如电话混响 DRY=0）当 falsy 吞掉，必须用 isFinite 判有效
+    const mg = Number(s.reverb.mainGain);
+    const sg = Number(s.reverb.sendGain);
     out.reverb = {
       id: known ? s.reverb.id! : 'none',
-      mainGain: Math.max(0, Math.min(3, Number(s.reverb.mainGain) || 1)),
-      sendGain: Math.max(0, Math.min(3, Number(s.reverb.sendGain) || 0)),
+      mainGain: Number.isFinite(mg) ? Math.max(0, Math.min(3, mg)) : 1,
+      sendGain: Number.isFinite(sg) ? Math.max(0, Math.min(3, sg)) : 0,
     };
   }
   return out;
