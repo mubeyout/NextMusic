@@ -214,6 +214,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           break;
         case AudioProEventType.PLAYBACK_ERROR:
           setPlaying(false);
+          // 解析成功但播放失败（CDN 403 / 链接过期等）：明确反馈，不让用户猜
+          toast('播放失败：音源链接不可用，可重试或更换音源');
           break;
       }
     });

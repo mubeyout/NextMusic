@@ -9,9 +9,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { PillTabs } from '../components/PillTabs';
-import { ActionSheet } from '../components/ActionSheet';
 import { SongRow } from '../components/SongRow';
-import { StateOverlayCard } from '../components/StateOverlayCard';
 import { useApp } from '../state/AppState';
 import { usePlayer } from '../state/PlayerProvider';
 import { getRecents } from '../state/recent';
@@ -121,16 +119,8 @@ const t = StyleSheet.create({
 export function ExploreScreen() {
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState(0);
-  const [kw, setKw] = useState('');
-  const [results, setResults] = useState<SongItem[] | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [searched, setSearched] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const { } = useApp();
   const { playSong, current } = usePlayer();
   const navigation = useNavigation() as { navigate: (s: string, p?: object) => void };
-  // State: all sources failed after search
-  const [allFailed, setAllFailed] = useState(false);
 
   // 分类 tab：选中的标签（类型/场景/语言）+ 对应歌单
   const [activeTag, setActiveTag] = useState<string>('');
@@ -146,8 +136,6 @@ export function ExploreScreen() {
   // 推荐 tab：本周精选 = TOP500 前 8；hero 元数据用最近播放数；热门主题真实封面
   const [weekly, setWeekly] = useState<SongItem[]>([]);
   const [recentCount, setRecentCount] = useState(0);
-  const [filter, setFilter] = useState(false);
-  const [source, setSource] = useState<'kw' | 'kg' | 'wy'>('kw');
   const [topicCovers, setTopicCovers] = useState<Record<string, SongListMeta[]>>({});
   useEffect(() => { setRecentCount(getRecents().length); }, []);
   useEffect(() => {
@@ -203,38 +191,6 @@ export function ExploreScreen() {
     else setPlaylists(null);
   };
 
-  const search = useCallback(async (text: string) => {
-    const q = text.trim();
-    if (!q) return;
-    setBusy(true); setErr(null); setSearched(true); setAllFailed(false);
-    try {
-      // 无启用音源：直接进入全失败态，不等 3×20s 引擎超时
-      if (activeSources().length === 0) { setResults([]); setAllFailed(true); return; }
-      const r = await lxapi.search(q, source);
-      if (r.length === 0) {
-        // 搜索返回空结果：尝试其他源确认是否全部失败
-        const sources = ['kw', 'kg', 'wy'].filter(s => s !== source);
-        let anyOk = false;
-        for (const s of sources) { // eslint-disable-line no-await-in-loop
-          try {
-            const alt = await lxapi.search(q, s);
-            if (alt.length > 0) { anyOk = true; break; }
-          } catch { /* ignore */ }
-        }
-        if (!anyOk) setAllFailed(true);
-      }
-      setResults(r);
-    } catch {
-      setErr('搜索失败：无法连接服务器');
-      setResults([]);
-    } finally { setBusy(false); }
-  }, [source]);
-
-  useEffect(() => {
-    const t = setTimeout(() => { if (kw.trim().length >= 2 && !searched) search(kw); }, 600);
-    return () => clearTimeout(t);
-  }, [kw]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const openPlaylist = (pl: SongListMeta) => {
     navigation.navigate('PlaylistDetail', {
       remoteId: pl.id,
@@ -269,22 +225,18 @@ export function ExploreScreen() {
         <PillTabs tabs={['推荐', '分类', '榜单']} active={tab} onChange={setTab} />
 
         {/* 设计稿：榜单页无搜索栏；分类页搜索框 #2B2B2B、推荐页 #171717 */}
+        {/* 搜索入口：点击进入独立搜索页（全键盘体验 + 独立返回） */}
         {tab !== 2 && (
-          <View style={[st.searchBox, tab === 1 && st.searchBoxGray]}>
+          <TouchableOpacity
+            style={[st.searchBox, tab === 1 && st.searchBoxGray]}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('Search' as never)}
+          >
             <Icon name="search" size={20} color={C.text2} />
-            <TextInput
-              style={st.searchInput}
-              placeholder={searchHints[tab]}
-              placeholderTextColor={C.text2}
-              value={kw}
-              onChangeText={t => { setKw(t); setSearched(false); }}
-              onSubmitEditing={() => search(kw)}
-              returnKeyType="search"
-            />
-            <TouchableOpacity hitSlop={6} onPress={() => setFilter(true)}>
-              <Icon name="sliders" size={20} color={C.text2} />
-            </TouchableOpacity>
-          </View>
+            <Text style={st.searchPlaceholder}>{searchHints[tab]}</Text>
+            <View style={{ flex: 1 }} />
+            <Icon name="chevronright" size={18} color={C.text3} />
+          </TouchableOpacity>
         )}
 
         {tab === 0 && (
@@ -325,43 +277,18 @@ export function ExploreScreen() {
                 );
               })}
             </View>
-
-            {busy ? (
-              <View style={st.center}><ActivityIndicator color={C.brand} /></View>
-            ) : err ? (
-              <Text style={st.errText}>{err}</Text>
-            ) : results && results.length > 0 ? (
-              <>
-                <View style={st.sectionRow}>
-                  <Text style={st.sectionTitle}>搜索结果</Text>
-                  <Text style={st.sectionMeta}>共 {results.length} 项</Text>
-                </View>
-                {results.slice(0, 30).map((s, i) => (
-                  <SongRow key={s.source + s.songmid + i} song={s}
-                    playing={current?.songmid === s.songmid}
-                    onPress={() => playSong(s, results!)} />
-                ))}
-              </>
-            ) : results && results.length === 0 && searched ? (
-              <Text style={st.errText}>没有找到相关内容，换个关键词试试</Text>
+            <View style={st.sectionRow}>
+              <Text style={st.sectionTitle}>本周精选</Text>
+              <Text style={st.sectionMeta}>{weekly.length ? `共 ${weekly.length} 项` : ''}</Text>
+            </View>
+            {weekly.length ? (
+              weekly.map((s, i) => (
+                <SongRow key={s.source + s.songmid + i} song={s}
+                  playing={current?.songmid === s.songmid}
+                  onPress={() => playSong(s, weekly)} />
+              ))
             ) : (
-              <>
-                <View style={st.sectionRow}>
-                  <Text style={st.sectionTitle}>本周精选</Text>
-                  <Text style={st.sectionMeta}>{weekly.length ? `共 ${weekly.length} 项` : ''}</Text>
-                </View>
-                {weekly.length ? (
-                  weekly.map((s, i) => (
-                    <SongRow key={s.source + s.songmid + i} song={s}
-                      playing={current?.songmid === s.songmid}
-                      onPress={() => playSong(s, weekly)} />
-                  ))
-                ) : (
-                  <Text style={st.errText}>
-                    {(kw ? '输入关键词开始搜索' : '正在加载精选…')}
-                  </Text>
-                )}
-              </>
+              <Text style={st.errText}>正在加载精选…</Text>
             )}
           </View>
         )}
@@ -497,31 +424,6 @@ export function ExploreScreen() {
 
       </ScrollView>
 
-      {/* 探索异常覆盖层 — 放在 ScrollView 外、LinearGradient 内以绝对定位生效 */}
-      {allFailed && (
-        <View style={st.overlay} pointerEvents="box-none">
-          <View style={st.overlayCard} pointerEvents="auto">
-            <StateOverlayCard
-              glyph="!"
-              glyphSize={34}
-              title="所有已启用音源均不可用"
-              body="可以重试搜索，或前往音源管理检查连接与脚本状态。"
-              primary="重新搜索"
-              secondary="前往音源管理"
-              onPrimary={() => search(kw)}
-              onSecondary={() => navigation.navigate('Sources' as never)}
-            />
-          </View>
-        </View>
-      )}
-      <ActionSheet
-        visible={filter} onClose={() => setFilter(false)} title="搜索音源"
-        items={[
-          { label: '酷我', sub: '资源丰富 · 推荐', selected: source === 'kw', onPress: () => setSource('kw') },
-          { label: '酷狗', sub: '无损音质', selected: source === 'kg', onPress: () => setSource('kg') },
-          { label: '网易', sub: '在线歌单', selected: source === 'wy', onPress: () => setSource('wy') },
-        ]}
-      />
     </LinearGradient>
   );
 }
@@ -541,7 +443,7 @@ const st = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, gap: 9,
   },
   searchBoxGray: { backgroundColor: '#2B2B2B' },
-  searchInput: { flex: 1, color: C.text, fontSize: 12, padding: 0 },
+  searchPlaceholder: { flex: 1, color: C.text2, fontSize: 12 },
   body: { gap: 10, paddingTop: 10 },
   hero: {
     height: 126, borderRadius: 16, overflow: 'hidden',

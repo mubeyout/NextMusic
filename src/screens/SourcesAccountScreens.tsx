@@ -6,7 +6,7 @@ import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { useApp } from '../state/AppState';
 import { SubPage } from '../components/SubPage';
-import { loadSources, addSourceByUrl, removeSource, toggleSource, activeSources, type CustomSource } from '../services/customSource';
+import { loadSources, addSourceByUrl, removeSource, toggleSource, activeSources, sourceHealthCheck, type CustomSource } from '../services/customSource';
 import { dialog, toast } from '../components/Dialog';
 
 // 自定义音源：LX 脚本本地沙箱运行，免登录即可播放
@@ -17,6 +17,9 @@ export function SourcesScreen() {
   const [adding, setAdding] = useState(false);
   const [url, setUrl] = useState('');
   const [busy, setBusy] = useState(false);
+  // 音源健康检查：id -> testing | ok | fail（含错误详情）
+  type Health = { st: 'testing'; msg?: string } | { st: 'ok' | 'fail'; msg: string };
+  const [health, setHealth] = useState<Record<string, Health>>({});
 
   const refresh = () => setSources(loadSources());
   useEffect(refresh, []);
@@ -69,7 +72,24 @@ export function SourcesScreen() {
                 <Text style={st.rowLabel}>{s.name} <Text style={st.ver}>v{s.version}</Text></Text>
                 <Text style={st.rowMeta} numberOfLines={1}>{Object.keys(s.sources).join(' · ')}</Text>
                 <Text style={st.rowUrl} numberOfLines={1}>{s.url}</Text>
+                {health[s.id] ? (
+                  <Text style={[st.healthText, health[s.id].st === 'ok' && st.healthOk, health[s.id].st === 'fail' && st.healthFail]} numberOfLines={2}>
+                    {health[s.id].st === 'testing' ? '⏳ 测试中…' : health[s.id].st === 'ok' ? `✓ ${health[s.id].msg}` : `✗ ${health[s.id].msg}`}
+                  </Text>
+                ) : null}
               </View>
+              <TouchableOpacity
+                hitSlop={6}
+                disabled={health[s.id]?.st === 'testing'}
+                onPress={async () => {
+                  setHealth(h => ({ ...h, [s.id]: { st: 'testing' } }));
+                  const r = await sourceHealthCheck(s.id);
+                  setHealth(h => ({ ...h, [s.id]: { st: r.ok ? 'ok' : 'fail', msg: r.detail } }));
+                  toast(r.ok ? `✓ ${s.name} 可用` : `✗ ${s.name}：${r.detail}`);
+                }}
+              >
+                <Text style={st.testBtn}>{health[s.id]?.st === 'testing' ? '…' : '测试'}</Text>
+              </TouchableOpacity>
               <TouchableOpacity onPress={() => toggle(s)} hitSlop={6}>
                 <View style={[st.switch, s.enabled && st.switchOn]}>
                   <View style={[st.knob, s.enabled && st.knobOn]} />
@@ -200,6 +220,10 @@ const st = StyleSheet.create({
   rowLabel: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '500' },
   rowMeta: { color: C.text2, fontSize: 11, lineHeight: 15 },
   rowUrl: { color: C.text2, fontSize: 10, lineHeight: 13, marginTop: 2 },
+  testBtn: { color: C.brand, fontSize: 12, fontWeight: '500', paddingHorizontal: 4 },
+  healthText: { fontSize: 10, lineHeight: 14, marginTop: 3, color: C.text2 },
+  healthOk: { color: '#52C41A' },
+  healthFail: { color: '#FF6B6B' },
   ver: { color: C.text2, fontSize: 11, fontWeight: '400' },
   badge: { color: C.text2, fontSize: 11, backgroundColor: '#242424', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, overflow: 'hidden' },
   badgeOn: { color: C.brand, backgroundColor: '#0E3B1F' },

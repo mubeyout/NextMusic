@@ -16,7 +16,7 @@ const PLATFORMS = [
   { id: 'wy', name: '网易云音乐', color: '#C20C0C', icon: 'netease' as BrandIconName, hasCircleBg: true },
   { id: 'tx', name: 'QQ音乐', color: '#31C27C', icon: 'qqmusic' as BrandIconName, hasCircleBg: true },
   { id: 'kg', name: '酷狗音乐', color: '#0C8ED9', icon: 'kugou' as BrandIconName, hasCircleBg: true },
-  { id: 'kw', name: '酷我音乐', color: '#FFA200', icon: 'kuwo' as BrandIconName, hasCircleBg: false },
+  { id: 'kw', name: '酷我音乐', color: '#FFA200', icon: 'kuwo' as BrandIconName, hasCircleBg: true },
   { id: 'mg', name: '咪咕音乐', color: '#00A0E9', icon: 'migu' as BrandIconName, hasCircleBg: true },
 ];
 

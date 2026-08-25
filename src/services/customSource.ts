@@ -91,3 +91,32 @@ export async function customGetMusicUrl(songInfo: { source: string; songmid: str
   }
   return null;
 }
+
+// 音源健康检查：用该源搜一首已知存在的歌（wy 晴天）→ 尝试取链。
+// 校验整条链路（脚本运行 + 搜索 + 解析），返回可直接展示的结果。
+export async function sourceHealthCheck(id: string): Promise<{ ok: boolean; detail: string }> {
+  const s = loadSources().find(x => x.id === id);
+  if (!s) return { ok: false, detail: '音源不存在' };
+  // 选一个该源支持的主流通
+  const src = ['kw', 'wy', 'kg'].find(k => s.sources[k]) || Object.keys(s.sources)[0];
+  if (!src) return { ok: false, detail: '该源不支持任何平台' };
+  try {
+    const r = await engine.sdk<any>([src, 'musicSearch', 'search'], ['周杰伦 晴天', 1, 15]) as { list?: unknown[] };
+    const list = Array.isArray(r?.list) ? r.list : [];
+    if (!list.length) return { ok: false, detail: '搜索无结果（脚本可能失效）' };
+    const song = (list.find(x => (x as { name?: string })?.name?.includes('晴天')) || list[0]) as Record<string, unknown>;
+    const info = {
+      songmid: String(song.songmid ?? ''),
+      hash: String(song.hash ?? ''),
+      name: String(song.name ?? ''),
+      singer: String(song.singer ?? ''),
+      interval: song.interval ? String(song.interval) : '',
+    };
+    const u = await engine.userApiGetMusicUrl(id, src, info, '128k');
+    const url = typeof u === 'string' ? u : u?.url;
+    if (url) return { ok: true, detail: `可用 · ${info.singer}《${info.name}》解析成功` };
+    return { ok: false, detail: '取链失败：脚本返回空链接（可能需要更新音源）' };
+  } catch (e) {
+    return { ok: false, detail: `脚本异常：${(e as Error).message || '运行出错'}` };
+  }
+}

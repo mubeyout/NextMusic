@@ -57,12 +57,20 @@ export function PlayerScreen() {
     if (!current) return;
     let dead = false;
     (async () => {
-      const r = await lxapi.lyric(current);
-      if (dead) return;
-      const raw = r.lxlyric || r.lyric || r.lrc;
-      if (!raw) return;
+      // 取词优先级：音源引擎 → 服务器（登录态）；两者都空才显示「暂无歌词」
+      let r = await lxapi.lyric(current);
+      let raw = r.lxlyric || r.lyric || r.lrc;
+      if (!raw && connected && token) {
+        try {
+          const rs = await api.lyric(current);
+          if (!dead) r = { ...r, ...rs };
+          raw = rs.lxlyric || rs.lyric || rs.lrc || raw;
+        } catch { /* 服务器也失败则保持空 */ }
+      }
+      if (dead || !raw) return;
       let lines = parseLrc(raw);
-      if (r.tlyric) lines = mergeTranslation(lines, r.tlyric);
+      const tly = r.tlyric;
+      if (tly) lines = mergeTranslation(lines, tly);
       if (lines.length) setLyrics(lines);
     })();
     return () => { dead = true; };

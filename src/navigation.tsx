@@ -31,6 +31,7 @@ import { FxScreen } from './screens/FxScreen';
 import { MediaLibsScreen, ProviderBrowseRoute } from './screens/MediaLibsScreen';
 import { DownloadsScreen } from './screens/DownloadsScreen';
 import { DeviceMusicScreen } from './screens/DeviceMusicScreen';
+import { SearchScreen } from './screens/SearchScreen';
 
 const navTheme = {
   ...DefaultTheme,
@@ -44,9 +45,9 @@ function MainTabs() {
   const [tab, setTab] = useState(0);
   return (
     <View style={st.main}>
-      <View style={[st.tabHost, tab !== 0 && st.hidden]}><HomeScreen visible={tab === 0} /></View>
-      <View style={[st.tabHost, tab !== 1 && st.hidden]}><ExploreScreen /></View>
-      <View style={[st.tabHost, tab !== 2 && st.hidden]}><MyScreen visible={tab === 2} /></View>
+      <View style={[st.tabHost, tab !== 0 && st.tabOff]}><HomeScreen visible={tab === 0} /></View>
+      <View style={[st.tabHost, tab !== 1 && st.tabOff]}><ExploreScreen /></View>
+      <View style={[st.tabHost, tab !== 2 && st.tabOff]}><MyScreen visible={tab === 2} /></View>
       <MiniPlayer />
       <TabBarManual tab={tab} setTab={setTab} />
     </View>
@@ -81,7 +82,7 @@ export function RootNavigator() {
 
   return (
     <NavigationContainer ref={navRef} theme={navTheme}>
-      <Stack.Navigator initialRouteName={initial} screenOptions={{ headerShown: false, animation: 'fade' }}>
+      <Stack.Navigator initialRouteName={initial} screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
         <Stack.Screen name="Boot" component={BootScreen} />
         <Stack.Screen name="Server" component={ServerScreen} />
         <Stack.Screen name="Auth" component={AuthScreen} />
@@ -94,6 +95,7 @@ export function RootNavigator() {
         <Stack.Screen name="PlayerSettings" component={PlayerSettingsScreen} />
         <Stack.Screen name="Comments" component={CommentsScreen} />
         <Stack.Screen name="PlaylistDetail" component={PlaylistDetailScreen} />
+        <Stack.Screen name="Search" component={SearchScreen} options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="Sources" component={SourcesScreen} />
         <Stack.Screen name="Account" component={AccountScreen} />
@@ -117,6 +119,7 @@ export function RootNavigator() {
 
 const st = StyleSheet.create({
   main: { flex: 1 },
-  tabHost: { flex: 1 },
-  hidden: { display: 'none' },
+  // 三个 tab 内容层叠：绝对定位互不挤压，隐藏层 opacity 0 保留状态（免 display:none 重排闪屏）
+  tabHost: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  tabOff: { opacity: 0, pointerEvents: 'none', elevation: 0 },
 });
