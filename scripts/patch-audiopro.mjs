@@ -23,7 +23,7 @@ function patch(file, marker, from, to) {
   console.log(`[patch-audiopro] ${file} ${marker}: patched`);
 }
 
-// 1) 注入 DSP 处理器（覆写 buildAudioSink）
+// 1) 注入 DSP 处理器（覆写 buildAudioSink；createProcessor 传 applicationContext 供 IR assets 加载）
 patch(
   'AudioProPlaybackService.kt',
   '[NextMusic-FX:renderers]',
@@ -33,8 +33,9 @@ patch(
     '\t\t// media3 1.6：覆写 buildAudioSink 把自定义 AudioProcessor 挂进管线（Sonic 变速/变调仍由 sink 内建处理）',
     '\t\tvar fxRenderersFactory: androidx.media3.exoplayer.DefaultRenderersFactory = androidx.media3.exoplayer.DefaultRenderersFactory(this)',
     '\t\ttry {',
-    '\t\t\tval fxProcessor = Class.forName("com.mubeyworks.nextmusic.SoundFxEngine")',
-    '\t\t\t\t.getMethod("createProcessor").invoke(null) as androidx.media3.common.audio.AudioProcessor',
+    '\t\t\tval fxMethod = Class.forName("com.mubeyworks.nextmusic.SoundFxEngine")',
+    '\t\t\t\t.getMethod("createProcessor", android.content.Context::class.java)',
+    '\t\t\tval fxProcessor = fxMethod.invoke(null, applicationContext) as androidx.media3.common.audio.AudioProcessor',
     '\t\t\tfxRenderersFactory = object : androidx.media3.exoplayer.DefaultRenderersFactory(this) {',
     '\t\t\t\toverride fun buildAudioSink(context: android.content.Context, enableFloatOutput: Boolean, enableAudioTrackPlaybackParams: Boolean): androidx.media3.exoplayer.audio.AudioSink? {',
     '\t\t\t\t\treturn androidx.media3.exoplayer.audio.DefaultAudioSink.Builder(context)',

@@ -192,6 +192,7 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
     override fun queueInput(inputBuffer: ByteBuffer) {
         maybeRefreshConfig()
         val preset = REVERBS[reverbId]
+        if (reverbId == "none" && SoundFxEngine.currentConvolver != null) SoundFxEngine.releaseConvolver()
         val bypass = !eqActive && reverbId == "none" && !pannerEnable
         if (bypass) {
             val remaining = inputBuffer.remaining()
@@ -213,24 +214,29 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
             var i = 0
             while (i < total) {
                 var l = floatBuf[i]; var r = floatBuf[i + 1]
-                if (preset?.mode == Mode.TELEPHONE) { l = telephone(l, 0); r = telephone(r, 1) }
                 if (eqActive) { l = eq(l, 0); r = eq(r, 1) }
                 var wl = 0f; var wr = 0f
                 if (preset != null) {
-                    val rvIn = (l + r) * 0.5f
-                    val fr = freeverb(rvIn, preset)
-                    when (preset.mode) {
+                    if (SoundFxEngine.ensureConvolver(reverbId, sampleRate)) {
+                        // 真 IR 卷积（与 lxserver ConvolverNode 同源 IR）
+                        val conv = SoundFxEngine.currentConvolver
+                        if (conv != null) {
+                            val (cl, cr) = conv.process(l, r)
+                            wl = cl; wr = cr
+                        }
+                    } else when (preset.mode) {
+                        Mode.TELEPHONE -> { l = telephone(l, 0); r = telephone(r, 1) }
                         Mode.SPREADER -> {
-                            wl = 0.6f * delayL50.read() + 0.4f * delayL65.read() + 0.35f * fr
-                            wr = 0.6f * delayR50.read() + 0.4f * delayR65.read() + 0.35f * fr
+                            wl = 0.6f * delayL50.read() + 0.4f * delayL65.read() + 0.35f * freeverb((l + r) * 0.5f, preset)
+                            wr = 0.6f * delayR50.read() + 0.4f * delayR65.read() + 0.35f * freeverb((l + r) * 0.5f, preset)
                             delayL50.write(l); delayL65.write(r); delayR50.write(r); delayR65.write(l)
                         }
                         Mode.WIDEN -> {
-                            wl = 0.32f * delayWidenL.read() + 0.8f * fr
-                            wr = 0.32f * delayWidenR.read() + 0.8f * fr
+                            wl = 0.32f * delayWidenL.read() + 0.8f * freeverb((l + r) * 0.5f, preset)
+                            wr = 0.32f * delayWidenR.read() + 0.8f * freeverb((l + r) * 0.5f, preset)
                             delayWidenL.write(r); delayWidenR.write(l)
                         }
-                        else -> { wl = fr; wr = fr }
+                        else -> { val fr = freeverb((l + r) * 0.5f, preset); wl = fr; wr = fr }
                     }
                 }
                 l = mainGain * l + sendGain * wl
@@ -243,9 +249,17 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
         } else {
             for (i in 0 until total) {
                 var x = floatBuf[i]
-                if (preset?.mode == Mode.TELEPHONE) x = telephone(x, 0)
                 if (eqActive) x = eq(x, 0)
-                if (preset != null) x = mainGain * x + sendGain * freeverb(x, preset) * 0.7f
+                if (preset != null) {
+                    if (SoundFxEngine.ensureConvolver(reverbId, sampleRate)) {
+                        val conv = SoundFxEngine.currentConvolver
+                        x = if (conv != null) mainGain * x + sendGain * conv.process(x, x).first * 0.7f
+                        else mainGain * x
+                    } else {
+                        if (preset.mode == Mode.TELEPHONE) x = telephone(x, 0)
+                        x = mainGain * x + sendGain * freeverb(x, preset) * 0.7f
+                    }
+                }
                 if (pannerEnable) { updatePanner(); x *= (panL + panR) * 0.5f }
                 floatBuf[i] = x.coerceIn(-1f, 1f)
             }
@@ -269,6 +283,7 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
             delayWidenL.clear(); delayWidenR.clear()
         }
         pannerAngleDeg = 0.0
+        SoundFxEngine.currentConvolver?.clear()
     }
 
     // ---------- DSP 单元 ----------
