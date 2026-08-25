@@ -1,0 +1,253 @@
+// 连接第三方媒体库 —— 按 Figma NM-REMOTE-SELECT-001 / NM-REMOTE-SUBSONIC-001 整页重做
+// 选择类型页：Bold 22 标题 + 说明 + 5 张类型卡（#2B2B2B r12 h64，Medium 14 + 推荐/说明 11）
+// 连接页：说明 + Tab 容器(#1C1C1C r12 p4) + 输入卡(#2B2B2B r12: label 11 灰 + 值 14 白 + hint 10) + 测试连接/保存并开始索引 h46 r12
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { Icon, BrandIcon } from '../theme/Icon';
+import { C } from '../theme/tokens';
+import { providers, providerApi, PROVIDER_META, type ProviderAcct, type ProviderType } from '../services/providers';
+import { dialog, toast } from '../components/Dialog';
+
+// 类型卡数据（对齐 Figma NM-REMOTE-SELECT-001 五张卡 + 推荐）
+const TYPE_CARDS: { type: ProviderType; title: string; badge?: string; sub: string }[] = [
+  { type: 'navidrome', title: 'Navidrome / Subsonic', badge: '推荐', sub: '优先走 Subsonic 1.16.1 / OpenSubsonic 兼容协议' },
+  { type: 'emby', title: 'Emby / Jellyfin', sub: '用户登录、音乐库选择、直放或服务端转码' },
+  { type: 'daoliyu', title: '道理鱼音乐', sub: '专有适配；可用时优先协商兼容协议' },
+  { type: 'webdav', title: 'WebDAV 音乐目录', sub: '直接读取远程文件；本地建立只读元数据索引' },
+  { type: 'subsonic', title: 'LX Server', sub: '同步、公开曲库、自定义源代理与多设备账号' },
+];
+
+// 连接页说明 / 输入 hint（对齐 Figma NM-REMOTE-SUBSONIC-001）
+interface ConnectCopy { desc: string; baseHint?: string; passHint?: string; badge?: string }
+const CONNECT_COPY: Record<string, ConnectCopy> = {
+  navidrome: { desc: '通过 Subsonic 1.16.1 / OpenSubsonic 连接远程曲库。', baseHint: '自动补全 /rest；测试 ping 与 OpenSubsonic 扩展', passHint: '凭证保存到系统安全存储', badge: '1.16.1' },
+  emby: { desc: '通过 Emby / Jellyfin API 登录并选择音乐库。', passHint: '凭证保存到系统安全存储' },
+  jellyfin: { desc: '通过 Emby / Jellyfin API 登录并选择音乐库。', passHint: '凭证保存到系统安全存储' },
+  daoliyu: { desc: '道理鱼专有 API；可用时优先协商 Subsonic 兼容协议。', passHint: '凭证保存到系统安全存储' },
+  webdav: { desc: '通过 PROPFIND / GET / Range 直接读取远程音频文件。', passHint: '凭证保存到系统安全存储' },
+  subsonic: { desc: '通过 Subsonic 1.16.1 / OpenSubsonic 连接远程曲库。', baseHint: '自动补全 /rest；测试 ping 与 OpenSubsonic 扩展', passHint: '凭证保存到系统安全存储' },
+};
+
+export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: string; type?: ProviderType } } }) {
+  const insets = useSafeAreaInsets();
+  const nav = useNavigation() as { goBack: () => void };
+  const existing = route?.params?.acctId ? providers.get(route.params.acctId) : undefined;
+
+  const [picked, setPicked] = useState<ProviderType | null>(existing?.type ?? route?.params?.type ?? null);
+  // subsonic 系有 密码/Token 两种认证方式（Tab 容器）；emby/webdav 只有账号密码
+  const [authTab, setAuthTab] = useState(0);
+  const [a, setA] = useState<ProviderAcct>(existing ?? { id: `pv-${Date.now()}`, type: 'navidrome', name: '', base: '', user: '', pass: '' });
+  const [busy, setBusy] = useState<'test' | 'save' | null>(null);
+  const [tested, setTested] = useState(false);
+
+  const set = (p: Partial<ProviderAcct>) => setA(prev => ({ ...prev, ...p }));
+  const subsonicFamily = picked === 'navidrome' || picked === 'subsonic' || picked === 'daoliyu';
+  const copy: ConnectCopy = picked ? CONNECT_COPY[picked] ?? { desc: '' } : { desc: '' };
+
+  const pickType = (t: ProviderType) => {
+    setPicked(t);
+    setA(prev => ({ ...prev, type: t }));
+    setTested(false);
+  };
+
+  // 测试连接：只验证，不保存
+  const testConn = async () => {
+    if (!a.base.trim()) { toast('请填写服务器地址'); return; }
+    setBusy('test');
+    try {
+      await providerApi.connect({ ...a, base: a.base.trim() });
+      setTested(true);
+      toast('连接测试通过');
+    } catch (e) {
+      dialog.alert('连接失败', (e as Error).message + '\n\n请检查地址、账号密码，以及服务器是否已在同一网络');
+    } finally { setBusy(null); }
+  };
+
+  // 保存并开始索引（= 连接并保存，成功后返回）
+  const save = async () => {
+    if (!a.base.trim()) { toast('请填写服务器地址'); return; }
+    setBusy('save');
+    try {
+      const connected = await providerApi.connect({ ...a, base: a.base.trim(), name: a.name.trim() || PROVIDER_META[a.type].label.split(' / ')[0] });
+      providers.save(connected);
+      nav.goBack();
+    } catch (e) {
+      dialog.alert('连接失败', (e as Error).message + '\n\n请检查地址、账号密码，以及服务器是否已在同一网络');
+    } finally { setBusy(null); }
+  };
+
+  // ---------- Step 1: 选择类型（对齐 NM-REMOTE-SELECT-001） ----------
+  if (!picked) {
+    return (
+      <View style={[st.screen, { paddingTop: insets.top + 10 }]}>
+        <View style={st.header}>
+          <TouchableOpacity onPress={() => nav.goBack()} hitSlop={6} style={{ width: 26 }}>
+            <Icon name="back" size={20} />
+          </TouchableOpacity>
+          <Text style={st.title}>添加远程音乐库</Text>
+          <View style={{ width: 26 }} />
+        </View>
+        <ScrollView contentContainerStyle={st.content} showsVerticalScrollIndicator={false}>
+          <Text style={st.desc}>选择服务器类型。NextMusic 会先测试能力，再保存凭证。</Text>
+          {TYPE_CARDS.map(c => (
+            <TouchableOpacity key={c.type} style={st.typeCard} activeOpacity={0.7} onPress={() => pickType(c.type)}>
+              <View style={st.typeCardHead}>
+                <Text style={st.typeCardTitle}>{c.title}</Text>
+                {c.badge ? <Text style={st.badge}>{c.badge}</Text> : null}
+              </View>
+              <Text style={st.typeCardSub}>{c.sub}</Text>
+            </TouchableOpacity>
+          ))}
+          <Text style={st.desc}>服务器地址与账号由用户明确填写，也可以从历史连接中选择。</Text>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // ---------- Step 2: 连接（对齐 NM-REMOTE-SUBSONIC-001） ----------
+  return (
+    <View style={[st.screen, { paddingTop: insets.top + 10 }]}>
+      <View style={st.header}>
+        <TouchableOpacity onPress={() => (existing ? nav.goBack() : setPicked(null))} hitSlop={6} style={{ width: 26 }}>
+          <Icon name="back" size={20} />
+        </TouchableOpacity>
+        <Text style={st.title}>连接 {PROVIDER_META[picked].label.split(' / ')[0]}</Text>
+        {existing ? (
+          <TouchableOpacity onPress={() => {
+            dialog.alert('删除媒体库', `确定删除「${existing.name || PROVIDER_META[existing.type].label}」？`, [
+              { text: '取消', style: 'cancel' },
+              { text: '删除', style: 'destructive', onPress: () => { providers.remove(existing.id); nav.goBack(); } },
+            ]);
+          }} hitSlop={6} style={{ width: 26, alignItems: 'flex-end' }}>
+            <Icon name="trash" size={20} color="#FF6B6B" />
+          </TouchableOpacity>
+        ) : <View style={{ width: 26 }} />}
+      </View>
+      <ScrollView contentContainerStyle={st.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <Text style={st.desc}>{copy.desc || PROVIDER_META[picked].hint}</Text>
+
+        {subsonicFamily ? (
+          <View style={st.tabsWrap}>
+            <View style={st.tabOn}><Text style={st.tabTextOn}>密码认证</Text></View>
+            <View style={st.tabOff} onTouchStart={() => toast('Token 认证即将支持')}><Text style={st.tabText}>Token</Text></View>
+          </View>
+        ) : null}
+
+        <View style={st.inputCard}>
+          <Text style={st.inputLabel}>备注名</Text>
+          <TextInput
+            style={st.inputValue}
+            value={a.name}
+            placeholder={PROVIDER_META[picked].label.split(' / ')[0]}
+            placeholderTextColor={C.text3}
+            autoCapitalize="none"
+            autoCorrect={false}
+            onChangeText={v => set({ name: v })}
+          />
+        </View>
+
+        <View style={st.inputCard}>
+          <Text style={st.inputLabel}>服务器地址</Text>
+          <TextInput
+            style={st.inputValue}
+            value={a.base}
+            placeholder={PROVIDER_META[picked].placeholder}
+            placeholderTextColor={C.text3}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            onChangeText={v => { set({ base: v }); setTested(false); }}
+          />
+          {copy.baseHint ? <Text style={st.inputHint}>{copy.baseHint}</Text> : null}
+        </View>
+
+        <View style={st.inputCard}>
+          <Text style={st.inputLabel}>{a.type === 'webdav' ? '账号（可选）' : '用户名'}</Text>
+          <TextInput
+            style={st.inputValue}
+            value={a.user}
+            placeholder={a.type === 'webdav' ? '匿名可留空' : 'music_user'}
+            placeholderTextColor={C.text3}
+            autoCapitalize="none"
+            autoCorrect={false}
+            onChangeText={v => { set({ user: v }); setTested(false); }}
+          />
+        </View>
+
+        <View style={st.inputCard}>
+          <Text style={st.inputLabel}>密码</Text>
+          <TextInput
+            style={st.inputValue}
+            value={a.pass}
+            placeholder="••••••••"
+            placeholderTextColor={C.text3}
+            secureTextEntry
+            onChangeText={v => { set({ pass: v }); setTested(false); }}
+          />
+          {copy.passHint ? <Text style={st.inputHint}>{copy.passHint}</Text> : null}
+        </View>
+
+        {tested ? (
+          <View style={st.infoCard}>
+            <View style={st.typeCardHead}>
+              <Text style={st.infoTitle}>连接测试通过</Text>
+              {copy.badge ? <Text style={st.badge}>{copy.badge}</Text> : null}
+            </View>
+            <Text style={st.typeCardSub}>可浏览 / 播放 / 导入歌单 / 下载</Text>
+          </View>
+        ) : null}
+
+        <View style={st.btnRow}>
+          <TouchableOpacity style={[st.btnGhost, busy && st.btnBusy]} activeOpacity={0.7} onPress={testConn} disabled={!!busy}>
+            {busy === 'test' ? <ActivityIndicator color={C.text} size="small" /> : <Text style={st.btnGhostText}>测试连接</Text>}
+          </TouchableOpacity>
+          <TouchableOpacity style={[st.btnPrimary, busy && st.btnBusy]} activeOpacity={0.7} onPress={save} disabled={!!busy}>
+            {busy === 'save' ? <ActivityIndicator color={C.onBrand} size="small" /> : <Text style={st.btnPrimaryText}>保存并开始索引</Text>}
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+const st = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: C.bg },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 12 },
+  title: { color: C.text, fontSize: 22, fontWeight: '700', flex: 1, textAlign: 'center' },
+  content: { paddingHorizontal: 16, paddingBottom: 40, gap: 10 },
+  desc: { color: C.text2, fontSize: 11, lineHeight: 16 },
+
+  // 类型卡（Figma: #2B2B2B r12 p12×14 h64）
+  typeCard: { backgroundColor: '#2B2B2B', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, gap: 4 },
+  typeCardHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  typeCardTitle: { color: C.text, fontSize: 14, fontWeight: '500' },
+  typeCardSub: { color: C.text2, fontSize: 11 },
+  badge: { color: '#6BE88F', fontSize: 11, fontWeight: '500' },
+
+  // Tab 容器（Figma: #1C1C1C r12 p4，选中页签 #2B2B2B r9 h36）
+  tabsWrap: { flexDirection: 'row', backgroundColor: '#1C1C1C', borderRadius: 12, padding: 4, gap: 4, height: 44 },
+  tabOn: { flex: 1, height: 36, borderRadius: 9, backgroundColor: '#2B2B2B', alignItems: 'center', justifyContent: 'center' },
+  tabOff: { flex: 1, height: 36, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  tabTextOn: { color: C.text, fontSize: 12, fontWeight: '500' },
+  tabText: { color: C.text2, fontSize: 12 },
+
+  // 输入卡（Figma: #2B2B2B r12 p10×12）
+  inputCard: { backgroundColor: '#2B2B2B', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, gap: 4 },
+  inputLabel: { color: C.text2, fontSize: 11 },
+  inputValue: { color: C.text, fontSize: 14, paddingVertical: 4 },
+  inputHint: { color: C.text2, fontSize: 10 },
+
+  // 测试通过信息卡
+  infoCard: { backgroundColor: '#2B2B2B', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, gap: 4 },
+  infoTitle: { color: C.text, fontSize: 14, fontWeight: '500' },
+
+  // 按钮（Figma: h46 r12；测试 #2B2B2B 白字 / 保存 #1ED760 深字）
+  btnRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  btnBusy: { opacity: 0.6 },
+  btnGhost: { flex: 1, height: 46, borderRadius: 12, backgroundColor: '#2B2B2B', alignItems: 'center', justifyContent: 'center' },
+  btnGhostText: { color: C.text, fontSize: 14, fontWeight: '500' },
+  btnPrimary: { flex: 1.4, height: 46, borderRadius: 12, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
+  btnPrimaryText: { color: C.onBrand, fontSize: 14, fontWeight: '500' },
+});

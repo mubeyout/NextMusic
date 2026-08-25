@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, ActivityIndicator, } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Icon, BrandIcon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { ActionSheet } from '../components/ActionSheet';
@@ -26,17 +26,14 @@ export function MediaLibsScreen() {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string, p?: object) => void };
   const [accts, setAccts] = useState<ProviderAcct[]>([]);
-  const [editing, setEditing] = useState<ProviderAcct | null>(null);
 
   const refresh = useCallback(() => setAccts(providers.all()), []);
   useEffect(refresh, []);
+  // 从 ProviderEdit 保存/删除返回时刷新列表（屏幕停留挂载不会重走 mount）
+  useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
 
-  const addMenu = () => {
-    setEditing({
-      id: `pv-${Date.now()}`, type: 'subsonic', name: '',
-      base: '', user: '', pass: '',
-    });
-  };
+  // 按钮入口：Figma NM-REMOTE-SELECT-001 选择类型页（ProviderEditScreen 内部先选类型再连接）
+  const addMenu = () => nav.navigate('ProviderEdit', {});
 
   return (
     <View style={st.screen}>
@@ -60,10 +57,7 @@ export function MediaLibsScreen() {
                 style={[st.row, i > 0 && st.rowDivide]}
                 activeOpacity={0.7}
                 onPress={() => nav.navigate('ProviderBrowse', { acctId: a.id })}
-                onLongPress={() => dialog.alert('删除媒体库', `确定删除「${a.name || PROVIDER_META[a.type].label}」？`, [
-                  { text: '取消', style: 'cancel' },
-                  { text: '删除', style: 'destructive', onPress: () => { providers.remove(a.id); refresh(); } },
-                ])}
+                onLongPress={() => nav.navigate('ProviderEdit', { acctId: a.id })}
               >
                 <View style={st.rowIconWrap}>{BRAND_ICON_TYPES.has(a.type) ? <BrandIcon name={a.type as any} size={20} /> : <Icon name={TYPE_ICON[a.type] as never} size={20} color={C.text} />}</View>
                 <View style={{ flex: 1, minWidth: 0 }}>
@@ -75,81 +69,14 @@ export function MediaLibsScreen() {
             ))}
           </View>
         )}
-        <Text style={st.tip}>长按可删除媒体库；飞牛 fnOS 可通过 WebDAV 共享接入</Text>
+        <Text style={st.tip}>长按可编辑媒体库；飞牛 fnOS 可通过 WebDAV 共享接入</Text>
       </ScrollView>
 
-      {editing ? <EditSheet acct={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); refresh(); }} /> : null}
+
     </View>
   );
 }
 
-// ---------- 添加 / 编辑 ----------
-function EditSheet({ acct, onClose, onSaved }: { acct: ProviderAcct; onClose: () => void; onSaved: () => void }) {
-  const insets = useSafeAreaInsets();
-  const [a, setA] = useState<ProviderAcct>(acct);
-  const [busy, setBusy] = useState(false);
-  const set = (p: Partial<ProviderAcct>) => setA(prev => ({ ...prev, ...p }));
-  const [typePick, setTypePick] = useState(false);
-
-  const connect = async () => {
-    if (!a.base.trim()) { toast('请填写服务器地址'); return; }
-    setBusy(true);
-    try {
-      const connected = await providerApi.connect({ ...a, base: a.base.trim(), name: a.name.trim() || PROVIDER_META[a.type].label.split(' / ')[0] });
-      providers.save(connected);
-      onSaved();
-    } catch (e) {
-      dialog.alert('连接失败', (e as Error).message + '\n\n请检查地址、账号密码，以及服务器是否已在同一网络');
-    } finally { setBusy(false); }
-  };
-
-  return (
-    <>
-    <ActionSheet
-      visible onClose={onClose} title={providers.get(acct.id) ? '编辑媒体库' : '添加媒体库'}
-      items={[]}
-      extra={(
-        <View style={{ gap: 6 }}>
-          <TouchableOpacity style={es.typeBtn} onPress={() => setTypePick(true)}>
-            <Text style={es.typeLabel}>类型</Text>
-            <Text style={es.typeValue}>{PROVIDER_META[a.type].label}</Text>
-          </TouchableOpacity>
-          <Text style={es.hint}>{PROVIDER_META[a.type].hint}</Text>
-          {(['name', 'base', 'user', 'pass'] as const).map(f => (
-            <View key={f} style={es.inputRow}>
-              <Text style={es.inputLabel}>
-                {f === 'name' ? '备注名' : f === 'base' ? '服务器地址' : f === 'user' ? '账号' : '密码'}
-              </Text>
-              <TextInput
-                style={es.input}
-                value={a[f]}
-                placeholder={f === 'base' ? PROVIDER_META[a.type].placeholder : ''}
-                placeholderTextColor={C.text3}
-                secureTextEntry={f === 'pass'}
-                autoCapitalize="none"
-                autoCorrect={false}
-                onChangeText={v => set({ [f]: v } as Partial<ProviderAcct>)}
-              />
-            </View>
-          ))}
-          <TouchableOpacity style={[es.connectBtn, busy && { opacity: 0.6 }]} onPress={connect} disabled={busy}>
-            {busy ? <ActivityIndicator color={C.onBrand} size="small" /> : <Text style={es.connectText}>连接并保存</Text>}
-          </TouchableOpacity>
-        </View>
-      )}
-    />
-    <ActionSheet
-      visible={typePick} onClose={() => setTypePick(false)} title="服务器类型"
-      items={(Object.keys(PROVIDER_META) as ProviderType[]).map(t => ({
-        label: PROVIDER_META[t].label,
-        sub: PROVIDER_META[t].hint,
-        selected: a.type === t,
-        onPress: () => set({ type: t }),
-      }))}
-    />
-    </>
-  );
-}
 
 // ---------- 浏览（专辑列表 / WebDAV 目录） ----------
 export function ProviderBrowseScreen({ route }: { route: { params: { acctId: string } } }) {
