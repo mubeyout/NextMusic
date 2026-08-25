@@ -45,9 +45,13 @@ function MainTabs() {
   const [tab, setTab] = useState(0);
   return (
     <View style={st.main}>
-      <View style={[st.tabHost, tab !== 0 && st.tabOff]}><HomeScreen visible={tab === 0} /></View>
-      <View style={[st.tabHost, tab !== 1 && st.tabOff]}><ExploreScreen /></View>
-      <View style={[st.tabHost, tab !== 2 && st.tabOff]}><MyScreen visible={tab === 2} /></View>
+      {/* tabStack 占流式空间，三个 tab 内容在其内部绝对层叠（防 display:none 闪屏），
+          MiniPlayer/TabBar 恢复流式排在下方 —— tab 栏回到底部 */}
+      <View style={st.tabStack} collapsable={false}>
+        <View style={[st.tabHost, tab !== 0 && st.tabOff]}><HomeScreen visible={tab === 0} /></View>
+        <View style={[st.tabHost, tab !== 1 && st.tabOff]}><ExploreScreen /></View>
+        <View style={[st.tabHost, tab !== 2 && st.tabOff]}><MyScreen visible={tab === 2} /></View>
+      </View>
       <MiniPlayer />
       <TabBarManual tab={tab} setTab={setTab} />
     </View>
@@ -119,6 +123,7 @@ export function RootNavigator() {
 
 const st = StyleSheet.create({
   main: { flex: 1 },
+  tabStack: { flex: 1 },
   // 三个 tab 内容层叠：绝对定位互不挤压，隐藏层 opacity 0 保留状态（免 display:none 重排闪屏）
   tabHost: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   tabOff: { opacity: 0, pointerEvents: 'none', elevation: 0 },
