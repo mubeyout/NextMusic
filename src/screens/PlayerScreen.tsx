@@ -180,27 +180,29 @@ export function PlayerScreen() {
             <Text style={st.pTitle} numberOfLines={1}>{current.name}</Text>
             <Text style={st.pSub} numberOfLines={1}>{current.singer}  ·  {current._types?.flac ? 'SQ 无损' : '128k'}</Text>
           </View>
-          <TouchableOpacity style={st.pIcon} hitSlop={6} onPress={openCollect}>
-            <Icon name="heart" size={20} active={faved} color={faved ? '#FF5A76' : C.text} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={st.pIcon}
-            hitSlop={6}
-            onPress={() => {
-              if (dlStore.isDownloaded(current)) return;
-              const n = enqueueDownload([current]);
-              toast(n ? `已加入下载队列 · ${current.name}` : '该歌曲已在下载队列');
-            }}
-          >
-            {dlProg != null ? (
-              <Text style={st.pProg}>{Math.round(dlProg * 100)}%</Text>
-            ) : dlStore.isDownloaded(current) ? (
-              <Icon name="check" size={20} active />
-            ) : (
-              <Icon name="download" size={20} />
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity style={st.pIcon} onPress={() => nav.navigate('Queue')}><Icon name="queue" size={20} /></TouchableOpacity>
+          <View style={st.pActions}>
+            <TouchableOpacity style={st.pIcon} hitSlop={6} onPress={openCollect}>
+              <Icon name="heart" size={20} active={faved} color={faved ? '#FF5A76' : C.text} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={st.pIcon}
+              hitSlop={6}
+              onPress={() => {
+                if (dlStore.isDownloaded(current)) return;
+                const n = enqueueDownload([current]);
+                toast(n ? `已加入下载队列 · ${current.name}` : '该歌曲已在下载队列');
+              }}
+            >
+              {dlProg != null ? (
+                <Text style={st.pProg}>{Math.round(dlProg * 100)}%</Text>
+              ) : dlStore.isDownloaded(current) ? (
+                <Icon name="check" size={20} active />
+              ) : (
+                <Icon name="download" size={20} />
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity style={st.pIcon} onPress={() => nav.navigate('Queue')}><Icon name="queue" size={20} /></TouchableOpacity>
+          </View>
         </View>
 
         <SeekBar pct={seekPct ?? pct} duration={duration} onSeek={p => { setSeekPct(null); seekTo(p * duration); }} onDrag={setSeekPct} />
@@ -313,6 +315,7 @@ const st = StyleSheet.create({
     backgroundColor: '#1C1C1C', paddingTop: 18, paddingHorizontal: 20, gap: 7,
   },
   pTrackRow: { flexDirection: 'row', alignItems: 'center', height: 56 },
+  pActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   pArt: { width: 52, height: 52, borderRadius: 10 },
   pMeta: { flex: 1, marginLeft: 13, gap: 2 },
   pTitle: { color: C.text, fontSize: 18, lineHeight: 22, fontWeight: '700' },
