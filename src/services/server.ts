@@ -25,6 +25,7 @@ export interface SongListMeta {
   img?: string;
   total?: number;
   desc?: string;
+  source?: string;
 }
 
 export interface ServerConfig {

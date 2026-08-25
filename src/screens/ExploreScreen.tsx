@@ -238,6 +238,7 @@ export function ExploreScreen() {
   const openPlaylist = (pl: SongListMeta) => {
     navigation.navigate('PlaylistDetail', {
       remoteId: pl.id,
+      remoteSource: pl.source || 'wy',
       title: pl.name,
       cover: pl.img,
       meta: `${pl.total ?? ''} 首 · ${pl.author || '歌单'}`,

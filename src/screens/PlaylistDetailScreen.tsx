@@ -35,7 +35,7 @@ type Params = {
 // Figma 26·歌单详情: header (cover + title + stats + desc + play all), action row, song list
 export function PlaylistDetailScreen() {
   const insets = useSafeAreaInsets();
-  const nav = useNavigation() as { goBack: () => void; navigate: (s: string, p?: object) => void };
+  const nav = useNavigation() as { goBack: () => void; navigate: (s: string, p?: object) => void; replace: (s: string, p?: object) => void };
   const route = useRoute();
   const p = route.params as Params;
   const { playSong, current } = usePlayer();
@@ -47,6 +47,8 @@ export function PlaylistDetailScreen() {
   const [total, setTotal] = useState(0);
   const [busy, setBusy] = useState(false);
   const [actSong, setActSong] = useState<SongItem | null>(null);
+  const [plMenu, setPlMenu] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [kw, setKw] = useState('');
   const [searching, setSearching] = useState(false);
   const localPl = p.localId ? library.get(p.localId) : null;
@@ -70,7 +72,7 @@ export function PlaylistDetailScreen() {
         return;
       }
       if (p.remoteId) {
-        const r = await lxapi.songListDetail(p.remoteId, 1);
+        const r = await lxapi.songListDetail(p.remoteId, 1, p.remoteSource || 'wy');
         if (dead) return;
         setSongs(r.list || []);
         setInfo(r.info || null);
@@ -85,7 +87,7 @@ export function PlaylistDetailScreen() {
   const loadMore = async () => {
     if (!p.remoteId || busy || !songs || songs.length >= total) return;
     setBusy(true);
-    const r = await lxapi.songListDetail(p.remoteId, page + 1);
+    const r = await lxapi.songListDetail(p.remoteId, page + 1, p.remoteSource || 'wy');
     const more = r.list || [];
     if (more.length) { setSongs(prev => [...(prev || []), ...more]); setPage(pg => pg + 1); }
     setBusy(false);
@@ -108,18 +110,7 @@ export function PlaylistDetailScreen() {
           title=""
           onBack={() => nav.goBack()}
           right={(
-            <TouchableOpacity hitSlop={6} onPress={() => {
-              if (localPl) {
-                dialog.menu(localPl.name, [
-                  { label: '歌单内搜索', onPress: () => setSearching(true) },
-                  ...(localPl.remoteId ? [{ label: syncing ? '同步中…' : '重新同步歌单', onPress: () => resyncPl() }] : []),
-                  { label: '重命名歌单', onPress: () => renamePl() },
-                  { label: '删除歌单', danger: true, onPress: () => deletePl() },
-                ]);
-              } else {
-                setSearching(true);
-              }
-            }}>
+            <TouchableOpacity hitSlop={6} onPress={() => { if (localPl) setPlMenu(true); else setSearching(true); }}>
               <Icon name="more" size={22} />
             </TouchableOpacity>
           )}
@@ -175,9 +166,15 @@ export function PlaylistDetailScreen() {
           <TouchableOpacity style={st.action} onPress={() => setCollect(true)} disabled={!songs?.length}>
             <Icon name="heart" size={20} color={C.text2} /><Text style={st.actionText}>收藏全部</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={st.action} onPress={() => { if (songs?.length) playSong(songs[Math.floor(Math.random() * songs.length)], songs); }}>
-            <Icon name="shuffle" size={20} color={C.text2} /><Text style={st.actionText}>随机播</Text>
-          </TouchableOpacity>
+          {p.remoteId && !localPl ? (
+            <TouchableOpacity style={st.action} onPress={importPl} disabled={!songs?.length}>
+              <Icon name="download" size={20} color={C.brand} /><Text style={[st.actionText, { color: C.brand }]}>导入到本地</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={st.action} onPress={() => { if (songs?.length) playSong(songs[Math.floor(Math.random() * songs.length)], songs); }}>
+              <Icon name="shuffle" size={20} color={C.text2} /><Text style={st.actionText}>随机播</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {songs == null ? (
@@ -203,6 +200,17 @@ export function PlaylistDetailScreen() {
       <View style={st.miniDock} pointerEvents="box-none">
         <MiniPlayer />
       </View>
+      {/* 歌单管理菜单：ActionSheet（自定义 sheet，交互与单曲菜单一致） */}
+      <ActionSheet
+        visible={plMenu} onClose={() => setPlMenu(false)}
+        title={localPl?.name || '歌单'}
+        items={[
+          { label: '歌单内搜索', onPress: () => setSearching(true) },
+          ...(localPl?.remoteId ? [{ label: syncing ? '同步中…' : '重新同步歌单', onPress: () => resyncPl() }] : []),
+          { label: '重命名歌单', onPress: () => renamePl() },
+          { label: '删除歌单', danger: true, onPress: () => deletePl() },
+        ]}
+      />
       <ActionSheet
         visible={!!actSong} onClose={() => setActSong(null)}
         title={actSong ? `${actSong.name} · ${actSong.singer}` : ''}
@@ -247,7 +255,6 @@ export function PlaylistDetailScreen() {
   }
 
   // 重新同步：从源平台全量拉取覆盖本地歌曲（导入时的 remoteId/source）
-  const [syncing, setSyncing] = useState(false);
   async function resyncPl() {
     if (!localPl?.remoteId || syncing) return;
     setSyncing(true);
@@ -272,6 +279,18 @@ export function PlaylistDetailScreen() {
     } catch {
       toast('同步失败，请检查网络与音源');
     } finally { setSyncing(false); }
+  }
+
+  // 导入到本地：在线浏览的歌单一键存为本地歌单（带 remoteId，后续可重新同步）
+  function importPl() {
+    if (!songs?.length || !p.remoteId) { toast('歌单尚未加载完成'); return; }
+    const created = library.create(title, songs, {
+      source: p.remoteSource || 'wy', remoteId: p.remoteId, cover,
+      desc: '从探索导入',
+    });
+    toast(`已导入「${title}」· ${songs.length} 首`);
+    // 切换到本地歌单模式：more 菜单的重命名/删除/同步立即可用
+    nav.replace('PlaylistDetail', { localId: created.id, title, songs, cover });
   }
 
   function renderSongAction(s: SongItem) {

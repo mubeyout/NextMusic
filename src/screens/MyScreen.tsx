@@ -7,11 +7,12 @@ import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { PillTabs } from '../components/PillTabs';
 import { EmptyState } from '../components/PageChrome';
+import { ActionSheet } from '../components/ActionSheet';
 import { dialog, toast } from '../components/Dialog';
 import { SongRow } from '../components/SongRow';
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
-import { library } from '../state/library';
+import { library, type LocalPlaylist } from '../state/library';
 import { getRecents } from '../state/recent';
 import { sync, lxToApp, type UserListsSnapshot } from '../services/sync';
 import { downloads as dlStore, subscribeDownloads, fmtBytes } from '../services/downloads';
@@ -49,6 +50,8 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
   useEffect(() => subscribeDownloads(() => { setDlList(dlStore.all()); setDlTick(t => t + 1); }), []);
   const [localCount, setLocalCount] = useState(deviceTrackCount());
   useEffect(() => { if (visible) setLocalCount(deviceTrackCount()); }, [visible]);
+  // 长按歌单卡管理菜单（ActionSheet，与媒体库一致）
+  const [actPl, setActPl] = useState<LocalPlaylist | null>(null);
 
   const loggedIn = connected && !!token;
   // 订阅本地歌单变更：导入/新建/删除后实时刷新（否则需冷启动才能看到）
@@ -108,6 +111,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
   ];
 
   return (
+    <>
     <ScrollView
       contentContainerStyle={[st.content, { paddingTop: insets.top + 24, paddingBottom: 24 }]}
       showsVerticalScrollIndicator={false}
@@ -170,25 +174,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
                     : openSongs(g.name, g.songs, g.img)}
                   onLongPress={g.localId ? () => {
                     const pl = library.get(g.localId!);
-                    if (!pl) return;
-                    dialog.menu(pl.name, [
-                      { label: '重命名歌单', onPress: () => {
-                        dialog.prompt('重命名歌单', {
-                          defaultValue: pl.name,
-                          onSubmit: (v) => {
-                            if (!v || v === pl.name) return;
-                            library.update(pl.id, { name: v });
-                            toast('已重命名');
-                          },
-                        });
-                      } },
-                      { label: '删除歌单', danger: true, onPress: () => {
-                        dialog.confirm('删除歌单', `确定删除「${pl.name}」？${pl.songs.length} 首歌曲将从此歌单移除`, () => {
-                          library.remove(pl.id);
-                          toast('歌单已删除');
-                        }, '删除', '取消');
-                      } },
-                    ]);
+                    if (pl) setActPl(pl);
                   } : undefined}
                 >                  {/* Figma 2154-730：自建歌单一律渐变抽象封面（不用歌曲专辑图） */}
                   <LinearGradient colors={COVER_GRADS[i % COVER_GRADS.length]} style={st.plCover}>
@@ -271,6 +257,29 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
         </View>
       )}
     </ScrollView>
+    <ActionSheet
+      visible={!!actPl} onClose={() => setActPl(null)}
+      title={actPl?.name || '歌单'}
+      items={actPl ? [
+        { label: '重命名歌单', onPress: () => {
+          dialog.prompt('重命名歌单', {
+            defaultValue: actPl.name,
+            onSubmit: (v) => {
+              if (!v || v === actPl.name) return;
+              library.update(actPl.id, { name: v });
+              toast('已重命名');
+            },
+          });
+        } },
+        { label: '删除歌单', danger: true, onPress: () => {
+          dialog.confirm('删除歌单', `确定删除「${actPl.name}」？${actPl.songs.length} 首歌曲将从此歌单移除`, () => {
+            library.remove(actPl.id);
+            toast('歌单已删除');
+          }, '删除', '取消');
+        } },
+      ] : []}
+    />
+    </>
   );
 }
 
