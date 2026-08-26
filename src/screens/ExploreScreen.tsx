@@ -303,20 +303,22 @@ export function ExploreScreen() {
 
         {tab === 1 && (
           <View style={st.body}>
-            {/* 按类型：渐变卡 3列×2行，宽度自适应（百分比，不写死 px——真机 320dp 下写死 350 会挤成一行一个） */}
+            {/* 按类型：渐变卡 3列×2行，宽度自适应（百分比，不写死 px——真机 320dp 下写死 350 会挤成一行一个）
+                选中环放在 TouchableOpacity（普通 View）上，不动 LinearGradient 的 style——
+                坑：Android 上给 LinearGradient 动态加/去 borderWidth，原生 drawable 不重绘→渐变消失 */}
             <Text style={st.groupTitle}>按类型</Text>
             <View style={st.genreGrid}>
               {GENRES.map(g => (
                 <TouchableOpacity
                   key={g.zh}
-                  style={st.genreCell}
+                  style={[st.genreCell, activeTag === g.zh && st.genreRingOn]}
                   activeOpacity={0.85}
                   onPress={() => selectTag(g.zh)}
                 >
                   <LinearGradient
                     colors={[g.from, g.to]}
                     start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                    style={[st.genreCard, activeTag === g.zh && st.genreOn]}
+                    style={st.genreCard}
                   >
                     <Text style={st.genreZh}>{g.zh}</Text>
                     <Text style={st.genreEn}>{g.en}</Text>
@@ -325,7 +327,7 @@ export function ExploreScreen() {
               ))}
             </View>
 
-            {/* 按场景：胶囊 3列×2行，flex 自适应 */}
+            {/* 按场景：胶囊 3列×2行，flex 自适应；选中=主色 */}
             <Text style={st.groupTitle}>按场景</Text>
             <View style={st.sceneGrid}>
               {SCENES.map(s => (
@@ -340,7 +342,7 @@ export function ExploreScreen() {
               ))}
             </View>
 
-            {/* 按语言：4 个等宽文字标签 */}
+            {/* 按语言：4 个等宽文字标签，选中=主色 */}
             <Text style={st.groupTitle}>按语言</Text>
             <View style={st.langRow}>
               {LANGS.map(l => (
@@ -484,12 +486,14 @@ const st = StyleSheet.create({
   groupTitle: { color: C.text, fontSize: 18, lineHeight: 22, fontWeight: '700', marginTop: 6 },
   // 自适应三列：百分比宽度，真机 320dp 内容区也能放下 3 列
   genreGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  genreCell: { width: '31%', flexGrow: 1 },
+  // 选中环常驻 borderWidth（未选=透明色），只有 borderColor 变化——杜绝任何 layout 抖动；
+  // 渐变卡的 style 恒定不变，规避 LinearGradient 原生重绘 bug
+  genreCell: { width: '31%', flexGrow: 1, borderWidth: 2, borderRadius: 14, borderColor: 'transparent' },
+  genreRingOn: { borderColor: C.brand },
   genreCard: {
     height: 56, borderRadius: 12, overflow: 'hidden',
     paddingHorizontal: 12, justifyContent: 'center', gap: 5,
   },
-  genreOn: { borderWidth: 2, borderColor: C.brand },
   genreZh: { color: C.text, fontSize: 14, lineHeight: 17, fontWeight: '700' },
   genreEn: { color: C.text2, fontSize: 8, lineHeight: 10, fontWeight: '500', letterSpacing: 0.5 },
   sceneGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -497,13 +501,13 @@ const st = StyleSheet.create({
     width: '31%', flexGrow: 1, height: 36, borderRadius: 18, backgroundColor: '#2B2B2B',
     alignItems: 'center', justifyContent: 'center',
   },
-  sceneOn: { backgroundColor: '#3A3A3A' },
+  sceneOn: { backgroundColor: C.brand },
   sceneLabel: { color: C.text2, fontSize: 12, lineHeight: 14, fontWeight: '500' },
-  sceneLabelOn: { color: C.text },
+  sceneLabelOn: { color: '#121212', fontWeight: '700' },
   langRow: { flexDirection: 'row', gap: 0 },
   langBtn: { flex: 1, height: 28, justifyContent: 'center' },
   langLabel: { color: C.text2, fontSize: 12, lineHeight: 14, fontWeight: '500' },
-  langLabelOn: { color: C.text },
+  langLabelOn: { color: C.brand, fontWeight: '700' },
   chartHero: {
     height: 126, borderRadius: 16, overflow: 'hidden',
     paddingHorizontal: 18, paddingVertical: 16, justifyContent: 'center', gap: 2,

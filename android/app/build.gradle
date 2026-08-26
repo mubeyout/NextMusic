@@ -82,8 +82,8 @@ android {
         applicationId "com.mubeyworks.nextmusic"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 37
-        versionName "3.4.0-lx21"
+        versionCode 38
+        versionName "3.4.0-lx22"
     }
     signingConfigs {
         debug {
