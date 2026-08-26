@@ -13,12 +13,22 @@ import type { SongItem } from '../services/server';
 
 // 独立搜索页：点击探索页搜索框进入（替代页内内联搜索）
 // 聚焦输入 → 600ms debounce 自动搜索；源切换立即重搜；全失败覆盖卡
+// 搜索源全平台直连（引擎侧 tx/mg 已打包）：kw 酷我 / kg 酷狗 / wy 网易 / tx QQ音乐 / mg 咪咕
+const SOURCES: { id: SearchSrc; label: string }[] = [
+  { id: 'kw', label: '酷我' },
+  { id: 'kg', label: '酷狗' },
+  { id: 'wy', label: '网易' },
+  { id: 'tx', label: 'QQ音乐' },
+  { id: 'mg', label: '咪咕' },
+];
+type SearchSrc = 'kw' | 'kg' | 'wy' | 'tx' | 'mg';
+
 export function SearchScreen() {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void };
   const { playSong, current } = usePlayer();
   const [kw, setKw] = useState('');
-  const [source, setSource] = useState<'kw' | 'kg' | 'wy'>('kw');
+  const [source, setSource] = useState<SearchSrc>('kw');
   const [results, setResults] = useState<SongItem[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -39,7 +49,7 @@ export function SearchScreen() {
       // 搜索走内置引擎直连平台公开 API，永远免费免登录（只有播放取链才需要音源/登录）
       const r = await lxapi.search(query, src);
       if (r.length === 0) {
-        const others = (['kw', 'kg', 'wy'] as const).filter(s => s !== src);
+        const others = SOURCES.map(s => s.id).filter(s => s !== src);
         let anyOk = false;
         for (const s of others) { // eslint-disable-line no-await-in-loop
           try {
@@ -62,7 +72,7 @@ export function SearchScreen() {
     return () => clearTimeout(t);
   }, [kw]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const switchSource = (s: 'kw' | 'kg' | 'wy') => {
+  const switchSource = (s: SearchSrc) => {
     setSource(s);
     if (kw.trim().length >= 2) search(kw, s);
   };
@@ -95,8 +105,8 @@ export function SearchScreen() {
       </View>
 
       <View style={st.pillWrap}>
-        <PillTabs tabs={['酷我', '酷狗', '网易']} active={source === 'kw' ? 0 : source === 'kg' ? 1 : 2}
-          onChange={i => switchSource(i === 0 ? 'kw' : i === 1 ? 'kg' : 'wy')} />
+        <PillTabs tabs={SOURCES.map(s => s.label)} active={SOURCES.findIndex(s => s.id === source)}
+          onChange={i => switchSource(SOURCES[i].id)} />
       </View>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 140 }}>
