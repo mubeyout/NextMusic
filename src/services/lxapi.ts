@@ -168,8 +168,33 @@ export const lxapi = {
         mrcUrl: si.mrcUrl || '',
         trcUrl: si.trcUrl || '',
       };
-      return await engine.sdk<any>([songInfo.source, 'lyric', 'getLyric'], [info]);
+      // SDK 里 getLyric 是源模块根方法（kw.getLyric / kg.getLyric），不是 lyric 子模块
+      // （旧代码 [source,'lyric','getLyric'] 会报 "reading 'lyric'"，一直靠服务器 fallback 顶着）
+      return await engine.sdk<any>([songInfo.source, 'getLyric'], [info]);
     } catch { return {}; }
+  },
+  /** 按歌名+歌手跨平台匹配取词：媒体库源（Emby/Subsonic 等）歌曲 id 无平台意义，用文本匹配同曲目标
+   *  匹配策略：wy → kg 两轮（kw 对冷门歌模糊匹配乱回），歌名必须互相包含 + 歌手首名包含；
+   *  匹配不到返回空（宁缺毋滥，不显示错误歌词） */
+  async lyricByName(name: string, singer: string): Promise<{ lyric?: string; tlyric?: string; rlyric?: string; lxlyric?: string; lrc?: string }> {
+    if (!name) return {};
+    const nl = name.toLowerCase().replace(/\s*\(.*?\)\s*/g, '').trim(); // 剥 Live/伴奏 等括号后缀
+    const sl = (singer || '').toLowerCase().split(/[,，、&]/)[0].trim();
+    for (const src of ['wy', 'kg']) {
+      try {
+        const list = await this.search(name, src, 1, 20);
+        const best = list.find(x => {
+          const xn = (x.name || '').toLowerCase();
+          const xs = (x.singer || '').toLowerCase();
+          return xn.includes(nl) && (!sl || xs.includes(sl));
+        });
+        if (best) {
+          const r = await this.lyric(best);
+          if (r.lyric || r.lxlyric || r.lrc) return r;
+        }
+      } catch { /* 下一个源 */ }
+    }
+    return {};
   },
 };
 

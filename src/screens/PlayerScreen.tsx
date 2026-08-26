@@ -57,9 +57,17 @@ export function PlayerScreen() {
     if (!current) return;
     let dead = false;
     (async () => {
-      // 取词优先级：音源引擎 → 服务器（登录态）；两者都空才显示「暂无歌词」
+      // 取词优先级：音源引擎 → （媒体库源：按名匹配）→ 服务器（登录态）；全空才显示「暂无歌词」
       let r = await lxapi.lyric(current);
       let raw = r.lxlyric || r.lyric || r.lrc;
+      const isProvider = ['emby', 'jellyfin', 'subsonic', 'navidrome', 'daoliyu', 'webdav'].includes(current.source);
+      if (!raw && isProvider) {
+        // 媒体库歌曲 id 对平台无意义，按歌名+歌手模糊匹配取词（LRC 文本通用）
+        try {
+          r = await lxapi.lyricByName(current.name, current.singer);
+          raw = r.lxlyric || r.lyric || r.lrc;
+        } catch { /* 匹配失败继续 */ }
+      }
       if (!raw && connected && token) {
         try {
           const rs = await api.lyric(current);

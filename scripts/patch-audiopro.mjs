@@ -112,3 +112,33 @@ patch(
 );
 
 console.log('[patch-audiopro] done');
+
+// 4) [NextMusic-FX:artwork-optional] JS 侧：artwork 空/缺省合法化（Emby/Subsonic 等无封面歌曲会被上游强制校验拒播）
+//    - validateFilePath: 空串跳过（消除误报）
+//    - validateTrack: artwork 仅在有值时校验合法性
+function patchJs(rel, marker, pairs) {
+  const p = 'node_modules/react-native-audio-pro/' + rel;
+  let s = readFileSync(p, 'utf8');
+  if (s.includes(marker)) {
+    console.log(`[patch-audiopro] ${rel} ${marker}: already patched`);
+    return;
+  }
+  for (const [from, to] of pairs) {
+    const i = s.indexOf(from);
+    if (i < 0) throw new Error(`[patch-audiopro] ${rel}: anchor not found:\n${from}`);
+    s = s.slice(0, i) + to + s.slice(i + from.length);
+  }
+  writeFileSync(p, s);
+  console.log(`[patch-audiopro] ${rel} ${marker}: patched`);
+}
+
+const JS_PAIRS = [
+  // validateFilePath: 空值跳过
+  ["function validateFilePath(path) {\n  const supportedSchemes = ['http://', 'https://', 'file://'];\n  if (!supportedSchemes.some(scheme => path && path.startsWith(scheme))) {",
+   "function validateFilePath(path) {\n  const supportedSchemes = ['http://', 'https://', 'file://'];\n  if (path && !supportedSchemes.some(scheme => path.startsWith(scheme))) {"],
+  // validateTrack: artwork 仅在有值时校验
+  ["  // 5. Artwork URL must be a non-empty string and valid\n  if (typeof track.artwork !== 'string' || !track.artwork.trim() || !isValidUrl(track.artwork)) {",
+   "  // 5. Artwork URL must be valid if provided (NextMusic: empty allowed)\n  if (typeof track.artwork === 'string' && track.artwork.trim() && !isValidUrl(track.artwork)) {"],
+];
+patchJs('lib/commonjs/utils.js', '[NextMusic-FX:artwork-optional]', JS_PAIRS);
+patchJs('lib/module/utils.js', '[NextMusic-FX:artwork-optional]', JS_PAIRS);

@@ -119,7 +119,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       if (isProvider) {
         const p = providerApi.streamFor(t);
         if (!p?.url) throw new Error('媒体库账号不存在，请重新添加');
-        AudioPro.play(trackToAudioPro(t, p.url, p.headers), p.headers ? { headers: p.headers } : undefined);
+        // audio-pro 原生层期待 headers: { audio, artwork } 嵌套结构（Controller.extractHeaders）
+        const opts = p.headers ? { headers: { audio: p.headers, artwork: p.headers } } : undefined;
+        AudioPro.play(trackToAudioPro(t, p.url, p.headers), opts);
         setCurrent(t);
         return;
       }

@@ -330,7 +330,10 @@ export const providerApi = {
         albumId: albumId,
         albumName: it.Album ? String(it.Album) : undefined,
         interval: fmtSec(Number(it.RunTimeTicks) / 10000000),
-        img: undefined,
+        // 有封面的歌带主图 URL（artwork 校验 + 播放页封面双受益；无图歌由 artwork-optional patch 兜底）
+        img: (it.ImageTags as Record<string, string> | undefined)?.Primary
+          ? `${embyRoot(a)}/Items/${it.Id}/Images/Primary?maxWidth=300${a.token ? `&api_key=${a.token}` : ''}`
+          : undefined,
       })) as SongItem[];
     }
     return [];

@@ -9,7 +9,6 @@ import { SongRow } from '../components/SongRow';
 import { StateOverlayCard } from '../components/StateOverlayCard';
 import { usePlayer } from '../state/PlayerProvider';
 import { lxapi } from '../services/lxapi';
-import { activeSources } from '../services/customSource';
 import type { SongItem } from '../services/server';
 
 // 独立搜索页：点击探索页搜索框进入（替代页内内联搜索）
@@ -37,7 +36,7 @@ export function SearchScreen() {
     if (!query) return;
     setBusy(true); setErr(null); setAllFailed(false);
     try {
-      if (activeSources().length === 0) { setResults([]); setAllFailed(true); return; }
+      // 搜索走内置引擎直连平台公开 API，永远免费免登录（只有播放取链才需要音源/登录）
       const r = await lxapi.search(query, src);
       if (r.length === 0) {
         const others = (['kw', 'kg', 'wy'] as const).filter(s => s !== src);
