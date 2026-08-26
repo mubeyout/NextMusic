@@ -107,6 +107,9 @@ export function DialogHost() {
   const btnColor = (b: DialogButton) =>
     b.style === 'destructive' ? '#FF6B6B' : b.style === 'cancel' ? C.text2 : C.brand;
 
+  // 按钮宽度规则：≤2 个（含 prompt）横向排列，flex:1 对半分（单个即占满整行）；3+ 个竖排各占一行
+  const stacked = req ? !req.input && req.buttons.length > 2 : false;
+
   return (
     <>
       {req ? (
@@ -144,20 +147,20 @@ export function DialogHost() {
                     onSubmitEditing={() => closeWithInput(true)}
                   />
                 ) : null}
-                <View style={[s.btnRow, !req.input && req.buttons.length <= 2 && { flexDirection: 'row' }]}>
+                <View style={[s.btnRow, !stacked && { flexDirection: 'row' }]}>
                   {req.input ? (
                     <>
-                      <TouchableOpacity style={s.btn} activeOpacity={0.75} onPress={() => closeWithInput(false)}>
+                      <TouchableOpacity style={[s.btn, { flex: 1 }]} activeOpacity={0.75} onPress={() => closeWithInput(false)}>
                         <Text style={s.btnText}>取消</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity style={[s.btn, s.btnMain]} activeOpacity={0.75} onPress={() => closeWithInput(true)}>
+                      <TouchableOpacity style={[s.btn, { flex: 1 }, s.btnMain]} activeOpacity={0.75} onPress={() => closeWithInput(true)}>
                         <Text style={[s.btnText, s.btnMainText]}>确定</Text>
                       </TouchableOpacity>
                     </>
                   ) : req.buttons.map(b => (
                     <TouchableOpacity
                       key={b.text}
-                      style={[s.btn, b.style !== 'cancel' && s.btnMain]}
+                      style={[s.btn, !stacked && { flex: 1 }, b.style !== 'cancel' && s.btnMain]}
                       activeOpacity={0.75}
                       onPress={() => close(b)}
                     >

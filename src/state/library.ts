@@ -8,6 +8,10 @@ export interface LocalPlaylist {
   createdAt: number;
   source?: string;       // imported platform: wy/tx/kg/kw/mg
   remoteId?: string;     // platform playlist id for re-sync
+  // 导入自第三方媒体库（emby/webdav/...）时记录来源，用于断连状态展示与复活机制
+  providerType?: string;
+  providerName?: string;
+  providerId?: string;
   desc?: string;
   cover?: string;
   songs: SongItem[];
@@ -70,5 +74,14 @@ export const library = {
   // 重新同步：全量覆盖歌曲（保留名称/封面等元数据）
   replaceSongs(id: string, songs: SongItem[]) {
     this.update(id, { songs });
+  },
+  // 依赖某媒体库账号的已导入歌曲数（删除账号前的影响提示用）：webdav 歌曲以 base 前缀匹配，其余以 "pid:" 前缀匹配
+  dependentSongCount(acct: { id: string; type: string; base: string }): number {
+    const pre = acct.type === 'webdav'
+      ? acct.base.trim().replace(/\/+$/, '')
+      : `${acct.id}:`;
+    return readAll().reduce((n, pl) => n + pl.songs.filter(s =>
+      s.source === acct.type && String(s.songmid ?? '').startsWith(pre)
+    ).length, 0);
   },
 };

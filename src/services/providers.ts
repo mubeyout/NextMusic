@@ -58,6 +58,15 @@ export const providers = {
 // ---------- helpers ----------
 function norm(base: string): string { return base.trim().replace(/\/+$/, ''); }
 
+// 稳定身份 id：同一「服务器+账号」重复添加得到相同 id——删除后重连，已导入歌曲（songmid=pid:itemId）全部自动复活
+// djb2 哈希足够：个人使用场景碰撞概率可忽略；同服务器同账号重复添加会被 upsert 去重（合理语义）
+export function providerIdentityId(type: ProviderType, base: string, user: string): string {
+  const key = `${norm(base).toLowerCase()}|${user.toLowerCase()}`;
+  let h = 5381;
+  for (let i = 0; i < key.length; i++) h = ((h * 33) ^ key.charCodeAt(i)) >>> 0;
+  return `pv-${type}-${h.toString(16)}`;
+}
+
 export function basicAuth(a: { user: string; pass: string }): Record<string, string> {
   return { Authorization: 'Basic ' + btoaUtf8(`${a.user}:${a.pass}`) };
 }
@@ -348,7 +357,12 @@ export const providerApi = {
       return { url: mid, headers: a ? basicAuth(a) : undefined };
     }
     const [pid, itemId] = mid.split(':');
-    const a = providers.get(pid);
+    let a = providers.get(pid);
+    // pid 已不存在（媒体库被删后重连 / 历史随机 id）：同类型只剩一个账号时直接复用——itemId 在同一服务器上仍然有效
+    if (!a) {
+      const cands = readAll().filter(p => p.type === src);
+      if (cands.length === 1) a = cands[0];
+    }
     if (!a || !itemId) return null;
     const proto = PROTOCOL[a.type];
     if (proto === 'subsonic') return { url: subUrl(a, 'stream', { id: itemId, maxBitRate: '0', format: 'raw' }) };

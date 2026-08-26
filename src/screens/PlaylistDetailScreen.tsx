@@ -12,10 +12,13 @@ import { PageHeader } from '../components/PageChrome';
 import { library } from '../state/library';
 import { usePlayer } from '../state/PlayerProvider';
 import { api, type SongItem, type SongListMeta } from '../services/server';
+import type { LocalPlaylist } from '../state/library';
+type ListMeta = SongListMeta & Partial<Pick<LocalPlaylist, 'providerType' | 'providerName' | 'providerId'>>;
 import { useApp } from '../state/AppState';
 import { enqueueDownload, downloads as dlStore, downloadProgress, subscribeDownloads } from '../services/downloads';
 import { MiniPlayer } from '../components/MiniPlayer';
 import { lxapi } from '../services/lxapi';
+import { providers } from '../services/providers';
 
 type Params = {
   // remote playlist
@@ -42,7 +45,7 @@ export function PlaylistDetailScreen() {
   const { connected } = useApp();
 
   const [songs, setSongs] = useState<SongItem[] | null>(null);
-  const [info, setInfo] = useState<SongListMeta | null>(null);
+  const [info, setInfo] = useState<ListMeta | null>(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -128,7 +131,21 @@ export function PlaylistDetailScreen() {
             {info?.play_count ? <Text style={st.stat}>播放 {info.play_count} 次</Text> : null}
           </View>
         </View>
-        {info?.desc ? <Text style={st.desc} numberOfLines={2}>{info.desc}</Text> : null}
+        {(localPl?.desc ?? info?.desc) ? <Text style={st.desc} numberOfLines={2}>{localPl?.desc ?? info?.desc}</Text> : null}
+        {/* 媒体库导入的歌单：连接状态行（断开时给用户明确原因，而不是播放时才报错） */}
+        {localPl?.providerType ? (
+          <Text style={st.desc}>
+            {(() => {
+              const accts = providers.all();
+              const alive = accts.some(p => p.id === localPl.providerId)
+                || accts.filter(p => p.type === localPl.providerType).length === 1;
+              const nm = localPl.providerName || localPl.providerType;
+              return alive
+                ? `✓ 媒体库「${nm}」已连接`
+                : `媒体库「${nm}」已断开 · 重新连接同一服务器后可恢复播放`;
+            })()}
+          </Text>
+        ) : null}
 
         <TouchableOpacity
           style={st.playAllBtn}

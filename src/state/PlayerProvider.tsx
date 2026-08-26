@@ -7,7 +7,7 @@ import type { SongItem } from '../services/server';
 import { api } from '../services/server';
 import { lxapi } from '../services/lxapi';
 import { customGetMusicUrl, activeSources } from '../services/customSource';
-import { providerApi } from '../services/providers';
+import { providerApi, PROVIDER_META, type ProviderType } from '../services/providers';
 import { downloads as dlStore } from '../services/downloads';
 import { settings } from '../services/settings';
 import { useApp } from './AppState';
@@ -43,6 +43,10 @@ const Ctx = createContext<PlayerCtx>(null as unknown as PlayerCtx);
 
 let seq = 0;
 const toTrack = (s: SongItem): QueueTrack => ({ ...s, uid: `${s.source}-${s.songmid}-${++seq}` });
+
+// 第三方媒体库源：播放依赖对应账号连接（emby/jellyfin/subsonic 系/webdav）
+const PROVIDER_SOURCES = ['emby', 'jellyfin', 'subsonic', 'navidrome', 'daoliyu', 'webdav'];
+const isProviderSource = (s?: { source?: string } | null) => !!s?.source && PROVIDER_SOURCES.includes(s.source);
 
 let configured = false;
 export async function setupPlayer() {
@@ -98,6 +102,37 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   queueRef.current = queue;
 
   const resolveAndPlay = useCallback(async (t: QueueTrack) => {
+    // 媒体库歌丬断链时的定向引导（不再误导去登录/设音源）
+    const providerUnavailable = (song: QueueTrack) => {
+      setPlaying(false);
+      const label = PROVIDER_META[song.source as ProviderType]?.label.split(' / ')[0] ?? '媒体库';
+      dialog.alert(
+        '歌曲暂不可用',
+        `这首歌来自「${label}」媒体库，连接已删除或失效。\n重新连接同一服务器即可恢复播放；已下载的文件不受影响。`,
+        [
+          { text: '取消', style: 'cancel' },
+          { text: '在线播放', onPress: () => { playOnlineFallback(song).catch(() => {}); } },
+          { text: '重新连接', onPress: () => navRef.current?.navigate('MediaLibs' as never) },
+        ],
+      );
+    };
+    // 在线兕底：同名同歌手去在线音源（kw）搜一条直接替换当前队列位播放
+    const playOnlineFallback = async (song: QueueTrack) => {
+      try {
+        const kw = `${song.name} ${song.singer || ''}`.trim();
+        const list = await lxapi.search(kw, 'kw', 1, 10);
+        const hit = list?.[0];
+        if (!hit) { toast('在线音源没有找到这首歌'); return; }
+        const replaced = toTrack(hit);
+        const q = [...queueRef.current];
+        if (q.length) q[idxRef.current] = replaced;
+        queueRef.current = q.length ? q : [replaced];
+        setQueue(queueRef.current);
+        idxRef.current = q.length ? idxRef.current : 0;
+        toast(`已切换在线播放：${hit.name} - ${hit.singer}`);
+        await resolveAndPlay(queueRef.current[idxRef.current]);
+      } catch { toast('在线搜索失败，请检查网络'); }
+    };
     try {
       // ① 设备本地文件：直接播（file:// 路径或 content:// uri）
       if (t.source === 'device') {
@@ -114,11 +149,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       // ③ 媒体库源（emby/jellyfin/subsonic/webdav）：直接出流地址 + 鉴权头
-      const isProvider = t.source === 'emby' || t.source === 'jellyfin' || t.source === 'subsonic'
-        || t.source === 'navidrome' || t.source === 'daoliyu' || t.source === 'webdav';
-      if (isProvider) {
+      if (isProviderSource(t)) {
         const p = providerApi.streamFor(t);
-        if (!p?.url) throw new Error('媒体库账号不存在，请重新添加');
+        if (!p?.url) { providerUnavailable(t); return; }
         // audio-pro 原生层期待 headers: { audio, artwork } 嵌套结构（Controller.extractHeaders）
         const opts = p.headers ? { headers: { audio: p.headers, artwork: p.headers } } : undefined;
         AudioPro.play(trackToAudioPro(t, p.url, p.headers), opts);
@@ -153,6 +186,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       setCurrent(t);
     } catch (e) {
       setPlaying(false);
+      // 媒体库歌丬的失败统一走定向引导，不再误导去登录/设音源
+      if (isProviderSource(t)) { providerUnavailable(t); return; }
       // 取链失败：提示登录或设置音源（产品语义：只有播放才需要这些）
       dialog.alert(
         '暂时无法播放',
@@ -216,8 +251,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           break;
         case AudioProEventType.PLAYBACK_ERROR:
           setPlaying(false);
-          // 解析成功但播放失败（CDN 403 / 链接过期等）：明确反馈，不让用户猜
-          toast('播放失败：音源链接不可用，可重试或更换音源');
+          // 解析成功但播放失败：按源区分原因，不让用户猜
+          toast(isProviderSource(queueRef.current[idxRef.current])
+            ? '播放失败：媒体库可能已断开或网络不可达'
+            : '播放失败：音源链接不可用，可重试或更换音源');
           break;
       }
     });

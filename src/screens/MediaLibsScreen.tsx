@@ -114,7 +114,8 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
 
   const importAll = (name: string, songs: SongItem[]) => {
     if (!songs.length) { toast('没有可导入的歌曲'); return; }
-    library.create(name, songs, { desc: `来自 ${acct.name}` });
+    // 记录来源媒体库（类型/名称/id）：详情页断连状态展示 + 重连复活机制都依赖这份元数据
+    library.create(name, songs, { desc: `来自 ${acct.name}`, providerType: acct.type, providerName: acct.name, providerId: acct.id });
     toast(`已导入「${name}」· ${songs.length} 首`);
   };
 

@@ -7,7 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon, BrandIcon } from '../theme/Icon';
 import { C } from '../theme/tokens';
-import { providers, providerApi, PROVIDER_META, type ProviderAcct, type ProviderType } from '../services/providers';
+import { providers, providerApi, PROVIDER_META, providerIdentityId, type ProviderAcct, type ProviderType } from '../services/providers';
+import { library } from '../state/library';
 import { dialog, toast } from '../components/Dialog';
 
 // 类型卡数据（对齐 Figma NM-REMOTE-SELECT-001 五张卡 + 推荐）
@@ -70,8 +71,13 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
     if (!a.base.trim()) { toast('请填写服务器地址'); return; }
     setBusy('save');
     try {
-      const connected = await providerApi.connect({ ...a, base: a.base.trim(), name: a.name.trim() || PROVIDER_META[a.type].label.split(' / ')[0] });
+      const base = a.base.trim();
+      // 新建用稳定身份 id（同服务器+账号重连得到相同 id）：删了重连，已导入歌曲自动复活；编辑已有连接则保留旧 id 不破坏既有歌
+      const id = existing?.id ?? providerIdentityId(a.type, base, a.user);
+      const dup = !existing && providers.get(id); // 同服务器同账号已存在 → save 会 upsert 覆盖（去重语义）
+      const connected = await providerApi.connect({ ...a, id, base, name: a.name.trim() || PROVIDER_META[a.type].label.split(' / ')[0] });
       providers.save(connected);
+      if (dup) toast('已更新现有同账号连接');
       nav.goBack();
     } catch (e) {
       dialog.alert('连接失败', (e as Error).message + '\n\n请检查地址、账号密码，以及服务器是否已在同一网络');
@@ -116,10 +122,19 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
         <Text style={st.title}>连接 {PROVIDER_META[picked].label.split(' / ')[0]}</Text>
         {existing ? (
           <TouchableOpacity onPress={() => {
-            dialog.alert('删除媒体库', `确定删除「${existing.name || PROVIDER_META[existing.type].label}」？`, [
-              { text: '取消', style: 'cancel' },
-              { text: '删除', style: 'destructive', onPress: () => { providers.remove(existing.id); nav.goBack(); } },
-            ]);
+            const nm = existing.name || PROVIDER_META[existing.type].label;
+            const n = library.dependentSongCount(existing);
+            const doRemove = () => { providers.remove(existing.id); nav.goBack(); };
+            dialog.alert(
+              '删除媒体库',
+              n > 0
+                ? `「${nm}」有 ${n} 首已导入歌曲依赖此连接。\n删除后这些歌暂时无法播放——重新添加同一服务器可自动恢复；已下载文件不受影响。`
+                : `确定删除「${nm}」？`,
+              [
+                { text: '取消', style: 'cancel' },
+                { text: n > 0 ? '仍要删除' : '删除', style: 'destructive', onPress: doRemove },
+              ],
+            );
           }} hitSlop={6} style={{ width: 26, alignItems: 'flex-end' }}>
             <Icon name="trash" size={20} color="#FF6B6B" />
           </TouchableOpacity>
