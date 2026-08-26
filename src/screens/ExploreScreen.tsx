@@ -16,6 +16,7 @@ import { getRecents } from '../state/recent';
 import { activeSources } from '../services/customSource';
 import { api, type SongItem, type SongListMeta } from '../services/server';
 import { lxapi } from '../services/lxapi';
+import { dialog, toast } from '../components/Dialog';
 
 import night from '../assets/art/night.jpg';
 import beach from '../assets/art/beach.jpg';
@@ -47,6 +48,12 @@ const CHART_SLOTS = [
   { match: /飙升/, caption: '24h 热度变化', tag: '↗ 18%', tagColor: '#6BE88F', accent: ['#1FD661', '#591F7A'] },
   { match: /新歌/, caption: '本周新发行', tag: 'NEW', tagColor: '#B3B3B3', accent: ['#1FB87A', '#731F66'] },
   { match: /欧美|Billboard|全球/, caption: '32 个地区', tag: 'GLOBAL', tagColor: '#B3B3B3', accent: ['#1F9994', '#8C1F52'] },
+];
+
+// 榜单卡渐变配色（循环取用）
+const BOARD_ACCENTS: [string, string][] = [
+  ['#1FD661', '#1F5E3A'], ['#1F87D6', '#1F3A6E'], ['#B01F87', '#5E1F4E'],
+  ['#D67A1F', '#6E3A1F'], ['#871FD6', '#3A1F5E'], ['#1FD6C0', '#1F5E5A'],
 ];
 
 interface PlaylistCardProps {
@@ -153,9 +160,10 @@ export function ExploreScreen() {
 
   const openBoard = useCallback(async (b: { name: string; bangid: string }, source = '') => {
     setBoardBusy(true);
-    const list = await lxapi.leaderboardList(b.bangid, source);
+    const list = await lxapi.leaderboardList(b.bangid, source).catch(() => [] as SongItem[]);
     setBoardBusy(false);
     if (list.length) navigation.navigate('PlaylistDetail', { title: b.name, songs: list, meta: `${list.length} 首 · 榜单` });
+    else toast('榜单加载失败，稍后重试');
   }, [navigation]);
 
   // 榜单 tab 数据（kg 全量 + wy 子卡 + TOP500）
@@ -295,12 +303,13 @@ export function ExploreScreen() {
 
         {tab === 1 && (
           <View style={st.body}>
-            {/* 按类型：渐变按钮 2列×3行 169x60 r12 */}
+            {/* 按类型：渐变卡 3列×2行，宽度自适应（百分比，不写死 px——真机 320dp 下写死 350 会挤成一行一个） */}
             <Text style={st.groupTitle}>按类型</Text>
             <View style={st.genreGrid}>
               {GENRES.map(g => (
                 <TouchableOpacity
                   key={g.zh}
+                  style={st.genreCell}
                   activeOpacity={0.85}
                   onPress={() => selectTag(g.zh)}
                 >
@@ -316,7 +325,7 @@ export function ExploreScreen() {
               ))}
             </View>
 
-            {/* 按场景：灰胶囊 3列×2行 110x36 r18 */}
+            {/* 按场景：胶囊 3列×2行，flex 自适应 */}
             <Text style={st.groupTitle}>按场景</Text>
             <View style={st.sceneGrid}>
               {SCENES.map(s => (
@@ -331,7 +340,7 @@ export function ExploreScreen() {
               ))}
             </View>
 
-            {/* 按语言：4 个文字标签 */}
+            {/* 按语言：4 个等宽文字标签 */}
             <Text style={st.groupTitle}>按语言</Text>
             <View style={st.langRow}>
               {LANGS.map(l => (
@@ -396,8 +405,16 @@ export function ExploreScreen() {
               ))}
             </View>
 
-            {/* Top 50 前 5（设计稿无"查看全部"入口，完整榜在下方"全部榜单"列表） */}
-            <Text style={st.sectionTitle}>Top 50</Text>
+            {/* Top 50 前 5 + 入口：点击进入完整榜 */}
+            <View style={st.sectionRow}>
+              <Text style={st.sectionTitle}>Top 50</Text>
+              <TouchableOpacity onPress={() => {
+                const top = boards.find(b => /TOP/i.test(b.name)) || boards[0];
+                if (top) openBoard(top);
+              }}>
+                <Text style={st.sectionMeta}>完整榜 ›</Text>
+              </TouchableOpacity>
+            </View>
             {top50.length ? (
               top50.slice(0, 5).map((s, i) => (
                 <TopRow key={s.source + s.songmid + i} rank={i + 1} song={s}
@@ -407,15 +424,27 @@ export function ExploreScreen() {
               <View style={st.center}><ActivityIndicator color={C.brand} /></View>
             )}
 
-            {/* 全部榜单（真实数据全量入口） */}
-            <Text style={st.groupTitle}>全部榜单</Text>
-            {boards.map(b => (
-              <TouchableOpacity key={b.id} style={st.boardRow} activeOpacity={0.8} onPress={() => openBoard(b)}>
-                <View style={st.boardRank}><Text style={st.boardRankText}>{b.name.slice(0, 1)}</Text></View>
-                <Text style={st.boardName}>{b.name}</Text>
-                <Icon name="next" size={16} color={C.text2} />
+            {/* 全部榜单：页内 2列×3行 网格卡 + 查看全部入口（独立榜单广场页） */}
+            <View style={st.sectionRow}>
+              <Text style={st.sectionTitle}>全部榜单</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('BoardsSquare')}>
+                <Text style={st.sectionMeta}>查看全部 ›</Text>
               </TouchableOpacity>
-            ))}
+            </View>
+            <View style={st.boardGrid}>
+              {boards.slice(0, 6).map((b, i) => (
+                <TouchableOpacity key={b.id} style={st.boardCell} activeOpacity={0.85} onPress={() => openBoard(b)}>
+                  <LinearGradient
+                    colors={[BOARD_ACCENTS[i % BOARD_ACCENTS.length][0], BOARD_ACCENTS[i % BOARD_ACCENTS.length][1]]}
+                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                    style={st.boardCard}
+                  >
+                    <Text style={st.boardCardName} numberOfLines={2}>{b.name}</Text>
+                    <Text style={st.boardCardSub}>酷狗榜</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              ))}
+            </View>
             {boardBusy ? (
               <View style={st.center}><ActivityIndicator color={C.brand} /></View>
             ) : null}
@@ -430,10 +459,6 @@ export function ExploreScreen() {
 
 const st = StyleSheet.create({
   screen: { flex: 1 },
-  boardRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 9 },
-  boardRank: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#1C1C1C', alignItems: 'center', justifyContent: 'center' },
-  boardRankText: { color: C.brandSoft, fontSize: 15, fontWeight: '700' },
-  boardName: { flex: 1, color: C.text, fontSize: 14, lineHeight: 19, fontWeight: '500' },
   content: { paddingHorizontal: 20, paddingBottom: 24 },
   headerRow: { height: 40, flexDirection: 'row', alignItems: 'center', gap: 12 },
   title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700' },
@@ -457,17 +482,19 @@ const st = StyleSheet.create({
     backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center',
   },
   groupTitle: { color: C.text, fontSize: 18, lineHeight: 22, fontWeight: '700', marginTop: 6 },
+  // 自适应三列：百分比宽度，真机 320dp 内容区也能放下 3 列
   genreGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  genreCell: { width: '31%', flexGrow: 1 },
   genreCard: {
-    width: (350 - 8) / 2, height: 60, borderRadius: 12,
-    paddingHorizontal: 14, justifyContent: 'center', gap: 6,
+    height: 56, borderRadius: 12, overflow: 'hidden',
+    paddingHorizontal: 12, justifyContent: 'center', gap: 5,
   },
   genreOn: { borderWidth: 2, borderColor: C.brand },
-  genreZh: { color: C.text, fontSize: 15, lineHeight: 18, fontWeight: '700' },
-  genreEn: { color: C.text2, fontSize: 9, lineHeight: 11, fontWeight: '500' },
+  genreZh: { color: C.text, fontSize: 14, lineHeight: 17, fontWeight: '700' },
+  genreEn: { color: C.text2, fontSize: 8, lineHeight: 10, fontWeight: '500', letterSpacing: 0.5 },
   sceneGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   scenePill: {
-    width: (350 - 16) / 3, height: 36, borderRadius: 18, backgroundColor: '#2B2B2B',
+    width: '31%', flexGrow: 1, height: 36, borderRadius: 18, backgroundColor: '#2B2B2B',
     alignItems: 'center', justifyContent: 'center',
   },
   sceneOn: { backgroundColor: '#3A3A3A' },
@@ -491,7 +518,7 @@ const st = StyleSheet.create({
   rankBadgeText: { color: C.text, fontSize: 20, lineHeight: 24, fontWeight: '700' },
   chartRow: { flexDirection: 'row', gap: 8 },
   chartCard: {
-    width: (350 - 16) / 3, height: 92, borderRadius: 12, backgroundColor: '#2B2B2B', overflow: 'hidden',
+    flex: 1, height: 92, borderRadius: 12, backgroundColor: '#2B2B2B', overflow: 'hidden',
     paddingHorizontal: 12, paddingTop: 20,
   },
   chartAccent: { position: 'absolute', left: 0, top: 0, right: 0, height: 8 },
@@ -512,6 +539,12 @@ const st = StyleSheet.create({
   catShade: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, backgroundColor: '#00000066' },
   catLabel: { color: C.text, fontSize: 15, lineHeight: 20, fontWeight: '700' },
   plGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  // 全部榜单网格：2 列自适应
+  boardGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  boardCell: { width: '48.5%' },
+  boardCard: { height: 64, borderRadius: 12, overflow: 'hidden', paddingHorizontal: 12, justifyContent: 'center', gap: 3 },
+  boardCardName: { color: C.text, fontSize: 13, lineHeight: 16, fontWeight: '700' },
+  boardCardSub: { color: C.text2, fontSize: 9, lineHeight: 11 },
   center: { paddingVertical: 32, alignItems: 'center' },
   errText: { color: C.text2, fontSize: 12, lineHeight: 18, textAlign: 'center', paddingVertical: 24 },
   overlay: { position: 'absolute', top: 146, left: 20, right: 20, alignItems: 'center' },

@@ -31,6 +31,7 @@ import { FxScreen } from './screens/FxScreen';
 import { ProviderEditScreen } from './screens/ProviderEditScreen';
 import { MediaLibsScreen, ProviderBrowseRoute } from './screens/MediaLibsScreen';
 import { DownloadsScreen } from './screens/DownloadsScreen';
+import { BoardsSquareScreen } from './screens/BoardsSquareScreen';
 import { DeviceMusicScreen } from './screens/DeviceMusicScreen';
 import { SearchScreen } from './screens/SearchScreen';
 
@@ -117,6 +118,7 @@ export function RootNavigator() {
         <Stack.Screen name="ProviderEdit" component={ProviderEditScreen} />
         <Stack.Screen name="ProviderBrowse" component={ProviderBrowseRoute} />
         <Stack.Screen name="Downloads" component={DownloadsScreen} />
+        <Stack.Screen name="BoardsSquare" component={BoardsSquareScreen} />
         <Stack.Screen name="DeviceMusic" component={DeviceMusicScreen} />
       </Stack.Navigator>
     </NavigationContainer>
