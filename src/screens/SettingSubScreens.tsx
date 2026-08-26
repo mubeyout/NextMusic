@@ -11,7 +11,7 @@ import { ToggleRow, ValueRow, ActionRow, StaticRow, NavRow, InputRow, Section, P
 import { settings, useSettings, QUALITY_LABEL, type Quality } from '../services/settings';
 import { providerApi } from '../services/providers';
 import { library } from '../state/library';
-import { downloads as dlStore, fmtBytes } from '../services/downloads';
+import { downloads as dlStore, fmtBytes, downloadFails, clearFails, subscribeDownloads } from '../services/downloads';
 import { APP_VERSION } from '../services/appversion';
 
 // ---------- 基本设置 ----------
@@ -143,6 +143,9 @@ export function AboutScreen() {
 export function DownloadsSettingsScreen() {
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string) => void };
   const s = useSettings();
+  const [, force] = useState(0);
+  useEffect(() => subscribeDownloads(() => force(n => n + 1)), []); // 下载完成/失败实时刷
+  const fails = downloadFails();
   const QUALITIES: { label: string; value: Quality }[] = [
     { label: QUALITY_LABEL['128k'], value: '128k' },
     { label: QUALITY_LABEL['320k'], value: '320k' },
@@ -159,6 +162,18 @@ export function DownloadsSettingsScreen() {
         <StaticRow label="下载位置" value="应用内部存储" />
         <NavRow label="下载管理" value={`${dlStore.all().length} 首 · ${fmtBytes(dlStore.totalBytes())}`} onPress={() => nav.navigate('Downloads')} />
       </Section>
+      {fails.length ? (
+        <Section title={`下载失败（${fails.length}）`}>
+          {fails.slice(0, 5).map(f => (
+            <StaticRow key={f.key + f.at} label={f.name} value={f.err.slice(0, 24)} />
+          ))}
+          {fails.length > 5 ? <StaticRow label="…" value={`共 ${fails.length} 首`} /> : null}
+          <ActionRow
+            label="清除失败记录"
+            onPress={() => { clearFails(); toast('已清除'); }}
+          />
+        </Section>
+      ) : null}
     </PageShell>
   );
 }

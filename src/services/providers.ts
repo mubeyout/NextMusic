@@ -36,6 +36,11 @@ export const PROVIDER_META: Record<ProviderType, { label: string; hint: string; 
   webdav: { label: 'WebDAV', hint: 'NAS / 飞牛 fnOS / Alist 等 WebDAV 共享目录，直接浏览音频文件', placeholder: 'http://192.168.1.10:5244/dav' },
 };
 
+// 判断歌曲是否来自第三方媒体库（source ∈ 协议表 keys；subsonic 系歌实际 source 为 'subsonic'）
+export function isProviderSongSource(src?: string): boolean {
+  return !!src && !!PROTOCOL[src as ProviderType];
+}
+
 // ---------- accounts CRUD ----------
 function readAll(): ProviderAcct[] {
   try { return JSON.parse(kv.getString('accounts') || '[]'); } catch { return []; }
@@ -358,9 +363,11 @@ export const providerApi = {
     }
     const [pid, itemId] = mid.split(':');
     let a = providers.get(pid);
-    // pid 已不存在（媒体库被删后重连 / 历史随机 id）：同类型只剩一个账号时直接复用——itemId 在同一服务器上仍然有效
-    if (!a) {
-      const cands = readAll().filter(p => p.type === src);
+    // pid 已不存在（重连换 id 的旧歌单）：同协议只剩一个账号时直接复用——itemId 在同一服务器上仍然有效
+    // 注意协议级匹配：navidrome/道理鱼账号的歌 source='subsonic'，按 type 匹配会漏
+    if (!a && PROTOCOL[src as ProviderType]) {
+      const proto = PROTOCOL[src as ProviderType];
+      const cands = readAll().filter(p => PROTOCOL[p.type] === proto);
       if (cands.length === 1) a = cands[0];
     }
     if (!a || !itemId) return null;

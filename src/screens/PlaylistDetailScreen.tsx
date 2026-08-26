@@ -18,7 +18,7 @@ import { useApp } from '../state/AppState';
 import { enqueueDownload, downloads as dlStore, downloadProgress, subscribeDownloads } from '../services/downloads';
 import { MiniPlayer } from '../components/MiniPlayer';
 import { lxapi } from '../services/lxapi';
-import { providers } from '../services/providers';
+import { providers, providerApi, isProviderSongSource } from '../services/providers';
 
 type Params = {
   // remote playlist
@@ -224,6 +224,7 @@ export function PlaylistDetailScreen() {
         items={[
           { label: '歌单内搜索', onPress: () => setSearching(true) },
           ...(localPl?.remoteId ? [{ label: syncing ? '同步中…' : '重新同步歌单', onPress: () => resyncPl() }] : []),
+          ...(localPl?.songs.some(s => isProviderSongSource(s.source)) ? [{ label: '移除失效歌曲', onPress: () => cleanBroken() }] : []),
           { label: '重命名歌单', onPress: () => renamePl() },
           { label: '删除歌单', danger: true, onPress: () => deletePl() },
         ]}
@@ -247,6 +248,25 @@ export function PlaylistDetailScreen() {
       <CollectSheet song={actSong} visible={collect} onClose={() => { setCollect(false); setActSong(null); }} />
     </View>
   );
+
+  // 移除失效歌曲：媒体库连接已断且无本地下载副本的歌（与播放兑底同口径），一键从歌单清理
+  function cleanBroken() {
+    if (!localPl) return;
+    const broken = localPl.songs.filter(s => isProviderSongSource(s.source) && !dlStore.pathFor(s) && !providerApi.streamFor(s));
+    if (!broken.length) { toast('没有失效歌曲'); return; }
+    dialog.confirm(
+      '移除失效歌曲',
+      `检测到 ${broken.length} 首歌曲的媒体库连接已断开且无本地文件，是否从歌单移除？`,
+      () => {
+        const dead = new Set(broken.map(s => `${s.source}:${s.songmid}`));
+        library.replaceSongs(localPl.id, localPl.songs.filter(s => !dead.has(`${s.source}:${s.songmid}`)));
+        setSongs(prev => (prev || []).filter(s => !dead.has(`${s.source}:${s.songmid}`)));
+        setTotal(t => Math.max(0, t - broken.length));
+        toast(`已移除 ${broken.length} 首失效歌曲`);
+      },
+      '移除',
+    );
+  }
 
   function renamePl() {
     if (!localPl) return;

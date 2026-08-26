@@ -124,6 +124,7 @@ function pump() {
     const job = queue.shift()!;
     active++;
     runJob(job).catch(e => {
+      console.log('[DL] fail:', songKey(job.song), (e as Error).message);
       pushFail({ key: songKey(job.song), name: job.song.name, err: (e as Error).message || '下载失败', at: Date.now() });
     }).finally(() => { active--; emit(); pump(); });
   }

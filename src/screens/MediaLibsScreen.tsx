@@ -112,11 +112,16 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
 
   if (!acct) return <View style={st.screen}><Text style={st.empty}>账号不存在</Text></View>;
 
-  const importAll = (name: string, songs: SongItem[]) => {
+  const importAll = (name: string, songs: SongItem[], dl = false) => {
     if (!songs.length) { toast('没有可导入的歌曲'); return; }
     // 记录来源媒体库（类型/名称/id）：详情页断连状态展示 + 重连复活机制都依赖这份元数据
     library.create(name, songs, { desc: `来自 ${acct.name}`, providerType: acct.type, providerName: acct.name, providerId: acct.id });
-    toast(`已导入「${name}」· ${songs.length} 首`);
+    if (dl) {
+      const n = enqueueDownload(songs);
+      toast(`已导入「${name}」· ${songs.length} 首，${n} 首开始下载`);
+    } else {
+      toast(`已导入「${name}」· ${songs.length} 首`);
+    }
   };
 
   const openAlbum = async (al: { id: string; name: string }) => {
@@ -128,6 +133,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
       dialog.alert(al.name, `${songs.length} 首 · 播放还是导入歌单？`, [
         { text: '取消', style: 'cancel' },
         { text: '导入歌单', onPress: () => importAll(al.name, songs) },
+        { text: '导入并下载', onPress: () => importAll(al.name, songs, true) },
         { text: '立即播放', onPress: () => playSong(songs[0], songs) },
         { text: '下载', onPress: () => { const n = enqueueDownload(songs); toast(`${n} 首加入下载队列`); } },
       ]);
