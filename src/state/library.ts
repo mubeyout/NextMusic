@@ -1,6 +1,7 @@
 // Local library: user playlists persisted in MMKV (works offline / local mode)
 import { createMMKV } from 'react-native-mmkv';
 import type { SongItem } from '../services/server';
+import { providers } from '../services/providers';
 
 export interface LocalPlaylist {
   id: string;
@@ -75,13 +76,20 @@ export const library = {
   replaceSongs(id: string, songs: SongItem[]) {
     this.update(id, { songs });
   },
-  // 依赖某媒体库账号的已导入歌曲数（删除账号前的影响提示用）：webdav 歌曲以 base 前缀匹配，其余以 "pid:" 前缀匹配
+  // 依赖某媒体库账号的已导入歌曲数（删除账号前的影响提示用）
+  // 语义 = 删除后会有多少歌失去可播路径：同类型还有其他账号时按精确前缀；否则该类型全部计入
+  //（重连后 id 会变，旧歌 songmid 还是旧 pid——播放靠 streamFor 同类型兑底，删除提示也要兑底口径）
   dependentSongCount(acct: { id: string; type: string; base: string }): number {
-    const pre = acct.type === 'webdav'
-      ? acct.base.trim().replace(/\/+$/, '')
-      : `${acct.id}:`;
-    return readAll().reduce((n, pl) => n + pl.songs.filter(s =>
-      s.source === acct.type && String(s.songmid ?? '').startsWith(pre)
-    ).length, 0);
+    const list = readAll();
+    const cnt = (f: (s: SongItem) => boolean) =>
+      list.reduce((n, pl) => n + pl.songs.filter(f).length, 0);
+    if (acct.type === 'webdav') {
+      const pre = acct.base.trim().replace(/\/+$/, '');
+      return cnt(s => s.source === acct.type && String(s.songmid ?? '').startsWith(pre));
+    }
+    const hasSibling = providers.all().some(p => p.id !== acct.id && p.type === acct.type);
+    return hasSibling
+      ? cnt(s => s.source === acct.type && String(s.songmid ?? '').startsWith(`${acct.id}:`))
+      : cnt(s => s.source === acct.type);
   },
 };
