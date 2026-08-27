@@ -1,5 +1,5 @@
 // 榜单广场：全部榜单独立页（探索-榜单「查看全部」目的页）
-// kg/wy 双源切换 + 2 列渐变网格卡；点击进 PlaylistDetail 榜单详情
+// 5 源切换（与搜索页同源集：kw/kg/wy/tx/mg）+ 2 列渐变网格卡；点击进 PlaylistDetail 榜单详情
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -11,9 +11,12 @@ import type { SongItem } from '../services/server';
 import { toast } from '../components/Dialog';
 
 type Board = { id: string; name: string; bangid: string };
-const SOURCES: { key: string; label: string }[] = [
-  { key: 'kg', label: '酷狗' },
-  { key: 'wy', label: '网易云' },
+const SOURCES: { key: string; label: string; sub: string }[] = [
+  { key: 'kw', label: '酷我', sub: '酷我榜' },
+  { key: 'kg', label: '酷狗', sub: '酷狗榜' },
+  { key: 'wy', label: '网易', sub: '网易榜' },
+  { key: 'tx', label: 'QQ音乐', sub: 'QQ榜' },
+  { key: 'mg', label: '咪咕', sub: '咪咕榜' },
 ];
 
 const ACCENTS: [string, string][] = [
@@ -30,7 +33,7 @@ export function BoardsSquareScreen() {
   useEffect(() => {
     let dead = false;
     setBoards(null);
-    lxapi.leaderboardBoards(src === 'wy' ? 'wy' : undefined)
+    lxapi.leaderboardBoards(src)
       .then(bs => { if (!dead) setBoards(bs); })
       .catch(() => { if (!dead) setBoards([]); });
     return () => { dead = true; };
@@ -38,7 +41,7 @@ export function BoardsSquareScreen() {
 
   const openBoard = useCallback(async (b: Board) => {
     setBusy(true);
-    const list = await lxapi.leaderboardList(b.bangid, src === 'wy' ? 'wy' : undefined).catch(() => [] as SongItem[]);
+    const list = await lxapi.leaderboardList(b.bangid, src).catch(() => [] as SongItem[]);
     setBusy(false);
     if (list.length) nav.navigate('PlaylistDetail', { title: b.name, songs: list, meta: `${list.length} 首 · 榜单` });
     else toast('榜单加载失败，稍后重试');
@@ -74,7 +77,7 @@ export function BoardsSquareScreen() {
                   style={st.card}
                 >
                   <Text style={st.name} numberOfLines={2}>{b.name}</Text>
-                  <Text style={st.sub}>{src === 'wy' ? '网易榜' : '酷狗榜'} ›</Text>
+                  <Text style={st.sub}>{SOURCES.find(s => s.key === src)?.sub ?? '榜单'} ›</Text>
                 </LinearGradient>
               </TouchableOpacity>
             ))}
