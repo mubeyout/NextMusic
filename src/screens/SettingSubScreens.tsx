@@ -125,7 +125,7 @@ export function ThemeScreen() {
 
 // ---------- 关于与帮助 ----------
 const AppVersionNative = NativeModules.AppVersionInfo as { versionName?: string; versionCode?: number } | undefined;
-const DEFAULT_UPDATE_URL = 'http://10.0.0.1:18888/update.json';
+const DEFAULT_UPDATE_URL = 'https://cdn.jsdelivr.net/gh/mubeyout/nextmusic-release@main/update.json';
 
 export function AboutScreen() {
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string) => void };
@@ -133,11 +133,9 @@ export function AboutScreen() {
   const [checking, setChecking] = useState(false);
 
   const checkUpdate = async () => {
-    // 多源降级：用户配置源 → 内网自建 → jsDelivr CDN（GitHub 公开仓镜像）→ GitHub raw
+    // GitHub 双镜像降级：jsDelivr CDN → GitHub raw
     const urls = [...new Set([
-      (s.updateUrl || '').trim(),
       DEFAULT_UPDATE_URL,
-      'https://cdn.jsdelivr.net/gh/mubeyout/nextmusic-release@main/update.json',
       'https://raw.githubusercontent.com/mubeyout/nextmusic-release/main/update.json',
     ].filter(u => /^https?:\/\//.test(u)))];
     setChecking(true);
@@ -170,7 +168,7 @@ export function AboutScreen() {
       }
       throw new Error(lastErr || '所有更新源均不可达');
     } catch (e) {
-      dialog.alert('检查更新失败', `无法访问更新源：${(e as Error).message}\n\n内网/外网源均已尝试，请稍后重试。`);
+      dialog.alert('检查更新失败', `无法访问更新源：${(e as Error).message}\n\n请检查网络连接后重试。`);
     } finally { setChecking(false); }
   };
 
@@ -179,7 +177,6 @@ export function AboutScreen() {
       <Section title="版本">
         <StaticRow label="当前版本" value={APP_VERSION} />
         <ActionRow label={checking ? '正在检查…' : '检查更新'} onPress={checkUpdate} />
-        <InputRow label="更新源地址" value={s.updateUrl || DEFAULT_UPDATE_URL} placeholder={DEFAULT_UPDATE_URL} onChange={v => settings.set('updateUrl', v)} />
         <ActionRow label="更新日志" onPress={() => nav.navigate('Changelog')} />
       </Section>
       <Section title="帮助">

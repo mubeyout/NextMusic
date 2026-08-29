@@ -20,7 +20,6 @@ import { ExploreScreen } from './screens/ExploreScreen';
 import { MyScreen } from './screens/MyScreen';
 import { PlayerScreen } from './screens/PlayerScreen';
 import { QueueScreen } from './screens/QueueScreen';
-import { RouteScreen } from './screens/RouteScreen';
 import { PlayerSettingsScreen } from './screens/PlayerSettingsScreen';
 import { CommentsScreen } from './screens/CommentsScreen';
 import { PlaylistDetailScreen } from './screens/PlaylistDetailScreen';
@@ -102,7 +101,6 @@ export function RootNavigator() {
         <Stack.Screen name="Main" component={MainTabs} />
         <Stack.Screen name="Player" component={PlayerScreen} options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="Queue" component={QueueScreen} options={{ animation: 'slide_from_bottom' }} />
-        <Stack.Screen name="Route" component={RouteScreen} options={{ animation: 'none' }} />
         <Stack.Screen name="PlayerSettings" component={PlayerSettingsScreen} />
         <Stack.Screen name="Comments" component={CommentsScreen} />
         <Stack.Screen name="PlaylistDetail" component={PlaylistDetailScreen} />

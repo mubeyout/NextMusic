@@ -198,7 +198,11 @@ export function AccountScreen() {
 
         <TouchableOpacity
           style={[st.linkBtn, st.danger]}
-          onPress={() => { setMode(null); nav.reset({ index: 0, routes: [{ name: 'Boot' }] }); }}
+          onPress={() => {
+            setMode(null);
+            toast('已断开服务器，回到本地模式');
+            nav.reset({ index: 0, routes: [{ name: 'Main' }] }); // 回首页，不再回向导
+          }}
         >
           <Text style={st.dangerText}>断开服务器，回到本地模式</Text>
         </TouchableOpacity>

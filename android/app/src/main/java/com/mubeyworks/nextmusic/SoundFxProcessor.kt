@@ -192,7 +192,7 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
     override fun queueInput(inputBuffer: ByteBuffer) {
         maybeRefreshConfig()
         val preset = REVERBS[reverbId]
-        if (reverbId == "none" && SoundFxEngine.currentConvolver != null) SoundFxEngine.releaseConvolver()
+        // 注：选“关闭”(none) 不再释放卷积器——IR 缓存常驻，切回瞬时命中（2026-08-29）
         val bypass = !eqActive && reverbId == "none" && !pannerEnable
         if (bypass) {
             val remaining = inputBuffer.remaining()

@@ -58,9 +58,13 @@ export function QueueScreen() {
           <Text style={st.sectionTitle}>当前列表</Text>
           <Text style={st.sectionMeta}>{queue.length} 首 · 点击切歌</Text>
         </View>
-        {upcoming.length ? upcoming.map((t, i) => (
-          <SongRow key={t.uid || i} song={t} onPress={() => playSong(t, queue)} />
-        )) : (
+        {upcoming.length ? (
+          <View style={st.list}>
+            {upcoming.map((t, i) => (
+              <SongRow key={t.uid || i} song={t} onPress={() => playSong(t, queue)} />
+            ))}
+          </View>
+        ) : (
           <EmptyState title={queue.length ? '没有下一首了' : '队列为空'} sub={queue.length ? undefined : '去首页或探索页添加歌曲'} />
         )}
       </ScrollView>
@@ -82,4 +86,5 @@ const st = StyleSheet.create({
   sectionRow: { height: 26, flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16, marginBottom: 8 },
   sectionTitle: { flex: 1, color: C.text, fontSize: 17, lineHeight: 25, fontWeight: '700' },
   sectionMeta: { color: C.text2, fontSize: 11, lineHeight: 16 },
+  list: { gap: 8 },
 });

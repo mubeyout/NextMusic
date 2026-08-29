@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
+import { toast } from '../components/Dialog';
 import { ActionSheet } from '../components/ActionSheet';
 import {
   FX_DEFAULT_PRESETS, FX_FREQ_LABELS, FX_REVERB_OPTIONS,
@@ -17,21 +18,31 @@ import {
 // 结构：预设胶囊横滚 → 垂直 10 段 EQ → 环境混响（胶囊网格 + 增益滑杆）→ 音调 → 3D 环绕
 // 数据与同步逻辑不变（soundfx.ts / 原生 DSP 全复用）
 
-// ---------- 横向滑杆（PanResponder，左起填充） ----------
+// ---------- 横向滑杆（PanResponder，左起填充；拖动只预览，松手才提交） ----------
 function HSlider({ value, min, max, step, onChange, disabled, style }: {
   value: number; min: number; max: number; step: number;
   onChange: (v: number) => void; disabled?: boolean; style?: object;
 }) {
   const [w, setW] = useState(0);
-  const latest = useRef({ min, max, step, onChange, w });
-  latest.current = { min, max, step, onChange, w };
+  const [drag, setDrag] = useState<number | null>(null);
+  const latest = useRef({ min, max, step, onChange, w, pending: null as number | null });
+  latest.current = { min, max, step, onChange, w, pending: latest.current.pending };
 
   const handle = (x: number) => {
-    const { min: mn, max: mx, step: st, onChange: cb, w: width } = latest.current;
+    const { min: mn, max: mx, step: st, w: width } = latest.current;
     if (!width) return;
     const ratio = Math.max(0, Math.min(1, x / width));
     const raw = mn + ratio * (mx - mn);
-    cb(Math.round(raw / st) * st);
+    const v = Math.round(raw / st) * st;
+    latest.current.pending = v;
+    setDrag(v);
+  };
+
+  const release = () => {
+    const v = latest.current.pending;
+    latest.current.pending = null;
+    setDrag(null);
+    if (v != null) latest.current.onChange(v);
   };
 
   const pan = useMemo(() => PanResponder.create({
@@ -39,9 +50,12 @@ function HSlider({ value, min, max, step, onChange, disabled, style }: {
     onMoveShouldSetPanResponder: () => !disabled,
     onPanResponderGrant: (e) => handle(e.nativeEvent.locationX),
     onPanResponderMove: (e) => handle(e.nativeEvent.locationX),
+    onPanResponderRelease: release,
+    onPanResponderTerminate: release,
   }), [disabled]);
 
-  const ratio = max > min ? (value - min) / (max - min) : 0;
+  const shown = drag ?? value;
+  const ratio = max > min ? (shown - min) / (max - min) : 0;
   const r = Math.max(0, Math.min(1, ratio));
 
   return (
@@ -65,21 +79,31 @@ const hs = StyleSheet.create({
   thumb: { position: 'absolute', top: 7, width: 14, height: 14, borderRadius: 7, backgroundColor: C.brand, shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 4, elevation: 3 },
 });
 
-// ---------- 垂直 EQ 滑杆（中点 0dB，向上下双向增益） ----------
+// ---------- 垂直 EQ 滑杆（中点 0dB，双向增益；拖动只预览，松手才提交） ----------
 function VSlider({ value, min, max, step, onChange, height = 150 }: {
   value: number; min: number; max: number; step: number; height?: number;
   onChange: (v: number) => void;
 }) {
   const [h, setH] = useState(height);
-  const latest = useRef({ min, max, step, onChange, h });
-  latest.current = { min, max, step, onChange, h };
+  const [drag, setDrag] = useState<number | null>(null);
+  const latest = useRef({ min, max, step, onChange, h, pending: null as number | null });
+  latest.current = { min, max, step, onChange, h, pending: latest.current.pending };
 
   const handle = (y: number) => {
-    const { min: mn, max: mx, step: st, onChange: cb, h: ht } = latest.current;
+    const { min: mn, max: mx, step: st, h: ht } = latest.current;
     if (!ht) return;
     const ratio = Math.max(0, Math.min(1, 1 - y / ht)); // 底=mn 顶=mx
     const raw = mn + ratio * (mx - mn);
-    cb(Math.round(raw / st) * st);
+    const v = Math.round(raw / st) * st;
+    latest.current.pending = v;
+    setDrag(v);
+  };
+
+  const release = () => {
+    const v = latest.current.pending;
+    latest.current.pending = null;
+    setDrag(null);
+    if (v != null) latest.current.onChange(v);
   };
 
   const pan = useMemo(() => PanResponder.create({
@@ -87,14 +111,17 @@ function VSlider({ value, min, max, step, onChange, height = 150 }: {
     onMoveShouldSetPanResponder: () => true,
     onPanResponderGrant: (e) => handle(e.nativeEvent.locationY),
     onPanResponderMove: (e) => handle(e.nativeEvent.locationY),
+    onPanResponderRelease: release,
+    onPanResponderTerminate: release,
   }), []);
 
-  const ratio = max > min ? (value - min) / (max - min) : 0.5;
+  const shown = drag ?? value;
+  const ratio = max > min ? (shown - min) / (max - min) : 0.5;
   const r = Math.max(0, Math.min(1, ratio));
   const thumbY = (h ? (1 - r) * h : 0) - 2; // thumb 高 4，中心对齐
   const center = h / 2;
-  // 从中点向 thumb 填充
-  const fillTop = value >= 0 ? thumbY + 4 : center;
+  // 从中点向 thumb 填充（拖动预览时按预览值填充）
+  const fillTop = shown >= 0 ? thumbY + 4 : center;
   const fillH = Math.max(2, Math.abs(center - (thumbY + 2)));
 
   return (
@@ -145,7 +172,6 @@ export function FxScreen() {
   const [managePreset, setManagePreset] = useState<string | null>(null);
 
   useEffect(() => subscribeFx(() => force(x => x + 1)), []);
-  useEffect(() => { fetchFxFromServer(); }, []);
 
   const { settings, customPresets, activePresetName } = fxSnapshot();
   const sync = fxSyncState();
@@ -163,10 +189,21 @@ export function FxScreen() {
           <Icon name="back" size={20} />
         </TouchableOpacity>
         <Text style={st.title}>均衡器与音效</Text>
-        <View style={st.syncBadge}>
+        {/* 点按徽标：手动从服务器拉取音效配置（不再自动覆盖本地） */}
+        <TouchableOpacity
+          style={st.syncBadge}
+          hitSlop={8}
+          activeOpacity={0.7}
+          onPress={() => {
+            fetchFxFromServer().then(() => {
+              const s = fxSyncState();
+              toast(s === 'synced' ? '已从服务器同步音效' : '未登录或服务器不可达，保持本地设置');
+            });
+          }}
+        >
           <View style={[st.syncDot, sync === 'synced' && st.syncDotOn]} />
           <Text style={st.syncText}>{sync === 'synced' ? '已同步' : sync === 'local' ? '本地' : '同步中'}</Text>
-        </View>
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={st.content} showsVerticalScrollIndicator={false}>
@@ -295,7 +332,7 @@ export function FxScreen() {
         </View>
 
         <Text style={st.syncCaption}>
-          {sync === 'synced' ? '已与服务器同步（Web 播放器共享）' : sync === 'local' ? '本地模式：未登录，设置仅保存在本机' : '同步中…'}
+          {sync === 'synced' ? '已与服务器同步（Web 播放器共享）· 点右上角徽标重新拉取' : sync === 'local' ? '本地模式：未登录，设置仅保存在本机 · 点右上角徽标从服务器拉取' : '同步中…'}
         </Text>
       </ScrollView>
 

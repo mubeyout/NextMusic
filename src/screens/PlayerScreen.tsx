@@ -15,6 +15,7 @@ import { library } from '../state/library';
 import { isFav, setFav } from '../state/favorites';
 import { CollectSheet } from '../components/CollectSheet';
 import { ActionSheet } from '../components/ActionSheet';
+import { DeviceSheet } from './RouteScreen';
 import { enqueueDownload, downloads as dlStore, downloadProgress, subscribeDownloads } from '../services/downloads';
 import { dialog, toast } from '../components/Dialog';
 
@@ -29,6 +30,7 @@ export function PlayerScreen() {
   const [faving, setFaving] = useState(false);
   const [collect, setCollect] = useState(false);
   const [more, setMore] = useState(false);
+  const [deviceSheet, setDeviceSheet] = useState(false); // 设备选择：悬浮层（不再全屏跳页）
   const [, forceDl] = useState(0);
   useEffect(() => subscribeDownloads(() => forceDl(n => n + 1)), []);
   const dlProg = current ? downloadProgress(current) : null;
@@ -99,6 +101,8 @@ export function PlayerScreen() {
 
   return (
     <View style={st.screen}>
+      {/* 内容层：设备选择悬浮时背景模糊作用于这一层（nativeID 原生侧 RenderEffect） */}
+      <View nativeID="playerContent" style={{ flex: 1 }}>
       {/* Header */}
       <View style={[st.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity style={st.hBtn} onPress={() => nav.goBack()} hitSlop={4}>
@@ -169,7 +173,7 @@ export function PlayerScreen() {
             <Icon name="sliders" size={20} color={C.text2} />
             <Text style={st.toolLabel}>音效</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={st.tool} onPress={() => nav.navigate('Route')}>
+          <TouchableOpacity style={st.tool} onPress={() => setDeviceSheet(true)}>
             <Icon name="devices" size={20} color={C.text2} />
             <Text style={st.toolLabel}>设备</Text>
           </TouchableOpacity>
@@ -234,6 +238,7 @@ export function PlayerScreen() {
           </TouchableOpacity>
         </View>
       </View>
+      </View>{/* /playerContent */}
 
       <CollectSheet song={current} visible={collect} onClose={() => setCollect(false)} />
       <ActionSheet
@@ -245,10 +250,12 @@ export function PlayerScreen() {
           { label: '收藏到歌单', onPress: openCollect },
           { label: '查看播放队列', onPress: () => nav.navigate('Queue') },
           { label: '均衡器与音效', onPress: () => nav.navigate('Fx') },
-          { label: '选择播放设备', onPress: () => nav.navigate('Route') },
+          { label: '选择播放设备', onPress: () => setDeviceSheet(true) },
           { label: '播放器设置', onPress: () => nav.navigate('PlayerSettings') },
         ]}
       />
+
+      <DeviceSheet visible={deviceSheet} onClose={() => setDeviceSheet(false)} />
     </View>
   );
 }

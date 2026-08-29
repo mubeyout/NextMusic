@@ -192,7 +192,8 @@ export function initFx() {
     } catch { /* 保持默认 */ }
   }
   applyNative();
-  fetchFxFromServer();
+  // 2026-09 需求：不再启动时自动拉服务器音效（会覆盖本地，出现“一来就很大”）；
+  // 同步改为 FX 页手动触发（徽标点按）。
 }
 
 // ---------- 管理操作（对齐 lxserver soundEffects manager API） ----------
