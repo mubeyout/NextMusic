@@ -414,7 +414,7 @@ class CastModule(reactContext: ReactApplicationContext) :
     fun getPosition(dev: ReadableMap, p: Promise) = exec.execute {
         try {
             val f = mediaCmd(dev, "GET_STATUS")
-            val resp = f?.get(timeoutSec, TimeUnit.SECONDS) ?: throw RuntimeException("cast: status timeout")
+            val resp = f?.get(8, TimeUnit.SECONDS) ?: throw RuntimeException("cast: status timeout")
             val st = resp.optJSONArray("status")
             val m = st?.optJSONObject(0)
             val map = Arguments.createMap()
@@ -439,7 +439,7 @@ class CastModule(reactContext: ReactApplicationContext) :
             val cmd = JSONObject().put("type", "SET_VOLUME").put("volume", JSONObject().put("level", level))
             val f = nextReq(s, cmd, true)
             sendMsg(s, NS_RECEIVER, "receiver-0", cmd)
-            try { f.get(4, TimeUnit.SECONDS) } catch (_: Throwable) {}
+            try { f?.get(4, TimeUnit.SECONDS) } catch (_: Throwable) {}
             s.volume = level
             p.resolve(true)
         } catch (t: Throwable) { p.reject("E_VOL", t) }
