@@ -27,6 +27,21 @@ export function BootScreen() {
         <View style={st.card}>
           <View style={st.cardTop}>
             <View style={st.cardDot} />
+            <Text style={st.cardTitle}>接入私有音乐库</Text>
+          </View>
+          <Text style={st.cardDesc}>Emby / Jellyfin / Navidrome / 道理鱼 / WebDAV：把 NAS 上的音乐库接入 App 浏览播放。进入后在 设置 → 媒体库 添加。</Text>
+          <TouchableOpacity
+            style={st.btnGhost}
+            hitSlop={{ top: 8, bottom: 8, left: 12, right: 12 }}
+            onPress={() => nav.navigate('MediaLibs' as never)}
+          >
+            <Text style={st.btnGhostText}>去添加媒体库</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={st.card}>
+          <View style={st.cardTop}>
+            <View style={st.cardDot} />
             <Text style={st.cardTitle}>本地使用</Text>
           </View>
           <Text style={st.cardDesc}>浏览、搜索、榜单直连平台。添加自定义音源后即可播放；收藏、歌单和配置保存在本机。</Text>
@@ -51,7 +66,7 @@ export function BootScreen() {
 
         <View style={st.hint}>
           <Text style={st.hintTitle}>之后可随时切换</Text>
-          <Text style={st.hintBody}>设置 → 使用方式与账号，可连接服务器、登录同步或回到本地模式。</Text>
+          <Text style={st.hintBody}>设置 → 使用方式与账号，可连接服务器、登录同步或回到本地模式；设置 → 媒体库，可接入或管理私有音乐库。</Text>
         </View>
       </ScrollView>
     </View>

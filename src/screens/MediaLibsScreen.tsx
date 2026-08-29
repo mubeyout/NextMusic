@@ -308,7 +308,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
         /* ---------- 四段曲库浏览 ---------- */
         <>
           <PillTabs tabs={['专辑', '艺术家', '歌曲', '歌单']} active={seg} onChange={(i) => setSeg(i as Seg)} />
-          <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: (current ? 116 : 32) }}>
+          <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: (current ? 116 : 32), gap: 8 }}>
             {seg === 0 && (
               <SegBody state={albums} onRetry={() => { setAlbums({ data: null, err: null, busy: false }); if (acct) loadAlbums(acct); }}>
                 {albums.data && albums.data.length === 0 ? <EmptyState icon="music" title="服务器上没有专辑" sub="先在媒体服务器里添加音乐库" /> : null}

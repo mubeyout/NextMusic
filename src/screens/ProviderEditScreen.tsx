@@ -11,13 +11,12 @@ import { providers, providerApi, PROVIDER_META, providerIdentityId, type Provide
 import { library } from '../state/library';
 import { dialog, toast } from '../components/Dialog';
 
-// 类型卡数据（对齐 Figma NM-REMOTE-SELECT-001 五张卡 + 推荐）
+// 类型卡数据（对齐 Figma NM-REMOTE-SELECT-001）；注：核心后台 LX Server 属于「使用方式与账号」的连接服务器流程，不是第三方媒体库，不在此列
 const TYPE_CARDS: { type: ProviderType; title: string; badge?: string; sub: string }[] = [
   { type: 'navidrome', title: 'Navidrome / Subsonic', badge: '推荐', sub: '优先走 Subsonic 1.16.1 / OpenSubsonic 兼容协议' },
   { type: 'emby', title: 'Emby / Jellyfin', sub: '用户登录、音乐库选择、直放或服务端转码' },
   { type: 'daoliyu', title: '道理鱼音乐', sub: '专有适配；可用时优先协商兼容协议' },
   { type: 'webdav', title: 'WebDAV 音乐目录', sub: '直接读取远程文件；本地建立只读元数据索引' },
-  { type: 'subsonic', title: 'LX Server', sub: '同步、公开曲库、自定义源代理与多设备账号' },
 ];
 
 // 连接页说明 / 输入 hint（对齐 Figma NM-REMOTE-SUBSONIC-001）

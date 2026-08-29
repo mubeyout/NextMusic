@@ -77,9 +77,10 @@ export const sync = {
   async fetchLists(): Promise<UserListsSnapshot | null> {
     try {
       const d = (await req('/api/user/list', { timeout: 10000 })) as UserListsSnapshot;
+      console.log('[sync] user/list resp type:', typeof d, '| defaultList:', Array.isArray((d as any)?.defaultList) ? (d as any).defaultList.length : String((d as any)?.defaultList).slice(0, 40));
       if (!d || !Array.isArray(d.defaultList)) return null;
       return { defaultList: d.defaultList, loveList: d.loveList || [], userList: d.userList || [] };
-    } catch { return null; }
+    } catch (e) { console.log('[sync] fetchLists err:', (e as Error).message); return null; }
   },
   async pushLists(snap: UserListsSnapshot): Promise<boolean> {
     try {

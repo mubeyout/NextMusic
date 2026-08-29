@@ -110,6 +110,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const queueRef = useRef<QueueTrack[]>([]);
   const idxRef = useRef(0);
   queueRef.current = queue;
+  // 转码重试标记（同一首只降级一次，防止错误循环）；换歌时在 STATE_CHANGED PLAYING 里不清、TRACK_ENDED 推进即可覆盖
+  const tcRetryUidRef = useRef<string | null>(null);
 
   const resolveAndPlay = useCallback(async (t: QueueTrack) => {
     // 媒体库歌丬断链时的定向引导（不再误导去登录/设音源）
@@ -171,6 +173,12 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       const token = tokenRef.current;
+      // 同步歌单里的无 id 脏数据（服务器侧元数据缺失）：songmid 为空时取链必败——直接按歌名在线兜底，不发垃圾请求
+      if (!String(t.songmid ?? '').trim() && !isProviderSource(t)) {
+        toast('该歌曲缺少 ID，自动在线匹配同名歌曲…');
+        await playOnlineFallback(t);
+        return;
+      }
       // 播放门槛：登录服务器 或 已启用自定义音源（对齐 lx-music：浏览免费，播放需其一）
       if (!token && activeSources().length === 0) {
         setPlaying(false);
@@ -200,16 +208,29 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       setPlaying(false);
       // 媒体库歌丬的失败统一走定向引导，不再误导去登录/设音源
       if (isProviderSource(t)) { providerUnavailable(t); return; }
-      // 取链失败：提示登录或设置音源（产品语义：只有播放才需要这些）
-      dialog.alert(
-        '暂时无法播放',
-        '该歌曲取链失败，可能需要登录或更换音源。',
-        [
-          { text: '去登录', onPress: () => navRef.current?.navigate('AuthLogin' as never) },
-          { text: '设置音源', onPress: () => navRef.current?.navigate('Sources' as never) },
-          { text: '取消', style: 'cancel' },
-        ],
-      );
+      // 取链失败：已登录 → 问题在服务器侧音源；未登录 → 引导登录/设源（产品语义：只有播放才需要这些）
+      // 注意：用 tokenRef.current——catch 里闭包捕获的是 useCallback([]) 创建时的组件 token（陈旧值，首渲染为 null）
+      if (tokenRef.current) {
+        dialog.alert(
+          '暂时无法播放',
+          '服务器取链失败。可在服务器端绑定可用音源，或在 App 内添加自定义音源后重试。',
+          [
+            { text: '重试', onPress: () => { resolveAndPlay(t).catch(() => setPlaying(false)); } },
+            { text: '设置音源', onPress: () => navRef.current?.navigate('Sources' as never) },
+            { text: '取消', style: 'cancel' },
+          ],
+        );
+      } else {
+        dialog.alert(
+          '暂时无法播放',
+          '该歌曲取链失败，可能需要登录或更换音源。',
+          [
+            { text: '去登录', onPress: () => navRef.current?.navigate('AuthLogin' as never) },
+            { text: '设置音源', onPress: () => navRef.current?.navigate('Sources' as never) },
+            { text: '取消', style: 'cancel' },
+          ],
+        );
+      }
     }
   }, []);
 
@@ -230,6 +251,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const idx = Math.max(0, items.findIndex(t => t.songmid === song.songmid && t.source === song.source));
     queueRef.current = items;
     idxRef.current = idx;
+    tcRetryUidRef.current = null; // 主动点播重置转码降级标记
     setQueue(items);
     pushRecent(song);
     await resolveAndPlay(items[idx]);
@@ -261,13 +283,26 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         case AudioProEventType.REMOTE_PREV:
           goTo(idxRef.current - 1);
           break;
-        case AudioProEventType.PLAYBACK_ERROR:
+        case AudioProEventType.PLAYBACK_ERROR: {
           setPlaying(false);
+          const t = queueRef.current[idxRef.current];
+          // 媒体库歌：直流失败自动降级转码流重试一次（外网/弱网下无损直流常握不住，服务端转 mp3 更稳）
+          if (t && isProviderSource(t) && tcRetryUidRef.current !== t.uid) {
+            const tc = providerApi.transcodeFor(t);
+            if (tc?.url) {
+              tcRetryUidRef.current = t.uid;
+              toast('直播流失败，切换转码流重试…');
+              const opts = tc.headers ? { headers: { audio: tc.headers, artwork: tc.headers } } : undefined;
+              AudioPro.play(trackToAudioPro(t, tc.url, tc.headers), opts);
+              break;
+            }
+          }
           // 解析成功但播放失败：按源区分原因，不让用户猜
-          toast(isProviderSource(queueRef.current[idxRef.current])
+          toast(isProviderSource(t)
             ? '播放失败：媒体库可能已断开或网络不可达'
             : '播放失败：音源链接不可用，可重试或更换音源');
           break;
+        }
       }
     });
     return () => sub.remove();

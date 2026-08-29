@@ -200,7 +200,7 @@ const st = StyleSheet.create({
   actionRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
   action: { flex: 1, minHeight: 56, borderRadius: 12, backgroundColor: '#1A1A1A', alignItems: 'center', justifyContent: 'center', gap: 6 },
   actionText: { color: C.text2, fontSize: 11, fontWeight: '500' },
-  songList: { marginTop: 14 },
+  songList: { marginTop: 14, gap: 8 },
   prog: { color: C.brand, fontSize: 11, width: 38, textAlign: 'right' },
   albumGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 18 },
   albumCell: { width: '31%', gap: 4 },

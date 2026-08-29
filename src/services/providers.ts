@@ -486,6 +486,28 @@ export const providerApi = {
     return null;
   },
 
+  /** 转码流（直流失败/弱网回退）：Emby/JF 服务端转 mp3；Subsonic 限码率；WebDAV 无（返回 null） */
+  transcodeFor(song: SongItem): { url: string; headers?: Record<string, string> } | null {
+    const src = song.source;
+    const mid = String(song.songmid ?? '');
+    if (src === 'webdav') return null;
+    const [pid, itemId] = mid.split(':');
+    let a = providers.get(pid);
+    if (!a && PROTOCOL[src as ProviderType]) {
+      const proto = PROTOCOL[src as ProviderType];
+      const cands = readAll().filter(p => PROTOCOL[p.type] === proto);
+      if (cands.length === 1) a = cands[0];
+    }
+    if (!a || !itemId) return null;
+    const proto = PROTOCOL[a.type];
+    if (proto === 'subsonic') return { url: subUrl(a, 'stream', { id: itemId, maxBitRate: '320' }) };
+    if (proto === 'emby' || proto === 'jellyfin') {
+      // 服务端转码 mp3：外网/弱网下比无损直流可靠得多
+      return { url: `${embyRoot(a)}/Audio/${itemId}/stream.mp3?audioBitRate=320`, headers: embyHeaders(a) };
+    }
+    return null;
+  },
+
   /** 播放回写（fire-and-forget）：Subsonic scrobble / Emby·JF PlayedItems，让服务器侧有播放统计 */
   async scrobble(a: ProviderAcct, itemId: string): Promise<void> {
     try {
