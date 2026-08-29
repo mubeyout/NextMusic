@@ -54,6 +54,27 @@ patch(
   ].join('\n'),
 );
 
+// 1c) [NextMusic-FX:route] 音频输出路由：buildAudioSink 产出的 sink 登记到 AudioRouteEngine，
+// 供应用内切设备（DefaultAudioSink.setPreferredDevice）使用；偏好在新 sink 上自动重放。
+patch(
+  'AudioProPlaybackService.kt',
+  '[NextMusic-FX:route]',
+  '\t\t\t\t\treturn androidx.media3.exoplayer.audio.DefaultAudioSink.Builder(context)\n\t\t\t\t\t\t.setEnableFloatOutput(enableFloatOutput)\n\t\t\t\t\t\t.setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)\n\t\t\t\t\t\t.setAudioProcessors(arrayOf(fxProcessor))\n\t\t\t\t\t\t.build()\n',
+  [
+    '\t\t\t\t\tval nmSink = androidx.media3.exoplayer.audio.DefaultAudioSink.Builder(context)',
+    '\t\t\t\t\t\t.setEnableFloatOutput(enableFloatOutput)',
+    '\t\t\t\t\t\t.setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)',
+    '\t\t\t\t\t\t.setAudioProcessors(arrayOf(fxProcessor))',
+    '\t\t\t\t\t\t.build()',
+    '\t\t\t\t\t// [NextMusic-FX:route] 反射登记 sink（避免 lib→app 编译依赖）；换 sink 时重放设备偏好',
+    '\t\t\t\t\ttry {',
+    '\t\t\t\t\t\tClass.forName("com.mubeyworks.nextmusic.AudioRouteEngine")',
+    '\t\t\t\t\t\t\t.getMethod("attachSink", Object::class.java).invoke(null, nmSink)',
+    '\t\t\t\t\t} catch (_: Throwable) { }',
+    '\t\t\t\t\treturn nmSink\n',
+  ].join('\n'),
+);
+
 // 1b) 媒体库转码流超时调大：Emby 服务端转码冷启动（rclone 随机读 ape 尾 + ValidateEncoderOutput）可 >8s，
 // 默认 8s read timeout 会反复断开重试。connect 15s / read 30s。
 patch(

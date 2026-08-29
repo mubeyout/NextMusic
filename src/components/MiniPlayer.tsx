@@ -10,7 +10,7 @@ import { isFav } from '../state/favorites';
 
 // Figma Player/Mini: 350x72 r=8, art 52x52 r=6, meta center-left, right icons
 export function MiniPlayer() {
-  const { current, playing, position, duration, toggle } = usePlayer();
+  const { current, playing, position, duration, toggle, cast } = usePlayer();
   const nav = useNavigation() as { navigate: (s: string) => void };
   const [collect, setCollect] = useState(false);
   if (!current) return null;
@@ -28,7 +28,7 @@ export function MiniPlayer() {
             <Text style={st.sub} numberOfLines={1}>{current.singer}{current._types?.flac ? ' · 无损' : ''}</Text>
           </View>
           <TouchableOpacity style={st.iconBtn} hitSlop={6} onPress={() => nav.navigate('Route')}>
-            <Icon name="devices" size={20} color={C.text} />
+            <Icon name="devices" size={20} color={cast ? C.brand : C.text} />
           </TouchableOpacity>
           <TouchableOpacity style={st.iconBtn} hitSlop={6} onPress={() => setCollect(true)}>
             <Icon name="heart" size={20} active={faved} color={faved ? '#FF5A76' : C.text} />

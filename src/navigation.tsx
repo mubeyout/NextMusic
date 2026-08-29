@@ -36,6 +36,7 @@ import { DownloadsScreen } from './screens/DownloadsScreen';
 import { BoardsSquareScreen } from './screens/BoardsSquareScreen';
 import { DeviceMusicScreen } from './screens/DeviceMusicScreen';
 import { SearchScreen } from './screens/SearchScreen';
+import { RoutePage } from './screens/RouteScreen';
 
 const navTheme = {
   ...DefaultTheme,
@@ -105,6 +106,7 @@ export function RootNavigator() {
         <Stack.Screen name="Comments" component={CommentsScreen} />
         <Stack.Screen name="PlaylistDetail" component={PlaylistDetailScreen} />
         <Stack.Screen name="Search" component={SearchScreen} options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="Route" component={RoutePage} options={{ animation: 'none', presentation: 'transparentModal' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="Sources" component={SourcesScreen} />
         <Stack.Screen name="Account" component={AccountScreen} />

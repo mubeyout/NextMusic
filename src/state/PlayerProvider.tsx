@@ -14,6 +14,7 @@ import { useApp } from './AppState';
 import { pushRecent } from './recent';
 import { navRef } from '../navRef';
 import { dialog, toast } from '../components/Dialog';
+import { dlna, type DlnaDevice } from '../services/audioroute';
 
 const modeKv = createMMKV({ id: 'nextmusic-playmode' });
 const playbackKv = createMMKV({ id: 'nextmusic-playback' }); // 恢复上次播放状态快照
@@ -38,6 +39,10 @@ interface PlayerCtx {
   skipPrev: () => Promise<void>;
   seekTo: (sec: number) => Promise<void>;
   clearQueue: () => void;
+  /** 正在投屏的 DLNA 渲染器（null = 本机播放） */
+  cast: DlnaDevice | null;
+  startCast: (dev: DlnaDevice) => void;
+  stopCast: () => void;
 }
 
 const Ctx = createContext<PlayerCtx>(null as unknown as PlayerCtx);
@@ -114,6 +119,31 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   // 转码重试标记（同一首只降级一次，防止错误循环）；换歌时在 STATE_CHANGED PLAYING 里不清、TRACK_ENDED 推进即可覆盖
   const tcRetryUidRef = useRef<string | null>(null);
 
+  // DLNA 投屏状态：castRef 供事件闭包读到最新值；投屏中本机 ExoPlayer 暂停挂起，恢复时续播
+  const [cast, setCast] = useState<DlnaDevice | null>(null);
+  const castRef = useRef<DlnaDevice | null>(null);
+  /** 统一播放入口：投屏中且是可投屏的 http(s) 流 → 推给渲染器；否则本机播放 */
+  const playOrCast = useCallback((t: QueueTrack, url: string, opts?: { headers: { audio: Record<string, string>; artwork?: Record<string, string> } }) => {
+    const cd = castRef.current;
+    if (cd && /^https?:\/\//i.test(url)) {
+      AudioPro.pause();
+      setPosition(0);
+      dlna.cast(cd, url, t.name, t.singer || '')
+        .then(() => setPlaying(true))
+        .catch(() => {
+          toast('投屏失败，已回到本机播放');
+          castRef.current = null;
+          setCast(null);
+          AudioPro.play(trackToAudioPro(t, url), opts);
+        });
+      return;
+    }
+    if (cd && !/^https?:\/\//i.test(url)) {
+      toast('本地文件不支持投屏，已在本机播放');
+    }
+    AudioPro.play(trackToAudioPro(t, url), opts);
+  }, []);
+
   const resolveAndPlay = useCallback(async (t: QueueTrack) => {
     // 媒体库歌丬断链时的定向引导（不再误导去登录/设音源）
     const providerUnavailable = (song: QueueTrack) => {
@@ -150,14 +180,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       // ① 设备本地文件：直接播（file:// 路径或 content:// uri）
       if (t.source === 'device') {
         const url = t.songmid.startsWith('content://') ? t.songmid : 'file://' + t.songmid;
-        AudioPro.play(trackToAudioPro(t, url));
+        playOrCast(t, url);
         setCurrent(t);
         return;
       }
       // ② 已下载：离线播放本地文件（媒体库歌离线播也回写服务器统计——听过了就算数）
       const dlPath = dlStore.pathFor(t);
       if (dlPath) {
-        AudioPro.play(trackToAudioPro(t, dlPath));
+        playOrCast(t, dlPath);
         setCurrent(t);
         if (isProviderSource(t)) scrobbleProvider(t);
         return;
@@ -168,7 +198,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         if (!p?.url) { providerUnavailable(t); return; }
         // audio-pro 原生层期待 headers: { audio, artwork } 嵌套结构（Controller.extractHeaders）
         const opts = p.headers ? { headers: { audio: p.headers, artwork: p.headers } } : undefined;
-        AudioPro.play(trackToAudioPro(t, p.url, p.headers), opts);
+        playOrCast(t, p.url, opts);
         setCurrent(t);
         scrobbleProvider(t); // 播放统计回写服务器（fire-and-forget）
         return;
@@ -203,7 +233,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         try { url = (await api.musicUrl(t, quality)).url || null; } catch { url = null; }
       }
       if (!url) throw new Error('no url');
-      AudioPro.play(trackToAudioPro(t, url));
+      playOrCast(t, url);
       setCurrent(t);
     } catch (e) {
       setPlaying(false);
@@ -294,7 +324,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
               tcRetryUidRef.current = t.uid;
               toast('直播流失败，切换转码流重试…');
               const opts = tc.headers ? { headers: { audio: tc.headers, artwork: tc.headers } } : undefined;
-              AudioPro.play(trackToAudioPro(t, tc.url, tc.headers), opts);
+              playOrCast(t, tc.url, opts);
               break;
             }
           }
@@ -322,6 +352,16 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const toggle = useCallback(async () => {
+    // 投屏中：控制 DLNA 渲染器
+    if (castRef.current) {
+      const cd = castRef.current;
+      try {
+        const p = await dlna.getPosition(cd);
+        if (p.state === 'PLAYING') { await dlna.pause(cd); setPlaying(false); }
+        else { await dlna.play(cd); setPlaying(true); }
+      } catch { toast('投屏设备无响应'); }
+      return;
+    }
     const st = AudioPro.getState();
     if (st === AudioProState.PLAYING) AudioPro.pause();
     else if (st === AudioProState.PAUSED) AudioPro.resume();
@@ -337,7 +377,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if (position > 3) { AudioPro.seekTo(0); setPosition(0); return; }
     goTo(idxRef.current - 1);
   }, [goTo, position]);
-  const seekTo = useCallback(async (sec: number) => { AudioPro.seekTo(Math.round(sec * 1000)); }, []);
+  const seekTo = useCallback(async (sec: number) => {
+    if (castRef.current) {
+      setPosition(sec);
+      dlna.seek(castRef.current, sec).catch(() => toast('投屏设备不支持进度调整'));
+      return;
+    }
+    AudioPro.seekTo(Math.round(sec * 1000));
+  }, []);
 
   const clearQueue = useCallback(() => {
     queueRef.current = [];
@@ -374,8 +421,59 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     } catch { /* 坏快照忽略 */ }
   }, []);
 
+  // —— DLNA 投屏控制 ——
+  const startCast = useCallback((dev: DlnaDevice) => {
+    castRef.current = dev;
+    setCast(dev);
+    const t = queueRef.current[idxRef.current];
+    if (t) {
+      AudioPro.pause();
+      resolveAndPlay(t).catch(() => setPlaying(false));
+    }
+  }, [resolveAndPlay]);
+
+  const stopCast = useCallback(() => {
+    const cd = castRef.current;
+    castRef.current = null;
+    setCast(null);
+    if (cd) dlna.stop(cd).catch(() => {});
+    // 本机续播：从投屏进度回接（本地轨还在 ExoPlayer 里挂着）
+    if (queueRef.current.length && AudioPro.getState() === AudioProState.PAUSED) {
+      AudioPro.seekTo(Math.round(position * 1000));
+      AudioPro.resume();
+    }
+  }, [position]);
+
+  // 投屏轮询：同步进度/播放态；播完自动推进队列（与 TRACK_ENDED 同口径）
+  useEffect(() => {
+    if (!cast) return;
+    let alive = true;
+    const iv = setInterval(async () => {
+      if (!alive || !castRef.current) return;
+      try {
+        const p = await dlna.getPosition(castRef.current);
+        if (!castRef.current || !alive) return;
+        setPosition(p.pos);
+        if (p.dur > 0) setDuration(p.dur);
+        setPlaying(p.state === 'PLAYING');
+        if (p.dur > 0 && p.state === 'STOPPED' && p.pos >= p.dur - 3) {
+          if (repeatRef.current === 'one') {
+            dlna.seek(castRef.current, 0).then(() => dlna.play(castRef.current!)).catch(() => {});
+          } else if (shuffleRef.current) {
+            goTo(Math.floor(Math.random() * Math.max(1, queueRef.current.length)));
+          } else if (repeatRef.current === 'all' || idxRef.current < queueRef.current.length - 1) {
+            goTo(idxRef.current + 1);
+          } else {
+            setPlaying(false);
+          }
+        }
+      } catch { /* 单次轮询失败静默，下轮重试 */ }
+    }, 1500);
+    return () => { alive = false; clearInterval(iv); };
+  }, [cast, goTo]);
+
   return (
-    <Ctx.Provider value={{ queue, current, playing, position, duration, shuffle, repeat, setShuffle, cycleRepeat, playSong, toggle, skipNext, skipPrev, seekTo, clearQueue }}>
+    <Ctx.Provider value={{ queue, current, playing, position, duration, shuffle, repeat, setShuffle, cycleRepeat, playSong, toggle, skipNext, skipPrev, seekTo, clearQueue, cast, startCast, stopCast }}>
       {children}
     </Ctx.Provider>
   );
