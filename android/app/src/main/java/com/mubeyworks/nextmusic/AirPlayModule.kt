@@ -121,6 +121,7 @@ class AirPlayModule(reactContext: ReactApplicationContext) :
         var out: BufferedOutputStream? = null
         var input: BufferedInputStream? = null
         var cseq = 0
+        private val rtspLock = Any() // 请求/应答串行化：避免 setVolume 与 feedback 线程交叉读写
 
         // 对端端口（SETUP 应答解析）
         var serverPort = 0
@@ -164,7 +165,7 @@ class AirPlayModule(reactContext: ReactApplicationContext) :
         private fun localIp(): String = sock?.localAddress?.hostAddress ?: "0.0.0.0"
         private val uri get() = "rtsp://${localIp()}/$sessionId"
 
-        fun rtsp(method: String, extraHeaders: Map<String, String> = emptyMap(), body: ByteArray? = null, contentType: String? = null, path: String? = null): Triple<Int, Map<String, String>, String> {
+        fun rtsp(method: String, extraHeaders: Map<String, String> = emptyMap(), body: ByteArray? = null, contentType: String? = null, path: String? = null): Triple<Int, Map<String, String>, String> = synchronized(rtspLock) {
             val o = out ?: throw RuntimeException("rtsp: closed")
             val b = ByteArrayOutputStream()
             fun w(s: String) = b.write(s.toByteArray(Charsets.ISO_8859_1))
@@ -208,7 +209,7 @@ class AirPlayModule(reactContext: ReactApplicationContext) :
                     }
                     String(bb, 0, got, Charsets.ISO_8859_1)
                 } else ""
-                return Triple(status, headers, respBody)
+                Triple(status, headers, respBody)
             }
         }
 
