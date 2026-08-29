@@ -41,6 +41,9 @@ export type DlnaDevice = {
 
 export type DlnaPosition = { pos: number; dur: number; state: string };
 
+export type CastDevice = { uuid: string; name: string; host: string; port: number };
+export type AirPlayDevice = { uuid: string; name: string; host: string; port: number };
+
 // ---------- 本机设备 / 音量 ----------
 
 export const audioRoute = {
@@ -88,4 +91,95 @@ export const dlna = {
     D ? D.getPosition(dev) : Promise.reject(new Error('no DLNA')),
   getVolume: (dev: DlnaDevice): Promise<number> => (D ? D.getVolume(dev) : Promise.resolve(50)),
   setVolume: (dev: DlnaDevice, vol: number) => (D ? D.setVolume(dev, vol) : Promise.resolve(false)),
+};
+
+// ---------- Google Cast（Chromecast built-in）----------
+
+const G = NativeModules.NMCast as {
+  startDiscovery(): void;
+  stopDiscovery(): void;
+  cast(dev: CastDevice, url: string, title: string, artist: string, contentType: string): Promise<boolean>;
+  play(dev: CastDevice): Promise<boolean>;
+  pause(dev: CastDevice): Promise<boolean>;
+  stop(dev: CastDevice): Promise<boolean>;
+  seek(dev: CastDevice, sec: number): Promise<boolean>;
+  getPosition(dev: CastDevice): Promise<{ pos: number; dur: number; state: string }>;
+  getVolume(dev: CastDevice): Promise<number>;
+  setVolume(dev: CastDevice, pct: number): Promise<boolean>;
+} | undefined;
+
+/** Cast 内容类型：从 URL 扩展名推断（Chromecast 按声明选解码器） */
+export function castMimeOf(url: string): string {
+  const m = /\.(mp3|m4a|aac|flac|wav|ogg|opus|mka|ts)(?:[?#]|$)/i.exec(url);
+  if (!m) return 'audio/mpeg';
+  switch (m[1].toLowerCase()) {
+    case 'm4a': return 'audio/mp4';
+    case 'aac': return 'audio/aac';
+    case 'flac': return 'audio/flac';
+    case 'wav': return 'audio/wav';
+    case 'ogg': return 'audio/ogg';
+    case 'opus': return 'audio/opus';
+    default: return 'audio/mpeg';
+  }
+}
+
+export const googleCast = {
+  available: !!G,
+  startScan: () => G?.startDiscovery(),
+  stopScan: () => G?.stopDiscovery(),
+  onFound(cb: (dev: CastDevice) => void): EmitterSubscription | undefined {
+    if (!G) return;
+    return new NativeEventEmitter(NativeModules.NMCast).addListener('cast.found', (e: any) => cb(e as CastDevice));
+  },
+  onScanEnd(cb: () => void): EmitterSubscription | undefined {
+    if (!G) return;
+    return new NativeEventEmitter(NativeModules.NMCast).addListener('cast.scanEnd', () => cb());
+  },
+  onLost(cb: () => void): EmitterSubscription | undefined {
+    if (!G) return;
+    return new NativeEventEmitter(NativeModules.NMCast).addListener('cast.lost', () => cb());
+  },
+  cast: (dev: CastDevice, url: string, title: string, artist: string): Promise<boolean> =>
+    G ? G.cast(dev, url, title, artist, castMimeOf(url)) : Promise.reject(new Error('no Cast')),
+  play: (dev: CastDevice) => (G ? G.play(dev) : Promise.resolve(false)),
+  pause: (dev: CastDevice) => (G ? G.pause(dev) : Promise.resolve(false)),
+  stop: (dev: CastDevice) => (G ? G.stop(dev) : Promise.resolve(false)),
+  seek: (dev: CastDevice, sec: number) => (G ? G.seek(dev, sec) : Promise.resolve(false)),
+  getPosition: (dev: CastDevice): Promise<DlnaPosition> =>
+    G ? G.getPosition(dev) : Promise.reject(new Error('no Cast')),
+  getVolume: (dev: CastDevice): Promise<number> => (G ? G.getVolume(dev) : Promise.resolve(50)),
+  setVolume: (dev: CastDevice, vol: number) => (G ? G.setVolume(dev, vol) : Promise.resolve(false)),
+};
+
+// ---------- AirPlay（RAOP 音频推流）----------
+
+const A = NativeModules.NMAirPlay as {
+  startDiscovery(): void;
+  stopDiscovery(): void;
+  start(dev: AirPlayDevice): Promise<boolean>;
+  stop(): Promise<boolean>;
+  setVolume(pct: number): Promise<boolean>;
+  getVolume(): Promise<number>;
+} | undefined;
+
+export const airplay = {
+  available: !!A,
+  startScan: () => A?.startDiscovery(),
+  stopScan: () => A?.stopDiscovery(),
+  onFound(cb: (dev: AirPlayDevice) => void): EmitterSubscription | undefined {
+    if (!A) return;
+    return new NativeEventEmitter(NativeModules.NMAirPlay).addListener('airplay.found', (e: any) => cb(e as AirPlayDevice));
+  },
+  onScanEnd(cb: () => void): EmitterSubscription | undefined {
+    if (!A) return;
+    return new NativeEventEmitter(NativeModules.NMAirPlay).addListener('airplay.scanEnd', () => cb());
+  },
+  onLost(cb: () => void): EmitterSubscription | undefined {
+    if (!A) return;
+    return new NativeEventEmitter(NativeModules.NMAirPlay).addListener('airplay.lost', () => cb());
+  },
+  start: (dev: AirPlayDevice): Promise<boolean> => (A ? A.start(dev) : Promise.reject(new Error('no AirPlay'))),
+  stop: (): Promise<boolean> => (A ? A.stop() : Promise.resolve(false)),
+  setVolume: (pct: number): Promise<boolean> => (A ? A.setVolume(pct) : Promise.resolve(false)),
+  getVolume: (): Promise<number> => (A ? A.getVolume() : Promise.resolve(50)),
 };

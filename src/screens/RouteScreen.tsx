@@ -6,7 +6,7 @@ import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { toast } from '../components/Dialog';
 import { usePlayer } from '../state/PlayerProvider';
-import { audioRoute, dlna, type LocalDevice, type DlnaDevice } from '../services/audioroute';
+import { audioRoute, dlna, googleCast, airplay, type LocalDevice, type DlnaDevice, type CastDevice, type AirPlayDevice } from '../services/audioroute';
 const NMBlur = NativeModules.NMBlur as { setBlur: (nativeId: string, enabled: boolean) => void } | undefined;
 
 /**
@@ -61,9 +61,12 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
   const [devices, setDevices] = useState<LocalDevice[]>([]);
   const [preferred, setPreferred] = useState(-1);
   const [sysVol, setSysVol] = useState(50);
-  const [dlnaVol, setDlnaVol] = useState(50);
+  const [castVol, setCastVol] = useState(50);
   const [renderers, setRenderers] = useState<DlnaDevice[]>([]);
+  const [castDevs, setCastDevs] = useState<CastDevice[]>([]);
+  const [airDevs, setAirDevs] = useState<AirPlayDevice[]>([]);
   const [scanning, setScanning] = useState(false);
+  const [airScanning, setAirScanning] = useState(false);
 
   const a = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -95,20 +98,31 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
     return () => { sub1?.remove(); sub2?.remove(); };
   }, [visible]);
 
-  // DLNA 扫描（打开时启动一次；结束停转圈，列表保留）
+  // 投屏扫描（DLNA + Chromecast + AirPlay 打开时并行；列表保留到关闭）
   useEffect(() => {
-    if (!visible || !dlna.available) return;
-    setRenderers([]);
-    setScanning(true);
+    if (!visible) return;
+    setRenderers([]); setCastDevs([]); setAirDevs([]);
+    setScanning(true); setAirScanning(true);
     dlna.startScan();
-    const f = dlna.onFound(dev => setRenderers(list => (list.some(x => x.uuid === dev.uuid) ? list : [...list, dev])));
-    const e = dlna.onScanEnd(() => setScanning(false));
-    return () => { f?.remove(); e?.remove(); dlna.stopScan(); };
+    googleCast.startScan();
+    airplay.startScan();
+    const subs = [
+      dlna.onFound(dev => setRenderers(list => (list.some(x => x.uuid === dev.uuid) ? list : [...list, dev]))),
+      dlna.onScanEnd(() => setScanning(false)),
+      googleCast.onFound(dev => setCastDevs(list => (list.some(x => x.uuid === dev.uuid) ? list : [...list, dev]))),
+      googleCast.onScanEnd(() => setScanning(false)),
+      airplay.onFound(dev => setAirDevs(list => (list.some(x => x.uuid === dev.uuid) ? list : [...list, dev]))),
+      airplay.onScanEnd(() => setAirScanning(false)),
+    ];
+    return () => { subs.forEach(s => s?.remove()); dlna.stopScan(); googleCast.stopScan(); airplay.stopScan(); };
   }, [visible]);
 
-  // 投屏中：拉取渲染器当前音量作为初始值
+  // 投屏中：拉取设备当前音量作为初始值
   useEffect(() => {
-    if (visible && cast) dlna.getVolume(cast).then(setDlnaVol).catch(() => {});
+    if (!visible || !cast) return;
+    const api = cast.kind === 'airplay' ? airplay : cast.kind === 'cast' ? googleCast : dlna;
+    (cast.kind === 'airplay' ? (api as typeof airplay).getVolume() : (api as typeof dlna).getVolume(cast.dev as never))
+      .then(setCastVol).catch(() => {});
   }, [visible, cast]);
 
   if (!visible) return null;
@@ -122,15 +136,18 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
   };
 
   const setVolCommit = (v: number) => {
-    if (cast) { setDlnaVol(v); dlna.setVolume(cast, v).catch(() => toast('渲染器不支持音量控制')); }
-    else { setSysVol(v); audioRoute.setVolume(v).catch(() => {}); }
+    if (cast) {
+      setCastVol(v);
+      if (cast.kind === 'airplay') airplay.setVolume(v).catch(() => toast('AirPlay 设备不支持音量控制'));
+      else (cast.kind === 'cast' ? googleCast : dlna).setVolume(cast.dev as never, v).catch(() => toast('设备不支持音量控制'));
+    } else { setSysVol(v); audioRoute.setVolume(v).catch(() => {}); }
   };
 
   // 当前生效的本机设备（无用户偏好时按 系统>蓝牙>有线>USB 优先即系统默认行为）
   const activeId = preferred >= 0 && devices.some(d => d.id === preferred)
     ? preferred
     : (devices.find(d => d.kind === 'bluetooth') ?? devices.find(d => d.kind === 'wired' || d.kind === 'usb') ?? devices.find(d => d.kind === 'speaker') ?? { id: -1 }).id;
-  const vol = cast ? dlnaVol : sysVol;
+  const vol = cast ? castVol : sysVol;
   const sheetY = a.interpolate({ inputRange: [0, 1], outputRange: [420, 0] });
 
   return (
@@ -147,7 +164,7 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
         </View>
         <ScrollView bounces={false} style={{ maxHeight: '72%' }} contentContainerStyle={{ paddingBottom: 6 }}>
           <Text style={st.title}>选择播放设备</Text>
-          <Text style={st.subtitle}>{cast ? `正在投屏到 ${cast.name}` : '让音乐在附近设备上继续播放'}</Text>
+          <Text style={st.subtitle}>{cast ? `正在${cast.kind === 'airplay' ? ' AirPlay 到' : cast.kind === 'cast' ? ' Cast 到' : '投屏到'} ${cast.dev.name}` : '让音乐在附近设备上继续播放'}</Text>
 
           <Text style={st.label}>本机设备</Text>
           <TouchableOpacity style={[st.deviceRow, activeId === -1 && st.deviceRowOn]} onPress={() => pickLocal(-1)}>
@@ -184,20 +201,20 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
           })}
 
           <Text style={st.label}>DLNA 投屏设备</Text>
-          {cast ? (
+          {cast?.kind === 'dlna' ? (
             <TouchableOpacity style={[st.deviceRow, st.deviceRowOn]} onPress={() => { stopCast(); toast('已停止投屏，回本机播放'); }}>
               <View style={[st.iconWrap, { backgroundColor: C.brand }]}>
                 <Icon name="tv" size={26} color={C.onBrand} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={st.deviceName}>{cast.name}</Text>
+                <Text style={st.deviceName}>{cast.dev.name}</Text>
                 <Text style={st.deviceStatusOn}>正在投屏 · 点击停止并回本机</Text>
               </View>
               <View style={st.checkBadge}><Icon name="check" size={18} color={C.onBrand} /></View>
             </TouchableOpacity>
           ) : null}
-          {renderers.filter(r => !cast || r.uuid !== cast.uuid).map(r => (
-            <TouchableOpacity key={r.uuid} style={st.deviceRow} onPress={() => { startCast(r); toast(`正在投屏到 ${r.name}…`); }}>
+          {renderers.filter(r => cast?.kind !== 'dlna' || r.uuid !== cast.dev.uuid).map(r => (
+            <TouchableOpacity key={r.uuid} style={st.deviceRow} onPress={() => { startCast(r, 'dlna'); toast(`正在投屏到 ${r.name}…`); }}>
               <View style={st.iconWrap}><Icon name="tv" size={26} /></View>
               <View style={{ flex: 1 }}>
                 <Text style={st.deviceName}>{r.name}</Text>
@@ -206,7 +223,7 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
               <Icon name="chevronright" size={20} color={C.text3} />
             </TouchableOpacity>
           ))}
-          {scanning ? (
+          {scanning && renderers.length === 0 ? (
             <Text style={st.scanHint}>正在扫描附近的 DLNA 设备…</Text>
           ) : renderers.length === 0 ? (
             <TouchableOpacity style={st.rescanBtn} onPress={() => { setRenderers([]); setScanning(true); dlna.startScan(); }}>
@@ -217,16 +234,74 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
               <Text style={st.rescanText}>重新扫描</Text>
             </TouchableOpacity>
           ) : null}
+
+          <Text style={st.label}>Chromecast 设备</Text>
+          {cast?.kind === 'cast' ? (
+            <TouchableOpacity style={[st.deviceRow, st.deviceRowOn]} onPress={() => { stopCast(); toast('已停止 Cast，回本机播放'); }}>
+              <View style={[st.iconWrap, { backgroundColor: C.brand }]}>
+                <Icon name="devices" size={26} color={C.onBrand} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={st.deviceName}>{cast.dev.name}</Text>
+                <Text style={st.deviceStatusOn}>正在 Cast · 点击停止并回本机</Text>
+              </View>
+              <View style={st.checkBadge}><Icon name="check" size={18} color={C.onBrand} /></View>
+            </TouchableOpacity>
+          ) : null}
+          {castDevs.filter(r => cast?.kind !== 'cast' || r.uuid !== cast.dev.uuid).map(r => (
+            <TouchableOpacity key={r.uuid} style={st.deviceRow} onPress={() => { startCast(r, 'cast'); toast(`正在 Cast 到 ${r.name}…`); }}>
+              <View style={st.iconWrap}><Icon name="devices" size={26} /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={st.deviceName}>{r.name}</Text>
+                <Text style={st.deviceStatus}>Chromecast built-in · 点击推送当前歌曲</Text>
+              </View>
+              <Icon name="chevronright" size={20} color={C.text3} />
+            </TouchableOpacity>
+          ))}
+          {castDevs.length === 0 && (scanning || airScanning) ? (
+            <Text style={st.scanHint}>正在扫描 Chromecast 设备…</Text>
+          ) : castDevs.length === 0 ? (
+            <Text style={st.scanHint}>未发现 Chromecast 设备（国际版音箱/电视/Google TV）</Text>
+          ) : null}
+
+          <Text style={st.label}>AirPlay 设备</Text>
+          {cast?.kind === 'airplay' ? (
+            <TouchableOpacity style={[st.deviceRow, st.deviceRowOn]} onPress={() => { stopCast(); toast('已停止 AirPlay，回本机播放'); }}>
+              <View style={[st.iconWrap, { backgroundColor: C.brand }]}>
+                <Icon name="wave" size={26} color={C.onBrand} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={st.deviceName}>{cast.dev.name}</Text>
+                <Text style={st.deviceStatusOn}>正在 AirPlay · 点击停止并回本机</Text>
+              </View>
+              <View style={st.checkBadge}><Icon name="check" size={18} color={C.onBrand} /></View>
+            </TouchableOpacity>
+          ) : null}
+          {airDevs.filter(r => cast?.kind !== 'airplay' || r.uuid !== cast.dev.uuid).map(r => (
+            <TouchableOpacity key={r.uuid} style={st.deviceRow} onPress={() => { startCast(r, 'airplay'); toast(`正在连接 AirPlay ${r.name}…`); }}>
+              <View style={st.iconWrap}><Icon name="wave" size={26} /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={st.deviceName}>{r.name}</Text>
+                <Text style={st.deviceStatus}>AirPlay 音箱 · 实时推流播放</Text>
+              </View>
+              <Icon name="chevronright" size={20} color={C.text3} />
+            </TouchableOpacity>
+          ))}
+          {airDevs.length === 0 && (scanning || airScanning) ? (
+            <Text style={st.scanHint}>正在扫描 AirPlay 设备…</Text>
+          ) : airDevs.length === 0 ? (
+            <Text style={st.scanHint}>未发现 AirPlay 设备</Text>
+          ) : null}
         </ScrollView>
 
         <View style={st.volumeRow}>
           <Icon name="volume" size={22} color={C.text2} />
           <Text style={st.volBtn} onPress={() => setVolCommit(Math.max(0, vol - 10))}>−</Text>
-          <VolSlider value={vol} onDrag={(v) => { cast ? setDlnaVol(v) : (setSysVol(v), audioRoute.setVolume(v).catch(() => {})); }} onCommit={setVolCommit} />
+          <VolSlider value={vol} onDrag={(v) => { cast ? setCastVol(v) : (setSysVol(v), audioRoute.setVolume(v).catch(() => {})); }} onCommit={setVolCommit} />
           <Text style={st.volBtn} onPress={() => setVolCommit(Math.min(100, vol + 10))}>＋</Text>
           <Text style={st.volumePct}>{vol}%</Text>
         </View>
-        <Text style={st.footer}>{cast ? '音量为投屏设备音量，进度与播放控制与 App 同步' : '音量为系统媒体音量，与音量键一致'}</Text>
+        <Text style={st.footer}>{cast ? `音量为${cast.kind === 'airplay' ? ' AirPlay' : cast.kind === 'cast' ? ' Cast' : '投屏'}设备音量，进度与播放控制与 App 同步` : '音量为系统媒体音量，与音量键一致'}</Text>
       </Animated.View>
     </View>
   );

@@ -203,6 +203,7 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
                 out.put(inputBuffer)
                 out.flip()
             }
+            maybeAirPlay(out)
             return
         }
 
@@ -272,6 +273,17 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
         val out = replaceOutputBuffer(total * 2)
         out.order(ByteOrder.nativeOrder())
         for (i in 0 until total) out.putShort((floatBuf[i] * 32767f).toInt().toShort())
+        out.flip()
+        maybeAirPlay(out)
+    }
+
+    /** AirPlay 激活：DSP 后 PCM 送 RAOP 推流，本地输出置零（防双唱）；音频线程内绝不阻塞 */
+    private fun maybeAirPlay(out: ByteBuffer) {
+        if (!AirPlayModule.tapActive) return
+        try {
+            AirPlayModule.tap(out.duplicate(), channels, sampleRate)
+        } catch (_: Throwable) { /* tap 失败不影响本地播放 */ }
+        while (out.hasRemaining()) out.put(0.toByte())
         out.flip()
     }
 
