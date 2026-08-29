@@ -16,6 +16,7 @@ import { navRef } from '../navRef';
 import { dialog, toast } from '../components/Dialog';
 
 const modeKv = createMMKV({ id: 'nextmusic-playmode' });
+const playbackKv = createMMKV({ id: 'nextmusic-playback' }); // 恢复上次播放状态快照
 
 export interface QueueTrack extends SongItem {
   uid: string; // local uid
@@ -342,6 +343,35 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     queueRef.current = [];
     idxRef.current = 0;
     setQueue([]);
+    playbackKv.set('snapshot', '');
+  }, []);
+
+  // —— 恢复上次播放状态（基本设置 → 启动 → 恢复上次播放状态）——
+  // 持久化：队列/当前曲/索引在变化时节流写入（不含进度，恢复后从 0 开始，避免取链/版权失效时卡启动）
+  const persistSnapshot = useRef<number>(0);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try {
+        if (queue.length && current) {
+          playbackKv.set('snapshot', JSON.stringify({ q: queue.slice(0, 200), i: idxRef.current }));
+        } else playbackKv.set('snapshot', '');
+      } catch { /* 超大队列放弃快照 */ }
+    }, 1500);
+    persistSnapshot.current = Date.now();
+    return () => clearTimeout(t);
+  }, [queue, current]);
+  // 恢复：挂载时一次性（只恢复队列与当前曲为暂停态，不自动取链播放）
+  useEffect(() => {
+    if (!settings.get().restorePlayback) return;
+    try {
+      const snap = JSON.parse(playbackKv.getString('snapshot') || 'null') as { q?: QueueTrack[]; i?: number } | null;
+      if (snap?.q?.length) {
+        queueRef.current = snap.q;
+        setQueue(snap.q);
+        idxRef.current = Math.min(Math.max(0, snap.i || 0), snap.q.length - 1);
+        setCurrent(snap.q[idxRef.current]);
+      }
+    } catch { /* 坏快照忽略 */ }
   }, []);
 
   return (

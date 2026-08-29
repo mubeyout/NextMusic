@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Icon, type IconName } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { settings } from '../services/settings';
+import { settings, useSettings } from '../services/settings';
 
 // Figma Navigation/Bottom: 3 items (首页/探索/我的), icon 24 + label 11, active=brand green
 export function TabBar({ state, navigation }: {
@@ -11,6 +11,7 @@ export function TabBar({ state, navigation }: {
   navigation: { emit: (e: { type: string; target: string }) => { defaultPrevented: boolean }; navigate: (n: string) => void };
 }) {
   const insets = useSafeAreaInsets();
+  const s = useSettings(); // 订阅：底栏标签开关即时生效
   const items: { name: string; icon: IconName; label: string }[] = [
     { name: 'Home', icon: 'home', label: '首页' },
     { name: 'Explore', icon: 'explore', label: '探索' },
@@ -33,7 +34,7 @@ export function TabBar({ state, navigation }: {
             }}
           >
             <Icon name={it.icon} size={24} active={on} />
-            {settings.get().showTabLabels ? <Text style={[st.label, on && st.labelOn]}>{it.label}</Text> : null}
+            {s.showTabLabels ? <Text style={[st.label, on && st.labelOn]}>{it.label}</Text> : null}
           </TouchableOpacity>
         );
       })}

@@ -103,7 +103,7 @@ const st = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64,
     backgroundColor: '#232323', borderRadius: 12, paddingHorizontal: 12, marginTop: 6,
   },
-  deviceRowOn: { backgroundColor: '#1F3A2A', borderWidth: 1, borderColor: '#1ED76055' },
+  deviceRowOn: { backgroundColor: '#1F3A2A', borderWidth: 1, borderColor: 'C.brand55' },
   iconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#2E2E2E', alignItems: 'center', justifyContent: 'center' },
   deviceName: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '600' },
   deviceStatus: { color: C.text2, fontSize: 11, lineHeight: 15 },

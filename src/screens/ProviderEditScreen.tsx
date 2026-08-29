@@ -257,7 +257,7 @@ const st = StyleSheet.create({
   infoCard: { backgroundColor: '#2B2B2B', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, gap: 4 },
   infoTitle: { color: C.text, fontSize: 14, fontWeight: '500' },
 
-  // 按钮（Figma: h46 r12；测试 #2B2B2B 白字 / 保存 #1ED760 深字）
+  // 按钮（Figma: h46 r12；测试 #2B2B2B 白字 / 保存 C.brand 深字）
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   btnBusy: { opacity: 0.6 },
   btnGhost: { flex: 1, height: 46, borderRadius: 12, backgroundColor: '#2B2B2B', alignItems: 'center', justifyContent: 'center' },

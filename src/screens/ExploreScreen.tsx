@@ -45,14 +45,14 @@ const SCENES = ['通勤', '学习', '运动', '派对', '睡眠', '旅行'];
 const LANGS = ['华语', '欧美', '日韩', '拉丁'];
 // 榜单子卡槽位（视觉固定，榜单名取真实数据）：Figma 2357:1270-1284
 const CHART_SLOTS = [
-  { match: /飙升/, caption: '24h 热度变化', tag: '↗ 18%', tagColor: '#6BE88F', accent: ['#1FD661', '#591F7A'] },
+  { match: /飙升/, caption: '24h 热度变化', tag: '↗ 18%', tagColor: '#6BE88F', accent: ['C.brand', '#591F7A'] },
   { match: /新歌/, caption: '本周新发行', tag: 'NEW', tagColor: '#B3B3B3', accent: ['#1FB87A', '#731F66'] },
   { match: /欧美|Billboard|全球/, caption: '32 个地区', tag: 'GLOBAL', tagColor: '#B3B3B3', accent: ['#1F9994', '#8C1F52'] },
 ];
 
 // 榜单卡渐变配色（循环取用）
 const BOARD_ACCENTS: [string, string][] = [
-  ['#1FD661', '#1F5E3A'], ['#1F87D6', '#1F3A6E'], ['#B01F87', '#5E1F4E'],
+  ['C.brand', '#1F5E3A'], ['#1F87D6', '#1F3A6E'], ['#B01F87', '#5E1F4E'],
   ['#D67A1F', '#6E3A1F'], ['#871FD6', '#3A1F5E'], ['#1FD6C0', '#1F5E5A'],
 ];
 
@@ -517,7 +517,7 @@ const st = StyleSheet.create({
   chartHeroMeta: { color: C.text2, fontSize: 11, lineHeight: 13, marginTop: 6 },
   rankBadge: {
     position: 'absolute', right: 18, top: 18, width: 56, height: 56, borderRadius: 28,
-    backgroundColor: '#1FD661', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'C.brand', alignItems: 'center', justifyContent: 'center',
   },
   rankBadgeText: { color: C.text, fontSize: 20, lineHeight: 24, fontWeight: '700' },
   chartRow: { flexDirection: 'row', gap: 8 },

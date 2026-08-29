@@ -8,6 +8,7 @@ import { C } from './theme/tokens';
 import { TabBar } from './components/TabBar';
 import { MiniPlayer } from './components/MiniPlayer';
 import { useApp } from './state/AppState';
+import { settings } from './services/settings';
 
 import { BootScreen } from './screens/BootScreen';
 import { ServerScreen } from './screens/ServerScreen';
@@ -26,6 +27,7 @@ import { PlaylistDetailScreen } from './screens/PlaylistDetailScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { SourcesScreen, AccountScreen } from './screens/SourcesAccountScreens';
 import { BasicSettingsScreen, ThemeScreen, AboutScreen, DownloadsSettingsScreen, BackupSettingsScreen, VizSettingsScreen, ProxySettingsScreen } from './screens/SettingSubScreens';
+import { ManualScreen, DeployGuideScreen, FaqScreen, ChangelogScreen } from './screens/HelpScreens';
 import { ImportPlaylistScreen } from './screens/ImportPlaylistScreen';
 import { FxScreen } from './screens/FxScreen';
 import { ProviderEditScreen } from './screens/ProviderEditScreen';
@@ -45,7 +47,9 @@ const Stack = createNativeStackNavigator();
 
 // Manual tab host to mirror Figma layout exactly: content + MiniPlayer + TabBar
 function MainTabs() {
-  const [tab, setTab] = useState(0);
+  // 启动页设置（基本设置 → 启动页面）：冷启动初始 tab
+  const sp = settings.get().startupPage;
+  const [tab, setTab] = useState(sp === 'explore' ? 1 : sp === 'my' ? 2 : 0);
   return (
     <View style={st.main}>
       {/* tabStack 占流式空间，三个 tab 内容在其内部绝对层叠（防 display:none 闪屏），
@@ -113,6 +117,10 @@ export function RootNavigator() {
         <Stack.Screen name="VizSettings" component={VizSettingsScreen} />
         <Stack.Screen name="ProxySettings" component={ProxySettingsScreen} />
         <Stack.Screen name="About" component={AboutScreen} />
+        <Stack.Screen name="Manual" component={ManualScreen} />
+        <Stack.Screen name="DeployGuide" component={DeployGuideScreen} />
+        <Stack.Screen name="Faq" component={FaqScreen} />
+        <Stack.Screen name="Changelog" component={ChangelogScreen} />
         <Stack.Screen name="ImportPlaylist" component={ImportPlaylistScreen} />
         <Stack.Screen name="Fx" component={FxScreen} />
         <Stack.Screen name="MediaLibs" component={MediaLibsScreen} />

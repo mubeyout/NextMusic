@@ -2,9 +2,7 @@ import React, { useEffect } from 'react';
 import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-// 主题 token 覆写必须最先执行（accent / 纯黑背景）
-import { applyThemeTokens } from './src/services/settings';
-applyThemeTokens();
+// 主题已在 theme/tokens.ts 模块加载期应用（早于一切组件/StyleSheet 创建）
 import { AppStateProvider, useApp } from './src/state/AppState';
 import { PlayerProvider, setupPlayer } from './src/state/PlayerProvider';
 import { LxEngineHost, engine } from './src/lx-engine/engine';

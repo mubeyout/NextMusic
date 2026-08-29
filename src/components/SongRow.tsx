@@ -13,7 +13,7 @@ export function SongRow({ song, onPress, playing, extra }: { song: SongItem; onP
         {song.img ? <Image source={{ uri: song.img }} style={st.art} /> : <View style={[st.art, st.fallback]} />}
       </View>
       <View style={st.meta}>
-        <Text style={[st.title, playing && { color: '#1ED760' }]} numberOfLines={1}>{song.name}</Text>
+        <Text style={[st.title, playing && { color: 'C.brand' }]} numberOfLines={1}>{song.name}</Text>
         <Text style={st.sub} numberOfLines={1}>
           {song.singer}{song.albumName ? ` · ${song.albumName}` : ''}{song._types?.flac ? ' · 无损' : ''}
         </Text>

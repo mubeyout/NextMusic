@@ -1,7 +1,7 @@
 // 全局应用设置：MMKV 持久化 + 轻量订阅（跨组件响应）
+// 注意：不要 import theme/tokens（tokens 反向依赖本模块做启动期主题，避免循环）
 import { useState, useEffect } from 'react';
 import { createMMKV } from 'react-native-mmkv';
-import { C } from '../theme/tokens';
 
 const kv = createMMKV({ id: 'nextmusic-settings' });
 
@@ -37,6 +37,8 @@ export interface AppSettings {
   backupSettings: boolean;
   // 代理（记录配置；生效需底层支持）
   proxy: ProxyConf;
+  // 关于页：检查更新的元数据地址（update.json）
+  updateUrl: string;
 }
 
 export const DEFAULTS: AppSettings = {
@@ -60,6 +62,7 @@ export const DEFAULTS: AppSettings = {
   backupHistory: false,
   backupSettings: true,
   proxy: { enabled: false, type: 'http', host: '', port: '' },
+  updateUrl: '',
 };
 
 function load(): AppSettings {
@@ -93,15 +96,8 @@ export function useSettings(): AppSettings {
   return s;
 }
 
-// 外观 token 覆写（App 启动最早期调用；accent/pureBlack 重启后生效）
-export function applyThemeTokens() {
-  const mutable = C as unknown as Record<string, string>;
-  if (current.accent && current.accent !== DEFAULTS.accent) {
-    mutable.brand = current.accent;
-    mutable.brandDim = current.accent + '47';
-  }
-  if (current.pureBlack) mutable.bg = '#000000';
-}
+// 外观 token 覆写已迁移到 theme/tokens.ts 的 applyBootTheme()（模块加载期执行，早于一切 StyleSheet.create）
+// 运行时切换主题：改设置后需重启应用（RestartModule）才作用于已固化的样式
 
 export const QUALITY_LABEL: Record<Quality, string> = {
   '128k': '128k 标准',

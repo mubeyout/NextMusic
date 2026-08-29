@@ -21,7 +21,7 @@ import { providers, PROVIDER_META, type ProviderAcct } from '../services/provide
 import type { SongItem } from '../services/server';
 
 // Figma 2154-702 我的·歌单: title 28 + settings btn(#2b2b2b round) + pills +
-// Library Summary banner(#145938→#1f2e52 r14 h72, 我的收藏 + counts + ＋新建 #1FD661 r18) +
+// Library Summary banner(#145938→#1f2e52 r14 h72, 我的收藏 + counts + ＋新建 C.brand r18) +
 // Quick row 3 cards (#2b2b2b r12 110x66: 最近播放/我喜欢的/本地音乐) +
 // 自建歌单 2-col grid (169x104 gradient covers + ♫ + 13px w700 + 9px meta)
 const COVER_GRADS: [string, string][] = [
@@ -336,7 +336,7 @@ const st = StyleSheet.create({
   },
   bannerTitle: { color: C.text, fontSize: 15, lineHeight: 18, fontWeight: '700' },
   bannerMeta: { color: C.text2, fontSize: 11, lineHeight: 13, marginTop: 6 },
-  newBtn: { height: 36, borderRadius: 18, backgroundColor: '#1FD661', paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
+  newBtn: { height: 36, borderRadius: 18, backgroundColor: 'C.brand', paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
   newBtnText: { color: C.white, fontSize: 12, lineHeight: 14, fontWeight: '500' },
   quickRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
   quickCard: { flex: 1, height: 66, borderRadius: 12, backgroundColor: '#2B2B2B', padding: 12, justifyContent: 'center', gap: 6 },

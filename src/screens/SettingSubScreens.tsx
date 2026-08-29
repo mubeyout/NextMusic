@@ -1,9 +1,10 @@
 // 设置子页（全部真实功能：持久化 + 可操作）
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, NativeModules, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import RNBlobUtil from 'react-native-blob-util';
+import SafX from 'react-native-saf-x';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { SubPage } from '../components/SubPage';
@@ -82,25 +83,33 @@ export function BasicSettingsScreen() {
 }
 
 // ---------- 主题与外观 ----------
+const Restart = NativeModules.AppRestart as { restart: () => void } | undefined;
+
 export function ThemeScreen() {
   const nav = useNavigation() as { goBack: () => void };
   const s = useSettings();
   const accents = [
-    { name: 'Next 绿', color: '#1ED760' },
+    { name: 'Next 绿', color: 'C.brand' },
     { name: '薄暮蓝', color: '#3B82F6' },
     { name: '晚樱粉', color: '#F472B6' },
     { name: '琥珀橙', color: '#F59E0B' },
   ];
+  const askRestart = () => {
+    dialog.alert('已保存', '主题将在重启应用后完全生效（样式在启动时固化）。', [
+      { text: '稍后', style: 'cancel' },
+      { text: '立即重启', onPress: () => Restart?.restart() },
+    ]);
+  };
   return (
     <PageShell title="主题与外观" onBack={() => nav.goBack()}>
       <Section title="模式">
         <StaticRow label="深色模式" value="始终深色" />
-        <ToggleRow label="纯黑背景（重启生效）" value={s.pureBlack} onChange={v => settings.set('pureBlack', v)} />
+        <ToggleRow label="纯黑背景（真·OLED 纯黑，重启生效）" value={s.pureBlack} onChange={v => { settings.set('pureBlack', v); askRestart(); }} />
       </Section>
       <Section title="强调色">
         <View style={ts.swatchRow}>
           {accents.map(a => (
-            <TouchableOpacity key={a.name} style={ts.swatchItem} onPress={() => settings.set('accent', a.color)}>
+            <TouchableOpacity key={a.name} style={ts.swatchItem} onPress={() => { settings.set('accent', a.color); askRestart(); }}>
               <View style={[ts.swatch, { backgroundColor: a.color }, s.accent === a.color && ts.swatchOn]}>
                 {s.accent === a.color ? <Icon name="check" size={16} color="#121212" /> : null}
               </View>
@@ -108,26 +117,63 @@ export function ThemeScreen() {
             </TouchableOpacity>
           ))}
         </View>
-        <Text style={ts.note}>切换强调色后重启应用生效</Text>
+        <Text style={ts.note}>强调色作用于全局品牌色（按钮/高亮/进度条），重启后生效</Text>
       </Section>
     </PageShell>
   );
 }
 
 // ---------- 关于与帮助 ----------
+const AppVersionNative = NativeModules.AppVersionInfo as { versionName?: string; versionCode?: number } | undefined;
+const DEFAULT_UPDATE_URL = 'http://10.0.0.1:18888/update.json';
+
 export function AboutScreen() {
-  const nav = useNavigation() as { goBack: () => void };
+  const nav = useNavigation() as { goBack: () => void; navigate: (s: string) => void };
+  const s = useSettings();
+  const [checking, setChecking] = useState(false);
+
+  const checkUpdate = async () => {
+    const url = (s.updateUrl || DEFAULT_UPDATE_URL).trim();
+    if (!/^https?:\/\//.test(url)) { toast('更新源地址无效'); return; }
+    setChecking(true);
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 10000);
+      const r = await fetch(url, { signal: ctrl.signal });
+      clearTimeout(t);
+      const info = await r.json() as { versionName?: string; versionCode?: number; notes?: string; apkUrl?: string };
+      const local = AppVersionNative?.versionCode ?? 0;
+      const remote = info.versionCode ?? 0;
+      if (!remote) throw new Error('更新源数据缺失');
+      if (remote <= local) {
+        dialog.alert('检查更新', `当前已是最新版本（${APP_VERSION}）`);
+      } else {
+        dialog.alert(
+          `发现新版本 ${info.versionName || ''}`,
+          (info.notes || '').slice(0, 600) + '\n\n可下载 APK 后直接覆盖安装，歌单与设置不受影响。',
+          [
+            { text: '取消', style: 'cancel' },
+            { text: '下载 APK', onPress: () => { if (info.apkUrl) Linking.openURL(info.apkUrl); else toast('更新源未提供下载地址'); } },
+          ],
+        );
+      }
+    } catch (e) {
+      dialog.alert('检查更新失败', `无法访问更新源：${(e as Error).message}\n\n请确认网络可达，或在「更新源地址」中配置可用地址。`);
+    } finally { setChecking(false); }
+  };
+
   return (
     <PageShell title="关于与帮助" onBack={() => nav.goBack()}>
       <Section title="版本">
         <StaticRow label="当前版本" value={APP_VERSION} />
-        <ActionRow label="检查更新" onPress={() => dialog.alert('检查更新', '当前已是最新版本')} />
-        <ActionRow label="更新日志" onPress={() => dialog.alert('更新日志', '3.2.0-lx4\n· 我的页移除更多菜单\n\n3.2.0-lx3\n· 服务器账号强关联与创建账号流\n\n3.2.0\n· 净室重建：三 Tab + 排行榜 + 歌单 + 全屏播放器')} />
+        <ActionRow label={checking ? '正在检查…' : '检查更新'} onPress={checkUpdate} />
+        <InputRow label="更新源地址" value={s.updateUrl || DEFAULT_UPDATE_URL} placeholder={DEFAULT_UPDATE_URL} onChange={v => settings.set('updateUrl', v)} />
+        <ActionRow label="更新日志" onPress={() => nav.navigate('Changelog')} />
       </Section>
       <Section title="帮助">
-        <StaticRow label="使用手册" value="整理中" />
-        <StaticRow label="服务器部署指南" value="整理中" />
-        <StaticRow label="常见问题" value="整理中" />
+        <NavRow label="使用手册" value="功能速览" onPress={() => nav.navigate('Manual')} />
+        <NavRow label="服务器部署指南" value="lxserver" onPress={() => nav.navigate('DeployGuide')} />
+        <NavRow label="常见问题" value="FAQ" onPress={() => nav.navigate('Faq')} />
       </Section>
       <Section title="开源与致谢">
         <StaticRow label="LX Music" value="音源引擎" />
@@ -191,6 +237,37 @@ import { dialog, toast } from '../components/Dialog';
 const davKv = createMMKV({ id: DAV_KEY });
 function kvGetString(k: string): string | undefined { return davKv.getString('conf'); }
 
+// 备份 payload 构建（云备份与文件导出同构）
+function buildBackupPayload(s: { backupPlaylists: boolean; backupSettings: boolean }) {
+  return {
+    at: Date.now(), version: APP_VERSION,
+    playlists: s.backupPlaylists ? library.all().map(p => ({ id: p.id, name: p.name, songs: p.songs })) : undefined,
+    settings: s.backupSettings ? settings.get() : undefined,
+  };
+}
+
+// 恢复应用（云端恢复与文件导入共用）：同名覆盖、新名单建
+function applyBackupData(data: { playlists?: { id: string; name: string; songs: never[] }[]; settings?: Record<string, unknown> }) {
+  const n = data.playlists?.length || 0;
+  dialog.alert('恢复备份', `备份包含 ${n} 个歌单，是否合并到本机？（同名歌单将被覆盖）`, [
+    { text: '取消', style: 'cancel' },
+    {
+      text: '恢复',
+      onPress: () => {
+        if (data.playlists) {
+          for (const pl of data.playlists) {
+            const exist = library.all().find(p => p.name === pl.name);
+            if (exist) library.update(exist.id, { songs: pl.songs });
+            else library.create(pl.name, pl.songs, { cover: undefined });
+          }
+        }
+        if (data.settings) settings.patch(data.settings as never);
+        toast(`已恢复 ${n} 个歌单`);
+      },
+    },
+  ]);
+}
+
 export function BackupSettingsScreen() {
   const nav = useNavigation() as { goBack: () => void };
   const s = useSettings();
@@ -218,11 +295,7 @@ export function BackupSettingsScreen() {
     if (!dav.base) { toast('请先配置 WebDAV'); return; }
     setBusy(true);
     try {
-      const payload = {
-        at: Date.now(), version: APP_VERSION,
-        playlists: s.backupPlaylists ? library.all() : undefined,
-        settings: s.backupSettings ? settings.get() : undefined,
-      };
+      const payload = buildBackupPayload(s);
       await providerApi.webdavPut(dav, '/NextMusic/backup.json', JSON.stringify(payload));
       toast('备份完成 · 已上传到云端');
     } catch (e) {
@@ -230,30 +303,41 @@ export function BackupSettingsScreen() {
     } finally { setBusy(false); }
   };
 
+  // 文件导出（SAF 另存为；不依赖 WebDAV，换机/归档用）
+  const exportToFile = async () => {
+    try {
+      const payload = buildBackupPayload(s);
+      const d = new Date();
+      const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+      const doc = await SafX.createDocument(JSON.stringify(payload), {
+        initialName: `NextMusic-backup-${stamp}.json`,
+        mimeType: 'application/json',
+      });
+      if (doc) toast('已导出到所选位置');
+    } catch (e) {
+      dialog.alert('导出失败', (e as Error).message);
+    }
+  };
+
+  // 文件导入（SAF 选文件 → 与云端恢复同一逻辑）
+  const importFromFile = async () => {
+    try {
+      const docs = await SafX.openDocument({ multiple: false });
+      if (!docs?.length) return;
+      const text = await SafX.readFile(docs[0].uri);
+      const data = JSON.parse(text);
+      applyBackupData(data);
+    } catch (e) {
+      dialog.alert('导入失败', (e as Error).message);
+    }
+  };
+
   const restore = async () => {
     if (!dav.base) { toast('请先配置 WebDAV'); return; }
     setBusy(true);
     try {
       const text = await providerApi.webdavGet(dav, '/NextMusic/backup.json');
-      const data = JSON.parse(text) as { playlists?: { id: string; name: string; songs: [] }[]; settings?: Record<string, unknown> };
-      const n = data.playlists?.length || 0;
-      dialog.alert('恢复备份', `云端备份包含 ${n} 个歌单，是否覆盖本机歌单？`, [
-        { text: '取消', style: 'cancel' },
-        {
-          text: '恢复',
-          onPress: () => {
-            if (data.playlists) {
-              for (const pl of data.playlists) {
-                const exist = library.all().find(p => p.name === pl.name);
-                if (exist) library.update(exist.id, { songs: pl.songs });
-                else library.create(pl.name, pl.songs, { cover: undefined });
-              }
-            }
-            if (data.settings) settings.patch(data.settings as never);
-            toast(`已恢复 ${n} 个歌单`);
-          },
-        },
-      ]);
+      applyBackupData(JSON.parse(text));
     } catch (e) {
       dialog.alert('恢复失败', (e as Error).message);
     } finally { setBusy(false); }
@@ -271,6 +355,10 @@ export function BackupSettingsScreen() {
         <ActionRow label={busy ? '处理中…' : '立即备份'} onPress={backupNow} />
         <ActionRow label="从云端恢复" onPress={restore} />
         <ToggleRow label="自动备份" value={s.autoBackup} onChange={v => settings.set('autoBackup', v)} />
+      </Section>
+      <Section title="本地文件（换机迁移 / 归档）">
+        <ActionRow label="导出到文件" value="保存为 JSON" onPress={exportToFile} />
+        <ActionRow label="从文件导入" value="选择备份 JSON" onPress={importFromFile} />
       </Section>
       <Section title="备份内容">
         <ToggleRow label="歌单与收藏" value={s.backupPlaylists} onChange={v => settings.set('backupPlaylists', v)} />

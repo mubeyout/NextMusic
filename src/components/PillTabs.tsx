@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { C } from '../theme/tokens';
 
-// Figma pill tabs: active pill filled brand green (#1ED760, label #121212),
+// Figma pill tabs: active pill filled brand green (C.brand, label #121212),
 // inactive #2B2B2B (label #B3B3B3), r=18, h=30, pad 16/8, label 12px
 export function PillTabs({ tabs, active, onChange }: {
   tabs: string[]; active: number; onChange: (i: number) => void;
