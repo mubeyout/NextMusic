@@ -119,4 +119,5 @@ dependencies {
 
     // 均衡器与音效 DSP：BaseAudioProcessor 需 media3-common（与 react-native-audio-pro 同版本）
     implementation("androidx.media3:media3-common:1.6.0")
+    implementation("androidx.media3:media3-exoplayer:1.6.0") // lx31: AudioRouteEngine 直接持有 DefaultAudioSink（setPreferredDevice）
 }
