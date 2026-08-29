@@ -25,7 +25,7 @@ import { CommentsScreen } from './screens/CommentsScreen';
 import { PlaylistDetailScreen } from './screens/PlaylistDetailScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { SourcesScreen, AccountScreen } from './screens/SourcesAccountScreens';
-import { BasicSettingsScreen, ThemeScreen, AboutScreen, DownloadsSettingsScreen, BackupSettingsScreen, VizSettingsScreen, ProxySettingsScreen } from './screens/SettingSubScreens';
+import { BasicSettingsScreen, ThemeScreen, AboutScreen, DownloadsSettingsScreen, BackupSettingsScreen } from './screens/SettingSubScreens';
 import { ManualScreen, DeployGuideScreen, FaqScreen, ChangelogScreen } from './screens/HelpScreens';
 import { ImportPlaylistScreen } from './screens/ImportPlaylistScreen';
 import { FxScreen } from './screens/FxScreen';
@@ -114,8 +114,6 @@ export function RootNavigator() {
         <Stack.Screen name="Theme" component={ThemeScreen} />
         <Stack.Screen name="DownloadsSettings" component={DownloadsSettingsScreen} />
         <Stack.Screen name="BackupSettings" component={BackupSettingsScreen} />
-        <Stack.Screen name="VizSettings" component={VizSettingsScreen} />
-        <Stack.Screen name="ProxySettings" component={ProxySettingsScreen} />
         <Stack.Screen name="About" component={AboutScreen} />
         <Stack.Screen name="Manual" component={ManualScreen} />
         <Stack.Screen name="DeployGuide" component={DeployGuideScreen} />

@@ -65,12 +65,9 @@ export function BasicSettingsScreen() {
       <Section title="启动">
         <ValueRow label="启动页面" value={s.startupPage} options={[{ label: '首页', value: 'home' }, { label: '探索', value: 'explore' }, { label: '我的', value: 'my' }]} onPick={v => settings.set('startupPage', v as 'home')} />
         <ToggleRow label="恢复上次播放状态" value={s.restorePlayback} onChange={v => settings.set('restorePlayback', v)} />
-        <ToggleRow label="启动即播放" value={s.autoplay} onChange={v => settings.set('autoplay', v)} />
       </Section>
       <Section title="界面">
-        <ValueRow label="语言" value="system" options={[{ label: '跟随系统', value: 'system' }, { label: '简体中文', value: 'zh' }, { label: 'English', value: 'en' }]} onPick={() => dialog.alert('语言', '当前版本内置中文界面，多语言将随后续版本提供')} />
         <ToggleRow label="底栏显示标签" value={s.showTabLabels} onChange={v => settings.set('showTabLabels', v)} />
-        <StaticRow label="圆角风格" value="标准" />
       </Section>
       <Section title="缓存">
         <StaticRow label="图片与网络缓存" value={cacheSize} />
@@ -209,7 +206,6 @@ export function DownloadsSettingsScreen() {
   return (
     <PageShell title="下载设置" onBack={() => nav.goBack()}>
       <Section title="网络">
-        <ToggleRow label="仅 Wi-Fi 下载" value={s.wifiOnly} onChange={v => settings.set('wifiOnly', v)} />
         <ValueRow label="下载音质" value={s.downloadQuality} options={QUALITIES} onPick={v => settings.set('downloadQuality', v as Quality)} />
       </Section>
       <Section title="存储">
@@ -363,7 +359,6 @@ export function BackupSettingsScreen() {
       <Section title="备份">
         <ActionRow label={busy ? '处理中…' : '立即备份'} onPress={backupNow} />
         <ActionRow label="从云端恢复" onPress={restore} />
-        <ToggleRow label="自动备份" value={s.autoBackup} onChange={v => settings.set('autoBackup', v)} />
       </Section>
       <Section title="本地文件（换机迁移 / 归档）">
         <ActionRow label="导出到文件" value="保存为 JSON" onPress={exportToFile} />
@@ -377,40 +372,7 @@ export function BackupSettingsScreen() {
   );
 }
 
-// ---------- 可视化 ----------
-export function VizSettingsScreen() {
-  const nav = useNavigation() as { goBack: () => void };
-  const s = useSettings();
-  return (
-    <PageShell title="可视化设置" onBack={() => nav.goBack()}>
-      <Section title="样式">
-        <ValueRow label="默认样式" value={s.vizStyle} options={[{ label: '波形', value: 'wave' }, { label: '频谱', value: 'spectrum' }, { label: '圆形律动', value: 'circle' }]} onPick={v => settings.set('vizStyle', v as 'spectrum')} />
-        <ToggleRow label="播放页显示可视化" value={s.vizEnabled} onChange={v => settings.set('vizEnabled', v)} />
-        <ToggleRow label="随音乐变色" value={s.vizColorful} onChange={v => settings.set('vizColorful', v)} />
-      </Section>
-      <Text style={ts.footer}>可视化组件将在播放页后续版本上线</Text>
-    </PageShell>
-  );
-}
-
-// ---------- 代理 ----------
-export function ProxySettingsScreen() {
-  const nav = useNavigation() as { goBack: () => void };
-  const s = useSettings();
-  const p = s.proxy;
-  const patch = (v: Partial<typeof p>) => settings.set('proxy', { ...p, ...v });
-  return (
-    <PageShell title="代理设置" onBack={() => nav.goBack()}>
-      <Section title="网络">
-        <ToggleRow label="使用代理" value={p.enabled} onChange={v => patch({ enabled: v })} />
-        <ValueRow label="代理类型" value={p.type} options={[{ label: 'HTTP', value: 'http' }, { label: 'SOCKS5', value: 'socks5' }]} onPick={v => patch({ type: v as 'http' })} />
-        <InputRow label="地址" value={p.host} placeholder="192.168.1.1" onChange={v => patch({ host: v })} />
-        <InputRow label="端口" value={p.port} placeholder="7890" onChange={v => patch({ port: v })} />
-      </Section>
-      <Text style={ts.footer}>代理配置已保存；音源请求走代理的能力在后续版本生效</Text>
-    </PageShell>
-  );
-}
+// ---------- 可视化 / 代理：lx34 移除（无真实实现，避免“死设置”；后续做播放页频谱时随功能回归） ----------
 
 const ts = StyleSheet.create({
   swatchRow: { flexDirection: 'row', gap: 14, paddingHorizontal: 4, marginTop: 10 },

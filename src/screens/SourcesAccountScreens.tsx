@@ -149,7 +149,7 @@ export function SourcesScreen() {
 export function AccountScreen() {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string) => void; reset: (o: unknown) => void };
-  const { connected, base, username, token, setAuth, setMode } = useApp();
+  const { connected, base, username, token, setAuth, disconnectServer } = useApp();
   const host = (base || '').replace(/^https?:\/\//, '');
 
   const logout = () => {
@@ -196,16 +196,30 @@ export function AccountScreen() {
           </TouchableOpacity>
         ) : null}
 
-        <TouchableOpacity
-          style={[st.linkBtn, st.danger]}
-          onPress={() => {
-            setMode(null);
-            toast('已断开服务器，回到本地模式');
-            nav.reset({ index: 0, routes: [{ name: 'Main' }] }); // 回首页，不再回向导
-          }}
-        >
-          <Text style={st.dangerText}>断开服务器，回到本地模式</Text>
-        </TouchableOpacity>
+        {(connected || base) ? (
+          <TouchableOpacity
+            style={[st.linkBtn, st.danger]}
+            onPress={() => {
+              dialog.alert(
+                '断开服务器',
+                '断开后进入本地模式：浏览与播放走在线音源，服务器歌单/账号同步不可用，需重新连接后恢复。',
+                [
+                  { text: '取消', style: 'cancel' },
+                  {
+                    text: '断开', style: 'destructive',
+                    onPress: () => {
+                      disconnectServer();
+                      toast('已断开服务器，回到本地模式');
+                      nav.reset({ index: 0, routes: [{ name: 'Main' }] });
+                    },
+                  },
+                ],
+              );
+            }}
+          >
+            <Text style={st.dangerText}>断开服务器，回到本地模式</Text>
+          </TouchableOpacity>
+        ) : null}
       </ScrollView>
     </View>
   );

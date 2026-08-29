@@ -24,6 +24,8 @@ interface AppStateCtx extends Persisted {
   setMode: (m: RunMode | null) => void;
   connectServer: (base: string) => Promise<void>;
   setAuth: (token: string | null, username: string | null) => void;
+  /** 真正断开：清空服务器绑定/凭据/连接态，进入本地模式；重新使用需直连/登录 */
+  disconnectServer: () => void;
 }
 
 const Ctx = createContext<AppStateCtx>(null as unknown as AppStateCtx);
@@ -66,6 +68,15 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       setModeState('server');
     },
     setAuth: (t, u) => { setToken(t); setUsername(u); httpStore.token = t || ''; },
+    disconnectServer: () => {
+      setBase(null);
+      setToken(null);
+      setUsername(null);
+      setServerConfig(null);
+      httpStore.base = '';
+      httpStore.token = '';
+      setModeState('local');
+    },
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

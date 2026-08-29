@@ -7,16 +7,10 @@ const kv = createMMKV({ id: 'nextmusic-settings' });
 
 export type Quality = '128k' | '320k' | 'flac';
 
-export interface ProxyConf { enabled: boolean; type: 'http' | 'socks5'; host: string; port: string }
-
 export interface AppSettings {
   // 播放
   playQuality: Quality;          // 默认播放音质（在线取链）
-  autoplay: boolean;             // 打开歌曲自动播放
-  gapless: boolean;              // 无缝播放（记录，暂不生效）
-  volumeNormalize: boolean;      // 音量均衡（记录，暂不生效）
   // 下载
-  wifiOnly: boolean;
   downloadQuality: Quality;
   maxConcurrent: number;         // 同时下载数
   // 外观（重启生效：启动时覆写 C token）
@@ -26,27 +20,19 @@ export interface AppSettings {
   // 启动
   startupPage: 'home' | 'explore' | 'my';
   restorePlayback: boolean;
-  // 可视化
-  vizStyle: 'wave' | 'spectrum' | 'circle';
-  vizEnabled: boolean;
-  vizColorful: boolean;
   // 备份
-  autoBackup: boolean;
   backupPlaylists: boolean;
   backupHistory: boolean;
   backupSettings: boolean;
-  // 代理（记录配置；生效需底层支持）
-  proxy: ProxyConf;
   // 关于页：检查更新的元数据地址（update.json）
   updateUrl: string;
 }
 
+// lx34 清理：autoplay/gapless/volumeNormalize/viz*/autoBackup/proxy/wifiOnly 无真实实现，选项与存储键一并移除；
+// 旧备份/旧持久化里的多余键在 load 合并时无害残留，不迁移。
+
 export const DEFAULTS: AppSettings = {
   playQuality: '320k',
-  autoplay: true,
-  gapless: true,
-  volumeNormalize: false,
-  wifiOnly: true,
   downloadQuality: '320k',
   maxConcurrent: 3,
   pureBlack: false,
@@ -54,14 +40,9 @@ export const DEFAULTS: AppSettings = {
   showTabLabels: true,
   startupPage: 'home',
   restorePlayback: false,
-  vizStyle: 'spectrum',
-  vizEnabled: true,
-  vizColorful: true,
-  autoBackup: false,
   backupPlaylists: true,
   backupHistory: false,
   backupSettings: true,
-  proxy: { enabled: false, type: 'http', host: '', port: '' },
   updateUrl: '',
 };
 

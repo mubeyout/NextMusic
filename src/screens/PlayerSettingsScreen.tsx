@@ -16,14 +16,6 @@ export function PlayerSettingsScreen() {
     <PageShell title="播放设置" onBack={() => nav.goBack()}>
       <Section title="默认播放">
         <ValueRow label="默认音质" value={s.playQuality} options={QUALITIES} onPick={v => settings.set('playQuality', v as Quality)} />
-        <ToggleRow label="打开歌曲自动播放" value={s.autoplay} onChange={v => settings.set('autoplay', v)} />
-        <ToggleRow label="无缝播放" value={s.gapless} onChange={v => settings.set('gapless', v)} />
-      </Section>
-      <Section title="音频输出">
-        <ToggleRow label="音量均衡" value={s.volumeNormalize} onChange={v => settings.set('volumeNormalize', v)} />
-      </Section>
-      <Section title="缓存与下载">
-        <ToggleRow label="仅 Wi-Fi 下载" value={s.wifiOnly} onChange={v => settings.set('wifiOnly', v)} />
       </Section>
     </PageShell>
   );

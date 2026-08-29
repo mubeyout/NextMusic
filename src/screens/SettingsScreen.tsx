@@ -14,7 +14,7 @@ import { APP_VERSION } from '../services/appversion';
 
 // 设置主页：图标语义修正（palette/cloud/globe/wave/info），全部入口可达
 const GROUPS: { icon: IconName; title: string; sub: string; to?: string }[] = [
-  { icon: 'sliders', title: '播放设置', sub: '音质、自动播放', to: 'PlayerSettings' },
+  { icon: 'sliders', title: '播放设置', sub: '默认音质', to: 'PlayerSettings' },
   { icon: 'music', title: '音源管理', sub: '', to: 'Sources' },
   { icon: 'devices', title: '媒体库', sub: 'Emby / Jellyfin / Navidrome / 道理鱼 / WebDAV', to: 'MediaLibs' },
   { icon: 'my', title: '使用方式与账号', sub: '本地/服务器/登录与同步', to: 'Account' },
@@ -22,8 +22,6 @@ const GROUPS: { icon: IconName; title: string; sub: string; to?: string }[] = [
   { icon: 'download', title: '下载设置', sub: '', to: 'DownloadsSettings' },
   { icon: 'cloud', title: '云备份', sub: 'WebDAV 同步歌单与设置', to: 'BackupSettings' },
   { icon: 'headphones', title: '音效设置', sub: '均衡器与空间音频', to: 'Fx' },
-  { icon: 'wave', title: '可视化设置', sub: '波形 · 频谱', to: 'VizSettings' },
-  { icon: 'globe', title: '代理设置', sub: 'HTTP / SOCKS5', to: 'ProxySettings' },
   { icon: 'settings', title: '基本设置', sub: '启动、缓存与存储', to: 'BasicSettings' },
   { icon: 'info', title: '关于与帮助', sub: `版本 ${APP_VERSION}`, to: 'About' },
 ];
