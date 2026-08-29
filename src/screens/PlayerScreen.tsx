@@ -335,7 +335,7 @@ const st = StyleSheet.create({
   pMeta: { flex: 1, marginLeft: 13, gap: 2 },
   pTitle: { color: C.text, fontSize: 18, lineHeight: 22, fontWeight: '700' },
   pSub: { color: C.text2, fontSize: 12, lineHeight: 14 },
-  pProg: { color: 'C.brandSoft', fontSize: 10, lineHeight: 14, fontWeight: '600' },
+  pProg: { color: C.brandSoft, fontSize: 10, lineHeight: 14, fontWeight: '600' },
   pIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#242424', alignItems: 'center', justifyContent: 'center' },
   seekHit: { height: 28, justifyContent: 'center' },
   bar: { height: 4, flexDirection: 'row', backgroundColor: '#2B2B2B' },

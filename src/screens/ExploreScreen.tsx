@@ -517,7 +517,7 @@ const st = StyleSheet.create({
   chartHeroMeta: { color: C.text2, fontSize: 11, lineHeight: 13, marginTop: 6 },
   rankBadge: {
     position: 'absolute', right: 18, top: 18, width: 56, height: 56, borderRadius: 28,
-    backgroundColor: 'C.brand', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center',
   },
   rankBadgeText: { color: C.text, fontSize: 20, lineHeight: 24, fontWeight: '700' },
   chartRow: { flexDirection: 'row', gap: 8 },

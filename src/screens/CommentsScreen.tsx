@@ -220,7 +220,7 @@ const st = StyleSheet.create({
   pillTextOn: { color: C.onBrand },
   center: { paddingVertical: 40, alignItems: 'center' },
   localLabel: { color: C.text3, fontSize: 11, lineHeight: 15, marginTop: 10, marginBottom: 4 },
-  cardMine: { borderColor: 'C.brand33', borderWidth: StyleSheet.hairlineWidth },
+  cardMine: { borderColor: C.brandDim, borderWidth: StyleSheet.hairlineWidth },
   delText: { color: C.text3, fontSize: 11 },
   empty: { color: C.text2, fontSize: 12, textAlign: 'center', paddingVertical: 40 },
   card: { flexDirection: 'row', gap: 12, paddingHorizontal: 20, paddingVertical: 12 },

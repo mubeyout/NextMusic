@@ -89,7 +89,7 @@ export function ThemeScreen() {
   const nav = useNavigation() as { goBack: () => void };
   const s = useSettings();
   const accents = [
-    { name: 'Next 绿', color: 'C.brand' },
+    { name: 'Next 绿', color: '#1ED760' },
     { name: '薄暮蓝', color: '#3B82F6' },
     { name: '晚樱粉', color: '#F472B6' },
     { name: '琥珀橙', color: '#F59E0B' },

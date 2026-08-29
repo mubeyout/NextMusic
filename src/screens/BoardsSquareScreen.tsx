@@ -20,7 +20,7 @@ const SOURCES: { key: string; label: string; sub: string }[] = [
 ];
 
 const ACCENTS: [string, string][] = [
-  ['C.brand', '#1F5E3A'], ['#1F87D6', '#1F3A6E'], ['#B01F87', '#5E1F4E'],
+  [C.brand, '#1F5E3A'], ['#1F87D6', '#1F3A6E'], ['#B01F87', '#5E1F4E'],
   ['#D67A1F', '#6E3A1F'], ['#871FD6', '#3A1F5E'], ['#1FD6C0', '#1F5E5A'],
 ];
 

@@ -336,7 +336,7 @@ const st = StyleSheet.create({
   },
   bannerTitle: { color: C.text, fontSize: 15, lineHeight: 18, fontWeight: '700' },
   bannerMeta: { color: C.text2, fontSize: 11, lineHeight: 13, marginTop: 6 },
-  newBtn: { height: 36, borderRadius: 18, backgroundColor: 'C.brand', paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
+  newBtn: { height: 36, borderRadius: 18, backgroundColor: C.brand, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
   newBtnText: { color: C.white, fontSize: 12, lineHeight: 14, fontWeight: '500' },
   quickRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
   quickCard: { flex: 1, height: 66, borderRadius: 12, backgroundColor: '#2B2B2B', padding: 12, justifyContent: 'center', gap: 6 },
