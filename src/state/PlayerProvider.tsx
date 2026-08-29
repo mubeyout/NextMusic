@@ -439,6 +439,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   // —— 投屏控制（dlna / cast / airplay 三通道）——
   const startCast = useCallback((dev: DlnaDevice | CastDevice | AirPlayDevice, kind: CastKind) => {
+    // 切换协议/设备：先停旧会话（否则渲染器残留旧流/双唱）
+    const prev = castRef.current;
+    if (prev && (prev.kind !== kind || (prev.dev as { uuid?: string }).uuid !== (dev as { uuid?: string }).uuid)) {
+      castRef.current = null;
+      setCast(null);
+      if (prev.kind === 'airplay') airplay.stop().catch(() => {});
+      else (prev.kind === 'dlna' ? dlna : googleCast).stop(prev.dev as never).catch(() => {});
+    }
     if (kind === 'airplay') {
       airplay.start(dev as AirPlayDevice)
         .then(() => {

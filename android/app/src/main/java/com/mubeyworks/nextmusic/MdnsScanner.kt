@@ -251,8 +251,9 @@ class MdnsScanner(
     }
 
     private fun prettyInstance(inst: String): String {
-        // raop 实例名 "58D55D7F4C5A@Living Room" → "Living Room"；转义 \032 等还原
-        val raw = if (inst.contains('@')) inst.substringAfter('@') else inst
+        // raop 实例名 "58D55D7F4C5A@Living Room._raop._tcp.local" → "Living Room"；服务后缀/转义清理
+        var raw = if (inst.contains('@')) inst.substringAfter('@') else inst
+        raw = raw.removeSuffix("._raop._tcp.local").removeSuffix("._googlecast._tcp.local").removeSuffix(".local")
         return raw.replace("\\\\", "\\").ifBlank { inst }
     }
 }
