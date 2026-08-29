@@ -197,8 +197,12 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
         if (bypass) {
             val remaining = inputBuffer.remaining()
             val out = replaceOutputBuffer(remaining)
-            out.put(inputBuffer)
-            out.flip()
+            // 防御：pipeline 偶发把上次未消费完的 output 回喂为本次 input（src==this 时 put 抛 IllegalArgumentException）。
+            // 同体时数据已在 output 位，保持 position/limit 不动；正常路径整体转移。
+            if (out !== inputBuffer) {
+                out.put(inputBuffer)
+                out.flip()
+            }
             return
         }
 

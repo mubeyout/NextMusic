@@ -284,11 +284,21 @@ function mapEmbySong(a: ProviderAcct, pid: string, it: Record<string, unknown>, 
     albumId: albumId || '',
     albumName: it.Album ? String(it.Album) : undefined,
     interval: fmtSec(Number(it.RunTimeTicks) / 10000000),
+    container: it.Container ? String(it.Container).toLowerCase() : undefined,
     img: (it.ImageTags as Record<string, string> | undefined)?.Primary
       ? `${embyRoot(a)}/Items/${it.Id}/Images/Primary?maxWidth=300${a.token ? `&api_key=${a.token}` : ''}`
       : undefined,
   } as SongItem;
 }
+
+/** 转码流（Emby/JF）：PlaySessionId 必须唯一 —— Emby 按 session 命名转码临时目录，缺省时重试 job 会复用同一目录互删文件（实测 ffmpeg exit 1） */
+function transcodeUrlFor(a: ProviderAcct, itemId: string): { url: string; headers?: Record<string, string> } {
+  const psid = 'nm' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
+  return { url: `${embyRoot(a)}/Audio/${itemId}/stream.mp3?audioBitRate=320&PlaySessionId=${psid}`, headers: embyHeaders(a) };
+}
+
+/** ExoPlayer 可直解的音频容器；其余（ape/wma/alac/aiff…）直流必败，只能转码 */
+const DIRECT_PLAY_OK = new Set(['mp3', 'm4a', 'aac', 'flac', 'ogg', 'oga', 'opus', 'wav', 'webma', 'webm']);
 
 export const providerApi = {
   /** 连接测试 + 登录（成功返回更新后的账号，含 token/userId） */
@@ -403,7 +413,7 @@ export const providerApi = {
       return (d.randomSongs?.song || []).map(s => mapSubSong(a, pid, s));
     }
     if (PROTOCOL[a.type] === 'emby' || PROTOCOL[a.type] === 'jellyfin') {
-      const d = (await embyFetch(a, `/Users/${a.userId}/Items?IncludeItemTypes=Audio&Recursive=true&SortBy=Random&Limit=${size}`)) as { Items?: Record<string, unknown>[] };
+      const d = (await embyFetch(a, `/Users/${a.userId}/Items?IncludeItemTypes=Audio&Recursive=true&SortBy=Random&Limit=${size}&Fields=Container`)) as { Items?: Record<string, unknown>[] };
       return (d.Items || []).map(it => mapEmbySong(a, pid, it));
     }
     return [];
@@ -440,7 +450,7 @@ export const providerApi = {
       return (d.playlist?.entry || []).map(s => mapSubSong(a, pid, s));
     }
     if (PROTOCOL[a.type] === 'emby' || PROTOCOL[a.type] === 'jellyfin') {
-      const d = (await embyFetch(a, `/Users/${a.userId}/Items?ParentId=${playlistId}&IncludeItemTypes=Audio&SortBy=ParentIndexNumber,IndexNumber,SortName&Limit=500`)) as { Items?: Record<string, unknown>[] };
+      const d = (await embyFetch(a, `/Users/${a.userId}/Items?ParentId=${playlistId}&IncludeItemTypes=Audio&SortBy=ParentIndexNumber,IndexNumber,SortName&Limit=500&Fields=Container`)) as { Items?: Record<string, unknown>[] };
       return (d.Items || []).map(it => mapEmbySong(a, pid, it));
     }
     return [];
@@ -454,7 +464,7 @@ export const providerApi = {
       return (d.album?.song || []).map(s => mapSubSong(a, pid, s, albumId));
     }
     if (PROTOCOL[a.type] === 'emby' || PROTOCOL[a.type] === 'jellyfin') {
-      const d = (await embyFetch(a, `/Users/${a.userId}/Items?ParentId=${albumId}&IncludeItemTypes=Audio&SortBy=ParentIndexNumber,IndexNumber,SortName&Limit=500`)) as { Items?: Record<string, unknown>[] };
+      const d = (await embyFetch(a, `/Users/${a.userId}/Items?ParentId=${albumId}&IncludeItemTypes=Audio&SortBy=ParentIndexNumber,IndexNumber,SortName&Limit=500&Fields=Container`)) as { Items?: Record<string, unknown>[] };
       return (d.Items || []).map(it => mapEmbySong(a, pid, it, albumId));
     }
     return [];
@@ -481,6 +491,9 @@ export const providerApi = {
     const proto = PROTOCOL[a.type];
     if (proto === 'subsonic') return { url: subUrl(a, 'stream', { id: itemId, maxBitRate: '0', format: 'raw' }) };
     if (proto === 'emby' || proto === 'jellyfin') {
+      // 无损容器 ExoPlayer 解不了（ape/wma/alac...）：直流必报 UnrecognizedInputFormatException，直接出转码流
+      const c = song.container;
+      if (c && !DIRECT_PLAY_OK.has(c)) return transcodeUrlFor(a, itemId);
       return { url: `${embyRoot(a)}/Audio/${itemId}/stream?static=true`, headers: embyHeaders(a) };
     }
     return null;
@@ -502,8 +515,8 @@ export const providerApi = {
     const proto = PROTOCOL[a.type];
     if (proto === 'subsonic') return { url: subUrl(a, 'stream', { id: itemId, maxBitRate: '320' }) };
     if (proto === 'emby' || proto === 'jellyfin') {
-      // 服务端转码 mp3：外网/弱网下比无损直流可靠得多
-      return { url: `${embyRoot(a)}/Audio/${itemId}/stream.mp3?audioBitRate=320`, headers: embyHeaders(a) };
+      // 服务端转码 mp3：外网/弱网下比无损直流可靠得多；PlaySessionId 唯一化防转码目录互删
+      return transcodeUrlFor(a, itemId);
     }
     return null;
   },

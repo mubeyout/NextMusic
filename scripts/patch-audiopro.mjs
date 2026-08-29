@@ -54,6 +54,21 @@ patch(
   ].join('\n'),
 );
 
+// 1b) 媒体库转码流超时调大：Emby 服务端转码冷启动（rclone 随机读 ape 尾 + ValidateEncoderOutput）可 >8s，
+// 默认 8s read timeout 会反复断开重试。connect 15s / read 30s。
+patch(
+  'AudioProPlaybackService.kt',
+  '[NextMusic-FX:timeouts]',
+  '\t\t\t\tval httpDataSourceFactory = DefaultHttpDataSource.Factory()\n',
+  [
+    '\t\t\t\tval httpDataSourceFactory = DefaultHttpDataSource.Factory()',
+    '\t\t\t\t// [NextMusic-FX:timeouts] 转码流冷启动可 >8s（rclone 随机读/ValidateEncoderOutput），默认 8s read timeout 会断开重试',
+    '\t\t\t\t\t.setConnectTimeoutMs(15_000)',
+    '\t\t\t\t\t.setReadTimeoutMs(30_000)',
+    ''
+  ].join('\n'),
+);
+
 // 2a) 音调状态变量
 patch(
   'AudioProController.kt',
@@ -124,10 +139,12 @@ function patchJs(rel, marker, pairs) {
     return;
   }
   for (const [from, to] of pairs) {
+    if (!s.includes(from) && s.includes(to)) continue; // 旧版已打但无 marker：跳过
     const i = s.indexOf(from);
     if (i < 0) throw new Error(`[patch-audiopro] ${rel}: anchor not found:\n${from}`);
     s = s.slice(0, i) + to + s.slice(i + from.length);
   }
+  s = s.replace("'use strict';", `'use strict';\n/* ${marker} */`, 1);
   writeFileSync(p, s);
   console.log(`[patch-audiopro] ${rel} ${marker}: patched`);
 }

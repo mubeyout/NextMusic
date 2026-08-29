@@ -324,7 +324,12 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const st = AudioPro.getState();
     if (st === AudioProState.PLAYING) AudioPro.pause();
     else if (st === AudioProState.PAUSED) AudioPro.resume();
-  }, []);
+    else {
+      // ERROR/IDLE（如媒体库歌取流失败后）：重新取流播当前曲，否则播放键变死键
+      const t = queueRef.current[idxRef.current];
+      if (t) resolveAndPlay(t).catch(() => setPlaying(false));
+    }
+  }, [resolveAndPlay]);
 
   const skipNext = useCallback(async () => { goTo(idxRef.current + 1); }, [goTo]);
   const skipPrev = useCallback(async () => {

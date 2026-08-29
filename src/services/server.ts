@@ -14,6 +14,7 @@ export interface SongItem {
   types?: { type: string; size: string }[];
   _types?: Record<string, { size: string }>;
   typeUrl?: Record<string, string>;
+  container?: string; // 媒体库源：音频容器（ape/wma 等无损需服务端转码，ExoPlayer 解不了）
 }
 
 export interface SongListMeta {
