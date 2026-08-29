@@ -289,12 +289,64 @@ class DlnaModule(reactContext: ReactApplicationContext) :
                     c, AV_TRANSPORT, "Play",
                     "<u:Play xmlns:u=\"$AV_TRANSPORT\"><InstanceID>0</InstanceID><Speed>1</Speed></u:Play>",
                 )
+                // 切流验证（lx32）：SOAP 200 不代表渲染器真的切换了——部分渲染器加载新流失败时会继续播旧流，
+                // 造成「App 显示新歌、设备还在放旧歌」的串台。轮询 TrackURI，连续 2 次仍指向别的流 → 判定失败
+                if (!verifySwitch(c, finalUrl)) {
+                    try {
+                        soap(c, AV_TRANSPORT, "Stop", "<u:Stop xmlns:u=\"$AV_TRANSPORT\"><InstanceID>0</InstanceID></u:Stop>")
+                    } catch (_: Throwable) {}
+                    throw RuntimeException("renderer did not switch to the pushed stream")
+                }
                 p.resolve(true)
             } catch (t: Throwable) {
                 p.reject("E_CAST", t)
             }
         }
     }
+
+    /**
+     * 验证渲染器已切到指定流（宽松优先，避免误杀慢加载的转码流）：
+     * - TrackURI == 推送 URL → 通过
+     * - TrackURI 非空且 != URL，且不在 TRANSITIONING（转码冷启动缓冲期可能暂报旧值），连续 2 次 → 失败
+     * - 渲染器不上报 TrackURI → 「PLAYING 且起播位置 ≈ 0」启发式
+     * - 16s 无定论（缓冲慢）→ 放行，交给轮询处理
+     */
+    private fun verifySwitch(c: String, url: String): Boolean {
+        var mismatches = 0
+        val t0 = SystemClock.elapsedRealtime()
+        while (SystemClock.elapsedRealtime() - t0 < 16000) {
+            try { Thread.sleep(800) } catch (_: InterruptedException) { return true }
+            try {
+                val posResp = soap(
+                    c, AV_TRANSPORT, "GetPositionInfo",
+                    "<u:GetPositionInfo xmlns:u=\"$AV_TRANSPORT\"><InstanceID>0</InstanceID><Track>1</Track></u:GetPositionInfo>",
+                )
+                val trackUri = unescapeXml(Regex("<TrackURI>([^<]*)</TrackURI>").find(posResp)?.groupValues?.get(1)?.trim() ?: "")
+                if (trackUri.isNotEmpty()) {
+                    if (trackUri.equals(url, ignoreCase = true)) return true
+                    if (transportState(c) == "TRANSITIONING") continue // 缓冲中，旧值不算数
+                    if (++mismatches >= 2) return false
+                    continue
+                }
+                // 不上报 TrackURI 的渲染器：起播位置启发
+                val rel = Regex("<RelTime>([^<]*)</RelTime>").find(posResp)?.groupValues?.get(1)
+                if (parseHms(rel) in 0..8 && transportState(c) == "PLAYING") return true
+            } catch (_: Throwable) { /* 单次查询失败下一轮重试 */ }
+        }
+        return true
+    }
+
+    private fun transportState(c: String): String = try {
+        val stResp = soap(
+            c, AV_TRANSPORT, "GetTransportInfo",
+            "<u:GetTransportInfo xmlns:u=\"$AV_TRANSPORT\"><InstanceID>0</InstanceID></u:GetTransportInfo>",
+        )
+        Regex("<CurrentTransportState>([^<]+)</CurrentTransportState>").find(stResp)?.groupValues?.get(1) ?: ""
+    } catch (_: Throwable) { "" }
+
+    private fun unescapeXml(s: String): String = s
+        .replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"")
+        .replace("&apos;", "'").replace("&#39;", "'").replace("&amp;", "&")
 
     @ReactMethod
     fun play(dev: ReadableMap, p: Promise) = simpleAV(dev, "Play", "<InstanceID>0</InstanceID><Speed>1</Speed>", p)

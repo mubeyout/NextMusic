@@ -132,6 +132,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         .then(() => setPlaying(true))
         .catch(() => {
           toast('投屏失败，已回到本机播放');
+          dlna.stop(cd).catch(() => {}); // 防渲染器残留旧流（串台）：切流失败/断连时先停掉再回本机
           castRef.current = null;
           setCast(null);
           AudioPro.play(trackToAudioPro(t, url), opts);
