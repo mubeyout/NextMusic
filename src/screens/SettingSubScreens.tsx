@@ -133,32 +133,44 @@ export function AboutScreen() {
   const [checking, setChecking] = useState(false);
 
   const checkUpdate = async () => {
-    const url = (s.updateUrl || DEFAULT_UPDATE_URL).trim();
-    if (!/^https?:\/\//.test(url)) { toast('更新源地址无效'); return; }
+    // 多源降级：用户配置源 → 内网自建 → jsDelivr CDN（GitHub 公开仓镜像）→ GitHub raw
+    const urls = [...new Set([
+      (s.updateUrl || '').trim(),
+      DEFAULT_UPDATE_URL,
+      'https://cdn.jsdelivr.net/gh/mubeyout/nextmusic-release@main/update.json',
+      'https://raw.githubusercontent.com/mubeyout/nextmusic-release/main/update.json',
+    ].filter(u => /^https?:\/\//.test(u)))];
     setChecking(true);
+    let lastErr = '';
     try {
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 10000);
-      const r = await fetch(url, { signal: ctrl.signal });
-      clearTimeout(t);
-      const info = await r.json() as { versionName?: string; versionCode?: number; notes?: string; apkUrl?: string };
-      const local = AppVersionNative?.versionCode ?? 0;
-      const remote = info.versionCode ?? 0;
-      if (!remote) throw new Error('更新源数据缺失');
-      if (remote <= local) {
-        dialog.alert('检查更新', `当前已是最新版本（${APP_VERSION}）`);
-      } else {
-        dialog.alert(
-          `发现新版本 ${info.versionName || ''}`,
-          (info.notes || '').slice(0, 600) + '\n\n可下载 APK 后直接覆盖安装，歌单与设置不受影响。',
-          [
-            { text: '取消', style: 'cancel' },
-            { text: '下载 APK', onPress: () => { if (info.apkUrl) Linking.openURL(info.apkUrl); else toast('更新源未提供下载地址'); } },
-          ],
-        );
+      for (const url of urls) {
+        try {
+          const ctrl = new AbortController();
+          const t = setTimeout(() => ctrl.abort(), 8000);
+          const r = await fetch(url, { signal: ctrl.signal });
+          clearTimeout(t);
+          const info = await r.json() as { versionName?: string; versionCode?: number; notes?: string; apkUrl?: string };
+          const local = AppVersionNative?.versionCode ?? 0;
+          const remote = info.versionCode ?? 0;
+          if (!remote || !info.versionName) throw new Error('更新源数据缺失');
+          if (remote <= local) {
+            dialog.alert('检查更新', `当前已是最新版本（${APP_VERSION}）`);
+          } else {
+            dialog.alert(
+              `发现新版本 ${info.versionName}`,
+              (info.notes || '').slice(0, 600) + '\n\n可下载 APK 后直接覆盖安装，歌单与设置不受影响。',
+              [
+                { text: '取消', style: 'cancel' },
+                { text: '下载 APK', onPress: () => { if (info.apkUrl) Linking.openURL(info.apkUrl); else toast('更新源未提供下载地址'); } },
+              ],
+            );
+          }
+          return; // 任一源成功即结束
+        } catch (e) { lastErr = (e as Error).message; }
       }
+      throw new Error(lastErr || '所有更新源均不可达');
     } catch (e) {
-      dialog.alert('检查更新失败', `无法访问更新源：${(e as Error).message}\n\n请确认网络可达，或在「更新源地址」中配置可用地址。`);
+      dialog.alert('检查更新失败', `无法访问更新源：${(e as Error).message}\n\n内网/外网源均已尝试，请稍后重试。`);
     } finally { setChecking(false); }
   };
 
