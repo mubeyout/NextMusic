@@ -7,7 +7,7 @@ import type { SongItem } from '../services/server';
 import { api } from '../services/server';
 import { lxapi } from '../services/lxapi';
 import { customGetMusicUrl, activeSources } from '../services/customSource';
-import { providerApi, PROVIDER_META, type ProviderType } from '../services/providers';
+import { providerApi, providers, PROVIDER_META, type ProviderType } from '../services/providers';
 import { downloads as dlStore } from '../services/downloads';
 import { settings } from '../services/settings';
 import { useApp } from './AppState';
@@ -47,6 +47,16 @@ const toTrack = (s: SongItem): QueueTrack => ({ ...s, uid: `${s.source}-${s.song
 // 第三方媒体库源：播放依赖对应账号连接（emby/jellyfin/subsonic 系/webdav）
 const PROVIDER_SOURCES = ['emby', 'jellyfin', 'subsonic', 'navidrome', 'daoliyu', 'webdav'];
 const isProviderSource = (s?: { source?: string } | null) => !!s?.source && PROVIDER_SOURCES.includes(s.source);
+
+// 播放回写：songmid = "pid:itemId"，取 pid 对应账号 scrobble；找不到账号（如 webdav）静默跳过
+function scrobbleProvider(t: SongItem) {
+  try {
+    const mid = String(t.songmid ?? '');
+    const pid = mid.includes(':') ? mid.split(':')[0] : '';
+    const acct = pid ? providers.get(pid) : null;
+    if (acct) providerApi.scrobble(acct, mid.slice(pid.length + 1)).catch(() => {});
+  } catch { /* 统计失败不影响播放 */ }
+}
 
 let configured = false;
 export async function setupPlayer() {
@@ -141,11 +151,12 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         setCurrent(t);
         return;
       }
-      // ② 已下载：离线播放本地文件
+      // ② 已下载：离线播放本地文件（媒体库歌离线播也回写服务器统计——听过了就算数）
       const dlPath = dlStore.pathFor(t);
       if (dlPath) {
         AudioPro.play(trackToAudioPro(t, dlPath));
         setCurrent(t);
+        if (isProviderSource(t)) scrobbleProvider(t);
         return;
       }
       // ③ 媒体库源（emby/jellyfin/subsonic/webdav）：直接出流地址 + 鉴权头
@@ -156,6 +167,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         const opts = p.headers ? { headers: { audio: p.headers, artwork: p.headers } } : undefined;
         AudioPro.play(trackToAudioPro(t, p.url, p.headers), opts);
         setCurrent(t);
+        scrobbleProvider(t); // 播放统计回写服务器（fire-and-forget）
         return;
       }
       const token = tokenRef.current;

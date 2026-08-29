@@ -30,6 +30,7 @@ import { ImportPlaylistScreen } from './screens/ImportPlaylistScreen';
 import { FxScreen } from './screens/FxScreen';
 import { ProviderEditScreen } from './screens/ProviderEditScreen';
 import { MediaLibsScreen, ProviderBrowseRoute } from './screens/MediaLibsScreen';
+import { ProviderDetailScreen } from './screens/ProviderDetailScreen';
 import { DownloadsScreen } from './screens/DownloadsScreen';
 import { BoardsSquareScreen } from './screens/BoardsSquareScreen';
 import { DeviceMusicScreen } from './screens/DeviceMusicScreen';
@@ -117,6 +118,7 @@ export function RootNavigator() {
         <Stack.Screen name="MediaLibs" component={MediaLibsScreen} />
         <Stack.Screen name="ProviderEdit" component={ProviderEditScreen} />
         <Stack.Screen name="ProviderBrowse" component={ProviderBrowseRoute} />
+        <Stack.Screen name="ProviderDetail" component={ProviderDetailScreen} />
         <Stack.Screen name="Downloads" component={DownloadsScreen} />
         <Stack.Screen name="BoardsSquare" component={BoardsSquareScreen} />
         <Stack.Screen name="DeviceMusic" component={DeviceMusicScreen} />

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIn
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
-import { Icon } from '../theme/Icon';
+import { Icon, BrandIcon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { PillTabs } from '../components/PillTabs';
 import { EmptyState } from '../components/PageChrome';
@@ -17,6 +17,7 @@ import { getRecents } from '../state/recent';
 import { sync, lxToApp, type UserListsSnapshot } from '../services/sync';
 import { downloads as dlStore, subscribeDownloads, fmtBytes } from '../services/downloads';
 import { deviceTrackCount } from '../services/devicelibrary';
+import { providers, PROVIDER_META, type ProviderAcct } from '../services/providers';
 import type { SongItem } from '../services/server';
 
 // Figma 2154-702 我的·歌单: title 28 + settings btn(#2b2b2b round) + pills +
@@ -154,6 +155,41 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
               <Text style={st.quickMeta}>{localCount ? `${localCount} 首` : '点此扫描'}</Text>
             </TouchableOpacity>
           </View>
+
+          {/* 媒体库：已连服务器直接进曲库（amcfy 式入口前置，不再只藏在设置里） */}
+          <View style={st.sectionRow}>
+            <Text style={st.sectionTitle}>媒体库</Text>
+            <TouchableOpacity onPress={() => nav.navigate('MediaLibs')} hitSlop={4}>
+              <Text style={st.sectionMeta}>{providers.all().length ? '管理 ›' : '接入 ›'}</Text>
+            </TouchableOpacity>
+          </View>
+          {(() => {
+            const pv = providers.all();
+            if (!pv.length) return (
+              <TouchableOpacity style={st.pvAddRow} activeOpacity={0.7} onPress={() => nav.navigate('MediaLibs')}>
+                <Icon name="add" size={16} color={C.brand} />
+                <Text style={st.pvAddText}>接入 Emby / Jellyfin / Navidrome / 道理鱼 / WebDAV</Text>
+              </TouchableOpacity>
+            );
+            return (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 4 }}>
+                {pv.map((a: ProviderAcct) => {
+                  const brand = ['emby', 'jellyfin', 'navidrome', 'subsonic', 'webdav'].includes(a.type);
+                  return (
+                    <TouchableOpacity
+                      key={a.id} style={st.pvCard} activeOpacity={0.85}
+                      onPress={() => nav.navigate('ProviderBrowse', { acctId: a.id })}
+                      onLongPress={() => nav.navigate('ProviderEdit', { acctId: a.id })}
+                    >
+                      {brand ? <BrandIcon name={a.type as never} size={18} /> : <Icon name="music" size={18} color={C.text} />}
+                      <Text style={st.pvName} numberOfLines={1}>{a.name || PROVIDER_META[a.type].label}</Text>
+                      <Text style={st.pvMeta} numberOfLines={1}>{PROVIDER_META[a.type].label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            );
+          })()}
 
           {/* 自建歌单 grid */}
           <View style={st.sectionRow}>
@@ -304,6 +340,11 @@ const st = StyleSheet.create({
   newBtnText: { color: C.white, fontSize: 12, lineHeight: 14, fontWeight: '500' },
   quickRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
   quickCard: { flex: 1, height: 66, borderRadius: 12, backgroundColor: '#2B2B2B', padding: 12, justifyContent: 'center', gap: 6 },
+  pvCard: { width: 138, minHeight: 64, borderRadius: 12, backgroundColor: '#2B2B2B', padding: 12, justifyContent: 'center', gap: 5 },
+  pvName: { color: C.text, fontSize: 12, lineHeight: 15, fontWeight: '600' },
+  pvMeta: { color: C.text2, fontSize: 9, lineHeight: 12 },
+  pvAddRow: { minHeight: 48, borderRadius: 12, backgroundColor: '#2B2B2B', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  pvAddText: { color: C.text2, fontSize: 11, lineHeight: 15 },
   quickTitle: { color: C.text, fontSize: 12, lineHeight: 14, fontWeight: '500' },
   quickMeta: { color: C.text2, fontSize: 10, lineHeight: 12 },
   sectionRow: { flexDirection: 'row', alignItems: 'center', height: 26, marginTop: 12 },

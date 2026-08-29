@@ -257,6 +257,39 @@ async function embyFetch(a: ProviderAcct, path: string, init?: RequestInit & { r
 }
 
 // ---------- 对外 API ----------
+export interface PvArtist { id: string; name: string; albumCount?: number; cover?: string }
+export interface PvAlbum { id: string; name: string; artist?: string; songCount?: number; cover?: string; year?: number }
+export interface PvPlaylist { id: string; name: string; songCount?: number; cover?: string }
+
+// Subsonic song → SongItem（getAlbum/getPlaylist/getRandomSongs 共用）
+function mapSubSong(a: ProviderAcct, pid: string, s: Record<string, unknown>, albumId?: string): SongItem {
+  return {
+    name: String(s.title || s.album || '未知曲目'),
+    singer: String(s.artist || ''),
+    source: 'subsonic',
+    songmid: `${pid}:${s.id}`,
+    albumId: String(s.albumId || albumId || ''),
+    albumName: s.album ? String(s.album) : undefined,
+    interval: fmtSec(Number(s.duration)),
+    img: s.coverArt ? subUrl(a, 'getCoverArt', { id: String(s.coverArt), size: '300' }) : undefined,
+  } as SongItem;
+}
+// Emby/Jellyfin item → SongItem（专辑/歌单/随机 共用）
+function mapEmbySong(a: ProviderAcct, pid: string, it: Record<string, unknown>, albumId?: string): SongItem {
+  return {
+    name: String(it.Name || '未知曲目'),
+    singer: it.Artists ? String((it.Artists as string[]).join(', ')) : (it.AlbumArtist ? String(it.AlbumArtist) : ''),
+    source: a.type,
+    songmid: `${pid}:${it.Id}`,
+    albumId: albumId || '',
+    albumName: it.Album ? String(it.Album) : undefined,
+    interval: fmtSec(Number(it.RunTimeTicks) / 10000000),
+    img: (it.ImageTags as Record<string, string> | undefined)?.Primary
+      ? `${embyRoot(a)}/Items/${it.Id}/Images/Primary?maxWidth=300${a.token ? `&api_key=${a.token}` : ''}`
+      : undefined,
+  } as SongItem;
+}
+
 export const providerApi = {
   /** 连接测试 + 登录（成功返回更新后的账号，含 token/userId） */
   async connect(a: ProviderAcct): Promise<ProviderAcct> {
@@ -291,14 +324,15 @@ export const providerApi = {
     throw lastErr || new Error('连接失败');
   },
 
-  /** 专辑/歌单列表 */
-  async albums(a: ProviderAcct): Promise<{ id: string; name: string; artist?: string; songCount?: number; cover?: string }[]> {
+  /** 专辑列表（P0 浏览页「专辑」段） */
+  async albums(a: ProviderAcct): Promise<PvAlbum[]> {
     if (PROTOCOL[a.type] === 'subsonic') {
       const d = await subCall<{ albumList2?: { album?: Record<string, unknown>[] } }>(a, 'getAlbumList2', { type: 'alphabeticalByName', size: '200' });
       return (d.albumList2?.album || []).map(al => ({
         id: String(al.id), name: String(al.name || ''),
         artist: al.artist ? String(al.artist) : undefined,
         songCount: al.songCount ? Number(al.songCount) : undefined,
+        year: al.year ? Number(al.year) : undefined,
         cover: al.coverArt ? subUrl(a, 'getCoverArt', { id: String(al.coverArt), size: '300' }) : undefined,
       }));
     }
@@ -308,47 +342,120 @@ export const providerApi = {
         id: String(it.Id), name: String(it.Name || ''),
         artist: it.AlbumArtist ? String(it.AlbumArtist) : (it.Artists ? String((it.Artists as string[])[0] || '') : undefined),
         songCount: it.ChildCount ? Number(it.ChildCount) : undefined,
-        // emby 支持 api_key query；jellyfin 图片端点同样兼容 api_key（老版本），失败则无封面
+        year: it.ProductionYear ? Number(it.ProductionYear) : undefined,
         cover: `${embyRoot(a)}/Items/${it.Id}/Images/Primary?maxWidth=300${a.token ? `&api_key=${a.token}` : ''}`,
       }));
     }
     return [];
   },
 
-  /** 专辑内歌曲 */
+  /** 艺术家列表（浏览页「艺术家」段；Subsonic getArtists / Emby MusicArtist） */
+  async artists(a: ProviderAcct): Promise<PvArtist[]> {
+    if (PROTOCOL[a.type] === 'subsonic') {
+      const d = await subCall<{ artists?: { index?: { artist?: Record<string, unknown>[] }[] } }>(a, 'getArtists');
+      const flat = (d.artists?.index || []).flatMap(ix => ix.artist || []);
+      return flat.map(ar => ({
+        id: String(ar.id), name: String(ar.name || ''),
+        albumCount: ar.albumCount ? Number(ar.albumCount) : undefined,
+        cover: ar.coverArt ? subUrl(a, 'getCoverArt', { id: String(ar.coverArt), size: '300' }) : undefined,
+      }));
+    }
+    if (PROTOCOL[a.type] === 'emby' || PROTOCOL[a.type] === 'jellyfin') {
+      const d = (await embyFetch(a, `/Users/${a.userId}/Items?IncludeItemTypes=MusicArtist&Recursive=true&SortBy=SortName&Limit=300`)) as { Items?: Record<string, unknown>[] };
+      return (d.Items || []).map(it => ({
+        id: String(it.Id), name: String(it.Name || ''),
+        cover: (it.ImageTags as Record<string, string> | undefined)?.Primary
+          ? `${embyRoot(a)}/Items/${it.Id}/Images/Primary?maxWidth=300${a.token ? `&api_key=${a.token}` : ''}`
+          : undefined,
+      }));
+    }
+    return [];
+  },
+
+  /** 某艺术家的专辑（艺术家详情页；Subsonic getArtist / Emby AlbumArtistIds 过滤） */
+  async artistAlbums(a: ProviderAcct, artistId: string): Promise<PvAlbum[]> {
+    if (PROTOCOL[a.type] === 'subsonic') {
+      const d = await subCall<{ artist?: { album?: Record<string, unknown>[] } }>(a, 'getArtist', { id: artistId });
+      return (d.artist?.album || []).map(al => ({
+        id: String(al.id), name: String(al.name || ''),
+        songCount: al.songCount ? Number(al.songCount) : undefined,
+        year: al.year ? Number(al.year) : undefined,
+        cover: al.coverArt ? subUrl(a, 'getCoverArt', { id: String(al.coverArt), size: '300' }) : undefined,
+      }));
+    }
+    if (PROTOCOL[a.type] === 'emby' || PROTOCOL[a.type] === 'jellyfin') {
+      const d = (await embyFetch(a, `/Users/${a.userId}/Items?IncludeItemTypes=MusicAlbum&Recursive=true&AlbumArtistIds=${artistId}&SortBy=ProductionYear&SortOrder=Descending&Limit=100`)) as { Items?: Record<string, unknown>[] };
+      return (d.Items || []).map(it => ({
+        id: String(it.Id), name: String(it.Name || ''),
+        songCount: it.ChildCount ? Number(it.ChildCount) : undefined,
+        year: it.ProductionYear ? Number(it.ProductionYear) : undefined,
+        cover: `${embyRoot(a)}/Items/${it.Id}/Images/Primary?maxWidth=300${a.token ? `&api_key=${a.token}` : ''}`,
+      }));
+    }
+    return [];
+  },
+
+  /** 随机歌曲（浏览页「歌曲」段，换一批即重调；Subsonic getRandomSongs / Emby SortBy=Random） */
+  async randomSongs(a: ProviderAcct, size = 100): Promise<SongItem[]> {
+    const pid = a.id;
+    if (PROTOCOL[a.type] === 'subsonic') {
+      const d = await subCall<{ randomSongs?: { song?: Record<string, unknown>[] } }>(a, 'getRandomSongs', { size: String(size) });
+      return (d.randomSongs?.song || []).map(s => mapSubSong(a, pid, s));
+    }
+    if (PROTOCOL[a.type] === 'emby' || PROTOCOL[a.type] === 'jellyfin') {
+      const d = (await embyFetch(a, `/Users/${a.userId}/Items?IncludeItemTypes=Audio&Recursive=true&SortBy=Random&Limit=${size}`)) as { Items?: Record<string, unknown>[] };
+      return (d.Items || []).map(it => mapEmbySong(a, pid, it));
+    }
+    return [];
+  },
+
+  /** 服务器端歌单列表（浏览页「歌单」段） */
+  async playlists(a: ProviderAcct): Promise<PvPlaylist[]> {
+    if (PROTOCOL[a.type] === 'subsonic') {
+      const d = await subCall<{ playlists?: { playlist?: Record<string, unknown>[] } }>(a, 'getPlaylists');
+      return (d.playlists?.playlist || []).map(pl => ({
+        id: String(pl.id), name: String(pl.name || ''),
+        songCount: pl.songCount ? Number(pl.songCount) : undefined,
+        cover: pl.coverArt ? subUrl(a, 'getCoverArt', { id: String(pl.coverArt), size: '300' }) : undefined,
+      }));
+    }
+    if (PROTOCOL[a.type] === 'emby' || PROTOCOL[a.type] === 'jellyfin') {
+      const d = (await embyFetch(a, `/Users/${a.userId}/Items?IncludeItemTypes=Playlist&Recursive=true&SortBy=SortName&Limit=200&Fields=MediaType`)) as { Items?: Record<string, unknown>[] };
+      // 音乐歌单才展示（Emby 视频歌单 MediaType=Video；无 MediaType 字段的老服务器不过滤）
+      return (d.Items || [])
+        .filter(it => it.MediaType == null || String(it.MediaType) === 'Audio')
+        .map(it => ({
+          id: String(it.Id), name: String(it.Name || ''),
+          songCount: it.ChildCount ? Number(it.ChildCount) : undefined,
+        }));
+    }
+    return [];
+  },
+
+  /** 服务器歌单曲目 */
+  async playlistSongs(a: ProviderAcct, playlistId: string): Promise<SongItem[]> {
+    const pid = a.id;
+    if (PROTOCOL[a.type] === 'subsonic') {
+      const d = await subCall<{ playlist?: { entry?: Record<string, unknown>[] } }>(a, 'getPlaylist', { id: playlistId });
+      return (d.playlist?.entry || []).map(s => mapSubSong(a, pid, s));
+    }
+    if (PROTOCOL[a.type] === 'emby' || PROTOCOL[a.type] === 'jellyfin') {
+      const d = (await embyFetch(a, `/Users/${a.userId}/Items?ParentId=${playlistId}&IncludeItemTypes=Audio&SortBy=ParentIndexNumber,IndexNumber,SortName&Limit=500`)) as { Items?: Record<string, unknown>[] };
+      return (d.Items || []).map(it => mapEmbySong(a, pid, it));
+    }
+    return [];
+  },
+
+  /** 专辑内歌曲（复用映射助手） */
   async albumSongs(a: ProviderAcct, albumId: string): Promise<SongItem[]> {
     const pid = a.id;
     if (PROTOCOL[a.type] === 'subsonic') {
       const d = await subCall<{ album?: { song?: Record<string, unknown>[] } }>(a, 'getAlbum', { id: albumId });
-      return (d.album?.song || []).map(s => {
-        const id = String(s.id);
-        return {
-          name: String(s.title || s.album || '未知曲目'),
-          singer: String(s.artist || ''),
-          source: 'subsonic',
-          songmid: `${pid}:${id}`,
-          albumId: String(s.albumId || albumId),
-          albumName: s.album ? String(s.album) : undefined,
-          interval: fmtSec(Number(s.duration)),
-          img: s.coverArt ? subUrl(a, 'getCoverArt', { id: String(s.coverArt), size: '300' }) : undefined,
-        } as SongItem;
-      });
+      return (d.album?.song || []).map(s => mapSubSong(a, pid, s, albumId));
     }
     if (PROTOCOL[a.type] === 'emby' || PROTOCOL[a.type] === 'jellyfin') {
       const d = (await embyFetch(a, `/Users/${a.userId}/Items?ParentId=${albumId}&IncludeItemTypes=Audio&SortBy=ParentIndexNumber,IndexNumber,SortName&Limit=500`)) as { Items?: Record<string, unknown>[] };
-      return (d.Items || []).map(it => ({
-        name: String(it.Name || '未知曲目'),
-        singer: it.Artists ? String((it.Artists as string[]).join(', ')) : (it.AlbumArtist ? String(it.AlbumArtist) : ''),
-        source: a.type,
-        songmid: `${pid}:${it.Id}`,
-        albumId: albumId,
-        albumName: it.Album ? String(it.Album) : undefined,
-        interval: fmtSec(Number(it.RunTimeTicks) / 10000000),
-        // 有封面的歌带主图 URL（artwork 校验 + 播放页封面双受益；无图歌由 artwork-optional patch 兜底）
-        img: (it.ImageTags as Record<string, string> | undefined)?.Primary
-          ? `${embyRoot(a)}/Items/${it.Id}/Images/Primary?maxWidth=300${a.token ? `&api_key=${a.token}` : ''}`
-          : undefined,
-      })) as SongItem[];
+      return (d.Items || []).map(it => mapEmbySong(a, pid, it, albumId));
     }
     return [];
   },
@@ -377,6 +484,17 @@ export const providerApi = {
       return { url: `${embyRoot(a)}/Audio/${itemId}/stream?static=true`, headers: embyHeaders(a) };
     }
     return null;
+  },
+
+  /** 播放回写（fire-and-forget）：Subsonic scrobble / Emby·JF PlayedItems，让服务器侧有播放统计 */
+  async scrobble(a: ProviderAcct, itemId: string): Promise<void> {
+    try {
+      if (PROTOCOL[a.type] === 'subsonic') {
+        await subCall(a, 'scrobble', { id: itemId, submission: 'true' });
+      } else if (PROTOCOL[a.type] === 'emby' || PROTOCOL[a.type] === 'jellyfin') {
+        await embyFetch(a, `/Users/${a.userId}/PlayedItems/${itemId}`, { method: 'POST' });
+      }
+    } catch { /* 统计失败不影响播放 */ }
   },
 
   /** WebDAV 目录浏览：返回子目录 + 音频文件（音频文件已转 SongItem） */
