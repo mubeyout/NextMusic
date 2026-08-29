@@ -21,12 +21,19 @@ export const C: Record<string, string> = {
 };
 
 // 启动期主题覆写（模块加载时同步执行；后续所有 StyleSheet.create 拿到的就是用户主题）
+function blend(hex: string, base: string, k: number): string {
+  // hex/base: #RRGGBB；结果 = base*(1-k) + hex*k（把强调色压暗成背景渐变顶色）
+  const h = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+  const b = [1, 3, 5].map(i => parseInt(base.slice(i, i + 2), 16));
+  return '#' + h.map((v, i) => Math.round(v * k + b[i] * (1 - k)).toString(16).padStart(2, '0')).join('').toUpperCase();
+}
 export function applyBootTheme() {
   const s = settings.get();
   if (s.accent && /^#[0-9A-Fa-f]{6}$/.test(s.accent) && s.accent !== '#1ED760') {
     C.brand = s.accent;
     C.brandDim = s.accent + '47';
     C.brandSoft = s.accent;
+    C.bgGradientTop = blend(s.accent, '#121212', 0.16);
   }
   if (s.pureBlack) {
     C.bg = '#000000';

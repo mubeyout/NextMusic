@@ -2,6 +2,7 @@ import React from 'react';
 import { SvgXml } from 'react-native-svg';
 import { ICONS } from './icon-data';
 import { BRAND_ICONS } from './brand-icons';
+import { C } from './tokens';
 
 export type IconName =
   | 'home' | 'explore' | 'my' | 'search' | 'play' | 'pause' | 'more' | 'back'
@@ -33,7 +34,8 @@ export function Icon({
   const key = `${name}-${active ? 'active' : 'default'}`;
   let xml = ICONS[key] || ICONS[`${name}-default`];
   if (!xml) return null;
-  xml = recolor(xml, color);
+  // 未显式传色：active 变体跟随主题品牌色（图标库内嵌 #1ED760 仅是绿色主题下的巧合）；default 保持白色
+  xml = recolor(xml, color ?? (active ? C.brand : undefined));
   return <SvgXml xml={xml} width={size} height={size} />;
 }
 

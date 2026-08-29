@@ -238,7 +238,7 @@ const st = StyleSheet.create({
   typeCardHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   typeCardTitle: { color: C.text, fontSize: 14, fontWeight: '500' },
   typeCardSub: { color: C.text2, fontSize: 11 },
-  badge: { color: '#6BE88F', fontSize: 11, fontWeight: '500' },
+  badge: { color: 'C.brandSoft', fontSize: 11, fontWeight: '500' },
 
   // Tab 容器（Figma: #1C1C1C r12 p4，选中页签 #2B2B2B r9 h36）
   tabsWrap: { flexDirection: 'row', backgroundColor: '#1C1C1C', borderRadius: 12, padding: 4, gap: 4, height: 44 },

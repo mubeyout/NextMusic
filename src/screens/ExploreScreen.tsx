@@ -45,14 +45,14 @@ const SCENES = ['通勤', '学习', '运动', '派对', '睡眠', '旅行'];
 const LANGS = ['华语', '欧美', '日韩', '拉丁'];
 // 榜单子卡槽位（视觉固定，榜单名取真实数据）：Figma 2357:1270-1284
 const CHART_SLOTS = [
-  { match: /飙升/, caption: '24h 热度变化', tag: '↗ 18%', tagColor: '#6BE88F', accent: ['C.brand', '#591F7A'] },
+  { match: /飙升/, caption: '24h 热度变化', tag: '↗ 18%', tagColor: C.brandSoft, accent: [C.brand, '#591F7A'] },
   { match: /新歌/, caption: '本周新发行', tag: 'NEW', tagColor: '#B3B3B3', accent: ['#1FB87A', '#731F66'] },
   { match: /欧美|Billboard|全球/, caption: '32 个地区', tag: 'GLOBAL', tagColor: '#B3B3B3', accent: ['#1F9994', '#8C1F52'] },
 ];
 
 // 榜单卡渐变配色（循环取用）
 const BOARD_ACCENTS: [string, string][] = [
-  ['C.brand', '#1F5E3A'], ['#1F87D6', '#1F3A6E'], ['#B01F87', '#5E1F4E'],
+  [C.brand, '#1F5E3A'], ['#1F87D6', '#1F3A6E'], ['#B01F87', '#5E1F4E'],
   ['#D67A1F', '#6E3A1F'], ['#871FD6', '#3A1F5E'], ['#1FD6C0', '#1F5E5A'],
 ];
 
@@ -209,8 +209,8 @@ export function ExploreScreen() {
     });
   };
 
-  // 页面顶部渐变随 tab 变化（Figma：推荐绿/分类紫/榜单橙）
-  const tints = ['#0D2A1B', '#1F1433', '#381F0D'];
+  // 页面顶部渐变随 tab 变化（Figma：推荐跟主题/分类紫/榜单橙）
+  const tints = [C.bgGradientTop, '#1F1433', '#381F0D'];
   const searchHints = ['搜索歌曲、歌手、专辑', '搜索风格、心情或场景', '搜索歌曲、歌手、专辑'];
 
   // 榜单子卡：从 wy 源找匹配的真实榜单（优先短名，避免卡片文本溢出），找不到则依次回退
