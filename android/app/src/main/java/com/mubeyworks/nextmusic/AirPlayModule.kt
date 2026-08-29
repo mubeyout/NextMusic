@@ -112,7 +112,7 @@ class AirPlayModule(reactContext: ReactApplicationContext) :
 
     private inner class RaopSession(dev: ReadableMap) {
         val host = dev.getString("host") ?: ""
-        val port = if (dev.hasKey("port")) dev.getInt("port") else 7000
+        val port = (if (dev.hasKey("port")) dev.getInt("port") else 0).let { if (it > 0) it else 7000 }
         val sessionId = (System.currentTimeMillis() and 0xFFFFFFFFL).toInt()
         val dacpId = UUID.randomUUID().toString().replace("-", "").uppercase().take(16)
         val activeRemote = (System.currentTimeMillis() and 0xFFFFFFFFL).toInt()
@@ -224,9 +224,13 @@ class AirPlayModule(reactContext: ReactApplicationContext) :
         }
 
         fun handshake() {
+            // Kotlin 陷阱：Socket.getPort() 合成属性 port 在 apply 内遮蔽 RaopSession.port（未连接=0）
+            // → 必须先取局部变量，否则 connect 到 port 0（lx33 遗留根因）
+            val raopHost = host
+            val raopPort = port
             sock = Socket().apply {
                 tcpNoDelay = true
-                connect(InetSocketAddress(host, port), 5000)
+                connect(InetSocketAddress(raopHost, raopPort), 5000)
                 soTimeout = 8000
             }
             out = BufferedOutputStream(sock!!.getOutputStream())
@@ -238,6 +242,7 @@ class AirPlayModule(reactContext: ReactApplicationContext) :
             timingSock = DatagramSocket()
 
             val (st1, _, _) = rtsp("OPTIONS")
+            Log.d(TAG, "airplay hs: OPTIONS $st1")
             if (st1 != 200) throw RuntimeException("airplay: OPTIONS $st1")
 
             val sdp = buildString {
@@ -251,11 +256,13 @@ class AirPlayModule(reactContext: ReactApplicationContext) :
                 append("a=fmtp:96 $FRAMES_PER_PACKET 0 16 40 10 14 2 255 0 0 $SAMPLE_RATE\r\n")
             }.toByteArray(Charsets.ISO_8859_1)
             val (st2, _, _) = rtsp("ANNOUNCE", body = sdp, contentType = "application/sdp")
+            Log.d(TAG, "airplay hs: ANNOUNCE $st2")
             if (st2 != 200) throw RuntimeException("airplay: ANNOUNCE $st2（设备可能要求加密/配对）")
 
             val transport = "RTP/AVP/UDP;unicast;interleaved=0-1;mode=record;" +
                 "control_port=${controlSock!!.localPort};timing_port=${timingSock!!.localPort}"
             val (st3, h3, _) = rtsp("SETUP", mapOf("Transport" to transport))
+            Log.d(TAG, "airplay hs: SETUP $st3 transport=${h3["transport"]}")
             if (st3 != 200) throw RuntimeException("airplay: SETUP $st3")
             val respTransport = h3["transport"] ?: ""
             fun tparam(k: String): Int = Regex("$k=(\\d+)").find(respTransport)?.groupValues?.get(1)?.toIntOrNull() ?: 0
@@ -504,6 +511,7 @@ class AirPlayModule(reactContext: ReactApplicationContext) :
     fun start(dev: ReadableMap, p: Promise) {
         exec.execute {
             try {
+                Log.d(TAG, "airplay start: name=${dev.getString("name")} host=${dev.getString("host")} port=${if (dev.hasKey("port")) dev.getInt("port") else -1}")
                 current?.stopInternal()
                 val s = RaopSession(dev)
                 s.handshake()
@@ -516,6 +524,7 @@ class AirPlayModule(reactContext: ReactApplicationContext) :
                 Log.d(TAG, "airplay session up: ${dev.getString("name")} @ ${dev.getString("host")}:${s.serverPort}")
                 p.resolve(true)
             } catch (t: Throwable) {
+                Log.e(TAG, "airplay start fail: ${t.message}", t)
                 p.reject("E_AIRPLAY", t)
             }
         }

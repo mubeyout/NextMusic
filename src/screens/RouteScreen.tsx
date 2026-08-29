@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, BackHandler, ScrollView, NativeModules, NativeEventSubscription, PanResponder } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, BackHandler, ScrollView, NativeModules, NativeEventSubscription, PanResponder, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAudioPro } from 'react-native-audio-pro';
 import { Icon } from '../theme/Icon';
@@ -162,7 +162,7 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
             <Icon name="close" size={18} color={C.text2} />
           </TouchableOpacity>
         </View>
-        <ScrollView bounces={false} style={{ maxHeight: '72%' }} contentContainerStyle={{ paddingBottom: 6 }}>
+        <ScrollView bounces={false} style={{ flexShrink: 1 }} contentContainerStyle={{ paddingBottom: 6 }}>
           <Text style={st.title}>选择播放设备</Text>
           <Text style={st.subtitle}>{cast ? `正在${cast.kind === 'airplay' ? ' AirPlay 到' : cast.kind === 'cast' ? ' Cast 到' : '投屏到'} ${cast.dev.name}` : '让音乐在附近设备上继续播放'}</Text>
 
@@ -323,6 +323,8 @@ const st = StyleSheet.create({
   sheet: {
     backgroundColor: 'rgba(22,22,24,0.96)', borderTopLeftRadius: 20, borderTopRightRadius: 20,
     paddingHorizontal: 20, paddingTop: 8,
+    // lx35：不用百分比（transparentModal 页测量怪癖），固定 dp 上限；ScrollView flexShrink 收缩
+    maxHeight: Math.round(Dimensions.get('window').height * 0.88),
   },
   headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 28, marginBottom: 4 },
   handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#FFFFFF2E' },

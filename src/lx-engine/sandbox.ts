@@ -514,12 +514,23 @@ window.addEventListener('unhandledrejection', function (e) { __nativePost({ t: '
 __bridge.post({ t: 'ready' });
 `;
 
-export function buildSandboxHtml(): string {
-  const files = JSON.stringify(VFILES);
+function pageHtml(vfiles: unknown): string {
+  const files = JSON.stringify(vfiles);
   return `<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;padding:0}</style></head><body>
 <script>${PAKO_JS}</script>
 <script>${CRYPTOJS_JS}</script>
 <script>var __VFILES = ${files};</script>
 <script>${SHIM.replace('__mods = {}', '__mods = __VFILES')}</script>
 </body></html>`;
+}
+
+/** musicSdk 页：完整平台 SDK 虚拟模块。 */
+export function buildSandboxHtml(): string {
+  return pageHtml(VFILES);
+}
+
+/** 自定义音源页：同一 SHIM（bridge/buffer/crypto/zlib），不带 musicSdk 模块。
+ *  lx35：音源脚本与 musicSdk 物理隔离，脚本再怎么污染全局也只影响本页。 */
+export function buildUserApiHtml(): string {
+  return pageHtml({});
 }
