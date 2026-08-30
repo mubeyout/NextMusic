@@ -42,7 +42,6 @@ export type DlnaDevice = {
 export type DlnaPosition = { pos: number; dur: number; state: string };
 
 export type CastDevice = { uuid: string; name: string; host: string; port: number };
-export type AirPlayDevice = { uuid: string; name: string; host: string; port: number };
 
 // ---------- 本机设备 / 音量 ----------
 
@@ -149,37 +148,4 @@ export const googleCast = {
     G ? G.getPosition(dev) : Promise.reject(new Error('no Cast')),
   getVolume: (dev: CastDevice): Promise<number> => (G ? G.getVolume(dev) : Promise.resolve(50)),
   setVolume: (dev: CastDevice, vol: number) => (G ? G.setVolume(dev, vol) : Promise.resolve(false)),
-};
-
-// ---------- AirPlay（RAOP 音频推流）----------
-
-const A = NativeModules.NMAirPlay as {
-  startDiscovery(): void;
-  stopDiscovery(): void;
-  start(dev: AirPlayDevice): Promise<boolean>;
-  stop(): Promise<boolean>;
-  setVolume(pct: number): Promise<boolean>;
-  getVolume(): Promise<number>;
-} | undefined;
-
-export const airplay = {
-  available: !!A,
-  startScan: () => A?.startDiscovery(),
-  stopScan: () => A?.stopDiscovery(),
-  onFound(cb: (dev: AirPlayDevice) => void): EmitterSubscription | undefined {
-    if (!A) return;
-    return new NativeEventEmitter(NativeModules.NMAirPlay).addListener('airplay.found', (e: any) => cb(e as AirPlayDevice));
-  },
-  onScanEnd(cb: () => void): EmitterSubscription | undefined {
-    if (!A) return;
-    return new NativeEventEmitter(NativeModules.NMAirPlay).addListener('airplay.scanEnd', () => cb());
-  },
-  onLost(cb: () => void): EmitterSubscription | undefined {
-    if (!A) return;
-    return new NativeEventEmitter(NativeModules.NMAirPlay).addListener('airplay.lost', () => cb());
-  },
-  start: (dev: AirPlayDevice): Promise<boolean> => (A ? A.start(dev) : Promise.reject(new Error('no AirPlay'))),
-  stop: (): Promise<boolean> => (A ? A.stop() : Promise.resolve(false)),
-  setVolume: (pct: number): Promise<boolean> => (A ? A.setVolume(pct) : Promise.resolve(false)),
-  getVolume: (): Promise<number> => (A ? A.getVolume() : Promise.resolve(50)),
 };
