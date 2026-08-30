@@ -252,8 +252,10 @@ class AirPlayModule(reactContext: ReactApplicationContext) :
                 append("c=IN IP4 $host\r\n")
                 append("t=0 0\r\n")
                 append("m=audio 0 RTP/AVP 96\r\n")
-                append("a=rtpmap:96 L16/$SAMPLE_RATE/2\r\n")
-                append("a=fmtp:96 $FRAMES_PER_PACKET 0 16 40 10 14 2 255 0 0 $SAMPLE_RATE\r\n")
+                // lx40: L16 被 AirPlay 2 设备拒（ANNOUNCE 403）——ALAC 是唯一保险编码。
+                // 用 ALAC 的 escape（未压缩）帧：仅包装不改样本，编码器几十行。
+                append("a=rtpmap:96 AppleLossless\r\n")
+                append("a=fmtp:96 $FRAMES_PER_PACKET 0 8 0 16 40 10 14 2 255 0 0 $SAMPLE_RATE\r\n")
             }.toByteArray(Charsets.ISO_8859_1)
             val (st2, _, _) = rtsp("ANNOUNCE", body = sdp, contentType = "application/sdp")
             Log.d(TAG, "airplay hs: ANNOUNCE $st2")
@@ -361,6 +363,42 @@ class AirPlayModule(reactContext: ReactApplicationContext) :
             wPos = (wPos + BYTES_PER_FRAME) % ring.size
         }
 
+        /** lx40: ALAC 未压缩（escape）帧编码。
+         * 帧格式（依 ffmpeg alac.c 解码器反推）：
+         *   3b 元素=CPE(1) + 4b 实例tag + 12b 保留 + 1b hasSize=1 + 2b extraBits=0
+         *   + 1b 未压缩标志=1 + 32b 样本数 + 样本原始位流（每样本每声道 16b，样本内 L 先 R 后）
+         *   + 3b 元素=END(6)，末尾补零对齐字节。
+         * pcm 为 BE16 立体声交错（环缓冲直接吐出的格式）。返回帧字节数。 */
+        private fun alacEscapeFrame(pcm: ByteArray, frames: Int, out: ByteArray): Int {
+            var acc = 0 // 位累积器（MSB first）
+            var nb = 0
+            var pos = 0
+            fun put(v: Int, n: Int) {
+                acc = (acc shl n) or (v and ((1 shl n) - 1))
+                nb += n
+                while (nb >= 8) {
+                    nb -= 8
+                    out[pos] = ((acc shr nb) and 0xFF).toByte()
+                    pos++
+                }
+            }
+            put(1, 3)          // CPE
+            put(0, 4)          // instance tag
+            put(0, 12)         // unused header bits
+            put(1, 1)          // has_size
+            put(0, 2)          // extra bits
+            put(1, 1)          // uncompressed（escape）
+            put(frames, 32)    // output samples
+            if (nb > 0) { put(0, 8 - nb) } // 样本区位对齐
+            // 裸样本位流：BE16 已是目标位序，直接拷字节
+            val n = frames * BYTES_PER_FRAME
+            System.arraycopy(pcm, 0, out, pos, n)
+            pos += n
+            var endAcc = 6 shl 5 // END(6)= '110' 高 3 位，后补 5 bit 到字节 → 0xC0
+            out[pos] = (endAcc and 0xFF).toByte(); pos++
+            return pos
+        }
+
         private fun filledFrames(): Int {
             val f = wPos - rPos
             return (if (f < 0) f + ring.size else f) / BYTES_PER_FRAME
@@ -389,7 +427,8 @@ class AirPlayModule(reactContext: ReactApplicationContext) :
         // ---------------- 线程 ----------------
 
         private fun paceLoop() {
-            val payload = ByteArray(FRAMES_PER_PACKET * BYTES_PER_FRAME)
+            val pcm = ByteArray(FRAMES_PER_PACKET * BYTES_PER_FRAME)
+            val payload = ByteArray(FRAMES_PER_PACKET * BYTES_PER_FRAME + 16) // ALAC 帧头+尾余量
             var next = System.nanoTime()
             try {
                 while (running) {
@@ -400,10 +439,11 @@ class AirPlayModule(reactContext: ReactApplicationContext) :
                         continue
                     }
                     if (waitUs < -100_000) next = now // 落后超 100ms：重同步时钟
-                    val got = takePacket(payload)
-                    if (!got) java.util.Arrays.fill(payload, 0)
+                    val got = takePacket(pcm)
+                    if (!got) java.util.Arrays.fill(pcm, 0)
+                    val alacLen = alacEscapeFrame(pcm, FRAMES_PER_PACKET, payload)
 
-                    val pkt = ByteArray(12 + payload.size)
+                    val pkt = ByteArray(12 + alacLen)
                     pkt[0] = 0x80.toByte()
                     pkt[1] = (if (firstAudio) 0xE0 else 0x60).toByte()
                     firstAudio = false
@@ -413,7 +453,7 @@ class AirPlayModule(reactContext: ReactApplicationContext) :
                     pkt[6] = ((rtpTs shr 8) and 0xFF).toByte(); pkt[7] = (rtpTs and 0xFF).toByte()
                     pkt[8] = ((ssrc shr 24) and 0xFF).toByte(); pkt[9] = ((ssrc shr 16) and 0xFF).toByte()
                     pkt[10] = ((ssrc shr 8) and 0xFF).toByte(); pkt[11] = (ssrc and 0xFF).toByte()
-                    System.arraycopy(payload, 0, pkt, 12, payload.size)
+                    System.arraycopy(payload, 0, pkt, 12, alacLen)
                     rtpTs += FRAMES_PER_PACKET
                     audioSock?.send(DatagramPacket(pkt, pkt.size, peer, serverPort))
                     next += PACKET_US

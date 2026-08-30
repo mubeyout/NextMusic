@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, BackHandler, ScrollView, NativeModules, NativeEventSubscription, PanResponder, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, BackHandler, ScrollView, NativeModules, NativeEventSubscription, PanResponder, Dimensions, AppState } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAudioPro } from 'react-native-audio-pro';
 import { Icon } from '../theme/Icon';
@@ -99,13 +99,15 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
   }, [visible]);
 
   // 投屏扫描（DLNA + Chromecast + AirPlay 打开时并行；列表保留到关闭）
+  // lx40: App 回前台自动重扫——切网后（如 iNextOS 2.4G 独立网段 → 主 WiFi）旧空列表不再滞留
   useEffect(() => {
     if (!visible) return;
-    setRenderers([]); setCastDevs([]); setAirDevs([]);
-    setScanning(true); setAirScanning(true);
-    dlna.startScan();
-    googleCast.startScan();
-    airplay.startScan();
+    const clearAll = () => { setRenderers([]); setCastDevs([]); setAirDevs([]); };
+    const startAll = () => {
+      clearAll(); setScanning(true); setAirScanning(true);
+      dlna.startScan(); googleCast.startScan(); airplay.startScan();
+    };
+    startAll();
     const subs = [
       dlna.onFound(dev => setRenderers(list => (list.some(x => x.uuid === dev.uuid) ? list : [...list, dev]))),
       dlna.onScanEnd(() => setScanning(false)),
@@ -113,6 +115,7 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
       googleCast.onScanEnd(() => setScanning(false)),
       airplay.onFound(dev => setAirDevs(list => (list.some(x => x.uuid === dev.uuid) ? list : [...list, dev]))),
       airplay.onScanEnd(() => setAirScanning(false)),
+      AppState.addEventListener('change', s => { if (s === 'active') startAll(); }),
     ];
     return () => { subs.forEach(s => s?.remove()); dlna.stopScan(); googleCast.stopScan(); airplay.stopScan(); };
   }, [visible]);
