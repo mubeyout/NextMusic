@@ -498,7 +498,11 @@ window.__lxcmd = function (id, payloadStr) {
       var last = p.path[p.path.length - 1];
       var fn = obj ? obj[last] : null;
       if (typeof fn !== 'function') throw new Error('sdk method not found: ' + p.path.join('.'));
-      return fn.apply(obj, p.args || []);
+      var r = fn.apply(obj, p.args || []);
+      // 坑75：lxserver 源模块部分方法（wy/kg/kw getLyric 等）返回 request 包装对象 {promise, cancelHttp}；
+      // RPC 边界 JSON 序列化会杀死 thenable（变成 {promise:{}}），必须在沙箱内解包成裸 Promise
+      if (r && r.promise && typeof r.promise.then === 'function') r = r.promise;
+      return r;
     }
     if (p.k === 'userApiInit') return initUserApi(p.id, p.script);
     if (p.k === 'userApiUrl') return userApiUrl(p.id, p.source, p.musicInfo, p.type);

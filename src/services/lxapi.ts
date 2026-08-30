@@ -122,6 +122,8 @@ export const lxapi = {
     return cached(`sr:${source}:${name}:${page}:${limit}`, 10 * 60_000, async () => {
       try {
         const r = await engine.sdk<{ list?: any[] }>([source, 'musicSearch', 'search'], [name, page, limit]);
+        // eslint-disable-next-line no-console
+        console.log(`[lxapi] search ${source} "${name}": ${(r?.list || []).length} raw items`);
         return (r?.list || []).map(normalize);
       } catch (e) {
         console.log('[lxapi] search fail', (e as Error).message);
@@ -232,7 +234,12 @@ export const lxapi = {
       };
       // SDK 里 getLyric 是源模块根方法（kw.getLyric / kg.getLyric），不是 lyric 子模块
       // （旧代码 [source,'lyric','getLyric'] 会报 "reading 'lyric'"，一直靠服务器 fallback 顶着）
-      return await engine.sdk<any>([songInfo.source, 'getLyric'], [info]);
+      // 坑75：wy/kg/kw 的 getLyric 返回的是 lxserver request 包装对象 {promise, cancelHttp}，
+      // 不是裸歌词 —— 必须解包 await r.promise，否则 lyric/lxlyric 恒空（媒体库歌无服务器 fallback 才暴露）
+      let r: any = await engine.sdk<any>([songInfo.source, 'getLyric'], [info]);
+      if (r && typeof r.promise?.then === 'function') r = await r.promise;
+      else if (r && typeof r.then === 'function') r = await r;
+      return r || {};
     } catch { return {}; }
   },
   /** 按歌名+歌手跨平台匹配取词：媒体库源（Emby/Subsonic 等）歌曲 id 无平台意义，用文本匹配同曲目标
@@ -242,19 +249,29 @@ export const lxapi = {
     if (!name) return {};
     const nl = name.toLowerCase().replace(/\s*\(.*?\)\s*/g, '').trim(); // 剥 Live/伴奏 等括号后缀
     const sl = (singer || '').toLowerCase().split(/[,，、&]/)[0].trim();
-    for (const src of ['wy', 'kg']) {
+    for (const src of ['wy', 'kg', 'mg']) {
       try {
         const list = await this.search(name, src, 1, 20);
+        // eslint-disable-next-line no-console
+        console.log(`[lyricByName] ${src} round: ${list.length} results for "${name}"`);
         const best = list.find(x => {
           const xn = (x.name || '').toLowerCase();
           const xs = (x.singer || '').toLowerCase();
           return xn.includes(nl) && (!sl || xs.includes(sl));
         });
+        // eslint-disable-next-line no-console
+        console.log(`[lyricByName] ${src} best:`, best ? `${best.singer}|${best.name}|${best.songmid}` : 'none');
         if (best) {
           const r = await this.lyric(best);
+          const rr = r as Record<string, unknown>;
+          // eslint-disable-next-line no-console
+          console.log(`[lyricByName] ${src} lyric keys:`, Object.keys(rr).filter(k => rr[k]).join(','));
           if (r.lyric || r.lxlyric || r.lrc) return r;
         }
-      } catch { /* 下一个源 */ }
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.log(`[lyricByName] ${src} round error:`, (e as Error).message);
+      }
     }
     return {};
   },
