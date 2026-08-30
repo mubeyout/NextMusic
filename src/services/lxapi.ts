@@ -67,6 +67,56 @@ function cached<T>(key: string, ttlMs: number, fetcher: () => Promise<T>): Promi
   return p;
 }
 
+// --- lx37: 歌单多源粘性解析 ---
+// 单押 wy 时，wy 侧任何抖动（网易 406 限流 / 代理路径拦截 / CDN 分流）都会让
+// 首页三区块（为你打造 / 热门歌单 / 热门主题）同时空白——三处共用同一数据链路。
+// 探测链 wy→tx→mg→kg（kw 的 getList 实测恒空，不进链），第一个返回非空列表的源粘住 10 分钟；
+// 标签名跨源翻译（wy 用中文名当 tagId，mg/kg/tx 用各自数字 id），翻译不了降级该源推荐位（tagId=''）。
+const SL_CHAIN = ['wy', 'mg', 'kg']; // tx getListDetail 上游 bug（cdlist undefined）弃用；kw getList 恒空弃用
+const SL_STICKY_MS = 10 * 60_000;
+let slSrc: string | null = null;
+let slSrcAt = 0;
+let slProbe: Promise<string> | null = null;
+
+async function resolveSongListSource(force = false): Promise<string> {
+  if (!force && slSrc && Date.now() - slSrcAt < SL_STICKY_MS) return slSrc;
+  if (!force && slProbe) return slProbe;
+  const probe = (async () => {
+    for (const s of SL_CHAIN) {
+      try {
+        const r = await engine.sdk<any>([s, 'songList', 'getList'], ['5', '', 1], 12000);
+        if (Array.isArray(r?.list) && r.list.length) {
+          CACHE.set(`sll:${s}:5::1`, { at: Date.now(), data: r }); // 探测结果直接种进缓存，首页同 key 零额外请求
+          if (s !== slSrc) console.log(`[lxapi] songList source → ${s} (${r.list.length})`);
+          slSrc = s; slSrcAt = Date.now();
+          return s;
+        }
+        console.log(`[lxapi] songList source ${s}: empty`);
+      } catch (e) { console.log(`[lxapi] songList source ${s}: ${(e as Error).message}`); }
+    }
+    throw new Error('歌单源均不可用');
+  })();
+  if (force) return probe; // force 重探不共享（粘性源已判死）
+  slProbe = probe.finally(() => { slProbe = null; });
+  return slProbe;
+}
+
+// wy 之外 tagId 体系不同：在目标源标签表里找同名/包含匹配；找不到返回 ''（推荐位，保证有内容）
+async function translateTag(tagId: string, source: string): Promise<string> {
+  if (!tagId || source === 'wy') return tagId;
+  try {
+    const t = await lxapi.songListTags(source);
+    const pool: { id: unknown; name: unknown }[] = [
+      ...((t.hotTag || []) as any[]),
+      ...(t.tags || []).flatMap((g: any) => g.list || []),
+    ];
+    const norm = (x: unknown) => String(x ?? '').replace(/\s+/g, '');
+    const hit = pool.find(x => norm(x.name) === norm(tagId))
+      || pool.find(x => { const n = norm(x.name); return n && (n.includes(norm(tagId)) || norm(tagId).includes(n)); });
+    return hit ? String(hit.id) : '';
+  } catch { return ''; }
+}
+
 export const lxapi = {
   async search(name: string, source = 'kw', page = 1, limit = 20): Promise<SongItem[]> {
     return cached(`sr:${source}:${name}:${page}:${limit}`, 10 * 60_000, async () => {
@@ -99,13 +149,15 @@ export const lxapi = {
     });
   },
 
-  async songListTags(source = 'wy'): Promise<{ tags: { name: string; list: { id: string; name: string }[] }[]; sortList?: unknown }> {
+  async songListTags(source = 'wy'): Promise<{ tags: { name: string; list: { id: string; name: string }[] }[]; hotTag?: { id: string; name: string }[]; sortList?: unknown }> {
     return cached(`slt:${source}`, 30 * 60_000, async () => {
       try {
         const r = await engine.sdk<any>([source, 'songList', 'getTags'], []);
-        const sortList = await engine.sdk<any>([source, 'songList', 'sortList'], []);
-        return { tags: Array.isArray(r?.tags) ? r.tags : [], sortList };
-      } catch { return { tags: [] }; }
+        // wy/tx 返回 {tags:[{name,list}]}；mg/kg 返回 {hotTag:[{id,name}]}——两种形态都保留
+        let sortList: unknown;
+        try { sortList = await engine.sdk<any>([source, 'songList', 'sortList'], []); } catch { /* tx/mg/kg 无此方法，非致命 */ }
+        return { tags: Array.isArray(r?.tags) ? r.tags : [], hotTag: Array.isArray(r?.hotTag) ? r.hotTag : [], sortList };
+      } catch { return { tags: [], hotTag: [] }; }
     });
   },
 
@@ -116,6 +168,16 @@ export const lxapi = {
         return await engine.sdk<any>([source, 'songList', 'getList'], [sortId, tagId, page]);
       } catch (e) { console.log('[lxapi] songListList fail', (e as Error).message); return {}; }
     });
+  },
+
+  /** lx37: 自动源歌单列表（首页/探索专用）。源挂了 throw，UI 层可 catch 后 force 重探换源。 */
+  async songListAuto(tagId: string, sortId = '5', page = 1, limit = 20, force = false): Promise<{ list: SongListMeta[]; source: string }> {
+    const src = await resolveSongListSource(force);
+    const t = await translateTag(tagId, src);
+    const r = await this.songListList(t, sortId, page, limit, src);
+    const list = (r.list || []).map((pl: any) => { if (!pl.source) pl.source = src; return pl as SongListMeta; });
+    if (!list.length) throw new Error(`歌单空(${src})`); // 空≠成功：让 UI 走重试/换源，不给假成功
+    return { list, source: src };
   },
 
   async songListDetail(id: string, page = 1, source = 'wy'): Promise<{ list?: SongItem[]; page?: number; limit?: number; total?: number; source?: string; info?: SongListMeta }> {

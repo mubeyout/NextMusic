@@ -147,6 +147,44 @@ patch(
   ].join('\n'),
 );
 
+// 5a) [NextMusic-FX:state-fn] 原生真状态查询（JS 重建/Activity 回收后 lib 的 internalStore 归零，
+//     AudioPro.getState() 全是 JS 侧数据不可信；以进程级 Controller 为准）
+patch(
+  'AudioProController.kt',
+  '[NextMusic-FX:state-fn]',
+  '\t// [NextMusic-FX:pitch-fn] 音调升降（保留当前速度；Sonic 由 ExoPlayer 内建处理）\n',
+  [
+    '\t// [NextMusic-FX:state-fn] 原生真状态（JS 重建后 internalStore 归零，以进程级状态为准）',
+    '\tfun nativePlaybackState(): String = if (flowLastEmittedState.isNotEmpty()) flowLastEmittedState else "IDLE"',
+    '\tfun nativeActiveTrack(): com.facebook.react.bridge.ReadableMap? = activeTrack',
+    '',
+    '\t// [NextMusic-FX:pitch-fn] 音调升降（保留当前速度；Sonic 由 ExoPlayer 内建处理）\n',
+  ].join('\n'),
+);
+
+// 5b) [NextMusic-FX:state-bridge] JS 桥：getNativeState(promise) 返回 {state, trackId?, trackTitle?, trackArtist?}
+patch(
+  'AudioProModule.kt',
+  '[NextMusic-FX:state-bridge]',
+  '\t@ReactMethod // [NextMusic-FX:pitch-bridge]\n',
+  [
+    '\t@ReactMethod // [NextMusic-FX:state-bridge]',
+    '\tfun getNativeState(promise: com.facebook.react.bridge.Promise) {',
+    '\t\tval m = com.facebook.react.bridge.Arguments.createMap()',
+    '\t\tm.putString("state", AudioProController.nativePlaybackState())',
+    '\t\tval t = AudioProController.nativeActiveTrack()',
+    '\t\tif (t != null) {',
+    '\t\t\tif (t.hasKey("id")) m.putString("trackId", t.getString("id") ?: "")',
+    '\t\t\tif (t.hasKey("title")) m.putString("trackTitle", t.getString("title") ?: "")',
+    '\t\t\tif (t.hasKey("artist")) m.putString("trackArtist", t.getString("artist") ?: "")',
+    '\t\t}',
+    '\t\tpromise.resolve(m)',
+    '\t}',
+    '',
+    '\t@ReactMethod // [NextMusic-FX:pitch-bridge]\n',
+  ].join('\n'),
+);
+
 console.log('[patch-audiopro] done');
 
 // 4) [NextMusic-FX:artwork-optional] JS 侧：artwork 空/缺省合法化（Emby/Subsonic 等无封面歌曲会被上游强制校验拒播）

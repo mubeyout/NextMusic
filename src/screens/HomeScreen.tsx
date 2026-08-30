@@ -139,6 +139,14 @@ function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
   const [loveSongs, setLoveSongs] = useState<SongItem[] | null>(null);
   const [hotBoard, setHotBoard] = useState<SongItem[]>([]);
   const [mixes, setMixes] = useState<SongListMeta[]>([]);
+  const [mixFail, setMixFail] = useState(false);
+  const loadMixes = useCallback((force = false) => {
+    setMixFail(false);
+    // lx37: 多源自动解析（wy→tx→mg→kg），wy 单点故障不再拖垮首页
+    lxapi.songListAuto('', '5', 1, 12, force)
+      .then(r => setMixes(r.list.slice(0, 6)))
+      .catch(() => setMixFail(true));
+  }, []);
   const [dataLoaded, setDataLoaded] = useState(false);
   // Report empty state to parent for overlay rendering
   useEffect(() => {
@@ -154,7 +162,7 @@ function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
 
   // 真实数据：热歌榜（每日推荐/私人雷达）+ 热门歌单（Mix 卡）——与登录无关
   useEffect(() => {
-    lxapi.songListList('', '5', 1, 12).then(r => setMixes((r.list || []).slice(0, 6))).catch(() => {});
+    loadMixes();
     if (token) sync.fetchLists().then(s => { if (s) setLoveSongs(s.loveList.map(lxToApp)); });
     lxapi.leaderboardBoards().then(boards => {
       const hot = boards.find(b => /热歌|TOP/i.test(b.name)) || boards[0];
@@ -218,7 +226,11 @@ function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
           ? mixes.slice(0, 4).map((pl, i) => (
             <MixCard key={pl.id} pl={pl} fallbackArt={[warm, city, night, sky][i % 4]} />
           ))
-          : [0, 1].map(i => (
+          : mixFail ? (
+            <TouchableOpacity style={[st.mixCard, st.mixPlaceholder]} activeOpacity={0.8} onPress={() => loadMixes(true)}>
+              <Text style={st.mixPhText}>加载失败 · 点击重试</Text>
+            </TouchableOpacity>
+          ) : [0, 1].map(i => (
             <View key={i} style={[st.mixCard, st.mixPlaceholder]}>
               <Text style={st.mixPhText}>加载中…</Text>
             </View>
@@ -364,9 +376,17 @@ function HomeMusic() {
   const [boards, setBoards] = useState<{ id: string; name: string; bangid: string }[]>([]);
   const [lists, setLists] = useState<Record<string, SongItem[]>>({});
   const [playlists, setPlaylists] = useState<SongListMeta[]>([]);
+  const [plFail, setPlFail] = useState(false);
+  const loadPls = useCallback((force = false) => {
+    setPlFail(false);
+    lxapi.songListAuto('', '5', 1, 12, force)
+      .then(r => setPlaylists(r.list))
+      .catch(() => setPlFail(true));
+  }, []);
 
   useEffect(() => {
     let dead = false;
+    loadPls();
     (async () => {
       try {
         const bs = await lxapi.leaderboardBoards('kw');
@@ -378,10 +398,6 @@ function HomeMusic() {
             if (!dead) setLists(p => ({ ...p, [b.id]: l.slice(0, 50) }));
           } catch {}
         }
-      } catch {}
-      try {
-        const r = await lxapi.songListList('', '5', 1, 12);
-        if (!dead) setPlaylists(r.list || []);
       } catch {}
     })();
     return () => { dead = true; };
@@ -424,9 +440,15 @@ function HomeMusic() {
       <View style={st.sectionRow}>
         <Text style={st.sectionTitle}>热门歌单</Text>
       </View>
-      <View style={st.plGrid}>
-        {playlists.slice(0, 9).map(pl => <PlCard key={pl.id} pl={pl} />)}
-      </View>
+      {playlists.length ? (
+        <View style={st.plGrid}>
+          {playlists.slice(0, 9).map(pl => <PlCard key={pl.id} pl={pl} />)}
+        </View>
+      ) : plFail ? (
+        <TouchableOpacity style={st.retryRow} activeOpacity={0.8} onPress={() => loadPls(true)}>
+          <Text style={st.retryText}>加载失败 · 点击重试</Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }
@@ -465,6 +487,8 @@ const st = StyleSheet.create({
   mixPlaceholder: { backgroundColor: '#1C1C1C', alignItems: 'center', justifyContent: 'center' },
   mixPhText: { color: C.text2, fontSize: 11 },
   plGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  retryRow: { height: 44, borderRadius: 12, backgroundColor: '#1C1C1C', alignItems: 'center', justifyContent: 'center' },
+  retryText: { color: C.text2, fontSize: 12 },
   plCell: { width: '31%', gap: 4 },
   plArt: { width: '100%', aspectRatio: 1, borderRadius: 10, backgroundColor: '#232323' },
   plFallback: { alignItems: 'center', justifyContent: 'center' },

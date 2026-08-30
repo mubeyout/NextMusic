@@ -1,6 +1,6 @@
 // Player state on top of react-native-audio-pro (New Arch native)
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
-import {} from 'react-native';
+import { NativeModules, AppState } from 'react-native';
 import { AudioPro, AudioProContentType, AudioProEventType, AudioProState } from 'react-native-audio-pro';
 import { createMMKV } from 'react-native-mmkv';
 import type { SongItem } from '../services/server';
@@ -18,6 +18,11 @@ import { dlna, googleCast, airplay, type DlnaDevice, type CastDevice, type AirPl
 
 const modeKv = createMMKV({ id: 'nextmusic-playmode' });
 const playbackKv = createMMKV({ id: 'nextmusic-playback' }); // 恢复上次播放状态快照
+
+// 原生真状态桥（[NextMusic-FX:state-bridge]）：JS 重建后 lib internalStore 归零，需以进程级原生状态为准
+const NativeAudioPro = NativeModules.AudioPro as {
+  getNativeState?: () => Promise<{ state: string; trackId?: string; trackTitle?: string; trackArtist?: string }>;
+} | undefined;
 
 export interface QueueTrack extends SongItem {
   uid: string; // local uid
@@ -423,18 +428,39 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     persistSnapshot.current = Date.now();
     return () => clearTimeout(t);
   }, [queue, current]);
-  // 恢复：挂载时一次性（只恢复队列与当前曲为暂停态，不自动取链播放）
+  // 恢复/自愈：JS 重建（Activity 被系统回收后重开）而原生前台服务仍在播/暂停时，lib 的 internalStore 已归零，
+  // current=null → MiniPlayer 不渲染、播放页进不去（喇叭在响但 UI 失联）。
+  // 挂载时 + 每次回前台探测一次：原生在持有音频而 UI 无队列 → 从快照复活。
+  // 普通冷启动（原生 IDLE）：按设置恢复队列与当前曲为暂停态，不自动取链播放
   useEffect(() => {
-    if (!settings.get().restorePlayback) return;
-    try {
-      const snap = JSON.parse(playbackKv.getString('snapshot') || 'null') as { q?: QueueTrack[]; i?: number } | null;
-      if (snap?.q?.length) {
-        queueRef.current = snap.q;
-        setQueue(snap.q);
-        idxRef.current = Math.min(Math.max(0, snap.i || 0), snap.q.length - 1);
-        setCurrent(snap.q[idxRef.current]);
-      }
-    } catch { /* 坏快照忽略 */ }
+    let dead = false;
+    const revive = async () => {
+      if (queueRef.current.length) return; // UI 状态在，无需复活
+      try {
+        let nativeState: string | undefined;
+        try { nativeState = (await NativeAudioPro?.getNativeState?.())?.state; } catch { /* 旧原生无此方法 */ }
+        if (dead || queueRef.current.length) return;
+        const nativeHolding = nativeState === 'PLAYING' || nativeState === 'PAUSED' || nativeState === 'BUFFERING';
+        const snap = JSON.parse(playbackKv.getString('snapshot') || 'null') as { q?: QueueTrack[]; i?: number } | null;
+        if (snap?.q?.length && (nativeHolding || settings.get().restorePlayback)) {
+          // 重新分配 uid：快照里的旧 uid 会与新 toTrack 的自增 seq 撞车
+          const q = snap.q.map(t => ({ ...t, uid: `${t.source}-${t.songmid}-${++seq}` }));
+          queueRef.current = q;
+          setQueue(q);
+          idxRef.current = Math.min(Math.max(0, snap.i || 0), q.length - 1);
+          setCurrent(q[idxRef.current]);
+          if (nativeHolding) {
+            setPlaying(nativeState === 'PLAYING');
+            const tm = AudioPro.getTimings();
+            if (tm.position > 0) setPosition(tm.position / 1000);
+            if (tm.duration > 0) setDuration(tm.duration / 1000);
+          }
+        }
+      } catch { /* 坏快照忽略 */ }
+    };
+    revive();
+    const sub = AppState.addEventListener('change', s => { if (s === 'active') revive(); });
+    return () => { dead = true; sub.remove(); };
   }, []);
 
   // —— 投屏控制（dlna / cast / airplay 三通道）——

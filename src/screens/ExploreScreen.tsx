@@ -150,8 +150,8 @@ export function ExploreScreen() {
     (async () => {
       for (const t of TOPICS) {
         try {
-          const r = await lxapi.songListList(t.tag, '5', 1, 6);
-          if (!dead) setTopicCovers(p => ({ ...p, [t.label]: r.list || [] }));
+          const r = await lxapi.songListAuto(t.tag, '5', 1, 6);
+          if (!dead) setTopicCovers(p => ({ ...p, [t.label]: r.list }));
         } catch {}
       }
     })();
@@ -186,8 +186,8 @@ export function ExploreScreen() {
   const loadPlaylists = useCallback(async (tagId: string) => {
     setPlBusy(true); setPlaylists(null);
     try {
-      const r = await lxapi.songListList(tagId, '5', 1, 30);
-      setPlaylists(r.list || []);
+      const r = await lxapi.songListAuto(tagId, '5', 1, 30);
+      setPlaylists(r.list);
     } catch { setPlaylists([]); }
     finally { setPlBusy(false); }
   }, []);
