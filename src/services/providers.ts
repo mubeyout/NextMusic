@@ -547,7 +547,10 @@ export const providerApi = {
       });
       if (!r.ok && r.status !== 207) throw new Error('HTTP ' + r.status + '（检查地址是否为 WebDAV 端点）');
       const xml = await r.text();
-      const selfHref = encodeURI(dir === '/' ? '/' : dir.endsWith('/') ? dir : dir + '/');
+      // 相对路径计算不依赖 URL 构造器（RN 的 URL 实现与 WHATWG 语义不一致，startsWith 前缀剥离会失效
+      // → Alist 这类 href 含挂载前缀(/dav/..)的服务器会拼出 /dav/dav/.. 双前缀 404）
+      const origin = (() => { const i = base.indexOf('://'); const s = i < 0 ? -1 : base.indexOf('/', i + 3); return s < 0 ? base : base.slice(0, s); })();
+      const basePath = base.slice(origin.length).replace(/\/+$/, ''); // 如 '/dav'；base 在服务器根则为 ''
       const dirs: { name: string; path: string }[] = [];
       const songs: SongItem[] = [];
       const AUDIO = /\.(mp3|flac|m4a|aac|ogg|wav|ape|wma|opus)$/i;
@@ -557,19 +560,20 @@ export const providerApi = {
       let mm: RegExpExecArray | null;
       while ((mm = reHref.exec(xml)) !== null) hrefs.push(mm[1]);
       for (const hrefRaw of hrefs) {
-        const href = decodeURIComponent(hrefRaw);
-        // 去掉 base 的路径前缀，得到相对路径
-        let rel = href;
-        try {
-          const u = new URL(href, base + '/');
-          const bp = new URL(base + '/');
-          rel = decodeURIComponent(u.pathname.startsWith(bp.pathname) ? u.pathname.slice(bp.pathname.length - 1) : u.pathname);
-        } catch { /* keep */ }
-        if (rel === '/' || rel === selfHref || rel === selfHref.replace(/^\//, '')) continue;
-        if (hrefRaw.endsWith('/')) {
+        // 服务器绝对路径或完整 URL → 统一成路径，再剥掉 base 挂载前缀
+        let p = hrefRaw;
+        const mAbs = p.match(/^[a-zA-Z][a-zA-Z0-9+.\-]*:\/\/[^/]*/);
+        if (mAbs) p = p.slice(mAbs[0].length) || '/';
+        let rel = p.startsWith(basePath + '/') ? p.slice(basePath.length) : p;
+        if (!rel.startsWith('/')) rel = '/' + rel;
+        rel = decodeURIComponent(rel);
+        // 当前目录自身（rel === dir 或 dir 去尾斜杠）跳过
+        const cur = dir === '/' ? '/' : dir.endsWith('/') ? dir : dir + '/';
+        if (rel === cur || rel === cur.replace(/\/$/, '') || rel === '/') continue;
+        if (p.endsWith('/')) {
           dirs.push({ name: rel.replace(/\/$/, '').split('/').pop() || rel, path: rel });
         } else if (AUDIO.test(rel)) {
-          const absUrl = (() => { try { return new URL(href, base + '/').toString(); } catch { return base + href; } })();
+          const absUrl = hrefRaw.startsWith('/') ? origin + hrefRaw : mAbs ? hrefRaw : base + '/' + hrefRaw;
           const file = rel.split('/').pop() || rel;
           const stem = file.replace(AUDIO, '');
           const dash = stem.split(' - ');
