@@ -13,11 +13,13 @@ import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.modules.core.DeviceEventManagerModule
+import org.json.JSONArray
 import org.xmlpull.v1.XmlPullParser
 import java.io.ByteArrayInputStream
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetSocketAddress
+import java.net.Socket
 import java.net.SocketTimeoutException
 import java.net.URI
 import java.net.URL
@@ -64,6 +66,39 @@ class DlnaModule(reactContext: ReactApplicationContext) :
     }
 
     // ---------------- SSDP 发现 ----------------
+
+    /** 直连探活（lx42）：组播被 AP/路由器压制时，对已知设备 host:port 并发 TCP connect 探测。
+     *  入参 JSON: [{host,port},...]；返回可达下标数组的 JSON 字符串，如 "[0,2]" */
+    @ReactMethod
+    fun probeTcp(json: String, p: Promise) {
+        exec.execute {
+            try {
+                val arr = JSONArray(json)
+                val n = arr.length()
+                val alive = BooleanArray(n)
+                val threads = (0 until n).map { i ->
+                    Thread {
+                        try {
+                            val o = arr.getJSONObject(i)
+                            val h = o.getString("host")
+                            val prt = o.getInt("port")
+                            val s = Socket()
+                            try {
+                                s.connect(InetSocketAddress(h, prt), 900)
+                                alive[i] = true
+                            } finally { s.close() }
+                        } catch (e: Exception) { alive[i] = false }
+                    }.also { it.isDaemon = true; it.start() }
+                }
+                threads.forEach { it.join(2500) }
+                val out = JSONArray()
+                for (i in 0 until n) if (alive[i]) out.put(i)
+                p.resolve(out.toString())
+            } catch (e: Exception) {
+                p.reject("probe", e.message)
+            }
+        }
+    }
 
     @ReactMethod
     fun startDiscovery() {

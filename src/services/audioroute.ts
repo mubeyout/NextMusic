@@ -16,6 +16,7 @@ const R = NativeModules.NMAudioRoute as {
 const D = NativeModules.NMDlna as {
   startDiscovery(): void;
   stopDiscovery(): void;
+  probeTcp(json: string): Promise<string>;
   cast(dev: DlnaDevice, url: string, title: string, artist: string): Promise<boolean>;
   play(dev: DlnaDevice): Promise<boolean>;
   pause(dev: DlnaDevice): Promise<boolean>;
@@ -72,6 +73,9 @@ export const dlna = {
   available: !!D,
   startScan: () => D?.startDiscovery(),
   stopScan: () => D?.stopDiscovery(),
+  /** TCP 直连探活（lx42 兜底）：传入 [{host,port}] 返回可达下标数组 */
+  probeTcp: (targets: Array<{ host: string; port: number }>): Promise<number[]> =>
+    D ? D.probeTcp(JSON.stringify(targets)).then(s => JSON.parse(s) as number[]).catch(() => []) : Promise.resolve([]),
   onFound(cb: (dev: DlnaDevice) => void): EmitterSubscription | undefined {
     if (!D) return;
     return new NativeEventEmitter(NativeModules.NMDlna).addListener('dlna.found', (e: any) => cb(e as DlnaDevice));

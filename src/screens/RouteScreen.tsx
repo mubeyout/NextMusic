@@ -7,6 +7,7 @@ import { C } from '../theme/tokens';
 import { toast } from '../components/Dialog';
 import { usePlayer } from '../state/PlayerProvider';
 import { audioRoute, dlna, googleCast, type LocalDevice, type DlnaDevice, type CastDevice } from '../services/audioroute';
+import { loadKnown, rememberKnown, hostPortOf, type KnownDevice } from '../services/devicemem';
 const NMBlur = NativeModules.NMBlur as { setBlur: (nativeId: string, enabled: boolean) => void } | undefined;
 
 /**
@@ -65,6 +66,7 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
   const [renderers, setRenderers] = useState<DlnaDevice[]>([]);
   const [castDevs, setCastDevs] = useState<CastDevice[]>([]);
   const [scanning, setScanning] = useState(false);
+  const [directMode, setDirectMode] = useState(false); // lx42：组播空结果、直连探活注入
 
   const a = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -106,15 +108,45 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
       dlna.startScan(); googleCast.startScan();
     };
     startAll();
+    setDirectMode(false);
+    const rememberDlna = (dev: DlnaDevice) => {
+      const hp = hostPortOf(dev.controlUrl);
+      if (hp) rememberKnown([{ kind: 'dlna', uuid: dev.uuid, name: dev.name, host: hp.host, port: hp.port, controlUrl: dev.controlUrl, rcUrl: dev.rcUrl, lastSeen: Date.now() }]);
+    };
+    const rememberCast = (dev: CastDevice) => {
+      if (dev.host && dev.port) rememberKnown([{ kind: 'cast', uuid: dev.uuid, name: dev.name, host: dev.host, port: dev.port, lastSeen: Date.now() }]);
+    };
     const subs = [
-      dlna.onFound(dev => setRenderers(list => (list.some(x => x.uuid === dev.uuid) ? list : [...list, dev]))),
+      dlna.onFound(dev => { rememberDlna(dev); setRenderers(list => (list.some(x => x.uuid === dev.uuid) ? list : [...list, dev])); }),
       dlna.onScanEnd(() => setScanning(false)),
-      googleCast.onFound(dev => setCastDevs(list => (list.some(x => x.uuid === dev.uuid) ? list : [...list, dev]))),
+      googleCast.onFound(dev => { rememberCast(dev); setCastDevs(list => (list.some(x => x.uuid === dev.uuid) ? list : [...list, dev])); }),
       googleCast.onScanEnd(() => setScanning(false)),
       AppState.addEventListener('change', s => { if (s === 'active') startAll(); }),
     ];
     return () => { subs.forEach(s => s?.remove()); dlna.stopScan(); googleCast.stopScan(); };
   }, [visible]);
+
+  // lx42 兜底：两路扫描都结束且一无所获（AP/路由器组播抽风）→ 对已知设备 TCP 探活，活的注入列表
+  useEffect(() => {
+    if (!visible || scanning || renderers.length || castDevs.length) return;
+    const known = loadKnown();
+    if (!known.length) return;
+    let dead = false;
+    dlna.probeTcp(known.map(k => ({ host: k.host, port: k.port }))).then(ok => {
+      if (dead || !ok.length) return;
+      const alive = ok.map(i => known[i]).filter(Boolean) as KnownDevice[];
+      const dlnaAlive: DlnaDevice[] = alive
+        .filter(k => k.kind === 'dlna' && k.controlUrl)
+        .map(k => ({ uuid: k.uuid, name: k.name, controlUrl: k.controlUrl!, rcUrl: k.rcUrl }));
+      const castAlive: CastDevice[] = alive
+        .filter(k => k.kind === 'cast')
+        .map(k => ({ uuid: k.uuid, name: k.name, host: k.host, port: k.port }));
+      if (dlnaAlive.length) setRenderers(list => (list.length ? list : dlnaAlive));
+      if (castAlive.length) setCastDevs(list => (list.length ? list : castAlive));
+      if (dlnaAlive.length || castAlive.length) setDirectMode(true);
+    });
+    return () => { dead = true; };
+  }, [visible, scanning, renderers.length, castDevs.length]);
 
   // 投屏中：拉取设备当前音量作为初始值
   useEffect(() => {
@@ -232,6 +264,9 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
             <TouchableOpacity style={st.rescanBtn} onPress={() => { setRenderers([]); setScanning(true); dlna.startScan(); }}>
               <Text style={st.rescanText}>重新扫描</Text>
             </TouchableOpacity>
+          ) : null}
+          {directMode && renderers.length > 0 ? (
+            <Text style={st.scanHint}>网络组播发现受阻，已显示直连可达的已知设备</Text>
           ) : null}
 
           <Text style={st.label}>Chromecast 设备</Text>
