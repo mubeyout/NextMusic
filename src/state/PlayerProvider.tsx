@@ -386,6 +386,18 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if (st === AudioProState.PLAYING) AudioPro.pause();
     else if (st === AudioProState.PAUSED) AudioPro.resume();
     else {
+      // JS 可能刚重建（Activity 回收）还没来得及 hydrate：先问原生真状态，避免误走重播分支
+      try {
+        const ns = (await NativeAudioPro?.getNativeState?.())?.state;
+        const hydrate = (AudioPro as unknown as { hydrateFromNative?: (t: unknown) => Promise<boolean> }).hydrateFromNative;
+        const t0 = queueRef.current[idxRef.current];
+        if (t0 && (ns === 'PLAYING' || ns === 'BUFFERING' || ns === 'PAUSED')) {
+          await hydrate?.({ id: t0.uid, url: 'hydrated://native', title: t0.name, artwork: t0.img || '', artist: t0.singer, album: t0.albumName || '' });
+          if (ns === 'PAUSED') { AudioPro.resume(); setPlaying(true); }
+          else { AudioPro.pause(); setPlaying(false); }
+          return;
+        }
+      } catch { /* 旧原生/lib 无此方法，走重播 */ }
       // ERROR/IDLE（如媒体库歌取流失败后）：重新取流播当前曲，否则播放键变死键
       const t = queueRef.current[idxRef.current];
       if (t) resolveAndPlay(t).catch(() => setPlaying(false));
@@ -450,6 +462,17 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           idxRef.current = Math.min(Math.max(0, snap.i || 0), q.length - 1);
           setCurrent(q[idxRef.current]);
           if (nativeHolding) {
+            // 原生还在持有音频：把真状态灌回 lib internalStore——否则 pause/resume/seek 的
+            // guardTrackPlaying 拦死，toggle 会误走重播分支（暂停不了、重启当前曲）。
+            // 合成 track 随后会被真实 PROGRESS 事件里的原生 activeTrack 覆盖。
+            const t0 = q[idxRef.current];
+            try {
+              await (AudioPro as unknown as { hydrateFromNative?: (t: unknown) => Promise<boolean> })
+                .hydrateFromNative?.({
+                  id: t0.uid, url: 'hydrated://native', title: t0.name,
+                  artwork: t0.img || '', artist: t0.singer, album: t0.albumName || '',
+                });
+            } catch { /* 旧 lib 无此方法 */ }
             setPlaying(nativeState === 'PLAYING');
             const tm = AudioPro.getTimings();
             if (tm.position > 0) setPosition(tm.position / 1000);

@@ -185,6 +185,92 @@ patch(
   ].join('\n'),
 );
 
+// 6a) [NextMusic-FX:state-pos] 原生进度（JS 重建后 internalStore 归零，进度以进程级 player 为准）
+patch(
+  'AudioProController.kt',
+  '[NextMusic-FX:state-pos]',
+  '\t// [NextMusic-FX:pitch-fn] 音调升降（保留当前速度；Sonic 由 ExoPlayer 内建处理）\n',
+  [
+    '\t// [NextMusic-FX:state-pos] 原生真进度（供 JS 重建后回灌 internalStore）',
+    '\tfun nativePositionMs(): Long = try { enginerBrowser?.currentPosition ?: 0L } catch (_: Exception) { 0L }',
+    '\tfun nativeDurationMs(): Long = try { enginerBrowser?.duration ?: 0L } catch (_: Exception) { 0L }',
+    '',
+    '\t// [NextMusic-FX:pitch-fn] 音调升降（保留当前速度；Sonic 由 ExoPlayer 内建处理）\n',
+  ].join('\\n'),
+);
+
+// 6b) [NextMusic-FX:state-pos-bridge] JS 桥：getNativePosition(promise) -> {positionMs, durationMs}
+patch(
+  'AudioProModule.kt',
+  '[NextMusic-FX:state-pos-bridge]',
+  '\t@ReactMethod // [NextMusic-FX:state-bridge]\n',
+  [
+    '\t@ReactMethod // [NextMusic-FX:state-pos-bridge]',
+    '\tfun getNativePosition(promise: com.facebook.react.bridge.Promise) {',
+    '\t\tval m = com.facebook.react.bridge.Arguments.createMap()',
+    '\t\tm.putDouble("positionMs", AudioProController.nativePositionMs().toDouble())',
+    '\t\tm.putDouble("durationMs", AudioProController.nativeDurationMs().toDouble())',
+    '\t\tpromise.resolve(m)',
+    '\t}',
+    '',
+    '\t@ReactMethod // [NextMusic-FX:state-bridge]\n',
+  ].join('\\n'),
+);
+
+// 6c/6d) [NextMusic-FX:hydrate] lib 侧：AudioPro.hydrateFromNative(fallbackTrack) —— JS 重建后
+// 把原生真状态（playerState/trackPlaying/position/duration）灌回 internalStore，
+// 让 pause/resume/seek 的 guardTrackPlaying 通过；随后真实 PROGRESS 事件会用原生 activeTrack 覆盖合成 track。
+function patchHydrate(rel, isEsm) {
+  const p = 'node_modules/react-native-audio-pro/' + rel;
+  let s = readFileSync(p, 'utf8');
+  if (s.includes('[NextMusic-FX:hydrate]')) {
+    console.log(`[patch-audiopro] ${rel} [NextMusic-FX:hydrate]: already patched`);
+    return;
+  }
+  const store = isEsm ? 'internalStore' : '_internalStore.internalStore';
+  const anchor = '  }\n};\n//# sourceMappingURL=audioPro.js.map';
+  const i = s.indexOf(anchor);
+  if (i < 0) throw new Error(`[patch-audiopro] ${rel} [NextMusic-FX:hydrate]: anchor not found`);
+  const method = [
+    '  },',
+    '  /**',
+    '   * [NextMusic-FX:hydrate] JS 重建（Activity 回收）后 internalStore 归零：以原生真状态回灌，',
+    '   * 使 pause()/resume()/seekTo() 的 guard 通过。fallbackTrack 为快照当前曲（lib track 形状，url 可为占位）。',
+    '   */',
+    '  async hydrateFromNative(fallbackTrack) {',
+    `    const st = ${store}.getState();`,
+    '    if (st.trackPlaying) return true;',
+    '    try {',
+    '      const ns = await NativeAudioPro.getNativeState();',
+    "      if (!ns || (ns.state !== 'PLAYING' && ns.state !== 'PAUSED' && ns.state !== 'BUFFERING')) return false;",
+    '      let pos = 0;',
+    '      let dur = 0;',
+    '      try {',
+    '        const p2 = await NativeAudioPro.getNativePosition();',
+    '        pos = (p2 && p2.positionMs) || 0;',
+    '        dur = (p2 && p2.durationMs) || 0;',
+    '      } catch (e2) {}',
+    `      ${store}.setState({`,
+    '        playerState: ns.state,',
+    '        trackPlaying: fallbackTrack || null,',
+    '        position: pos,',
+    '        duration: dur',
+    '      });',
+    '      return true;',
+    '    } catch (e) {',
+    '      return false;',
+    '    }',
+    '  }',
+    '};',
+    '//# sourceMappingURL=audioPro.js.map',
+  ].join('\n');
+  s = s.slice(0, i) + method + s.slice(i + anchor.length);
+  writeFileSync(p, s);
+  console.log(`[patch-audiopro] ${rel} [NextMusic-FX:hydrate]: patched`);
+}
+patchHydrate('lib/commonjs/audioPro.js', false);
+patchHydrate('lib/module/audioPro.js', true);
+
 console.log('[patch-audiopro] done');
 
 // 4) [NextMusic-FX:artwork-optional] JS 侧：artwork 空/缺省合法化（Emby/Subsonic 等无封面歌曲会被上游强制校验拒播）
