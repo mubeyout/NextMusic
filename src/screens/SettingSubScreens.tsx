@@ -142,7 +142,10 @@ export function AboutScreen() {
         try {
           const ctrl = new AbortController();
           const t = setTimeout(() => ctrl.abort(), 8000);
-          const r = await fetch(url, { signal: ctrl.signal });
+          // 坑88：jsDelivr 响应头 max-age=604800，OkHttp HTTP 缓存会把旧 update.json 存住最久 7 天，
+          // 检查更新永远拿除旧数据 → 加时间戳破缓存键 + no-store 双保险
+          const bust = url + (url.includes('?') ? '&' : '?') + `_t=${Date.now()}`;
+          const r = await fetch(bust, { signal: ctrl.signal, cache: 'no-store' });
           clearTimeout(t);
           const info = await r.json() as { versionName?: string; versionCode?: number; notes?: string; apkUrl?: string };
           const local = AppVersionNative?.versionCode ?? 0;
