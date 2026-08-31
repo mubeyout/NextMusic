@@ -130,10 +130,12 @@ export function AboutScreen() {
   const [checking, setChecking] = useState(false);
 
   const checkUpdate = async () => {
-    // GitHub 双镜像降级：jsDelivr CDN → GitHub raw
+    // GitHub 双镜像降级：raw(权威,永远最新) → jsDelivr CDN(仅网络不通时的兑底)
+    // 坑89:jsDelivr 多层 PoP 缓存会滞后/回旧(实测 purge 后仍间歇吐旧版),陈旧但 200 的响应会短路兑底逻辑,
+    // 故 raw 必须打头;大陆裸网 raw 不通时自然落到 jsDelivr
     const urls = [...new Set([
-      DEFAULT_UPDATE_URL,
       'https://raw.githubusercontent.com/mubeyout/nextmusic-release/main/update.json',
+      DEFAULT_UPDATE_URL,
     ].filter(u => /^https?:\/\//.test(u)))];
     setChecking(true);
     let lastErr = '';
