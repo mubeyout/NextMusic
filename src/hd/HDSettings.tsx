@@ -70,7 +70,7 @@ export function HDSettingsScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={st.head}>
-        <HDTouch style={st.backBtn} onPress={nav.goBack} focusStyle={st.focus}>
+        <HDTouch style={st.backBtn} onPress={nav.goBack} focusStyle={st.focus} hasTVPreferredFocus>
           <Icon name="back" size={18} color={C.text2} />
         </HDTouch>
         <Text style={st.title}>设置</Text>
@@ -99,7 +99,8 @@ function SettingsRow({ row }: { row: RowDef }) {
   return (
     <HDTouch
       style={st.row}
-      focusStyle={st.rowFocus}
+      focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }}
+      focusBg={C.hover}
       onPress={() => {
         if (row.kind === 'toggle') row.onToggle();
         else if (row.kind === 'select') {
@@ -143,7 +144,7 @@ const st = StyleSheet.create({
   focus: { borderWidth: 2, borderColor: C.brand, borderRadius: 10 },
   title: { color: C.text, fontSize: H.font.hero, fontWeight: '800', flex: 1 },
   tabRow: { flexDirection: 'row', gap: 2, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border, paddingBottom: 2 },
-  tabItem: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
+  tabItem: { paddingHorizontal: 13, paddingVertical: 9, borderRadius: 8, minHeight: 38, justifyContent: 'center' },
   tabFocus: { borderWidth: 1.5, borderColor: C.brand, borderRadius: 8 },
   tabText: { color: C.text3, fontSize: H.font.md, fontWeight: '500' },
   tabTextOn: { color: C.text, fontWeight: '700' },
@@ -153,7 +154,6 @@ const st = StyleSheet.create({
     backgroundColor: C.surface, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth,
     borderColor: C.border, paddingHorizontal: 18, paddingVertical: 10,
   },
-  rowFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 10 },
   rowIcon: { width: 30, height: 30, borderRadius: 9, backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center' },
   rowTitle: { color: C.text, fontSize: H.font.md, fontWeight: '600' },
   rowDesc: { color: C.text3, fontSize: H.font.xs, lineHeight: 15 },

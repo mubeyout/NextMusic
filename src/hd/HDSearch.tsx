@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
 import { C, H } from './hdtokens';
 import { HDTouch } from './HDTouch';
+import { HDSongRow } from './HDSongRow';
 import { usePlayer } from '../state/PlayerProvider';
 import { lxapi } from '../services/lxapi';
 import type { SongItem } from '../services/server';
@@ -114,28 +115,6 @@ export function HDSearch() {
   );
 }
 
-// 桌面 SongRow:序号 + 34 封面 + 标题/歌手 + 源徽标 + 时长
-export function HDSongRow({ song, index, onPress, playing }: { song: SongItem; index?: number; onPress?: () => void; playing?: boolean }) {
-  return (
-    <HDTouch style={st.row} onPress={onPress} disabled={!onPress} activeOpacity={0.7}
-      focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.row }}>
-      {index != null ? <Text style={[st.idx, playing && { color: C.brand }]}>{playing ? '▶' : index}</Text> : <View style={{ width: 16 }} />}
-      {song.img
-        ? <Image source={{ uri: song.img }} style={st.art} />
-        : <View style={[st.art, { backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={12} color={C.text3} /></View>}
-      <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
-        <Text style={[st.title, playing && { color: C.brand }]} numberOfLines={1}>
-          {song.name}{song._types?.flac ? '  ' : ''}
-          {song._types?.flac ? <Text style={st.hiRes}>无损</Text> : null}
-        </Text>
-        <Text style={st.sub} numberOfLines={1}>{song.singer}{song.albumName ? ` · ${song.albumName}` : ''}</Text>
-      </View>
-      <Text style={st.srcTag}>{song.source.toUpperCase()}</Text>
-      <Text style={st.dur}>{playing ? '播放中' : song.interval}</Text>
-    </HDTouch>
-  );
-}
-
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   pill: { borderRadius: H.radius.pill, paddingHorizontal: 11, height: 26, backgroundColor: C.elev, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
@@ -151,7 +130,6 @@ const st = StyleSheet.create({
   clearBtn: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   secTitle: { color: C.text, fontSize: H.font.xl, fontWeight: '700' },
   secHint: { color: C.text3, fontSize: H.font.xs },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 9, height: H.row, paddingHorizontal: 9, borderRadius: H.radius.row },
   idx: { width: 18, textAlign: 'right', color: C.text3, fontSize: H.font.sm, fontVariant: ['tabular-nums'] },
   art: { width: 34, height: 34, borderRadius: 5 },
   title: { color: C.text, fontSize: H.font.md, fontWeight: '500' },

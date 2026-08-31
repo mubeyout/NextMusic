@@ -5,7 +5,7 @@ import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
-import { C, H } from './hdtokens';
+import { C, H, SH } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
@@ -146,10 +146,12 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
           <View style={st.grid}>
             {playlists.slice(0, 10).map(pl => (
               <HDTouch key={pl.key} style={st.plCard} onPress={() => openPl(pl)}>
-                {pl.img
-                  ? <Image source={{ uri: pl.img }} style={st.plArt} />
-                  : <View style={[st.plArt, { backgroundColor: '#232323', alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
-                <View style={st.plCount}><Text style={st.plCountText}>▶ {pl.count}</Text></View>
+                <View style={{ position: 'relative' }}>
+                  {pl.img
+                    ? <Image source={{ uri: pl.img }} style={st.plArt} />
+                    : <View style={[st.plArt, { backgroundColor: '#232323', alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
+                  <View style={st.plCount}><Text style={st.plCountText}>▶ {pl.count}</Text></View>
+                </View>
                 <Text style={st.plName} numberOfLines={1}>{pl.name}</Text>
               </HDTouch>
             ))}
@@ -168,7 +170,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
 // 桌面 BigCard:渐变 + 左徽标 + 标题/副标题 + 右圆钮
 function BigCard({ colors, badge, title, sub, onPress, busy }: { colors: [string, string]; badge: string; title: string; sub: string; onPress: () => void; busy?: boolean }) {
   return (
-    <HDTouch activeOpacity={0.9} onPress={onPress} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.card }}>
+    <HDTouch activeOpacity={0.9} onPress={onPress} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.card }} style={{ flex: 1, borderRadius: H.radius.card, boxShadow: SH.card }}>
       <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.big}>
         <Text style={st.bigBadge}>{badge}</Text>
         <View style={{ flex: 1, minWidth: 0 }}>
@@ -190,7 +192,7 @@ function Section({ title, hint, more, onMore, children }: { title: string; hint?
         <Text style={st.secTitle}>{title}</Text>
         {hint ? <Text style={st.secHint}>{hint}</Text> : null}
         <View style={{ flex: 1 }} />
-        {more ? <HDTouch style={{ paddingVertical: 2, paddingHorizontal: 4 }} focusStyle={false} onPress={onMore}><Text style={st.secMore}>{more} ›</Text></HDTouch> : null}
+        {more ? <HDTouch style={{ paddingVertical: 2, paddingHorizontal: 5 }} focusStyle={{ borderWidth: 1.5, borderColor: C.brand, borderRadius: 6 }} onPress={onMore}><Text style={st.secMore}>{more} ›</Text></HDTouch> : null}
       </View>
       {children}
     </View>
@@ -204,7 +206,7 @@ const st = StyleSheet.create({
   bigBadge: { color: '#fff', fontSize: 18, fontWeight: '800', opacity: 0.92 },
   bigTitle: { color: '#fff', fontSize: H.font.xl, fontWeight: '700' },
   bigSub: { color: '#FFFFFFD0', fontSize: H.font.sm, marginTop: 2 },
-  bigPlay: { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,.22)', alignItems: 'center', justifyContent: 'center' },
+  bigPlay: { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,.22)', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(0,0,0,.35)' },
   secTitle: { color: C.text, fontSize: H.font.xl, fontWeight: '700' },
   secHint: { color: C.text3, fontSize: H.font.xs },
   secMore: { color: C.brand, fontSize: H.font.sm },
@@ -213,9 +215,9 @@ const st = StyleSheet.create({
   recName: { color: C.text, fontSize: H.font.xs, fontWeight: '500' },
   recSub: { color: C.text3, fontSize: 8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  plCard: { width: 118, gap: 5 },
-  plArt: { width: 118, height: 118, borderRadius: 9 },
-  plCount: { position: 'absolute', top: 86, left: 88, backgroundColor: 'rgba(0,0,0,.55)', borderRadius: 5, paddingHorizontal: 5, paddingVertical: 1 },
+  plCard: { flexBasis: '15%', flexGrow: 1, gap: 5, borderRadius: 9 },
+  plArt: { width: '100%', aspectRatio: 1, borderRadius: 9 },
+  plCount: { position: 'absolute', bottom: 5, right: 5, backgroundColor: 'rgba(0,0,0,.6)', borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
   plCountText: { color: '#fff', fontSize: 8 },
   plName: { color: C.text, fontSize: H.font.sm, fontWeight: '600' },
   empty: { height: 64, borderRadius: H.radius.card, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', gap: 8, flexDirection: 'row', paddingHorizontal: 14 },

@@ -23,6 +23,7 @@ import { QueueScreen } from './screens/QueueScreen';
 import { PlayerSettingsScreen } from './screens/PlayerSettingsScreen';
 import { CommentsScreen } from './screens/CommentsScreen';
 import { PlaylistDetailScreen } from './screens/PlaylistDetailScreen';
+import { HDPlaylistDetailScreen } from './hd/HDPlaylistDetail';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { HDSettingsScreen } from './hd/HDSettings';
 import { SourcesScreen, AccountScreen } from './screens/SourcesAccountScreens';
@@ -110,7 +111,7 @@ export function RootNavigator() {
         <Stack.Screen name="Queue" component={QueueScreen} options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="PlayerSettings" component={PlayerSettingsScreen} />
         <Stack.Screen name="Comments" component={CommentsScreen} />
-        <Stack.Screen name="PlaylistDetail" component={PlaylistDetailScreen} />
+        <Stack.Screen name="PlaylistDetail" component={IS_HD ? HDPlaylistDetailScreen : PlaylistDetailScreen} />
         <Stack.Screen name="Search" component={SearchScreen} options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="Route" component={RoutePage} options={{ animation: 'none', presentation: 'transparentModal' }} />
         <Stack.Screen name="Settings" component={IS_HD ? HDSettingsScreen : SettingsScreen} />

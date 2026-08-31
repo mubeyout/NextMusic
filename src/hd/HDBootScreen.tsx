@@ -5,7 +5,7 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C } from './hdtokens';
+import { C, SH } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { useApp } from '../state/AppState';
 import { hdNav } from './hdnav';
@@ -81,13 +81,14 @@ const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   row: { flex: 1, flexDirection: 'row' },
   brand: { width: 360, paddingHorizontal: 48, justifyContent: 'center', borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.stroke, gap: 8 },
-  brandLogo: { width: 76, height: 76, borderRadius: 22, backgroundColor: '#1A1A1A', alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  brandLogo: { width: 76, height: 76, borderRadius: 22, backgroundColor: '#1A1A1A', alignItems: 'center', justifyContent: 'center', marginBottom: 10, boxShadow: '0 8px 26px rgba(30,215,96,.22)' },
   brandName: { color: C.text, fontSize: 32, fontWeight: '800' },
   brandSlogan: { color: C.text2, fontSize: 15 },
   brandHint: { color: C.text3, fontSize: 13 },
   card: {
     minHeight: 138, borderRadius: 20, backgroundColor: '#1A1A1A',
     flexDirection: 'row', alignItems: 'center', padding: 24, gap: 20,
+    boxShadow: SH.card,
   },
   cardFocus: { borderWidth: 2.5, borderColor: C.brand, backgroundColor: '#222222' },
   cardIcon: { width: 68, height: 68, borderRadius: 20, backgroundColor: C.brandDim, alignItems: 'center', justifyContent: 'center' },
@@ -96,7 +97,7 @@ const st = StyleSheet.create({
   cardTagText: { color: C.brand, fontSize: 12, fontWeight: '700' },
   cardDesc: { color: C.text2, fontSize: 14, lineHeight: 20 },
   cardBtn: { height: 54, borderRadius: 16, borderWidth: 1.5, borderColor: '#4A4A4A', paddingHorizontal: 26, alignItems: 'center', justifyContent: 'center' },
-  cardBtnPrimary: { backgroundColor: C.brand, borderColor: C.brand },
+  cardBtnPrimary: { backgroundColor: C.brand, borderColor: C.brand, boxShadow: SH.brand },
   cardBtnText: { color: C.text, fontSize: 16, fontWeight: '700' },
   cardBtnTextPrimary: { color: C.onBrand },
   footHint: { color: C.text3, fontSize: 12, textAlign: 'center', paddingTop: 2 },

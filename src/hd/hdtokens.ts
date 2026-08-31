@@ -48,3 +48,11 @@ export const H = {
 
 export const fmtSec = (s: number) =>
   `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
+// 彩色弥散投影(对齐桌面 --nm-shadow-*;RN 0.76+ New Arch boxShadow 字符串语法)
+export const SH = {
+  card: '0 8px 28px rgba(0,0,0,.5)',
+  brand: '0 6px 22px rgba(30,215,96,.35)',
+  pop: '0 12px 32px rgba(0,0,0,.6)',
+  focus: '0 4px 16px rgba(30,215,96,.25)',
+};

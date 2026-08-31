@@ -7,6 +7,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
 import { C, H } from './hdtokens';
 import { HDTouch } from './HDTouch';
+import { HDSongRow } from './HDSongRow';
 import { usePlayer } from '../state/PlayerProvider';
 import { lxapi } from '../services/lxapi';
 import { hdNav } from './hdnav';
@@ -112,19 +113,11 @@ export function HDPodcast() {
         <View style={st.loading}><ActivityIndicator color={C.brand} /><Text style={st.loadingText}>电台内容加载中…</Text></View>
       ) : hotMix.length ? (
         <View style={{ gap: 4 }}>
-          {hotMix.slice(0, 14).map((s, i) => {
-            const playing = current?.songmid === s.songmid;
-            return (
-              <HDTouch key={`${s.source}_${s.songmid}_${i}`} style={[st.row, playing && st.rowOn]} onPress={() => playSong(s, hotMix)}>
-                <Text style={[st.rowIdx, playing && { color: C.brand }]}>{String(i + 1).padStart(2, '0')}</Text>
-                <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
-                  <Text style={[st.rowName, playing && { color: C.brand }]} numberOfLines={1}>{s.name}</Text>
-                  <Text style={st.rowSub} numberOfLines={1}>{s.singer}{s.albumName ? ` · ${s.albumName}` : ''}</Text>
-                </View>
-                <Text style={st.rowMeta}>{s.interval}</Text>
-              </HDTouch>
-            );
-          })}
+          {hotMix.slice(0, 14).map((s, i) => (
+            <HDSongRow key={`${s.source}_${s.songmid}_${i}`} song={s} index={i + 1} first={i === 0}
+              playing={current?.songmid === s.songmid && current?.source === s.source}
+              onPress={() => playSong(s, hotMix)} />
+          ))}
         </View>
       ) : (
         <Text style={st.loadingText}>频道内容暂时无法加载,稍后再试</Text>
@@ -147,10 +140,4 @@ const st = StyleSheet.create({
   secHint: { color: C.text3, fontSize: H.font.xs },
   loading: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 18 },
   loadingText: { color: C.text3, fontSize: H.font.sm },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14, height: 54, borderRadius: 10, paddingHorizontal: 12 },
-  rowOn: { backgroundColor: C.surface },
-  rowIdx: { color: C.text3, fontSize: H.font.md, fontVariant: ['tabular-nums'], width: 26 },
-  rowName: { color: C.text, fontSize: H.font.md, fontWeight: '600' },
-  rowSub: { color: C.text3, fontSize: H.font.xs },
-  rowMeta: { color: C.text3, fontSize: H.font.sm, fontVariant: ['tabular-nums'] },
 });

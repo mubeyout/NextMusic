@@ -11,6 +11,7 @@ import { library } from '../state/library';
 import { useApp } from '../state/AppState';
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
+import { SH } from '../hd/hdtokens';
 
 // Figma NM-IMPORT-001 / 39 / 40 · 导入歌单三步流
 // hasCircleBg: SVG 自带圆形/满底色 → 裸渲染；否则保留品牌色容器
@@ -259,6 +260,7 @@ const hdSt = StyleSheet.create({
   pfCard: {
     width: 200, minHeight: 150, borderRadius: 16, backgroundColor: '#1A1A1A',
     alignItems: 'center', justifyContent: 'center', gap: 8, padding: 16,
+    boxShadow: SH.card,
   },
   pfFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 16, backgroundColor: '#222222' },
   pfIcon: { width: 62, height: 62, borderRadius: 31, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },

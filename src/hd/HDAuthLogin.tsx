@@ -74,12 +74,7 @@ export function HDAuthLoginScreen() {
   };
 
   return (
-    <ScrollView
-      style={st.screen}
-      contentContainerStyle={{ paddingTop: Math.min(insets.top, 24) + 16, paddingBottom: 30, alignItems: 'center' }}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-    >
+    <View style={[st.screen, { paddingTop: Math.min(insets.top, 20) + 10, paddingBottom: 16, alignItems: 'center', justifyContent: 'center' }]}>
       <View style={st.card}>
         {/* 顶行:返回 + 标题 */}
         <View style={st.topRow}>
@@ -94,7 +89,7 @@ export function HDAuthLoginScreen() {
 
         {/* 登录 / 创建账号 tab(对齐桌面版 Pill) */}
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          <HDTouch style={[st.pill, tab === 'login' && st.pillOn]} onPress={() => setTab('login')} focusStyle={st.pillFocus}>
+          <HDTouch style={[st.pill, tab === 'login' && st.pillOn]} onPress={() => setTab('login')} focusStyle={st.pillFocus} hasTVPreferredFocus>
             <Text style={[st.pillText, tab === 'login' && st.pillTextOn]}>登录</Text>
           </HDTouch>
           <HDTouch style={[st.pill, tab === 'register' && st.pillOn]} onPress={() => setTab('register')} focusStyle={st.pillFocus}>
@@ -174,13 +169,13 @@ export function HDAuthLoginScreen() {
           </View>
         ) : null}
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
-  card: { width: 720, borderRadius: 22, backgroundColor: '#1A1A1A', padding: 30, gap: 14 },
+  card: { width: 700, borderRadius: 20, backgroundColor: '#1A1A1A', padding: 24, gap: 12, boxShadow: '0 12px 36px rgba(0,0,0,.55)' },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingBottom: 6 },
   backBtn: { width: 56, height: 56, borderRadius: 16, backgroundColor: '#232323', alignItems: 'center', justifyContent: 'center' },
   title: { color: C.text, fontSize: 28, fontWeight: '800' },
@@ -190,8 +185,8 @@ const st = StyleSheet.create({
   stepBadgeText: { color: C.brand, fontSize: 15, fontWeight: '800' },
   fieldLabel: { color: C.text, fontSize: 17, fontWeight: '700' },
   okTag: { color: C.brand, fontSize: 14, fontWeight: '600' },
-  input: { height: 68, borderRadius: 14, backgroundColor: '#111111', borderWidth: 1, borderColor: '#2E2E2E', justifyContent: 'center', paddingHorizontal: 20 },
-  inputText: { color: C.text, fontSize: 19, padding: 0 },
+  input: { height: 56, borderRadius: 12, backgroundColor: '#111111', borderWidth: 1, borderColor: '#2E2E2E', justifyContent: 'center', paddingHorizontal: 18 },
+  inputText: { color: C.text, fontSize: 17, padding: 0 },
   err: { color: '#FF6B6B', fontSize: 15, lineHeight: 20 },
   btnPrimary: { height: 66, borderRadius: 16, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   btnPrimaryFocus: { borderWidth: 3, borderColor: '#FFFFFF', borderRadius: 16 },

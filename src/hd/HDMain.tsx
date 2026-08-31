@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
-import { C, H, fmtSec } from './hdtokens';
+import { C, H, SH, fmtSec } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
@@ -179,7 +179,7 @@ function HDPlayBar() {
           <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={skipPrev}>
             <Icon name="previous" size={15} color={C.text} />
           </HDTouch>
-          <HDTouch style={st.playBtn} focusStyle={st.playBtnFocus} onPress={toggle}>
+          <HDTouch style={st.playBtn} focusStyle={st.playBtnFocus} glow={SH.brand} onPress={toggle}>
             <Icon name={playing ? 'pause' : 'play'} size={15} color={C.onBrand} />
           </HDTouch>
           <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={skipNext}>

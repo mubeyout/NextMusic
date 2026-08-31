@@ -107,7 +107,7 @@ const st = StyleSheet.create({
   pillLabel: { color: C.text2, fontSize: H.font.sm },
   pillLabelOn: { color: C.onBrand, fontWeight: '600' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  card: { width: 138, height: 84, borderRadius: 11, padding: 11, justifyContent: 'flex-end', gap: 2, overflow: 'hidden' },
+  card: { flexBasis: '18%', flexGrow: 1, height: 96, borderRadius: 11, padding: 12, justifyContent: 'flex-end', gap: 2, overflow: 'hidden' },
   cardRank: { position: 'absolute', top: 10, right: 10 },
   cardName: { color: '#fff', fontSize: H.font.md, fontWeight: '800' },
   cardSub: { color: '#FFFFFF77', fontSize: 8 },
