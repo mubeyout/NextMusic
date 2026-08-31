@@ -1,97 +1,42 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# NextMusic
 
-# Getting Started
+多源音乐播放 App。React Native + Kotlin 原生音频层,一个人听歌的全套方案。
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## 功能概览
 
-## Step 1: Start Metro
+- **多源搜索/榜单**:酷我 / 酷狗 / 网易 / QQ音乐 / 咪咕 五源搜索与榜单广场,LX 音源引擎 WebView 沙箱隔离运行
+- **流媒体媒体库**:Subsonic / Navidrome / 道理鱼 / Emby / Jellyfin / WebDAV 六类服务器接入,专辑-艺术家-歌曲-歌单四段浏览,断链歌自动兜底与复活
+- **投屏**:DLNA + Chromecast(CASTV2 纯局域网实现,不依赖 GMS)
+- **音频 DSP**:10 段 EQ + 真 IR 卷积混响(WAV 解析 + partitioned FFT)+ 3D 声像 + 变调,与 LX Server 音效配置互通
+- **本地**:下载管理队列、设备音乐扫描、已下载优先离线播放
+- **其他**:歌词同步高亮、播客电台、SAF 备份导入导出、MMKV 全量设置持久化
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## 技术栈
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+- React Native(New Architecture)+ TypeScript
+- `react-native-audio-pro`(经 `scripts/patch-audiopro.mjs` 补丁注入原生 DSP)
+- Android:media3/ExoPlayer、MediaBrowserService、OkHttp 原生下载模块
+- 发布链:GitHub Releases + update.json(jsDelivr CDN 主源 / raw 备源),见 [nextmusic-release](https://github.com/mubeyout/nextmusic-release)
 
-```sh
-# Using npm
-npm start
-
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
+## 构建
 
 ```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
+cd android
+JAVA_HOME=<jdk21> ./gradlew assembleRelease --no-daemon
+# 产物: android/app/build/outputs/apk/release/app-release.apk
 ```
 
-### iOS
+版本号在 `android/app/build.gradle`(`versionCode` 单调递增,App 靠它与 update.json 比对触发更新)。
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+## 版本
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+当前:3.4.0-lx44(vc60)。完整更新日志见 Releases 仓库。
 
-```sh
-bundle install
-```
+## 目录速查
 
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
-```
-
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
-
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+- `src/services/lxapi.ts` — LX 引桥(搜索/取链/歌词)
+- `src/services/providers.ts` — 六类媒体库协议实现
+- `src/services/soundfx.ts` — 音效配置存储与服务器同步
+- `src/services/player*` — 播放状态机与投屏路由
+- `android/.../SoundFxEngine.kt` — 原生 DSP(EQ/IR/声像)
+- `scripts/patch-audiopro.mjs` — audio-pro 补丁(DSP 注入/错误竞态修复等)
