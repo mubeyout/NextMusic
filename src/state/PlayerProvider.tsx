@@ -52,6 +52,8 @@ interface PlayerCtx {
   cast: CastSession | null;
   startCast: (dev: DlnaDevice | CastDevice, kind: CastKind) => void;
   stopCast: () => void;
+  /** lx43：切换本机输出设备后重建音频管线（setPreferredDevice 需 track 重建才生效） */
+  rebuildAudio: () => void;
 }
 
 const Ctx = createContext<PlayerCtx>(null as unknown as PlayerCtx);
@@ -146,6 +148,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     persistCast(null);
   }, [persistCast]);
   /** 统一播放入口：dlna/cast 投屏中且是可投屏的 http(s) 流 → 推给设备；否则本机播放 */
+  // lx43：记录最近一次本机播放上下文（设备切换后无感重建用）
+  const lastLocalPlayRef = useRef<{ t: QueueTrack; url: string; opts?: { headers: { audio: Record<string, string>; artwork?: Record<string, string> } } } | null>(null);
   const playOrCast = useCallback((t: QueueTrack, url: string, opts?: { headers: { audio: Record<string, string>; artwork?: Record<string, string> } }) => {
     const cs = castRef.current;
     if (cs && /^https?:\/\//i.test(url)) {
@@ -169,7 +173,24 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if (cs && !/^https?:\/\//i.test(url)) {
       toast('本地文件不支持投屏，已在本机播放');
     }
+    lastLocalPlayRef.current = { t, url, opts };
     AudioPro.play(trackToAudioPro(t, url), opts);
+  }, []);
+
+  /** lx43：设备切换后无感重建音频管线——DefaultAudioSink.setPreferredDevice 只在
+   *  下一次 AudioTrack 创建时生效，播放中切换（如蓝牙→本机）声音会停在原设备。
+   *  姿势：AudioPro.play 同 URL 重载（原生完整 load，track 重建），进度用原生
+   *  startTimeMs 回跳（JS 侧零竞态——曾用 stop/play 双杀 MediaSession、PLAYING
+   *  监听 seek 被冷启动 10s+ 吞，均实测淘汰） */
+  const rebuildAudio = useCallback(() => {
+    const lp = lastLocalPlayRef.current;
+    if (!lp) return;
+    const st = AudioPro.getState();
+    if (st !== AudioProState.PLAYING && st !== AudioProState.PAUSED && st !== AudioProState.LOADING) return;
+    let pos = 0;
+    try { pos = Math.max(0, Math.floor(AudioPro.getTimings()?.position ?? 0)); } catch { /* ignore */ }
+    const wasPlaying = st === AudioProState.PLAYING;
+    AudioPro.play(trackToAudioPro(lp.t, lp.url), { ...lp.opts, startTimeMs: pos, autoPlay: wasPlaying });
   }, []);
 
   const resolveAndPlay = useCallback(async (t: QueueTrack) => {
@@ -587,7 +608,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, [cast, goTo]);
 
   return (
-    <Ctx.Provider value={{ queue, current, playing, position, duration, shuffle, repeat, setShuffle, cycleRepeat, playSong, toggle, skipNext, skipPrev, seekTo, clearQueue, cast, startCast, stopCast }}>
+    <Ctx.Provider value={{ queue, current, playing, position, duration, shuffle, repeat, setShuffle, cycleRepeat, playSong, toggle, skipNext, skipPrev, seekTo, clearQueue, cast, startCast, stopCast, rebuildAudio }}>
       {children}
     </Ctx.Provider>
   );

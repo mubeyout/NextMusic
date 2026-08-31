@@ -57,7 +57,7 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
   const insets = useSafeAreaInsets();
   const playerState = useAudioPro(s => s.playerState);
   const playingLocal = playerState === 'PLAYING';
-  const { cast, startCast, stopCast } = usePlayer();
+  const { cast, startCast, stopCast, rebuildAudio } = usePlayer();
 
   const [devices, setDevices] = useState<LocalDevice[]>([]);
   const [preferred, setPreferred] = useState(-1);
@@ -162,6 +162,8 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
     audioRoute.selectDevice(id).then(() => {
       setPreferred(id);
       audioRoute.getDevices().then(r => { setDevices(r.devices); setPreferred(r.preferred); }).catch(() => {});
+      // lx43：setPreferredDevice 只在 track 重建时生效，无感重启让切换立即生效
+      rebuildAudio();
       toast(id < 0 ? '已恢复系统自动选择输出' : '已切换输出设备');
     }).catch(() => toast('此设备暂不支持应用内切换'));
   };
