@@ -84,8 +84,15 @@ class AudioRouteModule(reactContext: ReactApplicationContext) :
         // 设备插拔/蓝牙连接断开 → 通知 JS 重列设备
         try {
             am.registerAudioDeviceCallback(object : AudioDeviceCallback() {
-                override fun onAudioDevicesAdded(added: Array<out AudioDeviceInfo>) = emitDevices()
-                override fun onAudioDevicesRemoved(removed: Array<out AudioDeviceInfo>) = emitDevices()
+                override fun onAudioDevicesAdded(added: Array<out AudioDeviceInfo>) {
+                    // 设备插拔/蓝牙重连后重放用户偏好,防止系统抢路由
+                    AudioRouteEngine.applyPreferred(reactApplicationContext)
+                    emitDevices()
+                }
+                override fun onAudioDevicesRemoved(removed: Array<out AudioDeviceInfo>) {
+                    AudioRouteEngine.applyPreferred(reactApplicationContext)
+                    emitDevices()
+                }
             }, null)
         } catch (t: Throwable) {
             Log.w(AudioRouteEngine.TAG, "device callback failed", t)
@@ -159,6 +166,36 @@ class AudioRouteModule(reactContext: ReactApplicationContext) :
         try {
             AudioRouteEngine.preferredId = id.toInt()
             AudioRouteEngine.applyPreferred(reactApplicationContext)
+            // [NextMusic:bt-route] API 34+:策略级路由双保险——部分 ROM(如 HyperOS)蓝牙连接时
+            // 忽略 AudioTrack.setPreferredDevice,只有系统策略强制媒体输出才真正切到扬声器;
+            // id<0(跟随系统)时清除策略偏好,交还系统自动路由。
+            // 注:本仓 compileSdk 为 preview 渠道的 android-37,jar 缺此符号,只能反射调
+            if (android.os.Build.VERSION.SDK_INT >= 34) {
+                try {
+                    val dev = if (id >= 0) {
+                        am.getDevices(AudioManager.GET_DEVICES_OUTPUTS).firstOrNull { it.id == id.toInt() }
+                    } else null
+                    val attrs = android.media.AudioAttributes.Builder()
+                        .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build()
+                    val adaCls = Class.forName("android.media.AudioDeviceAttributes")
+                    if (dev != null) {
+                        val ada = adaCls.getConstructor(android.media.AudioDeviceInfo::class.java).newInstance(dev)
+                        val ok = AudioManager::class.java
+                            .getMethod("setPreferredDeviceForStrategy", android.media.AudioAttributes::class.java, adaCls)
+                            .invoke(am, attrs, ada)
+                        Log.d(AudioRouteEngine.TAG, "strategy route -> id=${dev.id} type=${dev.type} ok=$ok")
+                    } else {
+                        AudioManager::class.java
+                            .getMethod("clearPreferredDeviceForStrategy", android.media.AudioAttributes::class.java)
+                            .invoke(am, attrs)
+                        Log.d(AudioRouteEngine.TAG, "strategy route cleared (follow system)")
+                    }
+                } catch (t: Throwable) {
+                    Log.w(AudioRouteEngine.TAG, "strategy route unavailable: ${t.message}")
+                }
+            }
             p.resolve(true)
         } catch (t: Throwable) {
             p.reject("E_ROUTE", t)
