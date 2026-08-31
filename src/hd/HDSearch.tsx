@@ -1,9 +1,10 @@
-// HD 搜索页:大输入框 + 五源 pill + 大行结果(车机触屏/遥控双友好)
+// HD 探索页 —— 桌面版 DiscoverScreen 结构:五源 pill + 搜索框 + 序号结果行
 import React, { ComponentRef, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, Image, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
 import { C, H } from './hdtokens';
+import { HDTouch } from './HDTouch';
 import { usePlayer } from '../state/PlayerProvider';
 import { lxapi } from '../services/lxapi';
 import type { SongItem } from '../services/server';
@@ -25,7 +26,6 @@ export function HDSearch() {
   const [results, setResults] = useState<SongItem[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
 
   const search = async (q: string, src = source) => {
     const query = q.trim();
@@ -47,14 +47,34 @@ export function HDSearch() {
 
   return (
     <View style={st.screen}>
-      <View style={{ paddingTop: Math.max(insets.top, 22), paddingHorizontal: 34, gap: 16 }}>
-        {/* 大搜索框 */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 22, paddingBottom: 26, gap: 12 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* 源 pill(桌面式 999 圆角) */}
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {SOURCES.map(s => (
+            <HDTouch
+              key={s.id}
+              style={[st.pill, source === s.id && st.pillOn]}
+              focusStyle={source === s.id ? { borderWidth: 2, borderColor: C.brandSoft } : st.pillFocus}
+              onPress={() => { setSource(s.id); if (kw.trim().length >= 2) search(kw, s.id); }}
+            >
+              <Text style={[st.pillLabel, source === s.id && st.pillLabelOn]}>{s.label}</Text>
+            </HDTouch>
+          ))}
+          <View style={{ flex: 1 }} />
+          {busy ? <ActivityIndicator color={C.brand} size="small" style={{ marginRight: 4 }} /> : null}
+        </View>
+
+        {/* 搜索框 */}
         <View style={st.searchRow}>
-          <Icon name="search" size={24} color={C.text2} />
+          <Icon name="search" size={15} color={C.text3} />
           <TextInput
-            ref={inputRef}
             style={st.input}
-            placeholder="搜索歌曲 / 歌手 / 专辑…"
+            placeholder="搜索歌曲 / 歌手 / 专辑 / 歌单 / 播客…"
             placeholderTextColor={C.text3}
             value={kw}
             onChangeText={setKw}
@@ -62,84 +82,84 @@ export function HDSearch() {
             onSubmitEditing={() => search(kw)}
           />
           {kw ? (
-            <TouchableOpacity style={st.clearBtn} activeOpacity={0.8} onPress={() => { setKw(''); setResults(null); }}>
-              <Icon name="close" size={20} color={C.text2} />
-            </TouchableOpacity>
+            <HDTouch style={st.clearBtn} focusStyle={false} onPress={() => { setKw(''); setResults(null); }}>
+              <Icon name="close" size={13} color={C.text2} />
+            </HDTouch>
           ) : null}
         </View>
 
-        {/* 源 pill */}
-        <View style={{ flexDirection: 'row', gap: 10 }}>
-          {SOURCES.map(s => (
-            <TouchableOpacity
-              key={s.id}
-              style={[st.pill, source === s.id && st.pillOn]}
-              activeOpacity={0.85}
-              onPress={() => { setSource(s.id); if (kw.trim().length >= 2) search(kw, s.id); }}
-            >
-              <Text style={[st.pillLabel, source === s.id && st.pillLabelOn]}>{s.label}</Text>
-            </TouchableOpacity>
-          ))}
-          <View style={{ flex: 1 }} />
-          {busy ? <ActivityIndicator color={C.brand} style={{ marginRight: 8 }} /> : null}
-        </View>
-      </View>
-
-      {/* 结果 */}
-      <ScrollView style={{ flex: 1, marginTop: 8 }} contentContainerStyle={{ paddingHorizontal: 34, paddingBottom: 30 }} showsVerticalScrollIndicator={false}>
-        {err ? <Text style={st.err}>{err}</Text> : null}
-        {results == null && !err ? (
+        {/* 结果 */}
+        {results != null ? (
+          <View style={{ gap: 2 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 7, marginBottom: 6 }}>
+              <Text style={st.secTitle}>{err ? '搜索失败' : `「${kw}」的结果`}</Text>
+              <Text style={st.secHint}>{err ? '' : `${results.length} 条 · 源:${source}`}</Text>
+            </View>
+            {err ? <Text style={st.empty}>{err}</Text> : null}
+            {(results || []).map((s, i) => (
+              <HDSongRow key={`${s.source}_${s.songmid}_${i}`} song={s} index={i + 1}
+                playing={current?.songmid === s.songmid && current?.source === s.source}
+                onPress={() => playSong(s, results || [s])} />
+            ))}
+            {!busy && !results.length && !err ? <Text style={st.empty}>{`没有找到「${kw}」相关内容`}</Text> : null}
+          </View>
+        ) : (
           <View style={st.tip}>
-            <Icon name="search" size={44} color={C.text3} />
+            <Icon name="search" size={28} color={C.text3} />
             <Text style={st.tipText}>输入关键词开始搜索(五源免登录直连)</Text>
           </View>
-        ) : null}
-        {(results || []).map((s, i) => (
-          <HDSongRow key={`${s.source}_${s.songmid}_${i}`} song={s} playing={current?.songmid === s.songmid && current?.source === s.source} onPress={() => playSong(s, results || [s])} />
-        ))}
-        {results != null && !results.length && !err ? <Text style={st.err}>没有找到相关内容</Text> : null}
+        )}
       </ScrollView>
     </View>
   );
 }
 
-// HD 歌曲行:72 高、48 封面、17/13 字号(车机触控友好)
-export function HDSongRow({ song, onPress, playing, extra }: { song: SongItem; onPress?: () => void; playing?: boolean; extra?: React.ReactNode }) {
+// 桌面 SongRow:序号 + 34 封面 + 标题/歌手 + 源徽标 + 时长
+export function HDSongRow({ song, index, onPress, playing }: { song: SongItem; index?: number; onPress?: () => void; playing?: boolean }) {
   return (
-    <TouchableOpacity activeOpacity={0.75} style={st.row} onPress={onPress} disabled={!onPress}>
+    <HDTouch style={st.row} onPress={onPress} disabled={!onPress} activeOpacity={0.7}
+      focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.row }}>
+      {index != null ? <Text style={[st.idx, playing && { color: C.brand }]}>{playing ? '▶' : index}</Text> : <View style={{ width: 16 }} />}
       {song.img
         ? <Image source={{ uri: song.img }} style={st.art} />
-        : <View style={[st.art, { backgroundColor: '#232323', alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text2} /></View>}
-      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-        <Text style={[st.title, playing && { color: C.brand }]} numberOfLines={1}>{song.name}</Text>
-        <Text style={st.sub} numberOfLines={1}>
-          {song.singer}{song.albumName ? ` · ${song.albumName}` : ''}{song._types?.flac ? ' · 无损' : ''}
+        : <View style={[st.art, { backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={12} color={C.text3} /></View>}
+      <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
+        <Text style={[st.title, playing && { color: C.brand }]} numberOfLines={1}>
+          {song.name}{song._types?.flac ? '  ' : ''}
+          {song._types?.flac ? <Text style={st.hiRes}>无损</Text> : null}
         </Text>
+        <Text style={st.sub} numberOfLines={1}>{song.singer}{song.albumName ? ` · ${song.albumName}` : ''}</Text>
       </View>
-      <Text style={st.dur}>{playing ? '正在播放' : song.interval}</Text>
-      {extra != null ? extra : <View style={{ width: 24 }} />}
-    </TouchableOpacity>
+      <Text style={st.srcTag}>{song.source.toUpperCase()}</Text>
+      <Text style={st.dur}>{playing ? '播放中' : song.interval}</Text>
+    </HDTouch>
   );
 }
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
+  pill: { borderRadius: H.radius.pill, paddingHorizontal: 11, height: 26, backgroundColor: C.elev, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
+  pillOn: { backgroundColor: C.brand, borderColor: C.brand },
+  pillFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.pill },
+  pillLabel: { color: C.text2, fontSize: H.font.sm },
+  pillLabelOn: { color: C.onBrand, fontWeight: '600' },
   searchRow: {
-    height: 64, borderRadius: 14, backgroundColor: '#1E1E1E', flexDirection: 'row',
-    alignItems: 'center', paddingHorizontal: 20, gap: 14,
+    height: 40, borderRadius: 10, backgroundColor: C.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border,
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 13, gap: 9,
   },
-  input: { flex: 1, color: C.text, fontSize: 18, padding: 0 },
-  clearBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#2A2A2A', alignItems: 'center', justifyContent: 'center' },
-  pill: { height: 44, borderRadius: 22, paddingHorizontal: 22, backgroundColor: '#1E1E1E', alignItems: 'center', justifyContent: 'center' },
-  pillOn: { backgroundColor: C.brand },
-  pillLabel: { color: C.text2, fontSize: 15, fontWeight: '600' },
-  pillLabelOn: { color: C.onBrand, fontWeight: '700' },
-  row: { height: H.row, flexDirection: 'row', alignItems: 'center', gap: 16 },
-  art: { width: 48, height: 48, borderRadius: 8 },
-  title: { color: C.text, fontSize: 17, fontWeight: '500' },
-  sub: { color: C.text2, fontSize: 13 },
-  dur: { color: C.text2, fontSize: 13, width: 76, textAlign: 'right' },
-  err: { color: C.text2, fontSize: 15, paddingVertical: 40, textAlign: 'center' },
-  tip: { alignItems: 'center', gap: 14, paddingVertical: 70 },
-  tipText: { color: C.text3, fontSize: 15 },
+  input: { flex: 1, color: C.text, fontSize: H.font.md, padding: 0 },
+  clearBtn: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  secTitle: { color: C.text, fontSize: H.font.xl, fontWeight: '700' },
+  secHint: { color: C.text3, fontSize: H.font.xs },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 9, height: H.row, paddingHorizontal: 9, borderRadius: H.radius.row },
+  idx: { width: 18, textAlign: 'right', color: C.text3, fontSize: H.font.sm, fontVariant: ['tabular-nums'] },
+  art: { width: 34, height: 34, borderRadius: 5 },
+  title: { color: C.text, fontSize: H.font.md, fontWeight: '500' },
+  hiRes: { color: C.brand, fontSize: 8, borderWidth: 1, borderColor: 'rgba(30,215,96,.4)', borderRadius: 3, paddingHorizontal: 3, overflow: 'hidden' },
+  sub: { color: C.text2, fontSize: H.font.sm },
+  srcTag: { color: C.text3, fontSize: 8, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, borderRadius: 3, paddingHorizontal: 4, overflow: 'hidden' },
+  dur: { color: C.text3, fontSize: H.font.sm, width: 36, textAlign: 'right', fontVariant: ['tabular-nums'] },
+  empty: { color: C.text3, fontSize: H.font.md, paddingVertical: 24, textAlign: 'center' },
+  tip: { alignItems: 'center', gap: 10, paddingVertical: 60 },
+  tipText: { color: C.text3, fontSize: H.font.md },
 });

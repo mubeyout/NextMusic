@@ -212,6 +212,7 @@ export function LxEngineHost() {
         source={{ html: sdkHtml }}
         onMessage={onSdk}
         javaScriptEnabled
+        focusable={false}
         domStorageEnabled={false}
         originWhitelist={['*']}
         allowFileAccess={false}
@@ -225,6 +226,7 @@ export function LxEngineHost() {
         source={{ html: usrHtml }}
         onMessage={onUsr}
         javaScriptEnabled
+        focusable={false}
         domStorageEnabled={false}
         originWhitelist={['*']}
         allowFileAccess={false}

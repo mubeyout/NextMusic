@@ -5,6 +5,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from 'rea
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
 import { C, fmtSec } from './hdtokens';
+import { HDTouch } from './HDTouch';
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
 import { api } from '../services/server';
@@ -96,16 +97,16 @@ export function HDPlayer() {
             <View style={{ gap: 6, alignItems: 'center' }}>
               <Text style={st.title} numberOfLines={1}>{current.name}</Text>
               <Text style={st.sub} numberOfLines={1}>{current.singer}{current.albumName ? ` · ${current.albumName}` : ''}</Text>
-              <View style={{ flexDirection: 'row', gap: 14, marginTop: 8 }}>
-                <TouchableOpacity style={st.tool} activeOpacity={0.8} onPress={doFav}>
-                  <Icon name="heart" size={22} color={faved ? C.brand : C.text2} />
-                </TouchableOpacity>
-                <TouchableOpacity style={st.tool} activeOpacity={0.8} onPress={() => nav.navigate('Queue')}>
-                  <Icon name="queue" size={22} color={C.text2} />
-                </TouchableOpacity>
-                <TouchableOpacity style={st.tool} activeOpacity={0.8} onPress={() => nav.navigate('Route')}>
-                  <Icon name="devices" size={22} color={C.text2} />
-                </TouchableOpacity>
+              <View style={{ flexDirection: 'row', gap: 16, marginTop: 10 }}>
+                <HDTouch style={st.tool} onPress={doFav}>
+                  <Icon name="heart" size={26} color={faved ? C.brand : C.text2} />
+                </HDTouch>
+                <HDTouch style={st.tool} onPress={() => nav.navigate('Queue')}>
+                  <Icon name="queue" size={26} color={C.text2} />
+                </HDTouch>
+                <HDTouch style={st.tool} onPress={() => nav.navigate('Route')}>
+                  <Icon name="devices" size={26} color={C.text2} />
+                </HDTouch>
               </View>
             </View>
           </View>
@@ -148,25 +149,25 @@ export function HDPlayer() {
           <Text style={st.time}>{fmtSec(duration)}</Text>
         </View>
         <View style={st.ctrls}>
-          <TouchableOpacity style={st.cBtn} activeOpacity={0.8} onPress={() => setShuffle(!shuffle)}>
-            <Icon name="shuffle" size={24} active={shuffle} color={shuffle ? C.brand : C.text2} />
-          </TouchableOpacity>
-          <TouchableOpacity style={st.cBtn} activeOpacity={0.8} onPress={skipPrev}>
-            <Icon name="previous" size={34} color={C.text} />
-          </TouchableOpacity>
-          <TouchableOpacity style={st.cMain} activeOpacity={0.85} onPress={toggle}>
-            <Icon name={playing ? 'pause' : 'play'} size={40} color={C.onBrand} />
-          </TouchableOpacity>
-          <TouchableOpacity style={st.cBtn} activeOpacity={0.8} onPress={skipNext}>
-            <Icon name="next" size={34} color={C.text} />
-          </TouchableOpacity>
-          <TouchableOpacity style={st.cBtn} activeOpacity={0.8} onPress={cycleRepeat}>
-            <Icon name="repeat" size={24} active={repeat !== 'off'} color={repeat !== 'off' ? C.brand : C.text2} />
-          </TouchableOpacity>
+          <HDTouch style={st.cBtn} onPress={() => setShuffle(!shuffle)}>
+            <Icon name="shuffle" size={28} active={shuffle} color={shuffle ? C.brand : C.text2} />
+          </HDTouch>
+          <HDTouch style={st.cBtn} onPress={skipPrev}>
+            <Icon name="previous" size={38} color={C.text} />
+          </HDTouch>
+          <HDTouch style={st.cMain} onPress={toggle} focusStyle={st.cMainFocus}>
+            <Icon name={playing ? 'pause' : 'play'} size={44} color={C.onBrand} />
+          </HDTouch>
+          <HDTouch style={st.cBtn} onPress={skipNext}>
+            <Icon name="next" size={38} color={C.text} />
+          </HDTouch>
+          <HDTouch style={st.cBtn} onPress={cycleRepeat}>
+            <Icon name="repeat" size={28} active={repeat !== 'off'} color={repeat !== 'off' ? C.brand : C.text2} />
+          </HDTouch>
           <View style={{ flex: 1 }} />
-          <TouchableOpacity style={st.cBtn} activeOpacity={0.8} onPress={nav.goBack}>
-            <Icon name="close" size={24} color={C.text2} />
-          </TouchableOpacity>
+          <HDTouch style={st.cBtn} onPress={nav.goBack}>
+            <Icon name="close" size={28} color={C.text2} />
+          </HDTouch>
         </View>
         <Text style={st.queueHint}>{queue.length ? `${queue.length} 首队列中` : ''}</Text>
       </View>
@@ -177,21 +178,22 @@ export function HDPlayer() {
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bgDeep },
   main: { flexDirection: 'row', flex: 1, paddingHorizontal: 60, gap: 50, paddingTop: 6 },
-  left: { width: 340, alignItems: 'center', gap: 18, paddingTop: 8 },
-  art: { width: 320, height: 320, borderRadius: 20 },
-  title: { color: C.text, fontSize: 24, fontWeight: '800', textAlign: 'center', maxWidth: 330 },
-  sub: { color: C.text2, fontSize: 15, textAlign: 'center', maxWidth: 330 },
-  tool: { width: 52, height: 52, borderRadius: 26, backgroundColor: '#1C1C1C', alignItems: 'center', justifyContent: 'center' },
+  left: { width: 360, alignItems: 'center', gap: 18, paddingTop: 8 },
+  art: { width: 340, height: 340, borderRadius: 22 },
+  title: { color: C.text, fontSize: 27, fontWeight: '800', textAlign: 'center', maxWidth: 350 },
+  sub: { color: C.text2, fontSize: 16, textAlign: 'center', maxWidth: 350 },
+  tool: { width: 58, height: 58, borderRadius: 29, backgroundColor: '#1C1C1C', alignItems: 'center', justifyContent: 'center' },
   lyricsBox: { flex: 1, gap: 14, paddingTop: 40, paddingRight: 20 },
-  lyric: { color: C.text3, fontSize: 20, lineHeight: 30, fontWeight: '500' },
-  lyricOn: { color: C.text, fontSize: 28, lineHeight: 40, fontWeight: '800' },
-  lyricTr: { color: '#FFFFFF55', fontSize: 14, lineHeight: 20, marginTop: 2 },
+  lyric: { color: C.text3, fontSize: 22, lineHeight: 32, fontWeight: '500' },
+  lyricOn: { color: C.text, fontSize: 31, lineHeight: 43, fontWeight: '800' },
+  lyricTr: { color: '#FFFFFF55', fontSize: 15, lineHeight: 21, marginTop: 2 },
   panel: { backgroundColor: '#141414', paddingHorizontal: 60, paddingTop: 12, gap: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.stroke },
   progRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   time: { color: C.text2, fontSize: 14, fontVariant: ['tabular-nums'], width: 52, textAlign: 'center' },
   track: { flex: 1, height: 6, flexDirection: 'row', borderRadius: 3, overflow: 'hidden' },
   ctrls: { flexDirection: 'row', alignItems: 'center', gap: 26 },
-  cBtn: { width: 60, height: 60, alignItems: 'center', justifyContent: 'center' },
-  cMain: { width: 84, height: 84, borderRadius: 42, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
-  queueHint: { color: C.text3, fontSize: 11, textAlign: 'center' },
+  cBtn: { width: 66, height: 66, alignItems: 'center', justifyContent: 'center' },
+  cMain: { width: 92, height: 92, borderRadius: 46, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
+  cMainFocus: { borderWidth: 3, borderColor: '#FFFFFF', borderRadius: 46 },
+  queueHint: { color: C.text3, fontSize: 12, textAlign: 'center' },
 });

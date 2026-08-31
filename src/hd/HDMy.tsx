@@ -1,10 +1,11 @@
 // HD 我的:账号卡 + 歌单网格 + 媒体库/下载/本地/设置入口(子页复用 phone Stack)
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
 import { C } from './hdtokens';
+import { HDTouch } from './HDTouch';
 import { useApp } from '../state/AppState';
 import { library, type LocalPlaylist } from '../state/library';
 import { sync, lxToApp, type UserListsSnapshot } from '../services/sync';
@@ -64,9 +65,9 @@ export function HDMy() {
             <Text style={st.acctName} numberOfLines={1}>{connected ? username : '未连接服务器'}</Text>
             <Text style={st.acctSub}>{connected ? `${playlists.length} 个歌单 · ${providerCount} 个媒体库 · 已同步` : '连接后同步歌单/收藏/音效'}</Text>
           </View>
-          <TouchableOpacity style={st.acctBtn} activeOpacity={0.85} onPress={() => hdNav()?.navigate(connected ? 'Account' : 'Server')}>
+          <HDTouch style={st.acctBtn} onPress={() => hdNav()?.navigate(connected ? 'Account' : 'AuthLogin')}>
             <Text style={st.acctBtnText}>{connected ? '账号' : '连接'}</Text>
-          </TouchableOpacity>
+          </HDTouch>
         </LinearGradient>
       </View>
 
@@ -78,11 +79,11 @@ export function HDMy() {
           { icon: 'headphones' as const, label: '本地音乐', sub: '设备扫描', to: 'DeviceMusic' },
           { icon: 'settings' as const, label: '设置', sub: '音源/音效/主题', to: 'Settings' },
         ].map(q => (
-          <TouchableOpacity key={q.label} activeOpacity={0.85} style={st.fnCard} onPress={() => hdNav()?.navigate(q.to)}>
-            <Icon name={q.icon} size={26} color={C.brand} />
+          <HDTouch key={q.label} style={st.fnCard} onPress={() => hdNav()?.navigate(q.to)}>
+            <Icon name={q.icon} size={30} color={C.brand} />
             <Text style={st.fnLabel}>{q.label}</Text>
             <Text style={st.fnSub}>{q.sub}</Text>
-          </TouchableOpacity>
+          </HDTouch>
         ))}
       </View>
 
@@ -91,17 +92,17 @@ export function HDMy() {
         <Text style={st.secTitle}>{`歌单 · ${playlists.length}`}</Text>
         <View style={st.grid}>
           {playlists.map((pl, i) => (
-            <TouchableOpacity key={pl.key} activeOpacity={0.85} style={st.plCard} onPress={() => openPl(pl)}>
+            <HDTouch key={pl.key} style={st.plCard} onPress={() => openPl(pl)}>
               {pl.img ? <Image source={{ uri: pl.img }} style={st.plArt} />
-                : <LinearGradient colors={GRADS[i % GRADS.length]} style={st.plArt}><Icon name="music" size={26} color="#FFFFFFAA" /></LinearGradient>}
+                : <LinearGradient colors={GRADS[i % GRADS.length]} style={st.plArt}><Icon name="music" size={28} color="#FFFFFFAA" /></LinearGradient>}
               <Text style={st.plName} numberOfLines={1}>{pl.name}</Text>
               <Text style={st.plMeta}>{pl.count} 首</Text>
-            </TouchableOpacity>
+            </HDTouch>
           ))}
-          <TouchableOpacity activeOpacity={0.85} style={st.plNew} onPress={() => hdNav()?.navigate('ImportPlaylist')}>
-            <Icon name="add" size={30} color={C.text2} />
+          <HDTouch style={st.plNew} onPress={() => hdNav()?.navigate('ImportPlaylist')}>
+            <Icon name="add" size={34} color={C.text2} />
             <Text style={st.plMeta}>新建歌单</Text>
-          </TouchableOpacity>
+          </HDTouch>
         </View>
       </View>
     </ScrollView>
@@ -110,20 +111,20 @@ export function HDMy() {
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
-  acct: { height: 110, borderRadius: 16, flexDirection: 'row', alignItems: 'center', padding: 20, gap: 16 },
-  acctAvatar: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#00000044', alignItems: 'center', justifyContent: 'center' },
-  acctName: { color: C.text, fontSize: 21, fontWeight: '800' },
-  acctSub: { color: '#FFFFFF99', fontSize: 13, marginTop: 3 },
-  acctBtn: { height: 46, borderRadius: 23, backgroundColor: '#00000042', paddingHorizontal: 26, alignItems: 'center', justifyContent: 'center' },
-  acctBtnText: { color: C.text, fontSize: 15, fontWeight: '700' },
-  fnCard: { flex: 1, height: 104, borderRadius: 14, backgroundColor: '#1E1E1E', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  fnLabel: { color: C.text, fontSize: 15, fontWeight: '700' },
-  fnSub: { color: C.text3, fontSize: 11 },
-  secTitle: { color: C.text, fontSize: 20, fontWeight: '800' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
-  plCard: { width: 150, gap: 8 },
-  plArt: { width: 150, height: 150, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  plNew: { width: 150, height: 150, borderRadius: 14, backgroundColor: '#1A1A1A', borderWidth: 1, borderStyle: 'dashed', borderColor: '#333', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  plName: { color: C.text, fontSize: 15, fontWeight: '600' },
-  plMeta: { color: C.text2, fontSize: 12 },
+  acct: { height: 122, borderRadius: 18, flexDirection: 'row', alignItems: 'center', padding: 22, gap: 18 },
+  acctAvatar: { width: 66, height: 66, borderRadius: 33, backgroundColor: '#00000044', alignItems: 'center', justifyContent: 'center' },
+  acctName: { color: C.text, fontSize: 24, fontWeight: '800' },
+  acctSub: { color: '#FFFFFF99', fontSize: 14, marginTop: 3 },
+  acctBtn: { height: 52, borderRadius: 26, backgroundColor: '#00000042', paddingHorizontal: 28, alignItems: 'center', justifyContent: 'center' },
+  acctBtnText: { color: C.text, fontSize: 17, fontWeight: '700' },
+  fnCard: { flex: 1, height: 116, borderRadius: 16, backgroundColor: '#1E1E1E', alignItems: 'center', justifyContent: 'center', gap: 7 },
+  fnLabel: { color: C.text, fontSize: 17, fontWeight: '700' },
+  fnSub: { color: C.text3, fontSize: 12 },
+  secTitle: { color: C.text, fontSize: 22, fontWeight: '800' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 18 },
+  plCard: { width: 168, gap: 8 },
+  plArt: { width: 168, height: 168, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  plNew: { width: 168, height: 168, borderRadius: 16, backgroundColor: '#1A1A1A', borderWidth: 1, borderStyle: 'dashed', borderColor: '#333', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  plName: { color: C.text, fontSize: 16, fontWeight: '600' },
+  plMeta: { color: C.text2, fontSize: 13 },
 });

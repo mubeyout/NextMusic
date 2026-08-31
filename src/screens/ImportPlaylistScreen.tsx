@@ -9,6 +9,8 @@ import { lxapi } from '../services/lxapi';
 import { activeSources } from '../services/customSource';
 import { library } from '../state/library';
 import { useApp } from '../state/AppState';
+import { IS_HD } from '../services/appversion';
+import { HDTouch } from '../hd/HDTouch';
 
 // Figma NM-IMPORT-001 / 39 / 40 · 导入歌单三步流
 // hasCircleBg: SVG 自带圆形/满底色 → 裸渲染；否则保留品牌色容器
@@ -94,7 +96,7 @@ export function ImportPlaylistScreen() {
         <Text style={st.title}>导入歌单</Text>
         <View style={{ width: 22 }} />
       </View>
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 24, gap: 14 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: IS_HD ? 44 : 20, paddingBottom: insets.bottom + 24, gap: IS_HD ? 18 : 14 }}>
         {/* steps indicator */}
         <View style={st.stepsRow}>
           {['选择平台', '填写链接', '预览导入'].map((s, i) => (
@@ -107,27 +109,50 @@ export function ImportPlaylistScreen() {
         {step === 0 && (
           <>
             <Text style={st.sectionTitle}>选择歌单所在平台</Text>
-            {PLATFORMS.map(pf => (
-              <TouchableOpacity key={pf.id} style={st.platformRow} activeOpacity={0.7} onPress={() => pick(pf.id)}>
-                {pf.hasCircleBg ? (
-                  <View style={st.platformIconBare}>
-                    <BrandIcon name={pf.icon} size={28} />
-                  </View>
-                ) : (
-                  <View style={[st.platformIcon, { backgroundColor: pf.color + '26', borderColor: pf.color }]}>
-                    <BrandIcon name={pf.icon} size={20} />
-                  </View>
-                )}
-                <View style={{ flex: 1 }}>
-                  <Text style={st.platformName}>{pf.name}</Text>
-                  <Text style={st.platformSub}>支持歌单链接或歌单 ID</Text>
-                </View>
-                <Icon name="chevronright" size={20} color={C.text3} />
+            {IS_HD ? (
+              /* HD:平台卡片网格(对齐桌面版视觉,整卡可聚焦) */
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
+                {PLATFORMS.map(pf => (
+                  <HDTouch key={pf.id} style={hdSt.pfCard} focusStyle={hdSt.pfFocus} onPress={() => pick(pf.id)}>
+                    <View style={[hdSt.pfIcon, { backgroundColor: pf.color + '1E', borderColor: pf.color + '66' }]}>
+                      <BrandIcon name={pf.icon} size={34} />
+                    </View>
+                    <Text style={hdSt.pfName}>{pf.name}</Text>
+                    <Text style={hdSt.pfSub}>支持歌单链接或 ID</Text>
+                  </HDTouch>
+                ))}
+              </View>
+            ) : (
+              <>
+                {PLATFORMS.map(pf => (
+                  <TouchableOpacity key={pf.id} style={st.platformRow} activeOpacity={0.7} onPress={() => pick(pf.id)}>
+                    {pf.hasCircleBg ? (
+                      <View style={st.platformIconBare}>
+                        <BrandIcon name={pf.icon} size={28} />
+                      </View>
+                    ) : (
+                      <View style={[st.platformIcon, { backgroundColor: pf.color + '26', borderColor: pf.color }]}>
+                        <BrandIcon name={pf.icon} size={20} />
+                      </View>
+                    )}
+                    <View style={{ flex: 1 }}>
+                      <Text style={st.platformName}>{pf.name}</Text>
+                      <Text style={st.platformSub}>支持歌单链接或歌单 ID</Text>
+                    </View>
+                    <Icon name="chevronright" size={20} color={C.text3} />
+                  </TouchableOpacity>
+                ))}
+              </>
+            )}
+            {IS_HD ? (
+              <HDTouch style={hdSt.ghostBtn} focusStyle={hdSt.ghostFocus} onPress={() => nav.goBack()}>
+                <Text style={hdSt.ghostText}>暂不导入</Text>
+              </HDTouch>
+            ) : (
+              <TouchableOpacity style={st.skipBtn} onPress={() => nav.goBack()}>
+                <Text style={st.skipText}>暂不导入</Text>
               </TouchableOpacity>
-            ))}
-            <TouchableOpacity style={st.skipBtn} onPress={() => nav.goBack()}>
-              <Text style={st.skipText}>暂不导入</Text>
-            </TouchableOpacity>
+            )}
           </>
         )}
 
@@ -152,9 +177,15 @@ export function ImportPlaylistScreen() {
               {err ? <Text style={st.err}>{err}</Text> : null}
               <Text style={st.hint}>仅支持公开歌单；私密歌单请先设为公开</Text>
             </View>
-            <TouchableOpacity style={st.primaryBtn} onPress={fetchPreview} disabled={loading}>
-              {loading ? <ActivityIndicator color={C.onBrand} /> : <Text style={st.primaryText}>预览歌单</Text>}
-            </TouchableOpacity>
+            {IS_HD ? (
+              <HDTouch style={hdSt.primaryBtn} focusStyle={hdSt.primaryFocus} onPress={fetchPreview} disabled={loading}>
+                {loading ? <ActivityIndicator color={C.onBrand} size="large" /> : <Text style={hdSt.primaryText}>预览歌单</Text>}
+              </HDTouch>
+            ) : (
+              <TouchableOpacity style={st.primaryBtn} onPress={fetchPreview} disabled={loading}>
+                {loading ? <ActivityIndicator color={C.onBrand} /> : <Text style={st.primaryText}>预览歌单</Text>}
+              </TouchableOpacity>
+            )}
           </>
         )}
 
@@ -172,9 +203,15 @@ export function ImportPlaylistScreen() {
               </View>
             ))}
             {preview.total > 20 ? <Text style={st.moreHint}>…以及另外 {preview.total - 20} 首</Text> : null}
-            <TouchableOpacity style={st.primaryBtn} onPress={save}>
-              <Text style={st.primaryText}>导入到我的音乐</Text>
-            </TouchableOpacity>
+            {IS_HD ? (
+              <HDTouch style={hdSt.primaryBtn} focusStyle={hdSt.primaryFocus} onPress={save}>
+                <Text style={hdSt.primaryText}>导入到我的音乐</Text>
+              </HDTouch>
+            ) : (
+              <TouchableOpacity style={st.primaryBtn} onPress={save}>
+                <Text style={st.primaryText}>导入到我的音乐</Text>
+              </TouchableOpacity>
+            )}
           </>
         )}
       </ScrollView>
@@ -215,4 +252,22 @@ const st = StyleSheet.create({
   songName: { color: C.text, fontSize: 13, lineHeight: 18, fontWeight: '500' },
   songArtist: { color: C.text2, fontSize: 10, lineHeight: 13 },
   moreHint: { color: C.text3, fontSize: 11, textAlign: 'center', paddingVertical: 8 },
+});
+
+// HD(车机/TV)样式:平台卡片网格 + 大按钮,D-pad 可聚焦
+const hdSt = StyleSheet.create({
+  pfCard: {
+    width: 200, minHeight: 150, borderRadius: 16, backgroundColor: '#1A1A1A',
+    alignItems: 'center', justifyContent: 'center', gap: 8, padding: 16,
+  },
+  pfFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 16, backgroundColor: '#222222' },
+  pfIcon: { width: 62, height: 62, borderRadius: 31, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  pfName: { color: C.text, fontSize: 16, fontWeight: '700' },
+  pfSub: { color: C.text3, fontSize: 11 },
+  primaryBtn: { height: 58, borderRadius: 14, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
+  primaryFocus: { borderWidth: 2.5, borderColor: '#FFFFFF', borderRadius: 14 },
+  primaryText: { color: C.onBrand, fontSize: 17, fontWeight: '700' },
+  ghostBtn: { height: 52, borderRadius: 14, borderWidth: 1.5, borderColor: '#4A4A4A', alignItems: 'center', justifyContent: 'center', marginTop: 4 },
+  ghostFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 14 },
+  ghostText: { color: C.text2, fontSize: 15, fontWeight: '600' },
 });

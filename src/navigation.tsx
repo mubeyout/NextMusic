@@ -24,6 +24,7 @@ import { PlayerSettingsScreen } from './screens/PlayerSettingsScreen';
 import { CommentsScreen } from './screens/CommentsScreen';
 import { PlaylistDetailScreen } from './screens/PlaylistDetailScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
+import { HDSettingsScreen } from './hd/HDSettings';
 import { SourcesScreen, AccountScreen } from './screens/SourcesAccountScreens';
 import { BasicSettingsScreen, ThemeScreen, AboutScreen, DownloadsSettingsScreen, BackupSettingsScreen } from './screens/SettingSubScreens';
 import { ManualScreen, DeployGuideScreen, FaqScreen, ChangelogScreen } from './screens/HelpScreens';
@@ -40,6 +41,8 @@ import { RoutePage } from './screens/RouteScreen';
 import { IS_HD } from './services/appversion';
 import { HDMain } from './hd/HDMain';
 import { HDPlayer } from './hd/HDPlayer';
+import { HDBootScreen } from './hd/HDBootScreen';
+import { HDAuthLoginScreen } from './hd/HDAuthLogin';
 
 const navTheme = {
   ...DefaultTheme,
@@ -97,10 +100,10 @@ export function RootNavigator() {
   return (
     <NavigationContainer ref={navRef} theme={navTheme}>
       <Stack.Navigator initialRouteName={initial} screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
-        <Stack.Screen name="Boot" component={BootScreen} />
+        <Stack.Screen name="Boot" component={IS_HD ? HDBootScreen : BootScreen} />
         <Stack.Screen name="Server" component={ServerScreen} />
         <Stack.Screen name="Auth" component={AuthScreen} />
-        <Stack.Screen name="AuthLogin" component={AuthLoginScreen} />
+        <Stack.Screen name="AuthLogin" component={IS_HD ? HDAuthLoginScreen : AuthLoginScreen} />
         <Stack.Screen name="AuthSignup" component={AuthSignupScreen} />
         <Stack.Screen name="Main" component={IS_HD ? HDMain : MainTabs} />
         <Stack.Screen name="Player" component={IS_HD ? HDPlayer : PlayerScreen} options={{ animation: 'slide_from_bottom' }} />
@@ -110,7 +113,7 @@ export function RootNavigator() {
         <Stack.Screen name="PlaylistDetail" component={PlaylistDetailScreen} />
         <Stack.Screen name="Search" component={SearchScreen} options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="Route" component={RoutePage} options={{ animation: 'none', presentation: 'transparentModal' }} />
-        <Stack.Screen name="Settings" component={SettingsScreen} />
+        <Stack.Screen name="Settings" component={IS_HD ? HDSettingsScreen : SettingsScreen} />
         <Stack.Screen name="Sources" component={SourcesScreen} />
         <Stack.Screen name="Account" component={AccountScreen} />
         <Stack.Screen name="BasicSettings" component={BasicSettingsScreen} />

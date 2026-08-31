@@ -1,39 +1,43 @@
-// HD 首页:继续播放大卡 + 我的歌单横滚 + 榜单速览(点击跳榜单 tab 语义 → 榜单页)
+// HD 首页 —— 桌面版 HomeScreen 结构:问候 + 双大卡(每日推荐/私人雷达)
+// + 最近播放横滚 + 我的歌单网格;全部真数据真播放
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
 import { C, H } from './hdtokens';
+import { HDTouch } from './HDTouch';
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
 import { library, type LocalPlaylist } from '../state/library';
 import { getRecents } from '../state/recent';
 import { sync, lxToApp, type UserListsSnapshot } from '../services/sync';
+import { lxapi } from '../services/lxapi';
+import type { SongListMeta } from '../services/server';
+import { toast } from '../components/Dialog';
 import { hdNav } from './hdnav';
 import type { SongItem } from '../services/server';
 
-const GRADS: [string, string][] = [
-  ['#1f6b5c', '#142647'], ['#80381f', '#381a2e'], ['#5c297a', '#1f3861'],
-  ['#146b85', '#1f2e47'], ['#1f6b5c', '#142647'], ['#80381f', '#381a2e'],
-];
-
-export function HDHome() {
+export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
   const insets = useSafeAreaInsets();
-  const { current, playing, toggle } = usePlayer();
+  const { playSong } = usePlayer();
   const { connected, token } = useApp();
   const [localPls, setLocalPls] = useState<LocalPlaylist[]>([]);
   const [snap, setSnap] = useState<UserListsSnapshot | null>(null);
   const [recents, setRecents] = useState<SongItem[]>([]);
-  const [syncing, setSyncing] = useState(false);
+  const [dailyBusy, setDailyBusy] = useState(false);
+  // 推荐歌单(五源聚合,对齐桌面版 HomeScreen「推荐歌单」区)
+  const [recPls, setRecPls] = useState<SongListMeta[]>([]);
+  const [recSource, setRecSource] = useState('');
+
+  useEffect(() => {
+    lxapi.songListAuto('', '5', 1, 18).then(r => { setRecPls(r.list); setRecSource(r.source); }).catch(() => {});
+  }, []);
 
   const refresh = () => {
     setLocalPls(library.all());
     setRecents(getRecents().slice(0, 20));
-    setSyncing(true);
-    if (connected && token) {
-      sync.fetchLists().then(s => setSnap(s)).catch(() => {}).finally(() => setSyncing(false));
-    } else setSyncing(false);
+    if (connected && token) sync.fetchLists().then(setSnap).catch(() => {});
   };
   useEffect(refresh, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -52,94 +56,141 @@ export function HDHome() {
       : { title: pl.name, songs: pl.songs, meta: `${pl.count} 首 · 同步歌单` });
   };
 
+  // 每日推荐 = kg TOP500 前 30 首即播(真数据,动态找榜)
+  const playDaily = async () => {
+    if (dailyBusy) return;
+    setDailyBusy(true);
+    try {
+      const bs = await lxapi.leaderboardBoards('kg');
+      const top = bs.find(b => /500/i.test(b.name)) || bs[0];
+      const list = top ? await lxapi.leaderboardList(top.bangid, 'kg').catch(() => [] as SongItem[]) : [];
+      if (list.length) { playSong(list[0], list.slice(0, 30)); toast(`每日推荐 · ${Math.min(30, list.length)} 首`); }
+      else toast('榜单获取失败,稍后重试');
+    } finally { setDailyBusy(false); }
+  };
+
+  // 私人雷达 = 最近播放随机 30 首
+  const playRadar = () => {
+    if (!recents.length) { toast('还没有播放记录,先去探索几首吧'); onGotoSearch?.(); return; }
+    const shuffled = [...recents].sort(() => Math.random() - 0.5).slice(0, 30);
+    playSong(shuffled[0], shuffled);
+    toast(`私人雷达 · ${shuffled.length} 首`);
+  };
+
+  const openRecPl = async (pl: SongListMeta) => {
+    try {
+      const r = await lxapi.songListDetail(pl.id, 1, pl.source || 'wy');
+      const songs = r.list || [];
+      if (!songs.length) { toast('歌单内容获取失败'); return; }
+      hdNav()?.navigate('PlaylistDetail', { title: pl.name, songs, meta: `${pl.total || songs.length} 首 · ${pl.author || '推荐歌单'}` });
+    } catch { toast('歌单内容获取失败'); }
+  };
+
+  const hour = new Date().getHours();
+  const greet = hour < 6 ? '夜深了' : hour < 12 ? '早上好' : hour < 18 ? '下午好' : '晚上好';
+
   return (
     <ScrollView
       style={st.screen}
-      contentContainerStyle={{ paddingTop: Math.max(insets.top, 22), paddingBottom: 30, gap: 26 }}
+      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 22, paddingBottom: 26, gap: 18 }}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={syncing} onRefresh={refresh} tintColor={C.brand} />}
     >
-      {/* 继续播放 / 最近播放 */}
-      {current ? (
-        <TouchableOpacity activeOpacity={0.9} style={st.heroTouch} onPress={() => hdNav()?.navigate('Player')}>
-          <LinearGradient colors={['#145938', '#1F2E52']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.hero}>
-            {current.img
-              ? <Image source={{ uri: current.img }} style={st.heroArt} />
-              : <View style={[st.heroArt, { backgroundColor: '#00000055', alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={40} color={C.text2} /></View>}
-            <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
-              <Text style={st.heroTag}>继续播放</Text>
-              <Text style={st.heroTitle} numberOfLines={1}>{current.name}</Text>
-              <Text style={st.heroSub} numberOfLines={1}>{current.singer}{current.albumName ? ` · ${current.albumName}` : ''}</Text>
-            </View>
-            <TouchableOpacity style={st.heroPlay} activeOpacity={0.85} onPress={toggle}>
-              <Icon name={playing ? 'pause' : 'play'} size={34} color={C.onBrand} />
-            </TouchableOpacity>
-          </LinearGradient>
-        </TouchableOpacity>
-      ) : null}
+      <Text style={st.greet}>Hi,{greet}{connected && snap ? ',Mubey' : ''}</Text>
 
-      {/* 我的歌单 */}
-      <Section title={`我的歌单 · ${playlists.length}`}>
-        {playlists.length ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 34, gap: 16 }}>
-            {playlists.slice(0, 12).map((pl, i) => (
-              <TouchableOpacity key={pl.key} activeOpacity={0.85} style={st.plCard} onPress={() => openPl(pl)}>
-                {pl.img ? <Image source={{ uri: pl.img }} style={st.plArt} />
-                  : <LinearGradient colors={GRADS[i % GRADS.length]} style={st.plArt}><Icon name="music" size={26} color="#FFFFFFAA" /></LinearGradient>}
-                <Text style={st.plName} numberOfLines={1}>{pl.name}</Text>
-                <Text style={st.plMeta}>{pl.count} 首</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        ) : (
-          <View style={{ paddingHorizontal: 34 }}>
-            <Text style={st.empty}>还没有歌单 —— 连接服务器后自动同步,或在「我的」创建</Text>
-          </View>
-        )}
-      </Section>
+      {/* 双大卡 */}
+      <View style={{ flexDirection: 'row', gap: 12 }}>
+        <BigCard colors={['#7C4DFF', '#3F8CFF']} badge="30" title="每日推荐" sub="根据你的口味生成 · 每天 6:00 更新" busy={dailyBusy} onPress={playDaily} />
+        <BigCard colors={['#0FA3A3', '#1ED760']} badge="雷达" title="私人雷达" sub="你循环过的歌,都在这里重逢" onPress={playRadar} />
+      </View>
 
       {/* 最近播放 */}
       {recents.length ? (
-        <Section title="最近播放">
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 34, gap: 12 }}>
-            {recents.map((s, i) => (
-              <TouchableOpacity key={`${s.source}_${s.songmid}_${i}`} activeOpacity={0.85} style={st.recCard} onPress={() => hdNav()?.navigate('PlaylistDetail', { title: '最近播放', songs: recents, meta: `${recents.length} 首` })}>
-                {s.img ? <Image source={{ uri: s.img }} style={st.recArt} /> : <View style={[st.recArt, { backgroundColor: '#232323' }]} />}
-                <View style={{ flex: 1, minWidth: 0, gap: 2, paddingTop: 2 }}>
-                  <Text style={st.recName} numberOfLines={1}>{s.name}</Text>
-                  <Text style={st.recSub} numberOfLines={1}>{s.singer}</Text>
-                </View>
-              </TouchableOpacity>
+        <Section title="最近播放" more="查看全部" onMore={() => hdNav()?.navigate('PlaylistDetail', { title: '最近播放', songs: recents, meta: `${recents.length} 首` })}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingVertical: 4 }}>
+            {recents.slice(0, 8).map((s, i) => (
+              <HDTouch key={`${s.source}_${s.songmid}_${i}`} style={st.recCard} onPress={() => playSong(s, recents)}>
+                {s.img ? <Image source={{ uri: s.img }} style={st.recArt} />
+                  : <View style={[st.recArt, { backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={14} color={C.text3} /></View>}
+                <Text style={st.recName} numberOfLines={1}>{s.name}</Text>
+                <Text style={st.recSub} numberOfLines={1}>{s.singer}</Text>
+              </HDTouch>
             ))}
           </ScrollView>
         </Section>
       ) : null}
 
-      {/* 快捷入口 */}
-      <Section title="快捷入口">
-        <View style={{ flexDirection: 'row', paddingHorizontal: 34, gap: 16 }}>
-          {[
-            { icon: 'server' as const, label: '媒体库', to: 'MediaLibs' },
-            { icon: 'download' as const, label: '下载', to: 'Downloads' },
-            { icon: 'headphones' as const, label: '本地音乐', to: 'DeviceMusic' },
-            { icon: 'queue' as const, label: '播放队列', to: 'Queue' },
-          ].map(q => (
-            <TouchableOpacity key={q.label} activeOpacity={0.85} style={st.quick} onPress={() => hdNav()?.navigate(q.to)}>
-              <Icon name={q.icon} size={26} color={C.brand} />
-              <Text style={st.quickLabel}>{q.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+      {/* 推荐歌单(五源聚合卡片 grid,对齐桌面版) */}
+      <Section title="推荐歌单" hint={recSource ? `五源聚合 · ${recSource}` : '五源聚合'} more="更多" onMore={() => onGotoSearch?.()}>
+        {recPls.length ? (
+          <View style={st.grid}>
+            {recPls.slice(0, 12).map(pl => (
+              <HDTouch key={`${pl.source}_${pl.id}`} style={st.plCard} onPress={() => openRecPl(pl)}>
+                {pl.img
+                  ? <Image source={{ uri: pl.img }} style={st.plArt} />
+                  : <View style={[st.plArt, { backgroundColor: '#232323', alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
+                <Text style={st.plName} numberOfLines={1}>{pl.name}</Text>
+                <Text style={st.recSub} numberOfLines={1}>{pl.author || (pl.play_count ? `▶ ${pl.play_count}` : '')}</Text>
+              </HDTouch>
+            ))}
+          </View>
+        ) : (
+          <View style={st.empty}>
+            <Text style={st.emptyText}>推荐歌单加载中…</Text>
+          </View>
+        )}
+      </Section>
+
+      {/* 我的歌单 */}
+      <Section title="我的歌单" hint={`${playlists.length} 个`} more="更多" onMore={() => hdNav()?.navigate('ImportPlaylist')}>
+        {playlists.length ? (
+          <View style={st.grid}>
+            {playlists.slice(0, 10).map(pl => (
+              <HDTouch key={pl.key} style={st.plCard} onPress={() => openPl(pl)}>
+                {pl.img
+                  ? <Image source={{ uri: pl.img }} style={st.plArt} />
+                  : <View style={[st.plArt, { backgroundColor: '#232323', alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
+                <View style={st.plCount}><Text style={st.plCountText}>▶ {pl.count}</Text></View>
+                <Text style={st.plName} numberOfLines={1}>{pl.name}</Text>
+              </HDTouch>
+            ))}
+          </View>
+        ) : (
+          <HDTouch style={st.empty} onPress={() => onGotoSearch?.()}>
+            <Icon name="search" size={16} color={C.text3} />
+            <Text style={st.emptyText}>还没有歌单 —— 去「探索」搜索,或连接服务器同步</Text>
+          </HDTouch>
+        )}
       </Section>
     </ScrollView>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+// 桌面 BigCard:渐变 + 左徽标 + 标题/副标题 + 右圆钮
+function BigCard({ colors, badge, title, sub, onPress, busy }: { colors: [string, string]; badge: string; title: string; sub: string; onPress: () => void; busy?: boolean }) {
   return (
-    <View style={{ gap: 14 }}>
-      <View style={{ paddingHorizontal: 34, flexDirection: 'row', alignItems: 'baseline', gap: 10 }}>
+    <HDTouch activeOpacity={0.9} onPress={onPress} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.card }}>
+      <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.big}>
+        <Text style={st.bigBadge}>{badge}</Text>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={st.bigTitle} numberOfLines={1}>{title}</Text>
+          <Text style={st.bigSub} numberOfLines={1}>{sub}</Text>
+        </View>
+        <View style={st.bigPlay}>
+          {busy ? <ActivityIndicator size="small" color="#fff" /> : <Icon name="play" size={11} color="#fff" />}
+        </View>
+      </LinearGradient>
+    </HDTouch>
+  );
+}
+
+function Section({ title, hint, more, onMore, children }: { title: string; hint?: string; more?: string; onMore?: () => void; children: React.ReactNode }) {
+  return (
+    <View style={{ gap: 9 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 7 }}>
         <Text style={st.secTitle}>{title}</Text>
+        {hint ? <Text style={st.secHint}>{hint}</Text> : null}
+        <View style={{ flex: 1 }} />
+        {more ? <HDTouch style={{ paddingVertical: 2, paddingHorizontal: 4 }} focusStyle={false} onPress={onMore}><Text style={st.secMore}>{more} ›</Text></HDTouch> : null}
       </View>
       {children}
     </View>
@@ -148,23 +199,25 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
-  heroTouch: { paddingHorizontal: 34 },
-  hero: { height: 150, borderRadius: 18, flexDirection: 'row', alignItems: 'center', padding: 20, gap: 20 },
-  heroArt: { width: 110, height: 110, borderRadius: 12 },
-  heroTag: { color: C.brand, fontSize: 13, fontWeight: '700' },
-  heroTitle: { color: C.text, fontSize: 26, fontWeight: '800' },
-  heroSub: { color: '#FFFFFF99', fontSize: 15 },
-  heroPlay: { width: 68, height: 68, borderRadius: 34, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
-  secTitle: { color: C.text, fontSize: 20, fontWeight: '800' },
-  empty: { color: C.text2, fontSize: 14 },
-  plCard: { width: 150, gap: 8 },
-  plArt: { width: 150, height: 150, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  plName: { color: C.text, fontSize: 15, fontWeight: '600' },
-  plMeta: { color: C.text2, fontSize: 12 },
-  recCard: { width: 240, height: 76, borderRadius: 12, backgroundColor: '#1E1E1E', flexDirection: 'row', alignItems: 'center', padding: 10, gap: 12 },
-  recArt: { width: 56, height: 56, borderRadius: 8 },
-  recName: { color: C.text, fontSize: 14, fontWeight: '600' },
-  recSub: { color: C.text2, fontSize: 12 },
-  quick: { flex: 1, height: 96, borderRadius: 14, backgroundColor: '#1E1E1E', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  quickLabel: { color: C.text, fontSize: 15, fontWeight: '600' },
+  greet: { color: C.text, fontSize: H.font.hero, fontWeight: '800' },
+  big: { height: 88, borderRadius: H.radius.card, flexDirection: 'row', alignItems: 'center', padding: 15, gap: 13 },
+  bigBadge: { color: '#fff', fontSize: 18, fontWeight: '800', opacity: 0.92 },
+  bigTitle: { color: '#fff', fontSize: H.font.xl, fontWeight: '700' },
+  bigSub: { color: '#FFFFFFD0', fontSize: H.font.sm, marginTop: 2 },
+  bigPlay: { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,.22)', alignItems: 'center', justifyContent: 'center' },
+  secTitle: { color: C.text, fontSize: H.font.xl, fontWeight: '700' },
+  secHint: { color: C.text3, fontSize: H.font.xs },
+  secMore: { color: C.brand, fontSize: H.font.sm },
+  recCard: { width: 88, gap: 4 },
+  recArt: { width: 88, height: 88, borderRadius: 9 },
+  recName: { color: C.text, fontSize: H.font.xs, fontWeight: '500' },
+  recSub: { color: C.text3, fontSize: 8 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  plCard: { width: 118, gap: 5 },
+  plArt: { width: 118, height: 118, borderRadius: 9 },
+  plCount: { position: 'absolute', top: 86, left: 88, backgroundColor: 'rgba(0,0,0,.55)', borderRadius: 5, paddingHorizontal: 5, paddingVertical: 1 },
+  plCountText: { color: '#fff', fontSize: 8 },
+  plName: { color: C.text, fontSize: H.font.sm, fontWeight: '600' },
+  empty: { height: 64, borderRadius: H.radius.card, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', gap: 8, flexDirection: 'row', paddingHorizontal: 14 },
+  emptyText: { color: C.text3, fontSize: H.font.sm },
 });
