@@ -5,4 +5,4 @@ const native = NativeModules.AppVersionInfo as { versionName?: string; versionCo
 
 export const APP_VERSION = native?.versionName
   ? `${native.versionName} (${native.versionCode})`
-  : '3.4.0-lx5';
+  : '1.0.0';

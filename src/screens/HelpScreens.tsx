@@ -59,6 +59,15 @@ export function ManualScreen() { return <Doc title="使用手册" blocks={MANUAL
 
 // ---------- 更新日志 ----------
 const CHANGELOG: { h: string; li: string[] }[] = [
+  { h: '1.0.0 正式版', li: [
+    '首个正式版：多源搜索（酷我/酷狗/网易/QQ/咪咕）+ 榜单广场 + 播客电台',
+    '媒体库：Emby/Jellyfin/Subsonic/Navidrome/道理鱼/WebDAV 六类接入，断链引导与自动兑底',
+    '投屏：DLNA + Chromecast 双协议；本机/蓝牙/投屏设备无缝切换',
+    '音频：10 段 EQ + 真实 IR 卷积混响 + 3D 环绕 + 变调，与 Web 播放器互通',
+    '健壮性：播放错误提示必达、错误自动重试、歌词引擎多源兑底',
+    '下载管理 / 设备本地音乐 / SAF 备份导入导出 / 深色主题与强调色',
+  ] },
+  { h: '内测期（3.3.0 - 3.4.0-lx44，仅内部归档）', li: [] },
   { h: '3.4.0-lx26', li: [
     'Emby 播放三连修：APE 等无损自动转码、转码会话隔离、慢启动不再断流',
     '音效引擎旁路加固，播放键失败后可重试',
