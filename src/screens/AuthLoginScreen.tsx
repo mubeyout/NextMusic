@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { C } from '../theme/tokens';
@@ -41,7 +41,7 @@ export function AuthLoginScreen() {
   };
 
   return (
-    <View style={[st.screen, { paddingTop: insets.top + 22 }]}>
+    <ScrollView style={st.screen} contentContainerStyle={{ paddingTop: insets.top + 22, paddingBottom: 30, gap: 17 }} keyboardShouldPersistTaps="handled">
       <View style={st.brandRow}>
         <View style={st.brandDot} />
         <Text style={st.brandName}>NextMusic</Text>
@@ -83,12 +83,12 @@ export function AuthLoginScreen() {
       <TouchableOpacity style={st.backLink} onPress={() => nav.goBack()}>
         <Text style={st.backText}>← 返回</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 
 const st = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: C.bg, paddingHorizontal: 20, gap: 17 },
+  screen: { flex: 1, backgroundColor: C.bg, paddingHorizontal: 20 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   brandDot: { width: 17, height: 17, borderRadius: 9, backgroundColor: C.brand },
   brandName: { color: C.text, fontSize: 15, lineHeight: 18, fontWeight: '700' },

@@ -10,5 +10,6 @@ class VersionModule(reactContext: ReactApplicationContext) : ReactContextBaseJav
     override fun getConstants(): Map<String, Any> = mapOf(
         "versionName" to BuildConfig.VERSION_NAME,
         "versionCode" to BuildConfig.VERSION_CODE.toLong(),
+        "flavor" to BuildConfig.FLAVOR, // phone / hd —— JS 层 UI 分流
     )
 }

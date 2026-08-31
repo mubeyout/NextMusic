@@ -37,6 +37,9 @@ import { BoardsSquareScreen } from './screens/BoardsSquareScreen';
 import { DeviceMusicScreen } from './screens/DeviceMusicScreen';
 import { SearchScreen } from './screens/SearchScreen';
 import { RoutePage } from './screens/RouteScreen';
+import { IS_HD } from './services/appversion';
+import { HDMain } from './hd/HDMain';
+import { HDPlayer } from './hd/HDPlayer';
 
 const navTheme = {
   ...DefaultTheme,
@@ -99,8 +102,8 @@ export function RootNavigator() {
         <Stack.Screen name="Auth" component={AuthScreen} />
         <Stack.Screen name="AuthLogin" component={AuthLoginScreen} />
         <Stack.Screen name="AuthSignup" component={AuthSignupScreen} />
-        <Stack.Screen name="Main" component={MainTabs} />
-        <Stack.Screen name="Player" component={PlayerScreen} options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="Main" component={IS_HD ? HDMain : MainTabs} />
+        <Stack.Screen name="Player" component={IS_HD ? HDPlayer : PlayerScreen} options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="Queue" component={QueueScreen} options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="PlayerSettings" component={PlayerSettingsScreen} />
         <Stack.Screen name="Comments" component={CommentsScreen} />

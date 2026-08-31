@@ -7,7 +7,8 @@ apply plugin: "com.facebook.react"
  * By default you don't need to apply any configuration, just uncomment the lines you need.
  */
 react {
-    /* Folders */
+    /* Debug variants skip JS bundling and load from Metro */
+    debuggableVariants = ["phoneDebug", "hdDebug"]
     //   The root of your project, i.e. where "package.json" lives. Default is '../..'
     // root = file("../../")
     //   The folder where the react-native NPM package is. Default is ../../node_modules/react-native
@@ -78,6 +79,20 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
 
     namespace "com.mubeyworks.nextmusic"
+
+    // HD（车机/TV）与手机同仓分流：hd = 独立包名(.hd 后缀可共存) + 横屏 leanback 壳，JS 层 BuildConfig.FLAVOR 分流 UI
+    flavorDimensions "ui"
+    productFlavors {
+        phone {
+            dimension "ui"
+        }
+        hd {
+            dimension "ui"
+            applicationIdSuffix ".hd"
+            versionNameSuffix "-hd"
+        }
+    }
+
     defaultConfig {
         applicationId "com.mubeyworks.nextmusic"
         minSdkVersion rootProject.ext.minSdkVersion
