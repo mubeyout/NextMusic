@@ -304,3 +304,34 @@ const JS_PAIRS = [
 ];
 patchJs('lib/commonjs/utils.js', '[NextMusic-FX:artwork-optional]', JS_PAIRS);
 patchJs('lib/module/utils.js', '[NextMusic-FX:artwork-optional]', JS_PAIRS);
+
+// 7) [NextMusic-FX:err-race] 错误清理竞态根治（lx44 假播放态）：
+//    a) resetInternal 最终状态事件提到 teardown 之前（原实现 emit 排在 release 与 destroy 调度
+//       之后、activeTrack 已清空——事件晚出+丢 track，JS 偶发收不到 → 假「正在播放」）
+//    b) 延时 destroyPlaybackService 带 play 代际校验：期间有新 play()（App 错误自动重试/切歌）
+//       则跳过，防止服务在重试会话刚建立时被拆 → MediaBrowser 断连 → 事件链死寂
+//    c) play() 入口代际 +1 作废挂起的 destroy
+patch(
+  'AudioProController.kt',
+  '[NextMusic-FX:err-race-var]',
+  '\tprivate var flowIsInErrorState: Boolean = false\n\tprivate var flowLastEmittedState: String = ""\n',
+  '\tprivate var flowIsInErrorState: Boolean = false\n\tprivate var flowLastEmittedState: String = ""\n\tprivate var flowPlayGeneration: Long = 0 // [NextMusic-FX:err-race-var] play 代际计数\n'
+);
+patch(
+  'AudioProController.kt',
+  '[NextMusic-FX:err-race-emit]',
+  '\t\t// Clear pending seek state\n\t\tflowPendingSeekPosition = null\n\n\t\t// Stop playback and ensure player is fully released before destroying service\n',
+  '\t\t// Clear pending seek state\n\t\tflowPendingSeekPosition = null\n\n\t\t// [NextMusic-FX:err-race-emit] 事件先出门再拆家：先发最终状态（activeTrack 还在，track 不丢），\n\t\t// 再做 stop/release/destroy——原实现 emit 排在 teardown 之后，错误事件偶发被吞\n\t\temitState(finalState, 0L, 0L, "resetInternal($finalState)")\n\n\t\t// Stop playback and ensure player is fully released before destroying service\n'
+);
+patch(
+  'AudioProController.kt',
+  '[NextMusic-FX:err-race-destroy]',
+  '\t\t// Release resources\n\t\trelease()\n\n\t\t// Add a small delay before destroying service to ensure player is fully released\n\t\tHandler(Looper.getMainLooper()).postDelayed({\n\t\t\t// Destroy the playback service to remove notification and tear down the media session\n\t\t\tdestroyPlaybackService()\n\t\t}, 50)\n\n\t\t// Emit final state\n\t\temitState(finalState, 0L, 0L, "resetInternal($finalState)")\n\t}',
+  '\t\t// Release resources\n\t\trelease()\n\n\t\t// [NextMusic-FX:err-race-destroy] 延时 destroy 带代际校验：期间有新 play() 则跳过，\n\t\t// 防止服务在重试会话刚建立时被拆掉 → MediaBrowser 断连 → JS 假「正在播放」\n\t\tval gen = flowPlayGeneration\n\t\t// Add a small delay before destroying service to ensure player is fully released\n\t\tHandler(Looper.getMainLooper()).postDelayed({\n\t\t\tif (gen != flowPlayGeneration) {\n\t\t\t\tlog("Skip service destroy: new playback started (gen $gen -> $flowPlayGeneration)")\n\t\t\t\treturn@postDelayed\n\t\t\t}\n\t\t\t// Destroy the playback service to remove notification and tear down the media session\n\t\t\tdestroyPlaybackService()\n\t\t}, 50)\n\t}'
+);
+patch(
+  'AudioProController.kt',
+  '[NextMusic-FX:err-race-bump]',
+  '\tsuspend fun play(track: ReadableMap, options: ReadableMap) {\n\t\tval opts = extractPlaybackOptions(options)\n',
+  '\tsuspend fun play(track: ReadableMap, options: ReadableMap) {\n\t\tflowPlayGeneration++ // [NextMusic-FX:err-race-bump] 新播放开始：作废错误清理挂起的延时 destroy\n\t\tval opts = extractPlaybackOptions(options)\n'
+);
