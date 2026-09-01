@@ -326,9 +326,9 @@ export function RoutePage({ navigation }: { navigation: any }) {
 const st = StyleSheet.create({
   routePage: { flex: 1, backgroundColor: 'transparent' },
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'flex-end', zIndex: 100, elevation: 100 },
-  scrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(8,8,10,0.55)' },
+  scrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: C.scrim },
   sheet: {
-    backgroundColor: 'rgba(22,22,24,0.96)', borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    backgroundColor: C.sheet, borderTopLeftRadius: 20, borderTopRightRadius: 20,
     paddingHorizontal: 20, paddingTop: 8,
     // lx35：不用百分比（transparentModal 页测量怪癖），固定 dp 上限；ScrollView flexShrink 收缩
     maxHeight: Math.round(Dimensions.get('window').height * 0.88),

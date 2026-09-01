@@ -73,7 +73,7 @@ export function QueueScreen() {
 }
 
 const st = StyleSheet.create({
-  screen: { flex: 1 },
+  screen: { flex: 1, backgroundColor: C.bgDeep },
   nowCard: { borderRadius: 12, backgroundColor: C.elev, padding: 12, marginTop: 8 },
   nowRow: { flexDirection: 'row', gap: 10 },
   nowArtWrap: { width: 60, height: 60, borderRadius: 7, overflow: 'hidden' },

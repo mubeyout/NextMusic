@@ -35,6 +35,7 @@ export const C: Record<string, string> = {
   knobOn: '#0E3B1F',       // 开关 on 钮（浅色下白色钮）
   knob: '#FFFFFF',         // Fx 开关钮（浅色 off 态灰钮）
   failTint: '#2A1A1A',     // 下载失败卡底
+  sheet: '#161618F5',      // 半透明抽屉面（浅色下乳白）
   brandText: '#1ED760',    // 绿色文字（浅色下换深绿，避免绿字贴白底看不清）
 };
 
@@ -91,6 +92,7 @@ export function applyBootTheme() {
     C.knobOn = '#FFFFFF';
     C.knob = '#8F969E';
     C.failTint = '#FDEEEE';
+    C.sheet = '#FAFBFCF5';
     C.brandText = '#0E8A44';
   }
 }
