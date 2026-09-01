@@ -14,7 +14,7 @@ import { useApp } from './AppState';
 import { pushRecent } from './recent';
 import { navRef } from '../navRef';
 import { dialog, toast } from '../components/Dialog';
-import { dlna, googleCast, type DlnaDevice, type CastDevice } from '../services/audioroute';
+import { dlna, googleCast, audioRoute, type DlnaDevice, type CastDevice } from '../services/audioroute';
 
 const modeKv = createMMKV({ id: 'nextmusic-playmode' });
 const playbackKv = createMMKV({ id: 'nextmusic-playback' }); // 恢复上次播放状态快照
@@ -192,6 +192,25 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const wasPlaying = st === AudioProState.PLAYING;
     AudioPro.play(trackToAudioPro(lp.t, lp.url), { ...lp.opts, startTimeMs: pos, autoPlay: wasPlaying });
   }, []);
+
+  // 1.0.5：系统抢路由兜底（一加 ColorOS 实证：二路 A2DP 上线后 ~8s，MDM CREATE_AUDIO_PATCH 无视 App 偏好
+  // 抢走媒体输出；setPreferredDevice 只能重放存量 track，赢不了 MDM patch）。原生哨兵连续两次比对
+  // preferred vs 实际路由不符后通知这里 rebuildAudio（新 AudioTrack 初始化时自动重放存储的偏好）。
+  // 防抖 5s + 120s 窗口最多 3 次：MDM 若反复抢不至于把音乐重启成抽风；投屏中本机挂起，跳过。
+  const routeStealRef = useRef({ last: 0, attempts: [] as number[] });
+  useEffect(() => {
+    const sub = audioRoute.onRouteStolen(() => {
+      if (castRef.current) return; // 投屏中：本机 ExoPlayer 挂起，无需重建
+      const now = Date.now();
+      const rs = routeStealRef.current;
+      rs.attempts = rs.attempts.filter((t) => now - t < 120_000);
+      if (rs.attempts.length >= 3 || now - rs.last < 5_000) return;
+      rs.last = now;
+      rs.attempts.push(now);
+      rebuildAudio();
+    });
+    return () => sub?.remove();
+  }, [rebuildAudio]);
 
   const resolveAndPlay = useCallback(async (t: QueueTrack) => {
     // 媒体库歌丬断链时的定向引导（不再误导去登录/设音源）

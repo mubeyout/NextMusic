@@ -54,6 +54,22 @@ object AudioRouteEngine {
             Log.w(TAG, "setPreferredDevice failed", t)
         }
     }
+
+    /** [1.0.5:route-watch] 实际路由设备 id（反射 DefaultAudioSink.audioTrack.getRoutedDevice，
+     *  media3 1.6 字段名 audioTrack）；拿不到（无 sink/无 track/反射失败）返回 -2，调用方按未知跳过 */
+    fun actualRoutedId(): Int {
+        val s = sink ?: return -2
+        return try {
+            val f = DefaultAudioSink::class.java.getDeclaredField("audioTrack")
+            f.isAccessible = true
+            val track = f.get(s) as? android.media.AudioTrack ?: return -2
+            val dev = track.routedDevice ?: return -2
+            dev.id
+        } catch (t: Throwable) {
+            Log.d(TAG, "actualRoutedId unavailable: ${t.message}")
+            -2
+        }
+    }
 }
 
 class AudioRouteModule(reactContext: ReactApplicationContext) :
@@ -81,21 +97,71 @@ class AudioRouteModule(reactContext: ReactApplicationContext) :
         } catch (t: Throwable) {
             Log.w(AudioRouteEngine.TAG, "volume receiver failed", t)
         }
-        // 设备插拔/蓝牙连接断开 → 通知 JS 重列设备
+        // 设备插拔/蓝牙连接断开 → 通知 JS 重列设备；并启动抢路由哨兵（1.0.5）
         try {
             am.registerAudioDeviceCallback(object : AudioDeviceCallback() {
                 override fun onAudioDevicesAdded(added: Array<out AudioDeviceInfo>) {
                     // 设备插拔/蓝牙重连后重放用户偏好,防止系统抢路由
                     AudioRouteEngine.applyPreferred(reactApplicationContext)
                     emitDevices()
+                    scheduleRouteWatch()
                 }
                 override fun onAudioDevicesRemoved(removed: Array<out AudioDeviceInfo>) {
                     AudioRouteEngine.applyPreferred(reactApplicationContext)
                     emitDevices()
+                    scheduleRouteWatch()
                 }
             }, null)
         } catch (t: Throwable) {
             Log.w(AudioRouteEngine.TAG, "device callback failed", t)
+        }
+    }
+
+    /** [1.0.5:route-watch] 抢路由哨兵：一加 ColorOS 实证——二路 A2DP（小爱音箱）上线后约 8s，
+     *  MDM 主动 CREATE_AUDIO_PATCH 抢走媒体输出，无视 App 的 setPreferredDevice（且策略级
+     *  setPreferredDeviceForStrategy 需 MODIFY_AUDIO_ROUTING 特权，API30 不跑/API34+ 空枪）。
+     *  唯一能赢的姿势：重建 AudioTrack（新 track 初始化时自动重放存储的偏好）。
+     *  设备变化后在 1.5~19s 窗口内延时多次比对 preferredId vs 实际路由（MDM 抢夺在 +8s 观测过，
+     *  不能只查一次）；连续两次不符才通知 JS 重建（首次仅廉价重放偏好，多数 ROM 到这就够了）。 */
+    private val routeWatchHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val routeWatchRunnables = ArrayList<Runnable>()
+    @Volatile private var routeMismatchStreak = 0
+
+    private fun scheduleRouteWatch() {
+        synchronized(routeWatchRunnables) {
+            routeWatchRunnables.forEach(routeWatchHandler::removeCallbacks)
+            routeWatchRunnables.clear()
+            routeMismatchStreak = 0
+            longArrayOf(1500, 4000, 8000, 13000, 19000).forEach { d ->
+                val r = Runnable { checkRouteSteal() }
+                routeWatchRunnables.add(r)
+                routeWatchHandler.postDelayed(r, d)
+            }
+        }
+    }
+
+    private fun checkRouteSteal() {
+        val pref = AudioRouteEngine.preferredId
+        if (pref < 0) { routeMismatchStreak = 0; return } // 跟随系统：系统路由就是用户要的
+        val exists = am.getDevices(AudioManager.GET_DEVICES_OUTPUTS).any { it.id == pref }
+        if (!exists) { routeMismatchStreak = 0; return } // 偏好设备已拔出/断开，applyPreferred 已回退自动
+        val actual = AudioRouteEngine.actualRoutedId()
+        if (actual == -2 || actual == pref) { routeMismatchStreak = 0; return }
+        routeMismatchStreak++
+        Log.w(AudioRouteEngine.TAG, "route mismatch #$routeMismatchStreak: preferred=$pref actual=$actual -> re-apply")
+        AudioRouteEngine.applyPreferred(reactApplicationContext)
+        if (routeMismatchStreak >= 2) {
+            Log.w(AudioRouteEngine.TAG, "route stolen (preferred=$pref actual=$actual) -> notify JS rebuild")
+            try {
+                val m = Arguments.createMap().apply {
+                    putDouble("preferred", pref.toDouble())
+                    putDouble("actual", actual.toDouble())
+                }
+                emit("nm.route.stolen", m)
+            } catch (t: Throwable) {
+                Log.w(AudioRouteEngine.TAG, "emit stolen failed", t)
+            }
+            routeMismatchStreak = 0 // JS 重建后重新计轮；若 MDM 再抢，下一轮继续兜
         }
     }
 

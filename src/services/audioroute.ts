@@ -65,6 +65,12 @@ export const audioRoute = {
     if (!R) return;
     return new NativeEventEmitter(NativeModules.NMAudioRoute).addListener('nm.devices', () => cb());
   },
+  /** 1.0.5：路由被系统抢走（ColorOS MDM 二路蓝牙上线抢路由）——原生哨兵连续两次比对不符后通知，
+   *  JS 应 rebuildAudio 重建 AudioTrack（新 track 初始化自动重放设备偏好） */
+  onRouteStolen(cb: (e: { preferred: number; actual: number }) => void): EmitterSubscription | undefined {
+    if (!R) return;
+    return new NativeEventEmitter(NativeModules.NMAudioRoute).addListener('nm.route.stolen', (e: any) => cb(e));
+  },
 };
 
 // ---------- DLNA ----------
