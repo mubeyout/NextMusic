@@ -125,7 +125,7 @@ class DlnaModule(reactContext: ReactApplicationContext) :
             socket = DatagramSocket(null).apply {
                 reuseAddress = true
                 bind(InetSocketAddress(0))
-                soTimeout = 900
+                soTimeout = 600
             }
             val sts = listOf(
                 "urn:schemas-upnp-org:service:AVTransport:1",
@@ -133,7 +133,8 @@ class DlnaModule(reactContext: ReactApplicationContext) :
             )
             val t0 = SystemClock.elapsedRealtime()
             var sendIdx = 0
-            while (scanning && SystemClock.elapsedRealtime() - t0 < 7000) {
+            // vc78：窗口 7s→4.5s（设备出现主延迟在 MX 等待，不再需长窗收尾）
+            while (scanning && SystemClock.elapsedRealtime() - t0 < 4500) {
                 if (sendIdx < sts.size) {
                     sendMsearch(socket, sts[sendIdx])
                     sendIdx++
@@ -150,7 +151,8 @@ class DlnaModule(reactContext: ReactApplicationContext) :
                     val body = String(buf, 0, pkt.length, Charsets.ISO_8859_1)
                     val loc = Regex("(?im)^LOCATION:\\s*(\\S+)")
                         .find(body)?.groupValues?.get(1) ?: continue
-                    fetchDevice(loc)
+                    // vc78：描述 XML 拉取并行化——串行时一台慢设备（5s 超时）阻塞后续全部发现
+                    exec.submit { fetchDevice(loc) }
                 }
             }
         } catch (t: Throwable) {
@@ -170,7 +172,7 @@ class DlnaModule(reactContext: ReactApplicationContext) :
             append("M-SEARCH * HTTP/1.1\r\n")
             append("HOST: $SSDP_ADDR:$SSDP_PORT\r\n")
             append("MAN: \"ssdp:discover\"\r\n")
-            append("MX: 3\r\n")
+            append("MX: 1\r\n") // vc78：3→1，设备回应等待从平均 1.5s 降到 0.5s 内
             append("ST: $st\r\n")
             append("\r\n")
         }.toByteArray(Charsets.ISO_8859_1)

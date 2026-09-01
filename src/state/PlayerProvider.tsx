@@ -147,6 +147,53 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     setCast(null);
     persistCast(null);
   }, [persistCast]);
+
+  // ---------- vc78：Emby/JF 播放统计会话上报（开始/每 10s 进度/停止） ----------
+  const repRef = useRef<{ acct: NonNullable<ReturnType<typeof providers.get>>; itemId: string; psid: string } | null>(null);
+  const repTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const repPosRef = useRef(0); repPosRef.current = position;
+  const repPlayingRef = useRef(false); repPlayingRef.current = playing;
+  const stopReport = useCallback(() => {
+    if (repTimerRef.current) { clearInterval(repTimerRef.current); repTimerRef.current = null; }
+    const r = repRef.current;
+    repRef.current = null;
+    if (r) providerApi.reportPlayback(r.acct, r.itemId, 'stop', repPosRef.current, r.psid).catch(() => {});
+  }, []);
+  const startReport = useCallback((t: SongItem) => {
+    stopReport();
+    try {
+      const mid = String(t.songmid ?? '');
+      const pid = mid.includes(':') ? mid.split(':')[0] : '';
+      const acct = pid ? providers.get(pid) : null;
+      if (!acct) return;
+      const itemId = mid.slice(pid.length + 1);
+      const psid = 'nm-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      repRef.current = { acct, itemId, psid };
+      providerApi.reportPlayback(acct, itemId, 'start', 0, psid).catch(() => {});
+      repTimerRef.current = setInterval(() => {
+        if (!repPlayingRef.current) return; // 暂停中不上报进度（位置不动）
+        const r = repRef.current;
+        if (r) providerApi.reportPlayback(r.acct, r.itemId, 'progress', repPosRef.current, r.psid).catch(() => {});
+      }, 10000);
+    } catch { /* ignore */ }
+  }, [stopReport]);
+  useEffect(() => () => { if (repTimerRef.current) clearInterval(repTimerRef.current); }, []);
+
+  // ---------- vc78：投屏中音量键转发（系统音量 delta → 投屏设备音量） ----------
+  // 投屏中本机不出声，按音量键只改系统音量无效果——把变化量转给投屏设备
+  const lastSysVol = useRef<number | null>(null);
+  const castVolMem = useRef(50);
+  useEffect(() => {
+    const sub = audioRoute.onVolumeChange(v => {
+      const prev = lastSysVol.current;
+      lastSysVol.current = v;
+      const cs = castRef.current;
+      if (!cs || prev === null || v === prev) return;
+      castVolMem.current = Math.max(0, Math.min(100, castVolMem.current + (v - prev)));
+      (cs.kind === 'dlna' ? dlna : googleCast).setVolume(cs.dev as never, castVolMem.current).catch(() => {});
+    });
+    return () => { sub?.remove(); };
+  }, []);
   /** 统一播放入口：dlna/cast 投屏中且是可投屏的 http(s) 流 → 推给设备；否则本机播放 */
   // lx43：记录最近一次本机播放上下文（设备切换后无感重建用）
   const lastLocalPlayRef = useRef<{ t: QueueTrack; url: string; opts?: { headers: { audio: Record<string, string>; artwork?: Record<string, string> } } } | null>(null);
@@ -257,7 +304,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       if (dlPath) {
         playOrCast(t, dlPath);
         setCurrent(t);
-        if (isProviderSource(t)) scrobbleProvider(t);
+        if (isProviderSource(t)) { scrobbleProvider(t); startReport(t); }
         return;
       }
       // ③ 媒体库源（emby/jellyfin/subsonic/webdav）：直接出流地址 + 鉴权头
@@ -269,6 +316,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         playOrCast(t, p.url, opts);
         setCurrent(t);
         scrobbleProvider(t); // 播放统计回写服务器（fire-and-forget）
+        startReport(t); // vc78：Emby/JF 会话上报（后台统计）
         return;
       }
       const token = tokenRef.current;
@@ -566,6 +614,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       (prev.kind === 'dlna' ? dlna : googleCast).stop(prev.dev as never).catch(() => {});
     }
     activateCast({ kind, dev });
+    // vc78：音量键转发基线——拉当前系统音量+设备音量
+    audioRoute.getVolume().then(v => { lastSysVol.current = v; }).catch(() => {});
+    (kind === 'dlna' ? dlna : googleCast).getVolume(dev as never).then(v => { castVolMem.current = v; }).catch(() => {});
     const t = queueRef.current[idxRef.current];
     if (t) {
       AudioPro.pause();

@@ -532,6 +532,20 @@ export const providerApi = {
     } catch { /* 统计失败不影响播放 */ }
   },
 
+  /** Emby/JF 播放会话上报（vc78）：Sessions/Playing 三件套——PlayedItems 只标已播不进后台统计，
+   * 服务器侧的播放次数/时长/活跃流需要会话上报才有 */
+  async reportPlayback(a: ProviderAcct, itemId: string, ev: 'start' | 'progress' | 'stop', posMs: number, playSessionId: string): Promise<void> {
+    try {
+      const proto = PROTOCOL[a.type];
+      if (proto !== 'emby' && proto !== 'jellyfin') return;
+      const ticks = Math.max(0, Math.round(posMs * 10000)); // ms → ticks(100ns)
+      const body = JSON.stringify({ itemId, playSessionId, positionTicks: ticks });
+      if (ev === 'start') await embyFetch(a, '/Sessions/Playing', { method: 'POST', body });
+      else if (ev === 'progress') await embyFetch(a, '/Sessions/Playing/Progress', { method: 'POST', body });
+      else await embyFetch(a, '/Sessions/Playing/Stopped', { method: 'POST', body });
+    } catch { /* 统计失败不影响播放 */ }
+  },
+
   /** WebDAV 目录浏览：返回子目录 + 音频文件（音频文件已转 SongItem） */
   async webdavList(a: ProviderAcct, dir: string): Promise<{ dirs: { name: string; path: string }[]; songs: SongItem[] }> {
     const base = norm(a.base);

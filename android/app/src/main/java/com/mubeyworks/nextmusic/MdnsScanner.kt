@@ -40,7 +40,7 @@ class MdnsScanner(
         const val TAG = "NMMdns"
         const val MDNS_ADDR = "224.0.0.251"
         const val MDNS_PORT = 5353
-        const val WINDOW_MS = 7000
+        const val WINDOW_MS = 4500
     }
 
     private val running = AtomicBoolean(false)

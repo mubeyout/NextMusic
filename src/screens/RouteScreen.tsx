@@ -108,14 +108,18 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
 
   // 投屏扫描（DLNA + Chromecast 打开时并行；列表保留到关闭）
   // lx40: App 回前台自动重扫——切网后（如 iNextOS 2.4G 独立网段 → 主 WiFi）旧空列表不再滞留
+  // vc78: 回前台重扫不再先清列表（设备列表闪空观感="突然断开"）；onFound 去重增量合并
+  const firstOpen = useRef(true);
   useEffect(() => {
     if (!visible) return;
     const clearAll = () => { setRenderers([]); setCastDevs([]); };
-    const startAll = () => {
-      clearAll(); setScanning(true);
+    const startAll = (fresh: boolean) => {
+      if (fresh) clearAll();
+      setScanning(true);
       dlna.startScan(); googleCast.startScan();
     };
-    startAll();
+    startAll(firstOpen.current);
+    firstOpen.current = false;
     setDirectMode(false);
     const rememberDlna = (dev: DlnaDevice) => {
       const hp = hostPortOf(dev.controlUrl);
@@ -129,7 +133,7 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
       dlna.onScanEnd(() => setScanning(false)),
       googleCast.onFound(dev => { rememberCast(dev); setCastDevs(list => (list.some(x => x.uuid === dev.uuid) ? list : [...list, dev])); }),
       googleCast.onScanEnd(() => setScanning(false)),
-      AppState.addEventListener('change', s => { if (s === 'active') startAll(); }),
+      AppState.addEventListener('change', s => { if (s === 'active') startAll(false); }),
     ];
     return () => { subs.forEach(s => s?.remove()); dlna.stopScan(); googleCast.stopScan(); };
   }, [visible]);

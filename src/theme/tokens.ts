@@ -57,7 +57,8 @@ function mixHex(a: string, b: string, k: number): string {
   return '#' + A.map((v, i) => Math.round(v * (1 - k) + B[i] * k).toString(16).padStart(2, '0')).join('').toUpperCase();
 }
 export function softGrad(...cs: string[]): string[] {
-  return T.light ? cs.map(c => mixHex(c, '#FFFFFF', 0.84)) : cs;
+  // vc78：0.84→0.91（老板反馈渐变太深与标题不融洽，再向白拉高透明度）
+  return T.light ? cs.map(c => mixHex(c, '#FFFFFF', 0.91)) : cs;
 }
 
 export function applyBootTheme() {

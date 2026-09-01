@@ -45,8 +45,8 @@ export function MiniPlayer() {
 }
 
 const st = StyleSheet.create({
-  wrap: { paddingHorizontal: 20 },
-  card: { height: 72, borderRadius: 8, backgroundColor: C.elev, overflow: 'hidden' },
+  wrap: { paddingHorizontal: 0 }, // vc78：老板要求沾满整行，左右不留间隙
+  card: { height: 72, borderRadius: 0, backgroundColor: C.elev, overflow: 'hidden' },
   row: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, gap: 0 },
   artWrap: { width: 52, height: 52, borderRadius: 6, overflow: 'hidden' },
   art: { width: 52, height: 52 },
