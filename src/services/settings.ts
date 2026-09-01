@@ -28,6 +28,7 @@ export interface AppSettings {
   backupSettings: boolean;
   // 关于页：检查更新的元数据地址（update.json）
   updateUrl: string;
+  sourceCatalogUrl: string;  // vc87：音源目录页（一键同步更新用）
 }
 
 // lx34 清理：autoplay/gapless/volumeNormalize/viz*/autoBackup/proxy/wifiOnly 无真实实现，选项与存储键一并移除；
@@ -49,6 +50,7 @@ export const DEFAULTS: AppSettings = {
   backupHistory: false,
   backupSettings: true,
   updateUrl: '',
+  sourceCatalogUrl: '',
 };
 
 function load(): AppSettings {

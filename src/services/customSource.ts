@@ -302,3 +302,72 @@ export async function sourceHealthCheck(id: string): Promise<{ ok: boolean; deta
     return { ok: false, detail: `脚本异常：${(e as Error).message || '运行出错'}` };
   }
 }
+
+
+// ---------- vc87：音源目录订阅（guoyue2010 目录页等静态 HTML）+ 系统一键更新覆盖 ----------
+export interface CatalogItem { name: string; url: string }
+
+const CATALOG_UA = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' };
+
+/** 解析目录页（HTML）里的所有 .js 音源链接 */
+export async function fetchCatalog(catalogUrl: string): Promise<CatalogItem[]> {
+  const resp = await fetch(catalogUrl, { headers: CATALOG_UA });
+  if (!resp.ok) throw new Error(`目录页拉取失败：HTTP ${resp.status}`);
+  const html = await resp.text();
+  const base = catalogUrl.replace(/[^/]*$/, '');
+  const out: CatalogItem[] = [];
+  const seen = new Set<string>();
+  for (const m of html.matchAll(/href="([^"]+\.js[^"]*)"[^>]*>([^<]*)</g)) {
+    const href = m[1];
+    let title = (m[2] || '').trim();
+    try { if (!title) title = decodeURIComponent(href); } catch { title = href; }
+    title = title.replace(/\.js\s*$/, '').trim();
+    const abs = href.startsWith('http') ? href : base + href;
+    if (seen.has(abs)) continue;
+    seen.add(abs);
+    out.push({ name: title, url: abs });
+  }
+  return out;
+}
+
+// 名字归一匹配（去版本号/「新」尾缀/空格标点）——目录「星海音乐源新」≈ 已装「星海音乐源kg」按前缀识别为同源
+function normName(n: string): string {
+  return n.replace(/v?\d+(\.\d+)*\s*/gi, '').replace(/(新|解密版|免费版|公益版|\(\d+\))/g, '').replace(/[\s（）()·\-—_/]/g, '').toLowerCase();
+}
+function catalogMatches(src: CustomSource, item: CatalogItem): boolean {
+  if (src.url === item.url) return true;
+  const a = normName(src.name);
+  const b = normName(item.name);
+  return a.length >= 2 && b.length >= 2 && (a.startsWith(b) || b.startsWith(a));
+}
+
+/** 系统一键同步：对照目录更新覆盖已装源（URL 精确 + 名字归一匹配；未装的不动） */
+export async function syncFromCatalog(catalogUrl: string): Promise<{ updated: number; names: string[] }> {
+  const cat = await fetchCatalog(catalogUrl);
+  const list = loadSources();
+  const names: string[] = [];
+  for (const item of cat) {
+    const s = list.find(x => catalogMatches(x, item));
+    if (!s) continue;
+    try {
+      const resp = await fetch(item.url, { headers: CATALOG_UA });
+      if (!resp.ok) continue;
+      const script = await resp.text();
+      if (script.length < 50) continue;
+      const meta = extractMeta(script);
+      if (isNewerVersion(meta.version, s.version)) {
+        s.script = script;
+        s.version = meta.version || s.version;
+        s.url = item.url; // 对齐到目录 URL，后续直连检查也走它
+        if (s.kind === 'musicfree') mfPlugins.delete(s.id);
+        names.push(`${s.name} → v${s.version}`);
+      }
+    } catch { /* 单个失败跳过 */ }
+  }
+  if (names.length) {
+    save(list);
+    engine.setActiveSources(list.filter(x => x.enabled));
+    for (const x of list) if (x.kind !== 'musicfree') engine.userApiInit(x.id, x.script).catch(() => {});
+  }
+  return { updated: names.length, names };
+}

@@ -6,8 +6,9 @@ import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { useApp } from '../state/AppState';
 import { SubPage } from '../components/SubPage';
-import { loadSources, addSourceByUrl, removeSource, toggleSource, activeSources, sourceHealthCheck, checkSourceUpdates, applySourceUpdate, type CustomSource } from '../services/customSource';
+import { loadSources, addSourceByUrl, removeSource, toggleSource, activeSources, sourceHealthCheck, checkSourceUpdates, applySourceUpdate, syncFromCatalog, type CustomSource } from '../services/customSource';
 import { dialog, toast } from '../components/Dialog';
+import { settings } from '../services/settings';
 
 // 自定义音源：LX 脚本本地沙箱运行，免登录即可播放
 export function SourcesScreen() {
@@ -17,33 +18,50 @@ export function SourcesScreen() {
   const [adding, setAdding] = useState(false);
   const [url, setUrl] = useState('');
   const [busy, setBusy] = useState(false);
+  // vc87：音源目录订阅
+  const [catalogUrl, setCatalogUrl] = useState(() => settings.get().sourceCatalogUrl);
+  const [catBusy, setCatBusy] = useState(false);
   // 音源健康检查：id -> testing | ok | fail（含错误详情）
   type Health = { st: 'testing'; msg?: string } | { st: 'ok' | 'fail'; msg: string };
   const [health, setHealth] = useState<Record<string, Health>>({});
 
   const refresh = () => setSources(loadSources());
   useEffect(refresh, []);
-  // vc85：打开时静默检查音源更新 → 有新版弹窗一键覆盖
+  // vc85/87：打开时静默检查音源更新（直连 + 目录页）→ 有新版弹窗一键覆盖
   useEffect(() => {
     let dead = false;
-    checkSourceUpdates().then(ups => {
-      if (dead || !ups.length) return;
-      dialog.alert(
-        '音源有新版本',
-        ups.map(u => `「${u.src.name}」v${u.src.version} → v${u.version}`).join('\n'),
-        [
-          { text: '稍后', style: 'cancel' },
-          {
-            text: `一键更新${ups.length > 1 ? `（${ups.length} 个）` : ''}`,
-            onPress: () => {
-              ups.forEach(applySourceUpdate);
-              refresh();
-              toast(`已更新 ${ups.length} 个音源`);
-            },
+    (async () => {
+      const lines: string[] = [];
+      let catCount = 0;
+      let directApply: () => void = () => {};
+      try {
+        const ups = await checkSourceUpdates();
+        if (ups.length) {
+          lines.push(...ups.map(u => `「${u.src.name}」v${u.src.version} → v${u.version}`));
+          directApply = () => ups.forEach(applySourceUpdate);
+        }
+      } catch { /* ignore */ }
+      const cat = settings.get().sourceCatalogUrl;
+      if (cat) {
+        try {
+          const r = await syncFromCatalog(cat); // 已持久化+引擎重载（目录链路内部完成）
+          catCount = r.updated;
+          if (r.updated) lines.push(...r.names.map(n => `「${n.replace(' → ', '」')}」`.replace('」」', '」')));
+        } catch { /* 目录不可达静默 */ }
+      }
+      if (dead || !lines.length) return;
+      dialog.alert('音源有新版本', lines.join('\n'), [
+        { text: '稍后', style: 'cancel' },
+        {
+          text: '一键全部更新',
+          onPress: () => {
+            directApply();
+            if (catCount) toast(`已从目录更新 ${catCount} 个音源`);
+            refresh();
           },
-        ],
-      );
-    }).catch(() => {});
+        },
+      ]);
+    })();
     return () => { dead = true; };
   }, []);
 
@@ -134,6 +152,36 @@ export function SourcesScreen() {
           <View style={st.row}>
             <Text style={st.rowLabel}>自定义音源</Text>
             <Text style={[st.badge, canPlay && st.badgeOn]}>{canPlay ? '已启用 · 可播放' : '未添加'}</Text>
+          </View>
+        </View>
+
+        {/* vc87：音源目录订阅（打开页面时对照目录一键更新覆盖） */}
+        <View style={st.card}>
+          <Text style={st.secTitle}>音源目录（自动更新源）</Text>
+          <TextInput
+            style={st.input}
+            placeholder="目录页 URL（如 https://lx.guoyue2010.top/…/优质音源/）"
+            placeholderTextColor={C.text2}
+            value={catalogUrl}
+            onChangeText={setCatalogUrl}
+          />
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+            <TouchableOpacity style={st.ghostBtn} onPress={() => { settings.set('sourceCatalogUrl', catalogUrl.trim()); toast(catalogUrl.trim() ? '已保存，打开本页时自动检查更新' : '已清除'); }}>
+              <Text style={st.ghostBtnText}>保存</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[st.ghostBtn, { flex: 1 }]} disabled={!catalogUrl.trim() || catBusy} onPress={async () => {
+              settings.set('sourceCatalogUrl', catalogUrl.trim());
+              setCatBusy(true);
+              try {
+                const r = await syncFromCatalog(catalogUrl.trim());
+                refresh();
+                dialog.alert('目录同步完成', r.updated ? `已更新覆盖 ${r.updated} 个音源：\n${r.names.join('\n')}` : '已安装的音源都是最新版本');
+              } catch (e) {
+                dialog.alert('目录同步失败', (e as Error).message);
+              } finally { setCatBusy(false); }
+            }}>
+              <Text style={st.ghostBtnText}>{catBusy ? '同步中…' : '立即从目录同步更新'}</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -249,6 +297,8 @@ export function AccountScreen() {
 }
 
 const st = StyleSheet.create({
+  ghostBtn: { paddingHorizontal: 14, height: 38, borderRadius: 10, borderWidth: 1, borderColor: C.strokeStrong, alignItems: 'center', justifyContent: 'center' },
+  ghostBtnText: { color: C.text2, fontSize: 12, fontWeight: '600' },
   screen: { flex: 1, backgroundColor: C.bg },
   header: { height: 40, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 10 },
   title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700', textAlign: 'center' },
