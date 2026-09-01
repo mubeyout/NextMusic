@@ -215,7 +215,9 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
             {activeId === -1 ? <View style={st.checkBadge}><Icon name="check" size={18} color="#FFFFFF" /></View> : null}
           </TouchableOpacity>
           {devices.map(d => {
-            const on = activeId === d.id;
+            // 显式选中才点亮整行（自动模式下本行不算选中，避免与「自动」行双高亮）；生效中只显示状态字
+            const on = preferred >= 0 && d.id === preferred;
+            const live = activeId === d.id;
             const meta = KIND_META[d.kind] ?? KIND_META.speaker;
             return (
               <TouchableOpacity key={d.id} style={[st.deviceRow, on && st.deviceRowOn]} onPress={() => pickLocal(d.id)}>
@@ -224,8 +226,8 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={st.deviceName}>{d.name}</Text>
-                  <Text style={on ? st.deviceStatusOn : st.deviceStatus}>
-                    {meta.label}设备{on ? (cast ? '' : playingLocal ? ' · 正在播放' : '') : ' · 点击切换'}
+                  <Text style={on || live ? st.deviceStatusOn : st.deviceStatus}>
+                    {meta.label}设备{live && !cast && playingLocal ? ' · 正在播放' : on ? '' : ' · 点击切换'}
                   </Text>
                 </View>
                 {on ? <View style={st.checkBadge}><Icon name="check" size={18} color="#FFFFFF" /></View> : null}

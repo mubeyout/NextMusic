@@ -13,7 +13,7 @@ import { settings, useSettings, QUALITY_LABEL, type Quality } from '../services/
 import { providerApi } from '../services/providers';
 import { library } from '../state/library';
 import { downloads as dlStore, fmtBytes, downloadFails, clearFails, subscribeDownloads } from '../services/downloads';
-import { APP_VERSION } from '../services/appversion';
+import { APP_VERSION, IS_HD } from '../services/appversion';
 
 // ---------- 基本设置 ----------
 export function BasicSettingsScreen() {
@@ -131,7 +131,9 @@ export function ThemeScreen() {
 
 // ---------- 关于与帮助 ----------
 const AppVersionNative = NativeModules.AppVersionInfo as { versionName?: string; versionCode?: number } | undefined;
-const DEFAULT_UPDATE_URL = 'https://cdn.jsdelivr.net/gh/mubeyout/nextmusic-release@main/update.json';
+// 独立更新通道：HD（车机/TV）走 update-hd.json，版本号空间与手机包互不干扰
+const UPDATE_FILE = IS_HD ? 'update-hd.json' : 'update.json';
+const DEFAULT_UPDATE_URL = `https://cdn.jsdelivr.net/gh/mubeyout/nextmusic-release@main/${UPDATE_FILE}`;
 
 export function AboutScreen() {
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string) => void };
@@ -143,7 +145,7 @@ export function AboutScreen() {
     // 坑89:jsDelivr 多层 PoP 缓存会滞后/回旧(实测 purge 后仍间歇吐旧版),陈旧但 200 的响应会短路兑底逻辑,
     // 故 raw 必须打头;大陆裸网 raw 不通时自然落到 jsDelivr
     const urls = [...new Set([
-      'https://raw.githubusercontent.com/mubeyout/nextmusic-release/main/update.json',
+      `https://raw.githubusercontent.com/mubeyout/nextmusic-release/main/${UPDATE_FILE}`,
       DEFAULT_UPDATE_URL,
     ].filter(u => /^https?:\/\//.test(u)))];
     setChecking(true);

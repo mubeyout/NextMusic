@@ -37,7 +37,7 @@ object AudioRouteEngine {
     fun attachSink(s: Any?) {
         sink = s as? DefaultAudioSink
         applyPreferred(null)
-        Log.d(TAG, "sink attached, preferred=$preferredId")
+        Log.i(TAG, "sink attached, preferred=$preferredId")
     }
 
     /** 把偏好应用到当前 sink；ctx 为空时通过 sink 上下文查 AudioManager */
