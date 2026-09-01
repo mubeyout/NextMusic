@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
-import { C } from '../theme/tokens';
+import { C, softGrad } from '../theme/tokens';
 import { PageHeader } from '../components/PageChrome';
 import { lxapi } from '../services/lxapi';
 import type { SongItem } from '../services/server';
@@ -72,7 +72,7 @@ export function BoardsSquareScreen() {
             {boards.map((b, i) => (
               <TouchableOpacity key={b.id + b.bangid} style={st.cell} activeOpacity={0.85} onPress={() => openBoard(b)}>
                 <LinearGradient
-                  colors={[ACCENTS[i % ACCENTS.length][0], ACCENTS[i % ACCENTS.length][1]]}
+                  colors={softGrad(ACCENTS[i % ACCENTS.length][0], ACCENTS[i % ACCENTS.length][1])}
                   start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                   style={st.card}
                 >
@@ -108,8 +108,8 @@ const st = StyleSheet.create({
   cardArt: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 },
   cardShade: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, backgroundColor: '#00000088' },
   cardTextWrap: { gap: 3 },
-  name: { color: C.white, fontSize: 13, lineHeight: 16, fontWeight: '700' },
-  sub: { color: '#B3B3B3', fontSize: 9, lineHeight: 11 },
+  name: { color: C.text, fontSize: 13, lineHeight: 16, fontWeight: '700' },
+  sub: { color: C.text2, fontSize: 9, lineHeight: 11 },
   center: { paddingVertical: 48, alignItems: 'center' },
   empty: { color: C.text2, fontSize: 12, lineHeight: 18, textAlign: 'center', paddingVertical: 40 },
   busyWrap: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: '#00000055' },

@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon, BrandIcon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, softGrad } from '../theme/tokens';
 import { PillTabs } from '../components/PillTabs';
 import { EmptyState } from '../components/PageChrome';
 import { ActionSheet } from '../components/ActionSheet';
@@ -130,7 +130,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
       {tab === 0 && (
         <View style={st.body}>
           {/* Library Summary banner */}
-          <LinearGradient colors={['#145938', '#1F2E52']} style={st.banner}>
+          <LinearGradient colors={softGrad('#145938', '#1F2E52')} style={st.banner}>
             <View style={{ flex: 1 }}>
               <Text style={st.bannerTitle}>我的收藏</Text>
               <Text style={st.bannerMeta}>{totalPlaylists} 个歌单 · {totalSongs} 首歌曲</Text>
@@ -334,8 +334,8 @@ const st = StyleSheet.create({
     height: 72, borderRadius: 14, marginTop: 12, flexDirection: 'row',
     alignItems: 'center', paddingHorizontal: 16, gap: 12,
   },
-  bannerTitle: { color: C.white, fontSize: 15, lineHeight: 18, fontWeight: '700' },
-  bannerMeta: { color: '#B3B3B3', fontSize: 11, lineHeight: 13, marginTop: 6 },
+  bannerTitle: { color: C.text, fontSize: 15, lineHeight: 18, fontWeight: '700' },
+  bannerMeta: { color: C.text2, fontSize: 11, lineHeight: 13, marginTop: 6 },
   newBtn: { height: 36, borderRadius: 18, backgroundColor: C.brand, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
   newBtnText: { color: C.white, fontSize: 12, lineHeight: 14, fontWeight: '500' },
   quickRow: { flexDirection: 'row', gap: 10, marginTop: 12 },

@@ -202,7 +202,7 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
           <Text style={st.label}>本机设备</Text>
           <TouchableOpacity style={[st.deviceRow, activeId === -1 && st.deviceRowOn]} onPress={() => pickLocal(-1)}>
             <View style={[st.iconWrap, activeId === -1 && { backgroundColor: C.brand }]}>
-              <Icon name="phone" size={26} color={activeId === -1 ? C.onBrand : C.text} />
+              <Icon name="phone" size={26} color={activeId === -1 ? '#FFFFFF' : C.text} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={st.deviceName}>自动（跟随系统）</Text>
@@ -212,7 +212,7 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
                   : '未连接外部设备，使用扬声器'}
               </Text>
             </View>
-            {activeId === -1 ? <View style={st.checkBadge}><Icon name="check" size={18} color={C.onBrand} /></View> : null}
+            {activeId === -1 ? <View style={st.checkBadge}><Icon name="check" size={18} color="#FFFFFF" /></View> : null}
           </TouchableOpacity>
           {devices.map(d => {
             const on = activeId === d.id;
@@ -220,7 +220,7 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
             return (
               <TouchableOpacity key={d.id} style={[st.deviceRow, on && st.deviceRowOn]} onPress={() => pickLocal(d.id)}>
                 <View style={[st.iconWrap, on && { backgroundColor: C.brand }]}>
-                  <Icon name={meta.icon} size={26} color={on ? C.onBrand : C.text} />
+                  <Icon name={meta.icon} size={26} color={on ? '#FFFFFF' : C.text} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={st.deviceName}>{d.name}</Text>
@@ -228,7 +228,7 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
                     {meta.label}设备{on ? (cast ? '' : playingLocal ? ' · 正在播放' : '') : ' · 点击切换'}
                   </Text>
                 </View>
-                {on ? <View style={st.checkBadge}><Icon name="check" size={18} color={C.onBrand} /></View> : null}
+                {on ? <View style={st.checkBadge}><Icon name="check" size={18} color="#FFFFFF" /></View> : null}
               </TouchableOpacity>
             );
           })}
@@ -243,7 +243,7 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
                 <Text style={st.deviceName}>{cast.dev.name}</Text>
                 <Text style={st.deviceStatusOn}>正在投屏 · 点击停止并回本机</Text>
               </View>
-              <View style={st.checkBadge}><Icon name="check" size={18} color={C.onBrand} /></View>
+              <View style={st.checkBadge}><Icon name="check" size={18} color="#FFFFFF" /></View>
             </TouchableOpacity>
           ) : null}
           {renderers.filter(r => cast?.kind !== 'dlna' || r.uuid !== cast.dev.uuid).map(r => (
@@ -281,7 +281,7 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
                 <Text style={st.deviceName}>{cast.dev.name}</Text>
                 <Text style={st.deviceStatusOn}>正在 Cast · 点击停止并回本机</Text>
               </View>
-              <View style={st.checkBadge}><Icon name="check" size={18} color={C.onBrand} /></View>
+              <View style={st.checkBadge}><Icon name="check" size={18} color="#FFFFFF" /></View>
             </TouchableOpacity>
           ) : null}
           {castDevs.filter(r => cast?.kind !== 'cast' || r.uuid !== cast.dev.uuid).map(r => (
@@ -343,11 +343,11 @@ const st = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64,
     backgroundColor: C.surface2, borderRadius: 12, paddingHorizontal: 12, marginTop: 6,
   },
-  deviceRowOn: { backgroundColor: '#1F3A2A', borderWidth: 1, borderColor: C.brand + '55' },
+  deviceRowOn: { backgroundColor: C.selTint, borderWidth: 1, borderColor: C.brand + '55' },
   iconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.inset2, alignItems: 'center', justifyContent: 'center' },
   deviceName: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '600' },
   deviceStatus: { color: C.text2, fontSize: 11, lineHeight: 15 },
-  deviceStatusOn: { color: C.brandSoft, fontSize: 11, lineHeight: 15 },
+  deviceStatusOn: { color: C.brandText, fontSize: 11, lineHeight: 15 },
   checkBadge: {
     width: 24, height: 24, borderRadius: 12, backgroundColor: C.brand,
     alignItems: 'center', justifyContent: 'center',

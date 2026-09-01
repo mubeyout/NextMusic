@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, softGrad } from '../theme/tokens';
 import { PillTabs } from '../components/PillTabs';
 import { SongRow } from '../components/SongRow';
 import { useApp } from '../state/AppState';
@@ -250,7 +250,7 @@ export function ExploreScreen() {
         {tab === 0 && (
           <View style={st.body}>
             {/* 为你发现 hero：Figma 2355:1187 */}
-            <LinearGradient colors={['#1A6B54', '#1F387A', '#66297A']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.hero}>
+            <LinearGradient colors={softGrad('#1A6B54', '#1F387A', '#66297A')} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.hero}>
               <Text style={st.heroKicker}>为你发现</Text>
               <Text style={st.heroTitle}>夜色电台</Text>
               <Text style={st.heroMeta}>
@@ -316,7 +316,7 @@ export function ExploreScreen() {
                   onPress={() => selectTag(g.zh)}
                 >
                   <LinearGradient
-                    colors={[g.from, g.to]}
+                    colors={softGrad(g.from, g.to)}
                     start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                     style={st.genreCard}
                   >
@@ -384,7 +384,7 @@ export function ExploreScreen() {
               const top = boards.find(b => /TOP/i.test(b.name)) || boards[0];
               if (top) openBoard(top);
             }}>
-              <LinearGradient colors={['#AD4714', '#611A2E', '#242E6B']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.chartHero}>
+              <LinearGradient colors={softGrad('#AD4714', '#611A2E', '#242E6B')} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.chartHero}>
                 <Text style={st.chartHeroKicker}>NEXTMUSIC</Text>
                 <Text style={st.chartHeroTitle}>TOP 50</Text>
                 <Text style={st.chartHeroMeta}>每日 12:00 更新 · 全站热度</Text>
@@ -476,9 +476,9 @@ const st = StyleSheet.create({
     height: 126, borderRadius: 16, overflow: 'hidden',
     justifyContent: 'center', paddingHorizontal: 18, gap: 4,
   },
-  heroKicker: { color: '#B3B3B3', fontSize: 11, lineHeight: 13, fontWeight: '500' },
-  heroTitle: { color: C.white, fontSize: 24, lineHeight: 29, fontWeight: '700' },
-  heroMeta: { color: '#B3B3B3', fontSize: 11, lineHeight: 13 },
+  heroKicker: { color: C.text2, fontSize: 11, lineHeight: 13, fontWeight: '500' },
+  heroTitle: { color: C.text, fontSize: 24, lineHeight: 29, fontWeight: '700' },
+  heroMeta: { color: C.text2, fontSize: 11, lineHeight: 13 },
   heroPlay: {
     position: 'absolute', right: 18, bottom: 18, width: 44, height: 44, borderRadius: 22,
     backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center',
@@ -512,9 +512,9 @@ const st = StyleSheet.create({
     height: 126, borderRadius: 16, overflow: 'hidden',
     paddingHorizontal: 18, paddingVertical: 16, justifyContent: 'center', gap: 2,
   },
-  chartHeroKicker: { color: '#B3B3B3', fontSize: 10, lineHeight: 12, fontWeight: '700' },
-  chartHeroTitle: { color: C.white, fontSize: 32, lineHeight: 38, fontWeight: '700' },
-  chartHeroMeta: { color: '#B3B3B3', fontSize: 11, lineHeight: 13, marginTop: 6 },
+  chartHeroKicker: { color: C.text2, fontSize: 10, lineHeight: 12, fontWeight: '700' },
+  chartHeroTitle: { color: C.text, fontSize: 32, lineHeight: 38, fontWeight: '700' },
+  chartHeroMeta: { color: C.text2, fontSize: 11, lineHeight: 13, marginTop: 6 },
   rankBadge: {
     position: 'absolute', right: 18, top: 18, width: 56, height: 56, borderRadius: 28,
     backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center',

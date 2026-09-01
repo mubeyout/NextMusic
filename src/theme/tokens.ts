@@ -49,6 +49,17 @@ function blend(hex: string, base: string, k: number): string {
 // 运行时主题标志（状态栏图标色等非 StyleSheet 场景用）；必须在 applyBootTheme() 调用前声明
 export const T = { light: false };
 
+// 渐变软化：浅色主题下把深色渐变提亮为 pastel（深色原样返回）；
+// 配套规则：用 softGrad 的卡内文字用 C.text/C.text2（深色下=白/灰 原样，浅色下=深色字配 pastel）
+function mixHex(a: string, b: string, k: number): string {
+  const A = [1, 3, 5].map(i => parseInt(a.slice(i, i + 2), 16));
+  const B = [1, 3, 5].map(i => parseInt(b.slice(i, i + 2), 16));
+  return '#' + A.map((v, i) => Math.round(v * (1 - k) + B[i] * k).toString(16).padStart(2, '0')).join('').toUpperCase();
+}
+export function softGrad(...cs: string[]): string[] {
+  return T.light ? cs.map(c => mixHex(c, '#FFFFFF', 0.84)) : cs;
+}
+
 export function applyBootTheme() {
   const s = settings.get();
   if (s.accent && /^#[0-9A-Fa-f]{6}$/.test(s.accent) && s.accent !== '#1ED760') {
