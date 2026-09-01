@@ -182,7 +182,7 @@ const st = StyleSheet.create({
   art: { width: 340, height: 340, borderRadius: 22 },
   title: { color: C.text, fontSize: 27, fontWeight: '800', textAlign: 'center', maxWidth: 350 },
   sub: { color: C.text2, fontSize: 16, textAlign: 'center', maxWidth: 350 },
-  tool: { width: 58, height: 58, borderRadius: 29, backgroundColor: '#1C1C1C', alignItems: 'center', justifyContent: 'center' },
+  tool: { width: 58, height: 58, borderRadius: 29, backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center' },
   lyricsBox: { flex: 1, gap: 14, paddingTop: 40, paddingRight: 20 },
   lyric: { color: C.text3, fontSize: 22, lineHeight: 32, fontWeight: '500' },
   lyricOn: { color: C.text, fontSize: 31, lineHeight: 43, fontWeight: '800' },

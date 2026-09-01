@@ -175,7 +175,7 @@ export function HDAuthLoginScreen() {
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
-  card: { width: 700, borderRadius: 20, backgroundColor: '#1A1A1A', padding: 24, gap: 12, boxShadow: '0 12px 36px rgba(0,0,0,.55)' },
+  card: { width: 700, borderRadius: 20, backgroundColor: C.surface, padding: 24, gap: 12, boxShadow: '0 12px 36px rgba(0,0,0,.35)' },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingBottom: 6 },
   backBtn: { width: 56, height: 56, borderRadius: 16, backgroundColor: '#232323', alignItems: 'center', justifyContent: 'center' },
   title: { color: C.text, fontSize: 28, fontWeight: '800' },

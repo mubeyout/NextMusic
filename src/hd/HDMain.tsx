@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
-import { C, H, SH, fmtSec, GLASS } from './hdtokens';
+import { C, H, SH, fmtSec } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
@@ -218,10 +218,10 @@ function HDPlayBar() {
 
 const st = StyleSheet.create({
   screen: { flex: 1, flexDirection: 'row', backgroundColor: C.bg },
-  sidebarWrap: { width: H.sidebar, backgroundColor: GLASS, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border },
+  sidebarWrap: { width: H.sidebar, backgroundColor: C.glass, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 10 },
   logo: { width: 26, height: 26, borderRadius: 13, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
-  logoText: { color: '#06130B', fontSize: 13, fontWeight: '800' },
+  logoText: { color: C.onBrand, fontSize: 13, fontWeight: '800' },
   brandName: { color: C.text, fontSize: 13, fontWeight: '800' },
   brandSub: { color: C.text3, fontSize: 7, letterSpacing: 2, fontWeight: '600', marginTop: 1 },
   group: { fontSize: 9, color: C.text3, paddingHorizontal: 12, paddingTop: 5, paddingBottom: 3, letterSpacing: 1, fontWeight: '600' },
@@ -230,7 +230,7 @@ const st = StyleSheet.create({
   navFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 9 },
   navLabel: { color: C.text2, fontSize: H.font.md, fontWeight: '500', flex: 1 },
   plItem: { flexDirection: 'row', alignItems: 'center', gap: 9, marginHorizontal: 8, paddingHorizontal: 10, height: 35, borderRadius: 9 },
-  plChip: { width: 20, height: 20, borderRadius: 6, backgroundColor: C.grad1, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,.09)', alignItems: 'center', justifyContent: 'center' },
+  plChip: { width: 20, height: 20, borderRadius: 6, backgroundColor: C.grad1, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
   plAddChip: { width: 20, height: 20, borderRadius: 6, borderWidth: 1, borderStyle: 'dashed', borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
   plName: { color: C.text2, fontSize: H.font.sm, flex: 1 },
   body: { flex: 1 },
@@ -240,7 +240,7 @@ const st = StyleSheet.create({
   // 播放条(桌面式 64dp,玻璃磨砂面)
   playbar: {
     height: H.playbar, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 12,
-    backgroundColor: GLASS, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border,
+    backgroundColor: C.glass, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border,
   },
   pbLeft: { flexDirection: 'row', alignItems: 'center', gap: 9, width: 225 },
   pbCoverTouch: { borderRadius: 9 },

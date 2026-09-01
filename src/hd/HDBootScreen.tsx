@@ -84,7 +84,7 @@ const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg, alignItems: 'center' },
   brand: { alignItems: 'center', gap: 4, marginTop: 10, marginBottom: 18 },
   brandLogo: {
-    width: 62, height: 62, borderRadius: 18, backgroundColor: '#1A1A1A',
+    width: 62, height: 62, borderRadius: 18, backgroundColor: C.surface,
     alignItems: 'center', justifyContent: 'center', marginBottom: 8,
     boxShadow: '0 8px 26px rgba(30,215,96,.22)',
   },
@@ -92,7 +92,7 @@ const st = StyleSheet.create({
   brandSlogan: { color: C.text2, fontSize: 14 },
   cardRow: { flex: 1, flexDirection: 'row', gap: 22, alignSelf: 'stretch', paddingHorizontal: 56, maxHeight: 460 },
   card: {
-    flex: 1, borderRadius: 20, backgroundColor: '#1A1A1A',
+    flex: 1, borderRadius: 20, backgroundColor: C.surface,
     alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12,
     boxShadow: SH.card,
   },

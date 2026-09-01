@@ -124,7 +124,7 @@ const st = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 18 },
   plCard: { width: 168, gap: 8 },
   plArt: { width: 168, height: 168, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  plNew: { width: 168, height: 168, borderRadius: 16, backgroundColor: '#1A1A1A', borderWidth: 1, borderStyle: 'dashed', borderColor: '#333', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  plNew: { width: 168, height: 168, borderRadius: 16, backgroundColor: C.surface, borderWidth: 1, borderStyle: 'dashed', borderColor: C.border, alignItems: 'center', justifyContent: 'center', gap: 8 },
   plName: { color: C.text, fontSize: 16, fontWeight: '600' },
   plMeta: { color: C.text2, fontSize: 13 },
 });

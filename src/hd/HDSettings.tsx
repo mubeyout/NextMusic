@@ -11,6 +11,16 @@ import { useApp } from '../state/AppState';
 import { settings, useSettings, type Quality } from '../services/settings';
 import { APP_VERSION, IS_HD } from '../services/appversion';
 import { hdNav } from './hdnav';
+import { NativeModules } from 'react-native';
+
+const Restart = NativeModules.AppRestart as { restart: () => void } | undefined;
+const ACCENTS = [
+  { name: 'Next 绿', color: '#1ED760' },
+  { name: '薄暮蓝', color: '#3B82F6' },
+  { name: '晚樱粉', color: '#F472B6' },
+  { name: '琥珀橙', color: '#F59E0B' },
+];
+const hdRestart = () => { setTimeout(() => Restart?.restart(), 350); };
 
 const TABS = ['外观与界面', '播放体验', '账号与同步', '下载与备份', '关于'] as const;
 type Tab = typeof TABS[number];
@@ -32,8 +42,9 @@ export function HDSettingsScreen() {
 
   const rows: Record<Tab, RowDef[]> = {
     '外观与界面': [
-      { kind: 'toggle', title: '纯黑背景', desc: 'OLED 友好的纯黑底色,重启后生效', value: s.pureBlack, onToggle: () => settings.set('pureBlack', !s.pureBlack) },
-      { kind: 'info', title: '界面主题', desc: 'HD 版恒定深色主题(车机/TV 场景)', value: '深色' },
+      { kind: 'toggle', title: '纯黑背景', desc: 'OLED 友好的纯黑底色(仅深色模式)', value: s.pureBlack, onToggle: () => { settings.set('pureBlack', !s.pureBlack); hdRestart(); } },
+      { kind: 'select', title: '界面主题', desc: '深色(车机/TV 默认)或浅色,切换后自动重启生效', value: s.light ? '浅色' : '深色', options: ['深色', '浅色'], onPick: v => { settings.set('light', v === '浅色'); hdRestart(); } },
+      { kind: 'select', title: '强调色', desc: '全局品牌色(按钮/高亮/选中态),切换后自动重启生效', value: ACCENTS.find(a => a.color === s.accent)?.name ?? 'Next 绿', options: ACCENTS.map(a => a.name), onPick: v => { const hit = ACCENTS.find(a => a.name === v); if (hit) { settings.set('accent', hit.color); hdRestart(); } } },
       { kind: 'info', title: '界面缩放', desc: 'HD 版已按电视 1080p 预设', value: '100%' },
     ],
     '播放体验': [

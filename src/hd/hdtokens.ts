@@ -1,7 +1,9 @@
 // HD(车机/TV)设计尺寸 —— 对齐桌面版(NextMusic-Desktop)设计语言
 // 映射:桌面 150% zoom 在 1920x1080 TV = 1280x720 CSS 视口;TV dp 视口 960x540 → 系数 0.75
-// 色彩:桌面版深色主题原值(index.css html.nm-dark),HD 恒深色,不随手机主题
-export const C = {
+// 色彩:默认深色(桌面深色主题原值);vc81 起支持浅色+强调色(与手机/桌面同规则,重启生效)
+import { settings } from '../services/settings';
+
+export const C: Record<string, string> = {
   brand: '#1ED760',
   brandSoft: '#6BE88F',
   brandDim: 'rgba(30,215,96,.14)',
@@ -22,7 +24,61 @@ export const C = {
   text: '#FFFFFF',
   text2: '#B3B3B3',
   text3: '#595959',
+  // 玻璃磨砂面(桌面 --nm-glass 同源;浅色覆写)
+  glass: 'rgba(16,18,22,.66)',
+  glassStrong: 'rgba(22,25,30,.8)',
 };
+
+export const T = { light: false };
+
+function mixHex(a: string, b: string, k: number): string {
+  const A = [1, 3, 5].map(i => parseInt(a.slice(i, i + 2), 16));
+  const B = [1, 3, 5].map(i => parseInt(b.slice(i, i + 2), 16));
+  return '#' + A.map((v, i) => Math.round(v * (1 - k) + B[i] * k).toString(16).padStart(2, '0')).join('').toUpperCase();
+}
+
+// 启动期主题覆写(与手机 tokens.applyBootTheme 同构:accent 全套派生 + 浅色盘)
+export function applyHdTheme() {
+  const s = settings.get();
+  const acc = (s.accent && /^#[0-9A-Fa-f]{6}$/.test(s.accent) && s.accent !== '#1ED760') ? s.accent : null;
+  if (acc) {
+    C.brand = acc;
+    C.brandSoft = acc;
+    C.brandDim = acc + '24'; // ≈14%
+  }
+  if (s.pureBlack) {
+    C.bg = '#000000';
+    C.surface = '#0D0D0D';
+  }
+  if (s.light) {
+    T.light = true;
+    C.bg = '#F6F7F9';
+    C.bgDeep = '#FFFFFF';
+    C.surface = '#FFFFFF';
+    C.elev = '#FFFFFF';
+    C.pop = '#FFFFFF';
+    C.text = '#26282C';
+    C.text2 = '#62676E';
+    C.text3 = '#8B9199';
+    C.hover = 'rgba(31,35,41,.045)';
+    C.input = 'rgba(31,35,41,.04)';
+    C.track = 'rgba(31,35,41,.14)';
+    C.grad1 = 'rgba(31,35,41,.045)';
+    C.grad2 = 'rgba(31,35,41,.012)';
+    C.border = 'rgba(31,35,41,.08)';
+    C.stroke = C.border;
+    C.onBrand = acc ? mixHex(acc, '#000000', 0.52) : '#0B3D1F';
+    C.brandSoft = acc ? mixHex(acc, '#000000', 0.22) : '#1DB455';
+    C.glass = 'rgba(255,255,255,.68)';
+    C.glassStrong = 'rgba(255,255,255,.8)';
+    // 投影浅色化(桌面 --nm-shadow-* 浅色同源)
+    SH.card = '0 12px 36px rgba(31,35,41,.10)';
+    SH.pop = '0 18px 52px rgba(31,35,41,.18)';
+    SH.brand = '0 6px 22px rgba(29,180,85,.26)';
+    SH.focus = '0 4px 16px rgba(29,180,85,.20)';
+  }
+}
+// applyHdTheme() 的调用在文件末尾(SH 等 const 先于执行,避免 TDZ)
 
 export const H = {
   // 字号(桌面 px × 0.75)
@@ -69,6 +125,8 @@ export const shadowOf = (seed: string) => {
   const R = Math.round((r1 + m) * 255), G = Math.round((g1 + m) * 255), B = Math.round((b1 + m) * 255);
   return `0 10px 30px rgba(${R},${G},${B},.34)`;
 };
-// 玻璃磨砂面(桌面 --nm-glass 深色值;RN 无 backdrop-filter,用半透明+亮边近似)
-export const GLASS = 'rgba(16,18,22,.66)';
-export const GLASS_STRONG = 'rgba(22,25,30,.8)';
+// 玻璃磨砂面(桌面 --nm-glass 深色值;RN 无 backdrop-filter,用半透明+亮边近似)—— 已迁入 C.glass/C.glassStrong(浅色覆写需运行时查找,export let 在 Metro 下是值拷贝)
+// 兼容旧引用
+export const GLASS_REF = { get face() { return C.glass; }, get strong() { return C.glassStrong; } };
+
+applyHdTheme();
