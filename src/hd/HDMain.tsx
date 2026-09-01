@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
-import { C, H, SH, fmtSec } from './hdtokens';
+import { C, H, SH, fmtSec, GLASS } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
@@ -218,7 +218,7 @@ function HDPlayBar() {
 
 const st = StyleSheet.create({
   screen: { flex: 1, flexDirection: 'row', backgroundColor: C.bg },
-  sidebarWrap: { width: H.sidebar, backgroundColor: C.elev, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border },
+  sidebarWrap: { width: H.sidebar, backgroundColor: GLASS, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 10 },
   logo: { width: 26, height: 26, borderRadius: 13, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   logoText: { color: '#06130B', fontSize: 13, fontWeight: '800' },
@@ -237,10 +237,10 @@ const st = StyleSheet.create({
   tabStack: { flex: 1 },
   tabHost: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   tabOff: { display: 'none' as const, elevation: 0 },
-  // 播放条(桌面式 64dp)
+  // 播放条(桌面式 64dp,玻璃磨砂面)
   playbar: {
     height: H.playbar, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 12,
-    backgroundColor: C.elev, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border,
+    backgroundColor: GLASS, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border,
   },
   pbLeft: { flexDirection: 'row', alignItems: 'center', gap: 9, width: 225 },
   pbCoverTouch: { borderRadius: 9 },

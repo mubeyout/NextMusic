@@ -4,8 +4,9 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Image } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
-import { C, H } from './hdtokens';
+import { C, H, shadowOf } from './hdtokens';
 import { HDTouch } from './HDTouch';
+import { HDGrid } from './HDGrid';
 import { lxapi } from '../services/lxapi';
 import type { SongItem } from '../services/server';
 import { toast } from '../components/Dialog';
@@ -75,22 +76,30 @@ export function HDBoards() {
       {boards == null ? (
         <View style={st.tip}><ActivityIndicator color={C.brand} size="large" /><Text style={st.tipText}>榜单加载中…</Text></View>
       ) : (
-        <View style={st.grid}>
+        <HDGrid min={128}>
           {boards.map((b, i) => (
             <HDTouch key={b.id} onPress={() => openBoard(b)} activeOpacity={0.85}
-              focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 11 }}>
+              style={[st.card, { boxShadow: shadowOf(b.name) }]}
+              focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12, backgroundColor: '#232323' }}
+              focusBg="#232323">
+              {/* 桌面同构:方形封面(图/渐变) + 居中排名图标 + 右下源 chip + 名称/副题 */}
               {b.image ? (
-                <Image source={{ uri: b.image }} style={st.card} />
+                <Image source={{ uri: b.image }} style={st.cardCover} />
               ) : (
-                <LinearGradient colors={ACCENTS[i % ACCENTS.length]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.card}>
-                  <View style={st.cardRank}><Icon name="ranking" size={16} color="#FFFFFF88" /></View>
-                  <Text style={st.cardName} numberOfLines={2}>{b.name}</Text>
-                  <Text style={st.cardSub}>查看完整榜单 ›</Text>
+                <LinearGradient colors={ACCENTS[i % ACCENTS.length]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.cardCover}>
+                  <Icon name="ranking" size={42} color="#FFFFFFB3" />
                 </LinearGradient>
               )}
+              <View style={st.cardChipWrapper}>
+                <View style={st.cardChip}><Text style={st.cardChipText}>{SOURCES.find(s => s.key === src)?.label ?? src}</Text></View>
+              </View>
+              <View style={st.cardBody}>
+                <Text style={st.cardName} numberOfLines={2}>{b.name}</Text>
+                <Text style={st.cardSub} numberOfLines={1}>{SOURCES.find(s => s.key === src)?.label} · 实时榜单</Text>
+              </View>
             </HDTouch>
           ))}
-        </View>
+        </HDGrid>
       )}
       {boards != null && !boards.length ? <Text style={st.tipText}>榜单加载失败,切源重试</Text> : null}
     </ScrollView>
@@ -107,10 +116,14 @@ const st = StyleSheet.create({
   pillLabel: { color: C.text2, fontSize: H.font.sm },
   pillLabelOn: { color: C.onBrand, fontWeight: '600' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  card: { flexBasis: '18%', flexGrow: 1, height: 96, borderRadius: 11, padding: 12, justifyContent: 'flex-end', gap: 2, overflow: 'hidden' },
-  cardRank: { position: 'absolute', top: 10, right: 10 },
-  cardName: { color: '#fff', fontSize: H.font.md, fontWeight: '800' },
-  cardSub: { color: '#FFFFFF77', fontSize: 8 },
+  card: { borderRadius: 12, backgroundColor: C.surface, overflow: 'hidden' },
+  cardCover: { width: '100%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
+  cardChipWrapper: { position: 'absolute', right: 8, bottom: 80 },
+  cardChip: { backgroundColor: 'rgba(0,0,0,.55)', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
+  cardChipText: { color: '#fff', fontSize: 9 },
+  cardBody: { padding: 10, gap: 2 },
+  cardName: { color: C.text, fontSize: H.font.md, fontWeight: '700', lineHeight: 16 },
+  cardSub: { color: C.text3, fontSize: 9 },
   tip: { alignItems: 'center', gap: 10, paddingVertical: 54 },
   tipText: { color: C.text2, fontSize: H.font.md, textAlign: 'center', paddingVertical: 30 },
 });

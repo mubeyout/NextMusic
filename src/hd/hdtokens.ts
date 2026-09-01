@@ -56,3 +56,19 @@ export const SH = {
   pop: '0 12px 32px rgba(0,0,0,.6)',
   focus: '0 4px 16px rgba(30,215,96,.25)',
 };
+
+// ---------- 桌面 9280 对齐(2026-09-01 老板:样式交互 1:1) ----------
+// 彩色弥散投影:与桌面 shadowOf 同公式(按名取色,hsl→rgba 单层,RN boxShadow 兼容)
+export const shadowOf = (seed: string) => {
+  const h = [...seed].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
+  const s = 0.62, l = 0.42;
+  const cH = (1 - Math.abs(2 * l - 1)) * s;
+  const hp = h / 60, x = cH * (1 - Math.abs((hp % 2) - 1));
+  const [r1, g1, b1] = hp < 1 ? [cH, x, 0] : hp < 2 ? [x, cH, 0] : hp < 3 ? [0, cH, x] : hp < 4 ? [0, x, cH] : hp < 5 ? [x, 0, cH] : [cH, 0, x];
+  const m = l - cH / 2;
+  const R = Math.round((r1 + m) * 255), G = Math.round((g1 + m) * 255), B = Math.round((b1 + m) * 255);
+  return `0 10px 30px rgba(${R},${G},${B},.34)`;
+};
+// 玻璃磨砂面(桌面 --nm-glass 深色值;RN 无 backdrop-filter,用半透明+亮边近似)
+export const GLASS = 'rgba(16,18,22,.66)';
+export const GLASS_STRONG = 'rgba(22,25,30,.8)';

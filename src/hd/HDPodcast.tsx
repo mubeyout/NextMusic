@@ -5,7 +5,8 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-nat
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
-import { C, H } from './hdtokens';
+import { C, H, shadowOf } from './hdtokens';
+import { HDGrid } from './HDGrid';
 import { HDTouch } from './HDTouch';
 import { HDSongRow } from './HDSongRow';
 import { usePlayer } from '../state/PlayerProvider';
@@ -84,17 +85,17 @@ export function HDPodcast() {
         <Text style={st.sub}>8 大主题频道 · 搜索聚合 · 自动连播</Text>
       </View>
 
-      {/* 频道卡横滚 */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingVertical: 4 }}>
+      {/* 频道卡(桌面同构:自适应网格+彩色投影) */}
+      <HDGrid min={132}>
         {POD_CHANNELS.map((ch, ci) => {
           const f = feeds[ch.id] || [];
           return (
-            <HDTouch key={ch.id} style={st.card} onPress={() => openChannel(ch)} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12 }}>
+            <HDTouch key={ch.id} style={[st.card, { boxShadow: shadowOf(ch.name) }]} onPress={() => openChannel(ch)} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12 }} focusBg="#232323">
               <LinearGradient colors={POD_GRADS[ci % POD_GRADS.length]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.cardCover}>
-                <Icon name="podcast" size={26} color="#FFFFFF" />
+                <Icon name="podcast" size={30} color="#FFFFFF" />
                 <View style={{ flex: 1 }} />
                 <HDTouch style={st.cardPlay} onPress={() => playChannel(ch)} focusStyle={{ borderWidth: 2, borderColor: '#FFFFFF', borderRadius: 15 }} activeOpacity={0.8}>
-                  <Icon name="play" size={12} color="#FFFFFF" />
+                  <Icon name="play" size={13} color="#FFFFFF" />
                 </HDTouch>
               </LinearGradient>
               <Text style={st.cardName} numberOfLines={1}>{ch.name}</Text>
@@ -102,7 +103,7 @@ export function HDPodcast() {
             </HDTouch>
           );
         })}
-      </ScrollView>
+      </HDGrid>
 
       {/* 热门节目 */}
       <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
@@ -131,8 +132,8 @@ const st = StyleSheet.create({
   head: { gap: 3 },
   title: { color: C.text, fontSize: H.font.hero, fontWeight: '800' },
   sub: { color: C.text3, fontSize: H.font.sm },
-  card: { width: 150, gap: 5 },
-  cardCover: { width: 150, height: 110, borderRadius: 12, padding: 10, flexDirection: 'row', alignItems: 'flex-start' },
+  card: { gap: 5 },
+  cardCover: { width: '100%', aspectRatio: 1.35, borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'flex-start' },
   cardPlay: { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,.22)', alignItems: 'center', justifyContent: 'center' },
   cardName: { color: C.text, fontSize: H.font.sm, fontWeight: '700' },
   cardSub: { color: C.text3, fontSize: H.font.xs },

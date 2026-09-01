@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name_hd">NextMusic HD</string>
+    <!-- flavor 覆盖:HD 桌面图标名带 HD 后缀(老板 2026-09-01) -->
+    <string name="app_name">NextMusic HD</string>
 </resources>

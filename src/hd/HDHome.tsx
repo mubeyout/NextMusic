@@ -5,8 +5,9 @@ import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
-import { C, H, SH } from './hdtokens';
+import { C, H, SH, shadowOf } from './hdtokens';
 import { HDTouch } from './HDTouch';
+import { HDGrid } from './HDGrid';
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
 import { library, type LocalPlaylist } from '../state/library';
@@ -119,12 +120,12 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
         </Section>
       ) : null}
 
-      {/* 推荐歌单(五源聚合卡片 grid,对齐桌面版) */}
+      {/* 推荐歌单(五源聚合卡片 grid,桌面同构:等宽自适应+彩色投影) */}
       <Section title="推荐歌单" hint={recSource ? `五源聚合 · ${recSource}` : '五源聚合'} more="更多" onMore={() => onGotoSearch?.()}>
         {recPls.length ? (
-          <View style={st.grid}>
+          <HDGrid min={126}>
             {recPls.slice(0, 12).map(pl => (
-              <HDTouch key={`${pl.source}_${pl.id}`} style={st.plCard} onPress={() => openRecPl(pl)}>
+              <HDTouch key={`${pl.source}_${pl.id}`} style={[st.plCard, { boxShadow: shadowOf(pl.name) }]} onPress={() => openRecPl(pl)}>
                 {pl.img
                   ? <Image source={{ uri: pl.img }} style={st.plArt} />
                   : <View style={[st.plArt, { backgroundColor: '#232323', alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
@@ -132,7 +133,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
                 <Text style={st.recSub} numberOfLines={1}>{pl.author || (pl.play_count ? `▶ ${pl.play_count}` : '')}</Text>
               </HDTouch>
             ))}
-          </View>
+          </HDGrid>
         ) : (
           <View style={st.empty}>
             <Text style={st.emptyText}>推荐歌单加载中…</Text>
@@ -143,9 +144,9 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
       {/* 我的歌单 */}
       <Section title="我的歌单" hint={`${playlists.length} 个`} more="更多" onMore={() => hdNav()?.navigate('ImportPlaylist')}>
         {playlists.length ? (
-          <View style={st.grid}>
+          <HDGrid min={126}>
             {playlists.slice(0, 10).map(pl => (
-              <HDTouch key={pl.key} style={st.plCard} onPress={() => openPl(pl)}>
+              <HDTouch key={pl.key} style={[st.plCard, { boxShadow: shadowOf(pl.name) }]} onPress={() => openPl(pl)}>
                 <View style={{ position: 'relative' }}>
                   {pl.img
                     ? <Image source={{ uri: pl.img }} style={st.plArt} />
@@ -155,7 +156,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
                 <Text style={st.plName} numberOfLines={1}>{pl.name}</Text>
               </HDTouch>
             ))}
-          </View>
+          </HDGrid>
         ) : (
           <HDTouch style={st.empty} onPress={() => onGotoSearch?.()}>
             <Icon name="search" size={16} color={C.text3} />
@@ -170,7 +171,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
 // 桌面 BigCard:渐变 + 左徽标 + 标题/副标题 + 右圆钮
 function BigCard({ colors, badge, title, sub, onPress, busy }: { colors: [string, string]; badge: string; title: string; sub: string; onPress: () => void; busy?: boolean }) {
   return (
-    <HDTouch activeOpacity={0.9} onPress={onPress} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.card }} style={{ flex: 1, borderRadius: H.radius.card, boxShadow: SH.card }}>
+    <HDTouch activeOpacity={0.9} onPress={onPress} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.card }} style={{ flex: 1, borderRadius: H.radius.card, boxShadow: shadowOf(title) }}>
       <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.big}>
         <Text style={st.bigBadge}>{badge}</Text>
         <View style={{ flex: 1, minWidth: 0 }}>
@@ -215,7 +216,7 @@ const st = StyleSheet.create({
   recName: { color: C.text, fontSize: H.font.xs, fontWeight: '500' },
   recSub: { color: C.text3, fontSize: 8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  plCard: { flexBasis: '15%', flexGrow: 1, gap: 5, borderRadius: 9 },
+  plCard: { gap: 5, borderRadius: 9 },
   plArt: { width: '100%', aspectRatio: 1, borderRadius: 9 },
   plCount: { position: 'absolute', bottom: 5, right: 5, backgroundColor: 'rgba(0,0,0,.6)', borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
   plCountText: { color: '#fff', fontSize: 8 },
