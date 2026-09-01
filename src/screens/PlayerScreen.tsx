@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, PanResponder, Animated, Easing, } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import Svg, { Circle } from 'react-native-svg';
+import Svg, { Circle, Path, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { usePlayer } from '../state/PlayerProvider';
@@ -133,14 +133,37 @@ export function PlayerScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
-        {/* Vinyl hero（整体旋转：胶纹同心圆视觉静止，封面/标签转动） */}
+        {/* Vinyl hero（整体旋转：胶纹纹理+偏心高光让旋转可见；容器不裁切） */}
         <View style={st.vinylWrap}>
           <Animated.View style={[st.vinylSpin, { transform: [{ rotate: spinDeg }] }]}>
             <Svg width={270} height={270}>
-              <Circle cx={135} cy={135} r={134} fill="#09090B" stroke="#00000085" strokeWidth={1} />
-              <Circle cx={135} cy={135} r={123} stroke="#FFFFFF14" strokeWidth={1} fill="none" />
-              <Circle cx={135} cy={135} r={110} stroke="#FFFFFF0D" strokeWidth={1} fill="none" />
-              <Circle cx={135} cy={135} r={97} stroke="#FFFFFF0A" strokeWidth={1} fill="none" />
+              <Defs>
+                <RadialGradient id="sheenA" cx="0.32" cy="0.26" r="0.95">
+                  <Stop offset="0" stopColor="#FFFFFF" stopOpacity="0.10" />
+                  <Stop offset="0.45" stopColor="#FFFFFF" stopOpacity="0.025" />
+                  <Stop offset="1" stopColor="#FFFFFF" stopOpacity="0" />
+                </RadialGradient>
+                <RadialGradient id="sheenB" cx="0.74" cy="0.82" r="0.65">
+                  <Stop offset="0" stopColor="#FFFFFF" stopOpacity="0.05" />
+                  <Stop offset="1" stopColor="#FFFFFF" stopOpacity="0" />
+                </RadialGradient>
+              </Defs>
+              <Circle cx={135} cy={135} r={134} fill="#0A0A0D" stroke="#00000085" strokeWidth={1} />
+              {/* 胶纹：多道交替透明度的刻痕环 */}
+              <Circle cx={135} cy={135} r={129} stroke="#FFFFFF0A" strokeWidth={1} fill="none" />
+              <Circle cx={135} cy={135} r={124} stroke="#FFFFFF08" strokeWidth={1.5} fill="none" />
+              <Circle cx={135} cy={135} r={119} stroke="#FFFFFF0F" strokeWidth={1} fill="none" />
+              <Circle cx={135} cy={135} r={114} stroke="#FFFFFF06" strokeWidth={1.5} fill="none" />
+              <Circle cx={135} cy={135} r={109} stroke="#FFFFFF12" strokeWidth={1} fill="none" />
+              <Circle cx={135} cy={135} r={104} stroke="#FFFFFF08" strokeWidth={1.5} fill="none" />
+              <Circle cx={135} cy={135} r={99} stroke="#FFFFFF14" strokeWidth={1} fill="none" />
+              <Circle cx={135} cy={135} r={89} stroke="#FFFFFF0D" strokeWidth={1} fill="none" />
+              {/* 两道偏心高光弧：旋转的视觉主线索 */}
+              <Path d="M29.8 96.7 A112 112 0 0 1 96.7 29.8" stroke="#FFFFFF1F" strokeWidth={3} strokeLinecap="round" fill="none" />
+              <Path d="M221.5 166.5 A92 92 0 0 1 151 225.6" stroke="#FFFFFF17" strokeWidth={4} strokeLinecap="round" fill="none" />
+              {/* 径向光泽（偏心，随盘旋转） */}
+              <Circle cx={135} cy={135} r={134} fill="url(#sheenA)" />
+              <Circle cx={135} cy={135} r={134} fill="url(#sheenB)" />
               <Circle cx={135} cy={135} r={79} fill={C.brand} />
             </Svg>
             {current.img ? (
@@ -323,8 +346,8 @@ const st = StyleSheet.create({
   header: { height: 72, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20 },
   hBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center' },
   hTitle: { flex: 1, textAlign: 'center', color: C.text, fontSize: 16, lineHeight: 19, fontWeight: '500' },
-  vinylWrap: { alignSelf: 'center', width: 270, height: 238, marginTop: 4 },
-  vinylSpin: { position: 'absolute', left: 0, top: -16, width: 270, height: 270 },
+  vinylWrap: { alignSelf: 'center', width: 270, height: 270, marginTop: 10 },
+  vinylSpin: { width: 270, height: 270 },
   vinylLabel: {
     position: 'absolute', left: 61, top: 61, width: 148, height: 148, borderRadius: 74,
     overflow: 'hidden',
