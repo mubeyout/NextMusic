@@ -49,7 +49,8 @@ function isTabState(n: unknown): boolean {
 
 const st = StyleSheet.create({
   bar: {
-    flexDirection: 'row', backgroundColor: '#171717',
+    flexDirection: 'row', backgroundColor: C.surface,
+    borderTopWidth: 1, borderTopColor: C.stroke,
     paddingTop: 8, paddingHorizontal: 24,
   },
   item: { flex: 1, alignItems: 'center', gap: 4, paddingVertical: 4 },
