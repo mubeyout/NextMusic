@@ -181,6 +181,9 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
     ? preferred
     : (devices.find(d => d.kind === 'bluetooth') ?? devices.find(d => d.kind === 'wired' || d.kind === 'usb') ?? devices.find(d => d.kind === 'speaker') ?? { id: -1 }).id;
   const vol = cast ? castVol : sysVol;
+  // vc73：选中态唯一真源=当前实际输出。投屏中本机整区熄灭；「自动」行在无有效偏好时点亮（此前条件写错恒不亮）
+  const prefValid = preferred >= 0 && devices.some(d => d.id === preferred);
+  const autoOn = !cast && !prefValid;
   const sheetY = a.interpolate({ inputRange: [0, 1], outputRange: [420, 0] });
 
   return (
@@ -200,23 +203,23 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
           <Text style={st.subtitle}>{cast ? `正在${cast.kind === 'cast' ? ' Cast 到' : '投屏到'} ${cast.dev.name}` : '让音乐在附近设备上继续播放'}</Text>
 
           <Text style={st.label}>本机设备</Text>
-          <TouchableOpacity style={[st.deviceRow, activeId === -1 && st.deviceRowOn]} onPress={() => pickLocal(-1)}>
-            <View style={[st.iconWrap, activeId === -1 && { backgroundColor: C.brand }]}>
-              <Icon name="phone" size={26} color={activeId === -1 ? '#FFFFFF' : C.text} />
+          <TouchableOpacity style={[st.deviceRow, autoOn && st.deviceRowOn]} onPress={() => pickLocal(-1)}>
+            <View style={[st.iconWrap, autoOn && { backgroundColor: C.brand }]}>
+              <Icon name="phone" size={26} color={autoOn ? '#FFFFFF' : C.text} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={st.deviceName}>自动（跟随系统）</Text>
-              <Text style={activeId === -1 ? st.deviceStatusOn : st.deviceStatus}>
+              <Text style={autoOn ? st.deviceStatusOn : st.deviceStatus}>
                 {devices.filter(d => d.kind !== 'speaker').length
                   ? `已连接 ${devices.filter(d => d.kind !== 'speaker').map(d => d.name).join('、')}`
                   : '未连接外部设备，使用扬声器'}
               </Text>
             </View>
-            {activeId === -1 ? <View style={st.checkBadge}><Icon name="check" size={18} color="#FFFFFF" /></View> : null}
+            {autoOn ? <View style={st.checkBadge}><Icon name="check" size={18} color="#FFFFFF" /></View> : null}
           </TouchableOpacity>
           {devices.map(d => {
-            // 显式选中才点亮整行（自动模式下本行不算选中，避免与「自动」行双高亮）；生效中只显示状态字
-            const on = preferred >= 0 && d.id === preferred;
+            // 显式选中才点亮整行（自动模式下本行不算选中，避免与「自动」行双高亮）；生效中只显示状态字；投屏中熄灭
+            const on = !cast && prefValid && d.id === preferred;
             const live = activeId === d.id;
             const meta = KIND_META[d.kind] ?? KIND_META.speaker;
             return (
