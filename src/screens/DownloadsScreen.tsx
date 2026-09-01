@@ -53,7 +53,7 @@ export function DownloadsScreen() {
         )}
       />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 120 }}>
-        <Text style={st.stat}>{list.length} 首 · {fmtBytes(dlStore.totalBytes())} · {(RNBlobUtil.fs.dirs.DocumentDir || '')}/downloads</Text>
+        <Text style={st.stat}>{list.length} 首 · {fmtBytes(dlStore.totalBytes())} · 内部存储/Music/NextMusic</Text>
         {lastFails.length ? (
           <View style={st.failCard}>
             <Text style={st.failTitle} numberOfLines={1}>⚠ {fails.length} 首下载失败 · 最近：{lastFails[0].err}</Text>

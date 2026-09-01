@@ -13,7 +13,7 @@ export interface AppSettings {
   // 下载
   downloadQuality: Quality;
   maxConcurrent: number;         // 同时下载数
-  downloadDir: 'private' | 'public';  // vc82：下载位置——应用私有 / 公共音乐目录(Music/NextMusic, MediaStore)
+  downloadDir: 'public';  // vc82/vc83：公共音乐目录(Music/NextMusic, MediaStore)——默认且唯一;历史 'private' 值兼容读取但 UI 不再提供
   // 外观（重启生效：启动时覆写 C token）
   pureBlack: boolean;
   accent: string;                // hex
@@ -37,7 +37,7 @@ export const DEFAULTS: AppSettings = {
   playQuality: '320k',
   downloadQuality: '320k',
   maxConcurrent: 3,
-  downloadDir: 'private',
+  downloadDir: 'public',
   pureBlack: false,
   accent: '#1ED760',
   light: false,
@@ -51,7 +51,11 @@ export const DEFAULTS: AppSettings = {
 };
 
 function load(): AppSettings {
-  try { return { ...DEFAULTS, ...JSON.parse(kv.getString('settings') || '{}') }; } catch { return { ...DEFAULTS }; }
+  try {
+    const merged = { ...DEFAULTS, ...JSON.parse(kv.getString('settings') || '{}') } as AppSettings;
+    merged.downloadDir = 'public'; // vc83：公盘默认且唯一(历史 private 存量强制归一)
+    return merged;
+  } catch { return { ...DEFAULTS }; }
 }
 
 let current: AppSettings = load();

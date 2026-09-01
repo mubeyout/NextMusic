@@ -227,11 +227,8 @@ export function DownloadsSettingsScreen() {
       </Section>
       <Section title="存储">
         <ValueRow label="同时下载数" value={String(s.maxConcurrent)} options={[1, 2, 3, 4, 5].map(n => ({ label: `${n} 首`, value: String(n) }))} onPick={v => settings.set('maxConcurrent', Number(v))} />
-        <ValueRow label="下载位置" value={s.downloadDir === 'public' ? '公共音乐目录' : '应用私有目录'} options={[
-          { label: '应用私有目录 · 安全/卸载即删', value: 'private' },
-          { label: '公共音乐目录 · 文件管理器可见', value: 'public' },
-        ]} onPick={v => settings.set('downloadDir', v as 'private' | 'public')} />
-        <StaticRow label="存储路径" value={s.downloadDir === 'public' ? '内部存储/Music/NextMusic' : `${(RNBlobUtil.fs.dirs.DocumentDir || '')}/downloads`} />
+        <StaticRow label="下载位置" value="公共音乐目录" />
+        <StaticRow label="存储路径" value="内部存储/Music/NextMusic(所有文件管理器可见,卸载 App 不删除)" />
         <NavRow label="下载管理" value={`${dlStore.all().length} 首 · ${fmtBytes(dlStore.totalBytes())}`} onPress={() => nav.navigate('Downloads')} />
       </Section>
       {fails.length ? (
