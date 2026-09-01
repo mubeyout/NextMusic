@@ -34,6 +34,7 @@ object AudioRouteEngine {
     @Volatile
     var preferredId: Int = -1
 
+    @JvmStatic  // lib 侧反射 invoke(null) 调用——object 方法无此注解会抛 IllegalArgumentException 被吞（vc63 以来 sink 从未登记过，2026-09-01 V40 实锤）
     fun attachSink(s: Any?) {
         sink = s as? DefaultAudioSink
         applyPreferred(null)
