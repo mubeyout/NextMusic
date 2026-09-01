@@ -71,7 +71,7 @@ class DownloaderModule(reactContext: ReactApplicationContext) : ReactContextBase
                 val total = body.contentLength()
                 var received = 0L
                 var lastEmit = 0L
-                resolver.openOutputStream(uri).use { out ->
+                resolver.openOutputStream(uri!!).use { out ->
                     body.byteStream().use { input ->
                         val buf = ByteArray(64 * 1024)
                         while (true) {
