@@ -373,5 +373,5 @@ const st = StyleSheet.create({
     backgroundColor: C.brand,
     alignItems: 'center', justifyContent: 'center',
   },
-  repeatOne: { position: 'absolute', right: 6, top: 6, color: C.brand, fontSize: 9, fontWeight: '700' },
+  repeatOne: { position: 'absolute', right: 6, top: 6, color: C.brandText, fontSize: 9, fontWeight: '700' },
 });

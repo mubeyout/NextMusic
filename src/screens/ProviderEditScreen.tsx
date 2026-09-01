@@ -115,7 +115,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                   glow={SH.brand}
                   onPress={() => pickType(c.type)}
                 >
-                  <View style={hdSt.typeIcon}><Icon name={c.icon} size={30} color={C.brand} /></View>
+                  <View style={hdSt.typeIcon}><Icon name={c.icon} size={30} color={C.brandText} /></View>
                   <Text style={hdSt.typeTitle}>{c.title}</Text>
                   {c.badge ? (
                     <View style={hdSt.typeBadge}><Text style={hdSt.typeBadgeText}>{c.badge}</Text></View>
@@ -326,7 +326,7 @@ const hdSt = StyleSheet.create({
   typeIcon: { width: 68, height: 68, borderRadius: 22, backgroundColor: C.brandDim, alignItems: 'center', justifyContent: 'center' },
   typeTitle: { color: C.text, fontSize: 16, fontWeight: '700', textAlign: 'center', lineHeight: 22 },
   typeBadge: { backgroundColor: C.brandDim, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 3 },
-  typeBadgeText: { color: C.brand, fontSize: 12, fontWeight: '700' },
+  typeBadgeText: { color: C.brandText, fontSize: 12, fontWeight: '700' },
   typeSub: { color: C.text3, fontSize: 12, textAlign: 'center', lineHeight: 17 },
   desc: { color: C.text2, fontSize: 13, lineHeight: 18 },
   inputCard: { backgroundColor: C.surface, borderRadius: 16, paddingHorizontal: 20, paddingVertical: 14, gap: 6, boxShadow: SH.card },

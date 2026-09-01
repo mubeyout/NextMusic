@@ -45,9 +45,9 @@ const SCENES = ['通勤', '学习', '运动', '派对', '睡眠', '旅行'];
 const LANGS = ['华语', '欧美', '日韩', '拉丁'];
 // 榜单子卡槽位（视觉固定，榜单名取真实数据）：Figma 2357:1270-1284
 const CHART_SLOTS = [
-  { match: /飙升/, caption: '24h 热度变化', tag: '↗ 18%', tagColor: C.brandSoft, accent: [C.brand, '#591F7A'] },
-  { match: /新歌/, caption: '本周新发行', tag: 'NEW', tagColor: '#B3B3B3', accent: ['#1FB87A', '#731F66'] },
-  { match: /欧美|Billboard|全球/, caption: '32 个地区', tag: 'GLOBAL', tagColor: '#B3B3B3', accent: ['#1F9994', '#8C1F52'] },
+  { match: /飙升/, caption: '24h 热度变化', tag: '↗ 18%', tagColor: C.brandText, accent: [C.brand, '#591F7A'] },
+  { match: /新歌/, caption: '本周新发行', tag: 'NEW', tagColor: C.text2, accent: ['#1FB87A', '#731F66'] },
+  { match: /欧美|Billboard|全球/, caption: '32 个地区', tag: 'GLOBAL', tagColor: C.text2, accent: ['#1F9994', '#8C1F52'] },
 ];
 
 // 榜单卡渐变配色（循环取用）
@@ -507,7 +507,7 @@ const st = StyleSheet.create({
   langRow: { flexDirection: 'row', gap: 0 },
   langBtn: { flex: 1, height: 28, justifyContent: 'center' },
   langLabel: { color: C.text2, fontSize: 12, lineHeight: 14, fontWeight: '500' },
-  langLabelOn: { color: C.brand, fontWeight: '700' },
+  langLabelOn: { color: C.brandText, fontWeight: '700' },
   chartHero: {
     height: 126, borderRadius: 16, overflow: 'hidden',
     paddingHorizontal: 18, paddingVertical: 16, justifyContent: 'center', gap: 2,

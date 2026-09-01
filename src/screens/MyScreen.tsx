@@ -167,7 +167,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
             const pv = providers.all();
             if (!pv.length) return (
               <TouchableOpacity style={st.pvAddRow} activeOpacity={0.7} onPress={() => nav.navigate('MediaLibs')}>
-                <Icon name="add" size={16} color={C.brand} />
+                <Icon name="add" size={16} color={C.brandText} />
                 <Text style={st.pvAddText}>接入 Emby / Jellyfin / Navidrome / 道理鱼 / WebDAV</Text>
               </TouchableOpacity>
             );

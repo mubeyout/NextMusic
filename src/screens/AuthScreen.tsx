@@ -61,7 +61,7 @@ const st = StyleSheet.create({
   title: { color: C.text, fontSize: 26, lineHeight: 31, fontWeight: '700' },
   subtitle: { color: C.text2, fontSize: 12, lineHeight: 14 },
   readyCard: { borderRadius: 14, backgroundColor: C.surface, padding: 16, gap: 8 },
-  readyTitle: { color: C.brand, fontSize: 13, lineHeight: 16, fontWeight: '500' },
+  readyTitle: { color: C.brandText, fontSize: 13, lineHeight: 16, fontWeight: '500' },
   readySub: { color: C.text2, fontSize: 10, lineHeight: 12 },
   btnPrimary: { height: 46, borderRadius: 12, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   btnPrimaryText: { color: C.onBrand, fontSize: 14, lineHeight: 17, fontWeight: '500' },

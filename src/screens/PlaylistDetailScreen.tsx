@@ -185,7 +185,7 @@ export function PlaylistDetailScreen() {
           </TouchableOpacity>
           {p.remoteId && !localPl ? (
             <TouchableOpacity style={st.action} onPress={importPl} disabled={!songs?.length}>
-              <Icon name="download" size={20} color={C.brand} /><Text style={[st.actionText, { color: C.brand }]}>导入到本地</Text>
+              <Icon name="download" size={20} color={C.brandText} /><Text style={[st.actionText, { color: C.brandText }]}>导入到本地</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity style={st.action} onPress={() => { if (songs?.length) playSong(songs[Math.floor(Math.random() * songs.length)], songs); }}>

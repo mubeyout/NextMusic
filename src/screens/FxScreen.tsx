@@ -415,16 +415,16 @@ const st = StyleSheet.create({
   card: { backgroundColor: C.surface, borderRadius: 12, padding: 14, marginBottom: 12 },
   cardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   cardTitle: { color: C.text, fontSize: 14, fontWeight: '700' },
-  cardMeta: { color: C.brand, fontSize: 11, fontWeight: '700', maxWidth: 120 },
+  cardMeta: { color: C.brandText, fontSize: 11, fontWeight: '700', maxWidth: 120 },
   cardHint: { color: C.text3, fontSize: 11, fontWeight: '500' },
-  linkBtn: { color: C.brand, fontSize: 11, fontWeight: '800' },
+  linkBtn: { color: C.brandText, fontSize: 11, fontWeight: '800' },
   presetNameOn: { color: C.text2, fontSize: 11, fontWeight: '600' },
 
   // EQ 垂直网格
   eqGrid: { flexDirection: 'row', justifyContent: 'space-between' },
   eqCol: { width: '9%', alignItems: 'center', gap: 6 },
   eqDb: { color: C.text3, fontSize: 9, fontWeight: '800', height: 12 },
-  eqDbHot: { color: C.brand },
+  eqDbHot: { color: C.brandText },
   eqDbLow: { color: C.brandSoft },
   eqFreq: { color: C.text2, fontSize: 9, fontWeight: '600' },
 

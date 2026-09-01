@@ -47,7 +47,7 @@ const s = StyleSheet.create({
     // caller handles absolute positioning + width
   },
   glyph: {
-    color: C.brand,
+    color: C.brandText,
     fontWeight: '700',
   },
   title: {

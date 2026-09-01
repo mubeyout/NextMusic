@@ -230,7 +230,7 @@ const st = StyleSheet.create({
   stepPill: { flex: 1, height: 26, borderRadius: 13, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   stepPillOn: { backgroundColor: C.selTint },
   stepText: { color: C.text3, fontSize: 10 },
-  stepTextOn: { color: C.brand },
+  stepTextOn: { color: C.brandText },
   sectionTitle: { color: C.text, fontSize: 17, lineHeight: 25, fontWeight: '700' },
   platformRow: { minHeight: 60, borderRadius: 14, backgroundColor: C.surface, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14 },
   platformIcon: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },

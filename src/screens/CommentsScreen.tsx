@@ -228,7 +228,7 @@ const st = StyleSheet.create({
   avatarFallback: { backgroundColor: C.inset2, alignItems: 'center', justifyContent: 'center' },
   avatarInitial: { color: C.text2, fontSize: 15, fontWeight: '700' },
   cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  userName: { color: C.brand, fontSize: 12, lineHeight: 17, fontWeight: '500' },
+  userName: { color: C.brandText, fontSize: 12, lineHeight: 17, fontWeight: '500' },
   likeRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   likeCount: { color: C.text3, fontSize: 10, lineHeight: 13 },
   cmText: { color: C.text, fontSize: 13, lineHeight: 19, marginTop: 4 },

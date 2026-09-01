@@ -66,7 +66,7 @@ export function CollectSheet({ song, visible, onClose }: { song: SongItem | null
               <Text style={s.loveTitle}>我喜欢的</Text>
               <Text style={s.sub}>{faved ? '已收藏 · 点击取消' : '快速收藏'}</Text>
             </View>
-            {faved ? <Icon name="check" size={20} active color={C.brand} /> : null}
+            {faved ? <Icon name="check" size={20} active color={C.brandText} /> : null}
           </TouchableOpacity>
 
           <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>

@@ -253,7 +253,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
               ) : null}
               {davDirs.map(d => (
                 <TouchableOpacity key={d.path} style={st.dirRow} onPress={() => setDavDir(d.path)}>
-                  <Icon name="folder" size={18} color={C.brand} />
+                  <Icon name="folder" size={18} color={C.brandText} />
                   <Text style={st.dirText}>{d.name}</Text>
                   <Icon name="chevronright" size={16} color={C.text3} />
                 </TouchableOpacity>
@@ -466,7 +466,7 @@ const st = StyleSheet.create({
   plRow: { minHeight: 60, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint },
   artistArt: { width: 44, height: 44, borderRadius: 22 },
   artistFallback: { borderRadius: 22, backgroundColor: C.artTint2, alignItems: 'center', justifyContent: 'center' },
-  artistInitial: { color: C.brand, fontSize: 17, fontWeight: '700' },
+  artistInitial: { color: C.brandText, fontSize: 17, fontWeight: '700' },
   artistName: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '500' },
   artistMeta: { color: C.text2, fontSize: 11, lineHeight: 15 },
   // 随机歌曲段

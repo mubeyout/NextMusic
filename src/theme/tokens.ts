@@ -35,6 +35,7 @@ export const C: Record<string, string> = {
   knobOn: '#0E3B1F',       // 开关 on 钮（浅色下白色钮）
   knob: '#FFFFFF',         // Fx 开关钮（浅色 off 态灰钮）
   failTint: '#2A1A1A',     // 下载失败卡底
+  brandText: '#1ED760',    // 绿色文字（浅色下换深绿，避免绿字贴白底看不清）
 };
 
 // 启动期主题覆写（模块加载时同步执行；后续所有 StyleSheet.create 拿到的就是用户主题）
@@ -70,8 +71,8 @@ export function applyBootTheme() {
     C.surface2 = '#F0F1F4';
     C.elev = '#FFFFFF';
     C.text = '#26282C';
-    C.text2 = '#7A8087';
-    C.text3 = '#A8ADB4';
+    C.text2 = '#62676E';
+    C.text3 = '#8B9199';
     C.onBrand = '#0B3D1F';
     C.brandSoft = '#1DB455';   // 浅色下高亮绿加深（桌面同款）
     C.stroke = '#1F232914';    // rgba(31,35,41,.08)
@@ -90,6 +91,7 @@ export function applyBootTheme() {
     C.knobOn = '#FFFFFF';
     C.knob = '#8F969E';
     C.failTint = '#FDEEEE';
+    C.brandText = '#0E8A44';
   }
 }
 applyBootTheme();

@@ -125,6 +125,6 @@ const s = StyleSheet.create({
   h: { color: C.text, fontSize: 16, fontWeight: '700', marginBottom: 8 },
   p: { color: C.text2, fontSize: 13, lineHeight: 21 },
   liRow: { flexDirection: 'row', gap: 8, marginBottom: 6 },
-  dot: { color: C.brand, fontSize: 13, lineHeight: 21 },
+  dot: { color: C.brandText, fontSize: 13, lineHeight: 21 },
   li: { color: C.text2, fontSize: 13, lineHeight: 21, flex: 1 },
 });

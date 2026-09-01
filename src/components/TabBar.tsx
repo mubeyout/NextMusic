@@ -55,5 +55,5 @@ const st = StyleSheet.create({
   },
   item: { flex: 1, alignItems: 'center', gap: 4, paddingVertical: 4 },
   label: { color: C.text2, fontSize: 11, lineHeight: 13, fontWeight: '400' },
-  labelOn: { color: C.brand, fontWeight: '500' },
+  labelOn: { color: C.brandText, fontWeight: '500' },
 });
