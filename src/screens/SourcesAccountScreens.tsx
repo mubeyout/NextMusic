@@ -6,7 +6,7 @@ import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { useApp } from '../state/AppState';
 import { SubPage } from '../components/SubPage';
-import { loadSources, addSourceByUrl, removeSource, toggleSource, activeSources, sourceHealthCheck, type CustomSource } from '../services/customSource';
+import { loadSources, addSourceByUrl, removeSource, toggleSource, activeSources, sourceHealthCheck, checkSourceUpdates, applySourceUpdate, type CustomSource } from '../services/customSource';
 import { dialog, toast } from '../components/Dialog';
 
 // 自定义音源：LX 脚本本地沙箱运行，免登录即可播放
@@ -23,6 +23,29 @@ export function SourcesScreen() {
 
   const refresh = () => setSources(loadSources());
   useEffect(refresh, []);
+  // vc85：打开时静默检查音源更新 → 有新版弹窗一键覆盖
+  useEffect(() => {
+    let dead = false;
+    checkSourceUpdates().then(ups => {
+      if (dead || !ups.length) return;
+      dialog.alert(
+        '音源有新版本',
+        ups.map(u => `「${u.src.name}」v${u.src.version} → v${u.version}`).join('\n'),
+        [
+          { text: '稍后', style: 'cancel' },
+          {
+            text: `一键更新${ups.length > 1 ? `（${ups.length} 个）` : ''}`,
+            onPress: () => {
+              ups.forEach(applySourceUpdate);
+              refresh();
+              toast(`已更新 ${ups.length} 个音源`);
+            },
+          },
+        ],
+      );
+    }).catch(() => {});
+    return () => { dead = true; };
+  }, []);
 
   const add = async () => {
     if (!url.trim()) { setAdding(false); return; }
