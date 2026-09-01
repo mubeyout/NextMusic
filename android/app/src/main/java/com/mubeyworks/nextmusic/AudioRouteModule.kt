@@ -4,6 +4,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
+import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothProfile
 import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
@@ -209,13 +212,48 @@ class AudioRouteModule(reactContext: ReactApplicationContext) :
         "speaker" -> "本机扬声器"
         "wired" -> productName?.takeIf { it.isNotBlank() } ?: "有线耳机"
         "usb" -> productName?.takeIf { it.isNotBlank() } ?: "USB 音频设备"
-        "bluetooth" -> productName?.takeIf { it.isNotBlank() } ?: "蓝牙设备"
+        "bluetooth" -> btName(productName) ?: "蓝牙设备"
         else -> "音频设备"
+    }
+
+    // ---------- 蓝牙真名（vc76）：productName 在部分 ROM（LG/ColorOS）吐本机适配器名，
+    // 与 adapter.name 相同即视为伪名丢弃；A2DP proxy 取已连接远端设备名兑底
+    private var a2dpProxy: android.bluetooth.BluetoothA2dp? = null
+    private val adapterName: String? by lazy {
+        try {
+            (reactApplicationContext.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager)?.adapter?.name
+        } catch (t: Throwable) { null }
+    }
+
+    private fun ensureA2dpProxy() {
+        if (a2dpProxy != null) return
+        try {
+            val bm = reactApplicationContext.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager ?: return
+            bm.adapter?.getProfileProxy(reactApplicationContext, object : BluetoothProfile.ServiceListener {
+                override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
+                    if (profile == BluetoothProfile.A2DP) a2dpProxy = proxy as? android.bluetooth.BluetoothA2dp
+                }
+                override fun onServiceDisconnected(profile: Int) { a2dpProxy = null }
+            }, BluetoothProfile.A2DP)
+        } catch (t: Throwable) { Log.w(AudioRouteEngine.TAG, "a2dp proxy failed", t) }
+    }
+
+    private fun btName(productName: String?): String? {
+        val pn = productName?.trim()?.takeIf { it.isNotBlank() && it != adapterName }
+        if (pn != null) return pn
+        return try {
+            val px = a2dpProxy
+            if (px != null && reactApplicationContext.checkPermission(
+                    android.Manifest.permission.BLUETOOTH_CONNECT,
+                    android.os.Process.myPid(), android.os.Process.myUid()) == PackageManager.PERMISSION_GRANTED
+            ) px.connectedDevices.firstOrNull()?.name?.takeIf { !it.isNullOrBlank() } else null
+        } catch (t: Throwable) { null }
     }
 
     private fun listDevices(): com.facebook.react.bridge.WritableArray {
         val arr = Arguments.createArray()
         val outs = am.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+        ensureA2dpProxy() // 蓝牙真名兑底（首帧可能仍 productName，设备变化回调会再吐真名）
         // 蓝牙去重（系统可能给 SCO+A2DP 两条，只留 A2DP）；同名多设备保留各自身份 id
         for (d in outs) {
             val kind = kindOf(d.type) ?: continue

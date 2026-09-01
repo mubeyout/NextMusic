@@ -5,6 +5,9 @@
     <!-- 设备本地音乐扫描（Android 13+ 媒体读取 / 旧版外部存储读取） -->
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <!-- 蓝牙设备名（Route 面板显示远端设备真名；11- 用 legacy 权限，12+ 运行时请求） -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 
     <application
       android:name=".MainApplication"

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, BackHandler, ScrollView, NativeModules, NativeEventSubscription, PanResponder, Dimensions, AppState } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, BackHandler, ScrollView, NativeModules, NativeEventSubscription, PanResponder, Dimensions, AppState, PermissionsAndroid, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAudioPro } from 'react-native-audio-pro';
 import { Icon } from '../theme/Icon';
@@ -50,7 +50,7 @@ const KIND_META: Record<string, { icon: 'speaker' | 'headphones' | 'devices'; la
   speaker: { icon: 'speaker', label: '扬声器' },
   wired: { icon: 'headphones', label: '有线' },
   usb: { icon: 'headphones', label: 'USB' },
-  bluetooth: { icon: 'devices', label: '蓝牙' },
+  bluetooth: { icon: 'headphones', label: '蓝牙' },
 };
 
 export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
@@ -93,6 +93,14 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
   useEffect(() => {
     if (!visible) return;
     refreshDevices();
+    // vc76：12+ 请求 BLUETOOTH_CONNECT（取蓝牙远端设备真名；拒绝则名字退化 productName/兜底）
+    if (Platform.OS === 'android' && Platform.Version >= 31) {
+      PermissionsAndroid.request('android.permission.BLUETOOTH_CONNECT', {
+        title: '蓝牙设备名称',
+        message: '用于在播放设备面板中显示已连接蓝牙设备的名称',
+        buttonPositive: '允许', buttonNegative: '拒绝',
+      }).then(() => refreshDevices()).catch(() => {});
+    }
     const sub1 = audioRoute.onDevicesChange(refreshDevices);
     const sub2 = audioRoute.onVolumeChange(setSysVol);
     return () => { sub1?.remove(); sub2?.remove(); };
@@ -217,26 +225,38 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
             </View>
             {autoOn ? <View style={st.checkBadge}><Icon name="check" size={18} color="#FFFFFF" /></View> : null}
           </TouchableOpacity>
-          {devices.map(d => {
-            // 显式选中才点亮整行（自动模式下本行不算选中，避免与「自动」行双高亮）；生效中只显示状态字；投屏中熄灭
-            const on = !cast && prefValid && d.id === preferred;
-            const live = activeId === d.id;
-            const meta = KIND_META[d.kind] ?? KIND_META.speaker;
-            return (
-              <TouchableOpacity key={d.id} style={[st.deviceRow, on && st.deviceRowOn]} onPress={() => pickLocal(d.id)}>
-                <View style={[st.iconWrap, on && { backgroundColor: C.brand }]}>
-                  <Icon name={meta.icon} size={26} color={on ? '#FFFFFF' : C.text} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={st.deviceName}>{d.name}</Text>
-                  <Text style={on || live ? st.deviceStatusOn : st.deviceStatus}>
-                    {meta.label}设备{live && !cast && playingLocal ? ' · 正在播放' : on ? '' : ' · 点击切换'}
-                  </Text>
-                </View>
-                {on ? <View style={st.checkBadge}><Icon name="check" size={18} color="#FFFFFF" /></View> : null}
-              </TouchableOpacity>
-            );
-          })}
+          {(() => {
+            // 设备行渲染（vc76：本机区/蓝牙区共用；蓝牙独立分区不再混入本机设备）
+            const renderRow = (d: LocalDevice) => {
+              // 显式选中才点亮整行（自动模式下本行不算选中，避免与「自动」行双高亮）；生效中只显示状态字；投屏中熄灭
+              const on = !cast && prefValid && d.id === preferred;
+              const live = activeId === d.id;
+              const meta = KIND_META[d.kind] ?? KIND_META.speaker;
+              return (
+                <TouchableOpacity key={d.id} style={[st.deviceRow, on && st.deviceRowOn]} onPress={() => pickLocal(d.id)}>
+                  <View style={[st.iconWrap, on && { backgroundColor: C.brand }]}>
+                    <Icon name={meta.icon} size={26} color={on ? '#FFFFFF' : C.text} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={st.deviceName}>{d.name}</Text>
+                    <Text style={on || live ? st.deviceStatusOn : st.deviceStatus}>
+                      {meta.label}设备{live && !cast && playingLocal ? ' · 正在播放' : on ? '' : ' · 点击切换'}
+                    </Text>
+                  </View>
+                  {on ? <View style={st.checkBadge}><Icon name="check" size={18} color="#FFFFFF" /></View> : null}
+                </TouchableOpacity>
+              );
+            };
+            return (<>
+              {devices.filter(d => d.kind !== 'bluetooth').map(renderRow)}
+              {devices.some(d => d.kind === 'bluetooth') ? (
+                <>
+                  <Text style={st.label}>蓝牙设备</Text>
+                  {devices.filter(d => d.kind === 'bluetooth').map(renderRow)}
+                </>
+              ) : null}
+            </>);
+          })()}
 
           <Text style={st.label}>DLNA 投屏设备</Text>
           {cast?.kind === 'dlna' ? (
