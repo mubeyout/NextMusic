@@ -348,7 +348,7 @@ export function PlaylistDetailScreen() {
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg, paddingHorizontal: 20 },
-  miniDock: { position: 'absolute', left: 0, right: 0, bottom: 12 },
+  miniDock: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   header: { height: 44, flexDirection: 'row', alignItems: 'center' },
   hBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   headCard: { flexDirection: 'row', gap: 14, marginTop: 4 },

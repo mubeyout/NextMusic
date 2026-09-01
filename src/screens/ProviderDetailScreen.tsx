@@ -207,5 +207,5 @@ const st = StyleSheet.create({
   albumCover: { width: '100%', aspectRatio: 1, borderRadius: 10, backgroundColor: C.surface2 },
   albumName: { color: C.text, fontSize: 12, lineHeight: 15, fontWeight: '600' },
   albumMeta: { color: C.text2, fontSize: 9, lineHeight: 12 },
-  miniDock: { position: 'absolute', left: 0, right: 0, bottom: 12 },
+  miniDock: { position: 'absolute', left: 0, right: 0, bottom: 0 },
 });

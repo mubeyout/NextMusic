@@ -488,7 +488,7 @@ const st = StyleSheet.create({
   davBtn: { flex: 1, height: 40, borderRadius: 12, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   davBtnMain: { backgroundColor: C.brand },
   davBtnText: { color: C.text, fontSize: 12, fontWeight: '600' },
-  miniDock: { position: 'absolute', left: 0, right: 0, bottom: 12 },
+  miniDock: { position: 'absolute', left: 0, right: 0, bottom: 0 },
 });
 
 // navigation 注册用包装（native-stack 组件类型兼容）

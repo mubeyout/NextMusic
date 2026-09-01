@@ -152,5 +152,5 @@ const st = StyleSheet.create({
   addAll: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 38, borderRadius: 12, backgroundColor: C.surface, marginTop: 12 },
   addAllText: { color: C.brandSoft, fontSize: 12, fontWeight: '500' },
   empty: { color: C.text2, fontSize: 12, lineHeight: 18, textAlign: 'center', paddingVertical: 40 },
-  miniDock: { position: 'absolute', left: 0, right: 0, bottom: 12 },
+  miniDock: { position: 'absolute', left: 0, right: 0, bottom: 0 },
 });

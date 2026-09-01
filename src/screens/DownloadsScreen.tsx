@@ -99,5 +99,5 @@ const st = StyleSheet.create({
   empty: { color: C.text2, fontSize: 12, lineHeight: 18, textAlign: 'center', paddingVertical: 40 },
   progTrack: { flexDirection: 'row', height: 3, borderRadius: 2, backgroundColor: C.surface2, marginTop: 2, marginBottom: 4 },
   progBar: { backgroundColor: C.brand, borderRadius: 2 },
-  miniDock: { position: 'absolute', left: 0, right: 0, bottom: 12 },
+  miniDock: { position: 'absolute', left: 0, right: 0, bottom: 0 },
 });
