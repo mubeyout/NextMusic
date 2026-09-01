@@ -119,6 +119,85 @@ class DownloaderModule(reactContext: ReactApplicationContext) : ReactContextBase
         }
     }
 
+    // vc84：下载到用户自选 SAF 目录（openDocumentTree 持久授权的 tree uri）
+    @ReactMethod
+    fun downloadToTree(key: String, url: String, treeUriStr: String, displayName: String, mime: String, headers: ReadableMap?, promise: Promise) {
+        exec.execute {
+            val resolver = reactApplicationContext.contentResolver
+            var uri: android.net.Uri? = null
+            try {
+                val tree = androidx.documentfile.provider.DocumentFile.fromTreeUri(reactApplicationContext, android.net.Uri.parse(treeUriStr))
+                    ?: throw IllegalStateException("目录不可用（授权可能已失效，请重新选择）")
+                if (!tree.canWrite()) throw IllegalStateException("目录不可写（授权可能已失效，请重新选择）")
+                val doc = tree.createFile(mime, displayName) ?: throw IllegalStateException("创建文件失败")
+                uri = doc.uri
+                val rb = Request.Builder().url(url)
+                headers?.let { h ->
+                    val iter = h.keySetIterator()
+                    while (iter.hasNextKey()) {
+                        val k = iter.nextKey()
+                        rb.header(k, h.getString(k) ?: continue)
+                    }
+                }
+                val resp = client.newCall(rb.build()).execute()
+                if (!resp.isSuccessful) {
+                    resp.close(); try { doc.delete() } catch (_: Exception) {}
+                    promise.reject("HTTP_" + resp.code, "HTTP ${resp.code}")
+                    return@execute
+                }
+                val body = resp.body ?: run {
+                    resp.close(); try { doc.delete() } catch (_: Exception) {}
+                    promise.reject("EMPTY", "响应为空"); return@execute
+                }
+                val total = body.contentLength()
+                var received = 0L
+                var lastEmit = 0L
+                val outStream = resolver.openOutputStream(uri!!) ?: run {
+                    resp.close(); try { doc.delete() } catch (_: Exception) {}
+                    promise.reject("OPEN_STREAM", "打开输出流失败"); return@execute
+                }
+                outStream.use { out ->
+                    body.byteStream().use { input ->
+                        val buf = ByteArray(64 * 1024)
+                        while (true) {
+                            if (cancelled[key] == true) {
+                                try { doc.delete() } catch (_: Exception) {}
+                                promise.reject("CANCELLED", "已取消")
+                                return@execute
+                            }
+                            val n = input.read(buf)
+                            if (n < 0) break
+                            out.write(buf, 0, n)
+                            received += n
+                            val now = System.currentTimeMillis()
+                            if (now - lastEmit > 250) {
+                                lastEmit = now
+                                emitProgress(key, received, total)
+                            }
+                        }
+                        out.flush()
+                    }
+                }
+                resp.close()
+                if (received == 0L) {
+                    try { doc.delete() } catch (_: Exception) {}
+                    promise.reject("EMPTY", "下载内容为空")
+                    return@execute
+                }
+                emitProgress(key, received, received)
+                val m = Arguments.createMap()
+                m.putString("uri", uri.toString())
+                m.putDouble("size", received.toDouble())
+                promise.resolve(m)
+            } catch (e: Exception) {
+                uri?.let { try { resolver.delete(it, null, null) } catch (_: Exception) {} }
+                promise.reject("DL_ERROR", e.message ?: "下载失败", e)
+            } finally {
+                cancelled.remove(key)
+            }
+        }
+    }
+
     // vc82：删除公共目录记录（MediaStore）
     @ReactMethod
     fun removePublic(uriStr: String, promise: Promise) {

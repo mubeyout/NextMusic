@@ -7,6 +7,7 @@ import { NativeModules, NativeEventEmitter, Platform } from 'react-native';
 const Downloader = NativeModules.Downloader as {
   download(key: string, url: string, filePath: string, headers: Record<string, string> | null, ): Promise<number>;
   downloadPublic(key: string, url: string, displayName: string, mime: string, headers: Record<string, string> | null): Promise<{ uri: string; size: number }>;
+  downloadToTree(key: string, url: string, treeUri: string, displayName: string, mime: string, headers: Record<string, string> | null): Promise<{ uri: string; size: number }>;
   removePublic(uri: string): Promise<boolean>;
   cancelDownload(key: string): void;
 } | undefined;
@@ -155,10 +156,21 @@ async function runJob(job: Job): Promise<void> {
     const { url, headers } = await resolveUrl(job.song, job.quality);
     const hdrs = headers && Object.keys(headers).length ? headers : null;
     let size = 0;
-    // vc82：公共音乐目录（MediaStore Music/NextMusic，Android 10+；文件管理器可见、卸载不删）
-    const wantPublic = settings.get().downloadDir === 'public' && Platform.Version >= 29 && !!Downloader?.downloadPublic; // Android 9- 无 MediaStore RELATIVE_PATH,回退私有
+    // vc82：公共音乐目录（MediaStore Music/NextMusic，Android 10+）；vc84：custom=用户自选 SAF 目录
+    const dcfg = settings.get();
+    const wantCustom = dcfg.downloadDir === 'custom' && !!dcfg.downloadTreeUri && !!Downloader?.downloadToTree;
+    const wantPublic = !wantCustom && dcfg.downloadDir === 'public' && Platform.Version >= 29 && !!Downloader?.downloadPublic; // Android 9- 无 MediaStore RELATIVE_PATH,回退私有
     let savedPath = '';
-    if (wantPublic) {
+    if (wantCustom) {
+      const mime = job.quality === 'flac' ? 'audio/flac' : 'audio/mpeg';
+      const r = await new Promise<{ uri: string; size: number }>((resolveP, rejectP) => {
+        Downloader!.downloadToTree(key, url, dcfg.downloadTreeUri, displayName, mime, hdrs)
+          .then(res => resolveP(res))
+          .catch(e => rejectP(e));
+      });
+      size = r.size;
+      savedPath = r.uri;
+    } else if (wantPublic) {
       const mime = job.quality === 'flac' ? 'audio/flac' : 'audio/mpeg';
       const r = await new Promise<{ uri: string; size: number }>((resolveP, rejectP) => {
         Downloader!.downloadPublic(key, url, displayName, mime, hdrs)

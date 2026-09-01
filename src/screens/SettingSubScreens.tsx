@@ -227,8 +227,23 @@ export function DownloadsSettingsScreen() {
       </Section>
       <Section title="存储">
         <ValueRow label="同时下载数" value={String(s.maxConcurrent)} options={[1, 2, 3, 4, 5].map(n => ({ label: `${n} 首`, value: String(n) }))} onPick={v => settings.set('maxConcurrent', Number(v))} />
-        <StaticRow label="下载位置" value="公共音乐目录" />
-        <StaticRow label="存储路径" value="内部存储/Music/NextMusic(所有文件管理器可见,卸载 App 不删除)" />
+        <ValueRow label="下载位置" value={s.downloadDir === 'custom' ? '自定义目录' : '公共音乐目录'} options={[
+          { label: '公共音乐目录 · Music/NextMusic', value: 'public' },
+          { label: '自定义目录 · 自己选文件夹', value: 'custom' },
+        ]} onPick={async v => {
+          if (v === 'custom') {
+            try {
+              const dir = await SafX.openDocumentTree(true);
+              if (!dir?.uri) { toast('未选择目录'); return; }
+              settings.set('downloadDir', 'custom');
+              settings.set('downloadTreeUri', dir.uri);
+              toast(`下载位置已设为所选目录`);
+            } catch (e) { dialog.alert('选择目录失败', (e as Error).message); }
+          } else {
+            settings.set('downloadDir', 'public');
+          }
+        }} />
+        <StaticRow label="存储路径" value={s.downloadDir === 'custom' ? (s.downloadTreeUri || '未选择') : '内部存储/Music/NextMusic(文件管理器可见,卸载 App 不删除)'} />
         <NavRow label="下载管理" value={`${dlStore.all().length} 首 · ${fmtBytes(dlStore.totalBytes())}`} onPress={() => nav.navigate('Downloads')} />
       </Section>
       {fails.length ? (

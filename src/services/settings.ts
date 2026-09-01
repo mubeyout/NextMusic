@@ -38,6 +38,7 @@ export const DEFAULTS: AppSettings = {
   downloadQuality: '320k',
   maxConcurrent: 3,
   downloadDir: 'public',
+  downloadTreeUri: '',
   pureBlack: false,
   accent: '#1ED760',
   light: false,
@@ -53,7 +54,7 @@ export const DEFAULTS: AppSettings = {
 function load(): AppSettings {
   try {
     const merged = { ...DEFAULTS, ...JSON.parse(kv.getString('settings') || '{}') } as AppSettings;
-    merged.downloadDir = 'public'; // vc83：公盘默认且唯一(历史 private 存量强制归一)
+    if (merged.downloadDir !== 'custom') merged.downloadDir = 'public'; // vc84：默认公共;历史 private 归一
     return merged;
   } catch { return { ...DEFAULTS }; }
 }
