@@ -63,11 +63,14 @@ export function softGrad(...cs: string[]): string[] {
 
 export function applyBootTheme() {
   const s = settings.get();
-  if (s.accent && /^#[0-9A-Fa-f]{6}$/.test(s.accent) && s.accent !== '#1ED760') {
-    C.brand = s.accent;
-    C.brandDim = s.accent + '47';
-    C.brandSoft = s.accent;
-    C.bgGradientTop = blend(s.accent, '#121212', 0.16);
+  // vc79：绿系语义 token 全套跟随 accent 派生（此前 brandText/selTint/badgeOn 恒绿——蓝 accent 下蓝图标绿字混搭）
+  const acc = (s.accent && /^#[0-9A-Fa-f]{6}$/.test(s.accent) && s.accent !== '#1ED760') ? s.accent : null;
+  if (acc) {
+    C.brand = acc;
+    C.brandDim = acc + '47';
+    C.brandSoft = acc;
+    C.brandText = acc;
+    C.bgGradientTop = blend(acc, '#121212', 0.16);
   }
   if (s.pureBlack) {
     C.bg = '#000000';
@@ -79,15 +82,15 @@ export function applyBootTheme() {
     T.light = true;
     C.bg = '#F6F7F9';
     C.bgDeep = '#FFFFFF';
-    C.bgGradientTop = (s.accent && /^#[0-9A-Fa-f]{6}$/.test(s.accent) && s.accent !== '#1ED760') ? blend(s.accent, '#F6F7F9', 0.14) : '#EAF6EE';
+    C.bgGradientTop = acc ? blend(acc, '#F6F7F9', 0.14) : '#EAF6EE';
     C.surface = '#FFFFFF';
     C.surface2 = '#F0F1F4';
     C.elev = '#FFFFFF';
     C.text = '#26282C';
     C.text2 = '#62676E';
     C.text3 = '#8B9199';
-    C.onBrand = '#0B3D1F';
-    C.brandSoft = '#1DB455';   // 浅色下高亮绿加深（桌面同款）
+    C.onBrand = acc ? mixHex(acc, '#000000', 0.52) : '#0B3D1F';
+    C.brandSoft = acc ? mixHex(acc, '#000000', 0.22) : '#1DB455';   // 浅色下高亮色加深（桌面同款规则）
     C.stroke = '#1F232914';    // rgba(31,35,41,.08)
     C.inset = '#EDEFF3';
     C.inset2 = '#E4E7EC';
@@ -97,15 +100,15 @@ export function applyBootTheme() {
     C.strokeStrong = '#1F232924';
     C.handle = '#1F23293D';
     C.scrim = '#00000066';
-    C.artTint = '#E7F1EB';
-    C.artTint2 = '#E7F1EB';
-    C.selTint = '#DFF2E7';
-    C.badgeOn = '#D9F4E5';
+    C.brandText = acc ? mixHex(acc, '#000000', 0.40) : '#0E8A44';
+    C.selTint = acc ? mixHex(acc, '#FFFFFF', 0.87) : '#DFF2E7';
+    C.badgeOn = acc ? mixHex(acc, '#FFFFFF', 0.88) : '#D9F4E5';
+    C.artTint = acc ? mixHex(acc, '#FFFFFF', 0.90) : '#E7F1EB';
+    C.artTint2 = acc ? mixHex(acc, '#FFFFFF', 0.90) : '#E7F1EB';
     C.knobOn = '#FFFFFF';
     C.knob = '#8F969E';
     C.failTint = '#FDEEEE';
     C.sheet = '#FAFBFCF5';
-    C.brandText = '#0E8A44';
   }
 }
 applyBootTheme();
