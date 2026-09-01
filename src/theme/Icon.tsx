@@ -35,8 +35,8 @@ export function Icon({
   const key = `${name}-${active ? 'active' : 'default'}`;
   let xml = ICONS[key] || ICONS[`${name}-default`];
   if (!xml) return null;
-  // 未显式传色：active 变体跟随主题品牌色（图标库内嵌 #1ED760 仅是绿色主题下的巧合）；default 保持白色
-  xml = recolor(xml, color ?? (active ? C.brand : undefined));
+  // 未显式传色：active 变体跟随主题品牌色；default 跟随正文色（深色=#FFFFFF 与原图一致，浅色=深色图标）
+  xml = recolor(xml, color ?? (active ? C.brand : C.text));
   return <SvgXml xml={xml} width={size} height={size} />;
 }
 

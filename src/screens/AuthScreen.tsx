@@ -65,7 +65,7 @@ const st = StyleSheet.create({
   readySub: { color: C.text2, fontSize: 10, lineHeight: 12 },
   btnPrimary: { height: 46, borderRadius: 12, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   btnPrimaryText: { color: C.onBrand, fontSize: 14, lineHeight: 17, fontWeight: '500' },
-  btnGhost: { height: 46, borderRadius: 12, borderWidth: 1, borderColor: '#FFFFFF1F', alignItems: 'center', justifyContent: 'center' },
+  btnGhost: { height: 46, borderRadius: 12, borderWidth: 1, borderColor: C.strokeStrong, alignItems: 'center', justifyContent: 'center' },
   btnGhostText: { color: C.text, fontSize: 14, lineHeight: 17, fontWeight: '500' },
   note: { borderRadius: 14, backgroundColor: C.surface, padding: 16, gap: 6 },
   noteTitle: { color: C.text, fontSize: 12, lineHeight: 14, fontWeight: '500' },

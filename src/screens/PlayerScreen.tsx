@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, PanResponder, } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, PanResponder, Animated, Easing, } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Svg, { Circle } from 'react-native-svg';
@@ -35,6 +35,24 @@ export function PlayerScreen() {
   useEffect(() => subscribeDownloads(() => forceDl(n => n + 1)), []);
   const dlProg = current ? downloadProgress(current) : null;
   const [seekPct, setSeekPct] = useState<number | null>(null); // 拖动中的进度
+
+  // 唱片旋转：播放时匀速转动，暂停时停在当前角度，恢复后继续
+  const spin = useRef(new Animated.Value(0)).current;
+  const spinLoop = useRef<Animated.CompositeAnimation | null>(null);
+  useEffect(() => {
+    if (playing) {
+      if (!spinLoop.current) {
+        spinLoop.current = Animated.loop(
+          Animated.timing(spin, { toValue: 1, duration: 18000, easing: Easing.linear, useNativeDriver: true })
+        );
+      }
+      spinLoop.current.start();
+    } else {
+      spin.stopAnimation(); // 冻结在当前角度
+    }
+    return () => { spin.stopAnimation(); };
+  }, [playing]); // eslint-disable-line react-hooks/exhaustive-deps
+  const spinDeg = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
 
   const openCollect = () => { if (current) setCollect(true); };
   // CollectSheet 内部完成收藏/取消（同步服务器 + 本机歌单）
@@ -115,21 +133,23 @@ export function PlayerScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
-        {/* Vinyl hero */}
+        {/* Vinyl hero（整体旋转：胶纹同心圆视觉静止，封面/标签转动） */}
         <View style={st.vinylWrap}>
-          <Svg width={270} height={270} style={st.vinylSvg}>
-            <Circle cx={135} cy={135} r={134} fill="#09090B" stroke="#00000085" strokeWidth={1} />
-            <Circle cx={135} cy={135} r={123} stroke="#FFFFFF14" strokeWidth={1} fill="none" />
-            <Circle cx={135} cy={135} r={110} stroke="#FFFFFF0D" strokeWidth={1} fill="none" />
-            <Circle cx={135} cy={135} r={97} stroke="#FFFFFF0A" strokeWidth={1} fill="none" />
-            <Circle cx={135} cy={135} r={79} fill={C.brand} />
-          </Svg>
-          {current.img ? (
-            <Image source={{ uri: current.img }} style={st.vinylLabel} />
-          ) : (
-            <View style={[st.vinylLabel, { backgroundColor: '#2A2A2A' }]} />
-          )}
-          <View style={st.spindle} />
+          <Animated.View style={[st.vinylSpin, { transform: [{ rotate: spinDeg }] }]}>
+            <Svg width={270} height={270}>
+              <Circle cx={135} cy={135} r={134} fill="#09090B" stroke="#00000085" strokeWidth={1} />
+              <Circle cx={135} cy={135} r={123} stroke="#FFFFFF14" strokeWidth={1} fill="none" />
+              <Circle cx={135} cy={135} r={110} stroke="#FFFFFF0D" strokeWidth={1} fill="none" />
+              <Circle cx={135} cy={135} r={97} stroke="#FFFFFF0A" strokeWidth={1} fill="none" />
+              <Circle cx={135} cy={135} r={79} fill={C.brand} />
+            </Svg>
+            {current.img ? (
+              <Image source={{ uri: current.img }} style={st.vinylLabel} />
+            ) : (
+              <View style={[st.vinylLabel, { backgroundColor: '#2A2A2A' }]} />
+            )}
+            <View style={st.spindle} />
+          </Animated.View>
         </View>
         <View style={st.modeRow}>
           <View style={st.modeMarker} />
@@ -304,12 +324,12 @@ const st = StyleSheet.create({
   hBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center' },
   hTitle: { flex: 1, textAlign: 'center', color: C.text, fontSize: 16, lineHeight: 19, fontWeight: '500' },
   vinylWrap: { alignSelf: 'center', width: 270, height: 238, marginTop: 4 },
-  vinylSvg: { position: 'absolute', left: 0, top: -16 },
+  vinylSpin: { position: 'absolute', left: 0, top: -16, width: 270, height: 270 },
   vinylLabel: {
-    position: 'absolute', left: 61, top: 45, width: 148, height: 148, borderRadius: 74,
+    position: 'absolute', left: 61, top: 61, width: 148, height: 148, borderRadius: 74,
     overflow: 'hidden',
   },
-  spindle: { position: 'absolute', left: 130, top: 114, width: 10, height: 10, borderRadius: 5, backgroundColor: '#0D0D0D' },
+  spindle: { position: 'absolute', left: 130, top: 130, width: 10, height: 10, borderRadius: 5, backgroundColor: '#0D0D0D' },
   modeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 20, marginTop: 8 },
   modeMarker: { width: 3, height: 38, borderRadius: 2, backgroundColor: C.brand },
   modeTitle: { color: C.text, fontSize: 15, lineHeight: 18, fontWeight: '500' },
@@ -321,7 +341,7 @@ const st = StyleSheet.create({
   lFar: { color: C.text2, fontSize: 14, lineHeight: 17, opacity: 0.55 },
   tools: { flexDirection: 'row', gap: 6, paddingHorizontal: 20, marginTop: 8 },
   tool: {
-    flex: 1, height: 44, borderRadius: 14, backgroundColor: '#141414',
+    flex: 1, height: 44, borderRadius: 14, backgroundColor: C.inputBar,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
   },
   toolLabel: { color: C.text2, fontSize: 11, lineHeight: 13, fontWeight: '500' },
@@ -336,13 +356,13 @@ const st = StyleSheet.create({
   pTitle: { color: C.text, fontSize: 18, lineHeight: 22, fontWeight: '700' },
   pSub: { color: C.text2, fontSize: 12, lineHeight: 14 },
   pProg: { color: C.brandSoft, fontSize: 10, lineHeight: 14, fontWeight: '600' },
-  pIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#242424', alignItems: 'center', justifyContent: 'center' },
+  pIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' },
   seekHit: { height: 28, justifyContent: 'center' },
   bar: { height: 4, flexDirection: 'row', backgroundColor: C.surface2 },
   barValue: { backgroundColor: C.brand },
   barThumb: {
     position: 'absolute', top: 7, width: 14, height: 14, borderRadius: 7,
-    backgroundColor: C.white, marginLeft: -7,
+    backgroundColor: C.text, marginLeft: -7,
   },
   timeRow: { flexDirection: 'row', justifyContent: 'space-between' },
   time: { color: C.text2, fontSize: 10, lineHeight: 12 },

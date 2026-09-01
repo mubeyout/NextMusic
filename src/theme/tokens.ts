@@ -19,6 +19,22 @@ export const C: Record<string, string> = {
   onBrand: '#121212',     // text on green/white pills
   white: '#FFFFFF',
   stroke: '#FFFFFF14',
+  // —— 语义层（浅色适配轮）：深色值 = 原硬编码，浅色在 applyBootTheme 覆写 ——
+  inset: '#242424',        // 圆钮底/进度槽/徽标/pill/输入框
+  inset2: '#2E2E2E',       // 开关轨道/图标圈/头像底/音量槽
+  inputBar: '#141414',     // 播放页工具条/评论区输入条
+  searchPill: '#171717',   // 探索页搜索条
+  strokeFaint: '#FFFFFF0F',  // hairline 分隔线
+  strokeStrong: '#FFFFFF1F', // ghost 按钮描边
+  handle: '#FFFFFF2E',     // sheet 把手
+  scrim: '#000000AA',      // 弹层遮罩
+  artTint: '#233029',      // 封面占位底
+  artTint2: '#1E2B24',     // 艺术家占位底
+  selTint: '#14251C',      // 选中行/选中步骤条
+  badgeOn: '#0E3B1F',      // 已连接徽标底
+  knobOn: '#0E3B1F',       // 开关 on 钮（浅色下白色钮）
+  knob: '#FFFFFF',         // Fx 开关钮（浅色 off 态灰钮）
+  failTint: '#2A1A1A',     // 下载失败卡底
 };
 
 // 启动期主题覆写（模块加载时同步执行；后续所有 StyleSheet.create 拿到的就是用户主题）
@@ -59,6 +75,21 @@ export function applyBootTheme() {
     C.onBrand = '#0B3D1F';
     C.brandSoft = '#1DB455';   // 浅色下高亮绿加深（桌面同款）
     C.stroke = '#1F232914';    // rgba(31,35,41,.08)
+    C.inset = '#EDEFF3';
+    C.inset2 = '#E4E7EC';
+    C.inputBar = '#F0F1F4';
+    C.searchPill = '#ECEEF2';
+    C.strokeFaint = '#1F232912';
+    C.strokeStrong = '#1F232924';
+    C.handle = '#1F23293D';
+    C.scrim = '#00000066';
+    C.artTint = '#E7F1EB';
+    C.artTint2 = '#E7F1EB';
+    C.selTint = '#DFF2E7';
+    C.badgeOn = '#D9F4E5';
+    C.knobOn = '#FFFFFF';
+    C.knob = '#8F969E';
+    C.failTint = '#FDEEEE';
   }
 }
 applyBootTheme();

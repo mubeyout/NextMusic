@@ -55,7 +55,7 @@ const st = StyleSheet.create({
   title: { color: C.text, fontSize: 14, lineHeight: 17, fontWeight: '500' },
   sub: { color: C.text2, fontSize: 11, lineHeight: 13 },
   iconBtn: {
-    width: 32, height: 32, borderRadius: 16, backgroundColor: '#242424',
+    width: 32, height: 32, borderRadius: 16, backgroundColor: C.inset,
     alignItems: 'center', justifyContent: 'center', marginLeft: 8,
   },
   playBtn: {

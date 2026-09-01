@@ -74,7 +74,7 @@ function HSlider({ value, min, max, step, onChange, disabled, style }: {
 const hs = StyleSheet.create({
   track: { height: 28, justifyContent: 'center' },
   trackDisabled: { opacity: 0.4 },
-  rail: { position: 'absolute', left: 0, right: 0, top: 11, height: 6, borderRadius: 3, backgroundColor: '#FFFFFF17' },
+  rail: { position: 'absolute', left: 0, right: 0, top: 11, height: 6, borderRadius: 3, backgroundColor: C.stroke },
   fill: { position: 'absolute', left: 0, top: 11, height: 6, borderRadius: 3, backgroundColor: C.brand },
   thumb: { position: 'absolute', top: 7, width: 14, height: 14, borderRadius: 7, backgroundColor: C.brand, shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 4, elevation: 3 },
 });
@@ -140,8 +140,8 @@ function VSlider({ value, min, max, step, onChange, height = 150 }: {
 
 const vs = StyleSheet.create({
   col: { width: '100%', alignItems: 'center' },
-  rail: { position: 'absolute', top: 0, bottom: 0, left: '50%', marginLeft: -2, width: 4, borderRadius: 2, backgroundColor: '#FFFFFF14' },
-  zero: { position: 'absolute', top: '50%', marginTop: -0.5, left: 2, right: 2, height: 1, backgroundColor: '#FFFFFF2A' },
+  rail: { position: 'absolute', top: 0, bottom: 0, left: '50%', marginLeft: -2, width: 4, borderRadius: 2, backgroundColor: C.stroke },
+  zero: { position: 'absolute', top: '50%', marginTop: -0.5, left: 2, right: 2, height: 1, backgroundColor: C.strokeStrong },
   fill: { position: 'absolute', left: '50%', marginLeft: -2, width: 4, borderRadius: 2, backgroundColor: C.brand },
   thumb: { position: 'absolute', left: '50%', marginLeft: -9, width: 18, height: 4, borderRadius: 2, backgroundColor: C.brand, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 3, elevation: 3 },
 });
@@ -408,7 +408,7 @@ const st = StyleSheet.create({
   chipOn: { backgroundColor: C.brand },
   chipText: { color: C.text2, fontSize: 12, fontWeight: '600' },
   chipTextOn: { color: C.onBrand, fontWeight: '800' },
-  chipAdd: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', borderColor: '#FFFFFF2A', alignItems: 'center', justifyContent: 'center' },
+  chipAdd: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', borderColor: C.strokeStrong, alignItems: 'center', justifyContent: 'center' },
   chipAddText: { color: C.text3, fontSize: 15, fontWeight: '800', lineHeight: 17 },
 
   // 卡片
@@ -440,16 +440,16 @@ const st = StyleSheet.create({
   srowValue: { color: C.text, fontSize: 12, fontWeight: '800' },
 
   // 3D 开关
-  switch: { width: 44, height: 26, borderRadius: 13, backgroundColor: '#FFFFFF20', padding: 3 },
+  switch: { width: 44, height: 26, borderRadius: 13, backgroundColor: C.inset2, padding: 3 },
   switchOn: { backgroundColor: C.brand },
-  knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#FFFFFF' },
-  knobOn: { alignSelf: 'flex-end' },
+  knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: C.knob },
+  knobOn: { backgroundColor: '#FFFFFF', alignSelf: 'flex-end' },
 
   syncCaption: { color: C.text3, fontSize: 10, textAlign: 'center', marginTop: 2 },
 
   // sheet
   sheetInputRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
-  sheetInput: { flex: 1, backgroundColor: '#FFFFFF0F', borderRadius: 12, paddingHorizontal: 14, height: 44, color: C.text, fontSize: 15 },
+  sheetInput: { flex: 1, backgroundColor: C.inset, borderRadius: 12, paddingHorizontal: 14, height: 44, color: C.text, fontSize: 15 },
   sheetInputOk: { backgroundColor: C.brand, borderRadius: 12, paddingHorizontal: 18, height: 44, alignItems: 'center', justifyContent: 'center' },
   sheetInputOkText: { color: C.onBrand, fontSize: 14, fontWeight: '800' },
 });

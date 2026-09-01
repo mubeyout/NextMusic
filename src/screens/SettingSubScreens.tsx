@@ -117,7 +117,7 @@ export function ThemeScreen() {
           {accents.map(a => (
             <TouchableOpacity key={a.name} style={ts.swatchItem} onPress={() => { settings.set('accent', a.color); askRestart(); }}>
               <View style={[ts.swatch, { backgroundColor: a.color }, s.accent === a.color && ts.swatchOn]}>
-                {s.accent === a.color ? <Icon name="check" size={16} color="#121212" /> : null}
+                {s.accent === a.color ? <Icon name="check" size={16} color={C.onBrand} /> : null}
               </View>
               <Text style={ts.swatchName}>{a.name}</Text>
             </TouchableOpacity>

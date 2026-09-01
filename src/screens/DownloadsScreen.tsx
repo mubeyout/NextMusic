@@ -93,7 +93,7 @@ const st = StyleSheet.create({
   header: { height: 64, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 6 },
   title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700', textAlign: 'center' },
   stat: { color: C.text2, fontSize: 11, lineHeight: 15, marginBottom: 12 },
-  failCard: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#2A1A1A', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 10 },
+  failCard: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.failTint, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 10 },
   failTitle: { flex: 1, color: '#FF9B9B', fontSize: 11, lineHeight: 15 },
   failClear: { color: C.text2, fontSize: 11 },
   empty: { color: C.text2, fontSize: 12, lineHeight: 18, textAlign: 'center', paddingVertical: 40 },

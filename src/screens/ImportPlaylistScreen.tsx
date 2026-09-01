@@ -228,7 +228,7 @@ const st = StyleSheet.create({
   title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700', textAlign: 'center' },
   stepsRow: { flexDirection: 'row', gap: 6 },
   stepPill: { flex: 1, height: 26, borderRadius: 13, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
-  stepPillOn: { backgroundColor: '#233029' },
+  stepPillOn: { backgroundColor: C.selTint },
   stepText: { color: C.text3, fontSize: 10 },
   stepTextOn: { color: C.brand },
   sectionTitle: { color: C.text, fontSize: 17, lineHeight: 25, fontWeight: '700' },

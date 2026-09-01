@@ -93,7 +93,7 @@ const st = StyleSheet.create({
   brandSub: { color: C.text2, fontSize: 11, lineHeight: 15 },
   group: { borderRadius: 14, backgroundColor: C.surface, marginTop: 14, paddingHorizontal: 16 },
   row: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
-  rowDivide: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#FFFFFF0F' },
+  rowDivide: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.strokeFaint },
   rowIconWrap: { width: 36, height: 36, borderRadius: 10, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   rowTitle: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '500' },
   rowSub: { color: C.text2, fontSize: 11, lineHeight: 15 },

@@ -95,15 +95,15 @@ export function CollectSheet({ song, visible, onClose }: { song: SongItem | null
 }
 
 const s = StyleSheet.create({
-  scrim: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
+  scrim: { flex: 1, backgroundColor: C.scrim, justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: C.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
     paddingHorizontal: 20, paddingTop: 8,
   },
-  handle: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: '#FFFFFF2E', marginBottom: 10 },
+  handle: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: C.handle, marginBottom: 10 },
   title: { color: C.text, fontSize: 18, lineHeight: 24, fontWeight: '700', marginBottom: 6 },
-  loveRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#FFFFFF12', marginBottom: 4 },
-  loveIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#2E2E2E', alignItems: 'center', justifyContent: 'center' },
+  loveRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint, marginBottom: 4 },
+  loveIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.inset2, alignItems: 'center', justifyContent: 'center' },
   loveTitle: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '600' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 54 },
   rowIcon: { width: 40, height: 40, borderRadius: 8, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },

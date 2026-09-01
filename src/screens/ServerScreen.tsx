@@ -108,7 +108,7 @@ const st = StyleSheet.create({
   input: { height: 46, borderRadius: 12, backgroundColor: C.surface2, paddingHorizontal: 14, justifyContent: 'center' },
   inputText: { color: C.text, fontSize: 13, padding: 0 },
   fieldHint: { color: C.text2, fontSize: 10, lineHeight: 12 },
-  quickAction: { height: 40, borderRadius: 12, borderWidth: 1, borderColor: '#FFFFFF1F', alignItems: 'center', justifyContent: 'center' },
+  quickAction: { height: 40, borderRadius: 12, borderWidth: 1, borderColor: C.strokeStrong, alignItems: 'center', justifyContent: 'center' },
   quickText: { color: C.text, fontSize: 14, lineHeight: 17, fontWeight: '500' },
   btnPrimary: { height: 46, borderRadius: 12, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   btnPrimaryText: { color: C.onBrand, fontSize: 14, lineHeight: 17, fontWeight: '500' },

@@ -189,16 +189,16 @@ export function DialogHost() {
 }
 
 const s = StyleSheet.create({
-  scrim: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
+  scrim: { flex: 1, backgroundColor: C.scrim, justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: C.elev, borderTopLeftRadius: 20, borderTopRightRadius: 20,
     paddingHorizontal: 20, paddingTop: 8,
   },
-  handle: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: '#FFFFFF2E', marginBottom: 10 },
+  handle: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: C.handle, marginBottom: 10 },
   sheetTitle: { color: C.text2, fontSize: 12, lineHeight: 16, marginBottom: 6 },
-  sheetRow: { minHeight: 54, justifyContent: 'center', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#FFFFFF0D' },
+  sheetRow: { minHeight: 54, justifyContent: 'center', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.strokeFaint },
   sheetRowText: { color: C.text, fontSize: 15, lineHeight: 21, fontWeight: '500', textAlign: 'center' },
-  center: { flex: 1, backgroundColor: '#000000AA', alignItems: 'center', justifyContent: 'center', padding: 40 },
+  center: { flex: 1, backgroundColor: C.scrim, alignItems: 'center', justifyContent: 'center', padding: 40 },
   card: { width: '100%', maxWidth: 320, borderRadius: 16, backgroundColor: C.elev, padding: 20 },
   cardTitle: { color: C.text, fontSize: 17, lineHeight: 24, fontWeight: '700', textAlign: 'center' },
   cardMsg: { color: C.text2, fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 10 },
@@ -210,5 +210,5 @@ const s = StyleSheet.create({
   input: { backgroundColor: C.surface2, borderRadius: 10, color: C.text, fontSize: 14, paddingHorizontal: 14, height: 44, marginTop: 14 },
   toastWrap: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'flex-end' },
   toast: { backgroundColor: '#2E2E2EF2', borderRadius: 20, paddingHorizontal: 18, paddingVertical: 10, maxWidth: 300 },
-  toastText: { color: C.text, fontSize: 13, lineHeight: 18, textAlign: 'center' },
+  toastText: { color: '#FFFFFF', fontSize: 13, lineHeight: 18, textAlign: 'center' },
 });

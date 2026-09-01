@@ -171,6 +171,6 @@ const st = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80, gap: 10 },
   hintText: { color: C.text3, fontSize: 12 },
   errText: { color: C.text2, fontSize: 12, lineHeight: 17, textAlign: 'center', paddingVertical: 40 },
-  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#000000A6', justifyContent: 'center', alignItems: 'center', padding: 28 },
+  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: C.scrim, justifyContent: 'center', alignItems: 'center', padding: 28 },
   overlayCard: { width: '100%', maxWidth: 420 },
 });

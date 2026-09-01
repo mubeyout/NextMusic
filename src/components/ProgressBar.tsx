@@ -13,6 +13,6 @@ export function ProgressBar({ pct }: { pct: number }) {
 }
 
 const st = StyleSheet.create({
-  track: { height: 3, flexDirection: 'row', backgroundColor: '#242424' },
+  track: { height: 3, flexDirection: 'row', backgroundColor: C.inset },
   value: { backgroundColor: C.brand },
 });

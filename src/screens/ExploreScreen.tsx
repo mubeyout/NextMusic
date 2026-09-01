@@ -77,7 +77,7 @@ function PlaylistCard({ pl, onPress }: PlaylistCardProps) {
 const p = StyleSheet.create({
   card: { width: '31%', gap: 4 },
   art: { width: '100%', aspectRatio: 1, borderRadius: 10 },
-  artFallback: { backgroundColor: '#233029', alignItems: 'center', justifyContent: 'center' },
+  artFallback: { backgroundColor: C.artTint, alignItems: 'center', justifyContent: 'center' },
   glyph: { color: C.text, fontSize: 24, fontWeight: '700' },
   name: { color: C.text, fontSize: 11, lineHeight: 15, fontWeight: '500' },
   meta: { color: C.text2, fontSize: 9, lineHeight: 12 },
@@ -466,7 +466,7 @@ const st = StyleSheet.create({
   title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700' },
   titleBig: { fontSize: 28, lineHeight: 34 },
   searchBox: {
-    height: 44, borderRadius: 22, backgroundColor: '#171717',
+    height: 44, borderRadius: 22, backgroundColor: C.searchPill,
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, gap: 9,
   },
   searchBoxGray: { backgroundColor: C.surface2 },
@@ -503,7 +503,7 @@ const st = StyleSheet.create({
   },
   sceneOn: { backgroundColor: C.brand },
   sceneLabel: { color: C.text2, fontSize: 12, lineHeight: 14, fontWeight: '500' },
-  sceneLabelOn: { color: '#121212', fontWeight: '700' },
+  sceneLabelOn: { color: C.onBrand, fontWeight: '700' },
   langRow: { flexDirection: 'row', gap: 0 },
   langBtn: { flex: 1, height: 28, justifyContent: 'center' },
   langLabel: { color: C.text2, fontSize: 12, lineHeight: 14, fontWeight: '500' },

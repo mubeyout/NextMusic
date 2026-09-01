@@ -184,7 +184,7 @@ const st = StyleSheet.create({
   headCard: { flexDirection: 'row', gap: 14, marginTop: 4 },
   cover: { width: 120, height: 120, borderRadius: 10 },
   coverFallback: { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  artistFallback: { backgroundColor: '#1E2B24', alignItems: 'center', justifyContent: 'center' },
+  artistFallback: { backgroundColor: C.artTint2, alignItems: 'center', justifyContent: 'center' },
   artistInitial: { color: C.brand, fontSize: 44, fontWeight: '700' },
   glyph: { color: C.text2, fontSize: 32, fontWeight: '700' },
   headMeta: { flex: 1, justifyContent: 'center', gap: 6 },

@@ -81,7 +81,7 @@ const st = StyleSheet.create({
   nowMeta: { flex: 1, gap: 2 },
   nowTitle: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '700' },
   nowArtist: { color: C.text2, fontSize: 11, lineHeight: 16 },
-  nowBar: { height: 4, borderRadius: 2, backgroundColor: '#242424', marginTop: 8, overflow: 'hidden' },
+  nowBar: { height: 4, borderRadius: 2, backgroundColor: C.inset, marginTop: 8, overflow: 'hidden' },
   nowBarValue: { height: 4, borderRadius: 2, backgroundColor: C.brand },
   sectionRow: { height: 26, flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16, marginBottom: 8 },
   sectionTitle: { flex: 1, color: C.text, fontSize: 17, lineHeight: 25, fontWeight: '700' },

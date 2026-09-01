@@ -122,7 +122,7 @@ const st = StyleSheet.create({
   subtitle: { color: C.text2, fontSize: 12, lineHeight: 14 },
   card: { borderRadius: 14, backgroundColor: C.surface, padding: 16, gap: 8 },
   stepRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  stepBadge: { width: 18, height: 18, borderRadius: 9, backgroundColor: '#FFFFFF14', alignItems: 'center', justifyContent: 'center' },
+  stepBadge: { width: 18, height: 18, borderRadius: 9, backgroundColor: C.stroke, alignItems: 'center', justifyContent: 'center' },
   stepBadgeText: { color: C.brand, fontSize: 11, lineHeight: 13, fontWeight: '700' },
   fieldLabel: { color: C.text, fontSize: 12, lineHeight: 14, fontWeight: '500', flex: 1 },
   okTag: { color: C.brand, fontSize: 11, lineHeight: 13, fontWeight: '600' },
