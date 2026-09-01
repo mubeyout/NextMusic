@@ -13,6 +13,7 @@ export interface AppSettings {
   // 下载
   downloadQuality: Quality;
   maxConcurrent: number;         // 同时下载数
+  downloadDir: 'private' | 'public';  // vc82：下载位置——应用私有 / 公共音乐目录(Music/NextMusic, MediaStore)
   // 外观（重启生效：启动时覆写 C token）
   pureBlack: boolean;
   accent: string;                // hex
@@ -36,6 +37,7 @@ export const DEFAULTS: AppSettings = {
   playQuality: '320k',
   downloadQuality: '320k',
   maxConcurrent: 3,
+  downloadDir: 'private',
   pureBlack: false,
   accent: '#1ED760',
   light: false,

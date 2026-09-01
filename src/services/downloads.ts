@@ -6,8 +6,16 @@ import { NativeModules, NativeEventEmitter } from 'react-native';
 // 原生 OkHttp 下载模块（DownloaderModule.kt）；不可用时回退 blob-util
 const Downloader = NativeModules.Downloader as {
   download(key: string, url: string, filePath: string, headers: Record<string, string> | null, ): Promise<number>;
+  downloadPublic(key: string, url: string, displayName: string, mime: string, headers: Record<string, string> | null): Promise<{ uri: string; size: number }>;
+  removePublic(uri: string): Promise<boolean>;
   cancelDownload(key: string): void;
 } | undefined;
+
+// vc82：content://（公共目录 MediaStore 记录）走原生 resolver.delete；file:// 走 unlink
+function deleteFile(path: string) {
+  if (path.startsWith('content://')) { Downloader?.removePublic?.(path).catch(() => {}); return; }
+  RNBlobUtil.fs.unlink(localPath(path)).catch(() => {});
+}
 
 let progressSink: ((key: string, received: number, total: number) => void) | null = null;
 export function setProgressSink(fn: ((key: string, received: number, total: number) => void) | null) { progressSink = fn; }
@@ -70,13 +78,13 @@ export const downloads = {
     const rec = list.find(r => r.key === songKey(s));
     if (!rec) return;
     writeAll(list.filter(r => r.key !== rec.key));
-    RNBlobUtil.fs.unlink(localPath(rec.path)).catch(() => {});
+    deleteFile(rec.path);
     emit();
   },
   clearAll() {
     const list = readAll();
     writeAll([]);
-    list.forEach(r => RNBlobUtil.fs.unlink(localPath(r.path)).catch(() => {}));
+    list.forEach(r => deleteFile(r.path));
     emit();
   },
 };
@@ -142,11 +150,24 @@ async function runJob(job: Job): Promise<void> {
     await withTimeout((async () => {
     const dir = `${RNBlobUtil.fs.dirs.DocumentDir}/downloads`;
     await RNBlobUtil.fs.mkdir(dir).catch(() => {});
-    const file = `${dir}/${sanitize(job.song.name)}-${sanitize(job.song.singer)}-${String(job.song.songmid ?? '').slice(-24).replace(/[^a-zA-Z0-9_-]/g, '')}.${extFor(job.quality)}`;
+    const displayName = `${sanitize(job.song.name)}-${sanitize(job.song.singer)}-${String(job.song.songmid ?? '').slice(-24).replace(/[^a-zA-Z0-9_-]/g, '')}.${extFor(job.quality)}`;
+    const file = `${dir}/${displayName}`;
     const { url, headers } = await resolveUrl(job.song, job.quality);
     const hdrs = headers && Object.keys(headers).length ? headers : null;
     let size = 0;
-    if (Downloader) {
+    // vc82：公共音乐目录（MediaStore Music/NextMusic，Android 10+；文件管理器可见、卸载不删）
+    const wantPublic = settings.get().downloadDir === 'public' && !!Downloader?.downloadPublic;
+    let savedPath = '';
+    if (wantPublic) {
+      const mime = job.quality === 'flac' ? 'audio/flac' : 'audio/mpeg';
+      const r = await new Promise<{ uri: string; size: number }>((resolveP, rejectP) => {
+        Downloader!.downloadPublic(key, url, displayName, mime, hdrs)
+          .then(res => resolveP(res))
+          .catch(e => rejectP(e));
+      });
+      size = r.size;
+      savedPath = r.uri;
+    } else if (Downloader) {
       // 原生 OkHttp 流式下载（New Arch 稳定路径）
       await new Promise<void>((resolveP, rejectP) => {
         const sink = (k: string, received: number, total: number) => {
@@ -159,6 +180,7 @@ async function runJob(job: Job): Promise<void> {
           .then(sz => { size = sz; progressSink = null; resolveP(); })
           .catch(e => { progressSink = null; rejectP(e); });
       });
+      savedPath = 'file://' + file;
     } else {
       const task = RNBlobUtil.config({ path: file }).fetch('GET', url, headers || {});
       task.progress({ count: 10, interval: 300 }, (w, t) => { progressMap.set(key, t > 0 ? w / t : 0); emit(); });
@@ -173,7 +195,7 @@ async function runJob(job: Job): Promise<void> {
     }
     if (size === 0) throw new Error('下载内容为空');
     const list = readAll().filter(r => r.key !== key);
-    list.unshift({ key, song: job.song, path: 'file://' + file, size, quality: job.quality, at: Date.now() });
+    list.unshift({ key, song: job.song, path: savedPath, size, quality: job.quality, at: Date.now() });
     writeAll(list);
     })(), 180000, '下载');
   } finally {
