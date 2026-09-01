@@ -187,7 +187,7 @@ export function PlayerScreen() {
       {/* Playback panel */}
       <View style={[st.panel, { paddingBottom: insets.bottom + 12 }]}>
         <View style={st.pTrackRow}>
-          {current.img ? <Image source={{ uri: current.img }} style={st.pArt} /> : <View style={[st.pArt, { backgroundColor: '#2A2A2A' }]} />}
+          {current.img ? <Image source={{ uri: current.img }} style={st.pArt} /> : <View style={[st.pArt, { backgroundColor: C.surface2 }]} />}
           <View style={st.pMeta}>
             <Text style={st.pTitle} numberOfLines={1}>{current.name}</Text>
             <Text style={st.pSub} numberOfLines={1}>{current.singer}  ·  {current._types?.flac ? 'SQ 无损' : '128k'}</Text>
@@ -301,7 +301,7 @@ function SeekBar({ pct, duration, onSeek, onDrag }: {
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bgDeep },
   header: { height: 72, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20 },
-  hBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#1C1C1C', alignItems: 'center', justifyContent: 'center' },
+  hBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center' },
   hTitle: { flex: 1, textAlign: 'center', color: C.text, fontSize: 16, lineHeight: 19, fontWeight: '500' },
   vinylWrap: { alignSelf: 'center', width: 270, height: 238, marginTop: 4 },
   vinylSvg: { position: 'absolute', left: 0, top: -16 },
@@ -327,7 +327,7 @@ const st = StyleSheet.create({
   toolLabel: { color: C.text2, fontSize: 11, lineHeight: 13, fontWeight: '500' },
   panel: {
     borderRadius: 24, borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    backgroundColor: '#1C1C1C', paddingTop: 18, paddingHorizontal: 20, gap: 7,
+    backgroundColor: C.elev, paddingTop: 18, paddingHorizontal: 20, gap: 7,
   },
   pTrackRow: { flexDirection: 'row', alignItems: 'center', height: 56 },
   pActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -338,7 +338,7 @@ const st = StyleSheet.create({
   pProg: { color: C.brandSoft, fontSize: 10, lineHeight: 14, fontWeight: '600' },
   pIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#242424', alignItems: 'center', justifyContent: 'center' },
   seekHit: { height: 28, justifyContent: 'center' },
-  bar: { height: 4, flexDirection: 'row', backgroundColor: '#2B2B2B' },
+  bar: { height: 4, flexDirection: 'row', backgroundColor: C.surface2 },
   barValue: { backgroundColor: C.brand },
   barThumb: {
     position: 'absolute', top: 7, width: 14, height: 14, borderRadius: 7,

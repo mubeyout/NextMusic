@@ -238,7 +238,7 @@ const st = StyleSheet.create({
     flexDirection: 'row', gap: 10, paddingHorizontal: 20, paddingTop: 10,
     backgroundColor: '#141414', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#FFFFFF0F',
   },
-  input: { flex: 1, height: 40, borderRadius: 20, backgroundColor: '#232323', paddingHorizontal: 16, justifyContent: 'center' },
+  input: { flex: 1, height: 40, borderRadius: 20, backgroundColor: C.surface2, paddingHorizontal: 16, justifyContent: 'center' },
   inputText: { color: C.text, fontSize: 13, padding: 0 },
   sendBtn: { height: 40, borderRadius: 20, backgroundColor: C.brand, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center' },
   sendText: { color: C.onBrand, fontSize: 13, fontWeight: '500' },

@@ -116,7 +116,7 @@ export function ImportPlaylistScreen() {
               /* HD:五个平台一排排列(整卡可聚焦,对齐桌面版视觉) */
               <View style={{ flexDirection: 'row', gap: 16 }}>
                 {PLATFORMS.map(pf => (
-                  <HDTouch key={pf.id} style={hdSt.pfCard} focusStyle={hdSt.pfFocus} focusBg="#232323" glow={SH.brand} onPress={() => pick(pf.id)}>
+                  <HDTouch key={pf.id} style={hdSt.pfCard} focusStyle={hdSt.pfFocus} focusBg={C.surface2} glow={SH.brand} onPress={() => pick(pf.id)}>
                     <View style={[hdSt.pfIcon, { backgroundColor: pf.color + '1E', borderColor: pf.color + '66' }]}>
                       <BrandIcon name={pf.icon} size={40} />
                     </View>
@@ -227,12 +227,12 @@ const st = StyleSheet.create({
   header: { height: 40, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 10 },
   title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700', textAlign: 'center' },
   stepsRow: { flexDirection: 'row', gap: 6 },
-  stepPill: { flex: 1, height: 26, borderRadius: 13, backgroundColor: '#1A1A1A', alignItems: 'center', justifyContent: 'center' },
+  stepPill: { flex: 1, height: 26, borderRadius: 13, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   stepPillOn: { backgroundColor: '#233029' },
   stepText: { color: C.text3, fontSize: 10 },
   stepTextOn: { color: C.brand },
   sectionTitle: { color: C.text, fontSize: 17, lineHeight: 25, fontWeight: '700' },
-  platformRow: { minHeight: 60, borderRadius: 14, backgroundColor: '#1A1A1A', flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14 },
+  platformRow: { minHeight: 60, borderRadius: 14, backgroundColor: C.surface, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14 },
   platformIcon: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   platformIconBare: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
   platformIconText: { fontSize: 15, fontWeight: '700' },
@@ -240,15 +240,15 @@ const st = StyleSheet.create({
   platformSub: { color: C.text2, fontSize: 11, lineHeight: 15 },
   skipBtn: { height: 44, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   skipText: { color: C.text2, fontSize: 14, fontWeight: '500' },
-  card: { borderRadius: 14, backgroundColor: '#1A1A1A', padding: 16, gap: 8 },
+  card: { borderRadius: 14, backgroundColor: C.surface, padding: 16, gap: 8 },
   fieldLabel: { color: C.text, fontSize: 12, lineHeight: 14, fontWeight: '500' },
-  input: { height: 46, borderRadius: 12, backgroundColor: '#232323', paddingHorizontal: 14, justifyContent: 'center' },
+  input: { height: 46, borderRadius: 12, backgroundColor: C.surface2, paddingHorizontal: 14, justifyContent: 'center' },
   inputText: { color: C.text, fontSize: 13, padding: 0 },
   err: { color: '#FF6B6B', fontSize: 12, lineHeight: 15 },
   hint: { color: C.text2, fontSize: 10, lineHeight: 12 },
   primaryBtn: { height: 46, borderRadius: 12, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   primaryText: { color: C.onBrand, fontSize: 14, fontWeight: '600' },
-  previewCard: { borderRadius: 14, backgroundColor: '#1A1A1A', padding: 16, gap: 6 },
+  previewCard: { borderRadius: 14, backgroundColor: C.surface, padding: 16, gap: 6 },
   previewName: { color: C.text, fontSize: 16, lineHeight: 22, fontWeight: '700' },
   previewMeta: { color: C.text2, fontSize: 11, lineHeight: 15 },
   songLine: { minHeight: 40, justifyContent: 'center', gap: 1 },
@@ -260,7 +260,7 @@ const st = StyleSheet.create({
 // HD(车机/TV)样式:五平台一排大卡 + 大按钮,D-pad 可聚焦
 const hdSt = StyleSheet.create({
   pfCard: {
-    flex: 1, minHeight: 250, borderRadius: 18, backgroundColor: '#1A1A1A',
+    flex: 1, minHeight: 250, borderRadius: 18, backgroundColor: C.surface,
     alignItems: 'center', justifyContent: 'center', gap: 10, padding: 18,
     boxShadow: SH.card,
   },
@@ -269,7 +269,7 @@ const hdSt = StyleSheet.create({
   pfName: { color: C.text, fontSize: 17, fontWeight: '700' },
   pfSub: { color: C.text3, fontSize: 12 },
   primaryBtn: { height: 58, borderRadius: 14, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
-  primaryFocus: { borderWidth: 2.5, borderColor: '#FFFFFF', borderRadius: 14 },
+  primaryFocus: { borderWidth: 2.5, borderColor: C.text, borderRadius: 14 },
   primaryText: { color: C.onBrand, fontSize: 17, fontWeight: '700' },
   ghostBtn: { height: 52, borderRadius: 14, borderWidth: 1.5, borderColor: '#4A4A4A', alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   ghostFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 14 },

@@ -366,10 +366,10 @@ const st = StyleSheet.create({
   playAllText: { color: C.onBrand, fontSize: 14, lineHeight: 17, fontWeight: '600' },
   playAllCount: { color: '#0E3B1F', fontSize: 12 },
   actionRow: { flexDirection: 'row', gap: 8, marginTop: 10, marginBottom: 6 },
-  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 38, borderRadius: 10, backgroundColor: '#1E1E1E', paddingHorizontal: 12, marginTop: 12 },
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 38, borderRadius: 10, backgroundColor: C.elev, paddingHorizontal: 12, marginTop: 12 },
   searchInput: { flex: 1, color: C.text, fontSize: 13, paddingVertical: 0 },
   action: {
-    flex: 1, height: 40, borderRadius: 12, backgroundColor: '#1A1A1A',
+    flex: 1, height: 40, borderRadius: 12, backgroundColor: C.surface,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
   },
   actionText: { color: C.text2, fontSize: 11, lineHeight: 13, fontWeight: '500' },

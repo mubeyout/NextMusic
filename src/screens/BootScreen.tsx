@@ -82,7 +82,7 @@ const st = StyleSheet.create({
   header: { gap: 6 },
   title: { color: C.text, fontSize: 28, lineHeight: 34, fontWeight: '700' },
   subtitle: { color: C.text2, fontSize: 13, lineHeight: 16 },
-  card: { borderRadius: 18, backgroundColor: '#1A1A1A', padding: 16, gap: 12 },
+  card: { borderRadius: 18, backgroundColor: C.surface, padding: 16, gap: 12 },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 28 },
   cardDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: C.brand },
   cardTitle: { color: C.text, fontSize: 18, lineHeight: 22, fontWeight: '700' },
@@ -91,7 +91,7 @@ const st = StyleSheet.create({
   btnPrimaryText: { color: C.onBrand, fontSize: 14, lineHeight: 17, fontWeight: '500' },
   btnGhost: { height: 46, borderRadius: 14, borderWidth: 1, borderColor: '#595959', alignItems: 'center', justifyContent: 'center' },
   btnGhostText: { color: C.text, fontSize: 14, lineHeight: 17, fontWeight: '500' },
-  hint: { borderRadius: 14, backgroundColor: '#1A1A1A', padding: 14, gap: 4 },
+  hint: { borderRadius: 14, backgroundColor: C.surface, padding: 14, gap: 4 },
   hintTitle: { color: C.text, fontSize: 13, lineHeight: 16, fontWeight: '500' },
   hintBody: { color: C.text2, fontSize: 11, lineHeight: 13 },
 });

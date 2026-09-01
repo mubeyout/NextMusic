@@ -111,7 +111,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                   key={c.type}
                   style={hdSt.typeCard}
                   focusStyle={hdSt.typeFocus}
-                  focusBg="#232323"
+                  focusBg={C.surface2}
                   glow={SH.brand}
                   onPress={() => pickType(c.type)}
                 >
@@ -252,7 +252,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
         <View style={[st.btnRow, IS_HD && { marginTop: 8 }]}>
           {IS_HD ? (
             <>
-              <HDTouch style={hdSt.btnGhost} focusStyle={hdSt.btnGhostFocus} focusBg="#2A2A2A" onPress={testConn} disabled={!!busy}>
+              <HDTouch style={hdSt.btnGhost} focusStyle={hdSt.btnGhostFocus} focusBg={C.surface2} onPress={testConn} disabled={!!busy}>
                 {busy === 'test' ? <ActivityIndicator color={C.text} size="large" /> : <Text style={hdSt.btnGhostText}>测试连接</Text>}
               </HDTouch>
               <HDTouch style={hdSt.btnPrimary} focusStyle={hdSt.btnPrimaryFocus} onPress={save} disabled={!!busy}>
@@ -283,33 +283,33 @@ const st = StyleSheet.create({
   desc: { color: C.text2, fontSize: 11, lineHeight: 16 },
 
   // 类型卡（Figma: #2B2B2B r12 p12×14 h64）
-  typeCard: { backgroundColor: '#2B2B2B', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, gap: 4 },
+  typeCard: { backgroundColor: C.surface2, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, gap: 4 },
   typeCardHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   typeCardTitle: { color: C.text, fontSize: 14, fontWeight: '500' },
   typeCardSub: { color: C.text2, fontSize: 11 },
   badge: { color: C.brandSoft, fontSize: 11, fontWeight: '500' },
 
   // Tab 容器（Figma: #1C1C1C r12 p4，选中页签 #2B2B2B r9 h36）
-  tabsWrap: { flexDirection: 'row', backgroundColor: '#1C1C1C', borderRadius: 12, padding: 4, gap: 4, height: 44 },
-  tabOn: { flex: 1, height: 36, borderRadius: 9, backgroundColor: '#2B2B2B', alignItems: 'center', justifyContent: 'center' },
+  tabsWrap: { flexDirection: 'row', backgroundColor: C.elev, borderRadius: 12, padding: 4, gap: 4, height: 44 },
+  tabOn: { flex: 1, height: 36, borderRadius: 9, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   tabOff: { flex: 1, height: 36, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   tabTextOn: { color: C.text, fontSize: 12, fontWeight: '500' },
   tabText: { color: C.text2, fontSize: 12 },
 
   // 输入卡（Figma: #2B2B2B r12 p10×12）
-  inputCard: { backgroundColor: '#2B2B2B', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, gap: 4 },
+  inputCard: { backgroundColor: C.surface2, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, gap: 4 },
   inputLabel: { color: C.text2, fontSize: 11 },
   inputValue: { color: C.text, fontSize: 14, paddingVertical: 4 },
   inputHint: { color: C.text2, fontSize: 10 },
 
   // 测试通过信息卡
-  infoCard: { backgroundColor: '#2B2B2B', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, gap: 4 },
+  infoCard: { backgroundColor: C.surface2, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, gap: 4 },
   infoTitle: { color: C.text, fontSize: 14, fontWeight: '500' },
 
   // 按钮（Figma: h46 r12；测试 #2B2B2B 白字 / 保存 C.brand 深字）
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   btnBusy: { opacity: 0.6 },
-  btnGhost: { flex: 1, height: 46, borderRadius: 12, backgroundColor: '#2B2B2B', alignItems: 'center', justifyContent: 'center' },
+  btnGhost: { flex: 1, height: 46, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   btnGhostText: { color: C.text, fontSize: 14, fontWeight: '500' },
   btnPrimary: { flex: 1.4, height: 46, borderRadius: 12, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   btnPrimaryText: { color: C.onBrand, fontSize: 14, fontWeight: '500' },
@@ -318,7 +318,7 @@ const st = StyleSheet.create({
 // HD(车机/TV)样式:一排四张竖版类型卡 + 大表单 + D-pad 可聚焦按钮
 const hdSt = StyleSheet.create({
   typeCard: {
-    flex: 1, minHeight: 230, borderRadius: 18, backgroundColor: '#1A1A1A',
+    flex: 1, minHeight: 230, borderRadius: 18, backgroundColor: C.surface,
     alignItems: 'center', justifyContent: 'center', gap: 10, padding: 18,
     boxShadow: SH.card,
   },
@@ -329,13 +329,13 @@ const hdSt = StyleSheet.create({
   typeBadgeText: { color: C.brand, fontSize: 12, fontWeight: '700' },
   typeSub: { color: C.text3, fontSize: 12, textAlign: 'center', lineHeight: 17 },
   desc: { color: C.text2, fontSize: 13, lineHeight: 18 },
-  inputCard: { backgroundColor: '#1A1A1A', borderRadius: 16, paddingHorizontal: 20, paddingVertical: 14, gap: 6, boxShadow: SH.card },
+  inputCard: { backgroundColor: C.surface, borderRadius: 16, paddingHorizontal: 20, paddingVertical: 14, gap: 6, boxShadow: SH.card },
   inputLabel: { color: C.text2, fontSize: 13 },
   inputValue: { color: C.text, fontSize: 16, paddingVertical: 6 },
-  btnGhost: { flex: 1, height: 58, borderRadius: 14, backgroundColor: '#1A1A1A', alignItems: 'center', justifyContent: 'center' },
+  btnGhost: { flex: 1, height: 58, borderRadius: 14, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   btnGhostFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 14 },
   btnGhostText: { color: C.text, fontSize: 16, fontWeight: '600' },
   btnPrimary: { flex: 1.4, height: 58, borderRadius: 14, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
-  btnPrimaryFocus: { borderWidth: 2.5, borderColor: '#FFFFFF', borderRadius: 14 },
+  btnPrimaryFocus: { borderWidth: 2.5, borderColor: C.text, borderRadius: 14 },
   btnPrimaryText: { color: C.onBrand, fontSize: 16, fontWeight: '700' },
 });

@@ -56,7 +56,7 @@ const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   header: { height: 40, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 10 },
   title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700', textAlign: 'center' },
-  section: { borderRadius: 14, backgroundColor: '#1A1A1A', padding: 16, marginBottom: 14 },
+  section: { borderRadius: 14, backgroundColor: C.surface, padding: 16, marginBottom: 14 },
   secTitle: { color: C.text, fontSize: 13, lineHeight: 16, fontWeight: '500', marginBottom: 8 },
   row: { minHeight: 44, flexDirection: 'row', alignItems: 'center' },
   rowDivide: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#FFFFFF0F', paddingTop: 8, marginTop: 8 },

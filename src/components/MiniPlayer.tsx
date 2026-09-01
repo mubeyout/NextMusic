@@ -46,11 +46,11 @@ export function MiniPlayer() {
 
 const st = StyleSheet.create({
   wrap: { paddingHorizontal: 20 },
-  card: { height: 72, borderRadius: 8, backgroundColor: '#1C1C1C', overflow: 'hidden' },
+  card: { height: 72, borderRadius: 8, backgroundColor: C.elev, overflow: 'hidden' },
   row: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, gap: 0 },
   artWrap: { width: 52, height: 52, borderRadius: 6, overflow: 'hidden' },
   art: { width: 52, height: 52 },
-  artFallback: { backgroundColor: '#2A2A2A' },
+  artFallback: { backgroundColor: C.surface2 },
   meta: { flex: 1, marginLeft: 12, gap: 2, minWidth: 0 },
   title: { color: C.text, fontSize: 14, lineHeight: 17, fontWeight: '500' },
   sub: { color: C.text2, fontSize: 11, lineHeight: 13 },

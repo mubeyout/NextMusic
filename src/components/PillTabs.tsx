@@ -31,7 +31,7 @@ const st = StyleSheet.create({
   hit: { height: 40, justifyContent: 'center' },
   pill: {
     height: 30, borderRadius: 999, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center',
-    backgroundColor: '#2B2B2B',
+    backgroundColor: C.surface2,
   },
   pillOn: { backgroundColor: C.brand },
   label: { color: C.text2, fontSize: 12, lineHeight: 14, fontWeight: '400' },

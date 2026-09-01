@@ -38,7 +38,7 @@ export function ActionSheet({ visible, onClose, title, items, extra }: {
 const s = StyleSheet.create({
   scrim: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: '#1A1A1A', borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    backgroundColor: C.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
     paddingHorizontal: 20, paddingTop: 8,
   },
   handle: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: '#FFFFFF2E', marginBottom: 10 },

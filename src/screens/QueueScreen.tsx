@@ -41,7 +41,7 @@ export function QueueScreen() {
           <View style={st.nowCard}>
             <View style={st.nowRow}>
               <View style={st.nowArtWrap}>
-                {current.img ? <Image source={{ uri: current.img }} style={st.nowArt} /> : <View style={[st.nowArt, { backgroundColor: '#2A2A2A' }]} />}
+                {current.img ? <Image source={{ uri: current.img }} style={st.nowArt} /> : <View style={[st.nowArt, { backgroundColor: C.surface2 }]} />}
               </View>
               <View style={st.nowMeta}>
                 <Text style={st.nowTitle} numberOfLines={1}>{current.name}</Text>
@@ -74,7 +74,7 @@ export function QueueScreen() {
 
 const st = StyleSheet.create({
   screen: { flex: 1 },
-  nowCard: { borderRadius: 12, backgroundColor: '#1C1C1C', padding: 12, marginTop: 8 },
+  nowCard: { borderRadius: 12, backgroundColor: C.elev, padding: 12, marginTop: 8 },
   nowRow: { flexDirection: 'row', gap: 10 },
   nowArtWrap: { width: 60, height: 60, borderRadius: 7, overflow: 'hidden' },
   nowArt: { width: 60, height: 60 },

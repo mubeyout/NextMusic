@@ -3,6 +3,7 @@ import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 // 主题已在 theme/tokens.ts 模块加载期应用（早于一切组件/StyleSheet 创建）
+import { T } from './src/theme/tokens';
 import { AppStateProvider, useApp } from './src/state/AppState';
 import { PlayerProvider, setupPlayer } from './src/state/PlayerProvider';
 import { LxEngineHost, engine } from './src/lx-engine/engine';
@@ -23,7 +24,7 @@ function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <StatusBar barStyle="light-content" />
+        <StatusBar barStyle={T.light ? 'dark-content' : 'light-content'} />
         <AppStateProvider>
           <PlayerProvider>
             <LxEngineHost />

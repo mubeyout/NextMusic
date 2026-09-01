@@ -160,7 +160,7 @@ const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, marginBottom: 12 },
   searchBox: {
-    flex: 1, height: 44, borderRadius: 22, backgroundColor: '#1E1E1E',
+    flex: 1, height: 44, borderRadius: 22, backgroundColor: C.elev,
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 8,
   },
   searchInput: { flex: 1, color: C.text, fontSize: 13, padding: 0 },

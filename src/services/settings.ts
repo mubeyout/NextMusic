@@ -16,6 +16,7 @@ export interface AppSettings {
   // 外观（重启生效：启动时覆写 C token）
   pureBlack: boolean;
   accent: string;                // hex
+  light: boolean;                // 浅色主题（桌面 Web 同款浅色盘）
   showTabLabels: boolean;
   // 启动
   startupPage: 'home' | 'explore' | 'my';
@@ -37,6 +38,7 @@ export const DEFAULTS: AppSettings = {
   maxConcurrent: 3,
   pureBlack: false,
   accent: '#1ED760',
+  light: false,
   showTabLabels: true,
   startupPage: 'home',
   restorePlayback: false,

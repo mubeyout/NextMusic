@@ -30,7 +30,7 @@ const st = StyleSheet.create({
   row: { height: 46, flexDirection: 'row', alignItems: 'center', gap: 10 },
   artWrap: { width: 46, height: 46, borderRadius: 6, overflow: 'hidden' },
   art: { width: 46, height: 46 },
-  fallback: { backgroundColor: '#2A2A2A' },
+  fallback: { backgroundColor: C.surface2 },
   meta: { flex: 1, gap: 1, minWidth: 0 },
   title: { color: C.text, fontSize: 13, lineHeight: 19, fontWeight: '500' },
   sub: { color: C.text2, fontSize: 10, lineHeight: 15 },

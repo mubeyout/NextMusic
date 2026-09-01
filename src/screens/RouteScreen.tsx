@@ -341,7 +341,7 @@ const st = StyleSheet.create({
   label: { color: C.text2, fontSize: 12, lineHeight: 16, marginTop: 18, marginBottom: 8 },
   deviceRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64,
-    backgroundColor: '#232323', borderRadius: 12, paddingHorizontal: 12, marginTop: 6,
+    backgroundColor: C.surface2, borderRadius: 12, paddingHorizontal: 12, marginTop: 6,
   },
   deviceRowOn: { backgroundColor: '#1F3A2A', borderWidth: 1, borderColor: C.brand + '55' },
   iconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#2E2E2E', alignItems: 'center', justifyContent: 'center' },

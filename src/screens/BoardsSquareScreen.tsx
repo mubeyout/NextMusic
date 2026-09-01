@@ -96,7 +96,7 @@ export function BoardsSquareScreen() {
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   srcRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingBottom: 12 },
-  srcPill: { height: 32, borderRadius: 16, paddingHorizontal: 16, backgroundColor: '#2B2B2B', alignItems: 'center', justifyContent: 'center' },
+  srcPill: { height: 32, borderRadius: 16, paddingHorizontal: 16, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   srcPillOn: { backgroundColor: C.brand },
   srcLabel: { color: C.text2, fontSize: 12, lineHeight: 14, fontWeight: '600' },
   srcLabelOn: { color: C.onBrand },

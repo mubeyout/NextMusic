@@ -41,7 +41,7 @@ const h = StyleSheet.create({
 
 const e = StyleSheet.create({
   wrap: { alignItems: 'center', paddingVertical: 48, gap: 10, paddingHorizontal: 40 },
-  iconWrap: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#1E1E1E', alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
+  iconWrap: { width: 64, height: 64, borderRadius: 32, backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
   title: { color: C.text2, fontSize: 14, lineHeight: 20, fontWeight: '500', textAlign: 'center' },
   sub: { color: C.text3, fontSize: 12, lineHeight: 17, textAlign: 'center' },
 });

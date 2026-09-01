@@ -100,8 +100,17 @@ export function ThemeScreen() {
   return (
     <PageShell title="主题与外观" onBack={() => nav.goBack()}>
       <Section title="模式">
-        <StaticRow label="深色模式" value="始终深色" />
-        <ToggleRow label="纯黑背景（真·OLED 纯黑，重启生效）" value={s.pureBlack} onChange={v => { settings.set('pureBlack', v); askRestart(); }} />
+        <View style={ts.modeRow}>
+          {([{ k: false, label: '深色' }, { k: true, label: '浅色' }] as const).map(m => (
+            <TouchableOpacity key={m.label} style={[ts.modePill, s.light === m.k && ts.modeOn]} onPress={() => { if (s.light !== m.k) { settings.set('light', m.k); askRestart(); } }}>
+              <Text style={[ts.modeText, s.light === m.k && ts.modeTextOn]}>{m.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <Text style={ts.note}>浅色模式与桌面 Web 同款配色，重启后完全生效</Text>
+        {!s.light ? (
+          <ToggleRow label="纯黑背景（真·OLED 纯黑，重启生效）" value={s.pureBlack} onChange={v => { settings.set('pureBlack', v); askRestart(); }} />
+        ) : null}
       </Section>
       <Section title="强调色">
         <View style={ts.swatchRow}>
@@ -380,6 +389,11 @@ export function BackupSettingsScreen() {
 // ---------- 可视化 / 代理：lx34 移除（无真实实现，避免“死设置”；后续做播放页频谱时随功能回归） ----------
 
 const ts = StyleSheet.create({
+  modeRow: { flexDirection: 'row', gap: 8, paddingVertical: 6 },
+  modePill: { flex: 1, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2 },
+  modeOn: { backgroundColor: C.brand },
+  modeText: { color: C.text2, fontSize: 13, fontWeight: '600' },
+  modeTextOn: { color: C.onBrand, fontWeight: '700' },
   swatchRow: { flexDirection: 'row', gap: 14, paddingHorizontal: 4, marginTop: 10 },
   swatchItem: { alignItems: 'center', gap: 8 },
   swatch: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
