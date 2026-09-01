@@ -269,6 +269,19 @@ export async function sourceHealthCheck(id: string): Promise<{ ok: boolean; deta
   // 选一个该源支持的主流通
   const src = ['kw', 'wy', 'kg'].find(k => s.sources[k]) || Object.keys(s.sources)[0];
   if (!src) return { ok: false, detail: '该源不支持任何平台' };
+  // vc85b：MusicFree 源直接用插件 getMediaSource 自检（不走 LX 沙箱搜索链）
+  if (s.kind === 'musicfree') {
+    const p = mfPluginOf(s);
+    if (!p) return { ok: false, detail: '插件加载失败' };
+    try {
+      const r = await (p.getMediaSource as (item: Record<string, unknown>, q: string) => Promise<{ url?: string } | null>)(
+        { id: '', title: '互删', artist: '江辰', album: '', quality: '128' }, '128',
+      );
+      return r?.url ? { ok: true, detail: '取链成功' } : { ok: false, detail: '取链返回空（脚本可能需要歌单上下文）' };
+    } catch (e) {
+      return { ok: false, detail: '取链失败：' + (e as Error).message };
+    }
+  }
   try {
     const r = await engine.sdk<any>([src, 'musicSearch', 'search'], ['周杰伦 晴天', 1, 15]) as { list?: unknown[] };
     const list = Array.isArray(r?.list) ? r.list : [];
