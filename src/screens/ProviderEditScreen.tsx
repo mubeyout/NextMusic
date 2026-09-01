@@ -7,16 +7,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon, BrandIcon } from '../theme/Icon';
 import { C } from '../theme/tokens';
+import { IS_HD } from '../services/appversion';
+import { HDTouch } from '../hd/HDTouch';
+import { SH } from '../hd/hdtokens';
 import { providers, providerApi, PROVIDER_META, providerIdentityId, type ProviderAcct, type ProviderType } from '../services/providers';
 import { library } from '../state/library';
 import { dialog, toast } from '../components/Dialog';
 
 // 类型卡数据（对齐 Figma NM-REMOTE-SELECT-001）；注：核心后台 LX Server 属于「使用方式与账号」的连接服务器流程，不是第三方媒体库，不在此列
-const TYPE_CARDS: { type: ProviderType; title: string; badge?: string; sub: string }[] = [
-  { type: 'navidrome', title: 'Navidrome / Subsonic', badge: '推荐', sub: '优先走 Subsonic 1.16.1 / OpenSubsonic 兼容协议' },
-  { type: 'emby', title: 'Emby / Jellyfin', sub: '用户登录、音乐库选择、直放或服务端转码' },
-  { type: 'daoliyu', title: '道理鱼音乐', sub: '专有适配；可用时优先协商兼容协议' },
-  { type: 'webdav', title: 'WebDAV 音乐目录', sub: '直接读取远程文件；本地建立只读元数据索引' },
+// icon:HD 卡片用
+const TYPE_CARDS: { type: ProviderType; title: string; badge?: string; sub: string; icon: 'music' | 'tv' | 'wave' | 'cloud' }[] = [
+  { type: 'navidrome', title: 'Navidrome / Subsonic', badge: '推荐', sub: '优先走 Subsonic 1.16.1 / OpenSubsonic 兼容协议', icon: 'music' },
+  { type: 'emby', title: 'Emby / Jellyfin', sub: '用户登录、音乐库选择、直放或服务端转码', icon: 'tv' },
+  { type: 'daoliyu', title: '道理鱼音乐', sub: '专有适配；可用时优先协商兼容协议', icon: 'wave' },
+  { type: 'webdav', title: 'WebDAV 音乐目录', sub: '直接读取远程文件；本地建立只读元数据索引', icon: 'cloud' },
 ];
 
 // 连接页说明 / 输入 hint（对齐 Figma NM-REMOTE-SUBSONIC-001）
@@ -94,18 +98,46 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
           <Text style={st.title}>添加远程音乐库</Text>
           <View style={{ width: 26 }} />
         </View>
-        <ScrollView contentContainerStyle={st.content} showsVerticalScrollIndicator={false}>
-          <Text style={st.desc}>选择服务器类型。NextMusic 会先测试能力，再保存凭证。</Text>
-          {TYPE_CARDS.map(c => (
-            <TouchableOpacity key={c.type} style={st.typeCard} activeOpacity={0.7} onPress={() => pickType(c.type)}>
-              <View style={st.typeCardHead}>
-                <Text style={st.typeCardTitle}>{c.title}</Text>
-                {c.badge ? <Text style={st.badge}>{c.badge}</Text> : null}
-              </View>
-              <Text style={st.typeCardSub}>{c.sub}</Text>
-            </TouchableOpacity>
-          ))}
-          <Text style={st.desc}>服务器地址与账号由用户明确填写，也可以从历史连接中选择。</Text>
+        <ScrollView
+          contentContainerStyle={[st.content, IS_HD && { paddingHorizontal: 44, gap: 16 }]}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={[st.desc, IS_HD && hdSt.desc]}>选择服务器类型。NextMusic 会先测试能力，再保存凭证。</Text>
+          {IS_HD ? (
+            /* HD:一排四张竖版卡(整卡可聚焦,对齐引导页卡片语言) */
+            <View style={{ flexDirection: 'row', gap: 16 }}>
+              {TYPE_CARDS.map(c => (
+                <HDTouch
+                  key={c.type}
+                  style={hdSt.typeCard}
+                  focusStyle={hdSt.typeFocus}
+                  focusBg="#232323"
+                  glow={SH.brand}
+                  onPress={() => pickType(c.type)}
+                >
+                  <View style={hdSt.typeIcon}><Icon name={c.icon} size={30} color={C.brand} /></View>
+                  <Text style={hdSt.typeTitle}>{c.title}</Text>
+                  {c.badge ? (
+                    <View style={hdSt.typeBadge}><Text style={hdSt.typeBadgeText}>{c.badge}</Text></View>
+                  ) : null}
+                  <Text style={hdSt.typeSub}>{c.sub}</Text>
+                </HDTouch>
+              ))}
+            </View>
+          ) : (
+            <>
+              {TYPE_CARDS.map(c => (
+                <TouchableOpacity key={c.type} style={st.typeCard} activeOpacity={0.7} onPress={() => pickType(c.type)}>
+                  <View style={st.typeCardHead}>
+                    <Text style={st.typeCardTitle}>{c.title}</Text>
+                    {c.badge ? <Text style={st.badge}>{c.badge}</Text> : null}
+                  </View>
+                  <Text style={st.typeCardSub}>{c.sub}</Text>
+                </TouchableOpacity>
+              ))}
+            </>
+          )}
+          <Text style={[st.desc, IS_HD && hdSt.desc]}>服务器地址与账号由用户明确填写，也可以从历史连接中选择。</Text>
         </ScrollView>
       </View>
     );
@@ -139,8 +171,12 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
           </TouchableOpacity>
         ) : <View style={{ width: 26 }} />}
       </View>
-      <ScrollView contentContainerStyle={st.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <Text style={st.desc}>{copy.desc || PROVIDER_META[picked].hint}</Text>
+      <ScrollView
+        contentContainerStyle={[st.content, IS_HD && { maxWidth: 860, alignSelf: 'center', width: '100%', gap: 14 }]}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={[st.desc, IS_HD && hdSt.desc]}>{copy.desc || PROVIDER_META[picked].hint}</Text>
 
         {subsonicFamily ? (
           <View style={st.tabsWrap}>
@@ -149,10 +185,10 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
           </View>
         ) : null}
 
-        <View style={st.inputCard}>
-          <Text style={st.inputLabel}>备注名</Text>
+        <View style={[st.inputCard, IS_HD && hdSt.inputCard]}>
+          <Text style={[st.inputLabel, IS_HD && hdSt.inputLabel]}>备注名</Text>
           <TextInput
-            style={st.inputValue}
+            style={[st.inputValue, IS_HD && hdSt.inputValue]}
             value={a.name}
             placeholder={PROVIDER_META[picked].label.split(' / ')[0]}
             placeholderTextColor={C.text3}
@@ -162,10 +198,10 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
           />
         </View>
 
-        <View style={st.inputCard}>
-          <Text style={st.inputLabel}>服务器地址</Text>
+        <View style={[st.inputCard, IS_HD && hdSt.inputCard]}>
+          <Text style={[st.inputLabel, IS_HD && hdSt.inputLabel]}>服务器地址</Text>
           <TextInput
-            style={st.inputValue}
+            style={[st.inputValue, IS_HD && hdSt.inputValue]}
             value={a.base}
             placeholder={PROVIDER_META[picked].placeholder}
             placeholderTextColor={C.text3}
@@ -177,10 +213,10 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
           {copy.baseHint ? <Text style={st.inputHint}>{copy.baseHint}</Text> : null}
         </View>
 
-        <View style={st.inputCard}>
-          <Text style={st.inputLabel}>{a.type === 'webdav' ? '账号（可选）' : '用户名'}</Text>
+        <View style={[st.inputCard, IS_HD && hdSt.inputCard]}>
+          <Text style={[st.inputLabel, IS_HD && hdSt.inputLabel]}>{a.type === 'webdav' ? '账号（可选）' : '用户名'}</Text>
           <TextInput
-            style={st.inputValue}
+            style={[st.inputValue, IS_HD && hdSt.inputValue]}
             value={a.user}
             placeholder={a.type === 'webdav' ? '匿名可留空' : 'music_user'}
             placeholderTextColor={C.text3}
@@ -190,10 +226,10 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
           />
         </View>
 
-        <View style={st.inputCard}>
-          <Text style={st.inputLabel}>密码</Text>
+        <View style={[st.inputCard, IS_HD && hdSt.inputCard]}>
+          <Text style={[st.inputLabel, IS_HD && hdSt.inputLabel]}>密码</Text>
           <TextInput
-            style={st.inputValue}
+            style={[st.inputValue, IS_HD && hdSt.inputValue]}
             value={a.pass}
             placeholder="••••••••"
             placeholderTextColor={C.text3}
@@ -213,13 +249,26 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
           </View>
         ) : null}
 
-        <View style={st.btnRow}>
-          <TouchableOpacity style={[st.btnGhost, busy && st.btnBusy]} activeOpacity={0.7} onPress={testConn} disabled={!!busy}>
-            {busy === 'test' ? <ActivityIndicator color={C.text} size="small" /> : <Text style={st.btnGhostText}>测试连接</Text>}
-          </TouchableOpacity>
-          <TouchableOpacity style={[st.btnPrimary, busy && st.btnBusy]} activeOpacity={0.7} onPress={save} disabled={!!busy}>
-            {busy === 'save' ? <ActivityIndicator color={C.onBrand} size="small" /> : <Text style={st.btnPrimaryText}>保存并开始索引</Text>}
-          </TouchableOpacity>
+        <View style={[st.btnRow, IS_HD && { marginTop: 8 }]}>
+          {IS_HD ? (
+            <>
+              <HDTouch style={hdSt.btnGhost} focusStyle={hdSt.btnGhostFocus} focusBg="#2A2A2A" onPress={testConn} disabled={!!busy}>
+                {busy === 'test' ? <ActivityIndicator color={C.text} size="large" /> : <Text style={hdSt.btnGhostText}>测试连接</Text>}
+              </HDTouch>
+              <HDTouch style={hdSt.btnPrimary} focusStyle={hdSt.btnPrimaryFocus} onPress={save} disabled={!!busy}>
+                {busy === 'save' ? <ActivityIndicator color={C.onBrand} size="large" /> : <Text style={hdSt.btnPrimaryText}>保存并开始索引</Text>}
+              </HDTouch>
+            </>
+          ) : (
+            <>
+              <TouchableOpacity style={[st.btnGhost, busy && st.btnBusy]} activeOpacity={0.7} onPress={testConn} disabled={!!busy}>
+                {busy === 'test' ? <ActivityIndicator color={C.text} size="small" /> : <Text style={st.btnGhostText}>测试连接</Text>}
+              </TouchableOpacity>
+              <TouchableOpacity style={[st.btnPrimary, busy && st.btnBusy]} activeOpacity={0.7} onPress={save} disabled={!!busy}>
+                {busy === 'save' ? <ActivityIndicator color={C.onBrand} size="small" /> : <Text style={st.btnPrimaryText}>保存并开始索引</Text>}
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -264,4 +313,29 @@ const st = StyleSheet.create({
   btnGhostText: { color: C.text, fontSize: 14, fontWeight: '500' },
   btnPrimary: { flex: 1.4, height: 46, borderRadius: 12, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   btnPrimaryText: { color: C.onBrand, fontSize: 14, fontWeight: '500' },
+});
+
+// HD(车机/TV)样式:一排四张竖版类型卡 + 大表单 + D-pad 可聚焦按钮
+const hdSt = StyleSheet.create({
+  typeCard: {
+    flex: 1, minHeight: 230, borderRadius: 18, backgroundColor: '#1A1A1A',
+    alignItems: 'center', justifyContent: 'center', gap: 10, padding: 18,
+    boxShadow: SH.card,
+  },
+  typeFocus: { borderWidth: 2.5, borderColor: C.brand, borderRadius: 18 },
+  typeIcon: { width: 68, height: 68, borderRadius: 22, backgroundColor: C.brandDim, alignItems: 'center', justifyContent: 'center' },
+  typeTitle: { color: C.text, fontSize: 16, fontWeight: '700', textAlign: 'center', lineHeight: 22 },
+  typeBadge: { backgroundColor: C.brandDim, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 3 },
+  typeBadgeText: { color: C.brand, fontSize: 12, fontWeight: '700' },
+  typeSub: { color: C.text3, fontSize: 12, textAlign: 'center', lineHeight: 17 },
+  desc: { color: C.text2, fontSize: 13, lineHeight: 18 },
+  inputCard: { backgroundColor: '#1A1A1A', borderRadius: 16, paddingHorizontal: 20, paddingVertical: 14, gap: 6, boxShadow: SH.card },
+  inputLabel: { color: C.text2, fontSize: 13 },
+  inputValue: { color: C.text, fontSize: 16, paddingVertical: 6 },
+  btnGhost: { flex: 1, height: 58, borderRadius: 14, backgroundColor: '#1A1A1A', alignItems: 'center', justifyContent: 'center' },
+  btnGhostFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 14 },
+  btnGhostText: { color: C.text, fontSize: 16, fontWeight: '600' },
+  btnPrimary: { flex: 1.4, height: 58, borderRadius: 14, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
+  btnPrimaryFocus: { borderWidth: 2.5, borderColor: '#FFFFFF', borderRadius: 14 },
+  btnPrimaryText: { color: C.onBrand, fontSize: 16, fontWeight: '700' },
 });

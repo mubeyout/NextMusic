@@ -1,7 +1,7 @@
-// HD 引导页(横版):左品牌区 + 右三张大卡,整卡可聚焦可遥控(替代手机竖版 BootScreen)
-// 布局对齐桌面版 150% 观感:大字、大卡、焦点高亮
+// HD 引导页(横版) v2:顶部品牌 + 一排三张竖版大卡(对齐 v4 卡片设计语言)
+// 整卡可聚焦可遥控;主推卡品牌高亮;焦点环 + focusBg + glow
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
@@ -36,69 +36,83 @@ export function HDBootScreen() {
   ];
 
   return (
-    <View style={[st.screen, { paddingTop: Math.min(insets.top, 24), paddingBottom: Math.min(insets.bottom, 20) }]}>
-      <View style={st.row}>
-        {/* 左:品牌区 */}
-        <View style={st.brand}>
-          <View style={st.brandLogo}><Icon name="play" size={40} color={C.brand} /></View>
-          <Text style={st.brandName}>NextMusic HD</Text>
-          <Text style={st.brandSlogan}>车机 · 电视 · 大屏音乐</Text>
-          <View style={{ height: 1, backgroundColor: C.stroke, alignSelf: 'stretch', marginVertical: 22 }} />
-          <Text style={st.brandHint}>用遥控器方向键选择,按确认键进入</Text>
-        </View>
-
-        {/* 右:三张大卡 */}
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 22, justifyContent: 'center', paddingVertical: 16, paddingHorizontal: 12 }}>
-          {CARDS.map((c, i) => (
-            <HDTouch
-              key={c.key}
-              style={st.card}
-              hasTVPreferredFocus={i === 0}
-              focusStyle={st.cardFocus}
-              onPress={c.onPress}
-            >
-              <View style={st.cardIcon}><Icon name={c.icon} size={32} color={C.brand} /></View>
-              <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <Text style={st.cardTitle}>{c.title}</Text>
-                  {c.tag ? <View style={st.cardTag}><Text style={st.cardTagText}>{c.tag}</Text></View> : null}
-                </View>
-                <Text style={st.cardDesc} numberOfLines={2}>{c.desc}</Text>
-              </View>
-              <View style={[st.cardBtn, c.primary && st.cardBtnPrimary]}>
-                <Text style={[st.cardBtnText, c.primary && st.cardBtnTextPrimary]}>{c.btn} ›</Text>
-              </View>
-            </HDTouch>
-          ))}
-          <Text style={st.footHint}>之后可随时在 设置 → 使用方式与账号 切换</Text>
-        </ScrollView>
+    <View style={[st.screen, { paddingTop: Math.min(insets.top, 28), paddingBottom: Math.min(insets.bottom, 20) }]}>
+      {/* 顶部品牌区 */}
+      <View style={st.brand}>
+        <View style={st.brandLogo}><Icon name="play" size={34} color={C.brand} /></View>
+        <Text style={st.brandName}>NextMusic HD</Text>
+        <Text style={st.brandSlogan}>车机 · 电视 · 大屏音乐</Text>
       </View>
+
+      {/* 一排三张竖版大卡 */}
+      <View style={st.cardRow}>
+        {CARDS.map((c, i) => (
+          <HDTouch
+            key={c.key}
+            style={[st.card, c.primary && st.cardPrimary]}
+            hasTVPreferredFocus={i === 0}
+            focusStyle={st.cardFocus}
+            focusBg="#232323"
+            glow={SH.brand}
+            onPress={c.onPress}
+          >
+            <View style={[st.cardIcon, c.primary && st.cardIconPrimary]}>
+              <Icon name={c.icon} size={34} color={c.primary ? C.onBrand : C.brand} />
+            </View>
+            <View style={st.cardTitleRow}>
+              <Text style={st.cardTitle}>{c.title}</Text>
+              {c.tag ? (
+                <View style={[st.cardTag, c.primary && st.cardTagPrimary]}>
+                  <Text style={[st.cardTagText, c.primary && st.cardTagTextPrimary]}>{c.tag}</Text>
+                </View>
+              ) : null}
+            </View>
+            <Text style={st.cardDesc}>{c.desc}</Text>
+            <View style={[st.cardBtn, c.primary && st.cardBtnPrimary]}>
+              <Text style={[st.cardBtnText, c.primary && st.cardBtnTextPrimary]}>{c.btn} ›</Text>
+            </View>
+          </HDTouch>
+        ))}
+      </View>
+
+      <Text style={st.footHint}>用遥控器方向键选择,按确认键进入 · 之后可随时在 设置 → 使用方式与账号 切换</Text>
     </View>
   );
 }
 
 const st = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: C.bg },
-  row: { flex: 1, flexDirection: 'row' },
-  brand: { width: 360, paddingHorizontal: 48, justifyContent: 'center', borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.stroke, gap: 8 },
-  brandLogo: { width: 76, height: 76, borderRadius: 22, backgroundColor: '#1A1A1A', alignItems: 'center', justifyContent: 'center', marginBottom: 10, boxShadow: '0 8px 26px rgba(30,215,96,.22)' },
-  brandName: { color: C.text, fontSize: 32, fontWeight: '800' },
-  brandSlogan: { color: C.text2, fontSize: 15 },
-  brandHint: { color: C.text3, fontSize: 13 },
+  screen: { flex: 1, backgroundColor: C.bg, alignItems: 'center' },
+  brand: { alignItems: 'center', gap: 4, marginTop: 10, marginBottom: 18 },
+  brandLogo: {
+    width: 62, height: 62, borderRadius: 18, backgroundColor: '#1A1A1A',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 8,
+    boxShadow: '0 8px 26px rgba(30,215,96,.22)',
+  },
+  brandName: { color: C.text, fontSize: 28, fontWeight: '800' },
+  brandSlogan: { color: C.text2, fontSize: 14 },
+  cardRow: { flex: 1, flexDirection: 'row', gap: 22, alignSelf: 'stretch', paddingHorizontal: 56, maxHeight: 460 },
   card: {
-    minHeight: 138, borderRadius: 20, backgroundColor: '#1A1A1A',
-    flexDirection: 'row', alignItems: 'center', padding: 24, gap: 20,
+    flex: 1, borderRadius: 20, backgroundColor: '#1A1A1A',
+    alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12,
     boxShadow: SH.card,
   },
-  cardFocus: { borderWidth: 2.5, borderColor: C.brand, backgroundColor: '#222222' },
-  cardIcon: { width: 68, height: 68, borderRadius: 20, backgroundColor: C.brandDim, alignItems: 'center', justifyContent: 'center' },
-  cardTitle: { color: C.text, fontSize: 23, fontWeight: '800' },
+  cardPrimary: { borderWidth: 1.5, borderColor: C.brand + '66' },
+  cardFocus: { borderWidth: 2.5, borderColor: C.brand, borderRadius: 20 },
+  cardIcon: { width: 72, height: 72, borderRadius: 24, backgroundColor: C.brandDim, alignItems: 'center', justifyContent: 'center' },
+  cardIconPrimary: { backgroundColor: C.brand },
+  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  cardTitle: { color: C.text, fontSize: 21, fontWeight: '800' },
   cardTag: { backgroundColor: C.brandDim, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 3 },
+  cardTagPrimary: { backgroundColor: C.brandDim },
   cardTagText: { color: C.brand, fontSize: 12, fontWeight: '700' },
-  cardDesc: { color: C.text2, fontSize: 14, lineHeight: 20 },
-  cardBtn: { height: 54, borderRadius: 16, borderWidth: 1.5, borderColor: '#4A4A4A', paddingHorizontal: 26, alignItems: 'center', justifyContent: 'center' },
+  cardTagTextPrimary: { color: C.brand },
+  cardDesc: { color: C.text2, fontSize: 13, lineHeight: 19, textAlign: 'center' },
+  cardBtn: {
+    marginTop: 6, height: 50, borderRadius: 15, borderWidth: 1.5, borderColor: '#4A4A4A',
+    paddingHorizontal: 30, alignItems: 'center', justifyContent: 'center',
+  },
   cardBtnPrimary: { backgroundColor: C.brand, borderColor: C.brand, boxShadow: SH.brand },
-  cardBtnText: { color: C.text, fontSize: 16, fontWeight: '700' },
+  cardBtnText: { color: C.text, fontSize: 15, fontWeight: '700' },
   cardBtnTextPrimary: { color: C.onBrand },
-  footHint: { color: C.text3, fontSize: 12, textAlign: 'center', paddingTop: 2 },
+  footHint: { color: C.text3, fontSize: 12, textAlign: 'center', marginTop: 16 },
 });

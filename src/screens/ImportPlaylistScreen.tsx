@@ -98,28 +98,30 @@ export function ImportPlaylistScreen() {
         <View style={{ width: 22 }} />
       </View>
       <ScrollView contentContainerStyle={{ paddingHorizontal: IS_HD ? 44 : 20, paddingBottom: insets.bottom + 24, gap: IS_HD ? 18 : 14 }}>
-        {/* steps indicator */}
-        <View style={st.stepsRow}>
-          {['选择平台', '填写链接', '预览导入'].map((s, i) => (
-            <View key={s} style={[st.stepPill, i <= step && st.stepPillOn]}>
-              <Text style={[st.stepText, i <= step && st.stepTextOn]}>{i + 1}. {s}</Text>
-            </View>
-          ))}
-        </View>
+        {/* steps indicator(仅手机版;HD 无步骤条,页面即进度) */}
+        {!IS_HD && (
+          <View style={st.stepsRow}>
+            {['选择平台', '填写链接', '预览导入'].map((s, i) => (
+              <View key={s} style={[st.stepPill, i <= step && st.stepPillOn]}>
+                <Text style={[st.stepText, i <= step && st.stepTextOn]}>{i + 1}. {s}</Text>
+              </View>
+            ))}
+          </View>
+        )}
 
         {step === 0 && (
           <>
             <Text style={st.sectionTitle}>选择歌单所在平台</Text>
             {IS_HD ? (
-              /* HD:平台卡片网格(对齐桌面版视觉,整卡可聚焦) */
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
+              /* HD:五个平台一排排列(整卡可聚焦,对齐桌面版视觉) */
+              <View style={{ flexDirection: 'row', gap: 16 }}>
                 {PLATFORMS.map(pf => (
-                  <HDTouch key={pf.id} style={hdSt.pfCard} focusStyle={hdSt.pfFocus} onPress={() => pick(pf.id)}>
+                  <HDTouch key={pf.id} style={hdSt.pfCard} focusStyle={hdSt.pfFocus} focusBg="#232323" glow={SH.brand} onPress={() => pick(pf.id)}>
                     <View style={[hdSt.pfIcon, { backgroundColor: pf.color + '1E', borderColor: pf.color + '66' }]}>
-                      <BrandIcon name={pf.icon} size={34} />
+                      <BrandIcon name={pf.icon} size={40} />
                     </View>
                     <Text style={hdSt.pfName}>{pf.name}</Text>
-                    <Text style={hdSt.pfSub}>支持歌单链接或 ID</Text>
+                    <Text style={hdSt.pfSub}>歌单链接或 ID</Text>
                   </HDTouch>
                 ))}
               </View>
@@ -255,17 +257,17 @@ const st = StyleSheet.create({
   moreHint: { color: C.text3, fontSize: 11, textAlign: 'center', paddingVertical: 8 },
 });
 
-// HD(车机/TV)样式:平台卡片网格 + 大按钮,D-pad 可聚焦
+// HD(车机/TV)样式:五平台一排大卡 + 大按钮,D-pad 可聚焦
 const hdSt = StyleSheet.create({
   pfCard: {
-    width: 200, minHeight: 150, borderRadius: 16, backgroundColor: '#1A1A1A',
-    alignItems: 'center', justifyContent: 'center', gap: 8, padding: 16,
+    flex: 1, minHeight: 250, borderRadius: 18, backgroundColor: '#1A1A1A',
+    alignItems: 'center', justifyContent: 'center', gap: 10, padding: 18,
     boxShadow: SH.card,
   },
-  pfFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 16, backgroundColor: '#222222' },
-  pfIcon: { width: 62, height: 62, borderRadius: 31, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-  pfName: { color: C.text, fontSize: 16, fontWeight: '700' },
-  pfSub: { color: C.text3, fontSize: 11 },
+  pfFocus: { borderWidth: 2.5, borderColor: C.brand, borderRadius: 18 },
+  pfIcon: { width: 78, height: 78, borderRadius: 39, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  pfName: { color: C.text, fontSize: 17, fontWeight: '700' },
+  pfSub: { color: C.text3, fontSize: 12 },
   primaryBtn: { height: 58, borderRadius: 14, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   primaryFocus: { borderWidth: 2.5, borderColor: '#FFFFFF', borderRadius: 14 },
   primaryText: { color: C.onBrand, fontSize: 17, fontWeight: '700' },
