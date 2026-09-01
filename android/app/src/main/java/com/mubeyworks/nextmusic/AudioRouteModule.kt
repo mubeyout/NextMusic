@@ -56,17 +56,17 @@ object AudioRouteEngine {
     }
 
     /** [1.0.5:route-watch] 实际路由设备 id（反射 DefaultAudioSink.audioTrack.getRoutedDevice，
-     *  media3 1.6 字段名 audioTrack）；拿不到（无 sink/无 track/反射失败）返回 -2，调用方按未知跳过 */
+     *  media3 1.6 字段名 audioTrack）；拿不到返回 -2 并留痕原因（无 sink/无 track/反射失败） */
     fun actualRoutedId(): Int {
-        val s = sink ?: return -2
+        val s = sink ?: run { Log.i(TAG, "actualRoutedId: no sink attached"); return -2 }
         return try {
             val f = DefaultAudioSink::class.java.getDeclaredField("audioTrack")
             f.isAccessible = true
-            val track = f.get(s) as? android.media.AudioTrack ?: return -2
-            val dev = track.routedDevice ?: return -2
+            val track = f.get(s) as? android.media.AudioTrack ?: run { Log.i(TAG, "actualRoutedId: no audioTrack"); return -2 }
+            val dev = track.routedDevice ?: run { Log.i(TAG, "actualRoutedId: routedDevice null"); return -2 }
             dev.id
         } catch (t: Throwable) {
-            Log.d(TAG, "actualRoutedId unavailable: ${t.message}")
+            Log.w(TAG, "actualRoutedId reflect failed: ${t.message}")
             -2
         }
     }
@@ -126,13 +126,25 @@ class AudioRouteModule(reactContext: ReactApplicationContext) :
     private val routeWatchHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private val routeWatchRunnables = ArrayList<Runnable>()
     @Volatile private var routeMismatchStreak = 0
+    @Volatile private var routeWatchRearms = 0
 
-    private fun scheduleRouteWatch() {
+    /** 设备变化触发首轮；rearm=true 为抢路由后追击轮（最多 3 轮，防与系统拉锯抽风） */
+    private fun scheduleRouteWatch(rearm: Boolean = false) {
         synchronized(routeWatchRunnables) {
+            if (rearm) {
+                routeWatchRearms++
+                if (routeWatchRearms > 3) {
+                    Log.w(AudioRouteEngine.TAG, "route watch give up after $routeWatchRearms rounds (system keeps stealing)")
+                    return
+                }
+                Log.i(AudioRouteEngine.TAG, "route watch re-arm round $routeWatchRearms")
+            } else {
+                routeWatchRearms = 0
+            }
             routeWatchRunnables.forEach(routeWatchHandler::removeCallbacks)
             routeWatchRunnables.clear()
             routeMismatchStreak = 0
-            longArrayOf(1500, 4000, 8000, 13000, 19000).forEach { d ->
+            longArrayOf(2000, 6000, 12000, 20000, 30000).forEach { d ->
                 val r = Runnable { checkRouteSteal() }
                 routeWatchRunnables.add(r)
                 routeWatchHandler.postDelayed(r, d)
@@ -146,6 +158,8 @@ class AudioRouteModule(reactContext: ReactApplicationContext) :
         val exists = am.getDevices(AudioManager.GET_DEVICES_OUTPUTS).any { it.id == pref }
         if (!exists) { routeMismatchStreak = 0; return } // 偏好设备已拔出/断开，applyPreferred 已回退自动
         val actual = AudioRouteEngine.actualRoutedId()
+        // 每轮留痕：远程诊断靠这行日志看哨兵到底卡在哪一环
+        Log.i(AudioRouteEngine.TAG, "route check: preferred=$pref actual=$actual streak=$routeMismatchStreak rearm=$routeWatchRearms")
         if (actual == -2 || actual == pref) { routeMismatchStreak = 0; return }
         routeMismatchStreak++
         Log.w(AudioRouteEngine.TAG, "route mismatch #$routeMismatchStreak: preferred=$pref actual=$actual -> re-apply")
@@ -161,7 +175,8 @@ class AudioRouteModule(reactContext: ReactApplicationContext) :
             } catch (t: Throwable) {
                 Log.w(AudioRouteEngine.TAG, "emit stolen failed", t)
             }
-            routeMismatchStreak = 0 // JS 重建后重新计轮；若 MDM 再抢，下一轮继续兜
+            routeMismatchStreak = 0 // JS 重建后重新计轮
+            scheduleRouteWatch(rearm = true) // 追击：MDM 若在重建后再抢，继续兜（最多 3 轮）
         }
     }
 
