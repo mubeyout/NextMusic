@@ -1,7 +1,7 @@
 // 下载管理：解析取链（自定义音源/服务器/媒体库）→ 落盘到应用目录 → MMKV 索引
 // 队列串行 + 并发上限；UI 通过 subscribe() 刷新
 import RNBlobUtil from 'react-native-blob-util';
-import { NativeModules, NativeEventEmitter } from 'react-native';
+import { NativeModules, NativeEventEmitter, Platform } from 'react-native';
 
 // 原生 OkHttp 下载模块（DownloaderModule.kt）；不可用时回退 blob-util
 const Downloader = NativeModules.Downloader as {
@@ -156,7 +156,7 @@ async function runJob(job: Job): Promise<void> {
     const hdrs = headers && Object.keys(headers).length ? headers : null;
     let size = 0;
     // vc82：公共音乐目录（MediaStore Music/NextMusic，Android 10+；文件管理器可见、卸载不删）
-    const wantPublic = settings.get().downloadDir === 'public' && !!Downloader?.downloadPublic;
+    const wantPublic = settings.get().downloadDir === 'public' && Platform.Version >= 29 && !!Downloader?.downloadPublic; // Android 9- 无 MediaStore RELATIVE_PATH,回退私有
     let savedPath = '';
     if (wantPublic) {
       const mime = job.quality === 'flac' ? 'audio/flac' : 'audio/mpeg';
