@@ -220,10 +220,19 @@ class AudioRouteModule(reactContext: ReactApplicationContext) :
     // 与 adapter.name 相同即视为伪名丢弃；A2DP proxy 取已连接远端设备名兑底
     private var a2dpProxy: android.bluetooth.BluetoothA2dp? = null
     private val adapterName: String? by lazy {
+        // adapter.name 在蓝牙 BLE_ON 半死/关闭时抛异常或 null；Settings.Secure 的本机蓝牙名无需蓝牙栈（vc77）
         try {
             (reactApplicationContext.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager)?.adapter?.name
         } catch (t: Throwable) { null }
+            ?: try {
+                android.provider.Settings.Secure.getString(
+                    reactApplicationContext.contentResolver, "bluetooth_name")
+            } catch (t: Throwable) { null }
     }
+
+    // 伪名判定用规范化比较（去空格/连字符/大小写）：productName="LM - V409N" vs adapter="LM-V409N" 实锤不严格相等
+    private fun norm(s: String?): String? =
+        s?.replace(Regex("[\\s\\-–_]+"), "")?.lowercase()
 
     private fun ensureA2dpProxy() {
         if (a2dpProxy != null) return
@@ -239,7 +248,7 @@ class AudioRouteModule(reactContext: ReactApplicationContext) :
     }
 
     private fun btName(productName: String?): String? {
-        val pn = productName?.trim()?.takeIf { it.isNotBlank() && it != adapterName }
+        val pn = productName?.trim()?.takeIf { it.isNotBlank() && norm(it) != norm(adapterName) }
         if (pn != null) return pn
         return try {
             val px = a2dpProxy
