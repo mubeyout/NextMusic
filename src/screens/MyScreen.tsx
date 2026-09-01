@@ -281,7 +281,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
                   onPress={() => playSong(r.song, dlList.map(x => x.song))}
                   extra={(
                     <TouchableOpacity hitSlop={8} onPress={() => dlStore.remove(r.song)}>
-                      <Text style={st.delText}>删除</Text>
+                      <Icon name="trash" size={18} color={C.text3} />
                     </TouchableOpacity>
                   )}
                 />
@@ -364,6 +364,5 @@ const st = StyleSheet.create({
   rowName: { color: C.text, fontSize: 14, lineHeight: 19, fontWeight: '500' },
   rowMeta: { color: C.text2, fontSize: 11, lineHeight: 15 },
   empty: { color: C.text2, fontSize: 12, lineHeight: 17, textAlign: 'center', paddingTop: 18, paddingBottom: 6 },
-  delText: { color: C.text3, fontSize: 11, lineHeight: 14 },
   center: { paddingVertical: 24 },
 });

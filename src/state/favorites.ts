@@ -60,3 +60,7 @@ export async function addToPlaylist(plKey: 'love' | { id: string } | { name: str
     } catch { /* ignore */ }
   }
 }
+
+// 备份/恢复用：收藏 key 快照读写（vc81）
+export function readKeys(): string[] { return [...loadSet()]; }
+export function writeKeys(keys: string[]): void { kv.set(KEY, JSON.stringify(keys)); }

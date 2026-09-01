@@ -14,7 +14,7 @@ interface Persisted {
   username: string | null;
 }
 
-function load(): Persisted {
+export function load(): Persisted {
   try { return { ...JSON.parse(kv.getString('app') || '{}') }; } catch { return { mode: null, base: null, token: null, username: null }; }
 }
 

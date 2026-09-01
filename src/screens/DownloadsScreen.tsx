@@ -12,6 +12,7 @@ import { usePlayer } from '../state/PlayerProvider';
 import { downloads as dlStore, subscribeDownloads, fmtBytes, downloadProgress, downloadFails, clearFails } from '../services/downloads';
 import type { SongItem } from '../services/server';
 import { dialog, toast } from '../components/Dialog';
+import RNBlobUtil from 'react-native-blob-util';
 
 export function DownloadsScreen() {
   const insets = useSafeAreaInsets();
@@ -52,7 +53,7 @@ export function DownloadsScreen() {
         )}
       />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 120 }}>
-        <Text style={st.stat}>{list.length} 首 · {fmtBytes(dlStore.totalBytes())} · 应用内部存储</Text>
+        <Text style={st.stat}>{list.length} 首 · {fmtBytes(dlStore.totalBytes())} · {(RNBlobUtil.fs.dirs.DocumentDir || '')}/downloads</Text>
         {lastFails.length ? (
           <View style={st.failCard}>
             <Text style={st.failTitle} numberOfLines={1}>⚠ {fails.length} 首下载失败 · 最近：{lastFails[0].err}</Text>
@@ -71,7 +72,7 @@ export function DownloadsScreen() {
                 onPress={() => play(r.song)}
                 extra={(
                   <TouchableOpacity hitSlop={8} onPress={() => removeSong(r.song)}>
-                    <Icon name="close" size={18} color={C.text3} />
+                    <Icon name="trash" size={18} color={C.text3} />
                   </TouchableOpacity>
                 )}
               />

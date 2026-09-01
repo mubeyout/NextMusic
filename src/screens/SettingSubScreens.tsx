@@ -10,7 +10,10 @@ import { C } from '../theme/tokens';
 import { SubPage } from '../components/SubPage';
 import { ToggleRow, ValueRow, ActionRow, StaticRow, NavRow, InputRow, Section, PageShell } from '../components/SettingRows';
 import { settings, useSettings, QUALITY_LABEL, type Quality } from '../services/settings';
-import { providerApi } from '../services/providers';
+import { providerApi, providers, type ProviderAcct } from '../services/providers';
+import { loadSources, saveSources, type CustomSource } from '../services/customSource';
+import { readKeys as favKeys, writeKeys as writeFavKeys } from '../state/favorites';
+import { load as loadAppPersist, type RunMode } from '../state/AppState';
 import { library } from '../state/library';
 import { downloads as dlStore, fmtBytes, downloadFails, clearFails, subscribeDownloads } from '../services/downloads';
 import { APP_VERSION, IS_HD } from '../services/appversion';
@@ -224,7 +227,7 @@ export function DownloadsSettingsScreen() {
       </Section>
       <Section title="存储">
         <ValueRow label="同时下载数" value={String(s.maxConcurrent)} options={[1, 2, 3, 4, 5].map(n => ({ label: `${n} 首`, value: String(n) }))} onPick={v => settings.set('maxConcurrent', Number(v))} />
-        <StaticRow label="下载位置" value="应用内部存储" />
+        <StaticRow label="下载位置" value={`${(RNBlobUtil.fs.dirs.DocumentDir || '')}/downloads`} />
         <NavRow label="下载管理" value={`${dlStore.all().length} 首 · ${fmtBytes(dlStore.totalBytes())}`} onPress={() => nav.navigate('Downloads')} />
       </Section>
       {fails.length ? (
@@ -256,19 +259,37 @@ import { dialog, toast } from '../components/Dialog';
 const davKv = createMMKV({ id: DAV_KEY });
 function kvGetString(k: string): string | undefined { return davKv.getString('conf'); }
 
-// 备份 payload 构建（云备份与文件导出同构）
+// 备份 payload 构建（云备份与文件导出同构；vc81 全量：服务器连接/收藏/音源/媒体库账号一并入包）
 function buildBackupPayload(s: { backupPlaylists: boolean; backupSettings: boolean }) {
   return {
     at: Date.now(), version: APP_VERSION,
     playlists: s.backupPlaylists ? library.all().map(p => ({ id: p.id, name: p.name, songs: p.songs })) : undefined,
     settings: s.backupSettings ? settings.get() : undefined,
+    // vc81：老板要求——账号密码/服务器/收藏/音源都备进去
+    server: s.backupSettings ? (() => { const a = loadAppPersist(); return { mode: a.mode as RunMode, base: a.base, token: a.token, username: a.username }; })() : undefined,
+    favorites: s.backupPlaylists ? favKeys() : undefined,
+    sources: s.backupSettings ? loadSources() : undefined,
+    mediaLibs: s.backupSettings ? providers.all().map(p => ({ ...p })) : undefined,
   };
 }
 
-// 恢复应用（云端恢复与文件导入共用）：同名覆盖、新名单建
-function applyBackupData(data: { playlists?: { id: string; name: string; songs: never[] }[]; settings?: Record<string, unknown> }) {
+// 恢复应用（云端恢复与文件导入共用）：同名覆盖、新名单建；vc81 连带恢复服务器连接/收藏/音源/媒体库
+function applyBackupData(data: {
+  playlists?: { id: string; name: string; songs: never[] }[];
+  settings?: Record<string, unknown>;
+  server?: { mode?: RunMode | null; base?: string | null; token?: string | null; username?: string | null };
+  favorites?: string[];
+  sources?: CustomSource[];
+  mediaLibs?: ProviderAcct[];
+}) {
   const n = data.playlists?.length || 0;
-  dialog.alert('恢复备份', `备份包含 ${n} 个歌单，是否合并到本机？（同名歌单将被覆盖）`, [
+  const extras = [
+    data.server?.base ? '服务器连接' : null,
+    data.favorites?.length ? `收藏 ${data.favorites.length} 首` : null,
+    data.sources?.length ? `音源 ${data.sources.length} 个` : null,
+    data.mediaLibs?.length ? `媒体库 ${data.mediaLibs.length} 个` : null,
+  ].filter(Boolean);
+  dialog.alert('恢复备份', `备份包含 ${n} 个歌单${extras.length ? `，外加${extras.join('、')}` : ''}，是否合并到本机？（同名歌单将被覆盖）`, [
     { text: '取消', style: 'cancel' },
     {
       text: '恢复',
@@ -281,7 +302,23 @@ function applyBackupData(data: { playlists?: { id: string; name: string; songs: 
           }
         }
         if (data.settings) settings.patch(data.settings as never);
-        toast(`已恢复 ${n} 个歌单`);
+        if (data.server?.base) {
+          // 写回服务器连接（AppState 同源 MMKV；重启后生效）
+          const appKv = createMMKV({ id: 'nextmusic' });
+          appKv.set('app', JSON.stringify({ mode: data.server.mode ?? 'server', base: data.server.base, token: data.server.token, username: data.server.username }));
+        }
+        if (data.favorites?.length) writeFavKeys(data.favorites);
+        if (data.sources?.length) saveSources(data.sources);
+        if (data.mediaLibs?.length) data.mediaLibs.forEach(p => providers.save(p));
+        const needRestart = !!(data.server?.base || data.settings);
+        if (needRestart) {
+          dialog.alert('恢复完成', `已恢复 ${n} 个歌单${extras.length ? '及' + extras.join('、') : ''}。服务器连接与设置将在重启后完全生效。`, [
+            { text: '稍后重启', style: 'cancel' },
+            { text: '立即重启', onPress: () => setTimeout(() => (NativeModules.AppRestart as { restart: () => void } | undefined)?.restart(), 250) },
+          ]);
+        } else {
+          toast(`已恢复 ${n} 个歌单${extras.length ? '及' + extras.join('、') : ''}`);
+        }
       },
     },
   ]);
