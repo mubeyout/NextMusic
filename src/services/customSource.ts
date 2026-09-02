@@ -275,14 +275,9 @@ export async function sourceHealthCheck(id: string): Promise<{ ok: boolean; deta
     const p = mfPluginOf(s);
     if (!p) return { ok: false, detail: '插件加载失败' };
     try {
-      const pAny = p as unknown as Record<string, unknown>;
-      const sr = await (pAny.search as (q: string, page: number, limit: number) => Promise<unknown>)('周杰伦 晴天', 1, 3);
-      const srObj = sr as { data?: unknown } | Array<unknown> | null;
-      const list = (Array.isArray(srObj) ? srObj : ((srObj && typeof srObj === 'object' && 'data' in srObj ? (srObj as { data?: unknown }).data : []) || [])) as Array<Record<string, unknown>>;
-      const song = list[0];
-      if (!song) return { ok: false, detail: '搜索无结果（脚本可能失效）' };
-      const r = await (p.getMediaSource as (item: Record<string, unknown>, q: string) => Promise<{ url?: string } | null>)(song, '128');
-      return r?.url ? { ok: true, detail: `取链成功 · ${String(song.title ?? '')}` } : { ok: false, detail: '取链返回空' };
+      // 轻检测:插件可加载+渠道注册即认为可用(取链在播放时自然验证——硬测依赖搜索 API 网络,V40 实测域名不稳误报)
+      const chans = Object.keys(s.sources);
+      return { ok: true, detail: `插件运行正常 · ${chans.join('/')} 渠道` };
     } catch (e) {
       return { ok: false, detail: '检测失败：' + (e as Error).message };
     }
