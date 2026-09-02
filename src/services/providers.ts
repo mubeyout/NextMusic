@@ -62,6 +62,8 @@ export const providers = {
 
 // ---------- helpers ----------
 function norm(base: string): string { return base.trim().replace(/\/+$/, ''); }
+/** 安全解码：含原生 % 的文件名（如 "100%.mp3"）decodeURIComponent 会 throw，需兜底 */
+function safeDec(s: string): string { try { return decodeURIComponent(s); } catch { return s; } }
 
 // 稳定身份 id：同一「服务器+账号」重复添加得到相同 id——删除后重连，已导入歌曲（songmid=pid:itemId）全部自动复活
 // djb2 哈希足够：个人使用场景碰撞概率可忽略；同服务器同账号重复添加会被 upsert 去重（合理语义）
@@ -475,7 +477,7 @@ export const providerApi = {
     const src = song.source;
     const mid = String(song.songmid ?? ''); // 历史数据 songmid 可能为 number，统一转 string
     if (src === 'webdav') {
-      const a = providers.all().find(p => p.type === 'webdav' && mid.startsWith(norm(p.base)));
+      const a = providers.all().find(p => p.type === 'webdav' && (mid.startsWith(norm(p.base)) || safeDec(mid).startsWith(safeDec(norm(p.base)))));
       return { url: mid, headers: a ? basicAuth(a) : undefined };
     }
     const [pid, itemId] = mid.split(':');
@@ -578,9 +580,12 @@ export const providerApi = {
         let p = hrefRaw;
         const mAbs = p.match(/^[a-zA-Z][a-zA-Z0-9+.\-]*:\/\/[^/]*/);
         if (mAbs) p = p.slice(mAbs[0].length) || '/';
-        let rel = p.startsWith(basePath + '/') ? p.slice(basePath.length) : p;
+        // 前缀剥离统一在解码域比较：服务器 href 恒为百分号编码（/dav/%E7%BD%91..），
+        // 而用户填的 base 可能是原始中文（/dav/网易云）——原文 startsWith 会失配 → 双前缀 404 / 认证头挂不上
+        const basePathDec = safeDec(basePath);
+        const pDec = safeDec(p);
+        let rel = pDec.startsWith(basePathDec + '/') ? pDec.slice(basePathDec.length) : pDec;
         if (!rel.startsWith('/')) rel = '/' + rel;
-        rel = decodeURIComponent(rel);
         // 当前目录自身（rel === dir 或 dir 去尾斜杠）跳过
         const cur = dir === '/' ? '/' : dir.endsWith('/') ? dir : dir + '/';
         if (rel === cur || rel === cur.replace(/\/$/, '') || rel === '/') continue;
