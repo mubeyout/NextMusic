@@ -13,7 +13,8 @@ export interface AppSettings {
   // 下载
   downloadQuality: Quality;
   maxConcurrent: number;         // 同时下载数
-  downloadDir: 'public';  // vc82/vc83：公共音乐目录(Music/NextMusic, MediaStore)——默认且唯一;历史 'private' 值兼容读取但 UI 不再提供
+  downloadDir: 'public' | 'custom';  // vc84：public=公共音乐目录(默认) / custom=SAF 自选目录
+  downloadTreeUri: string;      // custom 模式 SAF tree uri
   // 外观（重启生效：启动时覆写 C token）
   pureBlack: boolean;
   accent: string;                // hex

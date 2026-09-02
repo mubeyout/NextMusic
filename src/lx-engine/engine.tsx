@@ -87,7 +87,7 @@ class Sandbox {
       return;
     }
     if (m.t === 'log') { console.log(`[${this.tag}]`, m.line); return; }
-    if (m.t === 'rpc' && m.id != null) {
+    if (m.t === 'rpc' && typeof m.id === 'number') {
       const p = this.pending.get(m.id);
       if (!p) return;
       this.pending.delete(m.id);

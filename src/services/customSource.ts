@@ -105,6 +105,7 @@ function mfChannelOf(platform: string): string {
   return platform;
 }
 
+export function saveSources(list: CustomSource[]): void { save(list); }
 export function loadSources(): CustomSource[] {
   try { return JSON.parse(kv.getString('customSources') || '[]'); } catch { return []; }
 }
@@ -317,9 +318,11 @@ export async function fetchCatalog(catalogUrl: string): Promise<CatalogItem[]> {
   const base = catalogUrl.replace(/[^/]*$/, '');
   const out: CatalogItem[] = [];
   const seen = new Set<string>();
-  for (const m of html.matchAll(/href="([^"]+\.js[^"]*)"[^>]*>([^<]*)</g)) {
-    const href = m[1];
-    let title = (m[2] || '').trim();
+  const re = /href="([^"]+\.js[^"]*)"[^>]*>([^<]*)</g;
+  let mm: RegExpExecArray | null;
+  while ((mm = re.exec(html)) != null) {
+    const href = mm[1];
+    let title = (mm[2] || '').trim();
     try { if (!title) title = decodeURIComponent(href); } catch { title = href; }
     title = title.replace(/\.js\s*$/, '').trim();
     const abs = href.startsWith('http') ? href : base + href;

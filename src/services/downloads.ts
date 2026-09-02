@@ -159,7 +159,7 @@ async function runJob(job: Job): Promise<void> {
     // vc82：公共音乐目录（MediaStore Music/NextMusic，Android 10+）；vc84：custom=用户自选 SAF 目录
     const dcfg = settings.get();
     const wantCustom = dcfg.downloadDir === 'custom' && !!dcfg.downloadTreeUri && !!Downloader?.downloadToTree;
-    const wantPublic = !wantCustom && dcfg.downloadDir === 'public' && Platform.Version >= 29 && !!Downloader?.downloadPublic; // Android 9- 无 MediaStore RELATIVE_PATH,回退私有
+    const wantPublic = !wantCustom && dcfg.downloadDir === 'public' && Number(Platform.Version) >= 29 && !!Downloader?.downloadPublic; // Android 9- 无 MediaStore RELATIVE_PATH,回退私有
     let savedPath = '';
     if (wantCustom) {
       const mime = job.quality === 'flac' ? 'audio/flac' : 'audio/mpeg';
