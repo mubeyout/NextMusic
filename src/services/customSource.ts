@@ -120,7 +120,7 @@ function extractMeta(script: string): { name: string; version: string; descripti
   const lines = (m ? m[0] : '').split('\n');
   for (const line of lines) {
     const nm = line.match(/(?:^|\s)@name\s*[:：]?\s*(.+)/); if (nm) meta.name = nm[1].trim().replace(/\*\/$/, '').trim();
-    const vm = line.match(/(?:^|\s)@version\s*[:：]?\s*(\S+)/); if (vm) meta.version = vm[1].trim();
+    const vm = line.match(/(?:^|\s)@version\s*[:：]?\s*(\S+)/); if (vm) meta.version = vm[1].trim().replace(/^v/i, ''); // strip v 前缀,防显示 vv
     const dm = line.match(/(?:^|\s)@description\s*[:：]?\s*(.+)/); if (dm) meta.description = dm[1].trim().replace(/\*\/$/, '').trim();
     const am = line.match(/(?:^|\s)@author\s*[:：]?\s*(.+)/); if (am) meta.author = am[1].trim().replace(/\*\/$/, '').trim();
   }
