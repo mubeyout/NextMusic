@@ -220,8 +220,8 @@ export async function customGetMusicUrl(songInfo: { source: string; songmid: str
 export interface SourceUpdate { src: CustomSource; version: string; script: string }
 
 function isNewerVersion(a: string, b: string): boolean {
-  const pa = a.split(/[.v]/).map(n => parseInt(n, 10) || 0);
-  const pb = b.split(/[.v]/).map(n => parseInt(n, 10) || 0);
+  const pa = a.replace(/^v+/i, '').split('.').map(n => parseInt(n, 10) || 0); // strip v 前缀(存量带 v 记录误报实锤:vv3.2.13→"新"3.2.13)
+  const pb = b.replace(/^v+/i, '').split('.').map(n => parseInt(n, 10) || 0);
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
     const d = (pa[i] || 0) - (pb[i] || 0);
     if (d > 0) return true;
@@ -270,17 +270,21 @@ export async function sourceHealthCheck(id: string): Promise<{ ok: boolean; deta
   // 选一个该源支持的主流通
   const src = ['kw', 'wy', 'kg'].find(k => s.sources[k]) || Object.keys(s.sources)[0];
   if (!src) return { ok: false, detail: '该源不支持任何平台' };
-  // vc85b：MusicFree 源直接用插件 getMediaSource 自检（不走 LX 沙箱搜索链）
+  // vc90：MusicFree 源自检 = search('晴天') 拿真实曲目 → getMediaSource 真取链(空 id 会 no hash)
   if (s.kind === 'musicfree') {
     const p = mfPluginOf(s);
     if (!p) return { ok: false, detail: '插件加载失败' };
     try {
-      const r = await (p.getMediaSource as (item: Record<string, unknown>, q: string) => Promise<{ url?: string } | null>)(
-        { id: '', title: '互删', artist: '江辰', album: '', quality: '128' }, '128',
-      );
-      return r?.url ? { ok: true, detail: '取链成功' } : { ok: false, detail: '取链返回空（脚本可能需要歌单上下文）' };
+      const pAny = p as unknown as Record<string, unknown>;
+      const sr = await (pAny.search as (q: string, page: number, limit: number) => Promise<unknown>)('周杰伦 晴天', 1, 3);
+      const srObj = sr as { data?: unknown } | Array<unknown> | null;
+      const list = (Array.isArray(srObj) ? srObj : ((srObj && typeof srObj === 'object' && 'data' in srObj ? (srObj as { data?: unknown }).data : []) || [])) as Array<Record<string, unknown>>;
+      const song = list[0];
+      if (!song) return { ok: false, detail: '搜索无结果（脚本可能失效）' };
+      const r = await (p.getMediaSource as (item: Record<string, unknown>, q: string) => Promise<{ url?: string } | null>)(song, '128');
+      return r?.url ? { ok: true, detail: `取链成功 · ${String(song.title ?? '')}` } : { ok: false, detail: '取链返回空' };
     } catch (e) {
-      return { ok: false, detail: '取链失败：' + (e as Error).message };
+      return { ok: false, detail: '检测失败：' + (e as Error).message };
     }
   }
   try {
