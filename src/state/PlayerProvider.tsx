@@ -433,6 +433,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         case AudioProEventType.PLAYBACK_ERROR: {
           setPlaying(false);
           const t = queueRef.current[idxRef.current];
+          const errP = (ev as unknown as { payload?: { error?: string; errorCode?: number } }).payload;
+          const errDetail = errP?.error ? `（${String(errP.error).slice(0, 70)}${errP.errorCode != null ? ' #' + errP.errorCode : ''}）` : '';
           // 媒体库歌：直流失败自动降级转码流重试一次（外网/弱网下无损直流常握不住，服务端转 mp3 更稳）
           if (t && isProviderSource(t) && tcRetryUidRef.current !== t.uid) {
             const tc = providerApi.transcodeFor(t);
@@ -446,8 +448,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           }
           // 解析成功但播放失败：按源区分原因，不让用户猜
           toast(isProviderSource(t)
-            ? '播放失败：媒体库可能已断开或网络不可达'
-            : '播放失败：音源链接不可用，可重试或更换音源');
+            ? `播放失败：媒体库可能已断开或网络不可达${errDetail}`
+            : `播放失败：音源链接不可用，可重试或更换音源${errDetail}`);
           break;
         }
       }
