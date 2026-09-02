@@ -7,13 +7,13 @@
 //     可选 glow(聚焦时彩色弥散投影)与 focusBg(选中态背景提亮)。
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, type ViewStyle } from 'react-native';
-import { C } from './hdtokens';
+import { C, TV_LOW_GPU } from './hdtokens';
 type Props = React.ComponentProps<typeof Pressable> & {
   /** 聚焦时附加样式;不传 = 自动贴附环(元素圆角 + 2px 品牌描边);传 false = 无视觉 */
   focusStyle?: false | ViewStyle | ViewStyle[];
   /** 聚焦时背景提亮色(选中态);默认不动背景 */
   focusBg?: string;
-  /** 聚焦时弥散投影(RN boxShadow 字符串,如 SH.brand) */
+  /** 聚焦时弥散投影(RN boxShadow 字符串,如 SH.brand);TV 低 GPU 自动忽略 */
   glow?: string;
   activeOpacity?: number;
 };
@@ -34,7 +34,7 @@ export function HDTouch({ style, focusStyle, focusBg, glow, activeOpacity = 0.8,
         pressed && { opacity: activeOpacity },
         focus && (focusStyle === undefined ? autoRing : focusStyle === false ? null : focusStyle),
         focus && focusBg != null && { backgroundColor: focusBg },
-        focus && glow != null && { boxShadow: glow },
+        focus && glow != null && !TV_LOW_GPU && { boxShadow: glow },
       ]}
     >
       {children}

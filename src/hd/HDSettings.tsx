@@ -26,10 +26,10 @@ const TABS = ['外观与界面', '播放体验', '账号与同步', '下载与�
 type Tab = typeof TABS[number];
 
 type RowDef =
-  | { kind: 'toggle'; title: string; desc?: string; value: boolean; onToggle: () => void }
-  | { kind: 'select'; title: string; desc?: string; value: string; options: string[]; onPick: (v: string) => void }
+  | { kind: 'toggle'; title: string; desc?: string; icon?: IconName; value: boolean; onToggle: () => void }
+  | { kind: 'select'; title: string; desc?: string; icon?: IconName; value: string; options: string[]; onPick: (v: string) => void }
   | { kind: 'nav'; title: string; desc?: string; icon?: IconName; to?: string; action?: () => void }
-  | { kind: 'info'; title: string; desc?: string; value: string };
+  | { kind: 'info'; title: string; desc?: string; icon?: IconName; value: string };
 
 export function HDSettingsScreen() {
   const insets = useSafeAreaInsets();
@@ -42,34 +42,34 @@ export function HDSettingsScreen() {
 
   const rows: Record<Tab, RowDef[]> = {
     '外观与界面': [
-      { kind: 'toggle', title: '纯黑背景', desc: 'OLED 友好的纯黑底色(仅深色模式)', value: s.pureBlack, onToggle: () => { settings.set('pureBlack', !s.pureBlack); hdRestart(); } },
-      { kind: 'select', title: '界面主题', desc: '深色(车机/TV 默认)或浅色,切换后自动重启生效', value: s.light ? '浅色' : '深色', options: ['深色', '浅色'], onPick: v => { settings.set('light', v === '浅色'); hdRestart(); } },
-      { kind: 'select', title: '强调色', desc: '全局品牌色(按钮/高亮/选中态),切换后自动重启生效', value: ACCENTS.find(a => a.color === s.accent)?.name ?? 'Next 绿', options: ACCENTS.map(a => a.name), onPick: v => { const hit = ACCENTS.find(a => a.name === v); if (hit) { settings.set('accent', hit.color); hdRestart(); } } },
-      { kind: 'info', title: '界面缩放', desc: 'HD 版已按电视 1080p 预设', value: '100%' },
+      { kind: 'toggle', icon: 'palette', title: '纯黑背景', desc: 'OLED 友好的纯黑底色(仅深色模式)', value: s.pureBlack, onToggle: () => { settings.set('pureBlack', !s.pureBlack); hdRestart(); } },
+      { kind: 'select', icon: 'palette', title: '界面主题', desc: '深色(车机/TV 默认)或浅色,切换后自动重启生效', value: s.light ? '浅色' : '深色', options: ['深色', '浅色'], onPick: v => { settings.set('light', v === '浅色'); hdRestart(); } },
+      { kind: 'select', icon: 'palette', title: '强调色', desc: '全局品牌色(按钮/高亮/选中态),切换后自动重启生效', value: ACCENTS.find(a => a.color === s.accent)?.name ?? 'Next 绿', options: ACCENTS.map(a => a.name), onPick: v => { const hit = ACCENTS.find(a => a.name === v); if (hit) { settings.set('accent', hit.color); hdRestart(); } } },
+      { kind: 'info', icon: 'fullscreen', title: '界面缩放', desc: 'HD 版已按电视 1080p 预设', value: '100%' },
     ],
     '播放体验': [
-      { kind: 'select', title: '默认音质', desc: '在线播放优先选择的音质档位', value: s.playQuality, options: QUALITY_OPTS, onPick: v => settings.set('playQuality', v as Quality) },
-      { kind: 'toggle', title: '恢复上次播放', desc: '启动时恢复退出前的播放队列与进度', value: s.restorePlayback, onToggle: () => settings.set('restorePlayback', !s.restorePlayback) },
+      { kind: 'select', icon: 'music', title: '默认音质', desc: '在线播放优先选择的音质档位', value: s.playQuality, options: QUALITY_OPTS, onPick: v => settings.set('playQuality', v as Quality) },
+      { kind: 'toggle', icon: 'history', title: '恢复上次播放', desc: '启动时恢复退出前的播放队列与进度', value: s.restorePlayback, onToggle: () => settings.set('restorePlayback', !s.restorePlayback) },
       { kind: 'nav', title: '均衡器与音效', desc: '10 段 EQ · 空间混响 · 预设', icon: 'sliders', to: 'Fx' },
     ],
     '账号与同步': [
       connected
-        ? { kind: 'info', title: '服务器', desc: `${username} @ ${base}`, value: '已连接' }
+        ? { kind: 'info', icon: 'server', title: '服务器', desc: `${username} @ ${base}`, value: '已连接' }
         : { kind: 'nav', title: '连接服务器', desc: '登录账号,同步歌单/收藏/音效', icon: 'server', to: 'AuthLogin' },
       { kind: 'nav', title: '音源管理', desc: 'LX 音源脚本,决定本地取链能力', icon: 'wave', to: 'Sources' },
-      { kind: 'nav', title: '媒体库', desc: 'Emby / Jellyfin / Navidrome / WebDAV', icon: 'server', to: 'MediaLibs' },
+      { kind: 'nav', title: '媒体库', desc: 'Emby / Jellyfin / Navidrome / WebDAV', icon: 'music', to: 'MediaLibs' },
       ...(connected ? [{ kind: 'nav' as const, title: '断开服务器', desc: '清除连接与凭据,回到本地模式', icon: 'close' as IconName, action: () => { disconnectServer(); nav.goBack(); } }] : []),
     ],
     '下载与备份': [
-      { kind: 'select', title: '下载音质', desc: '下载歌曲保存的音质档位', value: s.downloadQuality, options: QUALITY_OPTS, onPick: v => settings.set('downloadQuality', v as Quality) },
-      { kind: 'select', title: '同时下载数', desc: '下载任务并发数', value: String(s.maxConcurrent), options: ['1', '2', '3', '5'], onPick: v => settings.set('maxConcurrent', Number(v)) },
-      { kind: 'toggle', title: '备份歌单', desc: '云备份时包含本地歌单', value: s.backupPlaylists, onToggle: () => settings.set('backupPlaylists', !s.backupPlaylists) },
+      { kind: 'select', icon: 'music', title: '下载音质', desc: '下载歌曲保存的音质档位', value: s.downloadQuality, options: QUALITY_OPTS, onPick: v => settings.set('downloadQuality', v as Quality) },
+      { kind: 'select', icon: 'queue', title: '同时下载数', desc: '下载任务并发数', value: String(s.maxConcurrent), options: ['1', '2', '3', '5'], onPick: v => settings.set('maxConcurrent', Number(v)) },
+      { kind: 'toggle', icon: 'heart', title: '备份歌单', desc: '云备份时包含本地歌单', value: s.backupPlaylists, onToggle: () => settings.set('backupPlaylists', !s.backupPlaylists) },
       { kind: 'nav', title: '云备份(WebDAV)', desc: '配置 WebDAV,备份/恢复全部数据', icon: 'cloud', to: 'BackupSettings' },
       { kind: 'nav', title: '下载管理', desc: '查看下载队列与失败重试', icon: 'download', to: 'Downloads' },
     ],
     '关于': [
-      { kind: 'info', title: '版本', desc: IS_HD ? 'HD 车机/电视版' : undefined, value: APP_VERSION },
-      { kind: 'nav', title: '检查更新与关于', desc: '更新源 · 开源致谢', icon: 'info', to: 'About' },
+      { kind: 'info', icon: 'info', title: '版本', desc: IS_HD ? 'HD 车机/电视版' : undefined, value: APP_VERSION },
+      { kind: 'nav', title: '检查更新与关于', desc: '更新源 · 开源致谢', icon: 'refresh', to: 'About' },
       { kind: 'nav', title: '使用手册', desc: '功能说明 · 部署指南 · FAQ', icon: 'info', to: 'Manual' },
     ],
   };
@@ -123,7 +123,7 @@ function SettingsRow({ row }: { row: RowDef }) {
         }
       }}
     >
-      {row.kind === 'nav' && row.icon ? (
+      {row.icon ? (
         <View style={st.rowIcon}><Icon name={row.icon} size={14} color={C.text3} /></View>
       ) : null}
       <View style={{ flex: 1, minWidth: 0, gap: 2 }}>

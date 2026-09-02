@@ -74,7 +74,7 @@ export function HDMy() {
       {/* 功能入口 */}
       <View style={{ flexDirection: 'row', paddingHorizontal: 34, gap: 16 }}>
         {[
-          { icon: 'server' as const, label: '媒体库', sub: `${providerCount} 个连接`, to: 'MediaLibs' },
+          { icon: 'music' as const, label: '媒体库', sub: `${providerCount} 个连接`, to: 'MediaLibs' },
           { icon: 'download' as const, label: '下载管理', sub: '离线歌曲', to: 'Downloads' },
           { icon: 'headphones' as const, label: '本地音乐', sub: '设备扫描', to: 'DeviceMusic' },
           { icon: 'settings' as const, label: '设置', sub: '音源/音效/主题', to: 'Settings' },
@@ -117,12 +117,12 @@ const st = StyleSheet.create({
   acctSub: { color: '#FFFFFF99', fontSize: 14, marginTop: 3 },
   acctBtn: { height: 52, borderRadius: 26, backgroundColor: '#00000042', paddingHorizontal: 28, alignItems: 'center', justifyContent: 'center' },
   acctBtnText: { color: C.text, fontSize: 17, fontWeight: '700' },
-  fnCard: { flex: 1, height: 116, borderRadius: 16, backgroundColor: '#1E1E1E', alignItems: 'center', justifyContent: 'center', gap: 7 },
+  fnCard: { flex: 1, height: 116, borderRadius: 16, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 8 },
   fnLabel: { color: C.text, fontSize: 17, fontWeight: '700' },
   fnSub: { color: C.text3, fontSize: 12 },
   secTitle: { color: C.text, fontSize: 22, fontWeight: '800' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 18 },
-  plCard: { width: 168, gap: 8 },
+  plCard: { width: 168, gap: 8, paddingBottom: 4 },
   plArt: { width: 168, height: 168, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   plNew: { width: 168, height: 168, borderRadius: 16, backgroundColor: C.surface, borderWidth: 1, borderStyle: 'dashed', borderColor: C.border, alignItems: 'center', justifyContent: 'center', gap: 8 },
   plName: { color: C.text, fontSize: 16, fontWeight: '600' },

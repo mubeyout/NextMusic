@@ -30,6 +30,8 @@ export const C: Record<string, string> = {
 };
 
 export const T = { light: false };
+// TV/车机性能开关:小米电视实测彩色投影+聚焦 glow 重绘掉帧;网格卡投影与 glow 全降级
+export const TV_LOW_GPU = true;
 
 function mixHex(a: string, b: string, k: number): string {
   const A = [1, 3, 5].map(i => parseInt(a.slice(i, i + 2), 16));
@@ -115,7 +117,9 @@ export const SH = {
 
 // ---------- 桌面 9280 对齐(2026-09-01 老板:样式交互 1:1) ----------
 // 彩色弥散投影:与桌面 shadowOf 同公式(按名取色,hsl→rgba 单层,RN boxShadow 兼容)
+// TV/车机(HD)降级返回 none:弱 GPU 上大量网格卡彩色投影导致重绘卡顿(小米电视实测)
 export const shadowOf = (seed: string) => {
+  if (TV_LOW_GPU) return 'none';
   const h = [...seed].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
   const s = 0.62, l = 0.42;
   const cH = (1 - Math.abs(2 * l - 1)) * s;

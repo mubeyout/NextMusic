@@ -4,6 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
+import { IS_HD } from '../services/appversion';
+import { HDTouch } from '../hd/HDTouch';
 import { useApp } from '../state/AppState';
 import { SubPage } from '../components/SubPage';
 import { PageHeader } from '../components/PageChrome';
@@ -14,6 +16,21 @@ import SafX from 'react-native-saf-x';
 
 // 自定义音源:音源脚本本地沙箱运行,免登录即可播放
 // vc90 重设计:对齐项目设计语言(SubPage + Section 行式卡片 + ghost 按钮组),去掉目录订阅区(更新以预埋协议为准)
+// 触点抽象:HD(车机/TV)用 HDTouch(D-pad 焦点环自动贴附圆角),phone 保持 TouchableOpacity
+function T(props: { style?: unknown; onPress?: () => void; disabled?: boolean; children?: React.ReactNode } & Record<string, unknown>) {
+  const { style, onPress, disabled, children, ...rest } = props;
+  if (IS_HD) return (
+    <HDTouch style={style as never} onPress={onPress} disabled={disabled} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12 }} {...(rest as object)}>
+      {children}
+    </HDTouch>
+  );
+  return (
+    <TouchableOpacity style={style as never} onPress={onPress} disabled={disabled} activeOpacity={0.7} {...(rest as object)}>
+      {children}
+    </TouchableOpacity>
+  );
+}
+
 export function SourcesScreen() {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void };
@@ -115,60 +132,74 @@ export function SourcesScreen() {
 
   return (
     <View style={[st.screen, { paddingTop: Math.max(Math.min(insets.top, 16), 12) }]}>
-      <PageHeader title="音源管理" onBack={() => nav.goBack()} />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 28 }} showsVerticalScrollIndicator={false}>
+      {IS_HD ? (
+        /* HD:自绘头部(HDTouch 返回,遥控可达) + 限宽居中 */
+        <View style={hd.head}>
+          <HDTouch style={hd.backBtn} onPress={() => nav.goBack()} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }} hasTVPreferredFocus>
+            <Icon name="back" size={17} color={C.text2} />
+          </HDTouch>
+          <Text style={hd.title}>音源管理</Text>
+          <View style={{ width: 34 }} />
+        </View>
+      ) : (
+        <PageHeader title="音源管理" onBack={() => nav.goBack()} />
+      )}
+      <ScrollView
+        contentContainerStyle={[{ paddingHorizontal: 20, paddingBottom: insets.bottom + 28 }, IS_HD && { maxWidth: 900, alignSelf: 'center', width: '100%' }]}
+        showsVerticalScrollIndicator={false}
+      >
       <Section title="自定义音源">
-        <Text style={st.hint}>音源脚本在本机沙箱运行,添加后无需登录即可播放。支持 LX Music 音源协议与 MusicFree 插件;更新由音源内置检查自动提醒。</Text>
+        <Text style={[st.hint, IS_HD && hd.hint]}>音源脚本在本机沙箱运行,添加后无需登录即可播放。支持 LX Music 音源协议与 MusicFree 插件;更新由音源内置检查自动提醒。</Text>
         {sources.length ? sources.map(s => {
           const h = hOf(s);
           return (
-            <View key={s.id} style={st.srcRow}>
-              <TouchableOpacity style={st.srcIcon} onPress={() => testSource(s)} activeOpacity={0.7}>
-                <Icon name="wave" size={18} color={s.enabled ? C.brand : C.text3} />
-              </TouchableOpacity>
-              <TouchableOpacity style={st.srcMeta} activeOpacity={0.7} onPress={() => testSource(s)}>
-                <Text style={st.srcName} numberOfLines={1}>
+            <View key={s.id} style={[st.srcRow, IS_HD && hd.srcRow]}>
+              <T style={[st.srcIcon, IS_HD && hd.srcIcon]} onPress={() => testSource(s)}>
+                <Icon name="wave" size={IS_HD ? 22 : 18} color={s.enabled ? C.brand : C.text3} />
+              </T>
+              <T style={st.srcMeta} onPress={() => testSource(s)}>
+                <Text style={[st.srcName, IS_HD && hd.srcName]} numberOfLines={1}>
                   {s.name} <Text style={st.srcVer}>v{s.version}</Text>
                   {s.kind === 'musicfree' ? <Text style={st.srcTag}> MF</Text> : null}
                 </Text>
-                <Text style={st.srcSub} numberOfLines={1}>
+                <Text style={[st.srcSub, IS_HD && hd.srcSub]} numberOfLines={1}>
                   {h?.st === 'testing' ? '检测中…'
                     : h?.st === 'ok' ? `可用 · ${h.msg ?? ''}`
                     : h?.st === 'fail' ? `检测失败 · ${h.msg}`
                     : `${Object.keys(s.sources).join(' / ') || ''} · 点击图标检测`}
                 </Text>
-              </TouchableOpacity>
-              <TouchableOpacity hitSlop={8} onPress={() => del(s)} style={st.srcDel}>
-                <Icon name="trash" size={16} color={C.text3} />
-              </TouchableOpacity>
-              <TouchableOpacity hitSlop={6} onPress={() => { toggleSource(s.id, !s.enabled); refresh(); }} style={st.switchWrap}>
-                <View style={[st.switch, s.enabled && st.switchOn]}>
-                  <View style={[st.knob, s.enabled && st.knobOn]} />
+              </T>
+              <T style={st.srcDel} onPress={() => del(s)}>
+                <Icon name="trash" size={IS_HD ? 20 : 16} color={C.text3} />
+              </T>
+              <T style={st.switchWrap} onPress={() => { toggleSource(s.id, !s.enabled); refresh(); }}>
+                <View style={[st.switch, IS_HD && hd.switch, s.enabled && st.switchOn]}>
+                  <View style={[st.knob, IS_HD && hd.knob, s.enabled && st.knobOn]} />
                 </View>
-              </TouchableOpacity>
+              </T>
             </View>
           );
         }) : (
-          <Text style={st.empty}>暂无自定义音源。播放音乐需要添加音源或登录服务器。</Text>
+          <Text style={[st.empty, IS_HD && hd.srcSub]}>暂无自定义音源。播放音乐需要添加音源或登录服务器。</Text>
         )}
         <View style={st.btnRow}>
-          <TouchableOpacity style={st.ghostBtn} onPress={addByUrl} disabled={busy}>
-            <Icon name="add" size={15} color={C.brand} />
-            <Text style={st.ghostText}>添加音源(URL)</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={st.ghostBtn} onPress={importFile} disabled={busy}>
-            <Icon name="download" size={15} color={C.brand} />
-            <Text style={st.ghostText}>导入音源文件</Text>
-          </TouchableOpacity>
+          <T style={[st.ghostBtn, IS_HD && hd.ghostBtn]} onPress={addByUrl} disabled={busy}>
+            <Icon name="add" size={IS_HD ? 18 : 15} color={C.brand} />
+            <Text style={[st.ghostText, IS_HD && hd.ghostText]}>添加音源(URL)</Text>
+          </T>
+          <T style={[st.ghostBtn, IS_HD && hd.ghostBtn]} onPress={importFile} disabled={busy}>
+            <Icon name="download" size={IS_HD ? 18 : 15} color={C.brand} />
+            <Text style={[st.ghostText, IS_HD && hd.ghostText]}>导入音源文件</Text>
+          </T>
         </View>
       </Section>
 
       <Section title="播放权限">
         <View style={st.permRow}>
-          <Text style={st.permLabel}>自定义音源</Text>
+          <Text style={[st.permLabel, IS_HD && hd.srcName]}>自定义音源</Text>
           <Text style={[st.badge, canPlay && st.badgeOn]}>{canPlay ? '已启用 · 可播放' : '未添加'}</Text>
         </View>
-        <Text style={st.hint}>登录服务器或启用任意自定义音源后即可播放;浏览和搜索始终免费。</Text>
+        <Text style={[st.hint, IS_HD && hd.hint]}>登录服务器或启用任意自定义音源后即可播放;浏览和搜索始终免费。</Text>
       </Section>
       </ScrollView>
     </View>
@@ -327,4 +358,20 @@ const st = StyleSheet.create({
   modalBtnMain: { flex: 1, height: 42, borderRadius: 10, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   modalGhostText: { color: C.text, fontSize: 13, fontWeight: '500' },
   modalMainText: { color: C.onBrand, fontSize: 13, fontWeight: '600' },
+});
+
+// HD(车机/TV)覆盖样式:限宽居中 + 大字号/大触点(老板:音源管理需遥控光标+大屏排版)
+const hd = StyleSheet.create({
+  head: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, marginBottom: 10 },
+  backBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
+  title: { flex: 1, color: C.text, fontSize: 20, fontWeight: '800', textAlign: 'center' },
+  hint: { fontSize: 13, lineHeight: 19 },
+  srcRow: { paddingVertical: 14, gap: 14 },
+  srcIcon: { width: 46, height: 46, borderRadius: 13 },
+  srcName: { fontSize: 16 },
+  srcSub: { fontSize: 13 },
+  switch: { width: 48, height: 28 },
+  knob: { width: 24, height: 24 },
+  ghostBtn: { height: 54, borderRadius: 14 },
+  ghostText: { fontSize: 15 },
 });

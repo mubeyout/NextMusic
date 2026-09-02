@@ -1,4 +1,4 @@
-// HD 引导页(横版) v2:顶部品牌 + 一排三张竖版大卡(对齐 v4 卡片设计语言)
+// HD 引导页(横版) v3:单行字标(去大 logo 块)+紧凑三卡(老板反馈:卡片太大、banner/logo 不对)
 // 整卡可聚焦可遥控;主推卡品牌高亮;焦点环 + focusBg + glow
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
@@ -36,10 +36,10 @@ export function HDBootScreen() {
   ];
 
   return (
-    <View style={[st.screen, { paddingTop: Math.min(insets.top, 28), paddingBottom: Math.min(insets.bottom, 20) }]}>
-      {/* 顶部品牌区 */}
+    <View style={[st.screen, { paddingTop: Math.min(insets.top, 28), paddingBottom: Math.min(insets.bottom, 20), justifyContent: 'center' }]}>
+      {/* 顶部品牌区:单行字标(绿点 + 字标,去大 logo 块) */}
       <View style={st.brand}>
-        <View style={st.brandLogo}><Icon name="play" size={34} color={C.brand} /></View>
+        <View style={st.brandDot} />
         <Text style={st.brandName}>NextMusic HD</Text>
         <Text style={st.brandSlogan}>车机 · 电视 · 大屏音乐</Text>
       </View>
@@ -82,37 +82,32 @@ export function HDBootScreen() {
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg, alignItems: 'center' },
-  brand: { alignItems: 'center', gap: 4, marginTop: 10, marginBottom: 18 },
-  brandLogo: {
-    width: 62, height: 62, borderRadius: 18, backgroundColor: C.surface,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 8,
-    boxShadow: '0 8px 26px rgba(30,215,96,.22)',
-  },
-  brandName: { color: C.text, fontSize: 28, fontWeight: '800' },
-  brandSlogan: { color: C.text2, fontSize: 14 },
-  cardRow: { flex: 1, flexDirection: 'row', gap: 22, alignSelf: 'stretch', paddingHorizontal: 56, maxHeight: 460 },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, marginBottom: 14 },
+  brandDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: C.brand, boxShadow: '0 0 12px rgba(30,215,96,.6)' },
+  brandName: { color: C.text, fontSize: 22, fontWeight: '800' },
+  brandSlogan: { color: C.text3, fontSize: 12 },
+  cardRow: { flexDirection: 'row', gap: 18, alignSelf: 'center', maxWidth: 780, width: '100%', maxHeight: 330, minHeight: 250 },
   card: {
-    flex: 1, borderRadius: 20, backgroundColor: C.surface,
-    alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12,
-    boxShadow: SH.card,
+    flex: 1, borderRadius: 18, backgroundColor: C.surface,
+    alignItems: 'center', justifyContent: 'center', padding: 16, gap: 9,
   },
   cardPrimary: { borderWidth: 1.5, borderColor: C.brand + '66' },
-  cardFocus: { borderWidth: 2.5, borderColor: C.brand, borderRadius: 20 },
-  cardIcon: { width: 72, height: 72, borderRadius: 24, backgroundColor: C.brandDim, alignItems: 'center', justifyContent: 'center' },
+  cardFocus: { borderWidth: 2.5, borderColor: C.brand, borderRadius: 18 },
+  cardIcon: { width: 52, height: 52, borderRadius: 17, backgroundColor: C.brandDim, alignItems: 'center', justifyContent: 'center' },
   cardIconPrimary: { backgroundColor: C.brand },
-  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  cardTitle: { color: C.text, fontSize: 21, fontWeight: '800' },
-  cardTag: { backgroundColor: C.brandDim, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 3 },
+  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  cardTitle: { color: C.text, fontSize: 17, fontWeight: '800' },
+  cardTag: { backgroundColor: C.brandDim, borderRadius: 7, paddingHorizontal: 8, paddingVertical: 2 },
   cardTagPrimary: { backgroundColor: C.brandDim },
-  cardTagText: { color: C.brand, fontSize: 12, fontWeight: '700' },
+  cardTagText: { color: C.brand, fontSize: 11, fontWeight: '700' },
   cardTagTextPrimary: { color: C.brand },
-  cardDesc: { color: C.text2, fontSize: 13, lineHeight: 19, textAlign: 'center' },
+  cardDesc: { color: C.text2, fontSize: 12, lineHeight: 17, textAlign: 'center' },
   cardBtn: {
-    marginTop: 6, height: 50, borderRadius: 15, borderWidth: 1.5, borderColor: '#4A4A4A',
-    paddingHorizontal: 30, alignItems: 'center', justifyContent: 'center',
+    marginTop: 4, height: 42, borderRadius: 13, borderWidth: 1.5, borderColor: '#4A4A4A',
+    paddingHorizontal: 24, alignItems: 'center', justifyContent: 'center',
   },
-  cardBtnPrimary: { backgroundColor: C.brand, borderColor: C.brand, boxShadow: SH.brand },
-  cardBtnText: { color: C.text, fontSize: 15, fontWeight: '700' },
+  cardBtnPrimary: { backgroundColor: C.brand, borderColor: C.brand },
+  cardBtnText: { color: C.text, fontSize: 13, fontWeight: '700' },
   cardBtnTextPrimary: { color: C.onBrand },
-  footHint: { color: C.text3, fontSize: 12, textAlign: 'center', marginTop: 16 },
+  footHint: { color: C.text3, fontSize: 11, textAlign: 'center', marginTop: 14 },
 });

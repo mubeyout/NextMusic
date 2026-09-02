@@ -6,6 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Icon, BrandIcon } from '../theme/Icon';
 import { C } from '../theme/tokens';
+import { IS_HD } from '../services/appversion';
+import { HDTouch } from '../hd/HDTouch';
 import { PillTabs } from '../components/PillTabs';
 import { ActionSheet } from '../components/ActionSheet';
 import { SongRow } from '../components/SongRow';
@@ -31,6 +33,22 @@ function AcctGlyph({ type, size = 20 }: { type: ProviderType; size?: number }) {
     : <Icon name={TYPE_ICON[type] as never} size={size} color={C.text} />;
 }
 
+// 触点抽象:HD 用 HDTouch(D-pad 焦点环),phone 保持 TouchableOpacity
+function T(props: { style?: unknown; onPress?: () => void; onLongPress?: () => void; disabled?: boolean; children?: React.ReactNode } & Record<string, unknown>) {
+  const { style, onPress, onLongPress, disabled, children, ...rest } = props;
+  if (IS_HD) return (
+    <HDTouch style={style as never} onPress={onPress} onLongPress={onLongPress} disabled={disabled}
+      focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12 }} {...(rest as object)}>
+      {children}
+    </HDTouch>
+  );
+  return (
+    <TouchableOpacity style={style as never} onPress={onPress} onLongPress={onLongPress} disabled={disabled} activeOpacity={0.7} {...(rest as object)}>
+      {children}
+    </TouchableOpacity>
+  );
+}
+
 export function MediaLibsScreen() {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string, p?: object) => void };
@@ -46,35 +64,49 @@ export function MediaLibsScreen() {
 
   return (
     <View style={st.screen}>
-      <PageHeader
-        title="媒体库"
-        right={(
-          <TouchableOpacity onPress={addMenu} hitSlop={6}>
-            <Icon name="add" size={22} />
-          </TouchableOpacity>
-        )}
-      />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 24 }}>
-        <Text style={st.intro}>接入 Emby、Jellyfin、Navidrome、道理鱼（Subsonic 兼容）或 WebDAV，把私有音乐库变成曲库。</Text>
+      {IS_HD ? (
+        /* HD:自绘头部(HDTouch 返回/添加,遥控可达) + 限宽居中 */
+        <View style={[hd.head, { paddingTop: Math.max(Math.min(insets.top, 20), 14) }]}>
+          <HDTouch style={hd.backBtn} onPress={() => nav.goBack()} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }} hasTVPreferredFocus>
+            <Icon name="back" size={17} color={C.text2} />
+          </HDTouch>
+          <Text style={hd.title}>媒体库</Text>
+          <HDTouch style={hd.addBtn} onPress={addMenu} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }}>
+            <Icon name="add" size={20} color={C.brand} />
+          </HDTouch>
+        </View>
+      ) : (
+        <PageHeader
+          title="媒体库"
+          right={(
+            <TouchableOpacity onPress={addMenu} hitSlop={6}>
+              <Icon name="add" size={22} />
+            </TouchableOpacity>
+          )}
+        />
+      )}
+      <ScrollView
+        contentContainerStyle={[{ paddingHorizontal: 20, paddingBottom: insets.bottom + 24 }, IS_HD && { maxWidth: 900, alignSelf: 'center', width: '100%', paddingTop: 8 }]}
+      >
+        <Text style={[st.intro, IS_HD && hd.intro]}>接入 Emby、Jellyfin、Navidrome、道理鱼（Subsonic 兼容）或 WebDAV，把私有音乐库变成曲库。</Text>
         {accts.length === 0 ? (
           <EmptyState icon="server" title="还没有添加媒体库" sub="点右上角 ＋ 接入 Emby / Jellyfin / Navidrome / WebDAV" />
         ) : (
           <View style={st.group}>
             {accts.map((a, i) => (
-              <TouchableOpacity
+              <T
                 key={a.id}
-                style={[st.row, i > 0 && st.rowDivide]}
-                activeOpacity={0.7}
+                style={[st.row, i > 0 && st.rowDivide, IS_HD && hd.row]}
                 onPress={() => nav.navigate('ProviderBrowse', { acctId: a.id })}
                 onLongPress={() => nav.navigate('ProviderEdit', { acctId: a.id })}
               >
-                <View style={st.rowIconWrap}><AcctGlyph type={a.type} /></View>
+                <View style={[st.rowIconWrap, IS_HD && hd.rowIconWrap]}><AcctGlyph type={a.type} size={IS_HD ? 24 : 20} /></View>
                 <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={st.rowTitle} numberOfLines={1}>{a.name || PROVIDER_META[a.type].label}</Text>
-                  <Text style={st.rowSub} numberOfLines={1}>{a.base}</Text>
+                  <Text style={[st.rowTitle, IS_HD && hd.rowTitle]} numberOfLines={1}>{a.name || PROVIDER_META[a.type].label}</Text>
+                  <Text style={[st.rowSub, IS_HD && hd.rowSub]} numberOfLines={1}>{a.base}</Text>
                 </View>
-                <Icon name="chevronright" size={20} color={C.text3} />
-              </TouchableOpacity>
+                <Icon name="chevronright" size={IS_HD ? 24 : 20} color={C.text3} />
+              </T>
             ))}
           </View>
         )}
@@ -489,6 +521,19 @@ const st = StyleSheet.create({
   davBtnMain: { backgroundColor: C.brand },
   davBtnText: { color: C.text, fontSize: 12, fontWeight: '600' },
   miniDock: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+});
+
+// HD(车机/TV)覆盖样式:限宽居中 + 大触点/大字号(老板:媒体库列表需遥控光标+大屏排版)
+const hd = StyleSheet.create({
+  head: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, marginBottom: 10 },
+  backBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
+  addBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
+  title: { flex: 1, color: C.text, fontSize: 20, fontWeight: '800', textAlign: 'center' },
+  intro: { fontSize: 13, lineHeight: 19 },
+  row: { minHeight: 78, paddingVertical: 12 },
+  rowIconWrap: { width: 46, height: 46, borderRadius: 13 },
+  rowTitle: { fontSize: 16 },
+  rowSub: { fontSize: 12 },
 });
 
 // navigation 注册用包装（native-stack 组件类型兼容）

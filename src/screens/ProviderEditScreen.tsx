@@ -99,13 +99,14 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
           <View style={{ width: 26 }} />
         </View>
         <ScrollView
-          contentContainerStyle={[st.content, IS_HD && { paddingHorizontal: 44, gap: 16 }]}
+          style={{ flex: 1 }}
+          contentContainerStyle={[st.content, IS_HD && { paddingHorizontal: 40, gap: 16, flexGrow: 1, justifyContent: 'center', paddingBottom: 30 }]}
           showsVerticalScrollIndicator={false}
         >
           <Text style={[st.desc, IS_HD && hdSt.desc]}>选择服务器类型。NextMusic 会先测试能力，再保存凭证。</Text>
           {IS_HD ? (
-            /* HD:一排四张竖版卡(整卡可聚焦,对齐引导页卡片语言) */
-            <View style={{ flexDirection: 'row', gap: 16 }}>
+            /* HD:一排四张竖版卡(整卡可聚焦,对齐引导页卡片语言;限宽居中+垂直居中) */
+            <View style={{ flexDirection: 'row', gap: 16, maxWidth: 920, width: '100%', alignSelf: 'center' }}>
               {TYPE_CARDS.map(c => (
                 <HDTouch
                   key={c.type}
@@ -320,7 +321,6 @@ const hdSt = StyleSheet.create({
   typeCard: {
     flex: 1, minHeight: 230, borderRadius: 18, backgroundColor: C.surface,
     alignItems: 'center', justifyContent: 'center', gap: 10, padding: 18,
-    boxShadow: SH.card,
   },
   typeFocus: { borderWidth: 2.5, borderColor: C.brand, borderRadius: 18 },
   typeIcon: { width: 68, height: 68, borderRadius: 22, backgroundColor: C.brandDim, alignItems: 'center', justifyContent: 'center' },
@@ -329,7 +329,7 @@ const hdSt = StyleSheet.create({
   typeBadgeText: { color: C.brandText, fontSize: 12, fontWeight: '700' },
   typeSub: { color: C.text3, fontSize: 12, textAlign: 'center', lineHeight: 17 },
   desc: { color: C.text2, fontSize: 13, lineHeight: 18 },
-  inputCard: { backgroundColor: C.surface, borderRadius: 16, paddingHorizontal: 20, paddingVertical: 14, gap: 6, boxShadow: SH.card },
+  inputCard: { backgroundColor: C.surface, borderRadius: 16, paddingHorizontal: 20, paddingVertical: 14, gap: 6 },
   inputLabel: { color: C.text2, fontSize: 13 },
   inputValue: { color: C.text, fontSize: 16, paddingVertical: 6 },
   btnGhost: { flex: 1, height: 58, borderRadius: 14, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },

@@ -63,6 +63,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     connectServer: async (b: string) => {
       const norm = normalizeBase(b);
       const cfg = await api.probe(norm); // throws on failure
+      httpStore.base = norm; // 立即同步 http store(setState 是异步的,连续流程 connect+login 会读到空 base → 登录必败,TV 表单实测复现)
       setBase(norm);
       setServerConfig(cfg);
       setModeState('server');
