@@ -620,6 +620,7 @@ export const providerApi = {
     const t = setTimeout(() => ctrl.abort(), 8000);
     try {
       const r = await fetch(norm(a.base) + '/', { method: 'PROPFIND', headers: { Depth: '0', ...basicAuth(a) }, signal: ctrl.signal });
+      if (r.status === 401) throw new Error('HTTP 401：账号或密码错误（服务器端凭据可能已变更，请更新后重试）');
       if (!r.ok && r.status !== 207) throw new Error('HTTP ' + r.status + '（不是有效 WebDAV 端点）');
     } finally { clearTimeout(t); }
   },
