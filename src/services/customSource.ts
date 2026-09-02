@@ -371,3 +371,61 @@ export async function syncFromCatalog(catalogUrl: string): Promise<{ updated: nu
   }
   return { updated: names.length, names };
 }
+
+
+// ---------- vc88：预埋更新(LX 协议 updateAlert)+ 手动文件导入 ----------
+/** 预埋更新覆盖：脚本 send(updateAlert {log, updateUrl}) → 宿主从 updateUrl 拉新版一键覆盖 */
+export async function applyUpdateFromAlert(srcId: string, updateUrl: string): Promise<string> {
+  const list = loadSources();
+  const s = list.find(x => x.id === srcId);
+  if (!s) throw new Error('音源不存在');
+  if (!/^https?:\/\//i.test(updateUrl)) throw new Error('更新地址无效');
+  const resp = await fetch(updateUrl, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' } });
+  if (!resp.ok) throw new Error(`更新脚本下载失败：HTTP ${resp.status}`);
+  const script = await resp.text();
+  if (script.length < 50) throw new Error('更新脚本内容异常');
+  const meta = extractMeta(script);
+  s.script = script;
+  if (meta.version) s.version = meta.version;
+  if (meta.name && s.name === '未命名音源') s.name = meta.name;
+  if (s.kind === 'musicfree') mfPlugins.delete(s.id);
+  save(list);
+  engine.setActiveSources(list.filter(x => x.enabled));
+  if (s.kind !== 'musicfree') await engine.userApiInit(s.id, s.script);
+  return s.version;
+}
+
+/** 手动添加音源文件（.js 内容直装；LX 走沙箱验证，MusicFree 探针验证；无 URL——更新走预埋或手动重导） */
+export async function addSourceFromFile(script: string): Promise<CustomSource> {
+  if (!script || script.length < 50) throw new Error('脚本内容异常（过短）');
+  const meta = extractMeta(script);
+  const id = `s_${Date.now().toString(36)}`;
+  if (isMusicfreeScript(script)) {
+    const probe: CustomSource = { id, name: meta.name, version: meta.version || '0.0.1', url: '', script, enabled: true, sources: {}, kind: 'musicfree' };
+    const p = mfPluginOf(probe);
+    if (!p) throw new Error('MusicFree 插件加载失败（缺少 getMediaSource 或执行报错）');
+    const platform = String(p.platform ?? meta.name ?? 'musicfree');
+    const channel = mfChannelOf(platform);
+    const src: CustomSource = {
+      id, name: meta.name || platform || 'MusicFree 音源', version: meta.version || String(p.version ?? '0.0.1'),
+      url: '', script, enabled: true, kind: 'musicfree', sources: { [channel]: { name: platform } },
+    };
+    const list = loadSources();
+    list.push(src);
+    save(list);
+    engine.setActiveSources(list.filter(x => x.enabled));
+    return src;
+  }
+  // LX：沙箱初始化验证
+  const init = await engine.userApiInit(id, script);
+  if (!init.sources || !Object.keys(init.sources).length) throw new Error('LX 脚本初始化成功但未注册任何音源');
+  const src: CustomSource = {
+    id, name: meta.name || '未命名音源', version: meta.version || '1.0.0',
+    url: '', script, enabled: true, sources: init.sources as CustomSource['sources'],
+  };
+  const list = loadSources();
+  list.push(src);
+  save(list);
+  engine.setActiveSources(list.filter(x => x.enabled));
+  return src;
+}

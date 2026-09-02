@@ -461,7 +461,9 @@ function initUserApi(id, script) {
           if (timer) clearTimeout(timer);
           resolve({ sources: registered });
         } else if (name === 'updateAlert') {
-          reject(new Error('音源脚本要求更新'));
+          // vc88：LX 预埋更新协议——脚本自检发现新版（自带 version 端点比对新版），
+          // 转发宿主弹窗一键覆盖；inited 通常已 resolve，这里只广播不再当错误
+          try { __bridge.post({ t: 'sourceUpdate', id: id, info: { log: (data && data.log) || '', updateUrl: (data && data.updateUrl) || '' } }); } catch (e) {}
         }
       },
       on: function (name, handler) { if (name === 'request') handlers.request = handler; },

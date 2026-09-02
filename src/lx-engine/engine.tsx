@@ -12,9 +12,10 @@ import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { buildSandboxHtml, buildUserApiHtml } from './sandbox';
 
 interface HttpMsg {
-  t: 'http' | 'rpc' | 'ready' | 'log';
+  t: 'http' | 'rpc' | 'ready' | 'log' | 'sourceUpdate';
   hid?: string;
-  id?: number;
+  id?: number | string;  // rpc 序号(number)或 sourceUpdate 的源 id(string)
+
   url?: string;
   method?: string;
   headers?: Record<string, string>;
@@ -95,6 +96,12 @@ class Sandbox {
       else { console.log(`[${this.tag}] rpc fail`, m.error); p.reject(new Error(m.error || 'sandbox rpc failed')); }
       return;
     }
+    if (m.t === 'sourceUpdate' && (m as { id?: string }).id != null) {
+      // vc88：LX 音源预埋更新事件(脚本 send updateAlert)
+      const su = m as unknown as { id: string; info: { log?: string; updateUrl?: string } };
+      emitSourceUpdate(su.id, su.info || {});
+      return;
+    }
     if (m.t === 'http' && m.hid) { void this.handleHttp(m); }
   }
 
@@ -137,6 +144,13 @@ class Sandbox {
       this.inject(`window.__lxcmd(${id},${arg});true;`);
     });
   }
+}
+
+// vc88：音源预埋更新事件(WebView → RN)
+type SourceUpdateInfo = { log?: string; updateUrl?: string };
+const sourceUpdateListeners = new Set<(id: string, info: SourceUpdateInfo) => void>();
+function emitSourceUpdate(id: string, info: SourceUpdateInfo) {
+  sourceUpdateListeners.forEach(cb => { try { cb(id, info); } catch { /* listener 异常不扩散 */ } });
 }
 
 class Engine {
@@ -186,6 +200,11 @@ class Engine {
       console.log('[LxEngineUsr] setActiveSources skipped:', e instanceof Error ? e.message : e);
     }
   }
+}
+
+export function onSourceUpdateAlert(cb: (id: string, info: SourceUpdateInfo) => void): () => void {
+  sourceUpdateListeners.add(cb);
+  return () => { sourceUpdateListeners.delete(cb); };
 }
 
 export const engine = new Engine();

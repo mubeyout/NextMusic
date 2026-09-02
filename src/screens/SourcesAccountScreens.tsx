@@ -6,8 +6,10 @@ import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { useApp } from '../state/AppState';
 import { SubPage } from '../components/SubPage';
-import { loadSources, addSourceByUrl, removeSource, toggleSource, activeSources, sourceHealthCheck, checkSourceUpdates, applySourceUpdate, syncFromCatalog, type CustomSource } from '../services/customSource';
+import { loadSources, addSourceByUrl, addSourceFromFile, removeSource, toggleSource, activeSources, sourceHealthCheck, checkSourceUpdates, applySourceUpdate, applyUpdateFromAlert, syncFromCatalog, type CustomSource } from '../services/customSource';
+import { onSourceUpdateAlert } from '../lx-engine/engine';
 import { dialog, toast } from '../components/Dialog';
+import SafX from 'react-native-saf-x';
 import { settings } from '../services/settings';
 
 // 自定义音源：LX 脚本本地沙箱运行，免登录即可播放
@@ -27,42 +29,44 @@ export function SourcesScreen() {
 
   const refresh = () => setSources(loadSources());
   useEffect(refresh, []);
-  // vc85/87：打开时静默检查音源更新（直连 + 目录页）→ 有新版弹窗一键覆盖
+  // vc85/88：音源更新三通道——①LX 预埋协议(脚本自带 version 端点自检,init 时 send updateAlert,引擎转发)
+  // ②直连 @version 比对(MusicFree 类) ③目录订阅=手动(老板纠偏:自动更新以音源自身预埋为准)
   useEffect(() => {
     let dead = false;
+    // 预埋更新事件 → 弹窗一键覆盖
+    const off = onSourceUpdateAlert((srcId, info) => {
+      if (dead) return;
+      const s = loadSources().find(x => x.id === srcId);
+      const name = s?.name ?? '音源';
+      if (!info.updateUrl) { toast(`${name}：${info.log || '发现新版本'}`); return; }
+      dialog.alert(
+        '音源有新版本',
+        `「${name}」\n${info.log || '发现新版本'}\n\n一键更新覆盖？`,
+        [
+          { text: '稍后', style: 'cancel' },
+          {
+            text: '一键更新',
+            onPress: () => {
+              applyUpdateFromAlert(srcId, info.updateUrl!)
+                .then(v => { toast(`已更新到 v${v}`); refresh(); })
+                .catch(e => dialog.alert('更新失败', (e as Error).message));
+            },
+          },
+        ],
+      );
+    });
+    // 直连检查(MusicFree 类的 @version)
     (async () => {
-      const lines: string[] = [];
-      let catCount = 0;
-      let directApply: () => void = () => {};
       try {
         const ups = await checkSourceUpdates();
-        if (ups.length) {
-          lines.push(...ups.map(u => `「${u.src.name}」v${u.src.version} → v${u.version}`));
-          directApply = () => ups.forEach(applySourceUpdate);
-        }
+        if (dead || !ups.length) return;
+        dialog.alert('音源有新版本', ups.map(u => `「${u.src.name}」v${u.src.version} → v${u.version}`).join('\n'), [
+          { text: '稍后', style: 'cancel' },
+          { text: '一键全部更新', onPress: () => { ups.forEach(applySourceUpdate); refresh(); toast(`已更新 ${ups.length} 个音源`); } },
+        ]);
       } catch { /* ignore */ }
-      const cat = settings.get().sourceCatalogUrl;
-      if (cat) {
-        try {
-          const r = await syncFromCatalog(cat); // 已持久化+引擎重载（目录链路内部完成）
-          catCount = r.updated;
-          if (r.updated) lines.push(...r.names.map(n => `「${n.replace(' → ', '」')}」`.replace('」」', '」')));
-        } catch { /* 目录不可达静默 */ }
-      }
-      if (dead || !lines.length) return;
-      dialog.alert('音源有新版本', lines.join('\n'), [
-        { text: '稍后', style: 'cancel' },
-        {
-          text: '一键全部更新',
-          onPress: () => {
-            directApply();
-            if (catCount) toast(`已从目录更新 ${catCount} 个音源`);
-            refresh();
-          },
-        },
-      ]);
     })();
-    return () => { dead = true; };
+    return () => { dead = true; off(); };
   }, []);
 
   const add = async () => {
@@ -74,6 +78,21 @@ export function SourcesScreen() {
       setUrl(''); setAdding(false); refresh();
     } catch (e) {
       dialog.alert('添加失败', (e as Error).message);
+    } finally { setBusy(false); }
+  };
+
+  // vc88：手动导入音源文件（SAF 选 .js）
+  const importFile = async () => {
+    try {
+      const docs = await SafX.openDocument({ multiple: false });
+      if (!docs?.length) return;
+      const text = await SafX.readFile(docs[0].uri);
+      setBusy(true);
+      const s = await addSourceFromFile(text);
+      toast(`已导入 ${s.name} v${s.version}`);
+      refresh();
+    } catch (e) {
+      dialog.alert('导入失败', (e as Error).message);
     } finally { setBusy(false); }
   };
 
@@ -141,10 +160,16 @@ export function SourcesScreen() {
               </TouchableOpacity>
             </View>
           ))}
-          <TouchableOpacity style={st.addAction} onPress={() => setAdding(true)}>
-            <Icon name="add" size={18} />
-            <Text style={st.addActionText}>添加音源（URL）</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+            <TouchableOpacity style={[st.addAction, { flex: 1, marginTop: 0 }]} onPress={() => setAdding(true)}>
+              <Icon name="add" size={18} />
+              <Text style={st.addActionText}>添加音源（URL）</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[st.addAction, { flex: 1, marginTop: 0 }]} onPress={importFile} disabled={busy}>
+              <Icon name="download" size={16} color={C.brand} />
+              <Text style={st.addActionText}>导入音源文件</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={st.section}>
