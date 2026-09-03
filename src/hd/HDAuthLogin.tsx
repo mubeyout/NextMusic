@@ -100,9 +100,12 @@ export function HDAuthLoginScreen() {
   // dialog.alert 引入会带 phone 组件树,这里用局部包装避免样式耦合
   function dialog_alert(title: string, msg: string) { toast(title + ':' + msg.split('\n')[0]); }
 
-  // TV/车机:输入卡整体 HDTouch 聚焦导航,OK 才进输入态(focusable=false 防 D-pad 碰框即弹 IME 吃掉导航——实测病灶)
+  // TV/车机:输入卡整体 HDTouch 聚焦导航,OK 才进输入态并弹 IME
+  // 坑:showSoftInputOnFocus=false 会连手动 focus() 的键盘一起拦(老板实测无法弹出)——OK 时动态放开
   const inputCard = (label: string, value: string, set: (v: string) => void, ph: string, opts?: { secure?: boolean; hint?: string; right?: React.ReactNode; kbd?: 'url' | 'default'; onSubmit?: () => void }) => {
     const ref = React.useRef<React.ComponentRef<typeof TextInput>>(null);
+    const [ime, setIme] = React.useState(false);
+    React.useEffect(() => { if (ime) ref.current?.focus(); }, [ime]);
     const card = (
       <View style={st.inputCard}>
         <View style={st.labelRow}>
@@ -121,15 +124,16 @@ export function HDAuthLoginScreen() {
           keyboardType={opts?.kbd === 'url' ? 'url' : 'default'}
           returnKeyType={opts?.onSubmit ? 'done' : 'next'}
           onSubmitEditing={opts?.onSubmit}
-          focusable={!IS_HD}
-          showSoftInputOnFocus={!IS_HD ? undefined : false}
+          focusable={!IS_HD || ime}
+          showSoftInputOnFocus={!IS_HD ? undefined : ime}
+          onBlur={() => setIme(false)}
         />
         {opts?.hint ? <Text style={st.inputHint}>{opts.hint}</Text> : null}
       </View>
     );
     if (!IS_HD) return card;
     return (
-      <HDTouch style={{ borderRadius: 16 }} onPress={() => { ref.current?.focus(); }} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 16 }}>
+      <HDTouch style={{ borderRadius: 16 }} onPress={() => setIme(true)} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 16 }}>
         {card}
       </HDTouch>
     );
