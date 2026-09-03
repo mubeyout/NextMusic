@@ -50,3 +50,14 @@ jobs:
             desktop/release/*.deb
             desktop/release/*.dmg
           if-nothing-found: ignore
+      # 产物直传 public release 仓(CI 内网,避免本地经代理中转 480MB)
+      - name: Publish to release repo
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          shopt -s nullglob
+          files=(release/*.exe release/*.AppImage release/*.deb release/*.dmg)
+          if [ ${#files[@]} -eq 0 ]; then echo "no installers found"; exit 1; fi
+          gh release upload v1.1.0 "${files[@]}" --repo mubeyout/nextmusic-release --clobber
+          echo "published: ${files[*]}"
