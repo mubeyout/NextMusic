@@ -1,5 +1,32 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, PanResponder, TextInput, LayoutChangeEvent } from 'react-native';
+import { IS_HD } from '../services/appversion';
+import { HDTouch } from '../hd/HDTouch';
+
+
+// 触点抽象:HD(车机/TV)用 HDTouch(D-pad 焦点环),phone 保持 TouchableOpacity
+function T(props: { style?: unknown; onPress?: () => void; disabled?: boolean; children?: React.ReactNode; activeOpacity?: number } & Record<string, unknown>) {
+  const { style, onPress, disabled, children, ...rest } = props;
+  if (IS_HD) return (
+    <HDTouch style={style as never} onPress={onPress} disabled={disabled} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12 }} {...(rest as object)}>
+      {children}
+    </HDTouch>
+  );
+  return (
+    <T style={style as never} onPress={onPress} disabled={disabled} activeOpacity={0.7} {...(rest as object)}>
+      {children}
+    </T>
+  );
+}
+
+// TV 步进钮:滑杆的 D-pad 等价物(焦点即选中,OK/点击 = ±step)
+function StepBtn({ d, onPress }: { d: -1 | 1; onPress: () => void }) {
+  return (
+    <HDTouch onPress={onPress} style={{ width: 30, height: 34, borderRadius: 8, backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ color: C.text, fontSize: 15, fontWeight: '800', lineHeight: 18 }}>{d < 0 ? '−' : '+'}</Text>
+    </HDTouch>
+  );
+}
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
@@ -19,6 +46,40 @@ import {
 // 数据与同步逻辑不变（soundfx.ts / 原生 DSP 全复用）
 
 // ---------- 横向滑杆（PanResponder，左起填充；拖动只预览，松手才提交） ----------
+// 触点抽象:HD(车机/TV)用 HDTouch(D-pad 焦点环),phone 保持 TouchableOpacity
+
+// ===== TV 行式音效控件:标签 | 轨道可视化 | 数值 | 步进钮 =====
+
+function FxRow({ label, value, min, max, step, onChange, fmt }: {
+  label: string; value: number; min: number; max: number; step: number;
+  onChange: (v: number) => void; fmt?: (v: number) => string;
+}) {
+  const r = Math.max(0, Math.min(1, (value - min) / (max - min)));
+  return (
+    <View style={fxrowSt.row}>
+      <Text style={fxrowSt.label}>{label}</Text>
+      <View style={fxrowSt.track}>
+        <View style={[fxrowSt.halfA, { flex: r }]} />
+        <View style={fxrowSt.bar} />
+        <View style={[fxrowSt.halfB, { flex: 1 - r }]} />
+      </View>
+      <Text style={fxrowSt.val}>{fmt ? fmt(value) : (value > 0 ? '+' : '') + value}</Text>
+      <StepBtn d={-1} onPress={() => onChange(Math.max(min, Math.round((value - step) / step) * step))} />
+      <StepBtn d={1} onPress={() => onChange(Math.min(max, Math.round((value + step) / step) * step))} />
+    </View>
+  );
+}
+
+const fxrowSt = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 5 },
+  label: { color: C.text2, fontSize: 13, width: 56, fontVariant: ['tabular-nums'] },
+  track: { flex: 1, height: 8, flexDirection: 'row', alignItems: 'center' },
+  halfA: { height: 8, backgroundColor: C.brand, borderTopLeftRadius: 4, borderBottomLeftRadius: 4 },
+  halfB: { height: 8, backgroundColor: C.inset },
+  bar: { width: 2, height: 14, borderRadius: 1, backgroundColor: C.text },
+  val: { color: C.text, fontSize: 14, fontWeight: '600', width: 64, textAlign: 'right', fontVariant: ['tabular-nums'] },
+});
+
 function HSlider({ value, min, max, step, onChange, disabled, style }: {
   value: number; min: number; max: number; step: number;
   onChange: (v: number) => void; disabled?: boolean; style?: object;
@@ -67,6 +128,12 @@ function HSlider({ value, min, max, step, onChange, disabled, style }: {
       <View style={hs.rail} pointerEvents="none" />
       <View style={[hs.fill, { width: r * w }]} pointerEvents="none" />
       <View style={[hs.thumb, { left: (w ? r * w : 0) - 7 }]} pointerEvents="none" />
+      {IS_HD && !disabled ? (
+        <View style={{ position: 'absolute', right: -2, top: -6, flexDirection: 'row', gap: 4 }}>
+          <StepBtn d={-1} onPress={() => onChange(Math.max(min, Math.round((value - step) / step) * step))} />
+          <StepBtn d={1} onPress={() => onChange(Math.min(max, Math.round((value + step) / step) * step))} />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -134,6 +201,12 @@ function VSlider({ value, min, max, step, onChange, height = 150 }: {
       <View style={vs.zero} pointerEvents="none" />
       <View style={[vs.fill, { top: fillTop, height: fillH }]} pointerEvents="none" />
       <View style={[vs.thumb, { top: thumbY }]} pointerEvents="none" />
+      {IS_HD ? (
+        <View style={{ position: 'absolute', bottom: -2, flexDirection: 'row', gap: 4 }}>
+          <StepBtn d={-1} onPress={() => onChange(Math.max(min, Math.round((value - step) / step) * step))} />
+          <StepBtn d={1} onPress={() => onChange(Math.min(max, Math.round((value + step) / step) * step))} />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -151,6 +224,15 @@ function SRow({ label, valueLabel, value, min, max, step, onChange, disabled, st
   label: string; valueLabel: string; value: number; min: number; max: number; step: number;
   onChange: (v: number) => void; disabled?: boolean; style?: object;
 }) {
+  if (IS_HD) {
+    return (
+      <View style={[{ opacity: disabled ? 0.4 : 1, paddingVertical: 4 }, style as never]}>
+        <FxRow label={label} value={value} min={min} max={max} step={step}
+          onChange={disabled ? () => {} : onChange}
+          fmt={v => (label === '音调' ? v.toFixed(2) + 'x' : String(Math.round(v)))} />
+      </View>
+    );
+  }
   return (
     <View style={[st.srow, disabled && st.srowDisabled, style]}>
       <View style={st.srowHead}>
@@ -185,12 +267,12 @@ export function FxScreen() {
     <View style={[st.screen, { paddingTop: insets.top + 10 }]}>
       {/* Header */}
       <View style={st.header}>
-        <TouchableOpacity onPress={() => nav.goBack()} hitSlop={6} style={{ width: 26 }}>
+        <T onPress={() => nav.goBack()} hitSlop={6} style={{ width: 26 }}>
           <Icon name="back" size={20} />
-        </TouchableOpacity>
+        </T>
         <Text style={st.title}>均衡器与音效</Text>
         {/* 点按徽标：手动从服务器拉取音效配置（不再自动覆盖本地） */}
-        <TouchableOpacity
+        <T
           style={st.syncBadge}
           hitSlop={8}
           activeOpacity={0.7}
@@ -203,17 +285,17 @@ export function FxScreen() {
         >
           <View style={[st.syncDot, sync === 'synced' && st.syncDotOn]} />
           <Text style={st.syncText}>{sync === 'synced' ? '已同步' : sync === 'local' ? '本地' : '同步中'}</Text>
-        </TouchableOpacity>
+        </T>
       </View>
 
-      <ScrollView contentContainerStyle={st.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[st.content, IS_HD && { maxWidth: 900, alignSelf: 'center', width: '100%' }]} showsVerticalScrollIndicator={false}>
         {/* ===== 快速预设（横滚胶囊） ===== */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.presetScroll}>
           {allPresetNames.map(name => {
             const active = activePresetName === name;
             const isCustom = customPresets.some(p => p.name === name);
             return (
-              <TouchableOpacity
+              <T
                 key={name}
                 style={[st.chip, active && st.chipOn]}
                 activeOpacity={0.7}
@@ -221,12 +303,12 @@ export function FxScreen() {
                 onLongPress={isCustom ? () => setManagePreset(name) : undefined}
               >
                 <Text style={[st.chipText, active && st.chipTextOn]}>{name}</Text>
-              </TouchableOpacity>
+              </T>
             );
           })}
-          <TouchableOpacity style={st.chipAdd} activeOpacity={0.7} onPress={() => { setInputVal(''); setPresetSheet({ mode: 'add' }); }}>
+          <T style={st.chipAdd} activeOpacity={0.7} onPress={() => { setInputVal(''); setPresetSheet({ mode: 'add' }); }}>
             <Text style={st.chipAddText}>＋</Text>
-          </TouchableOpacity>
+          </T>
         </ScrollView>
 
         {/* ===== 均衡器（垂直 10 段） ===== */}
@@ -236,12 +318,19 @@ export function FxScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               {activePresetName ? <Text style={st.presetNameOn}>{activePresetName}</Text> : null}
               {eqTouched ? (
-                <TouchableOpacity onPress={resetEQ} hitSlop={4}>
+                <T onPress={resetEQ} hitSlop={4}>
                   <Text style={st.linkBtn}>重置</Text>
-                </TouchableOpacity>
+                </T>
               ) : null}
             </View>
           </View>
+          {IS_HD ? (
+            <View style={{ gap: 4 }}>
+              {FX_FREQ_LABELS.map((label, i) => (
+                <FxRow key={label} label={label} value={settings.eq[i]} min={-12} max={12} step={1} onChange={v => setEQ(i, v)} />
+              ))}
+            </View>
+          ) : (
           <View style={st.eqGrid}>
             {FX_FREQ_LABELS.map((label, i) => {
               const g = settings.eq[i];
@@ -254,6 +343,7 @@ export function FxScreen() {
               );
             })}
           </View>
+          )}
         </View>
 
         {/* ===== 环境混响 ===== */}
@@ -266,14 +356,14 @@ export function FxScreen() {
             {FX_REVERB_OPTIONS.map(r => {
               const on = settings.reverb.id === r.id;
               return (
-                <TouchableOpacity
+                <T
                   key={r.id}
                   style={[st.chip, st.revChip, on && st.chipOn]}
                   activeOpacity={0.7}
                   onPress={() => setReverb(r.id)}
                 >
                   <Text style={[st.chipText, on && st.chipTextOn]} numberOfLines={1}>{r.name}</Text>
-                </TouchableOpacity>
+                </T>
               );
             })}
           </View>
@@ -296,9 +386,9 @@ export function FxScreen() {
           <View style={st.cardHead}>
             <Text style={st.cardTitle}>音调升降</Text>
             {settings.pitch !== 1 ? (
-              <TouchableOpacity onPress={resetFxPitch} hitSlop={4}>
+              <T onPress={resetFxPitch} hitSlop={4}>
                 <Text style={st.linkBtn}>重置</Text>
-              </TouchableOpacity>
+              </T>
             ) : null}
           </View>
           <SRow
@@ -311,11 +401,11 @@ export function FxScreen() {
         <View style={st.card}>
           <View style={st.cardHead}>
             <Text style={st.cardTitle}>3D 立体环绕<Text style={st.cardHint}>（需使用耳机）</Text></Text>
-            <TouchableOpacity activeOpacity={0.7} onPress={() => setPanner({ enable: !settings.panner.enable })}>
+            <T activeOpacity={0.7} onPress={() => setPanner({ enable: !settings.panner.enable })}>
               <View style={[st.switch, settings.panner.enable && st.switchOn]}>
                 <View style={[st.knob, settings.panner.enable && st.knobOn]} />
               </View>
-            </TouchableOpacity>
+            </T>
           </View>
           <SRow
             style={{ opacity: settings.panner.enable ? 1 : 0.4 }}
@@ -353,7 +443,7 @@ export function FxScreen() {
               maxLength={12}
               autoFocus
             />
-            <TouchableOpacity
+            <T
               style={st.sheetInputOk}
               onPress={() => {
                 if (!presetSheet) return;
@@ -365,7 +455,7 @@ export function FxScreen() {
               }}
             >
               <Text style={st.sheetInputOkText}>确定</Text>
-            </TouchableOpacity>
+            </T>
           </View>
         }
       />

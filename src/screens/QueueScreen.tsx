@@ -4,6 +4,22 @@ import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
+import { IS_HD } from '../services/appversion';
+import { HDTouch } from '../hd/HDTouch';
+// 触点抽象:HD 用 HDTouch(D-pad 焦点),phone 保持 TouchableOpacity
+function T(props: { style?: unknown; onPress?: () => void; disabled?: boolean; children?: React.ReactNode } & Record<string, unknown>) {
+  const { style, onPress, disabled, children, ...rest } = props;
+  if (IS_HD) return (
+    <HDTouch style={style as never} onPress={onPress} disabled={disabled} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12 }} {...(rest as object)}>
+      {children}
+    </HDTouch>
+  );
+  return (
+    <T style={style as never} onPress={onPress} disabled={disabled} activeOpacity={0.7} {...(rest as object)}>
+      {children}
+    </T>
+  );
+}
 import { SongRow } from '../components/SongRow';
 import { usePlayer } from '../state/PlayerProvider';
 import { PageHeader, EmptyState } from '../components/PageChrome';
@@ -25,7 +41,7 @@ export function QueueScreen() {
           title="播放队列"
           onBack={() => nav.goBack()}
           right={(
-            <TouchableOpacity
+            <T
               hitSlop={6}
               onPress={() => dialog.menu('队列操作', [
                 { label: `下载全部（${queue.length} 首）`, onPress: () => { const n = enqueueDownload(queue); toast(n ? `${n} 首加入下载队列` : '队列内均已下载'); } },
@@ -33,7 +49,7 @@ export function QueueScreen() {
               ])}
             >
               <Icon name="more" size={22} />
-            </TouchableOpacity>
+            </T>
           )}
         />
 

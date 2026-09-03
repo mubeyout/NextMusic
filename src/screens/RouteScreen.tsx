@@ -4,6 +4,22 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAudioPro } from 'react-native-audio-pro';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
+import { IS_HD } from '../services/appversion';
+import { HDTouch } from '../hd/HDTouch';
+// 触点抽象:HD 用 HDTouch(D-pad 焦点),phone 保持 TouchableOpacity
+function T(props: { style?: unknown; onPress?: () => void; disabled?: boolean; children?: React.ReactNode } & Record<string, unknown>) {
+  const { style, onPress, disabled, children, ...rest } = props;
+  if (IS_HD) return (
+    <HDTouch style={style as never} onPress={onPress} disabled={disabled} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12 }} {...(rest as object)}>
+      {children}
+    </HDTouch>
+  );
+  return (
+    <T style={style as never} onPress={onPress} disabled={disabled} activeOpacity={0.7} {...(rest as object)}>
+      {children}
+    </T>
+  );
+}
 import { toast } from '../components/Dialog';
 import { usePlayer } from '../state/PlayerProvider';
 import { audioRoute, dlna, googleCast, type LocalDevice, type DlnaDevice, type CastDevice } from '../services/audioroute';
@@ -201,21 +217,21 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
   return (
     <View style={st.overlay} pointerEvents="box-none">
       <Animated.View style={[st.scrim, { opacity: a }]} pointerEvents="auto">
-        <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={onClose} />
+        <T style={{ flex: 1 }} activeOpacity={1} onPress={onClose} />
       </Animated.View>
       <Animated.View style={[st.sheet, { paddingBottom: insets.bottom + 14, transform: [{ translateY: sheetY }] }]}>
         <View style={st.headRow}>
           <View style={st.handle} />
-          <TouchableOpacity style={st.closeBtn} onPress={onClose} hitSlop={8}>
+          <T style={st.closeBtn} onPress={onClose} hitSlop={8}>
             <Icon name="close" size={18} color={C.text2} />
-          </TouchableOpacity>
+          </T>
         </View>
         <ScrollView bounces={false} style={{ flexShrink: 1 }} contentContainerStyle={{ paddingBottom: 6 }}>
           <Text style={st.title}>选择播放设备</Text>
           <Text style={st.subtitle}>{cast ? `正在${cast.kind === 'cast' ? ' Cast 到' : '投屏到'} ${cast.dev.name}` : '让音乐在附近设备上继续播放'}</Text>
 
           <Text style={st.label}>本机设备</Text>
-          <TouchableOpacity style={[st.deviceRow, autoOn && st.deviceRowOn]} onPress={() => pickLocal(-1)}>
+          <T style={[st.deviceRow, autoOn && st.deviceRowOn]} onPress={() => pickLocal(-1)}>
             <View style={[st.iconWrap, autoOn && { backgroundColor: C.brand }]}>
               <Icon name="phone" size={26} color={autoOn ? '#FFFFFF' : C.text} />
             </View>
@@ -228,7 +244,7 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
               </Text>
             </View>
             {autoOn ? <View style={st.checkBadge}><Icon name="check" size={18} color="#FFFFFF" /></View> : null}
-          </TouchableOpacity>
+          </T>
           {(() => {
             // 设备行渲染（vc76：本机区/蓝牙区共用；蓝牙独立分区不再混入本机设备）
             const renderRow = (d: LocalDevice) => {
@@ -237,7 +253,7 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
               const live = activeId === d.id;
               const meta = KIND_META[d.kind] ?? KIND_META.speaker;
               return (
-                <TouchableOpacity key={d.id} style={[st.deviceRow, on && st.deviceRowOn]} onPress={() => pickLocal(d.id)}>
+                <T key={d.id} style={[st.deviceRow, on && st.deviceRowOn]} onPress={() => pickLocal(d.id)}>
                   <View style={[st.iconWrap, on && { backgroundColor: C.brand }]}>
                     <Icon name={meta.icon} size={26} color={on ? '#FFFFFF' : C.text} />
                   </View>
@@ -248,7 +264,7 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
                     </Text>
                   </View>
                   {on ? <View style={st.checkBadge}><Icon name="check" size={18} color="#FFFFFF" /></View> : null}
-                </TouchableOpacity>
+                </T>
               );
             };
             return (<>
@@ -264,7 +280,7 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
 
           <Text style={st.label}>DLNA 投屏设备</Text>
           {cast?.kind === 'dlna' ? (
-            <TouchableOpacity style={[st.deviceRow, st.deviceRowOn]} onPress={() => { stopCast(); toast('已停止投屏，回本机播放'); }}>
+            <T style={[st.deviceRow, st.deviceRowOn]} onPress={() => { stopCast(); toast('已停止投屏，回本机播放'); }}>
               <View style={[st.iconWrap, { backgroundColor: C.brand }]}>
                 <Icon name="tv" size={26} color={C.onBrand} />
               </View>
@@ -273,28 +289,28 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
                 <Text style={st.deviceStatusOn}>正在投屏 · 点击停止并回本机</Text>
               </View>
               <View style={st.checkBadge}><Icon name="check" size={18} color="#FFFFFF" /></View>
-            </TouchableOpacity>
+            </T>
           ) : null}
           {renderers.filter(r => cast?.kind !== 'dlna' || r.uuid !== cast.dev.uuid).map(r => (
-            <TouchableOpacity key={r.uuid} style={st.deviceRow} onPress={() => { startCast(r, 'dlna'); toast(`正在投屏到 ${r.name}…`); }}>
+            <T key={r.uuid} style={st.deviceRow} onPress={() => { startCast(r, 'dlna'); toast(`正在投屏到 ${r.name}…`); }}>
               <View style={st.iconWrap}><Icon name="tv" size={26} /></View>
               <View style={{ flex: 1 }}>
                 <Text style={st.deviceName}>{r.name}</Text>
                 <Text style={st.deviceStatus}>DLNA 渲染器 · 点击投屏当前歌曲</Text>
               </View>
               <Icon name="chevronright" size={20} color={C.text3} />
-            </TouchableOpacity>
+            </T>
           ))}
           {scanning && renderers.length === 0 ? (
             <Text style={st.scanHint}>正在扫描附近的 DLNA 设备…</Text>
           ) : renderers.length === 0 ? (
-            <TouchableOpacity style={st.rescanBtn} onPress={() => { setRenderers([]); setScanning(true); dlna.startScan(); }}>
+            <T style={st.rescanBtn} onPress={() => { setRenderers([]); setScanning(true); dlna.startScan(); }}>
               <Text style={st.rescanText}>未发现 DLNA 设备（需与手机同一网络）· 重新扫描</Text>
-            </TouchableOpacity>
+            </T>
           ) : !cast ? (
-            <TouchableOpacity style={st.rescanBtn} onPress={() => { setRenderers([]); setScanning(true); dlna.startScan(); }}>
+            <T style={st.rescanBtn} onPress={() => { setRenderers([]); setScanning(true); dlna.startScan(); }}>
               <Text style={st.rescanText}>重新扫描</Text>
-            </TouchableOpacity>
+            </T>
           ) : null}
           {directMode && renderers.length > 0 ? (
             <Text style={st.scanHint}>网络组播发现受阻，已显示直连可达的已知设备</Text>
@@ -302,7 +318,7 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
 
           <Text style={st.label}>Chromecast 设备</Text>
           {cast?.kind === 'cast' ? (
-            <TouchableOpacity style={[st.deviceRow, st.deviceRowOn]} onPress={() => { stopCast(); toast('已停止 Cast，回本机播放'); }}>
+            <T style={[st.deviceRow, st.deviceRowOn]} onPress={() => { stopCast(); toast('已停止 Cast，回本机播放'); }}>
               <View style={[st.iconWrap, { backgroundColor: C.brand }]}>
                 <Icon name="devices" size={26} color={C.onBrand} />
               </View>
@@ -311,17 +327,17 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
                 <Text style={st.deviceStatusOn}>正在 Cast · 点击停止并回本机</Text>
               </View>
               <View style={st.checkBadge}><Icon name="check" size={18} color="#FFFFFF" /></View>
-            </TouchableOpacity>
+            </T>
           ) : null}
           {castDevs.filter(r => cast?.kind !== 'cast' || r.uuid !== cast.dev.uuid).map(r => (
-            <TouchableOpacity key={r.uuid} style={st.deviceRow} onPress={() => { startCast(r, 'cast'); toast(`正在 Cast 到 ${r.name}…`); }}>
+            <T key={r.uuid} style={st.deviceRow} onPress={() => { startCast(r, 'cast'); toast(`正在 Cast 到 ${r.name}…`); }}>
               <View style={st.iconWrap}><Icon name="devices" size={26} /></View>
               <View style={{ flex: 1 }}>
                 <Text style={st.deviceName}>{r.name}</Text>
                 <Text style={st.deviceStatus}>Chromecast built-in · 点击推送当前歌曲</Text>
               </View>
               <Icon name="chevronright" size={20} color={C.text3} />
-            </TouchableOpacity>
+            </T>
           ))}
           {castDevs.length === 0 && scanning ? (
             <Text style={st.scanHint}>正在扫描 Chromecast 设备…</Text>
