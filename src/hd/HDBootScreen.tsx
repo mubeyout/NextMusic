@@ -1,7 +1,7 @@
 // HD 引导页(横版) v3:单行字标(去大 logo 块)+紧凑三卡(老板反馈:卡片太大、banner/logo 不对)
 // 整卡可聚焦可遥控;主推卡品牌高亮;焦点环 + focusBg + glow
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
@@ -37,9 +37,9 @@ export function HDBootScreen() {
 
   return (
     <View style={[st.screen, { paddingTop: Math.min(insets.top, 28), paddingBottom: Math.min(insets.bottom, 20), justifyContent: 'center' }]}>
-      {/* 顶部品牌区:单行字标(绿点 + 字标,去大 logo 块) */}
+      {/* 顶部品牌区:新品牌玻璃 Mark + 字标(Figma Brand Identity) */}
       <View style={st.brand}>
-        <View style={st.brandDot} />
+        <Image source={require('../assets/brand/mark.png')} style={st.brandMark} />
         <Text style={st.brandName}>NextMusic HD</Text>
         <Text style={st.brandSlogan}>车机 · 电视 · 大屏音乐</Text>
       </View>
@@ -83,7 +83,7 @@ export function HDBootScreen() {
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg, alignItems: 'center' },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, marginBottom: 14 },
-  brandDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: C.brand, boxShadow: '0 0 12px rgba(30,215,96,.6)' },
+  brandMark: { width: 30, height: 32 },
   brandName: { color: C.text, fontSize: 22, fontWeight: '800' },
   brandSlogan: { color: C.text3, fontSize: 12 },
   cardRow: { flexDirection: 'row', gap: 18, alignSelf: 'center', maxWidth: 780, width: '100%', maxHeight: 330, minHeight: 250 },

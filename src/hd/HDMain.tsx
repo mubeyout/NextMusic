@@ -78,9 +78,9 @@ export function HDMain() {
           contentContainerStyle={{ paddingTop: Math.min(insets.top, 12), paddingBottom: 10, gap: 2 }}
           showsVerticalScrollIndicator={false}
         >
-          {/* 品牌 */}
+          {/* 品牌(新品牌玻璃 Mark) */}
           <View style={st.brandRow}>
-            <View style={st.logo}><Text style={st.logoText}>N</Text></View>
+            <Image source={require('../assets/brand/mark.png')} style={st.logoMark} />
             <View style={{ flex: 1 }}>
               <Text style={st.brandName}>Next<Text style={{ color: C.brand }}>Music</Text></Text>
               <Text style={st.brandSub}>TV · CAR EDITION</Text>
@@ -220,7 +220,7 @@ const st = StyleSheet.create({
   screen: { flex: 1, flexDirection: 'row', backgroundColor: C.bg },
   sidebarWrap: { width: H.sidebar, backgroundColor: C.glass, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 10 },
-  logo: { width: 26, height: 26, borderRadius: 13, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
+  logoMark: { width: 26, height: 28 },
   logoText: { color: C.onBrand, fontSize: 13, fontWeight: '800' },
   brandName: { color: C.text, fontSize: 13, fontWeight: '800' },
   brandSub: { color: C.text3, fontSize: 7, letterSpacing: 2, fontWeight: '600', marginTop: 1 },
