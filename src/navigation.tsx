@@ -100,19 +100,20 @@ export function RootNavigator() {
 
   return (
     <NavigationContainer ref={navRef} theme={navTheme}>
-      <Stack.Navigator initialRouteName={initial} screenOptions={{ headerShown: false, animation: 'slide_from_right', contentStyle: { backgroundColor: C.bg } }}>
+      {/* 坑108:slide_from_right 在 TV(米电视)上转场后原生焦点链断裂——D-pad 全死但 touch 正常;HD 恒用 fade */}
+      <Stack.Navigator initialRouteName={initial} screenOptions={{ headerShown: false, animation: IS_HD ? 'fade' : 'slide_from_right', contentStyle: { backgroundColor: C.bg } }}>
         <Stack.Screen name="Boot" component={IS_HD ? HDBootScreen : BootScreen} />
         <Stack.Screen name="Server" component={ServerScreen} />
         <Stack.Screen name="Auth" component={AuthScreen} />
         <Stack.Screen name="AuthLogin" component={IS_HD ? HDAuthLoginScreen : AuthLoginScreen} />
         <Stack.Screen name="AuthSignup" component={AuthSignupScreen} />
         <Stack.Screen name="Main" component={IS_HD ? HDMain : MainTabs} />
-        <Stack.Screen name="Player" component={IS_HD ? HDPlayer : PlayerScreen} options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="Queue" component={QueueScreen} options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="Player" component={IS_HD ? HDPlayer : PlayerScreen} options={{ animation: 'fade' }} />
+        <Stack.Screen name="Queue" component={QueueScreen} options={{ animation: 'fade' }} />
         <Stack.Screen name="PlayerSettings" component={PlayerSettingsScreen} />
         <Stack.Screen name="Comments" component={CommentsScreen} />
         <Stack.Screen name="PlaylistDetail" component={IS_HD ? HDPlaylistDetailScreen : PlaylistDetailScreen} />
-        <Stack.Screen name="Search" component={SearchScreen} options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="Search" component={SearchScreen} options={{ animation: 'fade' }} />
         <Stack.Screen name="Route" component={RoutePage} options={{ animation: 'none', presentation: 'transparentModal' }} />
         <Stack.Screen name="Settings" component={IS_HD ? HDSettingsScreen : SettingsScreen} />
         <Stack.Screen name="Sources" component={SourcesScreen} />

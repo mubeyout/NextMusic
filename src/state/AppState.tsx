@@ -30,6 +30,33 @@ interface AppStateCtx extends Persisted {
 
 const Ctx = createContext<AppStateCtx>(null as unknown as AppStateCtx);
 
+function loadFallback(): Record<string, string> {
+  try { return JSON.parse(kv.getString('ipFallback') || '{}'); } catch { return {}; }
+}
+function portOf(b: string): string {
+  const tail = b.replace(/^https?:\/\//, '').split('/')[0];
+  const i = tail.lastIndexOf(':');
+  return i >= 0 ? tail.slice(i + 1) : (b.startsWith('https') ? '443' : '80');
+}
+const isIpBase = (b: string) => /^https?:\/\/\d{1,3}(\.\d{1,3}){3}(:|$)/.test(b);
+// 域名直连失败时回落：同端口最近一次成功连接的 IP（家庭网关自建服务场景，公网回环不通）
+function fallbackBase(b: string): string | null {
+  if (isIpBase(b)) return null;
+  try { return loadFallback()[portOf(b)] || null; } catch { return null; }
+}
+
+async function probeWithFallback(b: string): Promise<{ cfg: ServerConfig; base: string }> {
+  try {
+    const cfg = await api.probe(b);
+    return { cfg, base: b };
+  } catch (e) {
+    const fb = fallbackBase(b);
+    if (!fb) throw e;
+    const cfg = await api.probe(fb); // 回落也不通则抛出，交上层报错
+    return { cfg, base: fb };
+  }
+}
+
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const init = useMemo(load, []);
   const [mode, setModeState] = useState<RunMode | null>(init.mode ?? null);
@@ -47,11 +74,14 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   }, [mode, base, token, username]);
 
   // 浏览数据直连平台官方 API（LxEngine 沙箱），不经服务器；不再 auto-probe 默认地址。
-  // 仅当用户此前手动配置过服务器时，启动时校验该地址可用性（用于同步/账号显示）。
+  // 仅当用户此前手动配置过服务器时，启动时校验该地址可用性（用于同步/账号显示）。域名失败自动回落同端口已知 IP。
   useEffect(() => {
     if (!base) return;
-    api.probe(base)
-      .then(cfg => setServerConfig(cfg))
+    probeWithFallback(base)
+      .then(({ cfg, base: useBase }) => {
+        if (useBase !== base) { httpStore.base = useBase; setBase(useBase); } // 回落生效，落座实际可达地址
+        setServerConfig(cfg);
+      })
       .catch(() => setServerConfig(null));
   }, [base]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -62,9 +92,12 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     setMode: m => setModeState(m),
     connectServer: async (b: string) => {
       const norm = normalizeBase(b);
-      const cfg = await api.probe(norm); // throws on failure
-      httpStore.base = norm; // 立即同步 http store(setState 是异步的,连续流程 connect+login 会读到空 base → 登录必败,TV 表单实测复现)
-      setBase(norm);
+      const { cfg, base: useBase } = await probeWithFallback(norm); // throws on failure
+      if (isIpBase(useBase)) {
+        try { const m = loadFallback(); m[portOf(useBase)] = useBase; kv.set('ipFallback', JSON.stringify(m)); } catch { /* ignore */ }
+      }
+      httpStore.base = useBase; // 立即同步 http store(setState 是异步的,连续流程 connect+login 会读到空 base → 登录必败,TV 表单实测复现)
+      setBase(useBase);
       setServerConfig(cfg);
       setModeState('server');
     },
