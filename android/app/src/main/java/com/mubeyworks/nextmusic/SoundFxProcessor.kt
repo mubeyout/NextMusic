@@ -7,7 +7,6 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.Arrays
 import kotlin.math.PI
-import kotlin.math.atan2
 import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.pow
@@ -246,8 +245,8 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
                 l = mainGain * l + sendGain * wl
                 r = mainGain * r + sendGain * wr
                 if (pannerEnable) { updatePanner(); l *= panL; r *= panR }
-                floatBuf[i] = l.coerceIn(-1f, 1f)
-                floatBuf[i + 1] = r.coerceIn(-1f, 1f)
+                floatBuf[i] = softClip(l)
+                floatBuf[i + 1] = softClip(r)
                 i += 2
             }
         } else {
@@ -265,7 +264,7 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
                     }
                 }
                 if (pannerEnable) { updatePanner(); x *= (panL + panR) * 0.5f }
-                floatBuf[i] = x.coerceIn(-1f, 1f)
+                floatBuf[i] = softClip(x)
             }
         }
 
@@ -328,19 +327,23 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
 
     /** 复刻 Web Audio PannerNode(equalpower)：声源绕头旋转 + 距离衰减 */
     private fun updatePanner() {
+        // 2026-09-03 老板反馈:全圈 360° 旋转 + az ±90 钳位折叠 → 端点区单边长时间无声 + 镜像跳变,
+        // 失去 lxserver 平缓感。改为 ±40° 正弦摆动:单边永有底量、无跳变、钟摆式自然。
         pannerAngleDeg = (pannerAngleDeg + degPerSample) % 360.0
-        val rad = Math.toRadians(pannerAngleDeg)
-        val nx = sin(rad); val nz = cos(rad)
+        val az = 40.0 * sin(Math.toRadians(pannerAngleDeg))
         val radius = pannerDistance * 0.1f
-        // 距离增益（inverse 模型，refDistance=1）
-        val distGain = if (radius <= 1f) 1f else 1f / radius
-        // 方位角（听者朝 -z）：azimuth = atan2(x, -z)，钳到 ±90（equalpower 不区分前后）
-        var az = Math.toDegrees(atan2(nx.toDouble(), -nz.toDouble()))
-        if (az > 90.0) az = 90.0
-        if (az < -90.0) az = -90.0
+        // 距离增益(inverse 模型,refDistance=1)但钔1.5 保证底量(不静音)
+        val distGain = if (radius <= 1f) 1f else (1f / radius).coerceAtLeast(0.66f)
         val x = ((az + 90.0) / 180.0 * PI / 2.0).toFloat()
         panL = cos(x) * distGain
         panR = sin(x) * distGain
+    }
+
+    // 软限幅:大 EQ/混响叠加时不再硬削波(破声/震颤的直接来源);±0.5 内线性,外部渐进饱和
+    private fun softClip(x: Float): Float = when {
+        x > 0.5f -> 0.5f + (x - 0.5f) / (1f + 2f * (x - 0.5f))
+        x < -0.5f -> -0.5f + (x + 0.5f) / (1f - 2f * (x + 0.5f))
+        else -> x
     }
 
     // ---------- 延迟单元 ----------

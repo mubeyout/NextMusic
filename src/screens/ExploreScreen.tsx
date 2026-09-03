@@ -210,7 +210,8 @@ export function ExploreScreen() {
   };
 
   // 页面顶部渐变随 tab 变化（Figma：推荐跟主题/分类紫/榜单橙）
-  const tints = [C.bgGradientTop, '#1F1433', '#381F0D'];
+  // 顶部渐变 tint：分类/榜单的深色必须过 softGrad——浅色主题下不变会成深紫/深棕顶色，深色标题字被吞(老板实测)
+  const tints = [C.bgGradientTop, ...softGrad('#1F1433'), ...softGrad('#381F0D')];
   const searchHints = ['搜索歌曲、歌手、专辑', '搜索风格、心情或场景', '搜索歌曲、歌手、专辑'];
 
   // 榜单子卡：从 wy 源找匹配的真实榜单（优先短名，避免卡片文本溢出），找不到则依次回退
