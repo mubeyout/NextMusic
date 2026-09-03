@@ -74,7 +74,7 @@ export function HDMain() {
       {/* ===== 侧栏(桌面版结构) ===== */}
       <View style={st.sidebarWrap}>
         <ScrollView
-          style={{ flex: 1 }}
+          style={{ flex: 1, backgroundColor: C.bg }}
           contentContainerStyle={{ paddingTop: Math.min(insets.top, 12), paddingBottom: 10, gap: 2 }}
           showsVerticalScrollIndicator={false}
         >
