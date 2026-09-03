@@ -1,10 +1,11 @@
-// HD 播放页(横版全屏):左大封面+信息+收藏,右歌词窗口,底部大进度条+控件
-// 车机优先:大触点、高对比;歌词窗口式 5 行(驾驶场景一眼可读)
+// HD 播放页(横版全屏)v2 —— 完全重构:单屏自适应布局,封面永远完整显示
+// 结构:左列封面(高度自适应方形) | 右列 标题/歌词窗口/工具行;底部 进度+控件;左上返回
+// v1 教训:固定 340 封面 + 底部面板在 960x540 视口必然溢出 → ScrollView 切封面(老板实测"显示不完")
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
-import { C, fmtSec } from './hdtokens';
+import { C, H, fmtSec } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
@@ -22,7 +23,7 @@ export function HDPlayer() {
   const { connected, token } = useApp();
   const [lyrics, setLyrics] = useState<LyricLine[] | null>(null);
   const [faved, setFaved] = useState(false);
-  const trackW = React.useRef(0); // 进度条实际宽(onLayout 捕获,seek 点击定位用)
+  const trackW = React.useRef(0);
 
   // 收藏态(本地 + 服务器远端合并)
   useEffect(() => {
@@ -81,37 +82,28 @@ export function HDPlayer() {
   const pct = duration > 0 ? Math.min(1, position / duration) : 0;
 
   const doFav = async () => {
-    setFaved(!faved); // 乐观更新
+    setFaved(!faved);
     try { await setFav(current, !faved); } catch { setFaved(faved); }
   };
 
   return (
     <View style={st.screen}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: Math.max(insets.top, 18), paddingBottom: 16 }} showsVerticalScrollIndicator={false}>
-        <View style={st.main}>
-          {/* 左:封面 + 信息 */}
-          <View style={st.left}>
-            {current.img
-              ? <Image source={{ uri: current.img }} style={st.art} />
-              : <View style={[st.art, { backgroundColor: '#232323', alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={60} color={C.text2} /></View>}
-            <View style={{ gap: 6, alignItems: 'center' }}>
-              <Text style={st.title} numberOfLines={1}>{current.name}</Text>
-              <Text style={st.sub} numberOfLines={1}>{current.singer}{current.albumName ? ` · ${current.albumName}` : ''}</Text>
-              <View style={{ flexDirection: 'row', gap: 16, marginTop: 10 }}>
-                <HDTouch style={st.tool} onPress={doFav}>
-                  <Icon name="heart" size={26} color={faved ? C.brand : C.text2} />
-                </HDTouch>
-                <HDTouch style={st.tool} onPress={() => nav.navigate('Queue')}>
-                  <Icon name="queue" size={26} color={C.text2} />
-                </HDTouch>
-                <HDTouch style={st.tool} onPress={() => nav.navigate('Route')}>
-                  <Icon name="devices" size={26} color={C.text2} />
-                </HDTouch>
-              </View>
-            </View>
-          </View>
+      {/* 主区:左封面(自适应) | 右信息+歌词 */}
+      <View style={[st.main, { paddingTop: Math.max(insets.top, 14) }]}>
+        {/* 左列:封面占满可用高,方形永远完整 */}
+        <View style={st.artCol}>
+          {current.img
+            ? <Image source={{ uri: current.img }} style={st.art} resizeMode="cover" />
+            : <View style={[st.art, { backgroundColor: '#1E2722', alignItems: 'center', justifyContent: 'center' }]}>
+                <Icon name="music" size={64} color={C.text3} />
+              </View>}
+        </View>
 
-          {/* 右:歌词窗口 */}
+        {/* 右列:标题 / 歌词窗口 / 工具行 */}
+        <View style={st.infoCol}>
+          <Text style={st.title} numberOfLines={1}>{current.name}</Text>
+          <Text style={st.sub} numberOfLines={1}>{current.singer}{current.albumName ? ` · ${current.albumName}` : ''}</Text>
+
           <View style={st.lyricsBox}>
             {lyrics ? (
               lyrics.slice(Math.max(0, activeIdx - 1), activeIdx + 4).map((l, i) => {
@@ -125,17 +117,35 @@ export function HDPlayer() {
                 );
               })
             ) : (
-              <View style={{ alignItems: 'center', gap: 10, paddingTop: 60 }}>
-                <Icon name="music" size={36} color={C.text3} />
-                <Text style={{ color: C.text3, fontSize: 15 }}>{current.source.toUpperCase()} · 暂无歌词</Text>
+              <View style={{ alignItems: 'center', gap: 10, marginTop: 26 }}>
+                <Icon name="music" size={30} color={C.text3} />
+                <Text style={{ color: C.text3, fontSize: 13 }}>{current.source.toUpperCase()} · 暂无歌词</Text>
               </View>
             )}
           </View>
-        </View>
-      </ScrollView>
 
-      {/* 底:进度 + 大控件 */}
-      <View style={[st.panel, { paddingBottom: Math.max(insets.bottom, 14) }]}>
+          <View style={st.tools}>
+            <HDTouch style={st.tool} onPress={doFav}>
+              <Icon name="heart" size={22} color={faved ? C.brand : C.text2} />
+            </HDTouch>
+            <HDTouch style={st.tool} onPress={() => nav.navigate('Queue')}>
+              <Icon name="queue" size={22} color={C.text2} />
+              {queue.length ? <Text style={st.toolBadge}>{queue.length}</Text> : null}
+            </HDTouch>
+            <HDTouch style={st.tool} onPress={() => nav.navigate('Route')}>
+              <Icon name="devices" size={22} color={C.text2} />
+            </HDTouch>
+          </View>
+        </View>
+
+        {/* 左上返回 */}
+        <HDTouch style={st.backBtn} onPress={nav.goBack} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12 }} hasTVPreferredFocus>
+          <Icon name="back" size={20} color={C.text2} />
+        </HDTouch>
+      </View>
+
+      {/* 底:进度 + 控件 */}
+      <View style={[st.panel, { paddingBottom: Math.max(insets.bottom, 12) }]}>
         <View style={st.progRow}>
           <Text style={st.time}>{fmtSec(position)}</Text>
           <TouchableOpacity style={st.track} activeOpacity={0.9} onLayout={e => { trackW.current = e.nativeEvent.layout.width; }} onPress={e => {
@@ -143,33 +153,30 @@ export function HDPlayer() {
             const w = trackW.current;
             if (w > 0 && duration > 0) seekTo(Math.max(0, Math.min(1, locationX / w)) * duration);
           }}>
-            <View style={{ flex: pct, backgroundColor: C.brand, borderRadius: 3 }} />
-            <View style={{ flex: 1 - pct, backgroundColor: '#333', borderRadius: 3 }} />
+            <View style={{ flex: pct, backgroundColor: C.brand, borderRadius: 2 }} />
+            <View style={{ flex: 1 - pct, backgroundColor: '#333', borderRadius: 2 }} />
           </TouchableOpacity>
           <Text style={st.time}>{fmtSec(duration)}</Text>
         </View>
         <View style={st.ctrls}>
           <HDTouch style={st.cBtn} onPress={() => setShuffle(!shuffle)}>
-            <Icon name="shuffle" size={28} active={shuffle} color={shuffle ? C.brand : C.text2} />
+            <Icon name="shuffle" size={24} active={shuffle} color={shuffle ? C.brand : C.text2} />
           </HDTouch>
           <HDTouch style={st.cBtn} onPress={skipPrev}>
-            <Icon name="previous" size={38} color={C.text} />
+            <Icon name="previous" size={32} color={C.text} />
           </HDTouch>
           <HDTouch style={st.cMain} onPress={toggle} focusStyle={st.cMainFocus}>
-            <Icon name={playing ? 'pause' : 'play'} size={44} color={C.onBrand} />
+            <Icon name={playing ? 'pause' : 'play'} size={38} color={C.onBrand} />
           </HDTouch>
           <HDTouch style={st.cBtn} onPress={skipNext}>
-            <Icon name="next" size={38} color={C.text} />
+            <Icon name="next" size={32} color={C.text} />
           </HDTouch>
           <HDTouch style={st.cBtn} onPress={cycleRepeat}>
-            <Icon name="repeat" size={28} active={repeat !== 'off'} color={repeat !== 'off' ? C.brand : C.text2} />
+            <Icon name="repeat" size={24} active={repeat !== 'off'} color={repeat !== 'off' ? C.brand : C.text2} />
           </HDTouch>
           <View style={{ flex: 1 }} />
-          <HDTouch style={st.cBtn} onPress={nav.goBack}>
-            <Icon name="close" size={28} color={C.text2} />
-          </HDTouch>
+          <Text style={st.queueHint}>{queue.length ? `${queue.length} 首队列` : ''}</Text>
         </View>
-        <Text style={st.queueHint}>{queue.length ? `${queue.length} 首队列中` : ''}</Text>
       </View>
     </View>
   );
@@ -177,23 +184,31 @@ export function HDPlayer() {
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bgDeep },
-  main: { flexDirection: 'row', flex: 1, paddingHorizontal: 60, gap: 50, paddingTop: 6 },
-  left: { width: 360, alignItems: 'center', gap: 18, paddingTop: 8 },
-  art: { width: 340, height: 340, borderRadius: 22 },
-  title: { color: C.text, fontSize: 27, fontWeight: '800', textAlign: 'center', maxWidth: 350 },
-  sub: { color: C.text2, fontSize: 16, textAlign: 'center', maxWidth: 350 },
-  tool: { width: 58, height: 58, borderRadius: 29, backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center' },
-  lyricsBox: { flex: 1, gap: 14, paddingTop: 40, paddingRight: 20 },
-  lyric: { color: C.text3, fontSize: 22, lineHeight: 32, fontWeight: '500' },
-  lyricOn: { color: C.text, fontSize: 31, lineHeight: 43, fontWeight: '800' },
-  lyricTr: { color: '#FFFFFF55', fontSize: 15, lineHeight: 21, marginTop: 2 },
-  panel: { backgroundColor: '#141414', paddingHorizontal: 60, paddingTop: 12, gap: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.stroke },
-  progRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  time: { color: C.text2, fontSize: 14, fontVariant: ['tabular-nums'], width: 52, textAlign: 'center' },
-  track: { flex: 1, height: 6, flexDirection: 'row', borderRadius: 3, overflow: 'hidden' },
-  ctrls: { flexDirection: 'row', alignItems: 'center', gap: 26 },
-  cBtn: { width: 66, height: 66, alignItems: 'center', justifyContent: 'center' },
-  cMain: { width: 92, height: 92, borderRadius: 46, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
-  cMainFocus: { borderWidth: 3, borderColor: '#FFFFFF', borderRadius: 46 },
-  queueHint: { color: C.text3, fontSize: 12, textAlign: 'center' },
+  main: { flex: 1, flexDirection: 'row', paddingHorizontal: 46, gap: 40 },
+  // 左列:封面 flex 自适应高度(一屏内永远完整),方形 aspectRatio,上限 330
+  artCol: { flex: 0.9, alignItems: 'center', justifyContent: 'center' },
+  art: { width: '100%', aspectRatio: 1, borderRadius: 20, maxHeight: 330, maxWidth: 330 },
+  // 右列
+  infoCol: { flex: 1.1, gap: 8, paddingBottom: 10 },
+  title: { color: C.text, fontSize: 24, fontWeight: '800', marginTop: 4 },
+  sub: { color: C.text2, fontSize: 14 },
+  lyricsBox: { flex: 1, gap: 12, justifyContent: 'center' },
+  lyric: { color: C.text3, fontSize: 19, lineHeight: 28, fontWeight: '500' },
+  lyricOn: { color: C.text, fontSize: 27, lineHeight: 38, fontWeight: '800' },
+  lyricTr: { color: '#FFFFFF55', fontSize: 13, lineHeight: 18, marginTop: 2 },
+  tools: { flexDirection: 'row', gap: 14, paddingBottom: 4 },
+  tool: { width: 48, height: 48, borderRadius: 24, backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
+  toolBadge: { color: C.text2, fontSize: 10, marginLeft: 4 },
+  // 返回(左上绝对定位)
+  backBtn: { position: 'absolute', top: 6, left: -28, width: 40, height: 40, borderRadius: 12, backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center' },
+  // 底部面板
+  panel: { backgroundColor: '#141414', paddingHorizontal: 46, paddingTop: 10, gap: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.stroke },
+  progRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  time: { color: C.text2, fontSize: 13, fontVariant: ['tabular-nums'], width: 48, textAlign: 'center' },
+  track: { flex: 1, height: 5, flexDirection: 'row', borderRadius: 2, overflow: 'hidden' },
+  ctrls: { flexDirection: 'row', alignItems: 'center', gap: 24 },
+  cBtn: { width: 58, height: 58, alignItems: 'center', justifyContent: 'center' },
+  cMain: { width: 84, height: 84, borderRadius: 42, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
+  cMainFocus: { borderWidth: 3, borderColor: '#FFFFFF', borderRadius: 42 },
+  queueHint: { color: C.text3, fontSize: 11 },
 });

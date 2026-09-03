@@ -100,7 +100,7 @@ export function RootNavigator() {
 
   return (
     <NavigationContainer ref={navRef} theme={navTheme}>
-      <Stack.Navigator initialRouteName={initial} screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+      <Stack.Navigator initialRouteName={initial} screenOptions={{ headerShown: false, animation: 'slide_from_right', contentStyle: { backgroundColor: C.bg } }}>
         <Stack.Screen name="Boot" component={IS_HD ? HDBootScreen : BootScreen} />
         <Stack.Screen name="Server" component={ServerScreen} />
         <Stack.Screen name="Auth" component={AuthScreen} />

@@ -33,7 +33,7 @@ export function HDMy() {
       sync.fetchLists().then(setSnap).catch(() => {}).finally(() => setSyncing(false));
     } else setSyncing(false);
   };
-  useEffect(refresh, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(refresh, [connected]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const syncPls = snap?.userList || [];
   const playlists = [

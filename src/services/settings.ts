@@ -19,6 +19,7 @@ export interface AppSettings {
   pureBlack: boolean;
   accent: string;                // hex
   light: boolean;                // 浅色主题（桌面 Web 同款浅色盘）
+  uiScale: string;               // HD 界面缩放档位(90%/100%/110%/125%,重启生效)
   showTabLabels: boolean;
   // 启动
   startupPage: 'home' | 'explore' | 'my';
@@ -44,6 +45,7 @@ export const DEFAULTS: AppSettings = {
   pureBlack: false,
   accent: '#1ED760',
   light: false,
+  uiScale: '100%',
   showTabLabels: true,
   startupPage: 'home',
   restorePlayback: false,

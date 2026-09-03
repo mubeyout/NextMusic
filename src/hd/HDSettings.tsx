@@ -45,7 +45,7 @@ export function HDSettingsScreen() {
       { kind: 'toggle', icon: 'palette', title: '纯黑背景', desc: 'OLED 友好的纯黑底色(仅深色模式)', value: s.pureBlack, onToggle: () => { settings.set('pureBlack', !s.pureBlack); hdRestart(); } },
       { kind: 'select', icon: 'palette', title: '界面主题', desc: '深色(车机/TV 默认)或浅色,切换后自动重启生效', value: s.light ? '浅色' : '深色', options: ['深色', '浅色'], onPick: v => { settings.set('light', v === '浅色'); hdRestart(); } },
       { kind: 'select', icon: 'palette', title: '强调色', desc: '全局品牌色(按钮/高亮/选中态),切换后自动重启生效', value: ACCENTS.find(a => a.color === s.accent)?.name ?? 'Next 绿', options: ACCENTS.map(a => a.name), onPick: v => { const hit = ACCENTS.find(a => a.name === v); if (hit) { settings.set('accent', hit.color); hdRestart(); } } },
-      { kind: 'info', icon: 'fullscreen', title: '界面缩放', desc: 'HD 版已按电视 1080p 预设', value: '100%' },
+      { kind: 'select', icon: 'fullscreen', title: '界面缩放', desc: '全局字号/触点/行高缩放,切换后自动重启生效', value: s.uiScale || '100%', options: ['90%', '100%', '110%', '125%'], onPick: v => { settings.set('uiScale', v); hdRestart(); } },
     ],
     '播放体验': [
       { kind: 'select', icon: 'music', title: '默认音质', desc: '在线播放优先选择的音质档位', value: s.playQuality, options: QUALITY_OPTS, onPick: v => settings.set('playQuality', v as Quality) },

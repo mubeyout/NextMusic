@@ -40,7 +40,8 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
     setRecents(getRecents().slice(0, 20));
     if (connected && token) sync.fetchLists().then(setSnap).catch(() => {});
   };
-  useEffect(refresh, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // 挂载拉本地 + connected 就绪(probe 完成)后拉服务器歌单——冷启动 probe 晚于挂载,只拉一次会漏(老板实测我的歌单空)
+  useEffect(refresh, [connected]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const syncPls = snap?.userList || [];
   const playlists = [

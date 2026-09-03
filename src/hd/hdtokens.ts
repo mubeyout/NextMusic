@@ -82,16 +82,14 @@ export function applyHdTheme() {
 }
 // applyHdTheme() 的调用在文件末尾(SH 等 const 先于执行,避免 TDZ)
 
+// 界面缩放(设置→外观):重启生效——重启即 JS runtime 重载,所有 StyleSheet.create 以新值重建
+export const UI_SCALES = ['90%', '100%', '110%', '125%'] as const;
+export type UiScale = (typeof UI_SCALES)[number];
+const scaleOf = (s: string | undefined): number => (s === '90%' ? 0.9 : s === '110%' ? 1.1 : s === '125%' ? 1.25 : 1);
+
 export const H = {
-  // 字号(桌面 px × 0.75)
-  font: {
-    xs: 9,
-    sm: 10,
-    md: 11,
-    lg: 12,
-    xl: 15,
-    hero: 21,
-  },
+  // 字号(桌面 px × 0.75 × 缩放)
+  font: { xs: 9, sm: 10, md: 11, lg: 12, xl: 15, hero: 21 },
   // 触点:遥控/车机最低可用
   touch: 44,
   // 行高(歌曲行)
@@ -103,6 +101,18 @@ export const H = {
   // 圆角
   radius: { card: 11, row: 8, pill: 999 },
 };
+
+// 按 uiScale 重算 H(H 保持同一引用,属性覆写——引用处 import { H } 不变)
+export function applyHdScale(uiScale?: string) {
+  const k = scaleOf(uiScale);
+  const f = { xs: 9, sm: 10, md: 11, lg: 12, xl: 15, hero: 21 };
+  (Object.keys(f) as (keyof typeof f)[]).forEach(key => { H.font[key] = f[key] * k; });
+  H.touch = 44 * k;
+  H.row = 46 * k;
+  H.sidebar = 174 * k;
+  H.playbar = 64 * k;
+  H.radius = { card: 11 * k, row: 8 * k, pill: 999 };
+}
 
 export const fmtSec = (s: number) =>
   `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
@@ -133,4 +143,5 @@ export const shadowOf = (seed: string) => {
 // 兼容旧引用
 export const GLASS_REF = { get face() { return C.glass; }, get strong() { return C.glassStrong; } };
 
+applyHdScale(settings.get().uiScale);
 applyHdTheme();
