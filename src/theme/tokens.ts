@@ -57,8 +57,8 @@ function mixHex(a: string, b: string, k: number): string {
   return '#' + A.map((v, i) => Math.round(v * (1 - k) + B[i] * k).toString(16).padStart(2, '0')).join('').toUpperCase();
 }
 export function softGrad(...cs: string[]): string[] {
-  // vc78：0.84→0.91（老板反馈渐变太深与标题不融洽，再向白拉高透明度）
-  return T.light ? cs.map(c => mixHex(c, '#FFFFFF', 0.91)) : cs;
+  // vc95:浅色下降级单色渐变(纯色渲染)——低端机 LinearGradient drawable 创建风暴是卡顿主源(老板真机白闪/卡顿/闪退同源);深色保留
+  return T.light ? cs.map(() => mixHex(cs[0], '#FFFFFF', 0.88)) : cs;
 }
 
 export function applyBootTheme() {

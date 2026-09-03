@@ -9,6 +9,8 @@ import { C, H } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { useApp } from '../state/AppState';
 import { settings, useSettings, type Quality } from '../services/settings';
+import { createMMKV } from 'react-native-mmkv';
+import { usePlayer } from '../state/PlayerProvider';
 import { APP_VERSION, IS_HD } from '../services/appversion';
 import { hdNav } from './hdnav';
 import { NativeModules } from 'react-native';
@@ -20,7 +22,11 @@ const ACCENTS = [
   { name: '晚樱粉', color: '#F472B6' },
   { name: '琥珀橙', color: '#F59E0B' },
 ];
-const hdRestart = () => { setTimeout(() => Restart?.restart(), 350); };
+// 主题/缩放切换重启:resume=重启前在播→标记断点续播(重启后自动接同一首同一位置,音乐不断)
+const hdRestart = (resume?: boolean) => {
+  try { createMMKV({ id: 'nextmusic-playback' }).set('rr', resume ? '1' : ''); } catch { /* ignore */ }
+  setTimeout(() => Restart?.restart(), 350);
+};
 
 const TABS = ['外观与界面', '播放体验', '账号与同步', '下载与备份', '关于'] as const;
 type Tab = typeof TABS[number];
@@ -37,15 +43,16 @@ export function HDSettingsScreen() {
   const [tab, setTab] = useState<Tab>('外观与界面');
   const s = useSettings();
   const { connected, base, username, disconnectServer } = useApp();
+  const { playing } = usePlayer();
 
   const QUALITY_OPTS: string[] = ['128k', '320k', 'flac'];
 
   const rows: Record<Tab, RowDef[]> = {
     '外观与界面': [
-      { kind: 'toggle', icon: 'palette', title: '纯黑背景', desc: 'OLED 友好的纯黑底色(仅深色模式)', value: s.pureBlack, onToggle: () => { settings.set('pureBlack', !s.pureBlack); hdRestart(); } },
-      { kind: 'select', icon: 'palette', title: '界面主题', desc: '深色(车机/TV 默认)或浅色,切换后自动重启生效', value: s.light ? '浅色' : '深色', options: ['深色', '浅色'], onPick: v => { settings.set('light', v === '浅色'); hdRestart(); } },
-      { kind: 'select', icon: 'palette', title: '强调色', desc: '全局品牌色(按钮/高亮/选中态),切换后自动重启生效', value: ACCENTS.find(a => a.color === s.accent)?.name ?? 'Next 绿', options: ACCENTS.map(a => a.name), onPick: v => { const hit = ACCENTS.find(a => a.name === v); if (hit) { settings.set('accent', hit.color); hdRestart(); } } },
-      { kind: 'select', icon: 'fullscreen', title: '界面缩放', desc: '全局字号/触点/行高缩放,切换后自动重启生效', value: s.uiScale || '100%', options: ['90%', '100%', '110%', '125%'], onPick: v => { settings.set('uiScale', v); hdRestart(); } },
+      { kind: 'toggle', icon: 'palette', title: '纯黑背景', desc: 'OLED 友好的纯黑底色(仅深色模式)', value: s.pureBlack, onToggle: () => { settings.set('pureBlack', !s.pureBlack); hdRestart(playing); } },
+      { kind: 'select', icon: 'palette', title: '界面主题', desc: '深色(车机/TV 默认)或浅色,切换后自动重启生效', value: s.light ? '浅色' : '深色', options: ['深色', '浅色'], onPick: v => { settings.set('light', v === '浅色'); hdRestart(playing); } },
+      { kind: 'select', icon: 'palette', title: '强调色', desc: '全局品牌色(按钮/高亮/选中态),切换后自动重启生效', value: ACCENTS.find(a => a.color === s.accent)?.name ?? 'Next 绿', options: ACCENTS.map(a => a.name), onPick: v => { const hit = ACCENTS.find(a => a.name === v); if (hit) { settings.set('accent', hit.color); hdRestart(playing); } } },
+      { kind: 'select', icon: 'fullscreen', title: '界面缩放', desc: '全局字号/触点/行高缩放,切换后自动重启生效', value: s.uiScale || '100%', options: ['90%', '100%', '110%', '125%'], onPick: v => { settings.set('uiScale', v); hdRestart(playing); } },
     ],
     '播放体验': [
       { kind: 'select', icon: 'music', title: '默认音质', desc: '在线播放优先选择的音质档位', value: s.playQuality, options: QUALITY_OPTS, onPick: v => settings.set('playQuality', v as Quality) },

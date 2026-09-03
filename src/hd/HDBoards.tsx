@@ -76,7 +76,7 @@ export function HDBoards() {
       {boards == null ? (
         <View style={st.tip}><ActivityIndicator color={C.brand} size="large" /><Text style={st.tipText}>榜单加载中…</Text></View>
       ) : (
-        <HDGrid min={128}>
+        <HDGrid min={128 * (H.font.sm / 10)}>
           {boards.map((b, i) => (
             <HDTouch key={b.id} onPress={() => openBoard(b)} activeOpacity={0.85}
               style={[st.card, { boxShadow: shadowOf(b.name) }]}

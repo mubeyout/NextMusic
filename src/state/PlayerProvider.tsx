@@ -532,7 +532,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const t = setTimeout(() => {
       try {
         if (queue.length && current) {
-          playbackKv.set('snapshot', JSON.stringify({ q: queue.slice(0, 200), i: idxRef.current }));
+          // pos/p:主题重启断点续播(仅 settings.__rr 时消费;普通冷启动仍从 0,避免取链失效卡启动)
+          playbackKv.set('snapshot', JSON.stringify({ q: queue.slice(0, 200), i: idxRef.current, pos: Math.floor(position), p: playing }));
         } else playbackKv.set('snapshot', '');
       } catch { /* 超大队列放弃快照 */ }
     }, 1500);
@@ -552,7 +553,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         try { nativeState = (await NativeAudioPro?.getNativeState?.())?.state; } catch { /* 旧原生无此方法 */ }
         if (dead || queueRef.current.length) return;
         const nativeHolding = nativeState === 'PLAYING' || nativeState === 'PAUSED' || nativeState === 'BUFFERING';
-        const snap = JSON.parse(playbackKv.getString('snapshot') || 'null') as { q?: QueueTrack[]; i?: number } | null;
+        const snap = JSON.parse(playbackKv.getString('snapshot') || 'null') as { q?: QueueTrack[]; i?: number; pos?: number; p?: boolean } | null;
         if (snap?.q?.length && (nativeHolding || settings.get().restorePlayback)) {
           // 重新分配 uid：快照里的旧 uid 会与新 toTrack 的自增 seq 撞车
           const q = snap.q.map(t => ({ ...t, uid: `${t.source}-${t.songmid}-${++seq}` }));
@@ -576,6 +577,15 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             const tm = AudioPro.getTimings();
             if (tm.position > 0) setPosition(tm.position / 1000);
             if (tm.duration > 0) setDuration(tm.duration / 1000);
+          } else if (playbackKv.getString('rr') === '1' && snap.p && q[idxRef.current]) {
+            // 主题/缩放重启断点续播:hdRestart 写 rr(仅重启前在播时)——重载本曲并回跳进度
+            playbackKv.set('rr', '');
+            const t0 = q[idxRef.current];
+            const resumePos = Math.max(0, snap.pos || 0);
+            setTimeout(() => {
+              playSong(t0, q);
+              if (resumePos > 2) setTimeout(() => seekTo(resumePos), 1400);
+            }, 400);
           }
 
           // lx39：投屏会话恢复——JS 重建前正在投屏，从 castKv 恢复投屏态（不再失联）

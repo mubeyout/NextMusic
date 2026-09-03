@@ -86,7 +86,7 @@ export function HDPodcast() {
       </View>
 
       {/* 频道卡(桌面同构:自适应网格+彩色投影) */}
-      <HDGrid min={132}>
+      <HDGrid min={132 * (H.font.sm / 10)}>
         {POD_CHANNELS.map((ch, ci) => {
           const f = feeds[ch.id] || [];
           return (

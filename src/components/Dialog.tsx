@@ -3,6 +3,23 @@
 // <DialogHost /> 挂在 App 根部
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Animated, Easing, TextInput } from 'react-native';
+import { IS_HD } from '../services/appversion';
+import { HDTouch } from '../hd/HDTouch';
+
+// 触点抽象:HD(TV/车机)用 HDTouch(D-pad 焦点环)——弹窗按钮遥控器可达(老板实测无法选中)
+function DTouch(props: { style?: unknown; onPress?: () => void; children?: React.ReactNode; activeOpacity?: number } & Record<string, unknown>) {
+  const { style, onPress, children, ...rest } = props;
+  if (IS_HD) return (
+    <HDTouch style={style as never} onPress={onPress} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12 }} {...(rest as object)}>
+      {children}
+    </HDTouch>
+  );
+  return (
+    <TouchableOpacity style={style as never} onPress={onPress} activeOpacity={0.75} {...(rest as object)}>
+      {children}
+    </TouchableOpacity>
+  );
+}
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C } from '../theme/tokens';
 
@@ -116,14 +133,14 @@ export function DialogHost() {
         req.sheet ? (
           // 底部菜单风格
           <Modal animationType="slide" transparent visible onRequestClose={() => setReq(null)}>
-            <TouchableOpacity style={s.scrim} activeOpacity={1} onPress={() => setReq(null)}>
+            <TouchableOpacity style={s.scrim} activeOpacity={1} focusable={false} onPress={() => setReq(null)}>
               <View style={[s.sheet, { paddingBottom: insets.bottom + 16 }]} onStartShouldSetResponder={() => true}>
                 <View style={s.handle} />
                 {req.title ? <Text style={s.sheetTitle} numberOfLines={1}>{req.title}</Text> : null}
                 {req.buttons.map(b => (
-                  <TouchableOpacity key={b.text} style={s.sheetRow} activeOpacity={0.7} onPress={() => close(b)}>
+                  <DTouch key={b.text} style={s.sheetRow} onPress={() => close(b)}>
                     <Text style={[s.sheetRowText, { color: btnColor(b) }]}>{b.text}</Text>
-                  </TouchableOpacity>
+                  </DTouch>
                 ))}
               </View>
             </TouchableOpacity>
@@ -131,7 +148,7 @@ export function DialogHost() {
         ) : (
           // 居中对话框风格
           <Modal animationType="fade" transparent visible onRequestClose={() => setReq(null)}>
-            <TouchableOpacity style={s.center} activeOpacity={1} onPress={() => setReq(null)}>
+            <TouchableOpacity style={s.center} activeOpacity={1} focusable={false} onPress={() => setReq(null)}>
               <View style={s.card} onStartShouldSetResponder={() => true}>
                 <Text style={s.cardTitle}>{req.title}</Text>
                 {req.message ? <Text style={s.cardMsg}>{req.message}</Text> : null}
@@ -150,24 +167,24 @@ export function DialogHost() {
                 <View style={[s.btnRow, !stacked && { flexDirection: 'row' }]}>
                   {req.input ? (
                     <>
-                      <TouchableOpacity style={[s.btn, { flex: 1 }]} activeOpacity={0.75} onPress={() => closeWithInput(false)}>
+                      <DTouch style={[s.btn, { flex: 1 }]} onPress={() => closeWithInput(false)}>
                         <Text style={s.btnText}>取消</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity style={[s.btn, { flex: 1 }, s.btnMain]} activeOpacity={0.75} onPress={() => closeWithInput(true)}>
+                      </DTouch>
+                      <DTouch style={[s.btn, { flex: 1 }, s.btnMain]} onPress={() => closeWithInput(true)}>
                         <Text style={[s.btnText, s.btnMainText]}>确定</Text>
-                      </TouchableOpacity>
+                      </DTouch>
                     </>
-                  ) : req.buttons.map(b => (
-                    <TouchableOpacity
+                  ) : req.buttons.map((b, bi) => (
+                    <DTouch
                       key={b.text}
                       style={[s.btn, !stacked && { flex: 1 }, b.style !== 'cancel' && s.btnMain]}
-                      activeOpacity={0.75}
+                      hasTVPreferredFocus={bi === 0}
                       onPress={() => close(b)}
                     >
                       <Text style={[s.btnText, b.style !== 'cancel' && s.btnMainText, b.style === 'destructive' && { color: '#FF6B6B' }]}>
                         {b.text}
                       </Text>
-                    </TouchableOpacity>
+                    </DTouch>
                   ))}
                 </View>
               </View>

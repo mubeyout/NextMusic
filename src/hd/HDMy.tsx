@@ -4,8 +4,9 @@ import { View, Text, StyleSheet, ScrollView, Image, RefreshControl } from 'react
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
-import { C } from './hdtokens';
+import { C, H } from './hdtokens';
 import { HDTouch } from './HDTouch';
+import { HDGrid } from './HDGrid';
 import { useApp } from '../state/AppState';
 import { library, type LocalPlaylist } from '../state/library';
 import { sync, lxToApp, type UserListsSnapshot } from '../services/sync';
@@ -13,6 +14,7 @@ import { providers } from '../services/providers';
 import { hdNav } from './hdnav';
 import type { SongItem } from '../services/server';
 
+const K = H.font.sm / 10; // 界面缩放系数(设置 uiScale 联动网格列宽)
 const GRADS: [string, string][] = [
   ['#1f6b5c', '#142647'], ['#80381f', '#381a2e'], ['#5c297a', '#1f3861'],
   ['#146b85', '#1f2e47'], ['#1f6b5c', '#142647'], ['#80381f', '#381a2e'],
@@ -90,7 +92,7 @@ export function HDMy() {
       {/* 歌单网格 */}
       <View style={{ paddingHorizontal: 34, gap: 14 }}>
         <Text style={st.secTitle}>{`歌单 · ${playlists.length}`}</Text>
-        <View style={st.grid}>
+        <HDGrid min={168 * K} gap={18} minCols={3}>
           {playlists.map((pl, i) => (
             <HDTouch key={pl.key} style={st.plCard} onPress={() => openPl(pl)}>
               {pl.img ? <Image source={{ uri: pl.img }} style={st.plArt} />
@@ -103,7 +105,7 @@ export function HDMy() {
             <Icon name="add" size={34} color={C.text2} />
             <Text style={st.plMeta}>新建歌单</Text>
           </HDTouch>
-        </View>
+        </HDGrid>
       </View>
     </ScrollView>
   );
@@ -122,9 +124,9 @@ const st = StyleSheet.create({
   fnSub: { color: C.text3, fontSize: 12 },
   secTitle: { color: C.text, fontSize: 22, fontWeight: '800' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 18 },
-  plCard: { width: 168, gap: 8, paddingBottom: 4 },
-  plArt: { width: 168, height: 168, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  plNew: { width: 168, height: 168, borderRadius: 16, backgroundColor: C.surface, borderWidth: 1, borderStyle: 'dashed', borderColor: C.border, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  plCard: { gap: 8, paddingBottom: 4 },
+  plArt: { width: '100%', aspectRatio: 1, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  plNew: { width: '100%', aspectRatio: 1, borderRadius: 16, backgroundColor: C.surface, borderWidth: 1, borderStyle: 'dashed', borderColor: C.border, alignItems: 'center', justifyContent: 'center', gap: 8 },
   plName: { color: C.text, fontSize: 16, fontWeight: '600' },
   plMeta: { color: C.text2, fontSize: 13 },
 });

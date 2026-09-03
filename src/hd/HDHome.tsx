@@ -124,7 +124,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
       {/* 推荐歌单(五源聚合卡片 grid,桌面同构:等宽自适应+彩色投影) */}
       <Section title="推荐歌单" hint={recSource ? `五源聚合 · ${recSource}` : '五源聚合'} more="更多" onMore={() => onGotoSearch?.()}>
         {recPls.length ? (
-          <HDGrid min={126}>
+          <HDGrid min={126 * (H.font.sm / 10)}>
             {recPls.slice(0, 12).map(pl => (
               <HDTouch key={`${pl.source}_${pl.id}`} style={[st.plCard, { boxShadow: shadowOf(pl.name) }]} onPress={() => openRecPl(pl)}>
                 {pl.img
@@ -145,7 +145,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
       {/* 我的歌单 */}
       <Section title="我的歌单" hint={`${playlists.length} 个`} more="更多" onMore={() => hdNav()?.navigate('ImportPlaylist')}>
         {playlists.length ? (
-          <HDGrid min={126}>
+          <HDGrid min={126 * (H.font.sm / 10)}>
             {playlists.slice(0, 10).map(pl => (
               <HDTouch key={pl.key} style={[st.plCard, { boxShadow: shadowOf(pl.name) }]} onPress={() => openPl(pl)}>
                 <View style={{ position: 'relative' }}>

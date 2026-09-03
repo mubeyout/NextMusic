@@ -10,6 +10,7 @@ import { C, SH } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { useApp } from '../state/AppState';
 import { api, normalizeBase } from '../services/server';
+import { IS_HD } from '../services/appversion';
 import { toast } from '../components/Dialog';
 
 const recentKv = createMMKV({ id: 'nextmusic-server-history' });
@@ -99,27 +100,40 @@ export function HDAuthLoginScreen() {
   // dialog.alert 引入会带 phone 组件树,这里用局部包装避免样式耦合
   function dialog_alert(title: string, msg: string) { toast(title + ':' + msg.split('\n')[0]); }
 
-  const inputCard = (label: string, value: string, set: (v: string) => void, ph: string, opts?: { secure?: boolean; hint?: string; right?: React.ReactNode; kbd?: 'url' | 'default'; onSubmit?: () => void }) => (
-    <View style={st.inputCard}>
-      <View style={st.labelRow}>
-        <Text style={st.inputLabel}>{label}</Text>
-        {opts?.right}
+  // TV/车机:输入卡整体 HDTouch 聚焦导航,OK 才进输入态(focusable=false 防 D-pad 碰框即弹 IME 吃掉导航——实测病灶)
+  const inputCard = (label: string, value: string, set: (v: string) => void, ph: string, opts?: { secure?: boolean; hint?: string; right?: React.ReactNode; kbd?: 'url' | 'default'; onSubmit?: () => void }) => {
+    const ref = React.useRef<React.ComponentRef<typeof TextInput>>(null);
+    const card = (
+      <View style={st.inputCard}>
+        <View style={st.labelRow}>
+          <Text style={st.inputLabel}>{label}</Text>
+          {opts?.right}
+        </View>
+        <TextInput
+          ref={ref}
+          style={st.inputValue}
+          placeholder={ph}
+          placeholderTextColor={C.text3}
+          value={value}
+          onChangeText={v => { set(v); setTested(false); }}
+          autoCapitalize="none" autoCorrect={false}
+          secureTextEntry={opts?.secure}
+          keyboardType={opts?.kbd === 'url' ? 'url' : 'default'}
+          returnKeyType={opts?.onSubmit ? 'done' : 'next'}
+          onSubmitEditing={opts?.onSubmit}
+          focusable={!IS_HD}
+          showSoftInputOnFocus={!IS_HD ? undefined : false}
+        />
+        {opts?.hint ? <Text style={st.inputHint}>{opts.hint}</Text> : null}
       </View>
-      <TextInput
-        style={st.inputValue}
-        placeholder={ph}
-        placeholderTextColor={C.text3}
-        value={value}
-        onChangeText={v => { set(v); setTested(false); }}
-        autoCapitalize="none" autoCorrect={false}
-        secureTextEntry={opts?.secure}
-        keyboardType={opts?.kbd === 'url' ? 'url' : 'default'}
-        returnKeyType={opts?.onSubmit ? 'done' : 'next'}
-        onSubmitEditing={opts?.onSubmit}
-      />
-      {opts?.hint ? <Text style={st.inputHint}>{opts.hint}</Text> : null}
-    </View>
-  );
+    );
+    if (!IS_HD) return card;
+    return (
+      <HDTouch style={{ borderRadius: 16 }} onPress={() => { ref.current?.focus(); }} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 16 }}>
+        {card}
+      </HDTouch>
+    );
+  };
 
   return (
     <View style={[st.screen, { paddingTop: Math.min(insets.top, 20) + 8 }]}>
@@ -194,19 +208,29 @@ export function HDAuthLoginScreen() {
           <Text style={st.btnGhostText}>先本地使用(之后可再连接)</Text>
         </HDTouch>
 
-        {/* 常用/最近连接(输入卡风格行;TV 无键盘场景一键填入) */}
-        {(history.length ? history.slice(0, 4) : QUICK).length ? (
-          <View style={{ gap: 8 }}>
-            <Text style={st.inputLabel}>{history.length ? '最近连接' : '常用服务器'}</Text>
-            {(history.length ? history.slice(0, 4) : QUICK).map(h => (
+        {/* 常用服务器常显 + 最近连接(TV 无键盘,一键填入;历史里的坏地址可无视直接点常用行) */}
+        <View style={{ gap: 8 }}>
+          <Text style={st.inputLabel}>{history.length ? '最近连接' : '常用服务器'}</Text>
+          {(history.length ? history.slice(0, 4) : QUICK).map(h => (
               <HDTouch key={h} style={st.histRow} onPress={() => setAddr(h)} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 16 }}>
                 <Icon name="server" size={14} color={C.text3} />
                 <Text style={st.histText} numberOfLines={1}>{h}</Text>
                 <Icon name="chevronright" size={12} color={C.text3} />
               </HDTouch>
             ))}
+          {history.length ? (
+            <View style={{ gap: 8, marginTop: 6 }}>
+              <Text style={st.inputLabel}>常用服务器</Text>
+              {QUICK.filter(q => !history.slice(0, 4).includes(q)).map(q => (
+                <HDTouch key={q} style={st.histRow} onPress={() => setAddr(q)} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 16 }}>
+                  <Icon name="server" size={14} color={C.text3} />
+                  <Text style={st.histText} numberOfLines={1}>{q}</Text>
+                  <Icon name="chevronright" size={12} color={C.text3} />
+                </HDTouch>
+              ))}
+            </View>
+          ) : null}
           </View>
-        ) : null}
       </ScrollView>
     </View>
   );
