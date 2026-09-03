@@ -1,0 +1,52 @@
+name: build-desktop-app
+# NextMusic 桌面版(主仓 HD 形态 + RNW + Electron)三平台构建
+# tag v* 触发:产物上传到同名 draft release(--publish never,由 gh 命令统一传,沿用 NextMusic-Desktop 的教训:
+# electron-builder 原生 GitHub publisher 在 release 非 draft 时会 skip)
+on:
+  workflow_dispatch: {}
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: macos-latest
+            macArch: '--arm64 --x64'
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # renderer 依赖主仓 node_modules(RNW/navigation 等从这里解析),先装主仓再装 desktop
+      - name: Install root deps
+        working-directory: .
+        run: npm ci --no-audit --no-fund
+      - name: Install desktop deps
+        run: npm ci --no-audit --no-fund --include=dev
+        env:
+          ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      - name: Build renderer (vite)
+        run: npx vite build
+      - name: Package (electron-builder)
+        run: npx electron-builder --publish never ${{ matrix.macArch || '' }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.os }}
+          path: |
+            desktop/release/*.exe
+            desktop/release/*.AppImage
+            desktop/release/*.deb
+            desktop/release/*.dmg
+          if-nothing-found: ignore

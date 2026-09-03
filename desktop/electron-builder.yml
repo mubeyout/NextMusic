@@ -1,0 +1,29 @@
+appId: com.mubeyworks.nextmusic.desktop
+productName: NextMusic
+directories: { output: release, buildResources: build }
+icon: build/icon.png
+# 主仓 desktop 形态:dist(renderer)+electron(主进程/驱动) 全部进包
+files:
+  - dist/**
+  - electron/**
+win:
+  target: [nsis]
+  signAndEditExecutable: false   # Linux 交叉打包无 wine;有 wine/CI 时可开
+  icon: build/icon.ico
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  artifactName: ${productName}-Setup-${version}.${ext}
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+mac:
+  target: [dmg]
+  category: public.app-category.music
+  identity: null               # 免签名(用户 xattr -cr)
+  icon: build/icon.icns
+  artifactName: ${productName}-${version}-${arch}.${ext}
+linux:
+  target: [AppImage, deb]
+  category: Audio
+  icon: build/icon.png
+  artifactName: ${productName}-${version}-${arch}.${ext}

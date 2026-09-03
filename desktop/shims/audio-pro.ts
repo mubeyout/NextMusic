@@ -14,6 +14,8 @@ type Track = { id: string; url: string; title?: string; artist?: string; album?:
 type PlayOpts = { startTimeMs?: number; autoPlay?: boolean; headers?: Record<string, string> };
 
 const audio = new Audio();
+// 调试:暴露实例(桌面探测用),非生产逻辑
+(typeof window !== 'undefined') && ((window as never as Record<string, unknown>).__nmAudio = audio);
 audio.preload = 'auto';
 let state: AudioProState = AudioProState.IDLE;
 let curTrack: Track | null = null;
