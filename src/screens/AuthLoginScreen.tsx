@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, ScrollView } from 'react-native';
+import { Image, View, Text, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, ScrollView  } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { C } from '../theme/tokens';
@@ -44,7 +44,8 @@ export function AuthLoginScreen() {
     <ScrollView style={st.screen} contentContainerStyle={{ paddingTop: insets.top + 22, paddingBottom: 30, gap: 17 }} keyboardShouldPersistTaps="handled">
       <View style={st.brandRow}>
         <View style={st.brandDot} />
-        <Text style={st.brandName}>NextMusic</Text>
+        <Image source={require('../assets/brand/mark.png')} style={{ width: 16, height: 17 }} />
+          <Text style={st.brandName}>NextMusic</Text>
       </View>
       <View style={st.header}>
         <Text style={st.title}>登录账号</Text>

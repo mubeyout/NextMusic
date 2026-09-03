@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, ScrollView } from 'react-native';
+import { Image, View, Text, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, ScrollView  } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { C } from '../theme/tokens';
@@ -54,6 +54,7 @@ export function AuthSignupScreen() {
       <ScrollView contentContainerStyle={[st.content, { paddingBottom: insets.bottom + 22 }]} showsVerticalScrollIndicator={false}>
         <View style={st.brandRow}>
           <View style={st.brandDot} />
+          <Image source={require('../assets/brand/mark.png')} style={{ width: 16, height: 17 }} />
           <Text style={st.brandName}>NextMusic</Text>
         </View>
         <View style={st.header}>
