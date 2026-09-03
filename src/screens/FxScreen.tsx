@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, PanResponder, Tex
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
 
-
 // 触点抽象:HD(车机/TV)用 HDTouch(D-pad 焦点环),phone 保持 TouchableOpacity
 function T(props: { style?: unknown; onPress?: () => void; disabled?: boolean; children?: React.ReactNode; activeOpacity?: number } & Record<string, unknown>) {
   const { style, onPress, disabled, children, ...rest } = props;
@@ -46,31 +45,6 @@ import {
 // 数据与同步逻辑不变（soundfx.ts / 原生 DSP 全复用）
 
 // ---------- 横向滑杆（PanResponder，左起填充；拖动只预览，松手才提交） ----------
-// 触点抽象:HD(车机/TV)用 HDTouch(D-pad 焦点环),phone 保持 TouchableOpacity
-
-// ===== TV 行式音效控件:标签 | 轨道可视化 | 数值 | 步进钮 =====
-
-function FxRow({ label, value, min, max, step, onChange, fmt }: {
-  label: string; value: number; min: number; max: number; step: number;
-  onChange: (v: number) => void; fmt?: (v: number) => string;
-}) {
-  const r = Math.max(0, Math.min(1, (value - min) / (max - min)));
-  const zero = Math.max(0, Math.min(1, (0 - min) / (max - min)));
-  const from = Math.min(r, zero), to = Math.max(r, zero);
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 5 }}>
-      <Text style={{ color: C.text2, fontSize: 13, width: 56, fontVariant: ['tabular-nums'] } as never}>{label}</Text>
-      <View style={{ flex: 1, height: 8, borderRadius: 4, backgroundColor: C.inset, overflow: 'hidden' } as never}>
-        <View style={{ position: 'absolute', left: from * 100 + '%', width: (to - from) * 100 + '%', top: 0, bottom: 0, backgroundColor: C.brand, borderRadius: 4 } as never} />
-        <View style={{ position: 'absolute', left: zero * 100 + '%', width: 1, top: -2, bottom: -2, backgroundColor: C.text3 } as never} />
-      </View>
-      <Text style={{ color: C.text, fontSize: 14, fontWeight: '600', width: 64, textAlign: 'right', fontVariant: ['tabular-nums'] } as never}>{fmt ? fmt(value) : `${value > 0 ? '+' : ''}${value}`}</Text>
-      <StepBtn d={-1} onPress={() => onChange(Math.max(min, Math.round((value - step) / step) * step))} />
-      <StepBtn d={1} onPress={() => onChange(Math.min(max, Math.round((value + step) / step) * step))} />
-    </View>
-  );
-}
-
 function HSlider({ value, min, max, step, onChange, disabled, style }: {
   value: number; min: number; max: number; step: number;
   onChange: (v: number) => void; disabled?: boolean; style?: object;
@@ -215,15 +189,6 @@ function SRow({ label, valueLabel, value, min, max, step, onChange, disabled, st
   label: string; valueLabel: string; value: number; min: number; max: number; step: number;
   onChange: (v: number) => void; disabled?: boolean; style?: object;
 }) {
-  if (IS_HD) {
-    return (
-      <View style={[{ opacity: disabled ? 0.4 : 1, paddingVertical: 4 }, style as never]}>
-        <FxRow label={label} value={value} min={min} max={max} step={step}
-          onChange={disabled ? () => {} : onChange}
-          fmt={v => (label === '音调' ? v.toFixed(2) + 'x' : String(Math.round(v)))} />
-      </View>
-    );
-  }
   return (
     <View style={[st.srow, disabled && st.srowDisabled, style]}>
       <View style={st.srowHead}>
@@ -315,13 +280,6 @@ export function FxScreen() {
               ) : null}
             </View>
           </View>
-          {IS_HD ? (
-            <View style={{ gap: 4 }}>
-              {FX_FREQ_LABELS.map((label, i) => (
-                <FxRow key={label} label={label} value={settings.eq[i]} min={-12} max={12} step={1} onChange={v => setEQ(i, v)} />
-              ))}
-            </View>
-          ) : (
           <View style={st.eqGrid}>
             {FX_FREQ_LABELS.map((label, i) => {
               const g = settings.eq[i];
@@ -334,7 +292,6 @@ export function FxScreen() {
               );
             })}
           </View>
-          )}
         </View>
 
         {/* ===== 环境混响 ===== */}
