@@ -59,5 +59,5 @@ jobs:
           shopt -s nullglob
           files=(release/*.exe release/*.AppImage release/*.deb release/*.dmg)
           if [ ${#files[@]} -eq 0 ]; then echo "no installers found"; exit 1; fi
-          gh release upload v1.1.0 "${files[@]}" --repo mubeyout/nextmusic-release --clobber
-          echo "published: ${files[*]}"
+          gh release upload "${GITHUB_REF_NAME}" "${files[@]}" --repo mubeyout/nextmusic-release --clobber
+          echo "published to ${GITHUB_REF_NAME}: ${files[*]}"
