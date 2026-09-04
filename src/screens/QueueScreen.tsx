@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+// lx45 坑108：phone 分支误写 <T> 自递归 → 点队列页瞬间爆栈卡死 ANR；改回 TouchableOpacity
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
@@ -15,9 +16,9 @@ function T(props: { style?: unknown; onPress?: () => void; disabled?: boolean; c
     </HDTouch>
   );
   return (
-    <T style={style as never} onPress={onPress} disabled={disabled} activeOpacity={0.7} {...(rest as object)}>
+    <TouchableOpacity style={style as never} onPress={onPress} disabled={disabled} activeOpacity={0.7} {...(rest as object)}>
       {children}
-    </T>
+    </TouchableOpacity>
   );
 }
 import { SongRow } from '../components/SongRow';

@@ -49,7 +49,7 @@ export const DEFAULTS: AppSettings = {
   uiScale: Platform.OS === 'web' ? '125%' : '100%', // 桌面默认 125%(老板定),CSS zoom 生效;原生重启生效
   showTabLabels: true,
   startupPage: 'home',
-  restorePlayback: Platform.OS === 'web', // 桌面：重开恢复队列/进度是默认预期；手机/TV 冷启动从 0（避免死链卡启动）
+  restorePlayback: true, // 全端默认开：冷启动恢复队列+当前曲（暂停态），点播放才取链续播——不卡启动、不丢上下文（lx45）
   backupPlaylists: true,
   backupHistory: false,
   backupSettings: true,

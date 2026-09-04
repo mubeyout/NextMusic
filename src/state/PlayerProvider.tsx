@@ -413,7 +413,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         case AudioProEventType.STATE_CHANGED:
           setPlaying(ev.payload?.state === AudioProState.PLAYING);
           // 冷启动恢复的续播回跳：首次进入 PLAYING 且尚未推进 → 回跳到保存进度（一次）
-          if (ev.payload?.state === AudioProState.PLAYING && resumeSeekRef.current > 2 && position < 1) {
+          if (ev.payload?.state === AudioProState.PLAYING && resumeSeekRef.current > 2) {
             const rp = resumeSeekRef.current; resumeSeekRef.current = 0;
             setTimeout(() => { AudioPro.seekTo(rp * 1000); }, 350);
           }
@@ -562,6 +562,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         const nativeHolding = nativeState === 'PLAYING' || nativeState === 'PAUSED' || nativeState === 'BUFFERING';
         const snap = JSON.parse(playbackKv.getString('snapshot') || 'null') as { q?: QueueTrack[]; i?: number; pos?: number; p?: boolean; d?: number } | null;
         if (snap?.q?.length && (nativeHolding || settings.get().restorePlayback)) {
+          // lx45：无网/弱网冷启动也恢复队列——纯 JS 内存操作，零网络请求；快照内含离线文件元数据，不依赖服务器
           // 重新分配 uid：快照里的旧 uid 会与新 toTrack 的自增 seq 撞车
           const q = snap.q.map(t => ({ ...t, uid: `${t.source}-${t.songmid}-${++seq}` }));
           queueRef.current = q;
