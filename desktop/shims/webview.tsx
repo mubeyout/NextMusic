@@ -20,6 +20,7 @@ export type WebView = {
 
 // 桥 bootstrap:iframe 内复到 RN WebView 全局接口(RN→JS 注入用 eval 执行)
 const BOOT = `<script>
+window.global = window; // pako UMD 检测 typeof global(srcdoc iframe 无 Node global,先前报 ReferenceError)
 window.ReactNativeWebView={postMessage:function(d){parent.postMessage(d,'*');}};
 window.addEventListener('message',function(e){var d=e.data;if(d&&d.__injected!==undefined){try{eval(d.__injected);}catch(err){console.error(err);}}});
 </script>`;

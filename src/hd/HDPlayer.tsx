@@ -2,6 +2,8 @@
 // v1 教训:固定尺寸溢出;v2 教训:深色底 panel 突兀(老板:粗糙,直接取消)
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Platform } from 'react-native';
+import Svg, { Circle, Path, Defs, RadialGradient, Stop } from 'react-native-svg';
+import { SpectrumRing } from './SpectrumRing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
 import { C, fmtSec } from './hdtokens';
@@ -97,9 +99,40 @@ export function HDPlayer() {
 
         <View style={stW.body}>
           <View style={stW.artCol}>
-            {current.img
-              ? <Image source={{ uri: current.img }} style={stW.art} resizeMode="cover" />
-              : <View style={[stW.art, st.artFallback]}><Icon name="music" size={64} color={C.text3} /></View>}
+            {/* v1.1.8:圆形旋转唱片 + 频谱动效环(老板:酷炫) */}
+            <View style={stW.vinylZone}>
+              <SpectrumRing size={340} playing={playing} />
+              {Platform.OS === 'web' ? (
+                <div className={playing ? "nm-vinyl-spin" : "nm-vinyl-spin nm-vinyl-paused"} style={{ width: 300, height: 300, position: 'absolute', top: 20, left: 20 }}>
+                  <Svg width={300} height={300}>
+                    <Defs>
+                      <RadialGradient id="hdSheen" cx="0.32" cy="0.26" r="0.95">
+                        <Stop offset="0" stopColor="#FFFFFF" stopOpacity="0.10" />
+                        <Stop offset="0.45" stopColor="#FFFFFF" stopOpacity="0.025" />
+                        <Stop offset="1" stopColor="#FFFFFF" stopOpacity="0" />
+                      </RadialGradient>
+                    </Defs>
+                    <Circle cx={150} cy={150} r={149} fill="#0A0A0D" stroke="#00000085" strokeWidth={1} />
+                    <Circle cx={150} cy={150} r={143} stroke="#FFFFFF0A" strokeWidth={1} fill="none" />
+                    <Circle cx={150} cy={150} r={136} stroke="#FFFFFF08" strokeWidth={1.5} fill="none" />
+                    <Circle cx={150} cy={150} r={129} stroke="#FFFFFF0F" strokeWidth={1} fill="none" />
+                    <Circle cx={150} cy={150} r={122} stroke="#FFFFFF06" strokeWidth={1.5} fill="none" />
+                    <Circle cx={150} cy={150} r={115} stroke="#FFFFFF12" strokeWidth={1} fill="none" />
+                    <Circle cx={150} cy={150} r={108} stroke="#FFFFFF08" strokeWidth={1.5} fill="none" />
+                    <Circle cx={150} cy={150} r={101} stroke="#FFFFFF14" strokeWidth={1} fill="none" />
+                    <Circle cx={150} cy={150} r={90} stroke="#FFFFFF0D" strokeWidth={1} fill="none" />
+                    <Path d="M33 107 A125 125 0 0 1 107 33" stroke="#FFFFFF1F" strokeWidth={3} strokeLinecap="round" fill="none" />
+                    <Path d="M246 185 A102 102 0 0 1 168 250" stroke="#FFFFFF17" strokeWidth={4} strokeLinecap="round" fill="none" />
+                    <Circle cx={150} cy={150} r={149} fill="url(#hdSheen)" />
+                    <Circle cx={150} cy={150} r={88} fill="#101312" />
+                    <Circle cx={150} cy={150} r={6} fill="#000000" />
+                  </Svg>
+                  {current.img
+                    ? <Image source={{ uri: current.img }} style={stW.vinylLabel} resizeMode="cover" />
+                    : <View style={[stW.vinylLabel, { backgroundColor: '#2A2A2A' }]} />}
+                </div>
+              ) : null}
+            </View>
             <Text style={stW.srcTag}>{current.source.toUpperCase()}</Text>
           </View>
 
@@ -165,6 +198,9 @@ export function HDPlayer() {
             <View style={stW.toolCluster}>
               <HDTouch style={stW.tBtn} onPress={doFav} focusStyle={st.focus}>
                 <Icon name="heart" size={17} color={faved ? C.brand : '#ffffff99'} />
+              </HDTouch>
+              <HDTouch style={stW.tBtn} onPress={() => nav.navigate('Comments')} focusStyle={st.focus}>
+                <Icon name="comments" size={17} color="#ffffff99" />
               </HDTouch>
               <HDTouch style={stW.tBtn} onPress={() => nav.navigate('Queue')} focusStyle={st.focus}>
                 <Icon name="queue" size={17} color="#ffffff99" />
@@ -301,6 +337,14 @@ const st = StyleSheet.create({
 });
 
 // ===== 桌面(网易云参照)样式 =====
+// CSS keyframes:唱片旋转(18s/转,暂停时停止)
+if (Platform.OS === 'web' && typeof (globalThis as { document?: unknown }).document !== 'undefined' && !(globalThis as never as { document?: { getElementById: (i: string) => unknown; createElement: (t: string) => { id: string; textContent: string }; head: { appendChild: (e: unknown) => void } } }).document?.getElementById('nm-vinyl-css')) {
+  const doc = (globalThis as never as { document?: { createElement: (t: string) => { id: string; textContent: string }; head: { appendChild: (e: unknown) => void } } }).document!;
+  const el = doc.createElement('style');
+  el.id = 'nm-vinyl-css';
+  el.textContent = '@keyframes nmSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}.nm-vinyl-spin{animation:nmSpin 18s linear infinite}.nm-vinyl-paused{animation-play-state:paused}';
+  doc.head.appendChild(el);
+}
 const stW = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#0a0c0b' },
   bgArt: { position: 'absolute', top: -60, left: -60, right: -60, bottom: -60, width: '120%', height: '120%', opacity: 0.5 },
@@ -308,6 +352,8 @@ const stW = StyleSheet.create({
   back: { position: 'absolute', top: 42, left: 22, zIndex: 5, width: 38, height: 38, borderRadius: 19, backgroundColor: '#ffffff14', alignItems: 'center', justifyContent: 'center' },
   body: { flex: 1, flexDirection: 'row', paddingHorizontal: 72, paddingTop: 74, gap: 52, alignItems: 'center' },
   artCol: { flex: 0.9, alignItems: 'center' },
+  vinylZone: { width: 340, height: 340, alignItems: 'center', justifyContent: 'center' },
+  vinylLabel: { position: 'absolute', top: 126, left: 126, width: 88, height: 88, borderRadius: 44 },
   art: { width: '86%', aspectRatio: 1, borderRadius: 14, maxHeight: 400, maxWidth: 400, shadowColor: '#000', shadowOpacity: 0.55, shadowRadius: 34, shadowOffset: { width: 0, height: 16 } },
   srcTag: { color: '#ffffff66', fontSize: 11, marginTop: 14, letterSpacing: 2 },
   infoCol: { flex: 1.1, alignSelf: 'stretch', justifyContent: 'center', gap: 8 },

@@ -35,6 +35,8 @@ object SoundFxEngine {
         val cureEnable: Boolean = false,
         val cureLevel: Float = 0.5f,
         val limiterEnable: Boolean = false,
+        // lx53 响度补偿：系统音量小时自动补低/高频（等响曲线）
+        val loudnessEnable: Boolean = false,
         // lx52 AutoEQ 耳机校正: [type,fc,gain,Q] × ≤10 + preamp(dB)。type: lowshelf/highshelf/peaking
         val autoeq: Array<Array<Any>>? = null,
         val autoeqPreamp: Double = 0.0,
@@ -92,13 +94,14 @@ object SoundFxEngine {
         val pSpeed = (panner?.getInt("speed") ?: 25).coerceIn(1, 50)
         val pDist = (panner?.getInt("distance") ?: 5).coerceIn(1, 30)
         // lx50 ViPER 链
-        val bm = (viper?.getInt("bassMode") ?: 0).coerceIn(0, 3)
-        val bl = (viper?.getDouble("bassLevel") ?: 0.0).toFloat().coerceIn(0f, 1f)
-        val dE = viper?.getBoolean("dcvEnable") ?: false
-        val dL = (viper?.getDouble("dcvLevel") ?: 0.5).toFloat().coerceIn(0f, 1f)
-        val cE = viper?.getBoolean("cureEnable") ?: false
-        val cL = (viper?.getDouble("cureLevel") ?: 0.5).toFloat().coerceIn(0f, 1f)
-        val lE = viper?.getBoolean("limiterEnable") ?: false
+        val bm = (if (viper?.hasKey("bassMode") == true) viper.getInt("bassMode") else 0).coerceIn(0, 3)
+        val bl = (if (viper?.hasKey("bassLevel") == true) viper.getDouble("bassLevel") else 0.0).toFloat().coerceIn(0f, 1f)
+        val dE = (viper?.hasKey("dcvEnable") == true) && viper.getBoolean("dcvEnable")
+        val dL = (if (viper?.hasKey("dcvLevel") == true) viper.getDouble("dcvLevel") else 0.5).toFloat().coerceIn(0f, 1f)
+        val cE = (viper?.hasKey("cureEnable") == true) && viper.getBoolean("cureEnable")
+        val cL = (if (viper?.hasKey("cureLevel") == true) viper.getDouble("cureLevel") else 0.5).toFloat().coerceIn(0f, 1f)
+        val lE = (viper?.hasKey("limiterEnable") == true) && viper.getBoolean("limiterEnable")
+        val loudE = (viper?.hasKey("loudnessEnable") == true) && viper.getBoolean("loudnessEnable")
         // lx52 AutoEQ
         val aq = viper?.getArray("autoeq")
         val autoeq: Array<Array<Any>>? = if (aq != null && aq.size() > 0) {
@@ -108,9 +111,22 @@ object SoundFxEngine {
                arrayOf<Any>(f.getString(0).let { if (it == "lowshelf" || it == "highshelf" || it == "peaking") it else "peaking" }, f.getDouble(1), f.getDouble(2), f.getDouble(3))
             }.let { arr -> if (arr.any { it == null }) null else arr as Array<Array<Any>> }
         } else null
-        val ap = viper?.getDouble("autoeqPreamp") ?: 0.0
-        config = Config(gains, rid, main, send, pEnable, pSpeed, pDist, bm, bl, dE, dL, cE, cL, lE, autoeq, ap)
+        val ap = if (viper?.hasKey("autoeqPreamp") == true) viper.getDouble("autoeqPreamp") else 0.0
+        config = Config(gains, rid, main, send, pEnable, pSpeed, pDist, bm, bl, dE, dL, cE, cL, lE, loudE, autoeq, ap)
         version.incrementAndGet()
+    }
+
+    /** lx53 响度补偿：系统音量比例（JS 音量监听回写），变化>1% 时 version++ 让音频线程重算 shelf 系数 */
+    @Volatile
+    var volumeRatio = 1f
+        private set
+
+    fun setVolumeRatio(v: Float) {
+        val nv = v.coerceIn(0f, 1f)
+        if (kotlin.math.abs(nv - volumeRatio) > 0.01f) {
+            volumeRatio = nv
+            version.incrementAndGet()
+        }
     }
 
     /**

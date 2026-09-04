@@ -97,6 +97,7 @@ function ensureGraph() {
   if (actx || !IS_ELECTRON) return;
   try {
     actx = new AudioContext();
+    (typeof window !== 'undefined') && ((window as never as Record<string, unknown>).__nmActx = actx); // 频谱环复用(SpectrumRing)
     srcNode = actx.createMediaElementSource(audio);
     preGain = actx.createGain();
     eqNodes = EQ_FREQS.map(f => {

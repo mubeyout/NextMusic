@@ -113,6 +113,13 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
     private var aqActive = false
     private var aqPreamp = 1f
 
+    // lx53 响度补偿（动态 low/high shelf，音量越小补偿越多）
+    private var loudnessOn = false
+    private var loudLoCoefs = FloatArray(5)
+    private var loudHiCoefs = FloatArray(5)
+    private val loudLoState = Array(2) { FloatArray(4) }
+    private val loudHiState = Array(2) { FloatArray(4) }
+
     // PCM 中转
     private var floatBuf = FloatArray(4096)
 
@@ -147,6 +154,13 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
         // lx52 AutoEQ 系数
         aqActive = c.autoeq != null && c.autoeq.isNotEmpty()
         aqPreamp = Math.pow(10.0, c.autoeqPreamp / 20.0).toFloat()
+        // lx53: 等响补偿——低音量时低频最多 +7dB、高频 +3.5dB，随音量线性收敛到 0（100% 音量不补偿）
+        loudnessOn = c.loudnessEnable
+        if (loudnessOn) {
+            val k = (1f - SoundFxEngine.volumeRatio).coerceIn(0f, 1f)
+            loudLoCoefs = shelfOrPeak("lowshelf", 110.0, 7.0 * k, 0.7)
+            loudHiCoefs = shelfOrPeak("highshelf", 8000.0, 3.5 * k, 0.7)
+        }
         if (aqActive) {
             for (i in 0 until minOf(10, c.autoeq!!.size)) {
                 val e = c.autoeq!![i]
@@ -205,6 +219,22 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
             }
         }
         return floatArrayOf((b0d / a0d).toFloat(), (b1d / a0d).toFloat(), (b2d / a0d).toFloat(), (a1d / a0d).toFloat(), (a2d / a0d).toFloat())
+    }
+
+    /** lx53 响度补偿单样本：动态 low shelf(110Hz) + high shelf(8kHz) */
+    private fun loudness(x: Float, ch: Int): Float {
+        var y = x
+        run {
+            val st = loudLoState[ch]; val c = loudLoCoefs
+            val o = c[0] * y + c[1] * st[0] + c[2] * st[1] - c[3] * st[2] - c[4] * st[3]
+            st[1] = st[0]; st[0] = y; st[3] = st[2]; st[2] = o; y = o
+        }
+        run {
+            val st = loudHiState[ch]; val c = loudHiCoefs
+            val o = c[0] * y + c[1] * st[0] + c[2] * st[1] - c[3] * st[2] - c[4] * st[3]
+            st[1] = st[0]; st[0] = y; st[3] = st[2]; st[2] = o; y = o
+        }
+        return if (y.isFinite()) y else x
     }
 
     /** AutoEQ 链单样本 */
@@ -281,7 +311,7 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
         maybeRefreshConfig()
         val preset = REVERBS[reverbId]
         // 注：选“关闭”(none) 不再释放卷积器——IR 缓存常驻，切回瞬时命中（2026-08-29）
-        val bypass = !eqActive && reverbId == "none" && !pannerEnable && !viperChainActive && !aqActive
+        val bypass = !eqActive && reverbId == "none" && !pannerEnable && !viperChainActive && !aqActive && !loudnessOn
         if (bypass) {
             val remaining = inputBuffer.remaining()
             val out = replaceOutputBuffer(remaining)
@@ -308,6 +338,7 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
                 var l = floatBuf[i]; var r = floatBuf[i + 1]
                 // lx51:NaN 防护(上游解码器/淡入淡出偶发非有限值→双二阶滤波器状态被污染→永久静音)
                 if (!l.isFinite() || !r.isFinite()) { floatBuf[i] = 0f; floatBuf[i + 1] = 0f; i += 2; continue }
+                if (loudnessOn) { l = loudness(l, 0); r = loudness(r, 1) }
                 if (aqActive) { l = autoeq(l, 0); r = autoeq(r, 1) }
                 if (eqActive) { l = eq(l, 0); r = eq(r, 1) }
                 // lx50: ViPER 链(EQ 后、混响前——低音/细节/声场/限幅依次处理)
@@ -374,6 +405,7 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
     override fun onFlush() {
         eqState.forEach { ch -> ch.forEach { Arrays.fill(it, 0f) } }
         aqState.forEach { ch -> ch.forEach { Arrays.fill(it, 0f) } }
+        loudLoState.forEach { Arrays.fill(it, 0f) }; loudHiState.forEach { Arrays.fill(it, 0f) }
         bpHP.forEach { Arrays.fill(it, 0f) }; bpLP.forEach { Arrays.fill(it, 0f) }
         if (this::combsL.isInitialized) {
             combsL.forEach { it.clear() }; combsR.forEach { it.clear() }

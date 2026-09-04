@@ -23,6 +23,12 @@ class SoundFxModule(reactContext: ReactApplicationContext) : ReactContextBaseJav
         )
     }
 
+    /** lx53 响度补偿：系统音量比例（JS 侧音量监听回写） */
+    @ReactMethod
+    fun setVolumeRatio(ratio: Double) {
+        SoundFxEngine.setVolumeRatio(ratio.toFloat())
+    }
+
     @ReactMethod
     fun isAttached(promise: Promise) {
         promise.resolve(SoundFxEngine.processorAttached)
