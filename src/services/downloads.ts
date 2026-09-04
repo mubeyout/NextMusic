@@ -149,6 +149,26 @@ async function runJob(job: Job): Promise<void> {
   emit();
   try {
     await withTimeout((async () => {
+    // ===== v1.1.7 桌面 web:主进程下载器(Electron net.fetch 落盘 ~/Music/NextMusic 或用户选目录) =====
+    if (Platform.OS === 'web') {
+      type NmDl = { download?: (o: Record<string, unknown>) => Promise<{ ok: boolean; path?: string; size?: number; error?: string }>; onProgress?: (cb: (p: { key: string; received: number; total: number }) => void) => (() => void) | void };
+      const nm = (globalThis as never as Record<string, NmDl>).nmDesktop;
+      if (nm?.download) {
+        const rU = await resolveUrl(job.song, job.quality);
+        const displayName = `${sanitize(job.song.name)}-${sanitize(job.song.singer)}.${extFor(job.quality)}`;
+        const dcfg = settings.get();
+        const off = nm.onProgress?.(p => { if (p.key === key) { progressMap.set(key, p.total > 0 ? p.received / p.total : 0); emit(); } });
+        try {
+          const r = await nm.download({ key, url: rU.url, fileName: displayName, saveDir: dcfg.downloadDir === 'custom' ? dcfg.downloadTreeUri || undefined : undefined });
+          off?.();
+          if (!r.ok || !r.size) throw new Error(r.error || '下载内容为空');
+          const list = readAll().filter(rr => rr.key !== key);
+          list.unshift({ key, song: job.song, path: 'file://' + r.path, size: r.size, quality: job.quality, at: Date.now() });
+          writeAll(list);
+        } catch (e2) { off?.(); throw e2; }
+        return;
+      }
+    }
     const dir = `${RNBlobUtil.fs.dirs.DocumentDir}/downloads`;
     await RNBlobUtil.fs.mkdir(dir).catch(() => {});
     const displayName = `${sanitize(job.song.name)}-${sanitize(job.song.singer)}-${String(job.song.songmid ?? '').slice(-24).replace(/[^a-zA-Z0-9_-]/g, '')}.${extFor(job.quality)}`;

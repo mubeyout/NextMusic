@@ -3,6 +3,8 @@ package com.mubeyworks.nextmusic
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
+import com.facebook.react.ReactApplication
+import com.facebook.react.ReactHost
 
 /**
  * lx48:主题热重载——RestartModule.restart() 会整 activity 重建+进程退出,
@@ -16,13 +18,15 @@ class ReloadModule(reactContext: ReactApplicationContext) : ReactContextBaseJava
   @ReactMethod
   fun reload() {
     val ctx = reactApplicationContext
-    val activity = ctx.currentActivity
-    val app = activity?.application as? ReactApplication ?: return
-    // 必须回主线程调(ReactHost.reload 有线程断言)
+    val activity = ctx.currentActivity ?: return
+    val app = activity.application as? ReactApplication ?: return
+    val host: ReactHost? = app.reactHost
+    if (host == null) return
+    // 回主线程调(ReactHost.reload 有线程断言)
     android.os.Handler(android.os.Looper.getMainLooper()).post {
       try {
-        app.reactHost.reload("theme-change")
-      } catch (_: Throwable) { /* 兜底走旧重启 */ }
+        host.reload("theme-change")
+      } catch (_: Throwable) { /* 兜底:静默,JS 侧仍可走旧重启 */ }
     }
   }
 }

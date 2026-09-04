@@ -1,7 +1,7 @@
 // NextMusic Desktop — Electron 主进程
 // 职责：窗口壳 / 媒体流代理(WebDAV 等带 headers 的音频走 HTML5 Audio 无法自定义头,
 //       由主进程 net.fetch 转发 Range 请求) / 媒体键由 renderer MediaSession 承担
-const { app, BrowserWindow, shell, protocol, net, ipcMain } = require('electron');
+const { app, BrowserWindow, shell, protocol, net, ipcMain, dialog } = require('electron');
 const { pathToFileURL } = require('url');
 
 // 自定义特权协议:prod 下承载 dist 静态资源(file:// 的 ES module 会被 CORS 拦,nmapp 是标准安全协议)
@@ -77,6 +77,58 @@ ipcMain.handle('nm:win', (e, act) => {
   if (act === 'min') w.minimize();
   else if (act === 'max') w.isMaximized() ? w.unmaximize() : w.maximize();
   else if (act === 'close') w.close();
+});
+// ===== v1.1.7 桌面文件能力:保存/打开对话框 + 主进程下载 =====
+const fsmod = require('fs');
+const os = require('os');
+ipcMain.handle('nm:openFile', async () => {
+  const w = BrowserWindow.getAllWindows()[0];
+  if (!w) return null;
+  const { canceled, filePaths } = await dialog.showOpenDialog(w, {
+    properties: ['openFile'], filters: [{ name: 'JSON', extensions: ['json'] }],
+  });
+  if (canceled || !filePaths.length) return null;
+  try { return { path: filePaths[0], text: fsmod.readFileSync(filePaths[0], 'utf8') }; } catch { return null; }
+});
+ipcMain.handle('nm:saveFile', async (_e, { defaultName, text }) => {
+  const w = BrowserWindow.getAllWindows()[0];
+  if (!w) return null;
+  const { canceled, filePath } = await dialog.showSaveDialog(w, { defaultPath: defaultName, filters: [{ name: 'JSON', extensions: ['json'] }] });
+  if (canceled || !filePath) return null;
+  try { fsmod.writeFileSync(filePath, String(text), 'utf8'); return { path: filePath }; } catch { return null; }
+});
+ipcMain.handle('nm:pickDir', async () => {
+  const w = BrowserWindow.getAllWindows()[0];
+  if (!w) return null;
+  const { canceled, filePaths } = await dialog.showOpenDialog(w, { properties: ['openDirectory'] });
+  return canceled || !filePaths.length ? null : filePaths[0];
+});
+// 主进程下载:net.fetch 流式落盘,进度 IPC 回推
+ipcMain.handle('nm:download', async (e, { key, url, fileName, saveDir }) => {
+  const dir = saveDir || path.join(os.homedir(), 'Music', 'NextMusic');
+  fsmod.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, String(fileName).replace(/[\\/:*?"<>|]/g, '_'));
+  const w = BrowserWindow.fromWebContents(e.sender);
+  try {
+    const up = await net.fetch(url);
+    if (!up.ok) throw new Error('HTTP ' + up.status);
+    const total = Number(up.headers.get('content-length') || 0);
+    let received = 0;
+    const st = fsmod.createWriteStream(file);
+    const reader = up.body.getReader();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      st.write(Buffer.from(value));
+      received += value.length;
+      if (w && !w.isDestroyed()) w.webContents.send('nm:dl-progress', { key, received, total });
+    }
+    await new Promise(r => st.end(r));
+    return { ok: true, path: file, size: received };
+  } catch (err) {
+    try { fsmod.unlinkSync(file); } catch { /* ignore */ }
+    return { ok: false, error: String(err && err.message || err) };
+  }
 });
 // 自动播放策略放行(单机音乐应用,无手势也允许出声——WebAudio/HTML5 需要音频上下文立即可用)
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
