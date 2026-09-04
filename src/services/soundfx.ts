@@ -23,6 +23,7 @@ export interface FxViper {
   limiterEnable: boolean;                 // 恒定限幅
   autoeqName: string;       // lx52 AutoEQ 耳机型号('' = 关)
   autoeqOn: boolean;        // 启用开关(选了型号但可临时关)
+  loudnessEnable: boolean;  // lx53 响度补偿(小音量自动补低/高频)
 }
 export type AutoeqFilter = [type: 'lowshelf' | 'highshelf' | 'peaking', fc: number, gain: number, q: number];
 export interface AutoeqProfile { preamp: number; f: AutoeqFilter[] }
@@ -35,15 +36,16 @@ export const FX_FREQ_LABELS = FX_FREQS.map(f => (f >= 1000 ? f / 1000 + 'k' : St
 
 // 与 lxserver defaultPresets 完全一致
 export const FX_DEFAULT_PRESETS: FxPreset[] = [
-  { name: '流行', values: [6, 5, -3, -2, 5, 4, -4, -3, 6, 4] },
-  { name: '舞曲', values: [4, 3, -4, -6, 0, 0, 3, 4, 4, 5] },
-  { name: '摇滚', values: [7, 6, 2, 1, -3, -4, 2, 1, 4, 5] },
-  { name: '古典', values: [6, 7, 1, 2, -1, 1, -4, -6, -7, -8] },
-  { name: '人声', values: [-5, -6, -4, -3, 3, 4, 5, 4, -3, -3] },
-  { name: '慢歌', values: [5, 4, 2, 0, -2, 0, 3, 6, 7, 8] },
-  { name: '电子乐', values: [6, 5, 0, -5, -4, 0, 6, 8, 8, 7] },
-  { name: '重低音', values: [8, 7, 5, 4, 0, 0, 0, 0, 0, 0] },
-  { name: '柔和', values: [-5, -5, -4, -4, 3, 2, 4, 4, 0, 0] },
+  // lx57 移动端重调:31/62Hz 手机/耳机发不出(旧预设数学上听不出,坑=EQ"无效"根因);低频主力移 125Hz,增益收敛防爆音
+  { name: '流行', values: [2, 4, 4, -1, 2, 3, -1, 0, 2, 2] },
+  { name: '舞曲', values: [2, 4, 5, 0, -1, 1, 2, 3, 3, 2] },
+  { name: '摇滚', values: [3, 4, 3, 1, -1, -1, 2, 2, 3, 3] },
+  { name: '古典', values: [2, 3, 2, 2, 0, 1, -1, -2, -2, -3] },
+  { name: '人声', values: [-3, -2, 0, 2, 4, 4, 3, 2, 0, -1] },
+  { name: '慢歌', values: [1, 3, 3, 1, -1, 1, 2, 3, 3, 2] },
+  { name: '电子乐', values: [3, 5, 4, -1, -2, 1, 3, 4, 4, 3] },
+  { name: '重低音', values: [4, 6, 6, 2, 0, 0, 0, 0, 1, 2] },
+  { name: '柔和', values: [-3, -2, -1, 0, 2, 2, 2, 2, 1, 0] },
 ];
 
 // 与 lxserver reverbOptions 完全一致（id/名称/main/send）
@@ -80,7 +82,7 @@ function defaultSettings(): FxSettings {
     pitch: 1.0,
     panner: { enable: false, speed: 25, distance: 5 },
     reverb: { id: 'none', mainGain: 1.0, sendGain: 0 },
-    viper: { bassMode: 0, bassLevel: 0.5, dcvEnable: false, dcvLevel: 0.5, cureEnable: false, cureLevel: 0.5, limiterEnable: false, autoeqName: '', autoeqOn: false },
+    viper: { bassMode: 0, bassLevel: 0.5, dcvEnable: false, dcvLevel: 0.5, cureEnable: false, cureLevel: 0.5, limiterEnable: false, autoeqName: '', autoeqOn: false, loudnessEnable: false },
   };
 }
 
@@ -122,6 +124,7 @@ function sanitize(v: unknown): FxSettings {
       limiterEnable: !!s.viper.limiterEnable,
       autoeqName: typeof s.viper.autoeqName === 'string' ? s.viper.autoeqName : '',
       autoeqOn: !!s.viper.autoeqOn,
+      loudnessEnable: !!s.viper.loudnessEnable,
     };
   }
   return out;
@@ -179,6 +182,7 @@ function applyNative() {
         dcvEnable: settings.viper.dcvEnable, dcvLevel: settings.viper.dcvLevel,
         cureEnable: settings.viper.cureEnable, cureLevel: settings.viper.cureLevel,
         limiterEnable: settings.viper.limiterEnable,
+        loudnessEnable: settings.viper.loudnessEnable,
         autoeq: settings.viper.autoeqOn && settings.viper.autoeqName
           ? (autoeqProfile(settings.viper.autoeqName)?.f ?? []).map(f => ({ 0: f[0], 1: f[1], 2: f[2], 3: f[3] }))
           : [],
@@ -251,7 +255,11 @@ function commit(next: FxSettings) {
   persist(); applyNative(); pushToServerSoon(); notify();
 }
 
+/** lx57:高级项手动变更 → 模式回落"自定义"(听感模式与手动调节互斥,治"冲突不生效"的感知) */
+function markCustom() { soundMode = 'custom'; }
+
 export function setEQ(index: number, val: number) {
+  markCustom();
   const eq = [...settings.eq];
   eq[index] = Math.max(-12, Math.min(12, Math.round(val)));
   activePresetName = '';
@@ -273,12 +281,14 @@ export function applyFxPreset(name: string) {
 }
 
 export function setReverb(id: string) {
+  markCustom();
   const r = FX_REVERB_OPTIONS.find(x => x.id === id);
   if (!r) return;
   commit({ ...settings, reverb: { id: r.id, mainGain: r.main, sendGain: r.send } });
 }
 
 export function setReverbGain(type: 'main' | 'send', val: number) {
+  markCustom();
   const v = Math.max(0, Math.min(3, val));
   const reverb = type === 'main'
     ? { ...settings.reverb, mainGain: v }
@@ -294,12 +304,62 @@ export function setFxPitch(v: number) {
 export function resetFxPitch() { setFxPitch(1.0); }
 
 export function setPanner(patch: Partial<FxPanner>) {
+  markCustom();
   commit({ ...settings, panner: { ...settings.panner, ...patch } });
 }
 
 // lx50: ViPER 链设样
 export function setViper(patch: Partial<FxViper>) {
+  markCustom();
   commit({ ...settings, viper: { ...settings.viper, ...patch } });
+}
+
+// lx57: 听感模式——一键组合全部音效参数;手动改任何高级项=自动回落"自定义"
+export type SoundMode = 'custom' | 'off' | 'bass' | 'vocal' | 'night' | 'scene';
+export const SOUND_MODES: { id: SoundMode; name: string; desc: string }[] = [
+  { id: 'off', name: '原声', desc: '不加工，原始输出' },
+  { id: 'bass', name: '重低音', desc: '低音增强+响度补偿' },
+  { id: 'vocal', name: '人声', desc: '人声突出+细节增强' },
+  { id: 'night', name: '夜听', desc: '小音量优化，柔和耐听' },
+  { id: 'scene', name: '现场感', desc: '临场混响+立体声展宽' },
+  { id: 'custom', name: '自定义', desc: '手动调节高级参数' },
+];
+let soundMode: SoundMode = 'custom';
+export function currentSoundMode() { return soundMode; }
+
+/** 一键应用:组合 EQ(移动端重调)/响度/ViPER/混响;AutoEq 耳机校正独立保留(不参与模式互斥) */
+export function applySoundMode(mode: SoundMode) {
+  soundMode = mode;
+  const eq = (a: number[]) => a.map(x => Math.max(-12, Math.min(12, x)));
+  switch (mode) {
+    case 'off':
+      activePresetName = '';
+      commit({ ...settings, eq: eq(Array(10).fill(0)), reverb: { ...settings.reverb, id: 'none' },
+        viper: { ...settings.viper, bassMode: 0, dcvEnable: false, cureEnable: false, limiterEnable: false, loudnessEnable: false } });
+      break;
+    case 'bass': // 移动端低音:中心 125Hz(手机/耳机发得出),配合 ViPER 纯净低音+限幅防爆
+      activePresetName = '重低音';
+      commit({ ...settings, eq: eq([5, 7, 6, 2, 0, 0, 0, 0, 1, 2]),
+        viper: { ...settings.viper, bassMode: 2, bassLevel: 0.5, loudnessEnable: true, limiterEnable: true, dcvEnable: false, cureEnable: false } });
+      break;
+    case 'vocal': // 人声:250-2k 提,低频让位,清澈模式谐波增亮
+      activePresetName = '人声';
+      commit({ ...settings, eq: eq([-3, -2, 0, 3, 5, 5, 3, 1, 0, -1]),
+        viper: { ...settings.viper, bassMode: 3, bassLevel: 0.35, dcvEnable: true, loudnessEnable: true, limiterEnable: false, cureEnable: false } });
+      break;
+    case 'night': // 夜听:压低频防扰、响度补偿细节、限幅
+      activePresetName = '柔和';
+      commit({ ...settings, eq: eq([-5, -4, -2, 0, 2, 3, 3, 2, 1, -2]),
+        viper: { ...settings.viper, bassMode: 0, loudnessEnable: true, dcvEnable: true, limiterEnable: true, cureEnable: false } });
+      break;
+    case 'scene':
+      activePresetName = '';
+      commit({ ...settings, eq: eq([2, 3, 1, 0, 0, 1, 2, 3, 4, 3]), reverb: { id: 'v_presence', mainGain: 1.2, sendGain: 0.9 },
+        viper: { ...settings.viper, bassMode: 0, loudnessEnable: true, limiterEnable: true, dcvEnable: false, cureEnable: true, cureLevel: 0.3 } });
+      break;
+    case 'custom': break; // 只切换标记
+  }
+  persist(); notify();
 }
 
 // lx52: AutoEq 耳机校正库

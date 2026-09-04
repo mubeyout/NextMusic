@@ -27,15 +27,14 @@ export function MiniPlayer() {
             <Text style={st.title} numberOfLines={1}>{current.name}</Text>
             <Text style={st.sub} numberOfLines={1}>{current.singer}{current._types?.flac ? ' · 无损' : ''}</Text>
           </View>
-          {/* lx56:播放钮前置(歌名后第一个)——老板反馈"播放跑最右边不顺手";设备/心右移 */}
-          <TouchableOpacity style={st.playBtn} hitSlop={4} onPress={toggle}>
-            <Icon name={playing ? 'pause' : 'play'} size={24} color={C.onBrand} />
-          </TouchableOpacity>
           <TouchableOpacity style={st.iconBtn} hitSlop={6} onPress={() => nav.navigate('Route')}>
             <Icon name="devices" size={20} color={cast ? C.brand : C.text} />
           </TouchableOpacity>
           <TouchableOpacity style={st.iconBtn} hitSlop={6} onPress={() => setCollect(true)}>
             <Icon name="heart" size={20} active={faved} color={faved ? '#FF5A76' : C.text} />
+          </TouchableOpacity>
+          <TouchableOpacity style={st.playBtn} hitSlop={4} onPress={toggle}>
+            <Icon name={playing ? 'pause' : 'play'} size={24} color={C.onBrand} />
           </TouchableOpacity>
         </View>
         <ProgressBar pct={pct} />

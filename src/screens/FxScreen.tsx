@@ -40,6 +40,7 @@ import {
   setFxPitch, resetFxPitch, setPanner, setViper,
   saveNewPreset, renameCustomPreset, deleteCustomPreset,
   AUTOEQ_MODELS, autoeqProfile,
+  SOUND_MODES, applySoundMode, currentSoundMode,
 } from '../services/soundfx';
 import type { FxViper } from '../services/soundfx';
 
@@ -255,6 +256,7 @@ export function FxScreen() {
   const [inputVal, setInputVal] = useState('');
   const [managePreset, setManagePreset] = useState<string | null>(null);
   const [aeqQuery, setAeqQuery] = useState(''); // lx52 AutoEq 型号搜索
+  const [advancedOpen, setAdvancedOpen] = useState(false); // lx57 高级折叠
 
   useEffect(() => subscribeFx(() => force(x => x + 1)), []);
 
@@ -292,6 +294,27 @@ export function FxScreen() {
       </View>
 
       <ScrollView contentContainerStyle={[st.content, IS_HD && { maxWidth: 900, alignSelf: 'center', width: '100%' }]} showsVerticalScrollIndicator={false}>
+        {/* ===== lx57: 听感模式(一键,普通用户唯一入口) ===== */}
+        <View style={st.modeGrid}>
+          {SOUND_MODES.filter(m => m.id !== 'custom').map(m => {
+            const active = currentSoundMode() === m.id;
+            return (
+              <T key={m.id} activeOpacity={0.75} onPress={() => applySoundMode(m.id)} style={{ flex: 1 }}>
+                <View style={[st.modeCard, active && st.modeCardOn]}>
+                  <Text style={[st.modeName, active && st.modeNameOn]}>{m.name}</Text>
+                  <Text style={st.modeDesc} numberOfLines={1}>{m.desc}</Text>
+                </View>
+              </T>
+            );
+          })}
+        </View>
+
+        {/* ===== 高级调音(默认折叠) ===== */}
+        <T activeOpacity={0.8} onPress={() => setAdvancedOpen(!advancedOpen)} style={st.advToggle}>
+          <Text style={st.advToggleText}>高级调音 {advancedOpen ? '▾' : '▸'}</Text>
+          <Text style={st.advHint}>均衡器/混响/音效细节</Text>
+        </T>
+        {advancedOpen && (<>
         {/* ===== 快速预设（横滚胶囊） ===== */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.presetScroll}>
           {allPresetNames.map(name => {
@@ -513,6 +536,7 @@ export function FxScreen() {
           </View>
         </View>
 
+        </>)}
         <Text style={st.syncCaption}>
           {sync === 'synced' ? '已与服务器同步（Web 播放器共享）· 点右上角徽标重新拉取' : sync === 'local' ? '本地模式：未登录，设置仅保存在本机 · 点右上角徽标从服务器拉取' : '同步中…'}
         </Text>
@@ -592,6 +616,15 @@ const st = StyleSheet.create({
   chipTextOn: { color: C.onBrand, fontWeight: '800' },
   chipAdd: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', borderColor: C.strokeStrong, alignItems: 'center', justifyContent: 'center' },
   chipAddText: { color: C.text3, fontSize: 15, fontWeight: '800', lineHeight: 17 },
+  modeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
+  modeCard: { borderRadius: 12, backgroundColor: C.surface2, paddingHorizontal: 12, paddingVertical: 10, alignItems: 'center', minWidth: 100 },
+  modeCardOn: { backgroundColor: C.brand },
+  modeName: { color: C.text, fontSize: 14, fontWeight: '700' },
+  modeNameOn: { color: C.onBrand },
+  modeDesc: { color: C.text3, fontSize: 10, marginTop: 2 },
+  advToggle: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, marginBottom: 4 },
+  advToggleText: { color: C.text2, fontSize: 14, fontWeight: '600' },
+  advHint: { color: C.text3, fontSize: 11 },
   aeqInput: { height: 38, borderRadius: 10, backgroundColor: C.inset, color: C.text, fontSize: 13, paddingHorizontal: 12, marginBottom: 8 },
   aeqList: { maxHeight: 220, borderRadius: 12 },
   aeqRow: { flexDirection: 'row', alignItems: 'center', height: 40, paddingHorizontal: 12, borderRadius: 10, backgroundColor: C.surface2, marginBottom: 4 },
