@@ -7,7 +7,7 @@ import com.facebook.react.uimanager.ViewManager
 
 class MusicScannerPackage : ReactPackage {
     override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> =
-        listOf(MusicScannerModule(reactContext), DownloaderModule(reactContext), VersionModule(reactContext), SoundFxModule(reactContext), RestartModule(reactContext), BlurModule(reactContext), AudioRouteModule(reactContext), DlnaModule(reactContext), CastModule(reactContext))
+        listOf(MusicScannerModule(reactContext), DownloaderModule(reactContext), VersionModule(reactContext), SoundFxModule(reactContext), RestartModule(reactContext), ReloadModule(reactContext), BlurModule(reactContext), AudioRouteModule(reactContext), DlnaModule(reactContext), CastModule(reactContext))
 
     override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> = emptyList()
 }

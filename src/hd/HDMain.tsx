@@ -2,7 +2,8 @@
 // + 内容区(层叠保状态) + 底部 64dp 桌面式播放条
 // 业务层(播放引擎/音源/媒体库)全复用 phone 版,仅 UI 形态不同
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, Platform } from 'react-native';
+const IS_WEB = Platform.OS === 'web';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
 import { C, H, SH, fmtSec } from './hdtokens';
@@ -78,12 +79,12 @@ export function HDMain() {
           contentContainerStyle={{ paddingTop: 34 + 6, paddingBottom: 10, gap: 2 }} // 34 让位拖拽条
           showsVerticalScrollIndicator={false}
         >
-          {/* 品牌(新品牌玻璃 Mark):paddingTop 36 让位顶部拖拽条,logo 放大 */}
+          {/* 品牌(新品牌玻璃 Mark):paddingTop 让位顶部拖拽条,logo 放大;桌面不显示 TV 副标 */}
           <View style={st.brandRow}>
             <Image source={require('../assets/brand/mark.png')} style={st.logoMark} />
             <View style={{ flex: 1 }}>
               <Text style={st.brandName}>Next<Text style={{ color: C.brand }}>Music</Text></Text>
-              <Text style={st.brandSub}>TV · CAR EDITION</Text>
+              {IS_WEB ? null : <Text style={st.brandSub}>TV · CAR EDITION</Text>}
             </View>
           </View>
 
@@ -170,9 +171,9 @@ function HDPlayBar() {
         </View>
       </View>
 
-      {/* 中:控件 + 进度 */}
-      <View style={{ flex: 1, alignItems: 'center', gap: 3 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+      {/* 中:控件 + 进度(两行同宽对齐——v1.1.6 修错位) */}
+      <View style={st.pbCenter}>
+        <View style={st.pbCtrls}>
           <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={() => setShuffle(!shuffle)}>
             <Icon name="shuffle" size={13} active={shuffle} color={shuffle ? C.brand : C.text2} />
           </HDTouch>
@@ -189,7 +190,7 @@ function HDPlayBar() {
             <Icon name="repeat" size={13} active={repeat !== 'off'} color={repeat !== 'off' ? C.brand : C.text2} />
           </HDTouch>
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'stretch', maxWidth: 480 }}>
+        <View style={st.pbProgRow}>
           <Text style={st.pbTime}>{fmtSec(position)}</Text>
           <View style={st.pbTrack}>
             <View style={{ flex: pct, backgroundColor: C.brand, borderRadius: 2 }} />
@@ -243,6 +244,10 @@ const st = StyleSheet.create({
     backgroundColor: C.glass, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border,
   },
   pbLeft: { flexDirection: 'row', alignItems: 'center', gap: 9, width: 225 },
+  // 中列:控件行与进度行同容器同宽对齐(v1.1.6 修错位——原 alignSelf:stretch+maxWidth 导致两行错切)
+  pbCenter: { flex: 1, alignItems: 'center', gap: 4 },
+  pbCtrls: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  pbProgRow: { flexDirection: 'row', alignItems: 'center', gap: 7, width: '100%', maxWidth: 460, justifyContent: 'center' },
   pbCoverTouch: { borderRadius: 9 },
   pbArt: { width: 40, height: 40, borderRadius: 9 },
   pbTitle: { color: C.text, fontSize: H.font.md, fontWeight: '600' },

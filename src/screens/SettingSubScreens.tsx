@@ -84,6 +84,10 @@ export function BasicSettingsScreen() {
 
 // ---------- 主题与外观 ----------
 const Restart = NativeModules.AppRestart as { restart: () => void } | undefined;
+// lx48：终极热重载——JS bundle reload（模块级 StyleSheet 重建，新主题全量生效），
+// Activity/进程/前台音频服务不动，不再"退出重进"。旧原生无 AppReload 时兑底整重启。
+const HotReload = NativeModules.AppReload as { reload: () => void } | undefined;
+const reloadUI = () => { setTimeout(() => { if (HotReload?.reload) HotReload.reload(); else Restart?.restart(); }, 350); };
 
 export function ThemeScreen() {
   const nav = useNavigation() as { goBack: () => void };
@@ -94,9 +98,9 @@ export function ThemeScreen() {
     { name: '晚樱粉', color: '#F472B6' },
     { name: '琥珀橙', color: '#F59E0B' },
   ];
-  // vc79：切主题/强调色后直接重启（不再弹「稍后」——不重启会出现新旧样式混搭，蓝图标绿字的未生效残留就是它）
+  // lx48：切主题/强调色后热重载（不再整 App 重启；样式重建语义与重启等价，但音乐不断、无退出动画）
   const applyAndRestart = () => {
-    setTimeout(() => Restart?.restart(), 350); // 给 MMKV 落盘一点时间
+    reloadUI();
   };
   return (
     <PageShell title="主题与外观" onBack={() => nav.goBack()}>

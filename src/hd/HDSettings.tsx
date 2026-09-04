@@ -16,7 +16,6 @@ import { APP_VERSION, IS_HD } from '../services/appversion';
 import { hdNav } from './hdnav';
 import { NativeModules } from 'react-native';
 import { SelectSheet } from '../components/SelectSheet';
-import { applyBootTheme } from '../theme/tokens';
 
 const Restart = NativeModules.AppRestart as { restart: () => void } | undefined;
 const ACCENTS = [
@@ -25,10 +24,18 @@ const ACCENTS = [
   { name: '晚樱粉', color: '#F472B6' },
   { name: '琥珀橙', color: '#F59E0B' },
 ];
-// 主题/缩放切换重启:resume=重启前在播→标记断点续播(重启后自动接同一首同一位置,音乐不断)
+// lx48:主题/缩放切换热重载(JS bundle reload,样式全量重建;音乐不断、无退出动画)
+// resume=重载前在播→标记断点续播(reload 后自动接同一首同一位置)
+const HotReloadMod = NativeModules.AppReload as { reload: () => void } | undefined;
 const hdRestart = (resume?: boolean) => {
   try { createMMKV({ id: 'nextmusic-playback' }).set('rr', resume ? '1' : ''); } catch { /* ignore */ }
-  setTimeout(() => Restart?.restart(), 350);
+  setTimeout(() => { if (HotReloadMod?.reload) HotReloadMod.reload(); else Restart?.restart(); }, 350);
+};
+// web 主题热切:设置已落 MMKV,整页 reload——各屏 StyleSheet 模块加载期固化旧色,单页刷新必花屏;
+// 桌面 web 队列/进度冷启动自动恢复(restorePlayback web 默认开),体验等价即时
+const hdWebReload = () => {
+  try { createMMKV({ id: 'nextmusic-playback' }).set('rr', '1'); } catch { /* ignore */ }
+  setTimeout(() => { const l = (globalThis as { location?: { reload: () => void } }).location; l?.reload(); }, 200);
 };
 
 const TABS = ['外观与界面', '播放体验', '账号与同步', '下载与备份', '关于'] as const;
@@ -44,7 +51,6 @@ export function HDSettingsScreen() {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void };
   const [tab, setTab] = useState<Tab>('外观与界面');
-  const [, bump] = useState(0); // web 热切主题:强制 re-render 领新 token
   const s = useSettings();
   const { connected, base, username, disconnectServer } = useApp();
   const { playing } = usePlayer();
@@ -53,9 +59,9 @@ export function HDSettingsScreen() {
 
   const rows: Record<Tab, RowDef[]> = {
     '外观与界面': [
-      { kind: 'toggle', icon: 'palette', title: '纯黑背景', desc: 'OLED 友好的纯黑底色(仅深色模式)', value: s.pureBlack, onToggle: () => { settings.set('pureBlack', !s.pureBlack); if (IS_WEB) { applyBootTheme(); bump(n => n + 1); } else hdRestart(playing); } },
-      { kind: 'select', icon: 'palette', title: '界面主题', desc: IS_WEB ? '深色/浅色即时切换' : '深色(车机/TV 默认)或浅色,切换后自动重启生效', value: s.light ? '浅色' : '深色', options: ['深色', '浅色'], onPick: v => { settings.set('light', v === '浅色'); if (IS_WEB) { applyBootTheme(); bump(n => n + 1); } else hdRestart(playing); } },
-      { kind: 'select', icon: 'palette', title: '强调色', desc: IS_WEB ? '全局品牌色(即时生效)' : '全局品牌色(按钮/高亮/选中态),切换后自动重启生效', value: ACCENTS.find(a => a.color === s.accent)?.name ?? 'Next 绿', options: ACCENTS.map(a => a.name), onPick: v => { const hit = ACCENTS.find(a => a.name === v); if (hit) { settings.set('accent', hit.color); if (IS_WEB) { applyBootTheme(); bump(n => n + 1); } else hdRestart(playing); } } },
+      { kind: 'toggle', icon: 'palette', title: '纯黑背景', desc: 'OLED 友好的纯黑底色(仅深色模式)', value: s.pureBlack, onToggle: () => { settings.set('pureBlack', !s.pureBlack); if (IS_WEB) { hdWebReload(); } else hdRestart(playing); } },
+      { kind: 'select', icon: 'palette', title: '界面主题', desc: IS_WEB ? '深色/浅色即时切换' : '深色(车机/TV 默认)或浅色,切换后自动重启生效', value: s.light ? '浅色' : '深色', options: ['深色', '浅色'], onPick: v => { settings.set('light', v === '浅色'); if (IS_WEB) { hdWebReload(); } else hdRestart(playing); } },
+      { kind: 'select', icon: 'palette', title: '强调色', desc: IS_WEB ? '全局品牌色(即时生效)' : '全局品牌色(按钮/高亮/选中态),切换后自动重启生效', value: ACCENTS.find(a => a.color === s.accent)?.name ?? 'Next 绿', options: ACCENTS.map(a => a.name), onPick: v => { const hit = ACCENTS.find(a => a.name === v); if (hit) { settings.set('accent', hit.color); if (IS_WEB) { hdWebReload(); } else hdRestart(playing); } } },
       { kind: 'select', icon: 'fullscreen', title: '界面缩放', desc: '全局字号/触点/行高缩放(桌面即时生效,手机/TV 切换后重启生效)', value: s.uiScale || '100%', options: IS_WEB ? ['100%', '110%', '125%', '150%', '175%'] : ['90%', '100%', '110%', '125%'], onPick: v => { settings.set('uiScale', v); if (IS_WEB) { const z = Math.max(0.75, Math.min(2, Number(v.replace('%', '')) / 100)); const doc = (globalThis as { document?: { documentElement?: { style?: Record<string, string> } } }).document; if (doc?.documentElement?.style) doc.documentElement.style.zoom = String(z); } else hdRestart(playing); } },
     ],
     '播放体验': [
@@ -128,7 +134,7 @@ function SettingsRow({ row }: { row: RowDef }) {
       onPress={() => {
         if (row.kind === 'toggle') row.onToggle();
         else if (row.kind === 'select') {
-          if (IS_WEB && row.options.length > 2) setSheet(true); // 桌面:真下拉选单,不再轮巡
+          if (IS_WEB) setSheet(true); // 桌面:全部 select 走下拉选单(v1.1.6:2 项的主题也下拉,不再轮巡)
           else {
             const i = row.options.indexOf(row.value);
             row.onPick(row.options[(i + 1) % row.options.length]);
