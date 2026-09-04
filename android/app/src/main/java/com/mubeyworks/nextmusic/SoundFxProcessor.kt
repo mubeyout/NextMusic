@@ -131,9 +131,11 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
     private fun maybeRefreshConfig() {
         val v = SoundFxEngine.version.get()
         if (v == cachedVersion) return
+        val prev = cachedVersion
         cachedVersion = v
         val c = SoundFxEngine.config
         eqActive = c.eqGains.any { kotlin.math.abs(it) > 0.01f }
+        android.util.Log.d("AudioProFx", "config v=$v (was $prev) eqActive=$eqActive gains=${c.eqGains.joinToString(",")}") // lx56 EQ 无效排查
         reverbId = c.reverbId
         mainGain = c.reverbMain
         sendGain = c.reverbSend
