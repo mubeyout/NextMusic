@@ -15,6 +15,8 @@ import { usePlayer } from '../state/PlayerProvider';
 import { APP_VERSION, IS_HD } from '../services/appversion';
 import { hdNav } from './hdnav';
 import { NativeModules } from 'react-native';
+import { SelectSheet } from '../components/SelectSheet';
+import { applyBootTheme } from '../theme/tokens';
 
 const Restart = NativeModules.AppRestart as { restart: () => void } | undefined;
 const ACCENTS = [
@@ -42,6 +44,7 @@ export function HDSettingsScreen() {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void };
   const [tab, setTab] = useState<Tab>('外观与界面');
+  const [, bump] = useState(0); // web 热切主题:强制 re-render 领新 token
   const s = useSettings();
   const { connected, base, username, disconnectServer } = useApp();
   const { playing } = usePlayer();
@@ -50,9 +53,9 @@ export function HDSettingsScreen() {
 
   const rows: Record<Tab, RowDef[]> = {
     '外观与界面': [
-      { kind: 'toggle', icon: 'palette', title: '纯黑背景', desc: 'OLED 友好的纯黑底色(仅深色模式)', value: s.pureBlack, onToggle: () => { settings.set('pureBlack', !s.pureBlack); hdRestart(playing); } },
-      { kind: 'select', icon: 'palette', title: '界面主题', desc: '深色(车机/TV 默认)或浅色,切换后自动重启生效', value: s.light ? '浅色' : '深色', options: ['深色', '浅色'], onPick: v => { settings.set('light', v === '浅色'); hdRestart(playing); } },
-      { kind: 'select', icon: 'palette', title: '强调色', desc: '全局品牌色(按钮/高亮/选中态),切换后自动重启生效', value: ACCENTS.find(a => a.color === s.accent)?.name ?? 'Next 绿', options: ACCENTS.map(a => a.name), onPick: v => { const hit = ACCENTS.find(a => a.name === v); if (hit) { settings.set('accent', hit.color); hdRestart(playing); } } },
+      { kind: 'toggle', icon: 'palette', title: '纯黑背景', desc: 'OLED 友好的纯黑底色(仅深色模式)', value: s.pureBlack, onToggle: () => { settings.set('pureBlack', !s.pureBlack); if (IS_WEB) { applyBootTheme(); bump(n => n + 1); } else hdRestart(playing); } },
+      { kind: 'select', icon: 'palette', title: '界面主题', desc: IS_WEB ? '深色/浅色即时切换' : '深色(车机/TV 默认)或浅色,切换后自动重启生效', value: s.light ? '浅色' : '深色', options: ['深色', '浅色'], onPick: v => { settings.set('light', v === '浅色'); if (IS_WEB) { applyBootTheme(); bump(n => n + 1); } else hdRestart(playing); } },
+      { kind: 'select', icon: 'palette', title: '强调色', desc: IS_WEB ? '全局品牌色(即时生效)' : '全局品牌色(按钮/高亮/选中态),切换后自动重启生效', value: ACCENTS.find(a => a.color === s.accent)?.name ?? 'Next 绿', options: ACCENTS.map(a => a.name), onPick: v => { const hit = ACCENTS.find(a => a.name === v); if (hit) { settings.set('accent', hit.color); if (IS_WEB) { applyBootTheme(); bump(n => n + 1); } else hdRestart(playing); } } },
       { kind: 'select', icon: 'fullscreen', title: '界面缩放', desc: '全局字号/触点/行高缩放(桌面即时生效,手机/TV 切换后重启生效)', value: s.uiScale || '100%', options: IS_WEB ? ['100%', '110%', '125%', '150%', '175%'] : ['90%', '100%', '110%', '125%'], onPick: v => { settings.set('uiScale', v); if (IS_WEB) { const z = Math.max(0.75, Math.min(2, Number(v.replace('%', '')) / 100)); const doc = (globalThis as { document?: { documentElement?: { style?: Record<string, string> } } }).document; if (doc?.documentElement?.style) doc.documentElement.style.zoom = String(z); } else hdRestart(playing); } },
     ],
     '播放体验': [
@@ -115,7 +118,9 @@ export function HDSettingsScreen() {
 }
 
 function SettingsRow({ row }: { row: RowDef }) {
+  const [sheet, setSheet] = useState(false);
   return (
+    <>
     <HDTouch
       style={st.row}
       focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }}
@@ -123,8 +128,11 @@ function SettingsRow({ row }: { row: RowDef }) {
       onPress={() => {
         if (row.kind === 'toggle') row.onToggle();
         else if (row.kind === 'select') {
-          const i = row.options.indexOf(row.value);
-          row.onPick(row.options[(i + 1) % row.options.length]);
+          if (IS_WEB && row.options.length > 2) setSheet(true); // 桌面:真下拉选单,不再轮巡
+          else {
+            const i = row.options.indexOf(row.value);
+            row.onPick(row.options[(i + 1) % row.options.length]);
+          }
         } else if (row.kind === 'nav') {
           if (row.action) row.action();
           else if (row.to) hdNav()?.navigate(row.to);
@@ -153,6 +161,11 @@ function SettingsRow({ row }: { row: RowDef }) {
         <Icon name="chevronright" size={13} color={C.text3} />
       )}
     </HDTouch>
+    {row.kind === 'select' ? (
+      <SelectSheet visible={sheet} title={row.title} value={row.value} options={row.options}
+        onPick={v => row.onPick(v)} onClose={() => setSheet(false)} />
+    ) : null}
+    </>
   );
 }
 

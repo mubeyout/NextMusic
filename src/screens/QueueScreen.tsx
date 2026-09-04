@@ -36,7 +36,7 @@ export function QueueScreen() {
   const pct = duration > 0 ? Math.min(1, position / duration) : 0;
 
   return (
-    <LinearGradient colors={[C.bgGradientTop, C.bg, C.bg]} locations={[0, 0.55, 1]} style={st.screen}>
+    <LinearGradient colors={[C.bgGradientTop, C.bg, C.bg]} locations={[0, 0.55, 1]} style={[st.screen, { backgroundColor: C.bg }]}>
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}>
         <PageHeader
           title="播放队列"

@@ -92,6 +92,8 @@ app.whenReady().then(() => {
   });
   startMediaProxy();
   createWindow();
+  // 探针注入:PROBE 环境变量指向 .cjs,拿首个窗口自驱动验证(不进发布链)
+  if (process.env.PROBE) { try { const w = BrowserWindow.getAllWindows()[0]; console.log('[probe-hook] start'); require(process.env.PROBE)(w, app); } catch (e) { console.log('[probe-hook] ERR', e.message, e.stack); } }
 
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });

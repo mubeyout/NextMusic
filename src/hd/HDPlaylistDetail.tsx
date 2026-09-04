@@ -82,7 +82,7 @@ export function HDPlaylistDetailScreen() {
 
       {/* ===== 歌曲列表(全宽行 + 焦点选中态) ===== */}
       {songs.length ? (
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 22, paddingTop: 8, paddingBottom: 20, gap: 2 }} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 22, paddingTop: 8, paddingBottom: 20 + H.playbar, gap: 2 }} showsVerticalScrollIndicator={false}>
           {songs.map((s, i) => (
             <HDSongRow key={`${s.source}_${s.songmid}_${i}`} song={s} index={i + 1} first={i === 0}
               playing={current?.songmid === s.songmid && current?.source === s.source}

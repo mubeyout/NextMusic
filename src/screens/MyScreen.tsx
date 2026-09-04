@@ -114,6 +114,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
   return (
     <>
     <ScrollView
+      style={{ backgroundColor: C.bg }}
       contentContainerStyle={[st.content, { paddingTop: insets.top + 24, paddingBottom: 24 }]}
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={syncing} onRefresh={refresh} tintColor={C.brand} />}

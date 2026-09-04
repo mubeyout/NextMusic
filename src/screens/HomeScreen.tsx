@@ -47,7 +47,7 @@ export function HomeScreen({ visible = true }: { visible?: boolean }) {
   const [homeEmpty, setHomeEmpty] = useState(false);
 
   return (
-    <LinearGradient colors={[C.bgGradientTop, C.bg, C.bg]} locations={[0, 0.55, 1]} style={st.screen}>
+    <LinearGradient colors={[C.bgGradientTop, C.bg, C.bg]} locations={[0, 0.55, 1]} style={[st.screen]}>
       <ScrollView
         contentContainerStyle={[st.content, { paddingTop: insets.top + 28 }]}
         showsVerticalScrollIndicator={false}
@@ -454,7 +454,7 @@ function HomeMusic() {
 }
 
 const st = StyleSheet.create({
-  screen: { flex: 1 },
+  screen: { flex: 1, backgroundColor: C.bg },
   content: { paddingHorizontal: 20, paddingBottom: 24 },
   headerRow: { height: 40, flexDirection: 'row', alignItems: 'center', gap: 12 },
   hello: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700' },

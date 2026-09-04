@@ -46,8 +46,8 @@ export function MiniPlayer() {
 
 const st = StyleSheet.create({
   wrap: { paddingHorizontal: 0 }, // vc78：老板要求沾满整行，左右不留间隙
-  card: { height: 72, borderRadius: 0, backgroundColor: C.elev, overflow: 'hidden' },
-  row: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, gap: 0 },
+  card: { height: 76, borderRadius: 0, backgroundColor: C.elev, overflow: 'hidden' },
+  row: { height: 73, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, gap: 0 }, // 固定高度:进度条恒在底边(v1.1.5 修错位)
   artWrap: { width: 52, height: 52, borderRadius: 6, overflow: 'hidden' },
   art: { width: 52, height: 52 },
   artFallback: { backgroundColor: C.surface2 },

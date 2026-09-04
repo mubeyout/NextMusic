@@ -58,7 +58,7 @@ function MainTabs() {
   const sp = settings.get().startupPage;
   const [tab, setTab] = useState(sp === 'explore' ? 1 : sp === 'my' ? 2 : 0);
   return (
-    <View style={st.main}>
+    <View style={[st.main, { backgroundColor: C.bg }]}>
       {/* tabStack 占流式空间，三个 tab 内容在其内部绝对层叠（防 display:none 闪屏），
           MiniPlayer/TabBar 恢复流式排在下方 —— tab 栏回到底部 */}
       <View style={st.tabStack} collapsable={false}>

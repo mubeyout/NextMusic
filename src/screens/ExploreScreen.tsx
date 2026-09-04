@@ -468,7 +468,7 @@ export function ExploreScreen() {
 }
 
 const st = StyleSheet.create({
-  screen: { flex: 1 },
+  screen: { flex: 1, backgroundColor: C.bg },
   content: { paddingHorizontal: 20, paddingBottom: 24 },
   headerRow: { height: 40, flexDirection: 'row', alignItems: 'center', gap: 12 },
   title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700' },

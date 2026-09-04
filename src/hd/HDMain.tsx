@@ -75,10 +75,10 @@ export function HDMain() {
       <View style={st.sidebarWrap}>
         <ScrollView
           style={{ flex: 1, backgroundColor: C.bg }}
-          contentContainerStyle={{ paddingTop: Math.min(insets.top, 12), paddingBottom: 10, gap: 2 }}
+          contentContainerStyle={{ paddingTop: 34 + 6, paddingBottom: 10, gap: 2 }} // 34 让位拖拽条
           showsVerticalScrollIndicator={false}
         >
-          {/* 品牌(新品牌玻璃 Mark) */}
+          {/* 品牌(新品牌玻璃 Mark):paddingTop 36 让位顶部拖拽条,logo 放大 */}
           <View style={st.brandRow}>
             <Image source={require('../assets/brand/mark.png')} style={st.logoMark} />
             <View style={{ flex: 1 }}>
@@ -219,11 +219,11 @@ function HDPlayBar() {
 const st = StyleSheet.create({
   screen: { flex: 1, flexDirection: 'row', backgroundColor: C.bg },
   sidebarWrap: { width: H.sidebar, backgroundColor: C.glass, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 10 },
-  logoMark: { width: 26, height: 28 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingTop: 6, paddingBottom: 12 },
+  logoMark: { width: 38, height: 41 },
   logoText: { color: C.onBrand, fontSize: 13, fontWeight: '800' },
-  brandName: { color: C.text, fontSize: 13, fontWeight: '800' },
-  brandSub: { color: C.text3, fontSize: 7, letterSpacing: 2, fontWeight: '600', marginTop: 1 },
+  brandName: { color: C.text, fontSize: 15, fontWeight: '800' },
+  brandSub: { color: C.text3, fontSize: 8, letterSpacing: 2, fontWeight: '600', marginTop: 1 },
   group: { fontSize: 9, color: C.text3, paddingHorizontal: 12, paddingTop: 5, paddingBottom: 3, letterSpacing: 1, fontWeight: '600' },
   navItem: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 8, paddingHorizontal: 10, height: 35, borderRadius: 9 },
   navItemOn: { backgroundColor: C.brandDim },

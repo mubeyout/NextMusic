@@ -35,17 +35,24 @@ onSettings(applyZoom);
     | { platform: string; minimize: () => void; toggleMaximize: () => void; close: () => void }
     | undefined;
   const isMac = nm?.platform === 'darwin';
-  // 顶部拖拽条（-webkit-app-region:drag;按钮区 no-drag）
+  // 顶部拖拽条:仅在标题栏高度内拖拽(34px);按钮区 no-drag;不遮侧栏 logo(避开左下)
   const strip = document.createElement('div');
   strip.style.cssText = [
     'position:fixed', 'top:0', 'left:0', 'right:0', 'height:34px',
-    '-webkit-app-region:drag', 'z-index:2147483000', 'pointer-events:auto',
+    '-webkit-app-region:drag', 'z-index:2147483000', 'pointer-events:none',
   ].join(';');
   if (isMac) {
-    // mac:红绿灯由系统叠放在左上,仅留拖拽区+让位
+    // mac:红绿灯由系统叠放在左上,拖拽区让位
     strip.style.left = '78px';
+    strip.style.pointerEvents = 'auto';
   } else if (nm) {
-    // win/linux:自绘三钮（贴合应用设计:暗色扁平,悬停显色）
+    // win/linux:自绘三钮(右下贴角落):整个按钮容器 no-drag
+    const bar = document.createElement('div');
+    bar.style.cssText = [
+      'position:absolute', 'top:0', 'right:0', 'height:34px',
+      '-webkit-app-region:no-drag', 'display:flex', 'pointer-events:auto',
+    ].join(';');
+    strip.appendChild(bar);
     const btns: Array<[string, string, () => void]> = [
       ['\u2015', '#ffffff1a', () => nm.minimize()],
       ['\u25a1', '#ffffff1a', () => nm.toggleMaximize()],
@@ -55,16 +62,16 @@ onSettings(applyZoom);
       const b = document.createElement('div');
       b.textContent = label;
       b.style.cssText = [
-        'display:inline-flex', 'align-items:center', 'justify-content:center',
-        'width:44px', 'height:34px', 'float:right',
-        '-webkit-app-region:no-drag', 'cursor:pointer',
+        'display:flex', 'align-items:center', 'justify-content:center',
+        'width:46px', 'height:34px',
+        'cursor:pointer',
         'color:#ffffffb0', 'font-size:13px', 'user-select:none',
-        `transition:background .12s`,
+        'transition:background .12s',
       ].join(';');
       b.addEventListener('mouseenter', () => { b.style.background = hoverBg; b.style.color = '#fff'; });
       b.addEventListener('mouseleave', () => { b.style.background = 'transparent'; b.style.color = '#ffffffb0'; });
       b.addEventListener('click', fn);
-      strip.appendChild(b);
+      bar.appendChild(b);
     }
   }
   document.body.appendChild(strip);
