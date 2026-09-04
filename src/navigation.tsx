@@ -103,20 +103,20 @@ const SIDEBAR_LOCK_CONTENT: { marginLeft?: number; backgroundColor?: string } = 
 return (
     <NavigationContainer ref={navRef} theme={navTheme}>
       {/* 坑108:slide_from_right 在 TV(米电视)上转场后原生焦点链断裂——D-pad 全死但 touch 正常;HD 恒用 fade */}
-      {/* lx49:转场改 fade——slide_from_right 拉开两屏边缘,原生合成露底窗口在滑动中被看见(一加深色闪白根治不了的分设备现象);fade 不移动屏幕,露底窗口最小。HD 端一直用 fade 无闪 */}
-      <Stack.Navigator initialRouteName={initial} screenOptions={{ headerShown: false, animation: 'fade', contentStyle: { backgroundColor: C.bg } }}>
+      {/* lx57:转场最终方案 none(直切)——lx49 fade 后一加实测仍有"变亮一下"(两页半透明叠加的固有特性,31→66→35);直切零中间态,物理上无闪。速度感也更快 */}
+      <Stack.Navigator initialRouteName={initial} screenOptions={{ headerShown: false, animation: 'none', contentStyle: { backgroundColor: C.bg } }}>
         <Stack.Screen name="Boot" component={IS_HD ? HDBootScreen : BootScreen} />
         <Stack.Screen name="Server" component={ServerScreen} />
         <Stack.Screen name="Auth" component={AuthScreen} />
         <Stack.Screen name="AuthLogin" component={IS_HD ? HDAuthLoginScreen : AuthLoginScreen} />
         <Stack.Screen name="AuthSignup" component={AuthSignupScreen} />
         <Stack.Screen name="Main" component={IS_HD ? HDMain : MainTabs} />
-        <Stack.Screen name="Player" component={IS_HD ? HDPlayer : PlayerScreen} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'fade' }} />
-        <Stack.Screen name="Queue" component={QueueScreen} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'fade' }} />
+        <Stack.Screen name="Player" component={IS_HD ? HDPlayer : PlayerScreen} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />
+        <Stack.Screen name="Queue" component={QueueScreen} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="PlayerSettings" component={PlayerSettingsScreen} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Comments" component={CommentsScreen} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="PlaylistDetail" component={IS_HD ? HDPlaylistDetailScreen : PlaylistDetailScreen} />
-        <Stack.Screen name="Search" component={SearchScreen} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'fade' }} />
+        <Stack.Screen name="Search" component={SearchScreen} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />
         <Stack.Screen name="Route" component={RoutePage} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none', presentation: 'transparentModal' }} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Settings" component={IS_HD ? HDSettingsScreen : SettingsScreen} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Sources" component={SourcesScreen} />
