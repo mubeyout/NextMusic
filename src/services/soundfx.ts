@@ -11,7 +11,15 @@ import { req, store } from './server';
 
 export interface FxPanner { enable: boolean; speed: number; distance: number }
 export interface FxReverb { id: string; mainGain: number; sendGain: number }
-export interface FxSettings { eq: number[]; pitch: number; panner: FxPanner; reverb: FxReverb }
+// lx50 ViPER 招牌效果链
+export interface FxViper {
+  bassMode: 0 | 1 | 2 | 3;   // 0关 1自然低音 2纯净低音 3清澈人声
+  bassLevel: number;        // 0~1
+  dcvEnable: boolean; dcvLevel: number;    // 动态细节
+  cureEnable: boolean; cureLevel: number;  // 耳机声场矫正
+  limiterEnable: boolean;                 // 恒定限幅
+}
+export interface FxSettings { eq: number[]; pitch: number; panner: FxPanner; reverb: FxReverb; viper: FxViper }
 export interface FxPreset { name: string; values: number[] }
 
 export const FX_FREQS = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
@@ -58,6 +66,7 @@ function defaultSettings(): FxSettings {
     pitch: 1.0,
     panner: { enable: false, speed: 25, distance: 5 },
     reverb: { id: 'none', mainGain: 1.0, sendGain: 0 },
+    viper: { bassMode: 0, bassLevel: 0.5, dcvEnable: false, dcvLevel: 0.5, cureEnable: false, cureLevel: 0.5, limiterEnable: false },
   };
 }
 
@@ -79,11 +88,24 @@ function sanitize(v: unknown): FxSettings {
     const known = FX_REVERB_OPTIONS.some(r => r.id === s.reverb!.id);
     // 注意：Number(x) || 1 会把合法的 0（如电话混响 DRY=0）当 falsy 吞掉，必须用 isFinite 判有效
     const mg = Number(s.reverb.mainGain);
-    const sg = Number(s.reverb.sendGain);
-    out.reverb = {
+    const sg = Number(s.reverb.sendGain);    out.reverb = {
       id: known ? s.reverb.id! : 'none',
       mainGain: Number.isFinite(mg) ? Math.max(0, Math.min(3, mg)) : 1,
       sendGain: Number.isFinite(sg) ? Math.max(0, Math.min(3, sg)) : 0,
+    };
+  }
+  if (s.viper) {
+    const bl = Number(s.viper.bassLevel);
+    const dl = Number(s.viper.dcvLevel);
+    const cl = Number(s.viper.cureLevel);
+    out.viper = {
+      bassMode: (clampInt(s.viper.bassMode, 0, 3, 0)) as 0 | 1 | 2 | 3,
+      bassLevel: Number.isFinite(bl) ? Math.max(0, Math.min(1, bl)) : 0.5,
+      dcvEnable: !!s.viper.dcvEnable,
+      dcvLevel: Number.isFinite(dl) ? Math.max(0, Math.min(1, dl)) : 0.5,
+      cureEnable: !!s.viper.cureEnable,
+      cureLevel: Number.isFinite(cl) ? Math.max(0, Math.min(1, cl)) : 0.5,
+      limiterEnable: !!s.viper.limiterEnable,
     };
   }
   return out;
@@ -135,6 +157,12 @@ function applyNative() {
       eq: settings.eq,
       reverb: { id: settings.reverb.id, mainGain: settings.reverb.mainGain, sendGain: settings.reverb.sendGain },
       panner: { enable: settings.panner.enable, speed: settings.panner.speed, distance: settings.panner.distance },
+      viper: {
+        bassMode: settings.viper.bassMode, bassLevel: settings.viper.bassLevel,
+        dcvEnable: settings.viper.dcvEnable, dcvLevel: settings.viper.dcvLevel,
+        cureEnable: settings.viper.cureEnable, cureLevel: settings.viper.cureLevel,
+        limiterEnable: settings.viper.limiterEnable,
+      },
     });
   } catch { /* 原生模块缺失时静默 */ }
   try {
@@ -246,6 +274,11 @@ export function resetFxPitch() { setFxPitch(1.0); }
 
 export function setPanner(patch: Partial<FxPanner>) {
   commit({ ...settings, panner: { ...settings.panner, ...patch } });
+}
+
+// lx50: ViPER 链设样
+export function setViper(patch: Partial<FxViper>) {
+  commit({ ...settings, viper: { ...settings.viper, ...patch } });
 }
 
 export function saveNewPreset(name: string): string | null {

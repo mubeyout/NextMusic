@@ -37,9 +37,10 @@ import {
   FX_DEFAULT_PRESETS, FX_FREQ_LABELS, FX_REVERB_OPTIONS,
   subscribeFx, fxSnapshot, fxSyncState, fetchFxFromServer,
   setEQ, resetEQ, applyFxPreset, setReverb, setReverbGain,
-  setFxPitch, resetFxPitch, setPanner,
+  setFxPitch, resetFxPitch, setPanner, setViper,
   saveNewPreset, renameCustomPreset, deleteCustomPreset,
 } from '../services/soundfx';
+import type { FxViper } from '../services/soundfx';
 
 // 3.4.0-lx13 重设计：对齐 App 设计语言（Bold 大标题 / #1A1A1A r12 卡片 / #232323 内嵌控制块 / 绿胶囊选中）
 // 结构：预设胶囊横滚 → 垂直 10 段 EQ → 环境混响（胶囊网格 + 增益滑杆）→ 音调 → 3D 环绕
@@ -419,6 +420,63 @@ export function FxScreen() {
             value={settings.panner.distance} min={1} max={30} step={1}
             onChange={v => setPanner({ distance: v })} disabled={!settings.panner.enable}
           />
+        </View>
+
+        {/* ===== ViPER 效果（lx50） ===== */}
+        <View style={st.card}>
+          <View style={st.cardHead}>
+            <Text style={st.cardTitle}>ViPER 音效<Text style={st.cardHint}>（低音/细节/声场/限幅）</Text></Text>
+          </View>
+          {/* Fire Bass 模式胶囊 */}
+          <View style={st.presetScroll}>
+            {([0, 1, 2, 3] as const).map(m => (
+              <T key={m} activeOpacity={0.7} onPress={() => setViper({ bassMode: m })}>
+                <View style={[st.chip, settings.viper.bassMode === m && st.chipOn]}>
+                  <Text style={[st.chipText, settings.viper.bassMode === m && st.chipTextOn]}>{['关闭', '自然低音', '纯净低音', '清澈人声'][m]}</Text>
+                </View>
+              </T>
+            ))}
+          </View>
+          <SRow
+            style={{ marginTop: 8, opacity: settings.viper.bassMode > 0 ? 1 : 0.4 }}
+            label="低音强度" valueLabel={Math.round(settings.viper.bassLevel * 100) + '%'}
+            value={settings.viper.bassLevel} min={0} max={1} step={0.05}
+            onChange={v => setViper({ bassLevel: v })} disabled={settings.viper.bassMode === 0}
+          />
+          {/* DCV / Cure / Limiter 开关行 */}
+          {([
+            { k: 'dcvEnable', lv: 'dcvLevel', label: '动态细节（DCV）', tip: '小音量细节增强' },
+            { k: 'cureEnable', lv: 'cureLevel', label: '声场矫正（Cure+）', tip: '耳机交叉馈送，建议用耳机' },
+          ] as const).map(row => (
+            <View key={row.k} style={[st.cardHead, { marginTop: 14 }]}>
+              <Text style={st.cardTitle}>{row.label}<Text style={st.cardHint}>（{row.tip}）</Text></Text>
+              <T activeOpacity={0.7} onPress={() => setViper({ [row.k]: !settings.viper[row.k] } as Partial<FxViper>)}>
+                <View style={[st.switch, settings.viper[row.k] && st.switchOn]}>
+                  <View style={[st.knob, settings.viper[row.k] && st.knobOn]} />
+                </View>
+              </T>
+            </View>
+          ))}
+          <SRow
+            style={{ opacity: settings.viper.dcvEnable ? 1 : 0.4 }}
+            label="细节强度" valueLabel={Math.round(settings.viper.dcvLevel * 100) + '%'}
+            value={settings.viper.dcvLevel} min={0} max={1} step={0.05}
+            onChange={v => setViper({ dcvLevel: v })} disabled={!settings.viper.dcvEnable}
+          />
+          <SRow
+            style={{ marginTop: 8, opacity: settings.viper.cureEnable ? 1 : 0.4 }}
+            label="交叉馈送量" valueLabel={Math.round(settings.viper.cureLevel * 100) + '%'}
+            value={settings.viper.cureLevel} min={0} max={1} step={0.05}
+            onChange={v => setViper({ cureLevel: v })} disabled={!settings.viper.cureEnable}
+          />
+          <View style={[st.cardHead, { marginTop: 14 }]}>
+            <Text style={st.cardTitle}>恒定限幅器<Text style={st.cardHint}>（防多效果叠加爆音）</Text></Text>
+            <T activeOpacity={0.7} onPress={() => setViper({ limiterEnable: !settings.viper.limiterEnable })}>
+              <View style={[st.switch, settings.viper.limiterEnable && st.switchOn]}>
+                <View style={[st.knob, settings.viper.limiterEnable && st.knobOn]} />
+              </View>
+            </T>
+          </View>
         </View>
 
         <Text style={st.syncCaption}>

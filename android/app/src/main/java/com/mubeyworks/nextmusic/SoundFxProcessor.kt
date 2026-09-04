@@ -95,6 +95,11 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
     private var panL = 1f
     private var panR = 1f
 
+    // lx50 ViPER 链
+    private val viper = ViperFx.Chain()
+    private val viperOut = FloatArray(2)
+    private var viperChainActive = false
+
     // PCM 中转
     private var floatBuf = FloatArray(4096)
 
@@ -117,6 +122,15 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
         pannerDistance = c.pannerDistance.coerceIn(1, 30)
         recomputeEq(c.eqGains)
         degPerSample = 100.0 / (pannerSpeed * sampleRate) // 1°/(speed*10ms)，同 lxserver
+        // lx50: ViPER 链参数（bassMode: 1=natural 2=pure 3=clarity → ViperFx 0/1/2）
+        viper.bass.mode = when (c.viperBassMode) { 1 -> 0; 2 -> 1; 3 -> 2; else -> 0 }
+        viper.bass.intensity = if (c.viperBassMode > 0) c.viperBassLevel else 0f
+        viper.dcv.enable = c.dcvEnable
+        viper.dcv.intensity = c.dcvLevel
+        viper.cure.enable = c.cureEnable
+        viper.cure.strength = c.cureLevel
+        viper.limiter.enable = c.limiterEnable
+        viperChainActive = c.viperBassMode > 0 && c.viperBassLevel > 0.01f || c.dcvEnable || c.cureEnable || c.limiterEnable
     }
 
     private fun recomputeEq(gains: FloatArray) {
@@ -153,6 +167,9 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
     private fun allocDspState() {
         val scale = sampleRate / 44100.0
         fun size(t: Int) = ceil(t * scale).toInt().coerceAtLeast(4)
+
+        // lx50: ViPER 链采样率初始化
+        viper.init(sampleRate)
 
         combsL = Array(COMB_TUNINGS.size) { Comb(size(COMB_TUNINGS[it])) }
         combsR = Array(COMB_TUNINGS.size) { Comb(size(COMB_TUNINGS[it] + STEREO_SPREAD)) }
@@ -192,7 +209,7 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
         maybeRefreshConfig()
         val preset = REVERBS[reverbId]
         // 注：选“关闭”(none) 不再释放卷积器——IR 缓存常驻，切回瞬时命中（2026-08-29）
-        val bypass = !eqActive && reverbId == "none" && !pannerEnable
+        val bypass = !eqActive && reverbId == "none" && !pannerEnable && !viperChainActive
         if (bypass) {
             val remaining = inputBuffer.remaining()
             val out = replaceOutputBuffer(remaining)
@@ -218,6 +235,8 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
             while (i < total) {
                 var l = floatBuf[i]; var r = floatBuf[i + 1]
                 if (eqActive) { l = eq(l, 0); r = eq(r, 1) }
+                // lx50: ViPER 链(EQ 后、混响前——低音/细节/声场/限幅依次处理)
+                if (viperChainActive) { viper.stereoFrame(l, r, viperOut); l = viperOut[0]; r = viperOut[1] }
                 var wl = 0f; var wr = 0f
                 if (preset != null) {
                     if (SoundFxEngine.ensureConvolver(reverbId, sampleRate)) {
@@ -253,6 +272,7 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
             for (i in 0 until total) {
                 var x = floatBuf[i]
                 if (eqActive) x = eq(x, 0)
+                if (viperChainActive) { viper.stereoFrame(x, x, viperOut); x = (viperOut[0] + viperOut[1]) * 0.5f }
                 if (preset != null) {
                     if (SoundFxEngine.ensureConvolver(reverbId, sampleRate)) {
                         val conv = SoundFxEngine.currentConvolver
@@ -286,6 +306,7 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
             delayWidenL.clear(); delayWidenR.clear()
         }
         pannerAngleDeg = 0.0
+        viper.clear()
         SoundFxEngine.currentConvolver?.clear()
     }
 

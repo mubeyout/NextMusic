@@ -27,6 +27,14 @@ object SoundFxEngine {
         val pannerEnable: Boolean = false,
         val pannerSpeed: Int = 25,                          // 1~50
         val pannerDistance: Int = 5,                        // 1~30
+        // lx50 ViPER 招牌效果
+        val viperBassMode: Int = 0,                         // 0=off 1=natural 2=pure 3=clarity
+        val viperBassLevel: Float = 0f,                     // 0~1
+        val dcvEnable: Boolean = false,
+        val dcvLevel: Float = 0.5f,
+        val cureEnable: Boolean = false,
+        val cureLevel: Float = 0.5f,
+        val limiterEnable: Boolean = false,
     )
 
     @Volatile
@@ -67,7 +75,7 @@ object SoundFxEngine {
         return SoundFxProcessor()
     }
 
-    fun update(eq: ReadableArray?, reverb: ReadableMap?, panner: ReadableMap?) {
+    fun update(eq: ReadableArray?, reverb: ReadableMap?, panner: ReadableMap?, viper: ReadableMap? = null) {
         val gains = FloatArray(10)
         if (eq != null) {
             for (i in 0 until minOf(10, eq.size())) {
@@ -80,7 +88,15 @@ object SoundFxEngine {
         val pEnable = panner?.getBoolean("enable") ?: false
         val pSpeed = (panner?.getInt("speed") ?: 25).coerceIn(1, 50)
         val pDist = (panner?.getInt("distance") ?: 5).coerceIn(1, 30)
-        config = Config(gains, rid, main, send, pEnable, pSpeed, pDist)
+        // lx50 ViPER 链
+        val bm = (viper?.getInt("bassMode") ?: 0).coerceIn(0, 3)
+        val bl = (viper?.getDouble("bassLevel") ?: 0.0).toFloat().coerceIn(0f, 1f)
+        val dE = viper?.getBoolean("dcvEnable") ?: false
+        val dL = (viper?.getDouble("dcvLevel") ?: 0.5).toFloat().coerceIn(0f, 1f)
+        val cE = viper?.getBoolean("cureEnable") ?: false
+        val cL = (viper?.getDouble("cureLevel") ?: 0.5).toFloat().coerceIn(0f, 1f)
+        val lE = viper?.getBoolean("limiterEnable") ?: false
+        config = Config(gains, rid, main, send, pEnable, pSpeed, pDist, bm, bl, dE, dL, cE, cL, lE)
         version.incrementAndGet()
     }
 

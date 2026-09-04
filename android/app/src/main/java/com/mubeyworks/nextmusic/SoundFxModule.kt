@@ -19,6 +19,7 @@ class SoundFxModule(reactContext: ReactApplicationContext) : ReactContextBaseJav
             config.getArray("eq"),
             config.getMap("reverb"),
             config.getMap("panner"),
+            config.getMap("viper"),
         )
     }
 
