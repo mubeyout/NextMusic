@@ -8,4 +8,13 @@
         <item name="android:windowLightStatusBar">false</item>
     </style>
 
+    <!-- lx47:浅色原生底(与 JS C.bg #F6F7F9 同源);MainActivity 按持久化主题择一 -->
+    <style name="AppThemeLight" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
+        <item name="android:windowBackground">#F6F7F9</item>
+        <item name="android:statusBarColor">#F6F7F9</item>
+        <item name="android:navigationBarColor">#F0F1F4</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
 </resources>
