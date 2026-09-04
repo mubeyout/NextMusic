@@ -1,7 +1,7 @@
 // HD 播放页 v3 —— 完全重构:无底部工具 bar,所有元素融入左右两列,沉浸式
 // v1 教训:固定尺寸溢出;v2 教训:深色底 panel 突兀(老板:粗糙,直接取消)
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, Animated, Easing } from 'react-native';
 import Svg, { Circle, Path, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { SpectrumRing } from './SpectrumRing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,6 +17,32 @@ import { sync } from '../services/sync';
 import { isFav, setFav } from '../state/favorites';
 import { hdNav } from './hdnav';
 
+
+// 唱片 SVG 纯 DOM 版(react-native-svg 的 web shim forwardRef 与 RNW 混用会 React#130,直出 DOM 稳)
+function HD_VINYL_SVG(img?: string): React.ReactNode {
+  const h = React.createElement;
+  const rg = h('radialGradient', { id: 'hdSheen', cx: '0.32', cy: '0.26', r: '0.95' }, [
+    h('stop', { key: 'a', offset: '0', stopColor: '#FFFFFF', stopOpacity: '0.10' }),
+    h('stop', { key: 'b', offset: '0.45', stopColor: '#FFFFFF', stopOpacity: '0.025' }),
+    h('stop', { key: 'c', offset: '1', stopColor: '#FFFFFF', stopOpacity: '0' }),
+  ]);
+  const circles: Array<[number, string, number]> = [
+    [149, '#0A0A0D', 1], [143, '#FFFFFF0A', 1], [136, '#FFFFFF08', 1.5], [129, '#FFFFFF0F', 1],
+    [122, '#FFFFFF06', 1.5], [115, '#FFFFFF12', 1], [108, '#FFFFFF08', 1.5], [101, '#FFFFFF14', 1], [90, '#FFFFFF0D', 1],
+  ];
+  return h('svg', { width: 300, height: 300, viewBox: '0 0 300 300' },
+    h('defs', null, rg),
+    ...circles.map(([r, col, sw], i) => h('circle', { key: 'c' + i, cx: 150, cy: 150, r, fill: r === 149 ? col : 'none', stroke: col, strokeWidth: sw })),
+    h('path', { d: 'M33 107 A125 125 0 0 1 107 33', stroke: '#FFFFFF1F', strokeWidth: 3, strokeLinecap: 'round', fill: 'none' }),
+    h('path', { d: 'M246 185 A102 102 0 0 1 168 250', stroke: '#FFFFFF17', strokeWidth: 4, strokeLinecap: 'round', fill: 'none' }),
+    h('circle', { cx: 150, cy: 150, r: 149, fill: 'url(#hdSheen)' }),
+    h('circle', { cx: 150, cy: 150, r: 88, fill: '#101312' }),
+    h('image', { href: img || undefined, x: 106, y: 106, width: 88, height: 88, clipPath: undefined,
+      style: { borderRadius: 44 } as never }),
+    h('circle', { cx: 150, cy: 150, r: 6, fill: '#000' }),
+  );
+}
+
 export function HDPlayer() {
   const insets = useSafeAreaInsets();
   const nav = { goBack: () => hdNav()?.goBack(), navigate: (s: string) => hdNav()?.navigate(s) };
@@ -25,6 +51,20 @@ export function HDPlayer() {
   const [lyrics, setLyrics] = useState<LyricLine[] | null>(null);
   const [faved, setFaved] = useState(false);
   const trackW = React.useRef(0);
+  // v1.1.8 唱片旋转(18s/转;web JS driver——RNW Animated useNativeDriver 必 false)
+  const spin = React.useRef(new Animated.Value(0)).current;
+  const spinLoop = React.useRef<Animated.CompositeAnimation | null>(null);
+  React.useEffect(() => {
+    if (playing) {
+      if (!spinLoop.current) {
+        spinLoop.current = Animated.loop(Animated.timing(spin, { toValue: 1, duration: 18000, easing: Easing.linear, useNativeDriver: false }));
+      }
+      spinLoop.current.start();
+    } else {
+      spinLoop.current?.stop();
+    }
+  }, [playing, spin]);
+  const spinDeg = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
 
   useEffect(() => {
     let dead = false;
@@ -101,36 +141,9 @@ export function HDPlayer() {
           <View style={stW.artCol}>
             {/* v1.1.8:圆形旋转唱片 + 频谱动效环(老板:酷炫) */}
             <View style={stW.vinylZone}>
-              <SpectrumRing size={340} playing={playing} />
+              {null /* B3 */}
               {Platform.OS === 'web' ? (
-                <div className={playing ? "nm-vinyl-spin" : "nm-vinyl-spin nm-vinyl-paused"} style={{ width: 300, height: 300, position: 'absolute', top: 20, left: 20 }}>
-                  <Svg width={300} height={300}>
-                    <Defs>
-                      <RadialGradient id="hdSheen" cx="0.32" cy="0.26" r="0.95">
-                        <Stop offset="0" stopColor="#FFFFFF" stopOpacity="0.10" />
-                        <Stop offset="0.45" stopColor="#FFFFFF" stopOpacity="0.025" />
-                        <Stop offset="1" stopColor="#FFFFFF" stopOpacity="0" />
-                      </RadialGradient>
-                    </Defs>
-                    <Circle cx={150} cy={150} r={149} fill="#0A0A0D" stroke="#00000085" strokeWidth={1} />
-                    <Circle cx={150} cy={150} r={143} stroke="#FFFFFF0A" strokeWidth={1} fill="none" />
-                    <Circle cx={150} cy={150} r={136} stroke="#FFFFFF08" strokeWidth={1.5} fill="none" />
-                    <Circle cx={150} cy={150} r={129} stroke="#FFFFFF0F" strokeWidth={1} fill="none" />
-                    <Circle cx={150} cy={150} r={122} stroke="#FFFFFF06" strokeWidth={1.5} fill="none" />
-                    <Circle cx={150} cy={150} r={115} stroke="#FFFFFF12" strokeWidth={1} fill="none" />
-                    <Circle cx={150} cy={150} r={108} stroke="#FFFFFF08" strokeWidth={1.5} fill="none" />
-                    <Circle cx={150} cy={150} r={101} stroke="#FFFFFF14" strokeWidth={1} fill="none" />
-                    <Circle cx={150} cy={150} r={90} stroke="#FFFFFF0D" strokeWidth={1} fill="none" />
-                    <Path d="M33 107 A125 125 0 0 1 107 33" stroke="#FFFFFF1F" strokeWidth={3} strokeLinecap="round" fill="none" />
-                    <Path d="M246 185 A102 102 0 0 1 168 250" stroke="#FFFFFF17" strokeWidth={4} strokeLinecap="round" fill="none" />
-                    <Circle cx={150} cy={150} r={149} fill="url(#hdSheen)" />
-                    <Circle cx={150} cy={150} r={88} fill="#101312" />
-                    <Circle cx={150} cy={150} r={6} fill="#000000" />
-                  </Svg>
-                  {current.img
-                    ? <Image source={{ uri: current.img }} style={stW.vinylLabel} resizeMode="cover" />
-                    : <View style={[stW.vinylLabel, { backgroundColor: '#2A2A2A' }]} />}
-                </div>
+                HD_VINYL_SVG(current?.img)
               ) : null}
             </View>
             <Text style={stW.srcTag}>{current.source.toUpperCase()}</Text>
@@ -353,7 +366,8 @@ const stW = StyleSheet.create({
   body: { flex: 1, flexDirection: 'row', paddingHorizontal: 72, paddingTop: 74, gap: 52, alignItems: 'center' },
   artCol: { flex: 0.9, alignItems: 'center' },
   vinylZone: { width: 340, height: 340, alignItems: 'center', justifyContent: 'center' },
-  vinylLabel: { position: 'absolute', top: 126, left: 126, width: 88, height: 88, borderRadius: 44 },
+  vinylSpinWrap: { width: 300, height: 300 },
+  vinylLabel: { position: 'absolute', top: 106, left: 106, width: 88, height: 88, borderRadius: 44 },
   art: { width: '86%', aspectRatio: 1, borderRadius: 14, maxHeight: 400, maxWidth: 400, shadowColor: '#000', shadowOpacity: 0.55, shadowRadius: 34, shadowOffset: { width: 0, height: 16 } },
   srcTag: { color: '#ffffff66', fontSize: 11, marginTop: 14, letterSpacing: 2 },
   infoCol: { flex: 1.1, alignSelf: 'stretch', justifyContent: 'center', gap: 8 },
