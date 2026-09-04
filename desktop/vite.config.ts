@@ -25,7 +25,7 @@ export default defineConfig({
       { find: /^react-native-webview$/, replacement: `${SHIMS}/webview.tsx` },
       { find: /^react-native-gesture-handler$/, replacement: `${SHIMS}/gesture.tsx` },
       { find: /^react-native-safe-area-context$/, replacement: `${SHIMS}/safe-area.tsx` },
-      { find: /^@react-navigation\/native-stack$/, replacement: `${SHIMS}/native-stack.tsx` },
+      { find: /^@react-navigation\/native-stack$/, replacement: `${ROOT}/node_modules/@react-navigation/native-stack` },
       { find: /^react-native-svg$/, replacement: `${SHIMS}/svg.tsx` },
       { find: /^react-native-screens$/, replacement: `${SHIMS}/screens.tsx` },
       // @react-navigation 全家钉主仓实例(避免 desktop 新 stack 的嵌套 core 双实例 → Couldn't register navigator)

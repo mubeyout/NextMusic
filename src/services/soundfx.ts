@@ -169,6 +169,7 @@ function persist() {
 // ---------- 原生生效 ----------
 function applyNative() {
   try {
+    // lx55 救砖:原生 setConfig 任何异常(坏配置/旧原生/桥错误)都不许杀 App——音效失效可接受,启动循环闪退不可接受
     NativeModules.SoundFx?.setConfig({
       eq: settings.eq,
       reverb: { id: settings.reverb.id, mainGain: settings.reverb.mainGain, sendGain: settings.reverb.sendGain },

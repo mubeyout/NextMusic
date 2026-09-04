@@ -81,39 +81,43 @@ object SoundFxEngine {
     }
 
     fun update(eq: ReadableArray?, reverb: ReadableMap?, panner: ReadableMap?, viper: ReadableMap? = null) {
-        val gains = FloatArray(10)
-        if (eq != null) {
-            for (i in 0 until minOf(10, eq.size())) {
-                gains[i] = eq.getDouble(i).toFloat().coerceIn(-12f, 12f)
-            }
+        try {
+          val gains = FloatArray(10)
+          if (eq != null) {
+              for (i in 0 until minOf(10, eq.size())) {
+                  gains[i] = eq.getDouble(i).toFloat().coerceIn(-12f, 12f)
+              }
+          }
+          val rid = reverb?.getString("id") ?: "none"
+          val main = (reverb?.getDouble("mainGain") ?: 1.0).toFloat().coerceIn(0f, 3f)
+          val send = (reverb?.getDouble("sendGain") ?: 0.0).toFloat().coerceIn(0f, 3f)
+          val pEnable = panner?.getBoolean("enable") ?: false
+          val pSpeed = (panner?.getInt("speed") ?: 25).coerceIn(1, 50)
+          val pDist = (panner?.getInt("distance") ?: 5).coerceIn(1, 30)
+          // lx50 ViPER 链
+          val bm = (if (viper?.hasKey("bassMode") == true) viper.getInt("bassMode") else 0).coerceIn(0, 3)
+          val bl = (if (viper?.hasKey("bassLevel") == true) viper.getDouble("bassLevel") else 0.0).toFloat().coerceIn(0f, 1f)
+          val dE = (viper?.hasKey("dcvEnable") == true) && viper.getBoolean("dcvEnable")
+          val dL = (if (viper?.hasKey("dcvLevel") == true) viper.getDouble("dcvLevel") else 0.5).toFloat().coerceIn(0f, 1f)
+          val cE = (viper?.hasKey("cureEnable") == true) && viper.getBoolean("cureEnable")
+          val cL = (if (viper?.hasKey("cureLevel") == true) viper.getDouble("cureLevel") else 0.5).toFloat().coerceIn(0f, 1f)
+          val lE = (viper?.hasKey("limiterEnable") == true) && viper.getBoolean("limiterEnable")
+          val loudE = (viper?.hasKey("loudnessEnable") == true) && viper.getBoolean("loudnessEnable")
+          // lx52 AutoEQ
+          val aq = viper?.getArray("autoeq")
+          val autoeq: Array<Array<Any>>? = if (aq != null && aq.size() > 0) {
+              Array(minOf(10, aq.size())) { i ->
+                  val f = aq.getArray(i) ?: return@Array null
+                  @Suppress("UNCHECKED_CAST")
+                 arrayOf<Any>(f.getString(0).let { if (it == "lowshelf" || it == "highshelf" || it == "peaking") it else "peaking" }, f.getDouble(1), f.getDouble(2), f.getDouble(3))
+              }.let { arr -> if (arr.any { it == null }) null else arr as Array<Array<Any>> }
+          } else null
+          val ap = if (viper?.hasKey("autoeqPreamp") == true) viper.getDouble("autoeqPreamp") else 0.0
+          config = Config(gains, rid, main, send, pEnable, pSpeed, pDist, bm, bl, dE, dL, cE, cL, lE, loudE, autoeq, ap)
+          version.incrementAndGet()
+        } catch (t: Throwable) {
+            android.util.Log.w("AudioProFx", "update ignored bad payload", t) // lx55 救砖:坏配置吞掉,保持旧配置
         }
-        val rid = reverb?.getString("id") ?: "none"
-        val main = (reverb?.getDouble("mainGain") ?: 1.0).toFloat().coerceIn(0f, 3f)
-        val send = (reverb?.getDouble("sendGain") ?: 0.0).toFloat().coerceIn(0f, 3f)
-        val pEnable = panner?.getBoolean("enable") ?: false
-        val pSpeed = (panner?.getInt("speed") ?: 25).coerceIn(1, 50)
-        val pDist = (panner?.getInt("distance") ?: 5).coerceIn(1, 30)
-        // lx50 ViPER 链
-        val bm = (if (viper?.hasKey("bassMode") == true) viper.getInt("bassMode") else 0).coerceIn(0, 3)
-        val bl = (if (viper?.hasKey("bassLevel") == true) viper.getDouble("bassLevel") else 0.0).toFloat().coerceIn(0f, 1f)
-        val dE = (viper?.hasKey("dcvEnable") == true) && viper.getBoolean("dcvEnable")
-        val dL = (if (viper?.hasKey("dcvLevel") == true) viper.getDouble("dcvLevel") else 0.5).toFloat().coerceIn(0f, 1f)
-        val cE = (viper?.hasKey("cureEnable") == true) && viper.getBoolean("cureEnable")
-        val cL = (if (viper?.hasKey("cureLevel") == true) viper.getDouble("cureLevel") else 0.5).toFloat().coerceIn(0f, 1f)
-        val lE = (viper?.hasKey("limiterEnable") == true) && viper.getBoolean("limiterEnable")
-        val loudE = (viper?.hasKey("loudnessEnable") == true) && viper.getBoolean("loudnessEnable")
-        // lx52 AutoEQ
-        val aq = viper?.getArray("autoeq")
-        val autoeq: Array<Array<Any>>? = if (aq != null && aq.size() > 0) {
-            Array(minOf(10, aq.size())) { i ->
-                val f = aq.getArray(i) ?: return@Array null
-                @Suppress("UNCHECKED_CAST")
-               arrayOf<Any>(f.getString(0).let { if (it == "lowshelf" || it == "highshelf" || it == "peaking") it else "peaking" }, f.getDouble(1), f.getDouble(2), f.getDouble(3))
-            }.let { arr -> if (arr.any { it == null }) null else arr as Array<Array<Any>> }
-        } else null
-        val ap = if (viper?.hasKey("autoeqPreamp") == true) viper.getDouble("autoeqPreamp") else 0.0
-        config = Config(gains, rid, main, send, pEnable, pSpeed, pDist, bm, bl, dE, dL, cE, cL, lE, loudE, autoeq, ap)
-        version.incrementAndGet()
     }
 
     /** lx53 响度补偿：系统音量比例（JS 音量监听回写），变化>1% 时 version++ 让音频线程重算 shelf 系数 */
