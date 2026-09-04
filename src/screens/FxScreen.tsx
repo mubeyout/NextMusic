@@ -39,6 +39,7 @@ import {
   setEQ, resetEQ, applyFxPreset, setReverb, setReverbGain,
   setFxPitch, resetFxPitch, setPanner, setViper,
   saveNewPreset, renameCustomPreset, deleteCustomPreset,
+  AUTOEQ_MODELS, autoeqProfile,
 } from '../services/soundfx';
 import type { FxViper } from '../services/soundfx';
 
@@ -253,6 +254,7 @@ export function FxScreen() {
   const [presetSheet, setPresetSheet] = useState<{ mode: 'add' | 'rename'; name?: string } | null>(null);
   const [inputVal, setInputVal] = useState('');
   const [managePreset, setManagePreset] = useState<string | null>(null);
+  const [aeqQuery, setAeqQuery] = useState(''); // lx52 AutoEq 型号搜索
 
   useEffect(() => subscribeFx(() => force(x => x + 1)), []);
 
@@ -422,6 +424,38 @@ export function FxScreen() {
           />
         </View>
 
+        {/* ===== AutoEQ 耳机校正（lx52） ===== */}
+        <View style={st.card}>
+          <View style={st.cardHead}>
+            <Text style={st.cardTitle}>AutoEQ 耳机校正<Text style={st.cardHint}>（按耳机实测频响自动全频投到哈曼目标曲线）</Text></Text>
+            <T activeOpacity={0.7} onPress={() => setViper({ autoeqOn: !settings.viper.autoeqOn })} disabled={!settings.viper.autoeqName}>
+              <View style={[st.switch, settings.viper.autoeqOn && settings.viper.autoeqName && st.switchOn]}>
+                <View style={[st.knob, settings.viper.autoeqOn && settings.viper.autoeqName && st.knobOn]} />
+              </View>
+            </T>
+          </View>
+          <Text style={[st.cardHint, { marginBottom: 8 }]}>选择耳机型号（{AUTOEQ_MODELS.length} 个，来自 AutoEq 实测数据库）</Text>
+          <TextInput
+            style={st.aeqInput}
+            placeholder="搜索耳机型号…"
+            placeholderTextColor={C.text3}
+            value={aeqQuery}
+            onChangeText={setAeqQuery}
+          />
+          <ScrollView style={st.aeqList} nestedScrollEnabled>
+            {AUTOEQ_MODELS.filter(m => !aeqQuery || m.toLowerCase().includes(aeqQuery.toLowerCase())).slice(0, 60).map(m => (
+              <T key={m} activeOpacity={0.7} onPress={() => setViper({ autoeqName: m, autoeqOn: true })}>
+                <View style={[st.aeqRow, settings.viper.autoeqName === m && st.aeqRowOn]}>
+                  <Text style={[st.aeqRowText, settings.viper.autoeqName === m && { color: C.brand, fontWeight: '700' }]} numberOfLines={1}>{m}</Text>
+                  {settings.viper.autoeqName === m ? (
+                    <Text style={st.aeqMeta}>{autoeqProfile(m)?.f.length ?? 0} 段滤波</Text>
+                  ) : null}
+                </View>
+              </T>
+            ))}
+          </ScrollView>
+        </View>
+
         {/* ===== ViPER 效果（lx50） ===== */}
         <View style={st.card}>
           <View style={st.cardHead}>
@@ -558,6 +592,12 @@ const st = StyleSheet.create({
   chipTextOn: { color: C.onBrand, fontWeight: '800' },
   chipAdd: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', borderColor: C.strokeStrong, alignItems: 'center', justifyContent: 'center' },
   chipAddText: { color: C.text3, fontSize: 15, fontWeight: '800', lineHeight: 17 },
+  aeqInput: { height: 38, borderRadius: 10, backgroundColor: C.inset, color: C.text, fontSize: 13, paddingHorizontal: 12, marginBottom: 8 },
+  aeqList: { maxHeight: 220, borderRadius: 12 },
+  aeqRow: { flexDirection: 'row', alignItems: 'center', height: 40, paddingHorizontal: 12, borderRadius: 10, backgroundColor: C.surface2, marginBottom: 4 },
+  aeqRowOn: { backgroundColor: C.selTint },
+  aeqRowText: { flex: 1, color: C.text, fontSize: 13 },
+  aeqMeta: { color: C.text3, fontSize: 11 },
 
   // 卡片
   card: { backgroundColor: C.surface, borderRadius: 12, padding: 14, marginBottom: 12 },

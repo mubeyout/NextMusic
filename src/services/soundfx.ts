@@ -8,6 +8,9 @@
 import { NativeModules } from 'react-native';
 import { createMMKV } from 'react-native-mmkv';
 import { req, store } from './server';
+// lx52 AutoEq 耳机校正库(57 型号,源自 jaakkopasanen/AutoEq 实测参数化,17KB)
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const autoeqPack = require('../assets/autoeq_pack.json') as unknown as Record<string, AutoeqProfile>;
 
 export interface FxPanner { enable: boolean; speed: number; distance: number }
 export interface FxReverb { id: string; mainGain: number; sendGain: number }
@@ -18,7 +21,11 @@ export interface FxViper {
   dcvEnable: boolean; dcvLevel: number;    // 动态细节
   cureEnable: boolean; cureLevel: number;  // 耳机声场矫正
   limiterEnable: boolean;                 // 恒定限幅
+  autoeqName: string;       // lx52 AutoEQ 耳机型号('' = 关)
+  autoeqOn: boolean;        // 启用开关(选了型号但可临时关)
 }
+export type AutoeqFilter = [type: 'lowshelf' | 'highshelf' | 'peaking', fc: number, gain: number, q: number];
+export interface AutoeqProfile { preamp: number; f: AutoeqFilter[] }
 export interface FxSettings { eq: number[]; pitch: number; panner: FxPanner; reverb: FxReverb; viper: FxViper }
 export interface FxPreset { name: string; values: number[] }
 
@@ -73,7 +80,7 @@ function defaultSettings(): FxSettings {
     pitch: 1.0,
     panner: { enable: false, speed: 25, distance: 5 },
     reverb: { id: 'none', mainGain: 1.0, sendGain: 0 },
-    viper: { bassMode: 0, bassLevel: 0.5, dcvEnable: false, dcvLevel: 0.5, cureEnable: false, cureLevel: 0.5, limiterEnable: false },
+    viper: { bassMode: 0, bassLevel: 0.5, dcvEnable: false, dcvLevel: 0.5, cureEnable: false, cureLevel: 0.5, limiterEnable: false, autoeqName: '', autoeqOn: false },
   };
 }
 
@@ -113,6 +120,8 @@ function sanitize(v: unknown): FxSettings {
       cureEnable: !!s.viper.cureEnable,
       cureLevel: Number.isFinite(cl) ? Math.max(0, Math.min(1, cl)) : 0.5,
       limiterEnable: !!s.viper.limiterEnable,
+      autoeqName: typeof s.viper.autoeqName === 'string' ? s.viper.autoeqName : '',
+      autoeqOn: !!s.viper.autoeqOn,
     };
   }
   return out;
@@ -169,6 +178,10 @@ function applyNative() {
         dcvEnable: settings.viper.dcvEnable, dcvLevel: settings.viper.dcvLevel,
         cureEnable: settings.viper.cureEnable, cureLevel: settings.viper.cureLevel,
         limiterEnable: settings.viper.limiterEnable,
+        autoeq: settings.viper.autoeqOn && settings.viper.autoeqName
+          ? (autoeqProfile(settings.viper.autoeqName)?.f ?? []).map(f => ({ 0: f[0], 1: f[1], 2: f[2], 3: f[3] }))
+          : [],
+        autoeqPreamp: settings.viper.autoeqOn ? (autoeqProfile(settings.viper.autoeqName)?.preamp ?? 0) : 0,
       },
     });
   } catch { /* 原生模块缺失时静默 */ }
@@ -286,6 +299,12 @@ export function setPanner(patch: Partial<FxPanner>) {
 // lx50: ViPER 链设样
 export function setViper(patch: Partial<FxViper>) {
   commit({ ...settings, viper: { ...settings.viper, ...patch } });
+}
+
+// lx52: AutoEq 耳机校正库
+export const AUTOEQ_MODELS = Object.keys(autoeqPack).sort();
+export function autoeqProfile(name: string): AutoeqProfile | null {
+  return autoeqPack[name] ?? null;
 }
 
 export function saveNewPreset(name: string): string | null {

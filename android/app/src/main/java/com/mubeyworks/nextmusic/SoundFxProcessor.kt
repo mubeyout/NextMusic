@@ -107,6 +107,12 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
     private val viperOut = FloatArray(2)
     private var viperChainActive = false
 
+    // lx52 AutoEQ 耳机校正链(≤10 个 biquad + preamp)
+    private var aqCoefs = Array(10) { FloatArray(5) }   // [b0,b1,b2,a1,a2]
+    private var aqState = Array(2) { Array(10) { FloatArray(4) } }
+    private var aqActive = false
+    private var aqPreamp = 1f
+
     // PCM 中转
     private var floatBuf = FloatArray(4096)
 
@@ -138,6 +144,19 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
         viper.cure.strength = c.cureLevel
         viper.limiter.enable = c.limiterEnable
         viperChainActive = c.viperBassMode > 0 && c.viperBassLevel > 0.01f || c.dcvEnable || c.cureEnable || c.limiterEnable
+        // lx52 AutoEQ 系数
+        aqActive = c.autoeq != null && c.autoeq.isNotEmpty()
+        aqPreamp = Math.pow(10.0, c.autoeqPreamp / 20.0).toFloat()
+        if (aqActive) {
+            for (i in 0 until minOf(10, c.autoeq!!.size)) {
+                val e = c.autoeq!![i]
+                val t = e[0] as String
+                val fc = (e[1] as Number).toDouble()
+                val gain = (e[2] as Number).toDouble()
+                val q = (e[3] as Number).toDouble()
+                aqCoefs[i] = shelfOrPeak(t, fc, gain, q)
+            }
+        }
     }
 
     private fun recomputeEq(gains: FloatArray) {
@@ -154,6 +173,52 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
             a1[i] = (-2f * cw) / a0
             a2[i] = (1f - alpha / a) / a0
         }
+    }
+
+    /** lx52:lowshelf/highshelf/peaking 通用 biquad系数(AutoEQ 标准公式,Web Audio 同源) */
+    private fun shelfOrPeak(type: String, fcHz: Double, gainDb: Double, q: Double): FloatArray {
+        val a = 10.0.pow(gainDb / 40.0)
+        val w0 = 2.0 * PI * fcHz / sampleRate
+        val cw = cos(w0); val sw = sin(w0)
+        val alpha = sw / (2.0 * q)
+        val b0d: Double; val b1d: Double; val b2d: Double; val a0d: Double; val a1d: Double; val a2d: Double
+        when (type) {
+            "lowshelf" -> {
+                b0d = a * ((a + 1) - (a - 1) * cw + 2 * Math.sqrt(a) * alpha)
+                b1d = 2 * a * ((a - 1) - (a + 1) * cw)
+                b2d = a * ((a + 1) - (a - 1) * cw - 2 * Math.sqrt(a) * alpha)
+                a0d = (a + 1) + (a - 1) * cw + 2 * Math.sqrt(a) * alpha
+                a1d = -2 * ((a - 1) + (a + 1) * cw)
+                a2d = (a + 1) + (a - 1) * cw - 2 * Math.sqrt(a) * alpha
+            }
+            "highshelf" -> {
+                b0d = a * ((a + 1) + (a - 1) * cw + 2 * Math.sqrt(a) * alpha)
+                b1d = -2 * a * ((a - 1) + (a + 1) * cw)
+                b2d = a * ((a + 1) + (a - 1) * cw - 2 * Math.sqrt(a) * alpha)
+                a0d = (a + 1) - (a - 1) * cw + 2 * Math.sqrt(a) * alpha
+                a1d = 2 * ((a - 1) - (a + 1) * cw)
+                a2d = (a + 1) - (a - 1) * cw - 2 * Math.sqrt(a) * alpha
+            }
+            else -> { // peaking
+                b0d = 1 + alpha * a; b1d = -2 * cw; b2d = 1 - alpha * a
+                a0d = 1 + alpha / a; a1d = -2 * cw; a2d = 1 - alpha / a
+            }
+        }
+        return floatArrayOf((b0d / a0d).toFloat(), (b1d / a0d).toFloat(), (b2d / a0d).toFloat(), (a1d / a0d).toFloat(), (a2d / a0d).toFloat())
+    }
+
+    /** AutoEQ 链单样本 */
+    private fun autoeq(x0: Float, ch: Int): Float {
+        var x = x0 * aqPreamp
+        val n = if (aqActive) 10 else 0
+        for (i in 0 until n) {
+            val st = aqState[ch][i]
+            val c = aqCoefs[i]
+            val y = c[0] * x + c[1] * st[0] + c[2] * st[1] - c[3] * st[2] - c[4] * st[3]
+            st[1] = st[0]; st[0] = x; st[3] = st[2]; st[2] = y
+            x = y
+        }
+        return x
     }
 
     // ---------- AudioProcessor 生命周期 ----------
@@ -216,7 +281,7 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
         maybeRefreshConfig()
         val preset = REVERBS[reverbId]
         // 注：选“关闭”(none) 不再释放卷积器——IR 缓存常驻，切回瞬时命中（2026-08-29）
-        val bypass = !eqActive && reverbId == "none" && !pannerEnable && !viperChainActive
+        val bypass = !eqActive && reverbId == "none" && !pannerEnable && !viperChainActive && !aqActive
         if (bypass) {
             val remaining = inputBuffer.remaining()
             val out = replaceOutputBuffer(remaining)
@@ -243,6 +308,7 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
                 var l = floatBuf[i]; var r = floatBuf[i + 1]
                 // lx51:NaN 防护(上游解码器/淡入淡出偶发非有限值→双二阶滤波器状态被污染→永久静音)
                 if (!l.isFinite() || !r.isFinite()) { floatBuf[i] = 0f; floatBuf[i + 1] = 0f; i += 2; continue }
+                if (aqActive) { l = autoeq(l, 0); r = autoeq(r, 1) }
                 if (eqActive) { l = eq(l, 0); r = eq(r, 1) }
                 // lx50: ViPER 链(EQ 后、混响前——低音/细节/声场/限幅依次处理)
                 if (viperChainActive) { viper.stereoFrame(l, r, viperOut); l = viperOut[0]; r = viperOut[1] }
@@ -307,6 +373,7 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
 
     override fun onFlush() {
         eqState.forEach { ch -> ch.forEach { Arrays.fill(it, 0f) } }
+        aqState.forEach { ch -> ch.forEach { Arrays.fill(it, 0f) } }
         bpHP.forEach { Arrays.fill(it, 0f) }; bpLP.forEach { Arrays.fill(it, 0f) }
         if (this::combsL.isInitialized) {
             combsL.forEach { it.clear() }; combsR.forEach { it.clear() }

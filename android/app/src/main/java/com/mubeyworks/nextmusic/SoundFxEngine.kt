@@ -35,6 +35,9 @@ object SoundFxEngine {
         val cureEnable: Boolean = false,
         val cureLevel: Float = 0.5f,
         val limiterEnable: Boolean = false,
+        // lx52 AutoEQ 耳机校正: [type,fc,gain,Q] × ≤10 + preamp(dB)。type: lowshelf/highshelf/peaking
+        val autoeq: Array<Array<Any>>? = null,
+        val autoeqPreamp: Double = 0.0,
     )
 
     @Volatile
@@ -96,7 +99,17 @@ object SoundFxEngine {
         val cE = viper?.getBoolean("cureEnable") ?: false
         val cL = (viper?.getDouble("cureLevel") ?: 0.5).toFloat().coerceIn(0f, 1f)
         val lE = viper?.getBoolean("limiterEnable") ?: false
-        config = Config(gains, rid, main, send, pEnable, pSpeed, pDist, bm, bl, dE, dL, cE, cL, lE)
+        // lx52 AutoEQ
+        val aq = viper?.getArray("autoeq")
+        val autoeq: Array<Array<Any>>? = if (aq != null && aq.size() > 0) {
+            Array(minOf(10, aq.size())) { i ->
+                val f = aq.getArray(i) ?: return@Array null
+                @Suppress("UNCHECKED_CAST")
+               arrayOf<Any>(f.getString(0).let { if (it == "lowshelf" || it == "highshelf" || it == "peaking") it else "peaking" }, f.getDouble(1), f.getDouble(2), f.getDouble(3))
+            }.let { arr -> if (arr.any { it == null }) null else arr as Array<Array<Any>> }
+        } else null
+        val ap = viper?.getDouble("autoeqPreamp") ?: 0.0
+        config = Config(gains, rid, main, send, pEnable, pSpeed, pDist, bm, bl, dE, dL, cE, cL, lE, autoeq, ap)
         version.incrementAndGet()
     }
 
