@@ -1,6 +1,6 @@
 // Player state on top of react-native-audio-pro (New Arch native)
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
-import { NativeModules, AppState } from 'react-native';
+import { NativeModules, AppState , Platform } from 'react-native';
 import { AudioPro, AudioProContentType, AudioProEventType, AudioProState } from 'react-native-audio-pro';
 import { createMMKV } from 'react-native-mmkv';
 import type { SongItem } from '../services/server';
@@ -152,6 +152,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const repRef = useRef<{ acct: NonNullable<ReturnType<typeof providers.get>>; itemId: string; psid: string } | null>(null);
   const repTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const repPosRef = useRef(0); repPosRef.current = position;
+  // 冷启动恢复的续播回跳点（>2 生效一次后清零）：首次真正开始播时回跳到保存进度（桌面重开不丢进度）
+  const resumeSeekRef = useRef(0);
   const repPlayingRef = useRef(false); repPlayingRef.current = playing;
   const stopReport = useCallback(() => {
     if (repTimerRef.current) { clearInterval(repTimerRef.current); repTimerRef.current = null; }
@@ -410,6 +412,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       switch (ev.type) {
         case AudioProEventType.STATE_CHANGED:
           setPlaying(ev.payload?.state === AudioProState.PLAYING);
+          // 冷启动恢复的续播回跳：首次进入 PLAYING 且尚未推进 → 回跳到保存进度（一次）
+          if (ev.payload?.state === AudioProState.PLAYING && resumeSeekRef.current > 2 && position < 1) {
+            const rp = resumeSeekRef.current; resumeSeekRef.current = 0;
+            setTimeout(() => { AudioPro.seekTo(rp * 1000); }, 350);
+          }
           break;
         case AudioProEventType.PROGRESS: {
           const p = ev.payload?.position ?? 0;
@@ -532,8 +539,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const t = setTimeout(() => {
       try {
         if (queue.length && current) {
-          // pos/p:主题重启断点续播(仅 settings.__rr 时消费;普通冷启动仍从 0,避免取链失效卡启动)
-          playbackKv.set('snapshot', JSON.stringify({ q: queue.slice(0, 200), i: idxRef.current, pos: Math.floor(position), p: playing }));
+          // pos/p/d:断点续播(settings.__rr 时消费)与桌面冷启动恢复(web 默认带进度);手机冷启动仍从 0,避免取链失效卡启动
+          playbackKv.set('snapshot', JSON.stringify({ q: queue.slice(0, 200), i: idxRef.current, pos: Math.floor(position), p: playing, d: Math.floor(duration) }));
         } else playbackKv.set('snapshot', '');
       } catch { /* 超大队列放弃快照 */ }
     }, 1500);
@@ -553,7 +560,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         try { nativeState = (await NativeAudioPro?.getNativeState?.())?.state; } catch { /* 旧原生无此方法 */ }
         if (dead || queueRef.current.length) return;
         const nativeHolding = nativeState === 'PLAYING' || nativeState === 'PAUSED' || nativeState === 'BUFFERING';
-        const snap = JSON.parse(playbackKv.getString('snapshot') || 'null') as { q?: QueueTrack[]; i?: number; pos?: number; p?: boolean } | null;
+        const snap = JSON.parse(playbackKv.getString('snapshot') || 'null') as { q?: QueueTrack[]; i?: number; pos?: number; p?: boolean; d?: number } | null;
         if (snap?.q?.length && (nativeHolding || settings.get().restorePlayback)) {
           // 重新分配 uid：快照里的旧 uid 会与新 toTrack 的自增 seq 撞车
           const q = snap.q.map(t => ({ ...t, uid: `${t.source}-${t.songmid}-${++seq}` }));
@@ -586,6 +593,12 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
               playSong(t0, q);
               if (resumePos > 2) setTimeout(() => seekTo(resumePos), 1400);
             }, 400);
+          } else if (Platform.OS === 'web') {
+            // 冷启动恢复（桌面默认开）：队列+当前曲+进度显示恢复为暂停态；首次点播放时从保存进度继续
+            // 仅 web——Android 冷启动行为保持原样（恢复队列从 0，避免原生侧未验证的 seek 路径）
+            setPosition(Math.max(0, snap.pos || 0));
+            if ((snap.d || 0) > 0) setDuration(snap.d || 0);
+            resumeSeekRef.current = Math.max(0, snap.pos || 0);
           }
 
           // lx39：投屏会话恢复——JS 重建前正在投屏，从 castKv 恢复投屏态（不再失联）

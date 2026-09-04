@@ -1,6 +1,7 @@
 // 全局应用设置：MMKV 持久化 + 轻量订阅（跨组件响应）
 // 注意：不要 import theme/tokens（tokens 反向依赖本模块做启动期主题，避免循环）
 import { useState, useEffect } from 'react';
+import { Platform } from 'react-native';
 import { createMMKV } from 'react-native-mmkv';
 
 const kv = createMMKV({ id: 'nextmusic-settings' });
@@ -45,10 +46,10 @@ export const DEFAULTS: AppSettings = {
   pureBlack: false,
   accent: '#1ED760',
   light: false,
-  uiScale: '100%',
+  uiScale: Platform.OS === 'web' ? '125%' : '100%', // 桌面默认 125%(老板定),CSS zoom 生效;原生重启生效
   showTabLabels: true,
   startupPage: 'home',
-  restorePlayback: false,
+  restorePlayback: Platform.OS === 'web', // 桌面：重开恢复队列/进度是默认预期；手机/TV 冷启动从 0（避免死链卡启动）
   backupPlaylists: true,
   backupHistory: false,
   backupSettings: true,
@@ -80,6 +81,8 @@ export const settings = {
     listeners.forEach(fn => fn());
   },
 };
+
+export function onSettings(fn: () => void) { listeners.add(fn); return () => { listeners.delete(fn); }; }
 
 export function useSettings(): AppSettings {
   const [s, setS] = useState(current);

@@ -19,3 +19,53 @@ root.render(<EB><App /></EB>);
 
 // 桌面窗口标题
 document.title = 'NextMusic';
+
+// ===== 桌面壳层：页面缩放（settings.uiScale → CSS zoom）+ 无边框窗口控制条 =====
+import { settings, onSettings } from '../../src/services/settings';
+
+const applyZoom = () => {
+  const z = Math.max(0.75, Math.min(2, Number(String(settings.get().uiScale || '125%').replace('%', '')) / 100));
+  document.documentElement.style.zoom = String(z);
+};
+applyZoom();
+onSettings(applyZoom);
+
+(function mountWindowChrome() {
+  const nm = (window as never as Record<string, unknown>).nmDesktop as
+    | { platform: string; minimize: () => void; toggleMaximize: () => void; close: () => void }
+    | undefined;
+  const isMac = nm?.platform === 'darwin';
+  // 顶部拖拽条（-webkit-app-region:drag;按钮区 no-drag）
+  const strip = document.createElement('div');
+  strip.style.cssText = [
+    'position:fixed', 'top:0', 'left:0', 'right:0', 'height:34px',
+    '-webkit-app-region:drag', 'z-index:2147483000', 'pointer-events:auto',
+  ].join(';');
+  if (isMac) {
+    // mac:红绿灯由系统叠放在左上,仅留拖拽区+让位
+    strip.style.left = '78px';
+  } else if (nm) {
+    // win/linux:自绘三钮（贴合应用设计:暗色扁平,悬停显色）
+    const btns: Array<[string, string, () => void]> = [
+      ['\u2015', '#ffffff1a', () => nm.minimize()],
+      ['\u25a1', '#ffffff1a', () => nm.toggleMaximize()],
+      ['\u2715', '#e81123', () => nm.close()],
+    ];
+    for (const [label, hoverBg, fn] of btns) {
+      const b = document.createElement('div');
+      b.textContent = label;
+      b.style.cssText = [
+        'display:inline-flex', 'align-items:center', 'justify-content:center',
+        'width:44px', 'height:34px', 'float:right',
+        '-webkit-app-region:no-drag', 'cursor:pointer',
+        'color:#ffffffb0', 'font-size:13px', 'user-select:none',
+        `transition:background .12s`,
+      ].join(';');
+      b.addEventListener('mouseenter', () => { b.style.background = hoverBg; b.style.color = '#fff'; });
+      b.addEventListener('mouseleave', () => { b.style.background = 'transparent'; b.style.color = '#ffffffb0'; });
+      b.addEventListener('click', fn);
+      strip.appendChild(b);
+    }
+  }
+  document.body.appendChild(strip);
+})();

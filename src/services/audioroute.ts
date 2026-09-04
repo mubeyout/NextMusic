@@ -45,16 +45,18 @@ export type DlnaPosition = { pos: number; dur: number; state: string };
 export type CastDevice = { uuid: string; name: string; host: string; port: number };
 
 // ---------- 本机设备 / 音量 ----------
+// 原生方法级守卫：模块存在但方法缺失（web polyfill/旧原生）不炸——R?. 只挡模块级 null
+const has = <T,>(o: T | undefined, k: keyof T) => !!o && typeof o[k] === 'function';
 
 export const audioRoute = {
   available: !!R,
   /** 真实输出设备列表 + 当前用户偏好（-1 跟随系统） */
   getDevices: (): Promise<{ devices: LocalDevice[]; preferred: number }> =>
-    R?.getOutputDevices() ?? Promise.resolve({ devices: [], preferred: -1 }),
+    has(R, 'getOutputDevices') ? R!.getOutputDevices() : Promise.resolve({ devices: [], preferred: -1 }),
   /** 应用内切换输出设备；id=-1 恢复系统自动路由 */
-  selectDevice: (id: number): Promise<boolean> => R?.selectDevice(id) ?? Promise.resolve(false),
-  getVolume: (): Promise<number> => R?.getMusicVolume() ?? Promise.resolve(0),
-  setVolume: (pct: number): Promise<number> => R?.setMusicVolume(pct) ?? Promise.resolve(0),
+  selectDevice: (id: number): Promise<boolean> => has(R, 'selectDevice') ? R!.selectDevice(id) : Promise.resolve(false),
+  getVolume: (): Promise<number> => has(R, 'getMusicVolume') ? R!.getMusicVolume() : Promise.resolve(0),
+  setVolume: (pct: number): Promise<number> => has(R, 'setMusicVolume') ? R!.setMusicVolume(pct) : Promise.resolve(0),
   /** 系统音量变化（硬件音量键等） */
   onVolumeChange(cb: (pct: number) => void): EmitterSubscription | undefined {
     if (!R) return;

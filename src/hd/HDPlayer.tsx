@@ -1,7 +1,7 @@
 // HD 播放页 v3 —— 完全重构:无底部工具 bar,所有元素融入左右两列,沉浸式
 // v1 教训:固定尺寸溢出;v2 教训:深色底 panel 突兀(老板:粗糙,直接取消)
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
 import { C, fmtSec } from './hdtokens';
@@ -82,6 +82,103 @@ export function HDPlayer() {
     setFaved(!faved);
     try { await setFav(current, !faved); } catch { setFaved(faved); }
   };
+
+  // ===== 桌面(网易云参照):封面模糊铺底 + 大图/歌词双列 + 底部一体控制条 =====
+  if (Platform.OS === 'web') {
+    const lines = lyrics ? lyrics.slice(Math.max(0, activeIdx - 5), activeIdx + 5) : [];
+    const lineBase = lyrics ? Math.max(0, activeIdx - 5) : 0;
+    return (
+      <View style={stW.screen}>
+        {current.img ? <Image source={{ uri: current.img }} style={stW.bgArt} blurRadius={90} resizeMode="cover" /> : null}
+        <View style={stW.bgVeil} />
+        <HDTouch style={stW.back} onPress={nav.goBack} focusStyle={st.focus}>
+          <Icon name="back" size={19} color="#ffffffcc" />
+        </HDTouch>
+
+        <View style={stW.body}>
+          <View style={stW.artCol}>
+            {current.img
+              ? <Image source={{ uri: current.img }} style={stW.art} resizeMode="cover" />
+              : <View style={[stW.art, st.artFallback]}><Icon name="music" size={64} color={C.text3} /></View>}
+            <Text style={stW.srcTag}>{current.source.toUpperCase()}</Text>
+          </View>
+
+          <View style={stW.infoCol}>
+            <Text style={stW.title} numberOfLines={1}>{current.name}</Text>
+            <Text style={stW.sub} numberOfLines={1}>{current.singer}{current.albumName ? ` · ${current.albumName}` : ''}</Text>
+            <View style={stW.lyrics}>
+              {lyrics ? lines.map((l, i) => {
+                const idx = lineBase + i;
+                const on = idx === activeIdx;
+                return (
+                  <TouchableOpacity key={idx} disabled={!on || !l.t} onPress={() => l.t && seekTo(l.t + 0.3)} activeOpacity={0.7}>
+                    <Text style={[stW.lyric, on && stW.lyricOn]} numberOfLines={1}>{l.text || '\u266a'}</Text>
+                    {l.trans ? <Text style={[stW.lyricTr, on && stW.lyricTrOn]} numberOfLines={1}>{l.trans}</Text> : null}
+                  </TouchableOpacity>
+                );
+              }) : (
+                <View style={stW.noLyric}>
+                  <Icon name="music" size={30} color="#ffffff66" />
+                  <Text style={stW.noLyricText}>暂无歌词</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </View>
+
+        <View style={stW.dock}>
+          <View style={stW.progRow}>
+            <Text style={stW.time}>{fmtSec(position)}</Text>
+            <TouchableOpacity
+              style={stW.track}
+              activeOpacity={0.9}
+              onLayout={e => { trackW.current = e.nativeEvent.layout.width; }}
+              onPress={e => {
+                const { locationX } = e.nativeEvent;
+                const w = trackW.current;
+                if (w > 0 && duration > 0) seekTo(Math.max(0, Math.min(1, locationX / w)) * duration);
+              }}
+            >
+              <View style={[stW.trackFill, { flex: pct }]} />
+              <View style={[stW.trackRest, { flex: 1 - pct }]} />
+            </TouchableOpacity>
+            <Text style={stW.time}>{fmtSec(duration)}</Text>
+          </View>
+          <View style={stW.ctrlRow}>
+            <View style={stW.ctrlCluster}>
+              <HDTouch style={stW.cBtn} onPress={() => setShuffle(!shuffle)} focusStyle={st.focus}>
+                <Icon name="shuffle" size={17} active={shuffle} color={shuffle ? C.brand : '#ffffff99'} />
+              </HDTouch>
+              <HDTouch style={stW.cBtn} onPress={skipPrev} focusStyle={st.focus}>
+                <Icon name="previous" size={22} color="#ffffffee" />
+              </HDTouch>
+              <HDTouch style={stW.cMain} onPress={toggle} focusStyle={stW.cMainFocus}>
+                <Icon name={playing ? 'pause' : 'play'} size={26} color="#0b0f0d" />
+              </HDTouch>
+              <HDTouch style={stW.cBtn} onPress={skipNext} focusStyle={st.focus}>
+                <Icon name="next" size={22} color="#ffffffee" />
+              </HDTouch>
+              <HDTouch style={stW.cBtn} onPress={cycleRepeat} focusStyle={st.focus}>
+                <Icon name="repeat" size={17} active={repeat !== 'off'} color={repeat !== 'off' ? C.brand : '#ffffff99'} />
+              </HDTouch>
+            </View>
+            <View style={stW.toolCluster}>
+              <HDTouch style={stW.tBtn} onPress={doFav} focusStyle={st.focus}>
+                <Icon name="heart" size={17} color={faved ? C.brand : '#ffffff99'} />
+              </HDTouch>
+              <HDTouch style={stW.tBtn} onPress={() => nav.navigate('Queue')} focusStyle={st.focus}>
+                <Icon name="queue" size={17} color="#ffffff99" />
+                {queue.length ? <Text style={stW.badge}>{queue.length}</Text> : null}
+              </HDTouch>
+              <HDTouch style={stW.tBtn} onPress={() => nav.navigate('Route')} focusStyle={st.focus}>
+                <Icon name="devices" size={17} color="#ffffff99" />
+              </HDTouch>
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={st.screen}>
@@ -201,4 +298,40 @@ const st = StyleSheet.create({
   cMainFocus: { borderWidth: 3, borderColor: '#FFFFFF', borderRadius: 39 },
   ctrlDivider: { width: 1, height: 30, backgroundColor: C.stroke, marginHorizontal: 4 },
   badge: { color: C.text2, fontSize: 10, marginLeft: 3 },
+});
+
+// ===== 桌面(网易云参照)样式 =====
+const stW = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: '#0a0c0b' },
+  bgArt: { position: 'absolute', top: -60, left: -60, right: -60, bottom: -60, width: '120%', height: '120%', opacity: 0.5 },
+  bgVeil: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(6,8,7,0.72)' },
+  back: { position: 'absolute', top: 42, left: 22, zIndex: 5, width: 38, height: 38, borderRadius: 19, backgroundColor: '#ffffff14', alignItems: 'center', justifyContent: 'center' },
+  body: { flex: 1, flexDirection: 'row', paddingHorizontal: 72, paddingTop: 74, gap: 52, alignItems: 'center' },
+  artCol: { flex: 0.9, alignItems: 'center' },
+  art: { width: '86%', aspectRatio: 1, borderRadius: 14, maxHeight: 400, maxWidth: 400, shadowColor: '#000', shadowOpacity: 0.55, shadowRadius: 34, shadowOffset: { width: 0, height: 16 } },
+  srcTag: { color: '#ffffff66', fontSize: 11, marginTop: 14, letterSpacing: 2 },
+  infoCol: { flex: 1.1, alignSelf: 'stretch', justifyContent: 'center', gap: 8 },
+  title: { color: '#ffffff', fontSize: 27, fontWeight: '800' },
+  sub: { color: '#ffffffb0', fontSize: 14, marginBottom: 10 },
+  lyrics: { minHeight: 320, gap: 13, justifyContent: 'center' },
+  lyric: { color: '#ffffff59', fontSize: 17, lineHeight: 25, fontWeight: '500' },
+  lyricOn: { color: '#ffffff', fontSize: 22, lineHeight: 32, fontWeight: '800' },
+  lyricTr: { color: '#ffffff38', fontSize: 12, lineHeight: 17, marginTop: 1 },
+  lyricTrOn: { color: '#ffffff70' },
+  noLyric: { alignItems: 'center', gap: 10, marginTop: 30 },
+  noLyricText: { color: '#ffffff55', fontSize: 13 },
+  dock: { paddingHorizontal: 56, paddingBottom: 26, gap: 10 },
+  progRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  time: { color: '#ffffff99', fontSize: 12, fontVariant: ['tabular-nums'], width: 44, textAlign: 'center' },
+  track: { flex: 1, height: 5, flexDirection: 'row', borderRadius: 3, overflow: 'hidden' },
+  trackFill: { backgroundColor: C.brand, borderRadius: 3 },
+  trackRest: { backgroundColor: '#ffffff26', borderRadius: 3 },
+  ctrlRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  ctrlCluster: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  cBtn: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#ffffff10', alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
+  cMain: { width: 64, height: 64, borderRadius: 32, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
+  cMainFocus: { borderWidth: 3, borderColor: '#ffffffaa', borderRadius: 32 },
+  toolCluster: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  tBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#ffffff0d', alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
+  badge: { color: '#ffffff77', fontSize: 10, marginLeft: 3 },
 });

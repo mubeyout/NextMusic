@@ -1,7 +1,8 @@
 // HD 设置页 —— 对齐桌面版 SettingsScreen:顶部 tab + 行式设置卡
 // 行 = 标题/描述 + 右侧控件;TV 交互:整行可聚焦,CENTER 切换开关/循环选项/进入子页
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
+const IS_WEB = Platform.OS === 'web';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon, type IconName } from '../theme/Icon';
@@ -52,7 +53,7 @@ export function HDSettingsScreen() {
       { kind: 'toggle', icon: 'palette', title: '纯黑背景', desc: 'OLED 友好的纯黑底色(仅深色模式)', value: s.pureBlack, onToggle: () => { settings.set('pureBlack', !s.pureBlack); hdRestart(playing); } },
       { kind: 'select', icon: 'palette', title: '界面主题', desc: '深色(车机/TV 默认)或浅色,切换后自动重启生效', value: s.light ? '浅色' : '深色', options: ['深色', '浅色'], onPick: v => { settings.set('light', v === '浅色'); hdRestart(playing); } },
       { kind: 'select', icon: 'palette', title: '强调色', desc: '全局品牌色(按钮/高亮/选中态),切换后自动重启生效', value: ACCENTS.find(a => a.color === s.accent)?.name ?? 'Next 绿', options: ACCENTS.map(a => a.name), onPick: v => { const hit = ACCENTS.find(a => a.name === v); if (hit) { settings.set('accent', hit.color); hdRestart(playing); } } },
-      { kind: 'select', icon: 'fullscreen', title: '界面缩放', desc: '全局字号/触点/行高缩放,切换后自动重启生效', value: s.uiScale || '100%', options: ['90%', '100%', '110%', '125%'], onPick: v => { settings.set('uiScale', v); hdRestart(playing); } },
+      { kind: 'select', icon: 'fullscreen', title: '界面缩放', desc: '全局字号/触点/行高缩放(桌面即时生效,手机/TV 切换后重启生效)', value: s.uiScale || '100%', options: IS_WEB ? ['100%', '110%', '125%', '150%', '175%'] : ['90%', '100%', '110%', '125%'], onPick: v => { settings.set('uiScale', v); if (IS_WEB) { const z = Math.max(0.75, Math.min(2, Number(v.replace('%', '')) / 100)); const doc = (globalThis as { document?: { documentElement?: { style?: Record<string, string> } } }).document; if (doc?.documentElement?.style) doc.documentElement.style.zoom = String(z); } else hdRestart(playing); } },
     ],
     '播放体验': [
       { kind: 'select', icon: 'music', title: '默认音质', desc: '在线播放优先选择的音质档位', value: s.playQuality, options: QUALITY_OPTS, onPick: v => settings.set('playQuality', v as Quality) },
