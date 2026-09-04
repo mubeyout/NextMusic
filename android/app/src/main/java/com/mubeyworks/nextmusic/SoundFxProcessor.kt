@@ -49,6 +49,13 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
             "cardiod" to ReverbPreset(0.45f, 0.25f, 0.42f, Mode.WIDEN),
             "magnetic" to ReverbPreset(0.28f, 0.35f, 0.28f, Mode.WIDEN),
             "telephone" to ReverbPreset(0.30f, 0.10f, 0.35f, Mode.TELEPHONE),
+            // lx51:KuGou-viper IR 包(真 IR 卷积;Freeverb 参数仅作 IR 构建前的秒级垫底)
+            "v_clear" to ReverbPreset(0.10f, 0.20f, 0.30f),
+            "v_creek" to ReverbPreset(0.55f, 0.25f, 0.50f),
+            "v_resound2" to ReverbPreset(0.15f, 0.15f, 0.25f),
+            "v_surround" to ReverbPreset(0.20f, 0.20f, 0.30f),
+            "v_valley" to ReverbPreset(0.80f, 0.35f, 0.70f),
+            "v_presence" to ReverbPreset(0.40f, 0.20f, 0.40f),
         )
 
         // Freeverb 经典调谐（44.1kHz 基准，按采样率缩放）
@@ -234,6 +241,8 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
             var i = 0
             while (i < total) {
                 var l = floatBuf[i]; var r = floatBuf[i + 1]
+                // lx51:NaN 防护(上游解码器/淡入淡出偶发非有限值→双二阶滤波器状态被污染→永久静音)
+                if (!l.isFinite() || !r.isFinite()) { floatBuf[i] = 0f; floatBuf[i + 1] = 0f; i += 2; continue }
                 if (eqActive) { l = eq(l, 0); r = eq(r, 1) }
                 // lx50: ViPER 链(EQ 后、混响前——低音/细节/声场/限幅依次处理)
                 if (viperChainActive) { viper.stereoFrame(l, r, viperOut); l = viperOut[0]; r = viperOut[1] }
@@ -263,6 +272,8 @@ class SoundFxProcessor internal constructor() : BaseAudioProcessor() {
                 }
                 l = mainGain * l + sendGain * wl
                 r = mainGain * r + sendGain * wr
+                if (!l.isFinite()) l = 0f   // lx51:链中任一环节炸了→归零直通,绝不出 NaN
+                if (!r.isFinite()) r = 0f
                 if (pannerEnable) { updatePanner(); l *= panL; r *= panR }
                 floatBuf[i] = softClip(l)
                 floatBuf[i + 1] = softClip(r)

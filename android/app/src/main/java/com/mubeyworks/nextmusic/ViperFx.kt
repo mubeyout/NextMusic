@@ -62,7 +62,7 @@ object ViperFx {
         /** 逐样本；返回叠加了谐波激发的输出 */
         fun process(x: Float, ch: Int): Float {
             val k = intensity
-            if (k < 0.01f) return x
+            if (k < 0.01f || !x.isFinite()) return x
             val band: Float = if (mode == 2) {
                 // clarity: 带通 1.5k~6k 的中高频 → 谐波密度增强(人声/乐器"亮")
                 val hp = biquad(x, hpState[ch], hpB0, hpB1, hpB2, hpA1, hpA2)
@@ -78,7 +78,8 @@ object ViperFx {
             val drive = if (mode == 1) 3.0f else 1.8f
             val harmonics = (kotlin.math.tanh(band * drive) - kotlin.math.tanh(band * drive * 0.15f)) * 0.85f
             val mix = if (mode == 2) 0.9f else 0.75f
-            return x + harmonics * k * mix
+            val y = x + harmonics * k * mix
+            return if (y.isFinite()) y else x // lx51:NaN/Inf 防护(系数异常时直通,绝不静音)
         }
 
         fun clear() { lpState.forEach { it.fill(0f) }; hpState.forEach { it.fill(0f) } }
@@ -94,13 +95,14 @@ object ViperFx {
 
         /** 逐样本软扩展: |x|<thr 时 gain = 1+k*(1-|x|/thr) */
         fun process(x: Float): Float {
-            if (!enable || intensity < 0.01f) return x
+            if (!enable || intensity < 0.01f || !x.isFinite()) return x
             val thr = 0.28f
             env = kotlin.math.max(abs(x), env * 0.9995f)
             val gain = if (env < thr) 1f + intensity * (1f - env / thr) * 0.9f else 1f
             // 平滑 makeup 防抽动
             makeup += (gain - makeup) * 0.0003f
-            return x * makeup
+            val y = x * makeup
+            return if (y.isFinite()) y else x // lx51 防护
         }
 
         fun clear() { env = 0f; makeup = 1f }
@@ -143,7 +145,7 @@ object ViperFx {
 
         /** 逐样本: RMS 包络 → 超过 ceiling 的部分按 1/x 增益压缩(attack 快,release 慢) */
         fun process(x: Float): Float {
-            if (!enable) return x
+            if (!enable || !x.isFinite()) return x
             env = kotlin.math.max(abs(x), env * 0.9992f)
             if (env > ceiling) {
                 val target = ceiling / env
@@ -152,11 +154,12 @@ object ViperFx {
                 g += (1f - g) * 0.0008f            // 慢恢复
             }
             val y = x * g
-            return when {                          // brickwall 硬上限
+            val clamped = when {                          // brickwall 硬上限
                 y > ceiling -> ceiling
                 y < -ceiling -> -ceiling
                 else -> y
             }
+            return if (clamped.isFinite()) clamped else 0f // lx51 防护
         }
 
         fun clear() { g = 1f; env = 0f }
@@ -173,6 +176,8 @@ object ViperFx {
         fun init(sr: Int) { bass.init(sr); cure.init(sr) }
 
         fun stereoFrame(l0: Float, r0: Float, out: FloatArray) {
+            // lx51:入口防护——非有限输入直接直通(NaN 会传染整个 AudioTrack 造成永久静音)
+            if (!l0.isFinite() || !r0.isFinite()) { out[0] = 0f; out[1] = 0f; return }
             var l = l0; var r = r0
             if (bass.intensity > 0.01f) { l = bass.process(l, 0); r = bass.process(r, 1) }
             if (dcv.enable) { l = dcv.process(l); r = dcv.process(r) }

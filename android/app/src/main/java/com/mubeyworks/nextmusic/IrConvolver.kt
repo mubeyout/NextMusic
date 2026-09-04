@@ -38,6 +38,14 @@ object IrConvolver {
         "cardiod" to "cardiod-35-10-spread.ir",
         "magnetic" to "tim-omni-35-10-magnetic.ir",
         "spring" to "feedback-spring.ir",
+        // lx51:Ssssakurrra KuGou-viper IR 包(浮点/24bit wav 已转 PCM16@44.1k,峰值归一;
+        // 必须用 .ir 后缀——坑116:aapt2 会压缩损坏 assets 里的 .wav)
+        "v_clear" to "Clear_.ir",               // 清澈增强
+        "v_creek" to "Clear_石涧树林.ir",         // 石涧树林(自然空间)
+        "v_resound2" to "Resound_立体声效增强_02.ir", // 立体声增强
+        "v_surround" to "resound_立体声效环绕.ir", // 立体声环绕
+        "v_valley" to "宽场混响_山谷.ir",          // 山谷宽场混响
+        "v_presence" to "混响-临场.ir",           // 临场感
     )
 
     // ---------- WAV 解析（PCM16，RIFF） ----------

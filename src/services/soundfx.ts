@@ -55,6 +55,13 @@ export const FX_REVERB_OPTIONS: { id: string; name: string; main: number; send: 
   { id: 'cardiod', name: '心形扩散', main: 1.8, send: 0.6 },
   { id: 'magnetic', name: '磁性立体声', main: 1.0, send: 0.2 },
   { id: 'spring', name: '反馈弹簧', main: 1.8, send: 0.8 },
+  // lx51:KuGou-viper IR 包(Ssssakurrra)
+  { id: 'v_clear', name: '清澈增强', main: 1.6, send: 0.4 },
+  { id: 'v_creek', name: '石涧树林', main: 1.0, send: 1.2 },
+  { id: 'v_resound2', name: '立体声增强', main: 1.8, send: 0.5 },
+  { id: 'v_surround', name: '立体声环绕', main: 1.8, send: 0.6 },
+  { id: 'v_valley', name: '山谷宽场', main: 0.9, send: 1.6 },
+  { id: 'v_presence', name: '临场感', main: 1.2, send: 0.9 },
 ];
 
 const kv = createMMKV({ id: 'nextmusic-fx' });
