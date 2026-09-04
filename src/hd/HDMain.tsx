@@ -73,20 +73,21 @@ export function HDMain() {
   return (
     <View style={st.screen}>
       {/* ===== 侧栏(桌面版结构) ===== */}
-      <View style={st.sidebarWrap}>
+      <View style={IS_WEB ? st.sidebarWrapWeb : st.sidebarWrap}>
         <ScrollView
           style={{ flex: 1, backgroundColor: C.bg }}
-          contentContainerStyle={{ paddingTop: 34 + 6, paddingBottom: 10, gap: 2 }} // 34 让位拖拽条
+          contentContainerStyle={{ paddingTop: 8, paddingBottom: 10, gap: 2 }}
           showsVerticalScrollIndicator={false}
         >
-          {/* 品牌(新品牌玻璃 Mark):paddingTop 让位顶部拖拽条,logo 放大;桌面不显示 TV 副标 */}
-          <View style={st.brandRow}>
-            <Image source={require('../assets/brand/mark.png')} style={st.logoMark} />
-            <View style={{ flex: 1 }}>
-              <Text style={st.brandName}>Next<Text style={{ color: C.brand }}>Music</Text></Text>
-              {IS_WEB ? null : <Text style={st.brandSub}>TV · CAR EDITION</Text>}
+          {IS_WEB ? null : (
+            <View style={st.brandRow}>
+              <Image source={require('../assets/brand/mark.png')} style={st.logoMark} />
+              <View style={{ flex: 1 }}>
+                <Text style={st.brandName}>Next<Text style={{ color: C.brand }}>Music</Text></Text>
+                <Text style={st.brandSub}>TV · CAR EDITION</Text>
+              </View>
             </View>
-          </View>
+          )}
 
           {/* 发现 */}
           <Group label="发现" />
@@ -108,7 +109,7 @@ export function HDMain() {
           ))}
           <PlItem name="新建歌单" add onPress={() => hdNav()?.navigate('ImportPlaylist')} />
         </ScrollView>
-        <NavItem icon="settings" label="设置" onPress={() => hdNav()?.navigate('Settings')} />
+        {IS_WEB ? null : <NavItem icon="settings" label="设置" onPress={() => hdNav()?.navigate('Settings')} />}
       </View>
 
       {/* ===== 内容区 + 播放条 ===== */}
@@ -220,6 +221,8 @@ function HDPlayBar() {
 const st = StyleSheet.create({
   screen: { flex: 1, flexDirection: 'row', backgroundColor: C.bg },
   sidebarWrap: { width: H.sidebar, backgroundColor: C.glass, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border },
+  // v1.1.9 web:侧栏常驻最顶层(内页卡片 marginLeft 让位,zIndex 保证转场时侧栏不被卡片盖住)
+  sidebarWrapWeb: { position: 'relative', zIndex: 50, backgroundColor: C.bg, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingTop: 6, paddingBottom: 12 },
   logoMark: { width: 38, height: 41 },
   logoText: { color: C.onBrand, fontSize: 13, fontWeight: '800' },

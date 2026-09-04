@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, BackHandler } from 'react-native';
+import { Platform, View, StyleSheet, BackHandler } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -98,7 +98,9 @@ export function RootNavigator() {
     return () => sub.remove();
   }, []);
 
-  return (
+  // v1.1.9 桌面侧栏常驻:内页 contentStyle 让位左侧 174px 侧栏(native-stack 官方 option,web/原生都识别;原生端 {} 空对象无影响)
+const SIDEBAR_LOCK_CONTENT: { marginLeft?: number; backgroundColor?: string } = Platform.OS === 'web' ? { marginLeft: 174 } : {};
+return (
     <NavigationContainer ref={navRef} theme={navTheme}>
       {/* 坑108:slide_from_right 在 TV(米电视)上转场后原生焦点链断裂——D-pad 全死但 touch 正常;HD 恒用 fade */}
       {/* lx49:转场改 fade——slide_from_right 拉开两屏边缘,原生合成露底窗口在滑动中被看见(一加深色闪白根治不了的分设备现象);fade 不移动屏幕,露底窗口最小。HD 端一直用 fade 无闪 */}
@@ -109,34 +111,34 @@ export function RootNavigator() {
         <Stack.Screen name="AuthLogin" component={IS_HD ? HDAuthLoginScreen : AuthLoginScreen} />
         <Stack.Screen name="AuthSignup" component={AuthSignupScreen} />
         <Stack.Screen name="Main" component={IS_HD ? HDMain : MainTabs} />
-        <Stack.Screen name="Player" component={IS_HD ? HDPlayer : PlayerScreen} options={{ animation: 'fade' }} />
-        <Stack.Screen name="Queue" component={QueueScreen} options={{ animation: 'fade' }} />
-        <Stack.Screen name="PlayerSettings" component={PlayerSettingsScreen} />
-        <Stack.Screen name="Comments" component={CommentsScreen} />
-        <Stack.Screen name="PlaylistDetail" component={IS_HD ? HDPlaylistDetailScreen : PlaylistDetailScreen} />
-        <Stack.Screen name="Search" component={SearchScreen} options={{ animation: 'fade' }} />
-        <Stack.Screen name="Route" component={RoutePage} options={{ animation: 'none', presentation: 'transparentModal' }} />
-        <Stack.Screen name="Settings" component={IS_HD ? HDSettingsScreen : SettingsScreen} />
-        <Stack.Screen name="Sources" component={SourcesScreen} />
-        <Stack.Screen name="Account" component={AccountScreen} />
-        <Stack.Screen name="BasicSettings" component={BasicSettingsScreen} />
-        <Stack.Screen name="Theme" component={ThemeScreen} />
-        <Stack.Screen name="DownloadsSettings" component={DownloadsSettingsScreen} />
-        <Stack.Screen name="BackupSettings" component={BackupSettingsScreen} />
-        <Stack.Screen name="About" component={AboutScreen} />
-        <Stack.Screen name="Manual" component={ManualScreen} />
-        <Stack.Screen name="DeployGuide" component={DeployGuideScreen} />
-        <Stack.Screen name="Faq" component={FaqScreen} />
-        <Stack.Screen name="Changelog" component={ChangelogScreen} />
-        <Stack.Screen name="ImportPlaylist" component={ImportPlaylistScreen} />
-        <Stack.Screen name="Fx" component={FxScreen} />
-        <Stack.Screen name="MediaLibs" component={MediaLibsScreen} />
-        <Stack.Screen name="ProviderEdit" component={ProviderEditScreen} />
-        <Stack.Screen name="ProviderBrowse" component={ProviderBrowseRoute} />
-        <Stack.Screen name="ProviderDetail" component={ProviderDetailScreen} />
-        <Stack.Screen name="Downloads" component={DownloadsScreen} />
-        <Stack.Screen name="BoardsSquare" component={BoardsSquareScreen} />
-        <Stack.Screen name="DeviceMusic" component={DeviceMusicScreen} />
+        <Stack.Screen name="Player" component={IS_HD ? HDPlayer : PlayerScreen} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'fade' }} />
+        <Stack.Screen name="Queue" component={QueueScreen} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'fade' }} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="PlayerSettings" component={PlayerSettingsScreen} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Comments" component={CommentsScreen} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="PlaylistDetail" component={IS_HD ? HDPlaylistDetailScreen : PlaylistDetailScreen} />
+        <Stack.Screen name="Search" component={SearchScreen} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'fade' }} />
+        <Stack.Screen name="Route" component={RoutePage} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none', presentation: 'transparentModal' }} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Settings" component={IS_HD ? HDSettingsScreen : SettingsScreen} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Sources" component={SourcesScreen} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Account" component={AccountScreen} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="BasicSettings" component={BasicSettingsScreen} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Theme" component={ThemeScreen} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="DownloadsSettings" component={DownloadsSettingsScreen} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="BackupSettings" component={BackupSettingsScreen} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="About" component={AboutScreen} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Manual" component={ManualScreen} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="DeployGuide" component={DeployGuideScreen} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Faq" component={FaqScreen} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Changelog" component={ChangelogScreen} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ImportPlaylist" component={ImportPlaylistScreen} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Fx" component={FxScreen} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="MediaLibs" component={MediaLibsScreen} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ProviderEdit" component={ProviderEditScreen} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ProviderBrowse" component={ProviderBrowseRoute} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ProviderDetail" component={ProviderDetailScreen} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Downloads" component={DownloadsScreen} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="BoardsSquare" component={BoardsSquareScreen} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="DeviceMusic" component={DeviceMusicScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

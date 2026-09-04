@@ -141,7 +141,7 @@ export function HDPlayer() {
           <View style={stW.artCol}>
             {/* v1.1.8:圆形旋转唱片 + 频谱动效环(老板:酷炫) */}
             <View style={stW.vinylZone}>
-              {null /* B3 */}
+              <SpectrumRing size={340} playing={playing} />
               {Platform.OS === 'web' ? (
                 HD_VINYL_SVG(current?.img)
               ) : null}

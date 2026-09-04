@@ -8,7 +8,7 @@ files:
   - electron/**
 win:
   target: [nsis]
-  signAndEditExecutable: false   # Linux 交叉打包无 wine;有 wine/CI 时可开
+  signAndEditExecutable: true    # CI win 原生构建嵌 ico 进 exe(Linux 本地交叉打包时无 rcedit 需手动关)
   icon: build/icon.ico
 nsis:
   oneClick: false
