@@ -101,7 +101,8 @@ export function RootNavigator() {
   return (
     <NavigationContainer ref={navRef} theme={navTheme}>
       {/* 坑108:slide_from_right 在 TV(米电视)上转场后原生焦点链断裂——D-pad 全死但 touch 正常;HD 恒用 fade */}
-      <Stack.Navigator initialRouteName={initial} screenOptions={{ headerShown: false, animation: IS_HD ? 'fade' : 'slide_from_right', contentStyle: { backgroundColor: C.bg } }}>
+      {/* lx49:转场改 fade——slide_from_right 拉开两屏边缘,原生合成露底窗口在滑动中被看见(一加深色闪白根治不了的分设备现象);fade 不移动屏幕,露底窗口最小。HD 端一直用 fade 无闪 */}
+      <Stack.Navigator initialRouteName={initial} screenOptions={{ headerShown: false, animation: 'fade', contentStyle: { backgroundColor: C.bg } }}>
         <Stack.Screen name="Boot" component={IS_HD ? HDBootScreen : BootScreen} />
         <Stack.Screen name="Server" component={ServerScreen} />
         <Stack.Screen name="Auth" component={AuthScreen} />

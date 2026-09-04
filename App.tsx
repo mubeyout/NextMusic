@@ -3,7 +3,7 @@ import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 // 主题已在 theme/tokens.ts 模块加载期应用（早于一切组件/StyleSheet 创建）
-import { T } from './src/theme/tokens';
+import { T, C } from './src/theme/tokens';
 import { AppStateProvider, useApp } from './src/state/AppState';
 import { PlayerProvider, setupPlayer } from './src/state/PlayerProvider';
 import { LxEngineHost, engine } from './src/lx-engine/engine';
@@ -22,7 +22,10 @@ function App() {
   }, []);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    // lx49:根容器恒定主题底色——navigation stack 的屏容器在 pop 销毁瞬间会
+    // 露出 windowBackground(一加/浅色下露白一帧);GestureHandlerRootView 常驻不销毁,
+    // 它的背景色就是最后一道盾
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: C.bg }}>
       <SafeAreaProvider>
         <StatusBar barStyle={T.light ? 'dark-content' : 'light-content'} />
         <AppStateProvider>
