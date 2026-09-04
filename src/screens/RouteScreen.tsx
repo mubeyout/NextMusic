@@ -86,7 +86,7 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
 
   const a = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    if (visible) Animated.timing(a, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+    if (visible) Animated.timing(a, { toValue: 1, duration: 200, useNativeDriver: Platform.OS !== 'web' }).start();
     else a.setValue(0);
   }, [visible, a]);
 

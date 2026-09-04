@@ -2,7 +2,7 @@
 // 用法：dialog.alert(title, message?, buttons?) / dialog.confirm(title, message, onOk) / toast(msg)
 // <DialogHost /> 挂在 App 根部
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, Animated, Easing, TextInput } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, Animated, Easing, TextInput, Platform } from 'react-native';
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
 
@@ -104,7 +104,7 @@ export function DialogHost() {
         toValue: m ? 1 : 0,
         duration: 180,
         easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== 'web',
       }).start();
     };
     return () => { toastListener = null; };

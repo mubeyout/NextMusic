@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, PanResponder, Animated, Easing, } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, PanResponder, Animated, Easing, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Svg, { Circle, Path, Defs, RadialGradient, Stop } from 'react-native-svg';
@@ -43,7 +43,7 @@ export function PlayerScreen() {
     if (playing) {
       if (!spinLoop.current) {
         spinLoop.current = Animated.loop(
-          Animated.timing(spin, { toValue: 1, duration: 18000, easing: Easing.linear, useNativeDriver: true })
+          Animated.timing(spin, { toValue: 1, duration: 18000, easing: Easing.linear, useNativeDriver: Platform.OS !== 'web' })
         );
       }
       spinLoop.current.start();

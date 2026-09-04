@@ -61,6 +61,7 @@ function load(): AppSettings {
   try {
     const merged = { ...DEFAULTS, ...JSON.parse(kv.getString('settings') || '{}') } as AppSettings;
     if (merged.downloadDir !== 'custom') merged.downloadDir = 'public'; // vc84：默认公共;历史 private 归一
+    if (kv.getString('lx45m') !== '1') { merged.restorePlayback = true; kv.set('lx45m', '1'); } // lx45：历史用户从未动过此开关也视默认开（老安装存量 false 覆盖新默认）
     return merged;
   } catch { return { ...DEFAULTS }; }
 }
