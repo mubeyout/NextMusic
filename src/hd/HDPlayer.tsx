@@ -229,17 +229,29 @@ export function HDPlayer() {
     );
   }
 
+  // lx68:TV 版参照桌面重设计——封面模糊铺底 + 左旋转唱片(频谱环) + 右标题歌词 + 底部一体 dock
   return (
     <View style={st.screen}>
+      {current.img ? <Image source={{ uri: current.img }} style={st.bgArt} blurRadius={60} resizeMode="cover" /> : null}
+      <View style={st.bgVeil} />
       <HDTouch style={[st.backBtn, { top: Math.max(insets.top, 10) }]} onPress={nav.goBack} focusStyle={st.focus} hasTVPreferredFocus>
-        <Icon name="back" size={20} color={C.text2} />
+        <Icon name="back" size={20} color="#ffffffcc" />
       </HDTouch>
 
       <View style={[st.main, { paddingTop: Math.max(insets.top, 18), paddingBottom: Math.max(insets.bottom, 14) }]}>
         <View style={st.artCol}>
-          {current.img
-            ? <Image source={{ uri: current.img }} style={st.art} resizeMode="cover" />
-            : <View style={[st.art, st.artFallback]}><Icon name="music" size={64} color={C.text3} /></View>}
+          {/* lx68 桌面同构:频谱动效环 + 旋转圆形唱片 */}
+          <SpectrumRing size={330} playing={playing} />
+          <View style={st.vinylWrap}>
+            <Animated.Image
+              source={current.img ? { uri: current.img } : undefined}
+              style={[st.vinylArt, { transform: [{ rotate: spinDeg }] }]}
+              resizeMode="cover"
+            />
+            {!current.img ? <View style={[st.vinylArt, st.artFallback]}><Icon name="music" size={56} color={C.text3} /></View> : null}
+            <View style={st.vinylHole} />
+          </View>
+          <Text style={st.srcTag}>{current.source.toUpperCase()}</Text>
         </View>
 
         <View style={st.infoCol}>
@@ -319,7 +331,13 @@ export function HDPlayer() {
 }
 
 const st = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: C.bgDeep },
+  screen: { flex: 1, backgroundColor: '#0a0c0b' },
+  bgArt: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.5 },
+  bgVeil: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(6,8,7,.62)' },
+  vinylWrap: { width: 240, height: 240, borderRadius: 120, backgroundColor: '#0d100e', borderWidth: 6, borderColor: '#161a17', alignItems: 'center', justifyContent: 'center' },
+  vinylArt: { width: 150, height: 150, borderRadius: 75 },
+  vinylHole: { position: 'absolute', width: 12, height: 12, borderRadius: 6, backgroundColor: '#0a0c0b', borderWidth: 3, borderColor: '#222823' },
+  srcTag: { color: '#ffffff66', fontSize: 11, letterSpacing: 2, marginTop: 14 },
   backBtn: { position: 'absolute', top: 10, left: 18, zIndex: 5, width: 40, height: 40, borderRadius: 12, backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center' },
   focus: { borderWidth: 2, borderColor: C.brand, borderRadius: 26 },
   main: { flex: 1, flexDirection: 'row', paddingHorizontal: 64, gap: 44 },
@@ -327,22 +345,22 @@ const st = StyleSheet.create({
   art: { width: '100%', aspectRatio: 1, borderRadius: 20, maxHeight: 330, maxWidth: 330 },
   artFallback: { backgroundColor: '#1E2722', alignItems: 'center', justifyContent: 'center' },
   infoCol: { flex: 1.15, gap: 7 },
-  title: { color: C.text, fontSize: 24, fontWeight: '800' },
-  sub: { color: C.text2, fontSize: 14 },
+  title: { color: '#ffffff', fontSize: 24, fontWeight: '800' },
+  sub: { color: '#ffffffb3', fontSize: 14 },
   lyricsBox: { flex: 1, gap: 12, justifyContent: 'center' },
-  lyric: { color: C.text3, fontSize: 19, lineHeight: 28, fontWeight: '500' },
-  lyricOn: { color: C.text, fontSize: 26, lineHeight: 37, fontWeight: '800' },
+  lyric: { color: '#ffffff80', fontSize: 19, lineHeight: 28, fontWeight: '500' },
+  lyricOn: { color: '#ffffff', fontSize: 26, lineHeight: 37, fontWeight: '800' },
   lyricTr: { color: '#FFFFFF55', fontSize: 13, lineHeight: 18, marginTop: 2 },
   lyricTrOn: { color: '#FFFFFF99' },
   noLyric: { alignItems: 'center', gap: 10, marginTop: 16 },
-  noLyricText: { color: C.text3, fontSize: 13 },
+  noLyricText: { color: '#ffffff80', fontSize: 13 },
   progRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 8 },
-  time: { color: C.text2, fontSize: 13, fontVariant: ['tabular-nums'], width: 46, textAlign: 'center' },
+  time: { color: '#ffffffb3', fontSize: 13, fontVariant: ['tabular-nums'], width: 46, textAlign: 'center' },
   track: { flex: 1, height: 5, flexDirection: 'row', borderRadius: 3, overflow: 'hidden' },
   trackFill: { backgroundColor: C.brand, borderRadius: 3 },
-  trackRest: { backgroundColor: '#3A3A3A', borderRadius: 3 },
+  trackRest: { backgroundColor: '#ffffff2e', borderRadius: 3 },
   ctrlRow: { flexDirection: 'row', alignItems: 'center', gap: 18 },
-  cMode: { width: 52, height: 52, borderRadius: 26, backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
+  cMode: { width: 52, height: 52, borderRadius: 26, backgroundColor: '#ffffff14', alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
   cMain: { width: 78, height: 78, borderRadius: 39, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   cMainFocus: { borderWidth: 3, borderColor: '#FFFFFF', borderRadius: 39 },
   ctrlDivider: { width: 1, height: 30, backgroundColor: C.stroke, marginHorizontal: 4 },
