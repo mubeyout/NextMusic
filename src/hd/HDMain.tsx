@@ -13,11 +13,32 @@ import { useApp } from '../state/AppState';
 import { library } from '../state/library';
 import { getRecents } from '../state/recent';
 import { sync, lxToApp } from '../services/sync';
-import { hdNav } from './hdnav';
+import { hdNav, hdInnerRef } from './hdnav';
+import { NavigationContainer, DefaultTheme, StackActions, NavigationIndependentTree } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { HDHome } from './HDHome';
 import { HDSearch } from './HDSearch';
 import { HDBoards } from './HDBoards';
 import { HDPodcast } from './HDPodcast';
+// lx84:内容区嵌套栈内页(侧栏恒固定,内页只在右侧切换;设置族除外走根栈)
+import { HDPlayer } from './HDPlayer';
+import { HDPlaylistDetailScreen } from './HDPlaylistDetail';
+import { HDAuthLoginScreen } from './HDAuthLogin';
+import { QueueScreen } from '../screens/QueueScreen';
+import { CommentsScreen } from '../screens/CommentsScreen';
+import { PlayerSettingsScreen } from '../screens/PlayerSettingsScreen';
+import { ImportPlaylistScreen } from '../screens/ImportPlaylistScreen';
+import { FxScreen } from '../screens/FxScreen';
+import { MediaLibsScreen, ProviderBrowseRoute } from '../screens/MediaLibsScreen';
+import { ProviderEditScreen } from '../screens/ProviderEditScreen';
+import { ProviderDetailScreen } from '../screens/ProviderDetailScreen';
+import { DownloadsScreen } from '../screens/DownloadsScreen';
+import { BoardsSquareScreen } from '../screens/BoardsSquareScreen';
+import { DeviceMusicScreen } from '../screens/DeviceMusicScreen';
+import { SearchScreen } from '../screens/SearchScreen';
+import { RoutePage } from '../screens/RouteScreen';
+import { SourcesScreen, AccountScreen } from '../screens/SourcesAccountScreens';
+import { AuthSignupScreen } from '../screens/AuthSignupScreen';
 import type { SongItem } from '../services/server';
 
 // 对齐桌面版侧栏:发现 = 为我推荐/播客/探索/榜单
@@ -27,6 +48,20 @@ const TABS = [
   { key: 'search', icon: 'globe', label: '探索' },
   { key: 'boards', icon: 'ranking', label: '榜单' },
 ] as const;
+
+const InnerStack = createNativeStackNavigator();
+const hdInnerTheme = { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: C.bg, card: C.bg, text: C.text, primary: C.brand, border: 'transparent' } };
+// 侧栏 tab 点击:切 tab 同时把内容区栈收回首屏(内页开着时点侧栏=回内容首页,桌面司约)
+const hdInnerPop = () => {
+  try {
+    if (hdInnerRef.isReady()) hdInnerRef.dispatch(StackActions.popToTop());
+  } catch { /* 栈未就绪忽略 */ }
+};
+// 侧栏跳转:内容栈先回底再进新页(侧栏=顶级导航,桌面司约——避免返回时落回上一个内页)
+const railNav = (s: string, p?: object) => {
+  hdInnerPop();
+  hdNav()?.navigate(s, p);
+};
 
 export function HDMain() {
   const insets = useSafeAreaInsets();
@@ -52,7 +87,7 @@ export function HDMain() {
   }, [connected, token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const openPl = (pl: { localId?: string; name: string; count: number; songs: SongItem[] }) => {
-    hdNav()?.navigate('PlaylistDetail', pl.localId
+    railNav('PlaylistDetail', pl.localId
       ? { localId: pl.localId, title: pl.name, songs: pl.songs }
       : { title: pl.name, songs: pl.songs, meta: `${pl.count} 首 · 同步歌单` });
   };
@@ -68,13 +103,13 @@ export function HDMain() {
     sync.fetchLists().then(s => {
       if (!s) return;
       const songs = (s.loveList || []).map(lxToApp);
-      hdNav()?.navigate('PlaylistDetail', { title: '我喜欢的', songs, meta: `${songs.length} 首 · 同步收藏` });
+      railNav('PlaylistDetail', { title: '我喜欢的', songs, meta: `${songs.length} 首 · 同步收藏` });
     }).catch(() => {});
   };
 
   const openHistory = () => {
     const songs = getRecents().slice(0, 100);
-    if (songs.length) hdNav()?.navigate('PlaylistDetail', { title: '播放历史', songs, meta: `${songs.length} 首` });
+    if (songs.length) railNav('PlaylistDetail', { title: '播放历史', songs, meta: `${songs.length} 首` });
   };
 
   return (
@@ -91,7 +126,6 @@ export function HDMain() {
               <Image source={require('../assets/brand/mark.png')} style={st.logoMark} />
               <View style={{ flex: 1 }}>
                 <Text style={st.brandName}>Next<Text style={{ color: C.brand }}>Music</Text></Text>
-                <Text style={st.brandSub}>TV · CAR EDITION</Text>
               </View>
             </View>
           )}
@@ -100,12 +134,12 @@ export function HDMain() {
           <Group label="发现" />
           {TABS.map((t, i) => (
             <NavItem key={t.key} icon={t.icon} label={t.label} active={tab === i} first={i === 0}
-              onPress={() => setTab(i)} />
+              onPress={() => { setTab(i); hdInnerPop(); }} />
           ))}
 
           {/* 我的乐库 */}
           <Group label="我的乐库" top={8} />
-          <NavItem icon="server" label="媒体库" onPress={() => hdNav()?.navigate('MediaLibs')} />
+          <NavItem icon="server" label="媒体库" onPress={() => railNav('MediaLibs')} />
           <HDTouch style={st.navItem} focusStyle={st.navFocus} onPress={openFavorites}>
             <Icon name="heart" size={16} color={C.text2} />
             <Text style={st.navLabel} numberOfLines={1}>我喜欢的{loveCount != null ? ` · ${loveCount}` : ''}</Text>
@@ -117,21 +151,62 @@ export function HDMain() {
           {pls.slice(0, 5).map(pl => (
             <PlItem key={pl.key} name={pl.name} count={pl.count} onPress={() => openPl(pl)} />
           ))}
-          <PlItem name="新建歌单" add onPress={() => hdNav()?.navigate('ImportPlaylist')} />
+          <PlItem name="新建歌单" add onPress={() => railNav('ImportPlaylist')} />
         </ScrollView>
-        {IS_WEB ? null : <NavItem icon="settings" label="设置" onPress={() => hdNav()?.navigate('Settings')} />}
+        {/* lx85:设置项不贴底——留出焦点环完整显示空间(老板:太靠底被裁切) */}
+        {IS_WEB ? null : (
+          <View style={st.settingsDock}>
+            <NavItem icon="settings" label="设置" onPress={() => hdNav()?.navigate('Settings')} />
+          </View>
+        )}
       </View>
 
-      {/* ===== 内容区 + 播放条 ===== */}
+      {/* ===== 内容区(lx84:嵌套栈——内页只在此切换,侧栏恒固定) ===== */}
       <View style={st.body}>
-        <View style={st.tabStack} collapsable={false}>
-          <View style={[st.tabHost, tab !== 0 && st.tabOff]}><HDHome onGotoSearch={() => setTab(2)} /></View>
-          <View style={[st.tabHost, tab !== 1 && st.tabOff]}><HDPodcast /></View>
-          <View style={[st.tabHost, tab !== 2 && st.tabOff]}><HDSearch /></View>
-          <View style={[st.tabHost, tab !== 3 && st.tabOff]}><HDBoards /></View>
-        </View>
-        <HDPlayBar />
+        <NavigationIndependentTree>
+        <NavigationContainer ref={hdInnerRef} theme={hdInnerTheme}>
+          {/* 坞108:TV 转场必须直切;坞57:fade 有变亮中间态 */}
+          <InnerStack.Navigator screenOptions={{ headerShown: false, animation: 'none', contentStyle: { backgroundColor: C.bg }, freezeOnBlur: true }}>
+            <InnerStack.Screen name="Tabs">{() => <TabsHost tab={tab} setTab={setTab} />}</InnerStack.Screen>
+            <InnerStack.Screen name="Player" component={HDPlayer} />
+            <InnerStack.Screen name="Queue" component={QueueScreen} />
+            <InnerStack.Screen name="Route" component={RoutePage} options={{ presentation: 'transparentModal' }} />
+            <InnerStack.Screen name="Comments" component={CommentsScreen} />
+            <InnerStack.Screen name="PlaylistDetail" component={HDPlaylistDetailScreen} />
+            <InnerStack.Screen name="Search" component={SearchScreen} />
+            <InnerStack.Screen name="PlayerSettings" component={PlayerSettingsScreen} />
+            <InnerStack.Screen name="ImportPlaylist" component={ImportPlaylistScreen} />
+            <InnerStack.Screen name="Fx" component={FxScreen} />
+            <InnerStack.Screen name="MediaLibs" component={MediaLibsScreen} />
+            <InnerStack.Screen name="ProviderEdit" component={ProviderEditScreen} />
+            <InnerStack.Screen name="ProviderBrowse" component={ProviderBrowseRoute} />
+            <InnerStack.Screen name="ProviderDetail" component={ProviderDetailScreen} />
+            <InnerStack.Screen name="Downloads" component={DownloadsScreen} />
+            <InnerStack.Screen name="BoardsSquare" component={BoardsSquareScreen} />
+            <InnerStack.Screen name="DeviceMusic" component={DeviceMusicScreen} />
+            <InnerStack.Screen name="Sources" component={SourcesScreen} />
+            <InnerStack.Screen name="Account" component={AccountScreen} />
+            <InnerStack.Screen name="AuthLogin" component={HDAuthLoginScreen} />
+            <InnerStack.Screen name="AuthSignup" component={AuthSignupScreen} />
+          </InnerStack.Navigator>
+        </NavigationContainer>
+        </NavigationIndependentTree>
       </View>
+    </View>
+  );
+}
+
+// 内容区首屏:四 tab 层叠(保状态) + 底部播放条
+function TabsHost({ tab, setTab }: { tab: number; setTab: (i: number) => void }) {
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={st.tabStack} collapsable={false}>
+        <View style={[st.tabHost, tab !== 0 && st.tabOff]}><HDHome onGotoSearch={() => setTab(2)} /></View>
+        <View style={[st.tabHost, tab !== 1 && st.tabOff]}><HDPodcast /></View>
+        <View style={[st.tabHost, tab !== 2 && st.tabOff]}><HDSearch /></View>
+        <View style={[st.tabHost, tab !== 3 && st.tabOff]}><HDBoards /></View>
+      </View>
+      <HDPlayBar />
     </View>
   );
 }
@@ -237,7 +312,7 @@ const st = StyleSheet.create({
   logoMark: { width: 38, height: 41 },
   logoText: { color: C.onBrand, fontSize: 13, fontWeight: '800' },
   brandName: { color: C.text, fontSize: 15, fontWeight: '800' },
-  brandSub: { color: C.text3, fontSize: 8, letterSpacing: 2, fontWeight: '600', marginTop: 1 },
+  settingsDock: { paddingHorizontal: 0, paddingVertical: 6 },
   group: { fontSize: 9, color: C.text3, paddingHorizontal: 12, paddingTop: 5, paddingBottom: 3, letterSpacing: 1, fontWeight: '600' },
   navItem: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 8, paddingHorizontal: 10, height: 35, borderRadius: 9 },
   navItemOn: { backgroundColor: C.brandDim },

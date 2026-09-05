@@ -89,8 +89,9 @@ export function HDPodcast() {
       <HDGrid min={132 * (H.font.sm / 10)}>
         {POD_CHANNELS.map((ch, ci) => {
           const f = feeds[ch.id] || [];
+          // lx88(老板反馈):底角也要圆角——卡加底色+全圆角 12(overflow 裁剪封面),环统一 14
           return (
-            <HDTouch key={ch.id} style={[st.card, { boxShadow: shadowOf(ch.name) }]} onPress={() => openChannel(ch)} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }}>
+            <HDTouch key={ch.id} style={[st.card, { boxShadow: shadowOf(ch.name) }]} zoom={1.06} onPress={() => openChannel(ch)} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }}>
               <LinearGradient colors={POD_GRADS[ci % POD_GRADS.length]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.cardCover}>
                 <Icon name="podcast" size={30} color="#FFFFFF" />
                 <View style={{ flex: 1 }} />
@@ -134,10 +135,10 @@ const st = StyleSheet.create({
   head: { gap: 3 },
   title: { color: C.text, fontSize: H.font.hero, fontWeight: '800' },
   sub: { color: C.text3, fontSize: H.font.sm },
-  card: { gap: 5 },
+  card: { gap: 5, borderRadius: 12, backgroundColor: C.surface, overflow: 'hidden' },
   cardCoverWrap: { borderRadius: 12 },
-  cardBody: { paddingHorizontal: 8, paddingBottom: 8, gap: 3, alignSelf: 'center', width: '94%' },
-  cardCover: { width: '100%', aspectRatio: 1.35, borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'flex-start' },
+  cardBody: { paddingHorizontal: 8, paddingBottom: 8, paddingTop: 0, gap: 3 },
+  cardCover: { width: '100%', aspectRatio: 1.35, padding: 12, flexDirection: 'row', alignItems: 'flex-start' },
   cardPlay: { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,.22)', alignItems: 'center', justifyContent: 'center' },
   cardName: { color: C.text, fontSize: H.font.sm, fontWeight: '700' },
   cardSub: { color: C.text3, fontSize: H.font.xs },

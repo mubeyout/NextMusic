@@ -94,7 +94,7 @@ export function HDMy() {
         <Text style={st.secTitle}>{`歌单 · ${playlists.length}`}</Text>
         <HDGrid min={168 * K} gap={18} minCols={3}>
           {playlists.map((pl, i) => (
-            <HDTouch key={pl.key} style={st.plCard} onPress={() => openPl(pl)}>
+            <HDTouch key={pl.key} style={st.plCard} zoom={1.06} onPress={() => openPl(pl)}>
               {pl.img ? <Image source={{ uri: pl.img }} style={st.plArt} />
                 : <LinearGradient colors={GRADS[i % GRADS.length]} style={st.plArt}><Icon name="music" size={28} color="#FFFFFFAA" /></LinearGradient>}
               <View style={st.plTexts}>

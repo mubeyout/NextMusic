@@ -105,12 +105,13 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
         <BigCard colors={['#0FA3A3', '#1ED760']} badge="雷达" title="私人雷达" sub="你循环过的歌,都在这里重逢" onPress={playRadar} />
       </View>
 
-      {/* 最近播放 */}
+      {/* 最近播放(lx88:横向 ScrollView 会裁切 zoom 溢出——小卡去 zoom 只留环) */}
       {recents.length ? (
         <Section title="最近播放" more="查看全部" onMore={() => hdNav()?.navigate('PlaylistDetail', { title: '最近播放', songs: recents, meta: `${recents.length} 首` })}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingVertical: 4 }}>
             {recents.slice(0, 8).map((s, i) => (
-              <HDTouch key={`${s.source}_${s.songmid}_${i}`} style={st.recCard} onPress={() => playSong(s, recents)}>
+              <HDTouch key={`${s.source}_${s.songmid}_${i}`} style={st.recCard} onPress={() => playSong(s, recents)}
+                focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 11 }}>
                 {s.img ? <Image source={{ uri: s.img }} style={st.recArt} />
                   : <View style={[st.recArt, { backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={14} color={C.text3} /></View>}
                 <View style={st.plTexts}>
@@ -128,7 +129,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
         {recPls.length ? (
           <HDGrid min={126 * (H.font.sm / 10)}>
             {recPls.slice(0, 12).map(pl => (
-              <HDTouch key={`${pl.source}_${pl.id}`} style={[st.plCard, { boxShadow: shadowOf(pl.name) }]} onPress={() => openRecPl(pl)}>
+              <HDTouch key={`${pl.source}_${pl.id}`} style={[st.plCard, { boxShadow: shadowOf(pl.name) }]} zoom={1.06} onPress={() => openRecPl(pl)}>
                 {pl.img
                   ? <Image source={{ uri: pl.img }} style={st.plArt} />
                   : <View style={[st.plArt, { backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
@@ -151,7 +152,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
         {playlists.length ? (
           <HDGrid min={126 * (H.font.sm / 10)}>
             {playlists.slice(0, 10).map(pl => (
-              <HDTouch key={pl.key} style={[st.plCard, { boxShadow: shadowOf(pl.name) }]} onPress={() => openPl(pl)}>
+              <HDTouch key={pl.key} style={[st.plCard, { boxShadow: shadowOf(pl.name) }]} zoom={1.06} onPress={() => openPl(pl)}>
                 <View style={{ position: 'relative' }}>
                   {pl.img
                     ? <Image source={{ uri: pl.img }} style={st.plArt} />
@@ -176,11 +177,12 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
 }
 
 // 桌面 BigCard:渐变 + 左徽标 + 标题/副标题 + 右圆钮
+// v6(老板反馈):选中环圆角要比卡片圆角大(卡片 R=11,环=13)——描边画在卡边界外 2px,圆角同步 +2 才贴着弯过去
 function BigCard({ colors, badge, title, sub, onPress, busy }: { colors: [string, string]; badge: string; title: string; sub: string; onPress: () => void; busy?: boolean }) {
   // lx73:BigCard 尺寸三层一致——渐变 absolute 铺底(fill 外框),内容行叠加其上;
   // 之前渐变做流式子项,width 100% 与 Pressable 互相依赖在 Android 解析为内容宽→环/渐变/外框三层各不相同
   return (
-    <HDTouch activeOpacity={0.9} onPress={onPress} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: Math.max(4, H.radius.card - 2) }} style={{ flex: 1, height: 88, borderRadius: H.radius.card, boxShadow: shadowOf(title) }}>
+    <HDTouch activeOpacity={0.9} onPress={onPress} zoom={1.04} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.card + 2 }} style={{ flex: 1, height: 88, borderRadius: H.radius.card, boxShadow: shadowOf(title) }}>
       <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.bigBg} />
       <View style={st.big}>
         <Text style={st.bigBadge}>{badge}</Text>
@@ -222,7 +224,8 @@ const st = StyleSheet.create({
   secTitle: { color: C.text, fontSize: H.font.xl, fontWeight: '700' },
   secHint: { color: C.text3, fontSize: H.font.xs },
   secMore: { color: C.brand, fontSize: H.font.sm },
-  recCard: { width: 92, gap: 4, paddingHorizontal: 2, paddingBottom: 8, borderRadius: 9 },
+  // v6(老板反馈):环必须贴附卡片几何——环宽=封面宽(去水平 padding),环圆角=封面圆角+2(描边外扩 2px,圆角同步外放才不显小)
+  recCard: { width: 92, gap: 4, paddingBottom: 8, borderRadius: 9 },
   recArt: { width: '100%', aspectRatio: 1, borderRadius: 9 },
   recName: { color: C.text, fontSize: H.font.xs, fontWeight: '500' },
   recSub: { color: C.text3, fontSize: 8 },

@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { navRef } from './navRef';
+import { hdInnerRef } from './hd/hdnav';
 import { C } from './theme/tokens';
 import { TabBar } from './components/TabBar';
 import { MiniPlayer } from './components/MiniPlayer';
@@ -89,6 +90,11 @@ export function RootNavigator() {
   // send the whole task to background (observed on LG V40 / RN 0.87 New Arch).
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      // lx84:HD 嵌套内容栈优先出栈(内页在内容区,根栈底就是 Main)
+      if (hdInnerRef.isReady() && hdInnerRef.canGoBack()) {
+        hdInnerRef.goBack();
+        return true;
+      }
       if (navRef.current?.canGoBack()) {
         navRef.current.goBack();
         return true;

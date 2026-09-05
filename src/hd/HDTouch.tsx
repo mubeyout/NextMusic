@@ -15,10 +15,12 @@ type Props = React.ComponentProps<typeof Pressable> & {
   focusBg?: string;
   /** 聚焦时弥散投影(RN boxShadow 字符串,如 SH.brand);TV 低 GPU 自动忽略 */
   glow?: string;
+  /** lx87:聚焦放大悬浮(TV 卡片标准交互)——transform scale 不占布局+投影抬升;如 1.06 */
+  zoom?: number;
   activeOpacity?: number;
 };
 
-export function HDTouch({ style, focusStyle, focusBg, glow, activeOpacity = 0.8, children, ...rest }: Props) {
+export function HDTouch({ style, focusStyle, focusBg, glow, zoom, activeOpacity = 0.8, children, ...rest }: Props) {
   const [focus, setFocus] = useState(false);
   const flat = (StyleSheet.flatten(style as ViewStyle | ViewStyle[]) || {}) as { borderRadius?: number };
   // v6(lx75b): border 环(米电视渲染稳定) + padding 负补偿抵消 border 占位——环外扩 2px 描边,内容零位移
@@ -35,6 +37,8 @@ export function HDTouch({ style, focusStyle, focusBg, glow, activeOpacity = 0.8,
         pressed && { opacity: activeOpacity },
         focus && (focusStyle === undefined ? autoRing : focusStyle === false ? null : focusStyle),
         focus && focusStyle !== false && { margin: -2 }, // border 占 2px 布局,margin -2 外缩抵消——总占位不变,描边画在原边界,内容不动
+        zoom != null && { transform: [{ scale: focus ? zoom : 1 }] }, // lx87:卡片聚焦放大悬浮
+        focus && zoom != null && !TV_LOW_GPU && { boxShadow: '0 16px 32px rgba(0,0,0,.55)' }, // 悬浮投影抬升(低 GPU 忽略)
         focus && focusBg != null && { backgroundColor: focusBg },
         focus && glow != null && !TV_LOW_GPU && { boxShadow: glow },
       ]}

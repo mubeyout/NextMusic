@@ -2,7 +2,6 @@
 // v1 教训:固定尺寸溢出;v2 教训:深色底 panel 突兀(老板:粗糙,直接取消)
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, Animated, Easing } from 'react-native';
-import Svg, { Circle, Path, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { SpectrumRing } from './SpectrumRing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
@@ -53,8 +52,10 @@ export function HDPlayer() {
   const trackW = React.useRef(0);
   // v1.1.8 唱片旋转(18s/转;web JS driver——RNW Animated useNativeDriver 必 false)
   const spin = React.useRef(new Animated.Value(0)).current;
-  // lx69:TV 原生伪频谱(12 bar 循环动画;播放时驱动,暂停回落)
-  const specAnims = React.useRef(Array.from({ length: 12 }, () => new Animated.Value(0))).current;
+  // lx83:TV 原生伪频谱 24 bar——播放错相律动,暂停回落
+  // (v3 只渲染不驱动,Animated.Value 恒 0,视觉=死点——老板"没有频谱"的根因)
+  const specAnims = React.useRef(Array.from({ length: 24 }, () => new Animated.Value(0.06))).current;
+  const specLoops = React.useRef<Array<Animated.CompositeAnimation | null>>([]);
   const spinLoop = React.useRef<Animated.CompositeAnimation | null>(null);
   React.useEffect(() => {
     if (playing) {
@@ -67,6 +68,31 @@ export function HDPlayer() {
     }
   }, [playing, spin]);
   const spinDeg = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+
+  // lx83:频谱驱动——每根 bar 固定伪随机相位(错相不齐步,视觉有机);暂停全体回落基线
+  React.useEffect(() => {
+    if (playing) {
+      specAnims.forEach((a, i) => {
+        if (specLoops.current[i]) return;
+        const seed = (i * 2654435761) % 997;
+        const dur = 300 + (seed % 380);
+        const step = (to: number, ms: number) => Animated.timing(a, { toValue: to, duration: ms, easing: Easing.inOut(Easing.quad), useNativeDriver: false });
+        const loop = Animated.loop(Animated.sequence([
+          step(0.3 + ((seed * 7) % 58) / 100, dur),
+          step(0.08 + ((seed * 13) % 26) / 100, dur * 0.8),
+          step(0.55 + ((seed * 3) % 38) / 100, dur * 0.9),
+          step(0.12 + ((seed * 11) % 30) / 100, dur * 0.75),
+        ]));
+        specLoops.current[i] = loop;
+        loop.start();
+      });
+    } else {
+      specLoops.current.forEach(l => l?.stop());
+      specLoops.current = [];
+      specAnims.forEach(a => Animated.timing(a, { toValue: 0.06, duration: 420, useNativeDriver: false }).start());
+    }
+  }, [playing]); // eslint-disable-line react-hooks/exhaustive-deps
+  React.useEffect(() => () => { specLoops.current.forEach(l => l?.stop()); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     let dead = false;
@@ -231,33 +257,41 @@ export function HDPlayer() {
     );
   }
 
-  // lx68:TV 版参照桌面重设计——封面模糊铺底 + 左旋转唱片(频谱环) + 右标题歌词 + 底部一体 dock
+  // lx89:TV 播放页全屏独立屏(老板定夺)——头部返回行+左唱片活频谱+右歌词+单行控件
   return (
     <View style={st.screen}>
       {current.img ? <Image source={{ uri: current.img }} style={st.bgArt} blurRadius={60} resizeMode="cover" /> : null}
       <View style={st.bgVeil} />
-      <HDTouch style={[st.backBtn, { top: Math.max(insets.top, 10) }]} onPress={nav.goBack} focusStyle={st.focus} hasTVPreferredFocus>
-        <Icon name="back" size={20} color="#ffffffcc" />
-      </HDTouch>
 
-      <View style={[st.main, { paddingTop: Math.max(insets.top, 18), paddingBottom: Math.max(insets.bottom, 14) }]}>
+      {/* 头部:返回按钮入流式布局(不再悬浮怪位) */}
+      <View style={[st.header, { paddingTop: Math.max(insets.top, 12) }]}>
+        <HDTouch style={st.backBtn} onPress={nav.goBack} hasTVPreferredFocus>
+          <Icon name="back" size={16} color="#ffffffcc" />
+          <Text style={st.backLabel}>返回</Text>
+        </HDTouch>
+      </View>
+
+      <View style={[st.main, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View style={st.artCol}>
-          {/* lx69 重排版:封面已做全屏模糊背景;左列=旋转唱片(音乐具象)+下方原生频谱条(播放律动) */}
           <View style={st.vinylWrap}>
             <Animated.Image
               source={current.img ? { uri: current.img } : undefined}
               style={[st.vinylArt, { transform: [{ rotate: spinDeg }] }]}
               resizeMode="cover"
             />
-            {!current.img ? <View style={[st.vinylArt, st.artFallback]}><Icon name="music" size={56} color={C.text3} /></View> : null}
+            {!current.img ? <View style={[st.vinylArt, st.artFallback]}><Icon name="music" size={52} color={C.text3} /></View> : null}
             <View style={st.vinylHole} />
           </View>
+          {/* lx83:活频谱——24 bar 播放律动(错相),暂停回落 */}
           <View style={st.spectrum} pointerEvents="none">
             {specAnims.map((a, i) => (
-              <Animated.View key={i} style={[st.specBar, { backgroundColor: C.brand, opacity: 0.3 + (i % 4) * 0.16, height: a.interpolate({ inputRange: [0, 1], outputRange: [8, 20 + (i % 6) * 7] }) }]} />
+              <Animated.View key={i} style={[st.specBar, { backgroundColor: C.brand, opacity: 0.26 + (i % 5) * 0.13, height: a.interpolate({ inputRange: [0, 1], outputRange: [5, 58] }) }]} />
             ))}
           </View>
-          <Text style={st.srcTag}>{current.source.toUpperCase()}</Text>
+          <View style={st.srcPill}>
+            <View style={st.srcDot} />
+            <Text style={st.srcTag}>{current.source.toUpperCase()}</Text>
+          </View>
         </View>
 
         <View style={st.infoCol}>
@@ -266,8 +300,8 @@ export function HDPlayer() {
 
           <View style={st.lyricsBox}>
             {lyrics ? (
-              lyrics.slice(Math.max(0, activeIdx - 1), activeIdx + 3).map((l, i) => {
-                const idx = Math.max(0, activeIdx - 1) + i;
+              lyrics.slice(Math.max(0, activeIdx - 2), activeIdx + 4).map((l, i) => {
+                const idx = Math.max(0, activeIdx - 2) + i;
                 const on = idx === activeIdx;
                 return (
                   <TouchableOpacity key={idx} disabled={!on || !l.t} onPress={() => l.t && seekTo(l.t + 0.3)} activeOpacity={0.7}>
@@ -287,7 +321,7 @@ export function HDPlayer() {
           <View style={st.progRow}>
             <Text style={st.time}>{fmtSec(position)}</Text>
             <TouchableOpacity
-              style={st.track}
+              style={st.trackWrap}
               activeOpacity={0.9}
               onLayout={e => { trackW.current = e.nativeEvent.layout.width; }}
               onPress={e => {
@@ -298,36 +332,38 @@ export function HDPlayer() {
             >
               <View style={[st.trackFill, { flex: pct }]} />
               <View style={[st.trackRest, { flex: 1 - pct }]} />
+              <View style={[st.playhead, { left: `${pct * 100}%` }]} />
             </TouchableOpacity>
             <Text style={st.time}>{fmtSec(duration)}</Text>
           </View>
 
+          {/* lx89:控件单行(全屏 960dp 富余)——传输组+分隔+工具组,icon 純净排 */}
           <View style={st.ctrlRow}>
-            <HDTouch style={st.cMode} onPress={() => setShuffle(!shuffle)} focusStyle={st.focus}>
-              <Icon name="shuffle" size={22} active={shuffle} color={shuffle ? C.brand : C.text2} />
+            <HDTouch style={st.cMode} onPress={() => setShuffle(!shuffle)}>
+              <Icon name="shuffle" size={20} active={shuffle} color={shuffle ? C.brand : C.text2} />
             </HDTouch>
-            <HDTouch style={st.cMode} onPress={skipPrev} focusStyle={st.focus}>
-              <Icon name="previous" size={28} color={C.text} />
+            <HDTouch style={st.cMode} onPress={skipPrev}>
+              <Icon name="previous" size={26} color={C.text} />
             </HDTouch>
             <HDTouch style={st.cMain} onPress={toggle} focusStyle={st.cMainFocus}>
-              <Icon name={playing ? 'pause' : 'play'} size={34} color={C.onBrand} />
+              <Icon name={playing ? 'pause' : 'play'} size={32} color={C.onBrand} />
             </HDTouch>
-            <HDTouch style={st.cMode} onPress={skipNext} focusStyle={st.focus}>
-              <Icon name="next" size={28} color={C.text} />
+            <HDTouch style={st.cMode} onPress={skipNext}>
+              <Icon name="next" size={26} color={C.text} />
             </HDTouch>
-            <HDTouch style={st.cMode} onPress={cycleRepeat} focusStyle={st.focus}>
-              <Icon name="repeat" size={22} active={repeat !== 'off'} color={repeat !== 'off' ? C.brand : C.text2} />
+            <HDTouch style={st.cMode} onPress={cycleRepeat}>
+              <Icon name="repeat" size={20} active={repeat !== 'off'} color={repeat !== 'off' ? C.brand : C.text2} />
             </HDTouch>
             <View style={st.ctrlDivider} />
-            <HDTouch style={st.cMode} onPress={doFav} focusStyle={st.focus}>
-              <Icon name="heart" size={22} color={faved ? C.brand : C.text2} />
+            <HDTouch style={st.cTool} onPress={doFav}>
+              <Icon name="heart" size={19} color={faved ? C.brand : C.text2} />
             </HDTouch>
-            <HDTouch style={st.cMode} onPress={() => nav.navigate('Queue')} focusStyle={st.focus}>
-              <Icon name="queue" size={22} color={C.text2} />
+            <HDTouch style={st.cTool} onPress={() => nav.navigate('Queue')}>
+              <Icon name="queue" size={19} color={C.text2} />
               {queue.length ? <Text style={st.badge}>{queue.length}</Text> : null}
             </HDTouch>
-            <HDTouch style={st.cMode} onPress={() => nav.navigate('Route')} focusStyle={st.focus}>
-              <Icon name="devices" size={22} color={C.text2} />
+            <HDTouch style={st.cTool} onPress={() => nav.navigate('Route')}>
+              <Icon name="devices" size={19} color={C.text2} />
             </HDTouch>
           </View>
         </View>
@@ -340,39 +376,44 @@ const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#0a0c0b' },
   bgArt: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.5 },
   bgVeil: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(6,8,7,.62)' },
-  vinylWrap: { width: 240, height: 240, borderRadius: 120, backgroundColor: '#0d100e', borderWidth: 6, borderColor: '#161a17', alignItems: 'center', justifyContent: 'center' },
-  spectrum: { flexDirection: 'row', alignItems: 'flex-end', gap: 5, height: 52, marginTop: 26 },
-  specBar: { width: 7, borderRadius: 3 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 26, zIndex: 5 },
+  focus: { borderWidth: 2, borderColor: C.brand, borderRadius: 26 }, // web 分支控件环
+  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, borderRadius: 17, paddingHorizontal: 14, backgroundColor: '#ffffff14' },
+  backLabel: { color: '#ffffffcc', fontSize: 13, fontWeight: '600' },
+  vinylWrap: { width: 228, height: 228, borderRadius: 114, backgroundColor: '#0d100e', borderWidth: 5, borderColor: '#161a17', alignItems: 'center', justifyContent: 'center', boxShadow: '0 18px 44px rgba(0,0,0,.55), 0 0 36px rgba(30,215,96,.14)' },
+  spectrum: { flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: 58, marginTop: 20 },
+  specBar: { width: 6, borderRadius: 3 },
   vinylArt: { width: 150, height: 150, borderRadius: 75 },
   vinylHole: { position: 'absolute', width: 12, height: 12, borderRadius: 6, backgroundColor: '#0a0c0b', borderWidth: 3, borderColor: '#222823' },
-  srcTag: { color: '#ffffff66', fontSize: 11, letterSpacing: 2, marginTop: 14 },
-  backBtn: { position: 'absolute', top: 10, left: 18, zIndex: 5, width: 40, height: 40, borderRadius: 12, backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center' },
-  focus: { borderWidth: 2, borderColor: C.brand, borderRadius: 26 },
-  main: { flex: 1, flexDirection: 'row', paddingHorizontal: 64, gap: 44 },
-  artCol: { flex: 0.85, alignItems: 'center', justifyContent: 'center' },
-  art: { width: '100%', aspectRatio: 1, borderRadius: 20, maxHeight: 330, maxWidth: 330 },
+  srcPill: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 24, borderRadius: 12, paddingHorizontal: 12, marginTop: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,.16)', backgroundColor: 'rgba(255,255,255,.06)' },
+  srcDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.brand },
+  srcTag: { color: '#ffffffaa', fontSize: 10, letterSpacing: 2, fontWeight: '600' },
+  main: { flex: 1, flexDirection: 'row', paddingHorizontal: 52, paddingTop: 4, gap: 42 },
+  artCol: { width: 280, alignItems: 'center', justifyContent: 'center' },
   artFallback: { backgroundColor: '#1E2722', alignItems: 'center', justifyContent: 'center' },
-  infoCol: { flex: 1.15, gap: 7 },
-  title: { color: '#ffffff', fontSize: 24, fontWeight: '800' },
+  infoCol: { flex: 1, gap: 6 },
+  title: { color: '#ffffff', fontSize: 25, fontWeight: '800' },
   sub: { color: '#ffffffb3', fontSize: 14 },
-  lyricsBox: { flex: 1, gap: 12, justifyContent: 'center' },
-  lyric: { color: '#ffffff80', fontSize: 19, lineHeight: 28, fontWeight: '500' },
-  lyricOn: { color: '#ffffff', fontSize: 26, lineHeight: 37, fontWeight: '800' },
-  lyricTr: { color: '#FFFFFF55', fontSize: 13, lineHeight: 18, marginTop: 2 },
+  lyricsBox: { flex: 1, gap: 8, justifyContent: 'flex-start', paddingTop: 12 },
+  lyric: { color: '#ffffff7d', fontSize: 17, lineHeight: 24, fontWeight: '500' },
+  lyricOn: { color: '#ffffff', fontSize: 22, lineHeight: 31, fontWeight: '800' },
+  lyricTr: { color: '#FFFFFF55', fontSize: 12, lineHeight: 17, marginTop: 2 },
   lyricTrOn: { color: '#FFFFFF99' },
   noLyric: { alignItems: 'center', gap: 10, marginTop: 16 },
   noLyricText: { color: '#ffffff80', fontSize: 13 },
-  progRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 8 },
-  time: { color: '#ffffffb3', fontSize: 13, fontVariant: ['tabular-nums'], width: 46, textAlign: 'center' },
-  track: { flex: 1, height: 5, flexDirection: 'row', borderRadius: 3 },
+  progRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
+  time: { color: '#ffffffb3', fontSize: 12, fontVariant: ['tabular-nums'], width: 42, textAlign: 'center' },
+  trackWrap: { flex: 1, height: 5, flexDirection: 'row', borderRadius: 3 },
   trackFill: { backgroundColor: C.brand, borderRadius: 3 },
   trackRest: { backgroundColor: '#ffffff2e', borderRadius: 3 },
-  ctrlRow: { flexDirection: 'row', alignItems: 'center', gap: 18 },
-  cMode: { width: 52, height: 52, borderRadius: 26, backgroundColor: '#ffffff14', alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
-  cMain: { width: 78, height: 78, borderRadius: 39, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
-  cMainFocus: { borderWidth: 3, borderColor: '#FFFFFF', borderRadius: 39 },
-  ctrlDivider: { width: 1, height: 30, backgroundColor: C.stroke, marginHorizontal: 4 },
-  badge: { color: C.text2, fontSize: 10, marginLeft: 3 },
+  playhead: { position: 'absolute', top: -4, width: 13, height: 13, borderRadius: 7, backgroundColor: C.brand, borderWidth: 2.5, borderColor: '#ffffff', marginLeft: -7 },
+  ctrlRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  cMode: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#ffffff14', alignItems: 'center', justifyContent: 'center' },
+  cMain: { width: 66, height: 66, borderRadius: 33, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
+  cMainFocus: { borderWidth: 3, borderColor: '#FFFFFF', borderRadius: 33 },
+  ctrlDivider: { width: 1, height: 26, backgroundColor: 'rgba(255,255,255,.14)', marginHorizontal: 2 },
+  cTool: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#ffffff0d', alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
+  badge: { color: '#ffffffaa', fontSize: 11, marginLeft: 4, fontWeight: '600' },
 });
 
 // ===== 桌面(网易云参照)样式 =====

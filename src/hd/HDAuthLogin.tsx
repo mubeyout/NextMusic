@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { navRef } from '../navRef';
 import { createMMKV } from 'react-native-mmkv';
 import { Icon } from '../theme/Icon';
 import { C, SH } from './hdtokens';
@@ -68,7 +69,7 @@ export function HDAuthLoginScreen() {
       const r = await api.login(username.trim(), password);
       if (r.success) {
         setAuth(r.token, r.username);
-        nav.reset({ index: 0, routes: [{ name: 'Main' }] });
+        navRef.current?.reset({ index: 0, routes: [{ name: 'Main' }] });
       } else setErr('账号或密码错误');
     } catch (e) {
       const msg = (e as Error).message || '';
@@ -76,7 +77,7 @@ export function HDAuthLoginScreen() {
     } finally { setBusy(''); }
   };
 
-  const goLocal = () => { setMode('local'); nav.reset({ index: 0, routes: [{ name: 'Main' }] }); };
+  const goLocal = () => { setMode('local'); navRef.current?.reset({ index: 0, routes: [{ name: 'Main' }] }); };
 
   const register = async () => {
     if (!addr.trim()) { setErr('请先输入服务器地址'); return; }
@@ -89,7 +90,7 @@ export function HDAuthLoginScreen() {
       const r = await api.login(regUser.trim(), regPwd);
       if (r.success) {
         setAuth(r.token, r.username);
-        nav.reset({ index: 0, routes: [{ name: 'Main' }] });
+        navRef.current?.reset({ index: 0, routes: [{ name: 'Main' }] });
       } else setErr('创建成功但登录失败,请切回登录重试');
     } catch (e) {
       const msg = (e as Error).message || '';

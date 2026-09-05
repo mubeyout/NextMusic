@@ -76,11 +76,12 @@ export function HDBoards() {
       {boards == null ? (
         <View style={st.tip}><ActivityIndicator color={C.brand} size="large" /><Text style={st.tipText}>榜单加载中…</Text></View>
       ) : (
+        // lx83(老板反馈):封面顶角补圆角随卡 12——卡全圆角,环统一 14 贴附;zoom 悬浮放大
         <HDGrid min={128 * (H.font.sm / 10)}>
           {boards.map((b, i) => (
-            <HDTouch key={b.id} onPress={() => openBoard(b)} activeOpacity={0.85}
+            <HDTouch key={b.id} onPress={() => openBoard(b)} activeOpacity={0.85} zoom={1.06}
               style={[st.card, { boxShadow: shadowOf(b.name) }]}
-              focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }}
+              focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }}
 >
               {b.image ? (
                 <Image source={{ uri: b.image }} style={st.cardCover} />
@@ -117,7 +118,7 @@ const st = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   card: { borderRadius: 12, backgroundColor: C.surface, paddingBottom: 8 },
   cardCoverWrap: { borderRadius: 12 },
-  cardCover: { width: '100%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
+  cardCover: { width: '100%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderTopLeftRadius: 12, borderTopRightRadius: 12 },
   cardChipWrapper: { position: 'absolute', right: 8, bottom: 80 },
   cardChip: { backgroundColor: 'rgba(0,0,0,.55)', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
   cardChipText: { color: '#fff', fontSize: 9 },
