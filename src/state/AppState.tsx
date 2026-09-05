@@ -50,11 +50,30 @@ async function probeWithFallback(b: string): Promise<{ cfg: ServerConfig; base: 
     const cfg = await api.probe(b);
     return { cfg, base: b };
   } catch (e) {
+    // lx62:TV/私有DNS场景——域名解析到公网回环不通。候选:①历史成功IP ②内网网关同端口(dnsmasq 重定向被 DoH 绕过的兜底)
+    const candidates: string[] = [];
     const fb = fallbackBase(b);
-    if (!fb) throw e;
-    const cfg = await api.probe(fb); // 回落也不通则抛出，交上层报错
-    return { cfg, base: fb };
+    if (fb) candidates.push(fb);
+    (gatewayBase(b) || '').split('|').filter(Boolean).forEach(g => { if (!candidates.includes(g)) candidates.push(g); })
+    for (const c of candidates) {
+      try {
+        const cfg = await api.probe(c);
+        return { cfg, base: c };
+      } catch { /* 试下一个 */ }
+    }
+    throw e;
   }
+}
+
+/** lx62:家庭网关候选(同端口)——无 NetInfo 拿不到本机网段,用自建服务器场景常见网关近似:
+ *  主路由位 10.0.0.1(RoceOS) + 通用 192.168.1.1/192.168.0.1。只做可达探测,命中即用。 */
+function gatewayBase(b: string): string | null {
+  try {
+    const m = b.match(/^(https?:\/\/)([^:/]+)(:\d+)?/);
+    if (!m) return null;
+    const suffix = m[3] || '';
+    return ['10.0.0.1', '192.168.1.1', '192.168.0.1'].map(ip => `${m[1]}${ip}${suffix}`).join('|');
+  } catch { return null }
 }
 
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
