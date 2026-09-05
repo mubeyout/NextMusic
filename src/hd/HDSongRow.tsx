@@ -19,7 +19,7 @@ export function HDSongRow({ song, index, onPress, playing, showAlbum = true, fir
     <HDTouch
       style={st.row}
       focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.row }}
-      focusBg={C.surface}
+      focusBg={C.hover}
       onPress={onPress}
       disabled={!onPress}
       activeOpacity={0.7}
