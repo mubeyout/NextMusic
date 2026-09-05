@@ -32,6 +32,7 @@ export function HDMain() {
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<number>(0);
   const [pls, setPls] = useState<{ key: string; localId?: string; name: string; count: number; songs: SongItem[] }[]>([]);
+  const [loveCount, setLoveCount] = useState<number | null>(null); // lx67:侧栏"我喜欢的"数量统计
   const { connected, token } = useApp();
 
   // 歌单列表(本地 + 同步),侧栏「歌单」组
@@ -55,6 +56,12 @@ export function HDMain() {
       ? { localId: pl.localId, title: pl.name, songs: pl.songs }
       : { title: pl.name, songs: pl.songs, meta: `${pl.count} 首 · 同步歌单` });
   };
+
+  // lx67:登录后拉"我喜欢的"数量(侧栏展示)
+  useEffect(() => {
+    if (!connected || !token) { setLoveCount(null); return; }
+    sync.fetchLists().then(s => { if (s) setLoveCount((s.loveList || []).length); }).catch(() => {});
+  }, [connected, token]);
 
   const openFavorites = () => {
     if (!connected || !token) { hdNav()?.navigate('AuthLogin'); return; }
@@ -99,7 +106,10 @@ export function HDMain() {
           {/* 我的乐库 */}
           <Group label="我的乐库" top={8} />
           <NavItem icon="server" label="媒体库" onPress={() => hdNav()?.navigate('MediaLibs')} />
-          <NavItem icon="heart" label="我喜欢的" onPress={openFavorites} />
+          <HDTouch style={st.navItem} focusStyle={st.navFocus} onPress={openFavorites}>
+            <Icon name="heart" size={16} color={C.text2} />
+            <Text style={st.navLabel} numberOfLines={1}>我喜欢的{loveCount != null ? ` · ${loveCount}` : ''}</Text>
+          </HDTouch>
           <NavItem icon="history" label="播放历史" onPress={openHistory} />
 
           {/* 歌单 */}

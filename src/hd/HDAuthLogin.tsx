@@ -255,13 +255,13 @@ const st = StyleSheet.create({
   tabText: { color: C.text3, fontSize: 14, fontWeight: '500' },
   tabTextOn: { color: C.text, fontWeight: '700' },
   // 输入卡(ProviderEdit hdSt.inputCard 同构)
-  inputCard: { backgroundColor: C.surface, borderRadius: 16, paddingHorizontal: 20, paddingVertical: 14, gap: 6 },
+  inputCard: { backgroundColor: C.surface, borderRadius: 16, paddingHorizontal: 20, paddingVertical: 14, gap: 6, overflow: 'hidden' },
   labelRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   inputLabel: { color: C.text2, fontSize: 13, flex: 1 },
   okTag: { color: C.brand, fontSize: 13, fontWeight: '600' },
   inputValue: { color: C.text, fontSize: 16, paddingVertical: 6 },
   inputHint: { color: C.text3, fontSize: 11 },
-  infoCard: { backgroundColor: C.surface, borderRadius: 16, paddingHorizontal: 20, paddingVertical: 14, gap: 4 },
+  infoCard: { backgroundColor: C.surface, borderRadius: 16, paddingHorizontal: 20, paddingVertical: 14, gap: 4, overflow: 'hidden' },
   infoTitle: { color: C.text, fontSize: 15, fontWeight: '600' },
   err: { color: C.danger, fontSize: 14, lineHeight: 19 },
   // 按钮(ProviderEdit btnRow 同构:ghost flex1 + primary flex1.4)
