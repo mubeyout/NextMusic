@@ -484,8 +484,8 @@ export function FxScreen() {
           <View style={st.cardHead}>
             <Text style={st.cardTitle}>ViPER 音效<Text style={st.cardHint}>（低音/细节/声场/限幅）</Text></Text>
           </View>
-          {/* Fire Bass 模式胶囊 */}
-          <View style={st.presetScroll}>
+          {/* Fire Bass 模式胶囊(lx58:坑121 presetScroll 无 flexDirection:row——竖排堆叠观感'重叠'且挤出屏幕) */}
+          <View style={st.chipRow}>
             {([0, 1, 2, 3] as const).map(m => (
               <T key={m} activeOpacity={0.7} onPress={() => setViper({ bassMode: m })}>
                 <View style={[st.chip, settings.viper.bassMode === m && st.chipOn]}>
@@ -610,6 +610,7 @@ const st = StyleSheet.create({
 
   // 预设胶囊（横滚）
   presetScroll: { gap: 8, paddingBottom: 4, marginBottom: 12 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
   chip: { paddingHorizontal: 14, height: 32, borderRadius: 16, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   chipOn: { backgroundColor: C.brand },
   chipText: { color: C.text2, fontSize: 12, fontWeight: '600' },

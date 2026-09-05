@@ -430,14 +430,6 @@ function HomeMusic() {
       </View>
 
       <View style={st.sectionRow}>
-        <Text style={st.sectionTitle}>为你打造</Text>
-        <Text style={st.sectionMeta}>每日更新</Text>
-      </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.mixRow}>
-        {playlists.slice(0, 2).map((pl, i) => <MixCard key={pl.id} pl={pl} fallbackArt={[warm, city][i % 2]} />)}
-      </ScrollView>
-
-      <View style={st.sectionRow}>
         <Text style={st.sectionTitle}>热门歌单</Text>
       </View>
       {playlists.length ? (
