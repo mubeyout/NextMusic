@@ -90,7 +90,7 @@ export function HDPodcast() {
         {POD_CHANNELS.map((ch, ci) => {
           const f = feeds[ch.id] || [];
           return (
-            <HDTouch key={ch.id} style={[st.card, { boxShadow: shadowOf(ch.name) }]} onPress={() => openChannel(ch)} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12 }} focusBg={C.inset}>
+            <HDTouch key={ch.id} style={[st.card, { boxShadow: shadowOf(ch.name) }]} onPress={() => openChannel(ch)} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12 }}>
               <LinearGradient colors={POD_GRADS[ci % POD_GRADS.length]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.cardCover}>
                 <Icon name="podcast" size={30} color="#FFFFFF" />
                 <View style={{ flex: 1 }} />
@@ -98,8 +98,10 @@ export function HDPodcast() {
                   <Icon name="play" size={13} color="#FFFFFF" />
                 </HDTouch>
               </LinearGradient>
-              <Text style={st.cardName} numberOfLines={1}>{ch.name}</Text>
-              <Text style={st.cardSub} numberOfLines={1}>{f.length ? `${f.length} 期 · ${f[0].name}` : ch.sub}</Text>
+              <View style={st.cardBody}>
+                <Text style={st.cardName} numberOfLines={1}>{ch.name}</Text>
+                <Text style={st.cardSub} numberOfLines={1}>{f.length ? `${f.length} 期 · ${f[0].name}` : ch.sub}</Text>
+              </View>
             </HDTouch>
           );
         })}
@@ -133,6 +135,7 @@ const st = StyleSheet.create({
   title: { color: C.text, fontSize: H.font.hero, fontWeight: '800' },
   sub: { color: C.text3, fontSize: H.font.sm },
   card: { gap: 5 },
+  cardBody: { paddingHorizontal: 8, paddingBottom: 6 },
   cardCover: { width: '100%', aspectRatio: 1.35, borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'flex-start' },
   cardPlay: { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,.22)', alignItems: 'center', justifyContent: 'center' },
   cardName: { color: C.text, fontSize: H.font.sm, fontWeight: '700' },

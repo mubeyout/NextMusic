@@ -81,7 +81,7 @@ export function HDBoards() {
             <HDTouch key={b.id} onPress={() => openBoard(b)} activeOpacity={0.85}
               style={[st.card, { boxShadow: shadowOf(b.name) }]}
               focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12 }}
-              focusBg={C.inset}>
+>
               {/* 桌面同构:方形封面(图/渐变) + 居中排名图标 + 右下源 chip + 名称/副题 */}
               {b.image ? (
                 <Image source={{ uri: b.image }} style={st.cardCover} />
