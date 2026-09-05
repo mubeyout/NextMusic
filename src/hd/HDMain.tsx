@@ -270,7 +270,7 @@ const st = StyleSheet.create({
   playBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   playBtnFocus: { borderWidth: 2, borderColor: '#FFFFFF', borderRadius: 16 },
   pbTime: { color: C.text3, fontSize: 8, fontVariant: ['tabular-nums'], minWidth: 26 },
-  pbTrack: { flex: 1, height: 3, borderRadius: 2, flexDirection: 'row', overflow: 'hidden' },
+  pbTrack: { flex: 1, height: 3, borderRadius: 2, flexDirection: 'row' },
   pbRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   badge: { position: 'absolute', right: -3, bottom: -3, minWidth: 12, height: 12, borderRadius: 6, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 2 },
   badgeText: { color: C.onBrand, fontSize: 7, fontWeight: '700' },

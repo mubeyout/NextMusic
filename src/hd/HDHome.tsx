@@ -172,7 +172,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
 // 桌面 BigCard:渐变 + 左徽标 + 标题/副标题 + 右圆钮
 function BigCard({ colors, badge, title, sub, onPress, busy }: { colors: [string, string]; badge: string; title: string; sub: string; onPress: () => void; busy?: boolean }) {
   return (
-    <HDTouch activeOpacity={0.9} onPress={onPress} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: Math.max(4, H.radius.card - 2) }} style={{ flex: 1, borderRadius: H.radius.card, overflow: 'hidden', boxShadow: shadowOf(title) }}>
+    <HDTouch activeOpacity={0.9} onPress={onPress} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: Math.max(4, H.radius.card - 2) }} style={{ flex: 1, borderRadius: H.radius.card, boxShadow: shadowOf(title) }}>
       <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.big}>
         <Text style={st.bigBadge}>{badge}</Text>
         <View style={{ flex: 1, minWidth: 0 }}>
@@ -212,17 +212,17 @@ const st = StyleSheet.create({
   secTitle: { color: C.text, fontSize: H.font.xl, fontWeight: '700' },
   secHint: { color: C.text3, fontSize: H.font.xs },
   secMore: { color: C.brand, fontSize: H.font.sm },
-  recCard: { width: 96, gap: 4, paddingHorizontal: 4, paddingBottom: 4, borderRadius: 9, overflow: 'hidden' },
+  recCard: { width: 96, gap: 4, paddingHorizontal: 4, paddingBottom: 4, borderRadius: 9 },
   recArt: { width: 88, height: 88, borderRadius: 9, alignSelf: 'center' },
   recName: { color: C.text, fontSize: H.font.xs, fontWeight: '500' },
   recSub: { color: C.text3, fontSize: 8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   // 卡片内文字离边留气口(老板反馈:文字太贴边,左右和底部缺 padding)
-  plCard: { gap: 5, borderRadius: 9, paddingHorizontal: 4, paddingBottom: 6, overflow: 'hidden' },
+  plCard: { gap: 5, borderRadius: 9, paddingHorizontal: 4, paddingBottom: 6 },
   plArt: { width: '100%', aspectRatio: 1, borderRadius: 9 },
   plCount: { position: 'absolute', bottom: 5, right: 5, backgroundColor: 'rgba(0,0,0,.6)', borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
   plCountText: { color: '#fff', fontSize: 8 },
-  plName: { color: C.text, fontSize: H.font.sm, fontWeight: '600', alignSelf: 'stretch' },
+  plName: { color: C.text, fontSize: H.font.sm, fontWeight: '600' },
   empty: { height: 64, borderRadius: H.radius.card, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', gap: 8, flexDirection: 'row', paddingHorizontal: 14 },
   emptyText: { color: C.text3, fontSize: H.font.sm },
 });
