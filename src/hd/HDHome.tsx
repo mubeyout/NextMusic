@@ -129,7 +129,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
               <HDTouch key={`${pl.source}_${pl.id}`} style={[st.plCard, { boxShadow: shadowOf(pl.name) }]} onPress={() => openRecPl(pl)}>
                 {pl.img
                   ? <Image source={{ uri: pl.img }} style={st.plArt} />
-                  : <View style={[st.plArt, { backgroundColor: '#232323', alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
+                  : <View style={[st.plArt, { backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
                 <Text style={st.plName} numberOfLines={1}>{pl.name}</Text>
                 <Text style={st.recSub} numberOfLines={1}>{pl.author || (pl.play_count ? `▶ ${pl.play_count}` : '')}</Text>
               </HDTouch>
@@ -151,7 +151,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
                 <View style={{ position: 'relative' }}>
                   {pl.img
                     ? <Image source={{ uri: pl.img }} style={st.plArt} />
-                    : <View style={[st.plArt, { backgroundColor: '#232323', alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
+                    : <View style={[st.plArt, { backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
                   <View style={st.plCount}><Text style={st.plCountText}>▶ {pl.count}</Text></View>
                 </View>
                 <Text style={st.plName} numberOfLines={1}>{pl.name}</Text>

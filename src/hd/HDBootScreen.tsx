@@ -52,7 +52,7 @@ export function HDBootScreen() {
             style={[st.card, c.primary && st.cardPrimary]}
             hasTVPreferredFocus={i === 0}
             focusStyle={st.cardFocus}
-            focusBg="#232323"
+            focusBg={C.inset}
             glow={SH.brand}
             onPress={c.onPress}
           >

@@ -90,7 +90,7 @@ export function HDPodcast() {
         {POD_CHANNELS.map((ch, ci) => {
           const f = feeds[ch.id] || [];
           return (
-            <HDTouch key={ch.id} style={[st.card, { boxShadow: shadowOf(ch.name) }]} onPress={() => openChannel(ch)} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12 }} focusBg="#232323">
+            <HDTouch key={ch.id} style={[st.card, { boxShadow: shadowOf(ch.name) }]} onPress={() => openChannel(ch)} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12 }} focusBg={C.inset}>
               <LinearGradient colors={POD_GRADS[ci % POD_GRADS.length]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.cardCover}>
                 <Icon name="podcast" size={30} color="#FFFFFF" />
                 <View style={{ flex: 1 }} />
