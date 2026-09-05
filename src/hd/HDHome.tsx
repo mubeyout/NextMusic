@@ -172,7 +172,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
 // 桌面 BigCard:渐变 + 左徽标 + 标题/副标题 + 右圆钮
 function BigCard({ colors, badge, title, sub, onPress, busy }: { colors: [string, string]; badge: string; title: string; sub: string; onPress: () => void; busy?: boolean }) {
   return (
-    <HDTouch activeOpacity={0.9} onPress={onPress} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.card }} style={{ flex: 1, borderRadius: H.radius.card, boxShadow: shadowOf(title) }}>
+    <HDTouch activeOpacity={0.9} onPress={onPress} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: Math.max(4, H.radius.card - 2) }} style={{ flex: 1, borderRadius: H.radius.card, overflow: 'hidden', boxShadow: shadowOf(title) }}>
       <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.big}>
         <Text style={st.bigBadge}>{badge}</Text>
         <View style={{ flex: 1, minWidth: 0 }}>

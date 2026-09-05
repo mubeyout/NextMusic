@@ -80,7 +80,7 @@ export function HDBoards() {
           {boards.map((b, i) => (
             <HDTouch key={b.id} onPress={() => openBoard(b)} activeOpacity={0.85}
               style={[st.card, { boxShadow: shadowOf(b.name) }]}
-              focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12 }}
+              focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }}
 >
               {/* 桌面同构:方形封面(图/渐变) + 居中排名图标 + 右下源 chip + 名称/副题 */}
               {b.image ? (
