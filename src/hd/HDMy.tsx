@@ -97,8 +97,10 @@ export function HDMy() {
             <HDTouch key={pl.key} style={st.plCard} onPress={() => openPl(pl)}>
               {pl.img ? <Image source={{ uri: pl.img }} style={st.plArt} />
                 : <LinearGradient colors={GRADS[i % GRADS.length]} style={st.plArt}><Icon name="music" size={28} color="#FFFFFFAA" /></LinearGradient>}
-              <Text style={st.plName} numberOfLines={1}>{pl.name}</Text>
-              <Text style={st.plMeta}>{pl.count} 首</Text>
+              <View style={st.plTexts}>
+                <Text style={st.plName} numberOfLines={1}>{pl.name}</Text>
+                <Text style={st.plMeta}>{pl.count} 首</Text>
+              </View>
             </HDTouch>
           ))}
           <HDTouch style={st.plNew} onPress={() => hdNav()?.navigate('ImportPlaylist')}>
@@ -124,7 +126,8 @@ const st = StyleSheet.create({
   fnSub: { color: C.text3, fontSize: 12 },
   secTitle: { color: C.text, fontSize: 22, fontWeight: '800' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 18 },
-  plCard: { gap: 8, paddingBottom: 4 },
+  plCard: { gap: 5, paddingBottom: 8 },
+  plTexts: { alignSelf: 'center', width: '94%', gap: 3 },
   plArt: { width: '100%', aspectRatio: 1, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   plNew: { width: '100%', aspectRatio: 1, borderRadius: 16, backgroundColor: C.surface, borderWidth: 1, borderStyle: 'dashed', borderColor: C.border, alignItems: 'center', justifyContent: 'center', gap: 8 },
   plName: { color: C.text, fontSize: 16, fontWeight: '600' },

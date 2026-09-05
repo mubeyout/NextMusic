@@ -113,8 +113,10 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
               <HDTouch key={`${s.source}_${s.songmid}_${i}`} style={st.recCard} onPress={() => playSong(s, recents)}>
                 {s.img ? <Image source={{ uri: s.img }} style={st.recArt} />
                   : <View style={[st.recArt, { backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={14} color={C.text3} /></View>}
-                <Text style={st.recName} numberOfLines={1}>{s.name}</Text>
-                <Text style={st.recSub} numberOfLines={1}>{s.singer}</Text>
+                <View style={st.plTexts}>
+                  <Text style={st.recName} numberOfLines={1}>{s.name}</Text>
+                  <Text style={st.recSub} numberOfLines={1}>{s.singer}</Text>
+                </View>
               </HDTouch>
             ))}
           </ScrollView>
@@ -220,13 +222,13 @@ const st = StyleSheet.create({
   secTitle: { color: C.text, fontSize: H.font.xl, fontWeight: '700' },
   secHint: { color: C.text3, fontSize: H.font.xs },
   secMore: { color: C.brand, fontSize: H.font.sm },
-  recCard: { width: 96, gap: 4, paddingHorizontal: 4, paddingBottom: 4, borderRadius: 9 },
+  recCard: { width: 96, gap: 4, paddingHorizontal: 4, paddingBottom: 8, borderRadius: 9 },
   recArt: { width: 88, height: 88, borderRadius: 9, alignSelf: 'center' },
   recName: { color: C.text, fontSize: H.font.xs, fontWeight: '500' },
   recSub: { color: C.text3, fontSize: 8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   // 卡片内文字离边留气口(老板反馈:文字太贴边,左右和底部缺 padding)
-  plCard: { width: 132, gap: 5 },
+  plCard: { width: 132, gap: 5, paddingBottom: 8 },
   plArt: { width: '100%', aspectRatio: 1, borderRadius: 9 },
   plCount: { position: 'absolute', bottom: 5, right: 5, backgroundColor: 'rgba(0,0,0,.6)', borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
   plCountText: { color: '#fff', fontSize: 8 },
@@ -236,7 +238,7 @@ const st = StyleSheet.create({
   plTextsOverlay: { position: 'absolute', left: 8, right: 8, bottom: 7 },
   plNameOnArt: { color: '#FFFFFF', fontSize: H.font.sm, fontWeight: '700' },
   recSubOnArt: { color: '#FFFFFFCC', fontSize: 8 },
-  plTexts: { alignSelf: 'center', width: '94%' },
+  plTexts: { alignSelf: 'center', width: '94%', gap: 3 },
   empty: { height: 64, borderRadius: H.radius.card, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', gap: 8, flexDirection: 'row', paddingHorizontal: 14 },
   emptyText: { color: C.text3, fontSize: H.font.sm },
 });
