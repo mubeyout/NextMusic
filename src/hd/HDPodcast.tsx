@@ -134,7 +134,7 @@ const st = StyleSheet.create({
   head: { gap: 3 },
   title: { color: C.text, fontSize: H.font.hero, fontWeight: '800' },
   sub: { color: C.text3, fontSize: H.font.sm },
-  card: { gap: 5, overflow: 'hidden' },
+  card: { gap: 5, borderRadius: 12, overflow: 'hidden' },
   cardBody: { paddingHorizontal: 8, paddingBottom: 6, overflow: 'hidden' },
   cardCover: { width: '100%', aspectRatio: 1.35, borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'flex-start' },
   cardPlay: { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,.22)', alignItems: 'center', justifyContent: 'center' },

@@ -23,6 +23,7 @@ export function HDTouch({ style, focusStyle, focusBg, glow, activeOpacity = 0.8,
   // 从元素样式提圆角:环贴附元素的形状(数组和对象样式都兼容)
   const flat = (StyleSheet.flatten(style as ViewStyle | ViewStyle[]) || {}) as { borderRadius?: number };
   const autoRing: ViewStyle = { borderWidth: 2, borderColor: C.brand, borderRadius: flat.borderRadius ?? 12 };
+  // lx69:内嵌焦点指示(不撑大外框):border 画在元素边界内缘,内容圆角=外框圆角才贴合
   return (
     <Pressable
       focusable
