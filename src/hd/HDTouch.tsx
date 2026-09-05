@@ -6,7 +6,7 @@
 // v4:焦点环自动贴附 —— 从元素自身样式读 borderRadius,环与元素同圆角(老板反馈「描边不贴附」);
 //     可选 glow(聚焦时彩色弥散投影)与 focusBg(选中态背景提亮)。
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 import { C, TV_LOW_GPU } from './hdtokens';
 type Props = React.ComponentProps<typeof Pressable> & {
   /** 聚焦时附加样式;不传 = 自动贴附环(元素圆角 + 2px 品牌描边);传 false = 无视觉 */
@@ -20,10 +20,10 @@ type Props = React.ComponentProps<typeof Pressable> & {
 
 export function HDTouch({ style, focusStyle, focusBg, glow, activeOpacity = 0.8, children, ...rest }: Props) {
   const [focus, setFocus] = useState(false);
-  // 从元素样式提圆角:环贴附元素的形状(数组和对象样式都兼容)
   const flat = (StyleSheet.flatten(style as ViewStyle | ViewStyle[]) || {}) as { borderRadius?: number };
+  // v6(lx75b): border 环(米电视渲染稳定) + padding 负补偿抵消 border 占位——环外扩 2px 描边,内容零位移
+  // v5 overlay 在米电视 Pressable 内不渲染(同 overflow 裁剪家族 bug),废弃
   const autoRing: ViewStyle = { borderWidth: 2, borderColor: C.brand, borderRadius: flat.borderRadius ?? 12 };
-  // lx69:内嵌焦点指示(不撑大外框):border 画在元素边界内缘,内容圆角=外框圆角才贴合
   return (
     <Pressable
       focusable
@@ -34,6 +34,7 @@ export function HDTouch({ style, focusStyle, focusBg, glow, activeOpacity = 0.8,
         style as ViewStyle | ViewStyle[] | undefined,
         pressed && { opacity: activeOpacity },
         focus && (focusStyle === undefined ? autoRing : focusStyle === false ? null : focusStyle),
+        focus && focusStyle !== false && { margin: -2 }, // border 占 2px 布局,margin -2 外缩抵消——总占位不变,描边画在原边界,内容不动
         focus && focusBg != null && { backgroundColor: focusBg },
         focus && glow != null && !TV_LOW_GPU && { boxShadow: glow },
       ]}

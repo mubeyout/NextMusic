@@ -130,8 +130,10 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
                 {pl.img
                   ? <Image source={{ uri: pl.img }} style={st.plArt} />
                   : <View style={[st.plArt, { backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
-                <Text style={st.plName} numberOfLines={1}>{pl.name}</Text>
-                <Text style={st.recSub} numberOfLines={1}>{pl.author || (pl.play_count ? `▶ ${pl.play_count}` : '')}</Text>
+                <View style={st.plTexts}>
+                  <Text style={st.plName} numberOfLines={1}>{pl.name}</Text>
+                  <Text style={st.recSub} numberOfLines={1}>{pl.author || (pl.play_count ? `▶ ${pl.play_count}` : '')}</Text>
+                </View>
               </HDTouch>
             ))}
           </HDGrid>
@@ -154,7 +156,9 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
                     : <View style={[st.plArt, { backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
                   <View style={st.plCount}><Text style={st.plCountText}>▶ {pl.count}</Text></View>
                 </View>
-                <Text style={st.plName} numberOfLines={1}>{pl.name}</Text>
+                <View style={st.plTexts}>
+                  <Text style={st.plName} numberOfLines={1}>{pl.name}</Text>
+                </View>
               </HDTouch>
             ))}
           </HDGrid>
@@ -171,9 +175,12 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
 
 // 桌面 BigCard:渐变 + 左徽标 + 标题/副标题 + 右圆钮
 function BigCard({ colors, badge, title, sub, onPress, busy }: { colors: [string, string]; badge: string; title: string; sub: string; onPress: () => void; busy?: boolean }) {
+  // lx73:BigCard 尺寸三层一致——渐变 absolute 铺底(fill 外框),内容行叠加其上;
+  // 之前渐变做流式子项,width 100% 与 Pressable 互相依赖在 Android 解析为内容宽→环/渐变/外框三层各不相同
   return (
     <HDTouch activeOpacity={0.9} onPress={onPress} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: Math.max(4, H.radius.card - 2) }} style={{ flex: 1, height: 88, borderRadius: H.radius.card, boxShadow: shadowOf(title) }}>
-      <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.big}>
+      <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.bigBg} />
+      <View style={st.big}>
         <Text style={st.bigBadge}>{badge}</Text>
         <View style={{ flex: 1, minWidth: 0, paddingRight: 6 }}>
           <Text style={st.bigTitle} numberOfLines={1}>{title}</Text>
@@ -182,7 +189,7 @@ function BigCard({ colors, badge, title, sub, onPress, busy }: { colors: [string
         <View style={st.bigPlay}>
           {busy ? <ActivityIndicator size="small" color="#fff" /> : <Icon name="play" size={11} color="#fff" />}
         </View>
-      </LinearGradient>
+      </View>
     </HDTouch>
   );
 }
@@ -204,7 +211,8 @@ function Section({ title, hint, more, onMore, children }: { title: string; hint?
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   greet: { color: C.text, fontSize: H.font.hero, fontWeight: '800' },
-  big: { flex: 1, borderRadius: H.radius.card, flexDirection: 'row', alignItems: 'center', padding: 16, gap: 13 },
+  bigBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: H.radius.card },
+  big: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 14, gap: 13, borderRadius: H.radius.card },
   bigBadge: { color: '#fff', fontSize: 18, fontWeight: '800', opacity: 0.92 },
   bigTitle: { color: '#fff', fontSize: H.font.xl, fontWeight: '700' },
   bigSub: { color: '#FFFFFFD0', fontSize: H.font.sm, marginTop: 2 },
@@ -223,6 +231,7 @@ const st = StyleSheet.create({
   plCount: { position: 'absolute', bottom: 5, right: 5, backgroundColor: 'rgba(0,0,0,.6)', borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
   plCountText: { color: '#fff', fontSize: 8 },
   plName: { color: C.text, fontSize: H.font.sm, fontWeight: '600' },
+  plTexts: { alignSelf: 'center', width: '94%' },
   empty: { height: 64, borderRadius: H.radius.card, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', gap: 8, flexDirection: 'row', paddingHorizontal: 14 },
   emptyText: { color: C.text3, fontSize: H.font.sm },
 });
