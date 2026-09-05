@@ -482,7 +482,7 @@ export function FxScreen() {
         {/* ===== ViPER 效果（lx50） ===== */}
         <View style={st.card}>
           <View style={st.cardHead}>
-            <Text style={st.cardTitle}>ViPER 音效<Text style={st.cardHint}>（低音/细节/声场/限幅）</Text></Text>
+            <Text style={st.cardTitle}>ViPER 音效<Text style={st.cardHint}>  低音/细节/声场/限幅</Text></Text>
           </View>
           {/* Fire Bass 模式胶囊(lx58:坑121 presetScroll 无 flexDirection:row——竖排堆叠观感'重叠'且挤出屏幕) */}
           <View style={st.chipRow}>
@@ -506,7 +506,10 @@ export function FxScreen() {
             { k: 'cureEnable', lv: 'cureLevel', label: '声场矫正（Cure+）', tip: '耳机交叉馈送，建议用耳机' },
           ] as const).map(row => (
             <View key={row.k} style={[st.cardHead, { marginTop: 14 }]}>
-              <Text style={st.cardTitle}>{row.label}<Text style={st.cardHint}>（{row.tip}）</Text></Text>
+              <View style={{ flex: 1 }}>
+                <Text style={st.cardTitle}>{row.label}</Text>
+                <Text style={st.cardHint}>{row.tip}</Text>
+              </View>
               <T activeOpacity={0.7} onPress={() => setViper({ [row.k]: !settings.viper[row.k] } as Partial<FxViper>)}>
                 <View style={[st.switch, settings.viper[row.k] && st.switchOn]}>
                   <View style={[st.knob, settings.viper[row.k] && st.knobOn]} />
@@ -527,7 +530,10 @@ export function FxScreen() {
             onChange={v => setViper({ cureLevel: v })} disabled={!settings.viper.cureEnable}
           />
           <View style={[st.cardHead, { marginTop: 14 }]}>
-            <Text style={st.cardTitle}>恒定限幅器<Text style={st.cardHint}>（防多效果叠加爆音）</Text></Text>
+            <View style={{ flex: 1 }}>
+              <Text style={st.cardTitle}>恒定限幅器</Text>
+              <Text style={st.cardHint}>防多效果叠加爆音</Text>
+            </View>
             <T activeOpacity={0.7} onPress={() => setViper({ limiterEnable: !settings.viper.limiterEnable })}>
               <View style={[st.switch, settings.viper.limiterEnable && st.switchOn]}>
                 <View style={[st.knob, settings.viper.limiterEnable && st.knobOn]} />
