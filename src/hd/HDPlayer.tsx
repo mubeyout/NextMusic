@@ -2,6 +2,7 @@
 // v1 教训:固定尺寸溢出;v2 教训:深色底 panel 突兀(老板:粗糙,直接取消)
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, Animated, Easing } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import { SpectrumRing } from './SpectrumRing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
@@ -262,6 +263,7 @@ export function HDPlayer() {
     <View style={st.screen}>
       {current.img ? <Image source={{ uri: current.img }} style={st.bgArt} blurRadius={60} resizeMode="cover" /> : null}
       <View style={st.bgVeil} />
+      <LinearGradient colors={['rgba(4,6,5,0)', 'rgba(4,6,5,.62)']} locations={[0, 1]} style={st.bgBottomGrad} />
 
       {/* 头部:返回按钮入流式布局(不再悬浮怪位) */}
       <View style={[st.header, { paddingTop: Math.max(insets.top, 12) }]}>
@@ -376,6 +378,7 @@ const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#0a0c0b' },
   bgArt: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.5 },
   bgVeil: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(6,8,7,.62)' },
+  bgBottomGrad: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '42%' },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 26, zIndex: 5 },
   focus: { borderWidth: 2, borderColor: C.brand, borderRadius: 26 }, // web 分支控件环
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, borderRadius: 17, paddingHorizontal: 14, backgroundColor: '#ffffff14' },
@@ -396,17 +399,17 @@ const st = StyleSheet.create({
   sub: { color: '#ffffffb3', fontSize: 14 },
   lyricsBox: { flex: 1, gap: 8, justifyContent: 'flex-start', paddingTop: 12 },
   lyric: { color: '#ffffff7d', fontSize: 17, lineHeight: 24, fontWeight: '500' },
-  lyricOn: { color: '#ffffff', fontSize: 22, lineHeight: 31, fontWeight: '800' },
+  lyricOn: { color: '#ffffff', fontSize: 22, lineHeight: 31, fontWeight: '800', textShadowColor: 'rgba(255,255,255,.3)', textShadowRadius: 12, textShadowOffset: { width: 0, height: 0 } },
   lyricTr: { color: '#FFFFFF55', fontSize: 12, lineHeight: 17, marginTop: 2 },
   lyricTrOn: { color: '#FFFFFF99' },
-  noLyric: { alignItems: 'center', gap: 10, marginTop: 16 },
+  noLyric: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
   noLyricText: { color: '#ffffff80', fontSize: 13 },
   progRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
   time: { color: '#ffffffb3', fontSize: 12, fontVariant: ['tabular-nums'], width: 42, textAlign: 'center' },
   trackWrap: { flex: 1, height: 5, flexDirection: 'row', borderRadius: 3 },
   trackFill: { backgroundColor: C.brand, borderRadius: 3 },
   trackRest: { backgroundColor: '#ffffff2e', borderRadius: 3 },
-  playhead: { position: 'absolute', top: -4, width: 13, height: 13, borderRadius: 7, backgroundColor: C.brand, borderWidth: 2.5, borderColor: '#ffffff', marginLeft: -7 },
+  playhead: { position: 'absolute', top: -4, width: 13, height: 13, borderRadius: 7, backgroundColor: C.brand, borderWidth: 2.5, borderColor: '#ffffff', marginLeft: -7, boxShadow: '0 0 12px rgba(30,215,96,.75)' },
   ctrlRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   cMode: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#ffffff14', alignItems: 'center', justifyContent: 'center' },
   cMain: { width: 66, height: 66, borderRadius: 33, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },

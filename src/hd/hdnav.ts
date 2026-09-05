@@ -22,7 +22,10 @@ export const hdNav = (): LooseNav => {
   if (!inner && !root) return null;
   return {
     navigate: (s: string, p?: object) => {
-      const target = inner && !ROOT_ONLY.has(s) ? inner : root;
+      // lx90:播放页在根栈全屏时,子跳转(队列/投屏/评论)必须同层根栈——否则路由进被盖住的嵌套栈=按钮无响应
+      const rootTop = (navRef.current as unknown as { getCurrentRoute?: () => { name?: string } | null })?.getCurrentRoute?.()?.name;
+      const useRoot = ROOT_ONLY.has(s) || rootTop === 'Player';
+      const target = inner && !useRoot ? inner : root;
       target?.navigate(s, p);
     },
     goBack: () => {

@@ -81,6 +81,14 @@ class AudioRouteModule(reactContext: ReactApplicationContext) :
 
     override fun getName() = "NMAudioRoute"
 
+    // lx90(坑130):字段必须先于 init{} 的 registerAudioDeviceCallback 声明——
+    // 系统注册即回调 onAudioDevicesAdded(带初始设备),Kotlin 按声明序初始化,
+    // 声明在后的字段此刻为 null → synchronized(routeWatchRunnables) monitor-enter NPE(实锤崩溃 21:47)
+    private val routeWatchHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val routeWatchRunnables = ArrayList<Runnable>()
+    @Volatile private var routeMismatchStreak = 0
+    @Volatile private var routeWatchRearms = 0
+
     private val am: AudioManager
         get() = reactApplicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
@@ -127,10 +135,6 @@ class AudioRouteModule(reactContext: ReactApplicationContext) :
      *  唯一能赢的姿势：重建 AudioTrack（新 track 初始化时自动重放存储的偏好）。
      *  设备变化后在 1.5~19s 窗口内延时多次比对 preferredId vs 实际路由（MDM 抢夺在 +8s 观测过，
      *  不能只查一次）；连续两次不符才通知 JS 重建（首次仅廉价重放偏好，多数 ROM 到这就够了）。 */
-    private val routeWatchHandler = android.os.Handler(android.os.Looper.getMainLooper())
-    private val routeWatchRunnables = ArrayList<Runnable>()
-    @Volatile private var routeMismatchStreak = 0
-    @Volatile private var routeWatchRearms = 0
 
     /** 设备变化触发首轮；rearm=true 为抢路由后追击轮（最多 3 轮，防与系统拉锯抽风） */
     private fun scheduleRouteWatch(rearm: Boolean = false) {
