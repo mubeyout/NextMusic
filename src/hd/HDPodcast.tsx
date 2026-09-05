@@ -12,6 +12,7 @@ import { HDSongRow } from './HDSongRow';
 import { usePlayer } from '../state/PlayerProvider';
 import { lxapi } from '../services/lxapi';
 import { hdNav } from './hdnav';
+import { cacheStale, cacheSet } from './hdcache';
 import type { SongItem } from '../services/server';
 
 interface PodChannel { id: string; name: string; query: string; sub: string; source: 'kw' | 'kg' | 'wy'; }
@@ -37,23 +38,27 @@ const POD_GRADS: [string, string][] = [
 export function HDPodcast() {
   const insets = useSafeAreaInsets();
   const { playSong, current } = usePlayer();
+  // lx91:陈旧缓存秒开(SWR)+ 8 频道并行拉取(原串行 for-await=8 次顺序网络往返,加载慢真凶)
   const [loading, setLoading] = useState(true);
-  const [feeds, setFeeds] = useState<Record<string, SongItem[]>>({});
+  const [feeds, setFeeds] = useState<Record<string, SongItem[]>>(() => cacheStale<Record<string, SongItem[]>>('pod.feeds') || {});
 
   useEffect(() => {
     let dead = false;
+    if (Object.keys(feeds).length) setLoading(false); // 缓存命中即不转圈
     (async () => {
-      for (const ch of POD_CHANNELS) {
-        try {
-          const songs = await lxapi.search(ch.query, ch.source, 1, 20); // eslint-disable-line no-await-in-loop
-          if (dead) return;
-          setFeeds(p => ({ ...p, [ch.id]: songs }));
-        } catch { /* 单频道失败不阻塞 */ }
-      }
-      if (!dead) setLoading(false);
+      const results = await Promise.all(POD_CHANNELS.map(async ch => {
+        const songs = await lxapi.search(ch.query, ch.source, 1, 20).catch(() => [] as SongItem[]);
+        return [ch.id, songs] as const;
+      }));
+      if (dead) return;
+      const merged: Record<string, SongItem[]> = { ...feeds };
+      results.forEach(([id, songs]) => { merged[id] = songs; });
+      setFeeds(merged);
+      cacheSet('pod.feeds', merged);
+      setLoading(false);
     })();
     return () => { dead = true; };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const openChannel = (ch: PodChannel) => {
     const songs = feeds[ch.id] || [];

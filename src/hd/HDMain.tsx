@@ -70,20 +70,20 @@ export function HDMain() {
   const [loveCount, setLoveCount] = useState<number | null>(null); // lx67:侧栏"我喜欢的"数量统计
   const { connected, token } = useApp();
 
-  // 歌单列表(本地 + 同步),侧栏「歌单」组
+  // 歌单列表(本地+同步)与"我喜欢的"计数——lx91:合并为单次 fetchLists(原先两个 effect 各拉一次=双网络开销)
   useEffect(() => {
     const local = library.all().map(p => ({ key: p.id, localId: p.id, name: p.name, count: p.songs.length, songs: p.songs as SongItem[] }));
     setPls(local);
-    if (connected && token) {
-      sync.fetchLists().then(s => {
-        if (!s) return;
-        setPls([...local, ...(s.userList || []).map(u => ({
-          key: u.id, name: u.name,
-          count: (u.list || []).length,
-          songs: (u.list || []).map(lxToApp),
-        }))]);
-      }).catch(() => {});
-    }
+    if (!connected || !token) return;
+    sync.fetchLists().then(s => {
+      if (!s) return;
+      setLoveCount((s.loveList || []).length);
+      setPls([...local, ...(s.userList || []).map(u => ({
+        key: u.id, name: u.name,
+        count: (u.list || []).length,
+        songs: (u.list || []).map(lxToApp),
+      }))]);
+    }).catch(() => {});
   }, [connected, token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const openPl = (pl: { localId?: string; name: string; count: number; songs: SongItem[] }) => {
@@ -92,11 +92,7 @@ export function HDMain() {
       : { title: pl.name, songs: pl.songs, meta: `${pl.count} 首 · 同步歌单` });
   };
 
-  // lx67:登录后拉"我喜欢的"数量(侧栏展示)
-  useEffect(() => {
-    if (!connected || !token) { setLoveCount(null); return; }
-    sync.fetchLists().then(s => { if (s) setLoveCount((s.loveList || []).length); }).catch(() => {});
-  }, [connected, token]);
+  // lx67:登录后拉"我喜欢的"数量(侧栏展示)——lx91 并入上方歌单 effect,此处留空
 
   const openFavorites = () => {
     if (!connected || !token) { hdNav()?.navigate('AuthLogin'); return; }
@@ -197,14 +193,17 @@ export function HDMain() {
 }
 
 // 内容区首屏:四 tab 层叠(保状态) + 底部播放条
+// lx91:懒挂载——首访才渲染(冷启动只挂 Home,不再四 tab 同时开火 8+ 网络请求);访问后保持存活
 function TabsHost({ tab, setTab }: { tab: number; setTab: (i: number) => void }) {
+  const [visited, setVisited] = useState<number[]>([0]);
+  useEffect(() => { setVisited(v => (v.includes(tab) ? v : [...v, tab])); }, [tab]);
   return (
     <View style={{ flex: 1 }}>
       <View style={st.tabStack} collapsable={false}>
-        <View style={[st.tabHost, tab !== 0 && st.tabOff]}><HDHome onGotoSearch={() => setTab(2)} /></View>
-        <View style={[st.tabHost, tab !== 1 && st.tabOff]}><HDPodcast /></View>
-        <View style={[st.tabHost, tab !== 2 && st.tabOff]}><HDSearch /></View>
-        <View style={[st.tabHost, tab !== 3 && st.tabOff]}><HDBoards /></View>
+        <View style={[st.tabHost, tab !== 0 && st.tabOff]}>{visited.includes(0) ? <HDHome onGotoSearch={() => setTab(2)} /> : null}</View>
+        <View style={[st.tabHost, tab !== 1 && st.tabOff]}>{visited.includes(1) ? <HDPodcast /> : null}</View>
+        <View style={[st.tabHost, tab !== 2 && st.tabOff]}>{visited.includes(2) ? <HDSearch /> : null}</View>
+        <View style={[st.tabHost, tab !== 3 && st.tabOff]}>{visited.includes(3) ? <HDBoards /> : null}</View>
       </View>
       <HDPlayBar />
     </View>

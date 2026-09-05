@@ -17,6 +17,7 @@ import { lxapi } from '../services/lxapi';
 import type { SongListMeta } from '../services/server';
 import { toast } from '../components/Dialog';
 import { hdNav } from './hdnav';
+import { cacheStale, cacheSet } from './hdcache';
 import type { SongItem } from '../services/server';
 
 export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
@@ -27,13 +28,16 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
   const [snap, setSnap] = useState<UserListsSnapshot | null>(null);
   const [recents, setRecents] = useState<SongItem[]>([]);
   const [dailyBusy, setDailyBusy] = useState(false);
-  // 推荐歌单(五源聚合,对齐桌面版 HomeScreen「推荐歌单」区)
-  const [recPls, setRecPls] = useState<SongListMeta[]>([]);
-  const [recSource, setRecSource] = useState('');
+  // 推荐歌单(五源聚合)——lx91:缓存秒开 + 后台刷新(五源聚合上游慢,是首页加载慢主源)
+  const [recPls, setRecPls] = useState<SongListMeta[]>(() => cacheStale<SongListMeta[]>('home.recPls') || []);
+  const [recSource, setRecSource] = useState(() => cacheStale<string>('home.recSource') || '');
 
   useEffect(() => {
-    lxapi.songListAuto('', '5', 1, 18).then(r => { setRecPls(r.list); setRecSource(r.source); }).catch(() => {});
-  }, []);
+    lxapi.songListAuto('', '5', 1, 18).then(r => {
+      setRecPls(r.list); setRecSource(r.source);
+      cacheSet('home.recPls', r.list); cacheSet('home.recSource', r.source);
+    }).catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const refresh = () => {
     setLocalPls(library.all());

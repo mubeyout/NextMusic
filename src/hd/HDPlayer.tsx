@@ -51,17 +51,17 @@ export function HDPlayer() {
   const [lyrics, setLyrics] = useState<LyricLine[] | null>(null);
   const [faved, setFaved] = useState(false);
   const trackW = React.useRef(0);
-  // v1.1.8 唱片旋转(18s/转;web JS driver——RNW Animated useNativeDriver 必 false)
+  // v1.1.8 唱片旋转(18s/转;web 必须 JS driver——RNW Animated useNativeDriver 必 false,原生端 native driver 零 JS 开销)
   const spin = React.useRef(new Animated.Value(0)).current;
-  // lx83:TV 原生伪频谱 24 bar——播放错相律动,暂停回落
-  // (v3 只渲染不驱动,Animated.Value 恒 0,视觉=死点——老板"没有频谱"的根因)
+  // lx91:频谱 24 bar 全部 native driver(transform scaleY/translateY)——v3 的 height JS 动画每帧 24 次状态更新打满 JS 线程=卡顿真凶之一
   const specAnims = React.useRef(Array.from({ length: 24 }, () => new Animated.Value(0.06))).current;
   const specLoops = React.useRef<Array<Animated.CompositeAnimation | null>>([]);
+  const NATIVE = Platform.OS !== 'web';
   const spinLoop = React.useRef<Animated.CompositeAnimation | null>(null);
   React.useEffect(() => {
     if (playing) {
       if (!spinLoop.current) {
-        spinLoop.current = Animated.loop(Animated.timing(spin, { toValue: 1, duration: 18000, easing: Easing.linear, useNativeDriver: false }));
+        spinLoop.current = Animated.loop(Animated.timing(spin, { toValue: 1, duration: 18000, easing: Easing.linear, useNativeDriver: NATIVE }));
       }
       spinLoop.current.start();
     } else {
@@ -70,14 +70,15 @@ export function HDPlayer() {
   }, [playing, spin]);
   const spinDeg = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
 
-  // lx83:频谱驱动——每根 bar 固定伪随机相位(错相不齐步,视觉有机);暂停全体回落基线
+  // lx91:频谱驱动——每根 bar 独立 native-driven transform 循环(错相伪随机);暂停全体回落基线。
+  // scaleY 从中心细缩,translateY=(1-a)*29 同步下移锚底——两者都 native driver,JS 线程零参与
   React.useEffect(() => {
     if (playing) {
       specAnims.forEach((a, i) => {
         if (specLoops.current[i]) return;
         const seed = (i * 2654435761) % 997;
         const dur = 300 + (seed % 380);
-        const step = (to: number, ms: number) => Animated.timing(a, { toValue: to, duration: ms, easing: Easing.inOut(Easing.quad), useNativeDriver: false });
+        const step = (to: number, ms: number) => Animated.timing(a, { toValue: to, duration: ms, easing: Easing.inOut(Easing.quad), useNativeDriver: NATIVE });
         const loop = Animated.loop(Animated.sequence([
           step(0.3 + ((seed * 7) % 58) / 100, dur),
           step(0.08 + ((seed * 13) % 26) / 100, dur * 0.8),
@@ -90,7 +91,7 @@ export function HDPlayer() {
     } else {
       specLoops.current.forEach(l => l?.stop());
       specLoops.current = [];
-      specAnims.forEach(a => Animated.timing(a, { toValue: 0.06, duration: 420, useNativeDriver: false }).start());
+      specAnims.forEach(a => Animated.timing(a, { toValue: 0.06, duration: 420, useNativeDriver: NATIVE }).start());
     }
   }, [playing]); // eslint-disable-line react-hooks/exhaustive-deps
   React.useEffect(() => () => { specLoops.current.forEach(l => l?.stop()); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -284,11 +285,17 @@ export function HDPlayer() {
             {!current.img ? <View style={[st.vinylArt, st.artFallback]}><Icon name="music" size={52} color={C.text3} /></View> : null}
             <View style={st.vinylHole} />
           </View>
-          {/* lx83:活频谱——24 bar 播放律动(错相),暂停回落 */}
+          {/* lx91:活频谱——native transform 驱动(scaleY+translateY 锚底),高度固定不再每帧 setState */}
           <View style={st.spectrum} pointerEvents="none">
-            {specAnims.map((a, i) => (
-              <Animated.View key={i} style={[st.specBar, { backgroundColor: C.brand, opacity: 0.26 + (i % 5) * 0.13, height: a.interpolate({ inputRange: [0, 1], outputRange: [5, 58] }) }]} />
-            ))}
+            {specAnims.map((a, i) => {
+              const ty = a.interpolate({ inputRange: [0, 1], outputRange: [27, 0] }); // (1-a)*27.5 锚底补偿(高55/2)
+              return (
+                <Animated.View key={i} style={[st.specBar, {
+                  backgroundColor: C.brand, opacity: 0.26 + (i % 5) * 0.13,
+                  transform: [{ translateY: ty }, { scaleY: a }],
+                }]} />
+              );
+            })}
           </View>
           <View style={st.srcPill}>
             <View style={st.srcDot} />
@@ -385,7 +392,7 @@ const st = StyleSheet.create({
   backLabel: { color: '#ffffffcc', fontSize: 13, fontWeight: '600' },
   vinylWrap: { width: 228, height: 228, borderRadius: 114, backgroundColor: '#0d100e', borderWidth: 5, borderColor: '#161a17', alignItems: 'center', justifyContent: 'center', boxShadow: '0 18px 44px rgba(0,0,0,.55), 0 0 36px rgba(30,215,96,.14)' },
   spectrum: { flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: 58, marginTop: 20 },
-  specBar: { width: 6, borderRadius: 3 },
+  specBar: { width: 6, borderRadius: 3, height: 55 },
   vinylArt: { width: 150, height: 150, borderRadius: 75 },
   vinylHole: { position: 'absolute', width: 12, height: 12, borderRadius: 6, backgroundColor: '#0a0c0b', borderWidth: 3, borderColor: '#222823' },
   srcPill: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 24, borderRadius: 12, paddingHorizontal: 12, marginTop: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,.16)', backgroundColor: 'rgba(255,255,255,.06)' },

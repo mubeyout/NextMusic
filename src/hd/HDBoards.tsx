@@ -11,6 +11,7 @@ import { lxapi } from '../services/lxapi';
 import type { SongItem } from '../services/server';
 import { toast } from '../components/Dialog';
 import { hdNav } from './hdnav';
+import { cacheStale, cacheSet } from './hdcache';
 
 type Board = { id: string; name: string; bangid: string; image?: string };
 const SOURCES: { key: string; label: string }[] = [
@@ -29,17 +30,21 @@ const ACCENTS: [string, string][] = [
 export function HDBoards() {
   const insets = useSafeAreaInsets();
   const [src, setSrc] = useState('kg');
-  const [boards, setBoards] = useState<Board[] | null>(null);
+  // lx91:缓存回填——首帧就有卡(陈旧也先给,后台刷新覆盖);切源回访同 key 秒开
+  const [boards, setBoards] = useState<Board[] | null>(() => cacheStale<Board[]>('boards.kg'));
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     let dead = false;
     // SWR:切源时保留旧榜单直到新数据到达 —— 避免加载空窗期 D-pad 焦点搜索落空漂回侧栏
+    const key = `boards.${src}`;
+    const cachedBoards = cacheStale<Board[]>(key);
+    if (cachedBoards && !boards) setBoards(cachedBoards);
     lxapi.leaderboardBoards(src)
-      .then(bs => { if (!dead) setBoards(bs); })
+      .then(bs => { if (!dead) { setBoards(bs); cacheSet(key, bs); } })
       .catch(() => { if (!dead) setBoards(prev => prev || []); });
     return () => { dead = true; };
-  }, [src]);
+  }, [src]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const openBoard = async (b: Board) => {
     if (busy) return;
