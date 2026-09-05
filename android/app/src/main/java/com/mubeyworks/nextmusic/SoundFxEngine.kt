@@ -105,12 +105,19 @@ object SoundFxEngine {
           val loudE = (viper?.hasKey("loudnessEnable") == true) && viper.getBoolean("loudnessEnable")
           // lx52 AutoEQ
           val aq = viper?.getArray("autoeq")
+          // lx59:坑122 JS 传对象数组会 ClassCastException(Map→Array)——整个 update 被吞=音效全灭;
+          // 逐元素防御:非数组元素跳过,三段式 try 不再连坐
           val autoeq: Array<Array<Any>>? = if (aq != null && aq.size() > 0) {
-              Array(minOf(10, aq.size())) { i ->
-                  val f = aq.getArray(i) ?: return@Array null
-                  @Suppress("UNCHECKED_CAST")
-                 arrayOf<Any>(f.getString(0).let { if (it == "lowshelf" || it == "highshelf" || it == "peaking") it else "peaking" }, f.getDouble(1), f.getDouble(2), f.getDouble(3))
-              }.let { arr -> if (arr.any { it == null }) null else arr as Array<Array<Any>> }
+              val list = ArrayList<Array<Any>>()
+              for (i in 0 until minOf(10, aq.size())) {
+                  try {
+                      val f = aq.getArray(i) ?: continue
+                      list.add(arrayOf<Any>(
+                          f.getString(0).let { if (it == "lowshelf" || it == "highshelf" || it == "peaking") it else "peaking" },
+                          f.getDouble(1), f.getDouble(2), f.getDouble(3)))
+                  } catch (_: Throwable) { continue }
+              }
+              if (list.isEmpty()) null else list.toTypedArray()
           } else null
           val ap = if (viper?.hasKey("autoeqPreamp") == true) viper.getDouble("autoeqPreamp") else 0.0
           config = Config(gains, rid, main, send, pEnable, pSpeed, pDist, bm, bl, dE, dL, cE, cL, lE, loudE, autoeq, ap)

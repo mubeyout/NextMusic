@@ -104,7 +104,7 @@ return (
     <NavigationContainer ref={navRef} theme={navTheme}>
       {/* 坑108:slide_from_right 在 TV(米电视)上转场后原生焦点链断裂——D-pad 全死但 touch 正常;HD 恒用 fade */}
       {/* lx57:转场最终方案 none(直切)——lx49 fade 后一加实测仍有"变亮一下"(两页半透明叠加的固有特性,31→66→35);直切零中间态,物理上无闪。速度感也更快 */}
-      <Stack.Navigator initialRouteName={initial} screenOptions={{ headerShown: false, animation: 'none', contentStyle: { backgroundColor: C.bg }, freezeOnBlur: true, enableUnstableScreenRotation: false }}>
+      <Stack.Navigator initialRouteName={initial} screenOptions={{ headerShown: false, animation: 'none', contentStyle: { backgroundColor: C.bg }, freezeOnBlur: true }}>
         <Stack.Screen name="Boot" component={IS_HD ? HDBootScreen : BootScreen} />
         <Stack.Screen name="Server" component={ServerScreen} />
         <Stack.Screen name="Auth" component={AuthScreen} />

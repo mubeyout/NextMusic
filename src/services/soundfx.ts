@@ -184,7 +184,7 @@ function applyNative() {
         limiterEnable: settings.viper.limiterEnable,
         loudnessEnable: settings.viper.loudnessEnable,
         autoeq: settings.viper.autoeqOn && settings.viper.autoeqName
-          ? (autoeqProfile(settings.viper.autoeqName)?.f ?? []).map(f => ({ 0: f[0], 1: f[1], 2: f[2], 3: f[3] }))
+          ? (autoeqProfile(settings.viper.autoeqName)?.f ?? []).map(f => [f[0], f[1], f[2], f[3]] as (string | number)[])
           : [],
         autoeqPreamp: settings.viper.autoeqOn ? (autoeqProfile(settings.viper.autoeqName)?.preamp ?? 0) : 0,
       },
