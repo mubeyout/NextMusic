@@ -299,7 +299,7 @@ export function FxScreen() {
           {SOUND_MODES.filter(m => m.id !== 'custom').map(m => {
             const active = currentSoundMode() === m.id;
             return (
-              <T key={m.id} activeOpacity={0.75} onPress={() => applySoundMode(m.id)} style={{ flex: 1 }}>
+              <T key={m.id} activeOpacity={0.75} onPress={() => applySoundMode(m.id)} style={st.modeCell}>
                 <View style={[st.modeCard, active && st.modeCardOn]}>
                   <Text style={[st.modeName, active && st.modeNameOn]}>{m.name}</Text>
                   <Text style={st.modeDesc} numberOfLines={1}>{m.desc}</Text>
@@ -450,14 +450,14 @@ export function FxScreen() {
         {/* ===== AutoEQ 耳机校正（lx52） ===== */}
         <View style={st.card}>
           <View style={st.cardHead}>
-            <Text style={st.cardTitle}>AutoEQ 耳机校正<Text style={st.cardHint}>（按耳机实测频响自动全频投到哈曼目标曲线）</Text></Text>
+            <Text style={st.cardTitleAuto}>AutoEQ 耳机校正</Text>
             <T activeOpacity={0.7} onPress={() => setViper({ autoeqOn: !settings.viper.autoeqOn })} disabled={!settings.viper.autoeqName}>
               <View style={[st.switch, settings.viper.autoeqOn && settings.viper.autoeqName && st.switchOn]}>
                 <View style={[st.knob, settings.viper.autoeqOn && settings.viper.autoeqName && st.knobOn]} />
               </View>
             </T>
           </View>
-          <Text style={[st.cardHint, { marginBottom: 8 }]}>选择耳机型号（{AUTOEQ_MODELS.length} 个，来自 AutoEq 实测数据库）</Text>
+          <Text style={[st.cardHint, { marginBottom: 8 }]}>按耳机实测频响自动校正到哈曼目标曲线 · {AUTOEQ_MODELS.length} 个型号</Text>
           <TextInput
             style={st.aeqInput}
             placeholder="搜索耳机型号…"
@@ -618,11 +618,12 @@ const st = StyleSheet.create({
   chipAdd: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', borderColor: C.strokeStrong, alignItems: 'center', justifyContent: 'center' },
   chipAddText: { color: C.text3, fontSize: 15, fontWeight: '800', lineHeight: 17 },
   modeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
-  modeCard: { borderRadius: 12, backgroundColor: C.surface2, paddingHorizontal: 12, paddingVertical: 10, alignItems: 'center', minWidth: 100 },
+  modeCell: { width: '31%', flexGrow: 0, flexShrink: 0 },
+  modeCard: { borderRadius: 12, backgroundColor: C.surface2, paddingHorizontal: 6, paddingVertical: 10, alignItems: 'center', minHeight: 62, justifyContent: 'center' },
   modeCardOn: { backgroundColor: C.brand },
   modeName: { color: C.text, fontSize: 14, fontWeight: '700' },
   modeNameOn: { color: C.onBrand },
-  modeDesc: { color: C.text3, fontSize: 10, marginTop: 2 },
+  modeDesc: { color: C.text3, fontSize: 10, marginTop: 2, textAlign: 'center' },
   advToggle: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, marginBottom: 4 },
   advToggleText: { color: C.text2, fontSize: 14, fontWeight: '600' },
   advHint: { color: C.text3, fontSize: 11 },
@@ -635,7 +636,8 @@ const st = StyleSheet.create({
 
   // 卡片
   card: { backgroundColor: C.surface, borderRadius: 12, padding: 14, marginBottom: 12 },
-  cardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  cardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, gap: 8 },
+  cardTitleAuto: { flex: 1, color: C.text, fontSize: 14, fontWeight: '700' },
   cardTitle: { color: C.text, fontSize: 14, fontWeight: '700' },
   cardMeta: { color: C.brandText, fontSize: 11, fontWeight: '700', maxWidth: 120 },
   cardHint: { color: C.text3, fontSize: 11, fontWeight: '500' },
