@@ -228,7 +228,7 @@ const st = StyleSheet.create({
   recSub: { color: C.text3, fontSize: 8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   // 卡片内文字离边留气口(老板反馈:文字太贴边,左右和底部缺 padding)
-  plCard: { width: 132, gap: 5, paddingBottom: 8 },
+  plCard: { width: '100%', gap: 5, paddingBottom: 8 },
   plArt: { width: '100%', aspectRatio: 1, borderRadius: 9 },
   plCount: { position: 'absolute', bottom: 5, right: 5, backgroundColor: 'rgba(0,0,0,.6)', borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
   plCountText: { color: '#fff', fontSize: 8 },
