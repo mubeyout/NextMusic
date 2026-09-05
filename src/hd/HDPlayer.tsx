@@ -240,8 +240,13 @@ export function HDPlayer() {
 
       <View style={[st.main, { paddingTop: Math.max(insets.top, 18), paddingBottom: Math.max(insets.bottom, 14) }]}>
         <View style={st.artCol}>
-          {/* lx68 桌面同构:频谱动效环 + 旋转圆形唱片 */}
-          <SpectrumRing size={330} playing={playing} />
+          {/* lx68 桌面同构:旋转圆形唱片 + 静态律动环(SpectrumRing 是 web DOM 组件,TV 原生用 View 环替代——坑125) */}
+          <View style={st.ringOuter} pointerEvents="none">
+            <View style={[st.ringDot, { top: 2, left: '50%' }]} />
+            <View style={[st.ringDot, { bottom: 2, left: '50%' }]} />
+            <View style={[st.ringDot, { left: 2, top: '50%' }]} />
+            <View style={[st.ringDot, { right: 2, top: '50%' }]} />
+          </View>
           <View style={st.vinylWrap}>
             <Animated.Image
               source={current.img ? { uri: current.img } : undefined}
@@ -335,6 +340,8 @@ const st = StyleSheet.create({
   bgArt: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.5 },
   bgVeil: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(6,8,7,.62)' },
   vinylWrap: { width: 240, height: 240, borderRadius: 120, backgroundColor: '#0d100e', borderWidth: 6, borderColor: '#161a17', alignItems: 'center', justifyContent: 'center' },
+  ringOuter: { position: 'absolute', width: 330, height: 330, borderRadius: 165, borderWidth: 1.5, borderColor: '#ffffff22' },
+  ringDot: { position: 'absolute', width: 5, height: 5, borderRadius: 3, backgroundColor: C.brandDim },
   vinylArt: { width: 150, height: 150, borderRadius: 75 },
   vinylHole: { position: 'absolute', width: 12, height: 12, borderRadius: 6, backgroundColor: '#0a0c0b', borderWidth: 3, borderColor: '#222823' },
   srcTag: { color: '#ffffff66', fontSize: 11, letterSpacing: 2, marginTop: 14 },
