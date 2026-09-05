@@ -82,7 +82,6 @@ export function HDBoards() {
               style={[st.card, { boxShadow: shadowOf(b.name) }]}
               focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }}
 >
-              {/* 桌面同构:方形封面(图/渐变) + 居中排名图标 + 右下源 chip + 名称/副题 */}
               {b.image ? (
                 <Image source={{ uri: b.image }} style={st.cardCover} />
               ) : (
@@ -117,11 +116,12 @@ const st = StyleSheet.create({
   pillLabelOn: { color: C.onBrand, fontWeight: '600' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   card: { borderRadius: 12, backgroundColor: C.surface },
+  cardCoverWrap: { borderRadius: 12 },
   cardCover: { width: '100%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
   cardChipWrapper: { position: 'absolute', right: 8, bottom: 80 },
   cardChip: { backgroundColor: 'rgba(0,0,0,.55)', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
   cardChipText: { color: '#fff', fontSize: 9 },
-  cardBody: { padding: 10, gap: 2 },
+  cardBody: { padding: 10, gap: 2, alignSelf: 'center', width: '94%' },
   cardName: { color: C.text, fontSize: H.font.md, fontWeight: '700', lineHeight: 16 },
   cardSub: { color: C.text3, fontSize: 9 },
   tip: { alignItems: 'center', gap: 10, paddingVertical: 54 },
