@@ -5,7 +5,8 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-nat
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
-import { C, H, shadowOf } from './hdtokens';
+import { C, T, H, shadowOf } from './hdtokens';
+import { softGrad } from '../theme/tokens';
 import { HDGrid } from './HDGrid';
 import { HDTouch } from './HDTouch';
 import { HDSongRow } from './HDSongRow';
@@ -28,11 +29,14 @@ const POD_CHANNELS: PodChannel[] = [
   { id: 'kids', name: '儿童故事', query: '儿童故事 睡前', sub: '童话 · 寓言', source: 'kw' },
 ];
 
-const POD_GRADS: [string, string][] = [
+const POD_GRADS_DARK: [string, string][] = [
   ['#5B6EE1', '#8A6BD6'], ['#E1656B', '#D6558A'], ['#2C8AE0', '#3FB8AF'],
   ['#7C4DFF', '#3F8CFF'], ['#0FA3A3', '#1ED760'], ['#4A5568', '#718096'],
   ['#D46A31', '#E89B3C'], ['#508BD9', '#6BC5D2'],
 ];
+// lx63:浅色主题 pastel 版(同色相提亮 82%)——深渐变卡在浅色页面里突兀,老板报"选中卡片背景还是深色"
+const POD_GRADS_LIGHT: [string, string][] = POD_GRADS_DARK.map(([a, b]) => [softGrad(a, b)[0], softGrad(a, b)[1]] as [string, string]);
+
 
 export function HDPodcast() {
   const insets = useSafeAreaInsets();
@@ -91,11 +95,11 @@ export function HDPodcast() {
           const f = feeds[ch.id] || [];
           return (
             <HDTouch key={ch.id} style={[st.card, { boxShadow: shadowOf(ch.name) }]} onPress={() => openChannel(ch)} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12 }} focusBg={C.inset}>
-              <LinearGradient colors={POD_GRADS[ci % POD_GRADS.length]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.cardCover}>
-                <Icon name="podcast" size={30} color="#FFFFFF" />
+              <LinearGradient colors={(T.light ? POD_GRADS_LIGHT : POD_GRADS_DARK)[ci % POD_GRADS_DARK.length]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.cardCover}>
+                <Icon name="podcast" size={30} color={T.light ? '#2A2A2A' : '#FFFFFF'} />
                 <View style={{ flex: 1 }} />
-                <HDTouch style={st.cardPlay} onPress={() => playChannel(ch)} focusStyle={{ borderWidth: 2, borderColor: '#FFFFFF', borderRadius: 15 }} activeOpacity={0.8}>
-                  <Icon name="play" size={13} color="#FFFFFF" />
+                <HDTouch style={[st.cardPlay, T.light && { backgroundColor: 'rgba(0,0,0,.18)' }]} onPress={() => playChannel(ch)} focusStyle={{ borderWidth: 2, borderColor: T.light ? '#2A2A2A' : '#FFFFFF', borderRadius: 15 }} activeOpacity={0.8}>
+                  <Icon name="play" size={13} color={T.light ? '#2A2A2A' : '#FFFFFF'} />
                 </HDTouch>
               </LinearGradient>
               <Text style={st.cardName} numberOfLines={1}>{ch.name}</Text>

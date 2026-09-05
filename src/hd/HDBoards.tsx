@@ -4,7 +4,8 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Image } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
-import { C, H, shadowOf } from './hdtokens';
+import { C, T, H, shadowOf } from './hdtokens';
+import { softGrad } from '../theme/tokens';
 import { HDTouch } from './HDTouch';
 import { HDGrid } from './HDGrid';
 import { lxapi } from '../services/lxapi';
@@ -21,10 +22,12 @@ const SOURCES: { key: string; label: string }[] = [
   { key: 'mg', label: '咪咕' },
 ];
 
-const ACCENTS: [string, string][] = [
+const ACCENTS_DARK: [string, string][] = [
   ['#1F5E3A', '#0F2E1F'], ['#1F87D6', '#1F3A6E'], ['#B01F87', '#5E1F4E'],
   ['#D67A1F', '#6E3A1F'], ['#871FD6', '#3A1F5E'], ['#1FD6C0', '#1F5E5A'],
 ];
+// lx63:浅色 pastel 版
+const ACCENTS_LIGHT: [string, string][] = ACCENTS_DARK.map(([a, b]) => [softGrad(a, b)[0], softGrad(a, b)[1]] as [string, string]);
 
 export function HDBoards() {
   const insets = useSafeAreaInsets();
@@ -86,8 +89,8 @@ export function HDBoards() {
               {b.image ? (
                 <Image source={{ uri: b.image }} style={st.cardCover} />
               ) : (
-                <LinearGradient colors={ACCENTS[i % ACCENTS.length]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.cardCover}>
-                  <Icon name="ranking" size={42} color="#FFFFFFB3" />
+                <LinearGradient colors={(T.light ? ACCENTS_LIGHT : ACCENTS_DARK)[i % ACCENTS_DARK.length]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.cardCover}>
+                  <Icon name="ranking" size={42} color={T.light ? '#2A2A2AB3' : '#FFFFFFB3'} />
                 </LinearGradient>
               )}
               <View style={st.cardChipWrapper}>
