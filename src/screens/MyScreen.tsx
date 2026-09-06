@@ -104,7 +104,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
   // lx123:本地同名优先(平台导入副本/本地独有不被服务器同名顶成双显)
   const localGridNames = new Set(localPlaylists.map(p => p.name));
   const gridItems: { key: string; localId?: string; name: string; count: number; img?: string; songs: SongItem[] }[] = [
-    ...localPlaylists.map(p => ({
+    ...localPlaylists.filter(p => p.name !== '我喜欢的').map(p => ({ // lx124:我喜欢的走专用入口(空壳不再显示)
       key: p.id, localId: p.id, name: p.name, count: p.songs.length, img: p.cover || p.songs[0]?.img,
       songs: p.songs,
     })),

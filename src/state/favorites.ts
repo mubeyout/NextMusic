@@ -26,14 +26,19 @@ export async function setFav(s: SongItem, on: boolean, pushRemote?: (snap: any) 
   if (on) set.add(k); else set.delete(k);
   kv.set(KEY, JSON.stringify([...set]));
   notifyFav();
-  // 本机「我喜欢的」歌单同步
+  // 本机「我喜欢的」歌单同步——lx124:仅收藏时确保歌单存在(取消收藏不再空建=幽灵空壳"删不掉"根因)
   try {
     let pl = library.all().find(p => p.name === '我喜欢的');
-    if (!pl) pl = library.create('我喜欢的');
-    const songs = on
-      ? [s, ...pl.songs.filter(x => songKey(x) !== k)]
-      : pl.songs.filter(x => songKey(x) !== k);
-    library.update(pl.id, { songs });
+    if (!pl) {
+      if (!on) { /* 无歌单且取消:跳过,不造空壳 */ }
+      else pl = library.create('我喜欢的');
+    }
+    if (pl) {
+      const songs = on
+        ? [s, ...pl.songs.filter(x => songKey(x) !== k)]
+        : pl.songs.filter(x => songKey(x) !== k);
+      library.update(pl.id, { songs });
+    }
   } catch { /* ignore */ }
   // 服务器 loveList 双向同步（登录时）——lx101 修复:取消收藏也从服务器移除(原先只加不减,HD/手机取消后重拉又复活)
   if (pushRemote && fetchSnap) {

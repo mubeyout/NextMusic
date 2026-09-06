@@ -109,6 +109,11 @@ function trackToAudioPro(t: QueueTrack, url: string, headers?: Record<string, st
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const { token , connected } = useApp();
+  // lx124:一次性清扫"我喜欢的"空壳歌单(setFav 旧版取消收藏也会空建)
+  React.useEffect(() => {
+    try { library.all().forEach(p => { if (p.name === '我喜欢的' && !(p.songs || []).length) library.remove(p.id); }); } catch { /* ignore */ }
+  }, []);
+
   // lx107:本机歌单自动同步(老板:同步是自动的,不要手动选项)——登录后 library 变更去抖镜像上传
   React.useEffect(() => {
     if (!connected || !token) return;
