@@ -5,6 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon, type IconName } from '../theme/Icon';
 import { C } from '../theme/tokens';
+import { IS_HD } from '../services/appversion';
+import { HDTouch } from '../hd/HDTouch';
 
 // 统一子页 header：返回 + 居中标题 + 右侧动作槽
 export function PageHeader({ title, right, onBack }: { title: string; right?: React.ReactNode; onBack?: () => void }) {
@@ -13,9 +15,15 @@ export function PageHeader({ title, right, onBack }: { title: string; right?: Re
   const back = onBack || (() => nav.goBack());
   return (
     <View style={[h.wrap, { paddingTop: insets.top + 20 }]}>
-      <TouchableOpacity onPress={back} hitSlop={6} style={h.sideBtn}>
-        <Icon name="back" size={22} />
-      </TouchableOpacity>
+      {IS_HD ? (
+        <HDTouch onPress={back} style={h.sideBtn}>
+          <Icon name="back" size={22} color={C.text} />
+        </HDTouch>
+      ) : (
+        <TouchableOpacity onPress={back} hitSlop={6} style={h.sideBtn}>
+          <Icon name="back" size={22} />
+        </TouchableOpacity>
+      )}
       <Text style={h.title} numberOfLines={1}>{title}</Text>
       <View style={h.sideBtn}>{right}</View>
     </View>

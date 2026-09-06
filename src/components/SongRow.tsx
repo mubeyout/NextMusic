@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Image } from 'react-native';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import type { SongItem } from '../services/server';
@@ -9,8 +9,10 @@ import type { SongItem } from '../services/server';
 export function SongRow({ song, onPress, playing, extra }: { song: SongItem; onPress?: () => void; playing?: boolean; extra?: React.ReactNode }) {
   const [focus, setFocus] = useState(false); // lx145:TV D-pad 光标(队列页无选中态)
   return (
-    <TouchableOpacity activeOpacity={0.7}
-      style={[st.row, st.ringBase, focus && st.ringOn]}
+    <Pressable
+      style={({ pressed }: { pressed: boolean }) => [
+        st.row, st.ringBase, focus && st.ringOn, pressed && { opacity: 0.7 },
+      ]}
       onPress={onPress} disabled={!onPress}
       focusable={!!onPress}
       onFocus={() => setFocus(true)}
@@ -28,12 +30,12 @@ export function SongRow({ song, onPress, playing, extra }: { song: SongItem; onP
       <View style={st.more}>
         {extra != null ? extra : <Icon name="more" size={20} color={C.text2} />}
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
 const st = StyleSheet.create({
-  row: { height: 46, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 6, borderRadius: 10 },
+  row: { minHeight: 50, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10, marginVertical: 1 }, // lx148:上下 padding
   ringBase: { borderWidth: 2, borderColor: 'transparent' }, // 常驻占位,布局恒定
   ringOn: { borderColor: C.brand, backgroundColor: C.hover },
   artWrap: { width: 46, height: 46, borderRadius: 6, overflow: 'hidden' },

@@ -276,6 +276,7 @@ export function HDMain() {
 // lx91:懒挂载——首访才渲染(冷启动只挂 Home,不再四 tab 同时开火 8+ 网络请求);访问后保持存活
 function TabsHost({ tab, setTab }: { tab: number; setTab: (i: number) => void }) {
   const [visited, setVisited] = useState<number[]>([0]);
+  const [pbCollect, setPbCollect] = useState<import('../services/server').SongItem | null>(null); // lx148:播放条收藏面板(全屏层)
   useEffect(() => { setVisited(v => (v.includes(tab) ? v : [...v, tab])); }, [tab]);
   return (
     <View style={{ flex: 1 }}>
@@ -285,7 +286,8 @@ function TabsHost({ tab, setTab }: { tab: number; setTab: (i: number) => void })
         <View style={[st.tabHost, tab !== 2 && st.tabOff]}>{visited.includes(2) ? <HDSearch /> : null}</View>
         <View style={[st.tabHost, tab !== 3 && st.tabOff]}>{visited.includes(3) ? <HDBoards /> : null}</View>
       </View>
-      <HDPlayBar />
+      <HDPlayBar onCollect={setPbCollect} />
+      {pbCollect ? <HDCollect song={pbCollect} onClose={() => setPbCollect(null)} /> : null}
     </View>
   );
 }
@@ -317,10 +319,9 @@ function PlItem({ name, count, add, onPress, onLongPress }: { name: string; coun
 }
 
 // 桌面式播放条:左(封面+曲目+收藏) 中(控件+进度) 右(队列/投屏/详情)
-function HDPlayBar() {
+function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server').SongItem) => void }) {
   const { current, playing, position, duration, toggle, skipNext, skipPrev, queue, shuffle, repeat, setShuffle, cycleRepeat } = usePlayer();
   const { faved } = useFav(current); // lx103:收藏态展示(操作走选歌单面板)
-  const [collectOpen, setCollectOpen] = useState(false);
   const pct = duration > 0 ? Math.min(1, position / duration) : 0;
 
   return (
@@ -370,7 +371,7 @@ function HDPlayBar() {
 
       {/* 右:收藏(点按弹选歌单面板,对齐手机端) */}
       <View style={st.pbRight}>
-        <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={() => current && setCollectOpen(true)}>
+        <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={() => current && onCollect?.(current)}>
           <Icon name="heart" size={14} color={faved ? C.brand : C.text2} />
         </HDTouch>
         <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={() => hdNav()?.navigate('Queue')}>
@@ -384,7 +385,6 @@ function HDPlayBar() {
           <Icon name="fullscreen" size={14} color={C.text2} />
         </HDTouch>
       </View>
-      {collectOpen && current ? <HDCollect song={current} onClose={() => setCollectOpen(false)} /> : null}
     </View>
   );
 }

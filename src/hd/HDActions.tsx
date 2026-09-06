@@ -35,18 +35,32 @@ export function HDActionHost() {
   useEffect(() => { host = setReq; return () => { if (host === setReq) host = null; }; }, []);
   useEffect(() => { if (req?.input) setVal(req.input.defaultValue || ''); }, [req]);
   const close = () => setReq(null);
-  // lx114:BACK 关面板(老板:离开后无法关闭一直悬浮)——挂最高优先级返回处理
+  // lx114:BACK 关面板
+  // lx149:焦点陷阱兜底——面板打开后,若焦点离开面板(方向键飘走),2.5s 内未回来自动关闭(否则光标永远回不来+关不掉)
+  const focusIn = useRef(0);
+  const trapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!req) return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => { setReq(null); return true; });
     return () => sub.remove();
   }, [req]);
+  useEffect(() => {
+    if (!req) { if (trapTimer.current) clearTimeout(trapTimer.current); return; }
+    focusIn.current = 1; // 打开瞬间视为在面板内
+    trapTimer.current = setTimeout(() => { focusIn.current = 0; }, 100);
+    const iv = setInterval(() => {
+      if (!focusIn.current) { setReq(null); return; } // 焦点已离开→自动关
+      focusIn.current = 0; // 每轮重置,面板内任何 focus 事件会再置 1
+    }, 2600);
+    return () => { clearInterval(iv); if (trapTimer.current) clearTimeout(trapTimer.current); };
+  }, [req]);
   if (!req) return null;
+  const markIn = () => { focusIn.current = 1; };
   const submit = () => { const v = val.trim(); close(); if (v) req.input?.onSubmit(v); };
   return (
     <View style={st.scrim} pointerEvents="box-none">
       <Pressable style={StyleSheet.absoluteFill} focusable={false} onPress={close} />
-      <View style={st.panel}>
+      <View style={st.panel} onFocus={markIn} onBlur={markIn}>
         <View style={st.head}>
           <Text style={st.title} numberOfLines={1}>{req.title}</Text>
           <HDTouch style={st.x} focusStyle={{ borderWidth: 1.5, borderColor: C.brand, borderRadius: 12 }} onPress={close}>
