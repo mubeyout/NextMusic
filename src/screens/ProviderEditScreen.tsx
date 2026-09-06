@@ -16,11 +16,11 @@ import { dialog, toast } from '../components/Dialog';
 
 // 类型卡数据（对齐 Figma NM-REMOTE-SELECT-001）；注：核心后台 LX Server 属于「使用方式与账号」的连接服务器流程，不是第三方媒体库，不在此列
 // icon:HD 卡片用
-const TYPE_CARDS: { type: ProviderType; title: string; badge?: string; sub: string; icon: 'music' | 'tv' | 'wave' | 'cloud' }[] = [
-  { type: 'navidrome', title: 'Navidrome / Subsonic', badge: '推荐', sub: '优先走 Subsonic 1.16.1 / OpenSubsonic 兼容协议', icon: 'music' },
-  { type: 'emby', title: 'Emby / Jellyfin', sub: '用户登录、音乐库选择、直放或服务端转码', icon: 'tv' },
+const TYPE_CARDS: { type: ProviderType; title: string; badge?: string; sub: string; icon: 'music' | 'tv' | 'wave' | 'cloud'; mbadge?: string; mcolor?: string }[] = [ // lx153:品牌色 monogram 徽标
+  { type: 'navidrome', title: 'Navidrome / Subsonic', badge: '推荐', sub: '优先走 Subsonic 1.16.1 / OpenSubsonic 兼容协议', icon: 'music', mbadge: 'N', mcolor: '#19A457' }, // Navidrome 品牌绿
+  { type: 'emby', title: 'Emby / Jellyfin', sub: '用户登录、音乐库选择、直放或服务端转码', icon: 'tv', mbadge: 'E', mcolor: '#52B54B' }, // Emby 品牌绿
   { type: 'daoliyu', title: '道理鱼音乐', sub: '专有适配；可用时优先协商兼容协议', icon: 'wave' },
-  { type: 'webdav', title: 'WebDAV 音乐目录', sub: '直接读取远程文件；本地建立只读元数据索引', icon: 'cloud' },
+  { type: 'webdav', title: 'WebDAV 音乐目录', sub: '直接读取远程文件；本地建立只读元数据索引', icon: 'cloud', mbadge: 'W', mcolor: '#3D7DE9' },
 ];
 
 // 连接页说明 / 输入 hint（对齐 Figma NM-REMOTE-SUBSONIC-001）
@@ -116,7 +116,10 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                   glow={SH.brand}
                   onPress={() => pickType(c.type)}
                 >
-                  <View style={hdSt.typeIcon}><Icon name={c.icon} size={30} color={C.brandText} /></View>
+                  <View style={[hdSt.typeIcon, c.mcolor ? { backgroundColor: c.mcolor } : null]}>
+                    {c.mbadge ? <Text style={{ color: '#fff', fontSize: 26, fontWeight: '900' }}>{c.mbadge}</Text>
+                      : <Icon name={c.icon} size={30} color={C.brandText} />}
+                  </View>
                   <Text style={hdSt.typeTitle}>{c.title}</Text>
                   {c.badge ? (
                     <View style={hdSt.typeBadge}><Text style={hdSt.typeBadgeText}>{c.badge}</Text></View>

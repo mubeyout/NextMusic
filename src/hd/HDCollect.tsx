@@ -55,7 +55,7 @@ export function HDCollect({ song, onClose }: { song: SongItem; onClose: () => vo
       <View style={st.panel}>
       <Text style={st.title}>收藏到</Text>
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-        <HDTouch style={st.row} onPress={toggle}>
+        <HDTouch style={st.row} onPress={toggle} hasTVPreferredFocus>
           <Icon name="heart" size={15} active={faved} color={faved ? C.brand : '#ffffff99'} />
           <Text style={[st.rowText, faved && { color: C.brand }]} numberOfLines={1}>我喜欢的{faved ? ' · 已收藏' : ''}</Text>
         </HDTouch>
@@ -96,7 +96,7 @@ export function HDCollect({ song, onClose }: { song: SongItem; onClose: () => vo
 }
 
 const st = StyleSheet.create({
-  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, elevation: 999 }, // lx150:全屏焦点捕捉器——光标脱离面板即落于此,立即关
+  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, elevation: 999 },
   panel: { position: 'absolute', left: (Dimensions.get('window').width - 380) / 2, top: 180, width: 380, maxHeight: 560, borderRadius: 18, backgroundColor: C.elev, borderWidth: 1, borderColor: C.border, padding: 14, gap: 8, elevation: 24 }, // lx148:与 HDActions 完全同位同宽 // lx147:与 HDActions 同位同主题
   head: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 2 },
   title: { color: C.text, fontSize: 14, fontWeight: '700', flex: 1 },

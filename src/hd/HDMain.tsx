@@ -287,7 +287,7 @@ function TabsHost({ tab, setTab }: { tab: number; setTab: (i: number) => void })
         <View style={[st.tabHost, tab !== 3 && st.tabOff]}>{visited.includes(3) ? <HDBoards /> : null}</View>
       </View>
       <HDPlayBar onCollect={setPbCollect} />
-      {pbCollect ? <HDCollect song={pbCollect} onClose={() => setPbCollect(null)} /> : null}
+      {pbCollect ? <View style={{ position: 'absolute', top: 0, bottom: 0, left: -H.sidebar, right: 0, zIndex: 999 }}><HDCollect song={pbCollect} onClose={() => setPbCollect(null)} /></View> : null}
     </View>
   );
 }
