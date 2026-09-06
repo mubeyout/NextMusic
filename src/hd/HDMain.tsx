@@ -9,6 +9,7 @@ import { Icon } from '../theme/Icon';
 import { C, H, SH, fmtSec } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { usePlayer } from '../state/PlayerProvider';
+import { isFav, setFav } from '../state/favorites';
 import { useApp } from '../state/AppState';
 import { library } from '../state/library';
 import { getRecents } from '../state/recent';
@@ -239,6 +240,31 @@ function PlItem({ name, count, add, onPress }: { name: string; count?: number; a
 // 桌面式播放条:左(封面+曲目+收藏) 中(控件+进度) 右(队列/投屏/详情)
 function HDPlayBar() {
   const { current, playing, position, duration, toggle, skipNext, skipPrev, queue, shuffle, repeat, setShuffle, cycleRepeat } = usePlayer();
+  // v1.2.0 播放条收藏(对齐播放页三同步链)
+  const { connected, token } = useApp();
+  const [faved, setFaved] = useState(false);
+  useEffect(() => {
+    if (!current) { setFaved(false); return; }
+    let dead = false;
+    let base = isFav(current);
+    if (connected && token) {
+      sync.fetchLists().then(s => {
+        if (dead || !s) return;
+        const key = `${current.source}_${current.songmid}`;
+        setFaved(base || s.loveList.some(x => x.id === key));
+      }).catch(() => setFaved(base));
+    } else setFaved(base);
+    return () => { dead = true; };
+  }, [current?.songmid, current?.source, connected, token]); // eslint-disable-line react-hooks/exhaustive-deps
+  const doFav = async () => {
+    if (!current) return;
+    setFaved(!faved);
+    try {
+      await setFav(current, !faved,
+        connected && token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined,
+        connected && token ? () => sync.fetchLists() : undefined);
+    } catch { setFaved(faved); }
+  };
   const pct = duration > 0 ? Math.min(1, position / duration) : 0;
 
   return (
@@ -287,6 +313,9 @@ function HDPlayBar() {
 
       {/* 右 */}
       <View style={st.pbRight}>
+        <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={doFav}>
+          <Icon name="heart" size={14} color={faved ? '#FF5A76' : C.text2} />
+        </HDTouch>
         <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={() => hdNav()?.navigate('Queue')}>
           <Icon name="queue" size={14} color={C.text2} />
           {queue.length ? <View style={st.badge}><Text style={st.badgeText}>{queue.length > 99 ? '99' : queue.length}</Text></View> : null}

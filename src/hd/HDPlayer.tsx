@@ -177,8 +177,13 @@ export function HDPlayer() {
   const pct = duration > 0 ? Math.min(1, position / duration) : 0;
 
   const doFav = async () => {
+    // v1.2.0 对齐手机端 CollectSheet.toggle:本地 MMKV+歌单+服务器 loveList 三同步
     setFaved(!faved);
-    try { await setFav(current, !faved); } catch { setFaved(faved); }
+    try {
+      await setFav(current, !faved,
+        connected && token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined,
+        connected && token ? () => sync.fetchLists() : undefined);
+    } catch { setFaved(faved); }
   };
 
   // ===== 桌面(网易云参照):封面模糊铺底 + 大图/歌词双列 + 底部一体控制条 =====

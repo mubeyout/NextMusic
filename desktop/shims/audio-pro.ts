@@ -28,7 +28,11 @@ const emit = (type: AudioProEventType, payload: Record<string, unknown> = {}) =>
   listeners.forEach(l => l({ type, payload: { position: audio.currentTime * 1000, duration: (audio.duration || 0) * 1000, track: curTrack ?? undefined, ...payload } } as never));
 
 audio.addEventListener('timeupdate', () => { if (!audio.paused) emit(AudioProEventType.PROGRESS); });
-audio.addEventListener('play', () => { state = AudioProState.PLAYING; emit(AudioProEventType.STATE_CHANGED, { state }); emit(AudioProEventType.PLAYING); if (curTrack) wireMediaSession(); });
+audio.addEventListener('play', () => {
+  // v1.2.0 兜底:任何播放路径(含直接操作 audio 元素)都保证 WebAudio 图+频谱 analyser 已建
+  try { ensureGraph(); actx?.resume?.().catch(() => {}); } catch { /* ignore */ }
+  state = AudioProState.PLAYING; emit(AudioProEventType.STATE_CHANGED, { state }); emit(AudioProEventType.PLAYING); if (curTrack) wireMediaSession();
+});
 audio.addEventListener('pause', () => { state = AudioProState.PAUSED; emit(AudioProEventType.STATE_CHANGED, { state }); emit(AudioProEventType.PAUSED); });
 audio.addEventListener('ended', () => { state = AudioProState.STOPPED; emit(AudioProEventType.STATE_CHANGED, { state }); emit(AudioProEventType.TRACK_ENDED); });
 audio.addEventListener('error', () => { state = AudioProState.STOPPED; emit(AudioProEventType.PLAYBACK_ERROR, { error: 'audio element error' }); });
@@ -115,6 +119,13 @@ function ensureGraph() {
     for (const b of eqNodes) { node.connect(b); node = b; }
     node.connect(panNode);
     panNode.connect(dryGain); dryGain.connect(actx.destination);
+    // v1.2.0 频谱环数据源:analyser 并联 tap 进信号链(悬空 analyser 读数恒 0——波浪不动的根因)
+    try {
+      const an = actx!.createAnalyser();
+      an.fftSize = 256; an.smoothingTimeConstant = 0.78;
+      panNode.connect(an);
+      (typeof window !== 'undefined') && ((window as never as Record<string, unknown>).__nmAnalyser = an);
+    } catch { /* 频谱退化伪律动 */ }
     panNode.connect(convolver); convolver.connect(wetGain); wetGain.connect(actx.destination);
     if (lastCfg && Object.keys(lastCfg).length) applyFx(lastCfg);
   } catch { /* WebAudio 不可用:裸 Audio 输出 */ }

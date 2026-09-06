@@ -42,32 +42,40 @@ export function SpectrumRing({ size, playing }: { size: number; playing: boolean
     return () => { cancelAnimationFrame(ref.current.raf); ref.current.an?.disconnect(); };
   }, []);
 
+  // v1.2.0 波浪环:连续平滑路径(SVG),径向渐变填充、无描边——替代离散 bar
   const R = size / 2;
-  const barLen = Math.max(10, size * 0.075);
-  const items: React.ReactNode[] = [];
-  for (let i = 0; i < BARS; i++) {
+  const inner = R + size * 0.02;               // 波浪内缘(贴唱片)
+  const amp = Math.max(12, size * 0.085);      // 最大振幅
+  const lv = playing ? levels : new Array(BARS).fill(0.05);
+  const pts: Array<[number, number]> = [];
+  for (let i = 0; i <= BARS; i++) {
     const a = (i / BARS) * Math.PI * 2 - Math.PI / 2;
-    const lv = playing ? levels[i] : 0.06;
-    const h = barLen * (0.18 + lv * 0.92);
-    const r0 = R + size * 0.045;
-    const x0 = R + Math.cos(a) * r0 - 1.5, y0 = R + Math.sin(a) * r0 - 1.5;
-    const x1 = R + Math.cos(a) * (r0 + h) - 1.5, y1 = R + Math.sin(a) * (r0 + h) - 1.5;
-    const w = Math.max(2, size * 0.006);
-    items.push(
-      <div key={i} style={{
-        position: 'absolute', left: 0, top: 0, width: w * 2, height: w * 2,
-        transform: `translate(${x0 - w}px, ${y0 - w}px)`,
-        pointerEvents: 'none',
-      }}>
-        <div style={{
-          position: 'absolute', left: w, top: -h / 2 * 0, width: w, height: h,
-          background: `linear-gradient(to top, ${C.brand}55, ${C.brand}EE)`,
-          borderRadius: w, transformOrigin: `50% ${h / 2}px`,
-          transform: `rotate(${(a * 180) / Math.PI + 90}deg) translateY(${-h / 2}px)`,
-          opacity: 0.55 + lv * 0.45,
-        }} />
-      </div>
-    );
+    const v = Math.max(0.06, lv[i % BARS]);
+    const r = inner + amp * v;
+    pts.push([R + Math.cos(a) * r, R + Math.sin(a) * r]);
   }
-  return <div style={{ width: size, height: size, position: 'relative', pointerEvents: 'none' }}>{items}</div>;
+  // Catmull-Rom → 平滑闭合曲线
+  const pt = (i: number): [number, number] => pts[Math.max(0, Math.min(BARS, i))];
+  let d = `M ${pt(0)[0].toFixed(1)} ${pt(0)[1].toFixed(1)}`;
+  for (let i = 0; i < BARS; i++) {
+    const p0 = pt(i - 1), p1 = pt(i), p2 = pt(i + 1), p3 = pt(i + 2);
+    const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6;
+    const c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
+    d += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`;
+  }
+  d += ' Z';
+  const h = React.createElement;
+  const ring = h('div', { style: { width: size, height: size, position: 'relative', pointerEvents: 'none' } as never },
+    h('svg', { width: size, height: size, viewBox: `0 0 ${size} ${size}`, style: { position: 'absolute', inset: 0, overflow: 'visible' } as never },
+      h('defs', null,
+        h('radialGradient', { id: 'nmWave', cx: '50%', cy: '50%', r: '50%' },
+          h('stop', { offset: '72%', stopColor: C.brand, stopOpacity: '0.06' }),
+          h('stop', { offset: '88%', stopColor: C.brand, stopOpacity: '0.34' }),
+          h('stop', { offset: '100%', stopColor: C.brandSoft, stopOpacity: '0.92' }),
+        ),
+      ),
+      h('path', { d, fill: 'url(#nmWave)', stroke: 'none', fillRule: 'evenodd' }),
+    ));
+  return ring;
 }
+
