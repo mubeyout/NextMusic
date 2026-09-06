@@ -115,8 +115,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     let timer: ReturnType<typeof setTimeout> | null = null;
     const mirror = async () => {
       try {
+        // lx118:本地镜像仅覆盖"本地独有"歌单——与服务器歌单同名的跳过
+        // (否则服务器侧删歌/改名会被本地同名整单覆盖=移除后复活的根因)
+        const snap = await sync.fetchLists();
+        if (!snap) return;
+        const serverNames = new Set((snap.userList || []).map(u => u.name));
         const pls = library.all()
-          .filter(p => p.name !== '我喜欢的' && p.songs && p.songs.length)
+          .filter(p => p.name !== '我喜欢的' && p.songs && p.songs.length && !serverNames.has(p.name))
           .map(p => ({ name: p.name, songs: p.songs as SongItem[] }));
         if (pls.length) await sync.mirrorLibrary(pls);
       } catch { /* 网络失败等下轮变更再试 */ }

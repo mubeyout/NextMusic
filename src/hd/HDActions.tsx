@@ -2,7 +2,7 @@
 // 根因:Modal 新窗口在米电视上 D-pad 焦点不可靠(老板反复反馈"无法选中")——
 // 本组件走应用根节点 absolute 覆盖层 + HDTouch 行(原生焦点链,遥控实测稳)
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, BackHandler } from 'react-native';
 import { C } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { Icon } from '../theme/Icon';
@@ -35,6 +35,12 @@ export function HDActionHost() {
   useEffect(() => { host = setReq; return () => { if (host === setReq) host = null; }; }, []);
   useEffect(() => { if (req?.input) setVal(req.input.defaultValue || ''); }, [req]);
   const close = () => setReq(null);
+  // lx114:BACK 关面板(老板:离开后无法关闭一直悬浮)——挂最高优先级返回处理
+  useEffect(() => {
+    if (!req) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => { setReq(null); return true; });
+    return () => sub.remove();
+  }, [req]);
   if (!req) return null;
   const submit = () => { const v = val.trim(); close(); if (v) req.input?.onSubmit(v); };
   return (
@@ -84,14 +90,14 @@ export function HDActionHost() {
 
 const st = StyleSheet.create({
   scrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, elevation: 999 },
-  panel: { position: 'absolute', right: 60, top: 110, width: 340, maxHeight: 520, borderRadius: 18, backgroundColor: 'rgba(14,18,16,.97)', borderWidth: 1, borderColor: 'rgba(255,255,255,.14)', padding: 14, gap: 8 },
+  panel: { position: 'absolute', right: 60, top: 110, width: 340, maxHeight: 520, borderRadius: 18, backgroundColor: C.elev, borderWidth: 1, borderColor: C.border, padding: 14, gap: 8, elevation: 24 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 2 },
-  title: { color: '#ffffffdd', fontSize: 14, fontWeight: '700', flex: 1 },
-  x: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff14' },
+  title: { color: C.text, fontSize: 14, fontWeight: '700', flex: 1 },
+  x: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: C.inset },
   inputRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  input: { flex: 1, height: 42, borderRadius: 10, backgroundColor: '#ffffff10', borderWidth: 1, borderColor: 'rgba(255,255,255,.14)', paddingHorizontal: 12, color: '#ffffffee', fontSize: 13 },
+  input: { flex: 1, height: 42, borderRadius: 10, backgroundColor: C.inset, borderWidth: 1, borderColor: C.border, paddingHorizontal: 12, color: C.text, fontSize: 13 },
   okBtn: { height: 42, borderRadius: 10, backgroundColor: C.brand, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
   okText: { color: '#0b0f0d', fontSize: 12, fontWeight: '800' },
-  row: { height: 44, borderRadius: 11, backgroundColor: '#ffffff0d', justifyContent: 'center', paddingHorizontal: 14 },
-  rowText: { color: '#ffffffe0', fontSize: 13, fontWeight: '600' },
+  row: { height: 44, borderRadius: 11, backgroundColor: C.inset, justifyContent: 'center', paddingHorizontal: 14 },
+  rowText: { color: C.text, fontSize: 13, fontWeight: '600' },
 });

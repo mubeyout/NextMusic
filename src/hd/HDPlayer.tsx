@@ -81,9 +81,9 @@ function WaveRings({ anims, breaths }: { anims: Animated.Value[]; breaths: Anima
             position: 'absolute', top: 0, left: 0, width: RING_ZONE, height: RING_ZONE,
             transform: [
               { rotate: anims[i].interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${360 * rg.dir}deg`] }) },
-              { scale: breaths[i].interpolate({ inputRange: [0, 1], outputRange: [1, 1.035] }) }, // 呼吸
+              { scale: breaths[i].interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] }) }, // 呼吸/低音脉动
             ],
-            opacity: breaths[i].interpolate({ inputRange: [0, 1], outputRange: [rg.op * 0.7, rg.op] }), // 明暗同步
+            opacity: breaths[i].interpolate({ inputRange: [0, 1], outputRange: [rg.op * 0.75, rg.op] }), // 明暗/高音
           }}>
             <Svg width={RING_ZONE} height={RING_ZONE} viewBox={`0 0 ${RING_ZONE} ${RING_ZONE}`}>
               <Defs>
@@ -133,7 +133,7 @@ export function HDPlayer() {
   // lx112:水波环驱动——旋转循环保留;呼吸=真频谱(Visualizer FFT:低音驱动内环 scale,高音驱动外环明暗)
   // 权限拒绝/不支持:1.2s 无数据自动回退伪呼吸循环
   const ringAnims = React.useRef(RINGS.map(() => new Animated.Value(0))).current;
-  const ringBreaths = React.useRef(RINGS.map(() => new Animated.Value(0.15))).current;
+  const ringBreaths = React.useRef(RINGS.map(() => new Animated.Value(0.4))).current;
   const ringLoops = React.useRef<Array<Animated.CompositeAnimation | null>>([]);
   const breathLoops = React.useRef<Array<Animated.CompositeAnimation | null>>([]);
   const stopBreath = () => { breathLoops.current.forEach(l => l?.stop()); breathLoops.current = []; };
@@ -150,7 +150,7 @@ export function HDPlayer() {
       ringLoops.current.forEach(l => l?.stop());
       ringLoops.current = [];
       stopBreath();
-      ringBreaths.forEach(b => Animated.timing(b, { toValue: 0.15, duration: 400, useNativeDriver: NATIVE }).start());
+      ringBreaths.forEach(b => Animated.timing(b, { toValue: 0.4, duration: 400, useNativeDriver: NATIVE }).start()); // lx115:暂停保持静态水波可见
     }
   }, [playing]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -174,8 +174,8 @@ export function HDPlayer() {
       if (!specLive) { specLive = true; stopBreath(); }
       const bass = ((bins[0] || 0) + (bins[1] || 0) + (bins[2] || 0)) / 3;
       const hi = ((bins[15] || 0) + (bins[18] || 0) + (bins[21] || 0)) / 3;
-      Animated.timing(ringBreaths[0], { toValue: Math.min(1, 0.12 + bass * 1.05), duration: 90, useNativeDriver: NATIVE }).start();
-      Animated.timing(ringBreaths[1], { toValue: Math.min(1, 0.08 + hi * 1.25), duration: 90, useNativeDriver: NATIVE }).start();
+      Animated.timing(ringBreaths[0], { toValue: Math.min(1, 0.1 + bass * 1.25), duration: 90, useNativeDriver: NATIVE }).start();
+      Animated.timing(ringBreaths[1], { toValue: Math.min(1, 0.06 + hi * 1.5), duration: 90, useNativeDriver: NATIVE }).start();
     });
     return () => { clearTimeout(fallbackTimer); stopSpec(); stopBreath(); };
   }, [playing]); // eslint-disable-line react-hooks/exhaustive-deps

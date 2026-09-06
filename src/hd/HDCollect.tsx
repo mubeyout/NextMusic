@@ -1,6 +1,6 @@
 // lx103:HD 收藏到歌单面板(共享组件)——播放页收藏键/播放条收藏键统一行为:点按弹此面板选目标
 // (对齐手机端 CollectSheet:我喜欢的 + 本机歌单 + 服务器歌单)
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useReducer, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { Icon } from '../theme/Icon';
 import { C } from './hdtokens';
@@ -8,7 +8,7 @@ import { HDTouch } from './HDTouch';
 import { useFav } from './useFav';
 import { addToPlaylist } from '../state/favorites';
 import { library } from '../state/library';
-import { sync } from '../services/sync';
+import { sync, subscribeSync } from '../services/sync';
 import { useApp } from '../state/AppState';
 import { toast } from '../components/Dialog';
 import type { SongItem } from '../services/server';
@@ -16,6 +16,9 @@ import type { SongItem } from '../services/server';
 export function HDCollect({ song, onClose }: { song: SongItem; onClose: () => void }) {
   const { connected, token } = useApp();
   const { faved, toggle } = useFav(song);
+  const songKey = `${song.source}_${song.songmid}`;
+  const [, syncTick] = useReducer((x: number) => x + 1, 0);
+  useEffect(() => subscribeSync(() => syncTick()), []); // lx117:删歌单后面板不再显示旧项
   const [pls, setPls] = useState<Array<{ key: string; localId?: string; name: string }>>(() =>
     library.all().map(p => ({ key: p.id, localId: p.id, name: p.name })));
 
@@ -29,8 +32,14 @@ export function HDCollect({ song, onClose }: { song: SongItem; onClose: () => vo
       setPls([...local, ...(sp.userList || []).map(u => ({ key: u.id, name: u.name }))]);
     }).catch(() => {});
     return () => { dead = true; };
-  }, [connected, token]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [connected, token, syncTick]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // lx114:收录标记(本地立即判;服务器行以打开面板时拉到的列表判断)
+  const remoteNames = new Set<string>();
+  const inPl = (cp: { key: string; localId?: string; name: string }) => {
+    if (cp.localId) return !!library.get(cp.localId)?.songs.some(x => `${x.source}_${x.songmid}` === songKey);
+    return false;
+  };
   return (
     <View style={st.panel}>
       <Text style={st.title}>收藏到</Text>
@@ -52,6 +61,7 @@ export function HDCollect({ song, onClose }: { song: SongItem; onClose: () => vo
           }}>
             <Icon name="music" size={13} color="#ffffff77" />
             <Text style={st.rowText} numberOfLines={1}>{cp.name}</Text>
+            {inPl(cp) ? <Icon name="check" size={13} active color={C.brand} /> : null}
           </HDTouch>
         ))}
       </ScrollView>

@@ -11,7 +11,7 @@ import { HDTouch } from './HDTouch';
 import { HDGrid } from './HDGrid';
 import { useApp } from '../state/AppState';
 import { library, type LocalPlaylist } from '../state/library';
-import { sync, lxToApp, type UserListsSnapshot } from '../services/sync';
+import { sync, lxToApp, type UserListsSnapshot , subscribeSync } from '../services/sync';
 import { providers } from '../services/providers';
 import { hdNav } from './hdnav';
 import type { SongItem } from '../services/server';
@@ -27,6 +27,8 @@ export function HDMy() {
   const { username, connected, token } = useApp();
   const [localPls, setLocalPls] = useState<LocalPlaylist[]>([]);
   const [snap, setSnap] = useState<UserListsSnapshot | null>(null);
+  const [syncTick, setSyncTick] = useState(0);
+  useEffect(() => subscribeSync(() => setSyncTick(t => t + 1)), []);
   const [syncing, setSyncing] = useState(false);
   const providerCount = providers.all().length;
 

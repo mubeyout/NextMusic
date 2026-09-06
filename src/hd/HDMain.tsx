@@ -14,7 +14,7 @@ import { library } from '../state/library';
 import { toast } from '../components/Dialog';
 import { hdActions } from './HDActions';
 import { getRecents } from '../state/recent';
-import { sync, lxToApp } from '../services/sync';
+import { sync, lxToApp , subscribeSync , isPlatformList } from '../services/sync';
 import { hdNav, hdInnerRef } from './hdnav';
 import { useFav } from './useFav';
 import { mergeLocalLove } from '../state/favorites';
@@ -77,6 +77,8 @@ export function HDMain() {
   const { connected, token } = useApp();
 
   // 歌单列表(本地+同步)与"我喜欢的"计数——lx91 单次拉取;lx104:缓存秒出+我喜欢的去重+离线收藏合并
+  const [syncTick, setSyncTick] = useState(0);
+  useEffect(() => subscribeSync(() => setSyncTick(t => t + 1)), []); // lx117:服务器快照变更重拉(删除/移除后侧栏不再复活)
   useEffect(() => {
     // lx104:本地「我喜欢的」由专用入口展示,歌单组里去重(老板:快捷收藏合并)
     const local = library.all()
@@ -102,16 +104,24 @@ export function HDMain() {
     sync.fetchLists().then(s => {
       if (!s) return;
       setLoveCount((s.loveList || []).length);
-      setPls([...local, ...(s.userList || []).map(u => ({
+      const serverPls = (s.userList || []).map(u => ({
         key: u.id, name: u.name,
         count: (u.list || []).length,
         songs: (u.list || []).map(lxToApp),
-      }))]);
+      }));
+      const localNames = new Set(local.map(x => x.name)); // lx121:本地副本优先(平台导入 copy-on-write 后,本地才是可编辑真身)
+      setPls([...local, ...serverPls.filter(u => !localNames.has(u.name))]);
     }).catch(() => {});
-  }, [connected, token]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [connected, token, syncTick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // lx101:歌单管理(长按)——本机 library 重命名/删除;同步歌单 fetch+push 服务器 userList
   const managePl = (pl: { localId?: string; key: string; name: string; count: number; songs?: SongItem[] }) => {
+    if (!pl.localId && isPlatformList(pl.key)) {
+      hdActions.menu(`「${pl.name}」是平台导入歌单`, [
+        { label: '复制为可编辑本地副本', onPress: () => { library.create(pl.name, pl.songs || []); toast(`已创建本地副本「${pl.name}」`); } },
+      ]);
+      return;
+    }
     hdActions.menu(`管理「${pl.name}」`, [
       { label: '重命名歌单', onPress: () => {
         hdActions.prompt('重命名歌单', {

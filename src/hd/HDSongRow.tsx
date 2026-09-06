@@ -18,6 +18,7 @@ export function HDSongRow({ song, index, onPress, onLongPress, onAction, playing
   first?: boolean;
 }) {
   return (
+    <View style={st.rowWrap}>
     <HDTouch
       style={st.row}
       focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.row }}
@@ -41,12 +42,13 @@ export function HDSongRow({ song, index, onPress, onLongPress, onAction, playing
       </View>
       <View style={st.srcTag}><Text style={st.srcTagText}>{song.source}</Text></View>
       <Text style={st.dur}>{playing ? '播放中' : song.interval}</Text>
-      {onAction ? (
-        <HDTouch style={st.act} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 11 }} onPress={onAction}>
-          <Icon name="more" size={13} color={C.text3} />
-        </HDTouch>
-      ) : null}
     </HDTouch>
+    {onAction ? (
+      <HDTouch style={st.act} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 11 }} focusBg={C.hover} onPress={onAction}>
+        <Icon name="more" size={14} color={C.text3} />
+      </HDTouch>
+    ) : null}
+    </View>
   );
 }
 
@@ -54,7 +56,7 @@ const st = StyleSheet.create({
   // 整行占满(父容器全宽),左右留 16 padding —— 老板反馈「一行没有占满/文字太贴边」
   row: {
     minHeight: 52, borderRadius: H.radius.row, paddingHorizontal: 16,
-    flexDirection: 'row', alignItems: 'center', gap: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1,
   },
   idx: { color: C.text3, fontSize: H.font.md, fontVariant: ['tabular-nums'], width: 24, textAlign: 'center' },
   art: { width: 36, height: 36, borderRadius: 6 },
@@ -64,5 +66,6 @@ const st = StyleSheet.create({
   srcTag: { backgroundColor: C.elev, borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
   srcTagText: { color: C.text3, fontSize: 7, fontWeight: '600', letterSpacing: 0.5 },
   dur: { color: C.text3, fontSize: H.font.sm, fontVariant: ['tabular-nums'], minWidth: 34, textAlign: 'right' },
-  act: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  rowWrap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  act: { width: 30, height: 52, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
 });

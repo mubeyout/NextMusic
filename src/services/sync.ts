@@ -39,6 +39,20 @@ export interface UserListsSnapshot {
   userList: LXUserList[];
 }
 
+// lx121:平台导入歌单判定(id 前缀 tx_/wy_/kg_/kw_...)——服务器自动从源平台恢复,写操作不持久
+export function isPlatformList(id?: string): boolean {
+  return !!id && /^[a-z]{2}_/.test(id);
+}
+
+// lx117:服务器快照歌曲 id 带 source_ 前缀(kw_xxx),App 内 songmid 是剥前缀的——比对必须归一
+export function lxNormKey(x: { source?: string; id?: string | number; songmid?: string | number }): string {
+  const src = x.source || '';
+  let mid = String(x.id ?? x.songmid ?? '');
+  const pfx = `${src}_`;
+  if (mid.startsWith(pfx)) mid = mid.slice(pfx.length);
+  return `${src}_${mid}`;
+}
+
 export function lxToApp(s: LXSong): SongItem {
   const m = s.meta || {};
   let songmid: string = String(s.id ?? m.songId ?? '');
@@ -75,6 +89,12 @@ export function appToLx(s: SongItem): LXSong {
   };
 }
 
+// lx117:快照版本通知——push/fetch 后 bump,消费方联动刷新
+ type SyncSub = () => void;
+const syncSubs = new Set<SyncSub>();
+export function subscribeSync(f: SyncSub): () => void { syncSubs.add(f); return () => { syncSubs.delete(f); }; }
+function bumpSync() { syncSubs.forEach(f => f()); }
+
 export const sync = {
   /** lx104:上次快照缓存(MMKV)——冷启动侧栏/我的页秒出,后台刷新覆盖(大快照拉取慢=加载缓慢根因) */
   cachedLists(): UserListsSnapshot | null {
@@ -87,6 +107,7 @@ export const sync = {
       if (!d || !Array.isArray(d.defaultList)) return null;
       const snap = { defaultList: d.defaultList, loveList: d.loveList || [], userList: d.userList || [] };
       try { kvSync.set('snap', JSON.stringify(snap)); } catch { /* 超大忽略 */ }
+      // lx120:fetch 不 bump(订阅者重拉→再 bump=无限循环,2.5 req/s 轰服务器+并发旧快照覆盖写)——只有 push 才通知
       return snap;
     } catch (e) { console.log('[sync] fetchLists err:', (e as Error).message); return null; }
   },
@@ -105,24 +126,27 @@ export const sync = {
   async removeSongFromUserList(id: string, song: SongItem): Promise<boolean> {
     const snap = await this.fetchLists(); if (!snap) return false;
     const u = snap.userList.find(x => x.id === id); if (!u) return false;
-    u.list = (u.list || []).filter(x => !(x.source === song.source && String(x.songmid) === String(song.songmid)));
+    u.list = (u.list || []).filter(x => lxNormKey(x as never) !== lxNormKey(song));
     return this.pushLists(snap);
   },
-  // lx107:本机歌单自动镜像(老板:同步是自动的)——一次 fetch 批量 upsert,一次 push;按名匹配,服务器独立歌单不动
+  // lx107/lx119:本机歌单自动镜像——只"新增"本地独有歌单;服务器已存在同名一律不碰
+  // (lx119:即使调用方过滤失效,这里也是最后防线——同名覆盖=服务器侧删改被本地旧副本复活)
   async mirrorLibrary(playlists: { name: string; songs: SongItem[] }[]): Promise<boolean> {
     const snap = await this.fetchLists(); if (!snap) return false;
     let changed = false;
     for (const pl of playlists) {
-      const list = pl.songs.map(appToLx);
-      const exist = snap.userList.find(x => x.name === pl.name);
-      if (exist) {
-        if (JSON.stringify(exist.list || []) !== JSON.stringify(list)) { exist.list = list; changed = true; }
-      } else {
-        snap.userList.push({ id: `ul-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, name: pl.name, list });
-        changed = true;
-      }
+      if (snap.userList.some(x => x.name === pl.name)) continue; // 服务器已有同名:跳过,永不覆盖
+      snap.userList.push({ id: `ul-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, name: pl.name, list: pl.songs.map(appToLx) });
+      changed = true;
     }
     return changed ? this.pushLists(snap) : true;
+  },
+  // lx116:按歌单名移除歌曲(从任意入口打开的收藏歌单,无 plKey 时兜底)
+  async removeSongFromUserListByName(plName: string, song: SongItem): Promise<boolean> {
+    const snap = await this.fetchLists(); if (!snap) return false;
+    const u = snap.userList.find(x => x.name === plName); if (!u) return false;
+    u.list = (u.list || []).filter(x => lxNormKey(x as never) !== lxNormKey(song));
+    return this.pushLists(snap);
   },
   async renameUserList(id: string, name: string): Promise<boolean> {
     const snap = await this.fetchLists(); if (!snap) return false;
@@ -136,6 +160,7 @@ export const sync = {
   async pushLists(snap: UserListsSnapshot): Promise<boolean> {
     try {
       await req('/api/user/list', { method: 'POST', headers: { "Content-Type": "application/json" }, body: JSON.stringify(snap), timeout: 20000 });
+      bumpSync();
       return true;
     } catch { return false; }
   },

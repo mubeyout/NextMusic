@@ -15,7 +15,7 @@ import { library } from '../state/library';
 import { setFav, isFav } from '../state/favorites';
 import { enqueueDownload } from '../services/downloads';
 import { toast, dialog } from '../components/Dialog';
-import { sync } from '../services/sync';
+import { sync, isPlatformList } from '../services/sync';
 import { useApp } from '../state/AppState';
 import type { SongItem } from '../services/server';
 
@@ -38,9 +38,20 @@ export function HDPlaylistDetailScreen() {
 
   const [dlBusy, setDlBusy] = useState(false);
   const [limit, setLimit] = useState(40); // lx104 懒加载行数(大歌单全渲染=TV 卡顿源)
-  // lx106:移除单曲(本地 library/我喜欢的/服务器 userList)
+  // lx106/lx121:移除单曲——本地/我喜欢的直改;服务器歌单直改;平台导入(tx_/wy_ id)写不持久→复制本地副本编辑
   const removeSong = (sg: SongItem) => {
     const label = p.love ? '取消收藏' : '从歌单移除';
+    if (p.plKey && isPlatformList(p.plKey)) {
+      hdActions.menu(`「${title}」是平台导入歌单`, [
+        { label: '复制为本地副本并移除该曲', onPress: () => {
+          const songs2 = songs.filter(x => !(x.source === sg.source && x.songmid === sg.songmid));
+          library.create(title, songs2);
+          setSongs(songs2);
+          toast(`已创建本地副本「${title}」(${songs2.length} 首)`);
+        } },
+      ]);
+      return;
+    }
     hdActions.confirm(label, `确定将「${sg.name}」${p.love ? '移出我喜欢的' : '移出本歌单'}？`, async () => {
       try {
         if (p.love) {
@@ -52,7 +63,15 @@ export function HDPlaylistDetailScreen() {
         } else if (p.plKey && connected && token) {
           const ok = await sync.removeSongFromUserList(p.plKey, sg);
           if (!ok) { toast('服务器操作失败'); return; }
-        } else { toast('该歌单不支持移除'); return; }
+        } else {
+          // lx116:无 id 的收藏歌单兜底——按标题匹配本地库/服务器歌单移除
+          const localByName = library.all().find(q => q.name === title);
+          if (localByName) { library.removeSong(localByName.id, sg); }
+          else if (connected && token) {
+            const ok = await sync.removeSongFromUserListByName(title, sg);
+            if (!ok) { toast('未找到对应收藏歌单'); return; }
+          } else { toast('该歌单不支持移除'); return; }
+        }
         setSongs(prev => prev.filter(x => !(x.source === sg.source && x.songmid === sg.songmid)));
         toast(`${label}成功`);
       } catch { toast('操作失败'); }
@@ -62,7 +81,7 @@ export function HDPlaylistDetailScreen() {
   // lx107:歌曲行长按管理菜单(播放/收藏切换/下载/移除)
   const rowMenu = (sg: SongItem) => {
     const favd = isFav(sg);
-    const removable = !!(local || p.love || p.plKey);
+    const removable = !!(local || p.love || p.plKey || library.all().some(q => q.name === title)); // lx116:按名可解析的收藏歌单也可移除
     hdActions.menu(`${sg.name} · ${sg.singer}`, [
       { label: '播放', onPress: () => playSong(sg, songs) },
       { label: favd ? '取消收藏' : '收藏', onPress: async () => {
@@ -84,6 +103,17 @@ export function HDPlaylistDetailScreen() {
   const { connected, token } = useApp();
   const manage = () => {
     if (!p.localId && !p.plKey) { toast('该歌单请在歌单列表长按管理'); return; }
+    if (!p.localId && p.plKey && isPlatformList(p.plKey)) {
+      // 平台导入:重命名/删除不持久——只提供复制副本
+      hdActions.menu(`「${title}」是平台导入歌单`, [
+        { label: '复制为可编辑本地副本', onPress: () => {
+          library.create(title, songs);
+          toast(`已创建本地副本「${title}」`);
+        } },
+        { label: '删除本地副本与服务器副本的显示…', onPress: () => { toast('平台歌单由服务器自动恢复,删除请用复制副本替代'); } },
+      ]);
+      return;
+    }
     hdActions.menu(`管理「${title}」`, [
       { label: '重命名歌单', onPress: () => {
         hdActions.prompt('重命名歌单', { defaultValue: title, onSubmit: async (v) => {
@@ -149,6 +179,17 @@ export function HDPlaylistDetailScreen() {
                 <Text style={st.btnText}>管理</Text>
               </HDTouch>
             ) : null}
+            {!p.localId && !p.plKey && !p.love && songs.length ? (
+              <HDTouch style={st.btnPrimary} glow={SH.brand} onPress={() => {
+                // lx116:一键收藏整个歌单(榜单/推荐/播客 → 本地库,自动镜像服务器)
+                if (library.all().some(q => q.name === title)) { toast('已在歌单库中'); return; }
+                library.create(title, songs);
+                toast(`已收藏「${title}」(${songs.length} 首)`);
+              }}>
+                <Icon name="heart" size={10} color={C.onBrand} />
+                <Text style={st.btnPrimaryText}>收藏歌单</Text>
+              </HDTouch>
+            ) : null}
           </View>
         </View>
       </View>
@@ -166,8 +207,8 @@ export function HDPlaylistDetailScreen() {
             <HDSongRow key={`${s.source}_${s.songmid}_${i}`} song={s} index={i + 1} first={i === 0}
               playing={current?.songmid === s.songmid && current?.source === s.source}
               onPress={() => playSong(s, songs)}
-              onLongPress={local || p.love || p.plKey ? () => rowMenu(s) : undefined}
-              onAction={local || p.love || p.plKey ? () => rowMenu(s) : undefined} />
+              onLongPress={() => rowMenu(s)}
+              onAction={() => rowMenu(s)} />
           ))}
           {limit < songs.length ? <Text style={st.more}>滚动加载更多({limit}/{songs.length})</Text> : null}
         </ScrollView>
