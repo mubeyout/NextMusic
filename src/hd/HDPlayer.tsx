@@ -313,7 +313,7 @@ export function HDPlayer() {
 
       {/* 头部:返回按钮入流式布局(不再悬浮怪位) */}
       <View style={[st.header, { paddingTop: Math.max(insets.top, 12) }]}>
-        <HDTouch style={st.backBtn} onPress={nav.goBack} hasTVPreferredFocus>
+        <HDTouch style={st.backBtn} onPress={nav.goBack}>
           <Icon name="back" size={16} color="#ffffffcc" />
           <Text style={st.backLabel}>返回</Text>
         </HDTouch>
@@ -391,7 +391,7 @@ export function HDPlayer() {
             <HDTouch style={st.cMode} onPress={skipPrev}>
               <Icon name="previous" size={26} color="#ffffffee" />
             </HDTouch>
-            <HDTouch style={st.cMain} onPress={toggle} focusStyle={st.cMainFocus}>
+            <HDTouch style={st.cMain} onPress={toggle} focusStyle={st.cMainFocus} hasTVPreferredFocus>
               <Icon name={playing ? 'pause' : 'play'} size={32} color={C.onBrand} />
             </HDTouch>
             <HDTouch style={st.cMode} onPress={skipNext}>

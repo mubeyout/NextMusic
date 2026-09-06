@@ -5,6 +5,8 @@ import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { navRef } from './navRef';
 import { hdInnerRef } from './hd/hdnav';
+import { hdActions } from './hd/HDActions';
+import { toast } from './components/Dialog';
 import { C } from './theme/tokens';
 import { TabBar } from './components/TabBar';
 import { MiniPlayer } from './components/MiniPlayer';
@@ -89,6 +91,7 @@ export function RootNavigator() {
   // Android hardware back fallback: pop the stack instead of letting the OS
   // send the whole task to background (observed on LG V40 / RN 0.87 New Arch).
   useEffect(() => {
+    let exitArmed = false;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       // lx84:HD 嵌套内容栈优先出栈(内页在内容区,根栈底就是 Main)
       if (hdInnerRef.isReady() && hdInnerRef.canGoBack()) {
@@ -99,7 +102,19 @@ export function RootNavigator() {
         navRef.current.goBack();
         return true;
       }
-      return false; // at stack root: default behavior (exit)
+      // lx144(老板):根页再按返回——二次确认退出,防误触
+      if (exitArmed) return false; // 确认后放行系统默认(退出)
+      exitArmed = true;
+      setTimeout(() => { exitArmed = false; }, 2600);
+      if (IS_HD) {
+        hdActions.menu('退出应用', [
+          { label: '取消' },
+          { label: '退出', danger: true, onPress: () => BackHandler.exitApp() },
+        ]);
+      } else {
+        toast('再按一次返回键退出');
+      }
+      return true; // 拦截本次,不退出
     });
     return () => sub.remove();
   }, []);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
@@ -7,8 +7,14 @@ import type { SongItem } from '../services/server';
 // Figma Song Row: 350x46, art 46x46 r=6, title 13 w500 / sub 10, duration right, more icon 20
 // extra: 右侧操作位（下载按钮等）；不传则显示 more 图标
 export function SongRow({ song, onPress, playing, extra }: { song: SongItem; onPress?: () => void; playing?: boolean; extra?: React.ReactNode }) {
+  const [focus, setFocus] = useState(false); // lx145:TV D-pad 光标(队列页无选中态)
   return (
-    <TouchableOpacity activeOpacity={0.7} style={st.row} onPress={onPress} disabled={!onPress}>
+    <TouchableOpacity activeOpacity={0.7}
+      style={[st.row, st.ringBase, focus && st.ringOn]}
+      onPress={onPress} disabled={!onPress}
+      focusable={!!onPress}
+      onFocus={() => setFocus(true)}
+      onBlur={() => setFocus(false)}>
       <View style={st.artWrap}>
         {song.img ? <Image source={{ uri: song.img }} style={st.art} /> : <View style={[st.art, st.fallback]} />}
       </View>
@@ -27,7 +33,9 @@ export function SongRow({ song, onPress, playing, extra }: { song: SongItem; onP
 }
 
 const st = StyleSheet.create({
-  row: { height: 46, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  row: { height: 46, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 6, borderRadius: 10 },
+  ringBase: { borderWidth: 2, borderColor: 'transparent' }, // 常驻占位,布局恒定
+  ringOn: { borderColor: C.brand, backgroundColor: C.hover },
   artWrap: { width: 46, height: 46, borderRadius: 6, overflow: 'hidden' },
   art: { width: 46, height: 46 },
   fallback: { backgroundColor: C.surface2 },
