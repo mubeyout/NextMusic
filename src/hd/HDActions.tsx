@@ -36,31 +36,12 @@ export function HDActionHost() {
   useEffect(() => { if (req?.input) setVal(req.input.defaultValue || ''); }, [req]);
   const close = () => setReq(null);
   // lx114:BACK 关面板
-  // lx149:焦点陷阱兜底——面板打开后,若焦点离开面板(方向键飘走),2.5s 内未回来自动关闭(否则光标永远回不来+关不掉)
-  const focusIn = useRef(0);
-  const trapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    if (!req) return;
-    const sub = BackHandler.addEventListener('hardwareBackPress', () => { setReq(null); return true; });
-    return () => sub.remove();
-  }, [req]);
-  useEffect(() => {
-    if (!req) { if (trapTimer.current) clearTimeout(trapTimer.current); return; }
-    focusIn.current = 1; // 打开瞬间视为在面板内
-    trapTimer.current = setTimeout(() => { focusIn.current = 0; }, 100);
-    const iv = setInterval(() => {
-      if (!focusIn.current) { setReq(null); return; } // 焦点已离开→自动关
-      focusIn.current = 0; // 每轮重置,面板内任何 focus 事件会再置 1
-    }, 2600);
-    return () => { clearInterval(iv); if (trapTimer.current) clearTimeout(trapTimer.current); };
-  }, [req]);
   if (!req) return null;
-  const markIn = () => { focusIn.current = 1; };
   const submit = () => { const v = val.trim(); close(); if (v) req.input?.onSubmit(v); };
   return (
-    <View style={st.scrim} pointerEvents="box-none">
-      <Pressable style={StyleSheet.absoluteFill} focusable={false} onPress={close} />
-      <View style={st.panel} onFocus={markIn} onBlur={markIn}>
+    <View style={st.scrim}>
+      <Pressable style={StyleSheet.absoluteFill} focusable onPress={close} />
+      <View style={st.panel}>
         <View style={st.head}>
           <Text style={st.title} numberOfLines={1}>{req.title}</Text>
           <HDTouch style={st.x} focusStyle={{ borderWidth: 1.5, borderColor: C.brand, borderRadius: 12 }} onPress={close}>
@@ -103,7 +84,7 @@ export function HDActionHost() {
 }
 
 const st = StyleSheet.create({
-  scrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, elevation: 999 },
+  scrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, elevation: 999 }, // lx150:捕捉器 focusable——光标脱离面板即关
   panel: { position: 'absolute', left: (Dimensions.get('window').width - 380) / 2, top: 180, width: 380, maxHeight: 560, borderRadius: 18, backgroundColor: C.elev, borderWidth: 1, borderColor: C.border, padding: 14, gap: 8, elevation: 24 }, // lx130(老板):屏幕中间
   head: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 2 },
   title: { color: C.text, fontSize: 14, fontWeight: '700', flex: 1 },
