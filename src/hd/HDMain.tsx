@@ -11,7 +11,8 @@ import { HDTouch } from './HDTouch';
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
 import { library } from '../state/library';
-import { dialog, toast } from '../components/Dialog';
+import { toast } from '../components/Dialog';
+import { hdActions } from './HDActions';
 import { getRecents } from '../state/recent';
 import { sync, lxToApp } from '../services/sync';
 import { hdNav, hdInnerRef } from './hdnav';
@@ -61,22 +62,6 @@ const hdInnerPop = () => {
     if (hdInnerRef.isReady()) hdInnerRef.dispatch(StackActions.popToTop());
   } catch { /* 栈未就绪忽略 */ }
 };
-// lx111:滚到底直达播放条——播放条主按钮句柄(内容区滚尽后 DOWN 仍困在 ScrollView 内,锚点+nextFocusDown 破局)
-let pbHandle: number | null = null;
-const pbSubs = new Set<() => void>();
-function setPbHandle(h: number | null) {
-  if (h && h !== pbHandle) { pbHandle = h; pbSubs.forEach(f => f()); }
-}
-
-// 页尾锚点(内容区末尾,"⏬ 播放条"小片,nextFocusDown=播放条)
-export function BottomFocusAnchor({ tag }: { tag?: number }) {
-  if (tag == null) return null;
-  return (
-    <HDTouch style={st.pbAnchor} focusStyle={{ borderWidth: 1.5, borderColor: C.brand, borderRadius: 13 }} onPress={() => {}} nextFocusDown={tag}>
-      <Text style={st.pbAnchorText}>⏬ 播放条</Text>
-    </HDTouch>
-  );
-}
 
 // 侧栏跳转:内容栈先回底再进新页(侧栏=顶级导航,桌面司约——避免返回时落回上一个内页)
 const railNav = (s: string, p?: object) => {
@@ -127,9 +112,9 @@ export function HDMain() {
 
   // lx101:歌单管理(长按)——本机 library 重命名/删除;同步歌单 fetch+push 服务器 userList
   const managePl = (pl: { localId?: string; key: string; name: string; count: number; songs?: SongItem[] }) => {
-    dialog.menu(`管理「${pl.name}」`, [
+    hdActions.menu(`管理「${pl.name}」`, [
       { label: '重命名歌单', onPress: () => {
-        dialog.prompt('重命名歌单', {
+        hdActions.prompt('重命名歌单', {
           defaultValue: pl.name,
           onSubmit: async (v) => {
             if (!v || v === pl.name) return;
@@ -209,9 +194,9 @@ export function HDMain() {
           {pls.slice(0, 5).map(pl => (
             <PlItem key={pl.key} name={pl.name} count={pl.count} onPress={() => openPl(pl)} onLongPress={() => managePl(pl)} />
           ))}
-          <PlItem name="新建歌单" add onPress={() => dialog.menu('新建歌单', [
+          <PlItem name="新建歌单" add onPress={() => hdActions.menu('新建歌单', [
               { label: '空白歌单', onPress: () => {
-                dialog.prompt('新建歌单', { defaultValue: '', onSubmit: (v) => { const n = (v || '').trim(); if (n) { library.create(n); toast('已创建'); } } });
+                hdActions.prompt('新建歌单', { defaultValue: '', onSubmit: (v) => { const n = (v || '').trim(); if (n) { library.create(n); toast('已创建'); } } });
               } },
               { label: '导入平台歌单', onPress: () => railNav('ImportPlaylist') },
             ])} />
@@ -263,16 +248,14 @@ export function HDMain() {
 // lx91:懒挂载——首访才渲染(冷启动只挂 Home,不再四 tab 同时开火 8+ 网络请求);访问后保持存活
 function TabsHost({ tab, setTab }: { tab: number; setTab: (i: number) => void }) {
   const [visited, setVisited] = useState<number[]>([0]);
-  const [, pbTick] = useState(0);
   useEffect(() => { setVisited(v => (v.includes(tab) ? v : [...v, tab])); }, [tab]);
-  useEffect(() => { const f = () => pbTick(n => n + 1); pbSubs.add(f); return () => { pbSubs.delete(f); }; }, []);
   return (
     <View style={{ flex: 1 }}>
       <View style={st.tabStack} collapsable={false}>
-        <View style={[st.tabHost, tab !== 0 && st.tabOff]}>{visited.includes(0) ? <HDHome onGotoSearch={() => setTab(2)} bottomFocus={pbHandle ?? undefined} /> : null}</View>
-        <View style={[st.tabHost, tab !== 1 && st.tabOff]}>{visited.includes(1) ? <HDPodcast bottomFocus={pbHandle ?? undefined} /> : null}</View>
-        <View style={[st.tabHost, tab !== 2 && st.tabOff]}>{visited.includes(2) ? <HDSearch bottomFocus={pbHandle ?? undefined} /> : null}</View>
-        <View style={[st.tabHost, tab !== 3 && st.tabOff]}>{visited.includes(3) ? <HDBoards bottomFocus={pbHandle ?? undefined} /> : null}</View>
+        <View style={[st.tabHost, tab !== 0 && st.tabOff]}>{visited.includes(0) ? <HDHome onGotoSearch={() => setTab(2)} /> : null}</View>
+        <View style={[st.tabHost, tab !== 1 && st.tabOff]}>{visited.includes(1) ? <HDPodcast /> : null}</View>
+        <View style={[st.tabHost, tab !== 2 && st.tabOff]}>{visited.includes(2) ? <HDSearch /> : null}</View>
+        <View style={[st.tabHost, tab !== 3 && st.tabOff]}>{visited.includes(3) ? <HDBoards /> : null}</View>
       </View>
       <HDPlayBar />
     </View>
@@ -336,11 +319,9 @@ function HDPlayBar() {
           <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={skipPrev}>
             <Icon name="previous" size={15} color={C.text} />
           </HDTouch>
-          <View collapsable={false} onLayout={e => setPbHandle((e.nativeEvent as unknown as { target: number }).target)}>
-            <HDTouch style={st.playBtn} focusStyle={st.playBtnFocus} glow={SH.brand} onPress={toggle}>
-              <Icon name={playing ? 'pause' : 'play'} size={15} color={C.onBrand} />
-            </HDTouch>
-          </View>
+          <HDTouch style={st.playBtn} focusStyle={st.playBtnFocus} glow={SH.brand} onPress={toggle}>
+            <Icon name={playing ? 'pause' : 'play'} size={15} color={C.onBrand} />
+          </HDTouch>
           <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={skipNext}>
             <Icon name="next" size={15} color={C.text} />
           </HDTouch>
@@ -380,8 +361,6 @@ function HDPlayBar() {
 }
 
 const st = StyleSheet.create({
-  pbAnchor: { alignSelf: 'center', height: 26, borderRadius: 13, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: C.elev, marginTop: 6 },
-  pbAnchorText: { color: C.text3, fontSize: 10, fontWeight: '600' },
   screen: { flex: 1, flexDirection: 'row', backgroundColor: C.bg },
   sidebarWrap: { width: H.sidebar, backgroundColor: C.glass, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border },
   // v1.1.9 web:侧栏常驻最顶层(内页卡片 marginLeft 让位,zIndex 保证转场时侧栏不被卡片盖住)

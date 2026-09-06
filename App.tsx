@@ -11,6 +11,8 @@ import { loadSources } from './src/services/customSource';
 import { initFx } from './src/services/soundfx';
 import { RootNavigator } from './src/navigation';
 import { DialogHost } from './src/components/Dialog';
+import { IS_HD } from './src/services/appversion';
+import { HDActionHost } from './src/hd/HDActions';
 
 function App() {
   useEffect(() => {
@@ -32,6 +34,7 @@ function App() {
           <PlayerProvider>
             <LxEngineHost />
             <RootNavigator />
+            {IS_HD ? <HDActionHost /> : null}
             <DialogHost />
           </PlayerProvider>
         </AppStateProvider>

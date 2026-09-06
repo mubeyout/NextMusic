@@ -15,6 +15,7 @@ import { api } from '../services/server';
 import { lxapi } from '../services/lxapi';
 import { parseLrc, mergeTranslation, findActiveLine, type LyricLine } from '../services/lyric';
 import { useFav } from './useFav';
+import { startSpectrum } from '../services/visualizer';
 import { HDCollect } from './HDCollect';
 import { hdNav } from './hdnav';
 
@@ -129,29 +130,54 @@ export function HDPlayer() {
   }, [playing, spin]);
   const spinDeg = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
 
-  // lx100:水波环驱动——三层 rotate 循环(播放流动,暂停冻结);0→1 映射 360deg,循环回跳=同角度无缝
+  // lx112:水波环驱动——旋转循环保留;呼吸=真频谱(Visualizer FFT:低音驱动内环 scale,高音驱动外环明暗)
+  // 权限拒绝/不支持:1.2s 无数据自动回退伪呼吸循环
   const ringAnims = React.useRef(RINGS.map(() => new Animated.Value(0))).current;
-  const ringBreaths = React.useRef(RINGS.map(() => new Animated.Value(0))).current; // lx105 呼吸律动
+  const ringBreaths = React.useRef(RINGS.map(() => new Animated.Value(0.15))).current;
   const ringLoops = React.useRef<Array<Animated.CompositeAnimation | null>>([]);
+  const breathLoops = React.useRef<Array<Animated.CompositeAnimation | null>>([]);
+  const stopBreath = () => { breathLoops.current.forEach(l => l?.stop()); breathLoops.current = []; };
+
   React.useEffect(() => {
     if (playing) {
       RINGS.forEach((rg, k) => {
         if (ringLoops.current[k]) return;
-        const spin = Animated.loop(Animated.timing(ringAnims[k], { toValue: 1, duration: rg.dur, easing: Easing.linear, useNativeDriver: NATIVE }));
-        const breathDur = 2400 + k * 500;
-        const breathe = Animated.loop(Animated.sequence([
-          Animated.timing(ringBreaths[k], { toValue: 1, duration: breathDur / 2, easing: Easing.inOut(Easing.sin), useNativeDriver: NATIVE }),
-          Animated.timing(ringBreaths[k], { toValue: 0, duration: breathDur / 2, easing: Easing.inOut(Easing.sin), useNativeDriver: NATIVE }),
-        ]));
-        ringLoops.current[k] = Animated.parallel([spin, breathe]);
-        ringLoops.current[k].start();
+        const loop = Animated.loop(Animated.timing(ringAnims[k], { toValue: 1, duration: rg.dur, easing: Easing.linear, useNativeDriver: NATIVE }));
+        ringLoops.current[k] = loop;
+        loop.start();
       });
     } else {
       ringLoops.current.forEach(l => l?.stop());
       ringLoops.current = [];
-      // 暂停:呼吸落回静态基线,环静止
-      ringBreaths.forEach(b => Animated.timing(b, { toValue: 0, duration: 400, useNativeDriver: NATIVE }).start());
+      stopBreath();
+      ringBreaths.forEach(b => Animated.timing(b, { toValue: 0.15, duration: 400, useNativeDriver: NATIVE }).start());
     }
+  }, [playing]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  React.useEffect(() => {
+    if (!playing) return;
+    let specLive = false;
+    const fallbackTimer = setTimeout(() => {
+      if (specLive) return;
+      RINGS.forEach((rg, k) => {
+        if (breathLoops.current[k]) return;
+        const bd = 2400 + k * 500;
+        const loop = Animated.loop(Animated.sequence([
+          Animated.timing(ringBreaths[k], { toValue: 1, duration: bd / 2, easing: Easing.inOut(Easing.sin), useNativeDriver: NATIVE }),
+          Animated.timing(ringBreaths[k], { toValue: 0.1, duration: bd / 2, easing: Easing.inOut(Easing.sin), useNativeDriver: NATIVE }),
+        ]));
+        breathLoops.current[k] = loop;
+        loop.start();
+      });
+    }, 1200);
+    const stopSpec = startSpectrum(bins => {
+      if (!specLive) { specLive = true; stopBreath(); }
+      const bass = ((bins[0] || 0) + (bins[1] || 0) + (bins[2] || 0)) / 3;
+      const hi = ((bins[15] || 0) + (bins[18] || 0) + (bins[21] || 0)) / 3;
+      Animated.timing(ringBreaths[0], { toValue: Math.min(1, 0.12 + bass * 1.05), duration: 90, useNativeDriver: NATIVE }).start();
+      Animated.timing(ringBreaths[1], { toValue: Math.min(1, 0.08 + hi * 1.25), duration: 90, useNativeDriver: NATIVE }).start();
+    });
+    return () => { clearTimeout(fallbackTimer); stopSpec(); stopBreath(); };
   }, [playing]); // eslint-disable-line react-hooks/exhaustive-deps
   React.useEffect(() => () => { ringLoops.current.forEach(l => l?.stop()); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -393,9 +419,6 @@ export function HDPlayer() {
             </HDTouch>
             <HDTouch style={st.cMode} onPress={skipNext}>
               <Icon name="next" size={26} color="#ffffffee" />
-            </HDTouch>
-            <HDTouch style={st.cMode} onPress={cycleRepeat}>
-              <Icon name="repeat" size={20} active={repeat !== 'off'} color={repeat !== 'off' ? C.brand : '#ffffff99'} />
             </HDTouch>
             <View style={st.ctrlDivider} />
             <HDTouch style={st.cTool} onPress={() => setCollectOpen(true)}>

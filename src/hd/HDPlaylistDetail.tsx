@@ -2,6 +2,7 @@
 // 头部(封面 + 「歌单」标签/标题/meta/三钮) + 全宽歌曲行(焦点选中态/播放中品牌绿)
 // 参数与 phone PlaylistDetailScreen 同构:title/songs/meta/localId(本地歌单封面取第一首)
 import React, { useState } from 'react';
+import { hdActions } from './HDActions';
 import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -40,7 +41,7 @@ export function HDPlaylistDetailScreen() {
   // lx106:移除单曲(本地 library/我喜欢的/服务器 userList)
   const removeSong = (sg: SongItem) => {
     const label = p.love ? '取消收藏' : '从歌单移除';
-    dialog.confirm(label, `确定将「${sg.name}」${p.love ? '移出我喜欢的' : '移出本歌单'}？`, async () => {
+    hdActions.confirm(label, `确定将「${sg.name}」${p.love ? '移出我喜欢的' : '移出本歌单'}？`, async () => {
       try {
         if (p.love) {
           await setFav(sg, false,
@@ -62,7 +63,7 @@ export function HDPlaylistDetailScreen() {
   const rowMenu = (sg: SongItem) => {
     const favd = isFav(sg);
     const removable = !!(local || p.love || p.plKey);
-    dialog.menu(`${sg.name} · ${sg.singer}`, [
+    hdActions.menu(`${sg.name} · ${sg.singer}`, [
       { label: '播放', onPress: () => playSong(sg, songs) },
       { label: favd ? '取消收藏' : '收藏', onPress: async () => {
         try {
@@ -83,9 +84,9 @@ export function HDPlaylistDetailScreen() {
   const { connected, token } = useApp();
   const manage = () => {
     if (!p.localId && !p.plKey) { toast('该歌单请在歌单列表长按管理'); return; }
-    dialog.menu(`管理「${title}」`, [
+    hdActions.menu(`管理「${title}」`, [
       { label: '重命名歌单', onPress: () => {
-        dialog.prompt('重命名歌单', { defaultValue: title, onSubmit: async (v) => {
+        hdActions.prompt('重命名歌单', { defaultValue: title, onSubmit: async (v) => {
           if (!v || v === title) return;
           if (p.localId) { library.update(p.localId, { name: v }); toast('已重命名'); }
           else if (connected && token) toast((await sync.renameUserList(p.plKey!, v)) ? '已重命名' : '服务器操作失败');

@@ -447,6 +447,7 @@ export function FxScreen() {
           />
         </View>
 
+        {!IS_HD ? (<>
         {/* ===== AutoEQ 耳机校正（lx52） ===== */}
         <View style={st.card}>
           <View style={st.cardHead}>
@@ -479,6 +480,7 @@ export function FxScreen() {
           </ScrollView>
         </View>
 
+        </>) : null}
         {/* ===== ViPER 效果（lx50） ===== */}
         <View style={st.card}>
           <View style={st.cardHead}>

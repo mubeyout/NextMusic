@@ -6,7 +6,6 @@ import { Icon } from '../theme/Icon';
 import { C, H } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { HDSongRow } from './HDSongRow';
-import { BottomFocusAnchor } from './HDMain';
 import { usePlayer } from '../state/PlayerProvider';
 import { lxapi } from '../services/lxapi';
 import type { SongItem } from '../services/server';
@@ -20,7 +19,7 @@ const SOURCES: { id: SearchSrc; label: string }[] = [
 ];
 type SearchSrc = 'kw' | 'kg' | 'wy' | 'tx' | 'mg';
 
-export function HDSearch({ bottomFocus }: { bottomFocus?: number }) {
+export function HDSearch() {
   const insets = useSafeAreaInsets();
   const { playSong, current } = usePlayer();
   const [kw, setKw] = useState('');
@@ -111,8 +110,7 @@ export function HDSearch({ bottomFocus }: { bottomFocus?: number }) {
             <Text style={st.tipText}>输入关键词开始搜索(五源免登录直连)</Text>
           </View>
         )}
-              <BottomFocusAnchor tag={bottomFocus} />
-      </ScrollView>
+                   </ScrollView>
     </View>
   );
 }

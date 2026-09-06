@@ -1,6 +1,7 @@
 // HD 我的:账号卡 + 歌单网格 + 媒体库/下载/本地/设置入口(子页复用 phone Stack)
 import React, { useEffect, useState } from 'react';
-import { dialog, toast } from '../components/Dialog';
+import { toast } from '../components/Dialog';
+import { hdActions } from './HDActions';
 import { View, Text, StyleSheet, ScrollView, Image, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
@@ -49,9 +50,9 @@ export function HDMy() {
 
   // lx101:歌单长按管理——本机 library / 同步服务器 userList
   const managePl = (pl: typeof playlists[number]) => {
-    dialog.menu(`管理「${pl.name}」`, [
+    hdActions.menu(`管理「${pl.name}」`, [
       { label: '重命名歌单', onPress: () => {
-        dialog.prompt('重命名歌单', {
+        hdActions.prompt('重命名歌单', {
           defaultValue: pl.name,
           onSubmit: async (v) => {
             if (!v || v === pl.name) return;
