@@ -52,8 +52,8 @@ export function QueueScreen() {
             <T
               hitSlop={6}
               onPress={() => (IS_HD ? hdActions : dialog).menu('队列操作', [
-                { label: `下载全部（${queue.length} 首）`, onPress: () => { const n = enqueueDownload(queue); toast(n ? `${n} 首加入下载队列` : '队列内均已下载'); } },
-                { label: '清空队列', danger: true, onPress: () => (IS_HD ? hdActions : dialog).confirm('清空队列', `移除全部 ${queue.length} 首（不影响当前播放）`, () => { clearQueue(); toast('队列已清空'); }, '清空', '取消') },
+                { label: `下载全部（${queue.length} 首）`, icon: 'download', onPress: () => { const n = enqueueDownload(queue); toast(n ? `${n} 首加入下载队列` : '队列内均已下载'); } },
+                { label: '清空队列', icon: 'trash', danger: true, onPress: () => (IS_HD ? hdActions : dialog).confirm('清空队列', `移除全部 ${queue.length} 首（不影响当前播放）`, () => { clearQueue(); toast('队列已清空'); }, '清空', '取消') },
               ])}
             >
               <Icon name="more" size={22} />

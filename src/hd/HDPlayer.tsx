@@ -397,9 +397,10 @@ export function HDPlayer() {
             <HDTouch style={st.cMode} onPress={skipNext}>
               <Icon name="next" size={26} color="#ffffffee" />
             </HDTouch>
-            {/* lx151:循环三态(老板:缺单曲循环)——off 灰/all 绿/repeat-one 绿+角标1 */}
+            {/* lx151:循环三态(手机端同款角标) */}
             <HDTouch style={st.cMode} onPress={cycleRepeat}>
               <Icon name="repeat" size={20} active={repeat !== 'off'} color={repeat !== 'off' ? C.brand : '#ffffff99'} />
+              {repeat === 'one' ? <Text style={st.repOne}>1</Text> : null}
             </HDTouch>
             <View style={st.ctrlDivider} />
             <HDTouch style={st.cTool} onPress={() => setCollectOpen(true)}>

@@ -45,7 +45,7 @@ export function HDPlaylistDetailScreen() {
     const label = p.love ? '取消收藏' : '从歌单移除';
     if (p.plKey && isPlatformList(p.plKey)) {
       hdActions.menu(`「${title}」是平台导入歌单`, [
-        { label: '复制为本地副本并移除该曲', onPress: () => {
+        { label: '复制为本地副本并移除该曲', icon: 'add', onPress: () => {
           const songs2 = songs.filter(x => !(x.source === sg.source && x.songmid === sg.songmid));
           library.create(title, songs2);
           setSongs(songs2);
@@ -129,7 +129,7 @@ export function HDPlaylistDetailScreen() {
       return;
     }
     hdActions.menu(`管理「${title}」`, [
-      { label: '重命名歌单', onPress: () => {
+      { label: '重命名歌单', icon: 'edit', onPress: () => {
         hdActions.prompt('重命名歌单', { defaultValue: title, onSubmit: async (v) => {
           if (!v || v === title) return;
           if (p.localId) { library.update(p.localId, { name: v }); toast('已重命名'); }

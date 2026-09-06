@@ -108,8 +108,8 @@ export function RootNavigator() {
       setTimeout(() => { exitArmed = false; }, 2600);
       if (IS_HD) {
         hdActions.menu('退出应用', [
-          { label: '取消' },
-          { label: '退出', danger: true, onPress: () => BackHandler.exitApp() },
+          { label: '取消', icon: 'close' },
+          { label: '退出', icon: 'close', danger: true, onPress: () => BackHandler.exitApp() },
         ]);
       } else {
         toast('再按一次返回键退出');

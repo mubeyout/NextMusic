@@ -133,7 +133,7 @@ export function HDMain() {
             toast((await sync.renameUserList(pl.key, v)) ? '已重命名' : '服务器操作失败');
           } });
         } },
-        { label: '删除歌单', danger: true, onPress: async () => {
+        { label: '删除歌单', icon: 'trash', danger: true, onPress: async () => {
           toast((await sync.removeUserList(pl.key)) ? '已删除' : '服务器操作失败');
         } },
         { label: '复制为可编辑本地副本', icon: 'add', onPress: () => { library.create(pl.name, pl.songs || []); toast(`已创建本地副本「${pl.name}」`); } },
@@ -141,7 +141,7 @@ export function HDMain() {
       return;
     }
     hdActions.menu(`管理「${pl.name}」`, [
-      { label: '重命名歌单', onPress: () => {
+      { label: '重命名歌单', icon: 'edit', onPress: () => {
         hdActions.prompt('重命名歌单', {
           defaultValue: pl.name,
           onSubmit: async (v) => {
@@ -223,10 +223,10 @@ export function HDMain() {
             <PlItem key={pl.key} name={pl.name} count={pl.count} onPress={() => openPl(pl)} onLongPress={() => managePl(pl)} />
           ))}
           <PlItem name="新建歌单" add onPress={() => hdActions.menu('新建歌单', [
-              { label: '空白歌单', onPress: () => {
+              { label: '空白歌单', icon: 'add', onPress: () => {
                 hdActions.prompt('新建歌单', { defaultValue: '', onSubmit: (v) => { const n = (v || '').trim(); if (n) { library.create(n); toast('已创建'); } } });
               } },
-              { label: '导入平台歌单', onPress: () => railNav('ImportPlaylist') },
+              { label: '导入平台歌单', icon: 'download', onPress: () => railNav('ImportPlaylist') },
             ])} />
         </ScrollView>
         {/* lx85:设置项不贴底——留出焦点环完整显示空间(老板:太靠底被裁切) */}
