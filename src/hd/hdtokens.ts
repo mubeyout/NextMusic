@@ -142,6 +142,18 @@ export const shadowOf = (seed: string) => {
 // lx96:紧凑弥散投影——横向滚动行内小卡专用(30px 大弥散会被 ScrollView 裁切,需要 ≤16px 行内边距预算)
 // lx132:彩色弥散光晕(描边式)——RN Android boxShadow 在米电视 GPU 不稳定(红色巨影实测渲染失败);
 // 描边光晕=自绘 border,恒定渲染、零裁切
+// lx136:Android 原生彩色弥散投影——elevation+shadowColor(View.setElevation+outlineAmbient/SpotShadowColor API28+),
+// 系统级渲染,比 RN CSS boxShadow 模拟稳定(米电视上 CSS 模拟时灵时不灵)
+export function shadowStyleOf(seed: string): { elevation: number; shadowColor: string } {
+  const h = [...seed].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
+  const s2 = 0.7, l = 0.55;
+  const cH = (1 - Math.abs(2 * l - 1)) * s2;
+  const hp = h / 60, x = cH * (1 - Math.abs((hp % 2) - 1));
+  const [r1, g1, b1] = hp < 1 ? [cH, x, 0] : hp < 2 ? [x, cH, 0] : hp < 3 ? [0, cH, x] : hp < 4 ? [0, x, cH] : hp < 5 ? [x, 0, cH] : [cH, 0, x];
+  const m = l - cH / 2;
+  return { elevation: 12, shadowColor: `rgb(${Math.round((r1 + m) * 255)},${Math.round((g1 + m) * 255)},${Math.round((b1 + m) * 255)})` };
+}
+
 export function haloOf(seed: string): string {
   const h = [...seed].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
   const s2 = 0.62, l = 0.5;

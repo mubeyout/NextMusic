@@ -6,8 +6,8 @@ import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
-import { C, H, SH, haloOf } from './hdtokens';
-import { HDTouch, HDHalo } from './HDTouch';
+import { C, H, SH, shadowStyleOf } from './hdtokens';
+import { HDTouch } from './HDTouch';
 import { HDGrid } from './HDGrid';
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
@@ -113,9 +113,9 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
       {recents.length ? (
         <Section title="最近播放" more="查看全部" onMore={() => hdNav()?.navigate('PlaylistDetail', { title: '最近播放', songs: recents, meta: `${recents.length} 首` })}>
           {/* 最近播放(lx88:横向 ScrollView 会裁切 zoom 溢出——小卡去 zoom 只留环;lx92:左右 padding 4 留出环的 2px 外溢,首尾卡选中不裁) */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -18, marginRight: -22 }} contentContainerStyle={{ gap: 10, paddingVertical: 16, paddingHorizontal: 18 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -18, marginRight: -22 }} contentContainerStyle={{ gap: 10, paddingVertical: 20, paddingHorizontal: 18 }}>
             {recents.slice(0, 8).map((s, i) => (
-              <HDHalo color={haloOf(s.name)} radius={9}><HDTouch key={`${s.source}_${s.songmid}_${i}`} style={st.recCard} onPress={() => playSong(s, recents)}
+              <HDTouch key={`${s.source}_${s.songmid}_${i}`} style={[st.recCard, shadowStyleOf(s.name)]} onPress={() => playSong(s, recents)}
                 focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 11 }}>
                 {s.img ? <Image source={{ uri: s.img }} style={st.recArt} />
                   : <View style={[st.recArt, { backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={14} color={C.text3} /></View>}
@@ -123,7 +123,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
                   <Text style={st.recName} numberOfLines={1}>{s.name}</Text>
                   <Text style={st.recSub} numberOfLines={1}>{s.singer}</Text>
                 </View>
-              </HDTouch></HDHalo>
+              </HDTouch>
             ))}
           </ScrollView>
         </Section>
@@ -132,9 +132,9 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
       {/* 推荐歌单(五源聚合,单行横滑 lx131) */}
       <Section title="推荐歌单" hint={recSource ? `五源聚合 · ${recSource}` : '五源聚合'} more="更多" onMore={() => onGotoSearch?.()}>
         {recPls.length ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingLeft: 2, paddingRight: 10, paddingVertical: 18 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingLeft: 2, paddingRight: 10, paddingVertical: 20 }}>
             {recPls.slice(0, 10).map(pl => (
-              <HDHalo color={haloOf(pl.name)} radius={12}><HDTouch key={`${pl.source}_${pl.id}`} style={[st.plCard, { width: 148 }]} zoom={1.06} onPress={() => openRecPl(pl)}>
+              <HDTouch key={`${pl.source}_${pl.id}`} style={[st.plCard, { width: 148 }, shadowStyleOf(pl.name)]} zoom={1.06} onPress={() => openRecPl(pl)}>
                 {pl.img
                   ? <Image source={{ uri: pl.img }} style={st.plArt} />
                   : <View style={[st.plArt, { backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
@@ -142,7 +142,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
                   <Text style={st.plName} numberOfLines={1}>{pl.name}</Text>
                   <Text style={st.recSub} numberOfLines={1}>{pl.author || (pl.play_count ? `▶ ${pl.play_count}` : '')}</Text>
                 </View>
-              </HDTouch></HDHalo>
+              </HDTouch>
             ))}
           </ScrollView>
         ) : (
@@ -157,7 +157,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
         {playlists.length ? (
           <HDGrid min={126 * (H.font.sm / 10)}>
             {playlists.slice(0, 10).map(pl => (
-              <HDHalo color={haloOf(pl.name)} radius={12}><HDTouch key={pl.key} style={st.plCard} zoom={1.06} onPress={() => openPl(pl)}>
+              <HDTouch key={pl.key} style={[st.plCard, shadowStyleOf(pl.name)]} zoom={1.06} onPress={() => openPl(pl)}>
                 <View style={{ position: 'relative' }}>
                   {pl.img
                     ? <Image source={{ uri: pl.img }} style={st.plArt} />
@@ -167,7 +167,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
                 <View style={st.plTexts}>
                   <Text style={st.plName} numberOfLines={1}>{pl.name}</Text>
                 </View>
-              </HDTouch></HDHalo>
+              </HDTouch>
             ))}
           </HDGrid>
         ) : (
