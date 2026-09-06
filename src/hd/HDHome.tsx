@@ -50,7 +50,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
   const syncPls = snap?.userList || [];
   const playlists = [
     ...localPls.map(p => ({ key: p.id, localId: p.id, name: p.name, count: p.songs.length, img: p.cover || p.songs[0]?.img, songs: p.songs as SongItem[] })),
-    ...syncPls.map(u => {
+    ...syncPls.filter(u => !new Set(localPls.map((p: { name: string }) => p.name)).has(u.name)).map(u => {
       const songs = (u.list || []).map(lxToApp);
       return { key: u.id, localId: undefined as string | undefined, name: u.name, count: songs.length, img: songs[0]?.img, songs };
     }),

@@ -101,12 +101,14 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
     + localPlaylists.reduce((n, p) => n + p.songs.length, 0);
 
   // 自建歌单 grid items: local playlists first, then synced remote lists
+  // lx123:本地同名优先(平台导入副本/本地独有不被服务器同名顶成双显)
+  const localGridNames = new Set(localPlaylists.map(p => p.name));
   const gridItems: { key: string; localId?: string; name: string; count: number; img?: string; songs: SongItem[] }[] = [
     ...localPlaylists.map(p => ({
       key: p.id, localId: p.id, name: p.name, count: p.songs.length, img: p.cover || p.songs[0]?.img,
       songs: p.songs,
     })),
-    ...syncPls.map(u => {
+    ...syncPls.filter(u => !localGridNames.has(u.name)).map(u => {
       const songs = (u.list || []).map(lxToApp);
       return { key: u.id, name: u.name, count: songs.length, img: songs[0]?.img, songs };
     }),

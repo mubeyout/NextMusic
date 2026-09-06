@@ -42,9 +42,11 @@ export function HDMy() {
   useEffect(refresh, [connected]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const syncPls = snap?.userList || [];
+  const localClean = localPls.filter(p => p.name !== '我喜欢的');
+  const localNames = new Set(localClean.map(p => p.name)); // lx123:本地同名优先(平台导入 copy-on-write 副本不被服务器版顶掉)
   const playlists = [
-    ...localPls.filter(p => p.name !== '我喜欢的').map(p => ({ key: p.id, localId: p.id, name: p.name, count: p.songs.length, img: p.cover || p.songs[0]?.img, songs: p.songs as SongItem[] })),
-    ...syncPls.map(u => {
+    ...localClean.map(p => ({ key: p.id, localId: p.id, name: p.name, count: p.songs.length, img: p.cover || p.songs[0]?.img, songs: p.songs as SongItem[] })),
+    ...syncPls.filter(u => !localNames.has(u.name)).map(u => {
       const songs = (u.list || []).map(lxToApp);
       return { key: u.id, localId: undefined as string | undefined, name: u.name, count: songs.length, img: songs[0]?.img, songs };
     }),
