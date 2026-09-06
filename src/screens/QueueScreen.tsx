@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 // lx45 坑108：phone 分支误写 <T> 自递归 → 点队列页瞬间爆栈卡死 ANR；改回 TouchableOpacity
 import { useNavigation } from '@react-navigation/native';
@@ -29,6 +29,7 @@ import { enqueueDownload } from '../services/downloads';
 
 // Figma 03·播放队列: header + now playing card + list
 export function QueueScreen() {
+  const [limit, setLimit] = useState(40);
   const nav = useNavigation() as { goBack: () => void };
   const { queue, current, playSong, position, duration, clearQueue } = usePlayer();
 
@@ -37,7 +38,12 @@ export function QueueScreen() {
 
   return (
     <LinearGradient colors={[C.bgGradientTop, C.bg, C.bg]} locations={[0, 0.55, 1]} style={[st.screen, { backgroundColor: C.bg }]}>
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
+        onScroll={e => {
+          const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
+          if (layoutMeasurement.height + contentOffset.y > contentSize.height - 500) setLimit(n => (n < upcoming.length ? n + 40 : n));
+        }}
+        scrollEventThrottle={200}>
         <PageHeader
           title="播放队列"
           onBack={() => nav.goBack()}
@@ -77,13 +83,14 @@ export function QueueScreen() {
         </View>
         {upcoming.length ? (
           <View style={st.list}>
-            {upcoming.map((t, i) => (
+            {upcoming.slice(0, limit).map((t, i) => (
               <SongRow key={t.uid || i} song={t} onPress={() => playSong(t, queue)} />
             ))}
           </View>
         ) : (
           <EmptyState title={queue.length ? '没有下一首了' : '队列为空'} sub={queue.length ? undefined : '去首页或探索页添加歌曲'} />
         )}
+        {limit < upcoming.length ? <Text style={{ color: '#999', fontSize: 11, textAlign: 'center', paddingVertical: 8 }}>滚动加载更多({limit}/{upcoming.length})</Text> : null}
       </ScrollView>
     </LinearGradient>
   );

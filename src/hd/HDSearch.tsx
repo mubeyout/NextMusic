@@ -20,6 +20,15 @@ const SOURCES: { id: SearchSrc; label: string }[] = [
 ];
 type SearchSrc = 'kw' | 'kg' | 'wy' | 'tx' | 'mg';
 
+// lx134:探索页空闲态内容
+const HOT_ARTISTS = [
+  { n: '周杰伦', c: '#7C4DFF' }, { n: '林俊杰', c: '#3F8CFF' }, { n: '邓紫棋', c: '#FF5A76' },
+  { n: '陈奕迅', c: '#0FA3A3' }, { n: '薛之谦', c: '#FF8A3D' }, { n: 'Taylor Swift', c: '#8E44AD' },
+  { n: '王菲', c: '#E91E8C' }, { n: '陶喆', c: '#1ED760' },
+];
+const GENRES = ['华语流行', '粤语经典', '摇滚', '民谣', '电子', '古风', '爵士', '嘻哈', '轻音乐', '影视原声', 'K-POP', '乡村'];
+const HOT_WORDS = ['晴天', '后来', '海阔天空', '孤勇者', '起风了', '稻香', '红日', '月半小夜曲', '泡沫', '岁月神偷'];
+
 export function HDSearch() {
   const insets = useSafeAreaInsets();
   const { playSong, current } = usePlayer();
@@ -90,6 +99,44 @@ export function HDSearch() {
           ) : null}
         </View>
 
+        {/* lx134:空闲态内容(老板:探索页太空)——热门歌手卡 + 风格分类 + 热搜词 */}
+        {results == null && !kw.trim() ? (
+          <View style={{ gap: 18, marginTop: 6 }}>
+            <View style={{ gap: 9 }}>
+              <Text style={st.secTitle}>热门歌手</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingLeft: 2 }}>
+                {HOT_ARTISTS.map(a => (
+                  <HDTouch key={a.n} style={st.artistCard} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }} onPress={() => { setKw(a.n); search(a.n); }}>
+                    <View style={[st.artistAvatar, { backgroundColor: a.c }]}><Text style={st.artistGlyph}>{a.n[0]}</Text></View>
+                    <Text style={st.artistName} numberOfLines={1}>{a.n}</Text>
+                  </HDTouch>
+                ))}
+              </ScrollView>
+            </View>
+            <View style={{ gap: 9 }}>
+              <Text style={st.secTitle}>分类发现</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {GENRES.map(g => (
+                  <HDTouch key={g} style={st.genrePill} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 15 }} onPress={() => { setKw(g); search(g); }}>
+                    <Text style={st.genreText}>{g}</Text>
+                  </HDTouch>
+                ))}
+              </View>
+            </View>
+            <View style={{ gap: 9 }}>
+              <Text style={st.secTitle}>大家都在搜</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {HOT_WORDS.map((w, i) => (
+                  <HDTouch key={w} style={st.hotPill} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12 }} onPress={() => { setKw(w); search(w); }}>
+                    <Text style={[st.hotIdx, i < 3 && { color: C.brand }]}>{i + 1}</Text>
+                    <Text style={st.hotText} numberOfLines={1}>{w}</Text>
+                  </HDTouch>
+                ))}
+              </View>
+            </View>
+          </View>
+        ) : null}
+
         {/* 结果 */}
         {results != null ? (
           <View style={{ gap: 2 }}>
@@ -142,4 +189,13 @@ const st = StyleSheet.create({
   empty: { color: C.text3, fontSize: H.font.md, paddingVertical: 24, textAlign: 'center' },
   tip: { alignItems: 'center', gap: 10, paddingVertical: 60 },
   tipText: { color: C.text3, fontSize: H.font.md },
+  artistCard: { width: 92, height: 118, borderRadius: 14, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', gap: 8, padding: 8 },
+  artistAvatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
+  artistGlyph: { color: '#FFFFFF', fontSize: 22, fontWeight: '800' },
+  artistName: { color: C.text, fontSize: 11, fontWeight: '600' },
+  genrePill: { paddingHorizontal: 16, height: 32, borderRadius: 16, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
+  genreText: { color: C.text2, fontSize: 12, fontWeight: '600' },
+  hotPill: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 13, height: 34, borderRadius: 12, backgroundColor: C.surface },
+  hotIdx: { color: C.text3, fontSize: 11, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  hotText: { color: C.text, fontSize: 12, fontWeight: '500' },
 });

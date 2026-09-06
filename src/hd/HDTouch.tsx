@@ -29,7 +29,7 @@ export function HDTouch({ style, focusStyle, focusBg, glow, zoom, haloColor, act
   // v5 overlay 在米电视 Pressable 内不渲染(同 overflow 裁剪家族 bug),废弃
   const autoRing: ViewStyle = { borderWidth: 2, borderColor: C.brand, borderRadius: (flat.borderRadius ?? 12) + (haloColor ? 6 : 0) };
   // lx132:光晕描边(内容零位移:内容自身不变,border 外扩视觉即光晕)
-  const haloStyle: ViewStyle | null = haloColor ? { borderWidth: 6, borderColor: haloColor, borderRadius: (flat.borderRadius ?? 12) + 6 } : null;
+  const haloStyle: ViewStyle | null = null; // lx133:描边方案废弃(效果差),光晕由 HDHalo 包装提供
   return (
     <Pressable
       focusable
@@ -49,5 +49,22 @@ export function HDTouch({ style, focusStyle, focusBg, glow, zoom, haloColor, act
     >
       {children}
     </Pressable>
+  );
+}
+
+// lx133:双层弥散光晕(替代 border 描边——老板:光晕效果太差)——两层圆角半透明层由内向外渐隐,
+// 纯 View 自绘(米电视 boxShadow 不稳定),wrapper padding 保证不裁切
+export function HDHalo({ color, radius = 12, pad = 12, children }: {
+  color: string; radius?: number; pad?: number; children: React.ReactNode;
+}) {
+  // rgba(r,g,b,A) → 基色前缀
+  const m = color.match(/^(rgba\([^)]*?),[\d.]+\)$/);
+  const base = m ? m[1] : 'rgba(120,120,120';
+  return (
+    <View style={{ padding: pad }}>
+      <View pointerEvents="none" style={{ position: 'absolute', top: pad - 7, left: pad - 7, right: pad - 7, bottom: pad - 7, borderRadius: radius + 7, backgroundColor: base + ',0.22)' }} />
+      <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: radius + pad, backgroundColor: base + ',0.08)' }} />
+      {children}
+    </View>
   );
 }

@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
 import { C, H, haloOf } from './hdtokens';
-import { HDTouch } from './HDTouch';
+import { HDTouch, HDHalo } from './HDTouch';
 import { HDGrid } from './HDGrid';
 import { lxapi } from '../services/lxapi';
 import type { SongItem } from '../services/server';
@@ -85,8 +85,8 @@ export function HDBoards() {
         // lx83(老板反馈):封面顶角补圆角随卡 12——卡全圆角,环统一 14 贴附;zoom 悬浮放大
         <HDGrid min={128 * (H.font.sm / 10)}>
           {boards.map((b, i) => (
-            <HDTouch key={b.id} onPress={() => openBoard(b)} activeOpacity={0.85} zoom={1.06}
-              style={st.card} haloColor={haloOf(b.name)}
+            <HDHalo color={haloOf(b.name)} radius={12}><HDTouch key={b.id} onPress={() => openBoard(b)} activeOpacity={0.85} zoom={1.06}
+              style={st.card}
               focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }}
 >
               {b.image ? (
@@ -103,7 +103,7 @@ export function HDBoards() {
                 <Text style={st.cardName} numberOfLines={2}>{b.name}</Text>
                 <Text style={st.cardSub} numberOfLines={1}>{SOURCES.find(s => s.key === src)?.label} · 实时榜单</Text>
               </View>
-            </HDTouch>
+            </HDTouch></HDHalo>
           ))}
         </HDGrid>
       )}

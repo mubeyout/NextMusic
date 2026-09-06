@@ -58,6 +58,7 @@ export function PlaylistDetailScreen() {
   const [searching, setSearching] = useState(false);
   const localPl = p.localId ? library.get(p.localId) : null;
   const [collect, setCollect] = useState(false);
+  const [pdLimit, setPdLimit] = useState(40); // lx135:增量渲染(大歌单全渲染卡顿)
   const [, force] = useState(0);
 
   const shown = React.useMemo(() => {
@@ -211,7 +212,7 @@ export function PlaylistDetailScreen() {
           <Text style={st.empty}>{kw ? `没有匹配「${kw}」的歌曲` : '歌单为空'}</Text>
         ) : (
           <View style={st.songList}>
-            {shown.map((s, i) => (
+            {shown.slice(0, pdLimit).map((s, i) => (
               <SongRow
                 key={`${s.source}-${s.songmid}-${i}`}
                 song={s}
@@ -220,6 +221,7 @@ export function PlaylistDetailScreen() {
                 extra={renderSongAction(s)}
               />
             ))}
+            {pdLimit < shown.length ? <Text style={{ color: '#999', fontSize: 11, textAlign: 'center', paddingVertical: 8 }}>滚动加载更多({pdLimit}/{shown.length})</Text> : null}
           </View>
         )}
         {busy ? <View style={st.center}><ActivityIndicator color={C.brand} /></View> : null}
