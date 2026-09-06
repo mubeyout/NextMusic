@@ -23,14 +23,18 @@ export function HDCollect({ song, onClose }: { song: SongItem; onClose: () => vo
     library.all().map(p => ({ key: p.id, localId: p.id, name: p.name })));
 
   useEffect(() => {
-    if (!connected || !token) return;
     let dead = false;
-    const local = library.all().map(p => ({ key: p.id, localId: p.id, name: p.name }));
-    setPls(local);
-    sync.fetchLists().then(sp => {
-      if (dead || !sp) return;
-      setPls([...local, ...(sp.userList || []).map(u => ({ key: u.id, name: u.name }))]);
-    }).catch(() => {});
+    const local = library.all().filter(p => p.name !== '我喜欢的').map(p => ({ key: p.id, localId: p.id, name: p.name }));
+    // lx126:缓存先行(秒开);联网后台补一次
+    const cached = sync.cachedLists();
+    if (cached) setPls([...local, ...(cached.userList || []).map(u => ({ key: u.id, name: u.name }))]);
+    else setPls(local);
+    if (connected && token) {
+      sync.fetchLists().then(sp => {
+        if (dead || !sp) return;
+        setPls([...local, ...(sp.userList || []).map(u => ({ key: u.id, name: u.name }))]);
+      }).catch(() => {});
+    }
     return () => { dead = true; };
   }, [connected, token, syncTick]); // eslint-disable-line react-hooks/exhaustive-deps
 

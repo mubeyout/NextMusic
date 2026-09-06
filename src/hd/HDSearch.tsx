@@ -1,5 +1,6 @@
 // HD 探索页 —— 桌面版 DiscoverScreen 结构:五源 pill + 搜索框 + 序号结果行
 import React, { ComponentRef, useEffect, useRef, useState } from 'react';
+import { FocusBridge } from './HDMain';
 import { View, Text, StyleSheet, ScrollView, TextInput, Image, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
@@ -110,7 +111,8 @@ export function HDSearch() {
             <Text style={st.tipText}>输入关键词开始搜索(五源免登录直连)</Text>
           </View>
         )}
-                   </ScrollView>
+                         <FocusBridge active />
+      </ScrollView>
     </View>
   );
 }

@@ -1,5 +1,6 @@
 // HD 榜单页 —— 桌面版风格:五源 pill + 榜单卡片网格,点击拉榜进 PlaylistDetail(复用)
 import React, { useEffect, useState } from 'react';
+import { FocusBridge } from './HDMain';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
@@ -107,7 +108,8 @@ export function HDBoards() {
         </HDGrid>
       )}
       {boards != null && !boards.length ? <Text style={st.tipText}>榜单加载失败,切源重试</Text> : null}
-                 </ScrollView>
+                       <FocusBridge active />
+      </ScrollView>
   );
 }
 

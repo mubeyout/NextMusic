@@ -1,6 +1,7 @@
 // HD 首页 —— 桌面版 HomeScreen 结构:问候 + 双大卡(每日推荐/私人雷达)
 // + 最近播放横滚 + 我的歌单网格;全部真数据真播放
 import React, { useEffect, useState } from 'react';
+import { FocusBridge } from './HDMain';
 import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
@@ -176,7 +177,8 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
           </HDTouch>
         )}
       </Section>
-                 </ScrollView>
+                       <FocusBridge active />
+      </ScrollView>
   );
 }
 

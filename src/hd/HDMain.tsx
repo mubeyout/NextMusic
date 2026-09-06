@@ -55,6 +55,18 @@ const TABS = [
 
 const InnerStack = createNativeStackNavigator();
 const hdInnerTheme = { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: C.bg, card: C.bg, text: C.text, primary: C.brand, border: 'transparent' } };
+// lx127:内容区→播放条 焦点桥(不可见 2px,滚到内容底部后 DOWN 直达播放条;老板:D-pad 只有绕侧栏底部才能进)
+let pbBridgeHandle: number | null = null;
+const pbBridgeSubs = new Set<() => void>();
+export function FocusBridge({ active }: { active?: boolean }) {
+  const [, tick] = useState(0);
+  useEffect(() => { const f = () => tick(n => n + 1); pbBridgeSubs.add(f); return () => { pbBridgeSubs.delete(f); }; }, []);
+  if (!active || pbBridgeHandle == null) return null;
+  return (
+    <HDTouch style={{ height: 2, marginTop: 4 }} focusStyle={false} onPress={() => {}} nextFocusDown={pbBridgeHandle} />
+  );
+}
+
 // 侧栏 tab 点击:切 tab 同时把内容区栈收回首屏(内页开着时点侧栏=回内容首页,桌面司约)
 const hdInnerPop = () => {
   try {
@@ -326,7 +338,8 @@ function HDPlayBar() {
           <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={skipPrev}>
             <Icon name="previous" size={15} color={C.text} />
           </HDTouch>
-          <HDTouch style={st.playBtn} focusStyle={st.playBtnFocus} glow={SH.brand} onPress={toggle}>
+          <HDTouch style={st.playBtn} focusStyle={st.playBtnFocus} glow={SH.brand} onPress={toggle}
+            onLayout={e => { const h = (e.nativeEvent as unknown as { target: number }).target; if (h && h !== pbBridgeHandle) { pbBridgeHandle = h; pbBridgeSubs.forEach(f => f()); } }}>
             <Icon name={playing ? 'pause' : 'play'} size={15} color={C.onBrand} />
           </HDTouch>
           <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={skipNext}>

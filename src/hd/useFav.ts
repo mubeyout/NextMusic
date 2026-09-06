@@ -19,15 +19,18 @@ export function useFav(song?: SongItem | null) {
     if (!song) return;
     // lx114(老板定夺):收藏语义=我喜欢的 OR 收录进任意歌单(本地/服务器)
     const key = `${song.source}_${song.songmid}`;
+    // lx126 卡顿优化:改读缓存快照(每次收藏操作原来会触发 N 个 useFav 实例各拉一次全量快照——级联网络+多MB JSON 解析)
+    // 缓存由任意一次 fetchLists 写入,push 后 bumpSync → syncTick → 本 effect 重跑即刷新
+    const snap = sync.cachedLists();
+    const check = (s2: typeof snap) => {
+      const inRemotePl = (s2?.userList || []).some(u => (u.list || []).some((x: Parameters<typeof lxNormKey>[0]) => lxNormKey(x) === key));
+      setFaved(isFav(song) || inLocalPl || (s2?.loveList || []).some(x => x.id === key) || inRemotePl);
+    };
     const inLocalPl = library.all().some(pl => (pl.songs as SongItem[]).some(x => lxNormKey(x) === key));
-    const base = isFav(song) || inLocalPl;
-    if (connected && token) {
-      sync.fetchLists().then(s => {
-        if (dead || !s) return;
-        const inRemotePl = (s.userList || []).some(u => (u.list || []).some((x: Parameters<typeof lxNormKey>[0]) => lxNormKey(x) === key)); // lx117:归一比对
-        setFaved(base || s.loveList.some(x => x.id === key) || inRemotePl);
-      }).catch(() => { if (!dead) setFaved(base); });
-    } else setFaved(base);
+    if (snap) check(snap);
+    else if (connected && token) {
+      sync.fetchLists().then(s => { if (!dead) check(s); }).catch(() => { if (!dead) setFaved(isFav(song) || inLocalPl); });
+    } else setFaved(isFav(song) || inLocalPl);
     return () => { dead = true; };
   }, [song?.songmid, song?.source, connected, token, favTick]); // eslint-disable-line react-hooks/exhaustive-deps
 

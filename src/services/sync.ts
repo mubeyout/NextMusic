@@ -5,6 +5,7 @@
 import { req, type SongItem } from './server';
 import { createMMKV } from 'react-native-mmkv';
 const kvSync = createMMKV({ id: 'nextmusic-sync-cache' });
+let lastSnapJson = ''; // lx126:缓存写入去重(避免重复 MB 级序列化)
 
 export interface LXSong {
   id?: string;
@@ -106,8 +107,11 @@ export const sync = {
       console.log('[sync] user/list resp type:', typeof d, '| defaultList:', Array.isArray((d as any)?.defaultList) ? (d as any).defaultList.length : String((d as any)?.defaultList).slice(0, 40));
       if (!d || !Array.isArray(d.defaultList)) return null;
       const snap = { defaultList: d.defaultList, loveList: d.loveList || [], userList: d.userList || [] };
-      try { kvSync.set('snap', JSON.stringify(snap)); } catch { /* 超大忽略 */ }
-      // lx120:fetch 不 bump(订阅者重拉→再 bump=无限循环,2.5 req/s 轰服务器+并发旧快照覆盖写)——只有 push 才通知
+      // lx126 卡顿优化:内容未变跳过 MB 级 stringify+MMKV 写(全量快照 400+ 歌时 JS 线程卡顿源)
+      try {
+        const json = JSON.stringify(snap);
+        if (json !== lastSnapJson) { kvSync.set('snap', json); lastSnapJson = json; }
+      } catch { /* 超大忽略 */ }
       return snap;
     } catch (e) { console.log('[sync] fetchLists err:', (e as Error).message); return null; }
   },
