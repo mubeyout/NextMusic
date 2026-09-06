@@ -96,7 +96,7 @@ export function HDCollect({ song, onClose }: { song: SongItem; onClose: () => vo
 
 const st = StyleSheet.create({
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, elevation: 999 }, // lx150:全屏焦点捕捉器——光标脱离面板即落于此,立即关
-  panel: { left: (Dimensions.get('window').width - 380) / 2, top: 180, width: 380, maxHeight: 560, borderRadius: 18, backgroundColor: C.elev, borderWidth: 1, borderColor: C.border, padding: 14, gap: 8, elevation: 24 }, // lx148:与 HDActions 完全同位同宽 // lx147:与 HDActions 同位同主题
+  panel: { position: 'absolute', left: (Dimensions.get('window').width - 380) / 2, top: 180, width: 380, maxHeight: 560, borderRadius: 18, backgroundColor: C.elev, borderWidth: 1, borderColor: C.border, padding: 14, gap: 8, elevation: 24 }, // lx148:与 HDActions 完全同位同宽 // lx147:与 HDActions 同位同主题
   head: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 2 },
   title: { color: C.text, fontSize: 14, fontWeight: '700', flex: 1 },
   x: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: C.inset },
