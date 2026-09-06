@@ -72,29 +72,9 @@ export async function addToPlaylist(plKey: 'love' | { id: string } | { name: str
 export function readKeys(): string[] { return [...loadSet()]; }
 export function writeKeys(keys: string[]): void { kv.set(KEY, JSON.stringify(keys)); }
 
-// lx104:快捷收藏合并——离线期间攒的本地收藏,登录后补传服务器 loveList(单向补齐,幂等)
-export async function mergeLocalLove(pushRemote?: (snap: any) => Promise<unknown>, fetchSnap?: () => Promise<any>): Promise<void> {
-  if (!pushRemote || !fetchSnap) return;
-  try {
-    const snap = await fetchSnap();
-    if (!snap) return;
-    const localSet = loadSet();
-    const remoteIds = new Set((snap.loveList || []).map((x: { id: string }) => x.id));
-    // 本地库「我喜欢的」歌单也并入(双入口同源)
-    let pl = library.all().find(q => q.name === '我喜欢的');
-    const keys = new Set(localSet);
-    (pl?.songs || []).forEach(q => keys.add(songKey(q)));
-    const missing = [...keys].filter(k => !remoteIds.has(k));
-    if (!missing.length) return;
-    const byKey = new Map<string, SongItem>();
-    (pl?.songs || []).forEach(q => byKey.set(songKey(q), q));
-    // loveList 快照里存有完整歌曲的从远端取,本地库没有的从 loveList 已有项找
-    (snap.loveList || []).forEach((x: { id: string }) => remoteIds.has(x.id));
-    const additions = missing.map(k => byKey.get(k) || ({ id: k, source: k.split('_')[0], songmid: k.split('_').slice(1).join('_'), name: '', singer: '' } as never));
-    snap.loveList = [...additions, ...(snap.loveList || [])];
-    await pushRemote(snap);
-    console.log('[fav] merged local love -> server:', missing.length);
-  } catch { /* ignore */ }
-}
+// lx104/lx122:快捷收藏合并(离线补传)——⚠️ 已停用:原实现把原始 SongItem(无 id 字段)推入
+// loveList,服务器接收后 remoteIds 恒不匹配→循环重推→loveList 指数膨胀(2026-09-06 实锤 1188 条)。
+// 如需恢复:additions 必须映射为 {id: songKey(s), ...s} 且推送前按 id 去重。
+export async function mergeLocalLove(): Promise<void> { /* disabled */ }
 
 export function subscribeFav(f: () => void): () => void { favSubs.add(f); return () => { favSubs.delete(f); }; }

@@ -17,7 +17,6 @@ import { getRecents } from '../state/recent';
 import { sync, lxToApp , subscribeSync , isPlatformList } from '../services/sync';
 import { hdNav, hdInnerRef } from './hdnav';
 import { useFav } from './useFav';
-import { mergeLocalLove } from '../state/favorites';
 import { HDCollect } from './HDCollect';
 import { NavigationContainer, DefaultTheme, StackActions, NavigationIndependentTree } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -97,10 +96,8 @@ export function HDMain() {
         }))];
       });
     }
-    mergeLocalLove(
-      connected && token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined,
-      () => sync.fetchLists(),
-    );
+    // lx122:mergeLocalLove 已移除——其 additions 推原始 SongItem(无 id 字段)入 loveList,
+    // 服务器收下后 remoteIds 永远匹配不上→每轮再推→指数复制(实锤:1188 条中 1187 条无 id)
     sync.fetchLists().then(s => {
       if (!s) return;
       setLoveCount((s.loveList || []).length);
