@@ -126,7 +126,16 @@ export function HDMain() {
   // lx101:歌单管理(长按)——本机 library 重命名/删除;同步歌单 fetch+push 服务器 userList
   const managePl = (pl: { localId?: string; key: string; name: string; count: number; songs?: SongItem[] }) => {
     if (!pl.localId && isPlatformList(pl.key)) {
-      hdActions.menu(`「${pl.name}」是平台导入歌单`, [
+      hdActions.menu(`管理「${pl.name}」`, [
+        { label: '重命名歌单', onPress: () => {
+          hdActions.prompt('重命名歌单', { defaultValue: pl.name, onSubmit: async (v: string) => {
+            if (!v || v === pl.name) return;
+            toast((await sync.renameUserList(pl.key, v)) ? '已重命名' : '服务器操作失败');
+          } });
+        } },
+        { label: '删除歌单', danger: true, onPress: async () => {
+          toast((await sync.removeUserList(pl.key)) ? '已删除' : '服务器操作失败');
+        } },
         { label: '复制为可编辑本地副本', onPress: () => { library.create(pl.name, pl.songs || []); toast(`已创建本地副本「${pl.name}」`); } },
       ]);
       return;

@@ -6,7 +6,7 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-nat
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
-import { C, H, shadowOf } from './hdtokens';
+import { C, H, haloOf } from './hdtokens';
 import { HDGrid } from './HDGrid';
 import { HDTouch } from './HDTouch';
 import { HDSongRow } from './HDSongRow';
@@ -97,7 +97,7 @@ export function HDPodcast() {
           const f = feeds[ch.id] || [];
           // lx88(老板反馈):底角也要圆角——卡加底色+全圆角 12(overflow 裁剪封面),环统一 14
           return (
-            <HDTouch key={ch.id} style={[st.card, { boxShadow: shadowOf(ch.name) }]} zoom={1.06} onPress={() => openChannel(ch)} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }}>
+            <HDTouch key={ch.id} style={st.card} haloColor={haloOf(ch.name)} zoom={1.06} onPress={() => openChannel(ch)} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }}>
               <LinearGradient colors={POD_GRADS[ci % POD_GRADS.length]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.cardCover}>
                 <Icon name="podcast" size={30} color="#FFFFFF" />
                 <View style={{ flex: 1 }} />

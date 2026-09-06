@@ -5,7 +5,7 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Image } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
-import { C, H, shadowOf } from './hdtokens';
+import { C, H, haloOf } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { HDGrid } from './HDGrid';
 import { lxapi } from '../services/lxapi';
@@ -86,7 +86,7 @@ export function HDBoards() {
         <HDGrid min={128 * (H.font.sm / 10)}>
           {boards.map((b, i) => (
             <HDTouch key={b.id} onPress={() => openBoard(b)} activeOpacity={0.85} zoom={1.06}
-              style={[st.card, { boxShadow: shadowOf(b.name) }]}
+              style={st.card} haloColor={haloOf(b.name)}
               focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }}
 >
               {b.image ? (

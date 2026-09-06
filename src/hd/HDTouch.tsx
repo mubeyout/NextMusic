@@ -17,15 +17,19 @@ type Props = React.ComponentProps<typeof Pressable> & {
   glow?: string;
   /** lx87:聚焦放大悬浮(TV 卡片标准交互)——transform scale 不占布局+投影抬升;如 1.06 */
   zoom?: number;
+  /** lx132:彩色弥散光晕(描边式,替代不稳定的 boxShadow)——传 haloOf(seed) 结果 */
+  haloColor?: string;
   activeOpacity?: number;
 };
 
-export function HDTouch({ style, focusStyle, focusBg, glow, zoom, activeOpacity = 0.8, children, ...rest }: Props) {
+export function HDTouch({ style, focusStyle, focusBg, glow, zoom, haloColor, activeOpacity = 0.8, children, ...rest }: Props) {
   const [focus, setFocus] = useState(false);
   const flat = (StyleSheet.flatten(style as ViewStyle | ViewStyle[]) || {}) as { borderRadius?: number };
   // v6(lx75b): border 环(米电视渲染稳定) + padding 负补偿抵消 border 占位——环外扩 2px 描边,内容零位移
   // v5 overlay 在米电视 Pressable 内不渲染(同 overflow 裁剪家族 bug),废弃
-  const autoRing: ViewStyle = { borderWidth: 2, borderColor: C.brand, borderRadius: flat.borderRadius ?? 12 };
+  const autoRing: ViewStyle = { borderWidth: 2, borderColor: C.brand, borderRadius: (flat.borderRadius ?? 12) + (haloColor ? 6 : 0) };
+  // lx132:光晕描边(内容零位移:内容自身不变,border 外扩视觉即光晕)
+  const haloStyle: ViewStyle | null = haloColor ? { borderWidth: 6, borderColor: haloColor, borderRadius: (flat.borderRadius ?? 12) + 6 } : null;
   return (
     <Pressable
       focusable
@@ -34,10 +38,11 @@ export function HDTouch({ style, focusStyle, focusBg, glow, zoom, activeOpacity 
       onBlur={() => setFocus(false)}
       style={({ pressed }: { pressed: boolean }) => [
         style as ViewStyle | ViewStyle[] | undefined,
+        haloStyle,
         pressed && { opacity: activeOpacity },
         focus && (focusStyle === undefined ? autoRing : focusStyle === false ? null : focusStyle),
         focus && focusStyle !== false && { margin: -2 }, // border 占 2px 布局,margin -2 外缩抵消——总占位不变,描边画在原边界,内容不动
-        zoom != null && { transform: [{ scale: focus ? zoom : 1 }] }, // lx87:卡片聚焦放大悬浮(彩色弥散投影随卡保留,不另加暗影)
+        focus && zoom != null && { transform: [{ scale: zoom }] }, // lx129:transform 仅聚焦时挂——常驻 scale(1) 强制硬件层,Android boxShadow 投影消失真凶(彩色弥散投影随卡保留,不另加暗影)
         focus && focusBg != null && { backgroundColor: focusBg },
         focus && glow != null && !TV_LOW_GPU && { boxShadow: glow },
       ]}

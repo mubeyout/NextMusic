@@ -107,12 +107,24 @@ export function HDPlaylistDetailScreen() {
     if (!p.localId && !p.plKey) { toast('该歌单请在歌单列表长按管理'); return; }
     if (!p.localId && p.plKey && isPlatformList(p.plKey)) {
       // 平台导入:重命名/删除不持久——只提供复制副本
-      hdActions.menu(`「${title}」是平台导入歌单`, [
+      hdActions.menu(`管理「${title}」`, [
+        { label: '重命名歌单', onPress: () => {
+          hdActions.prompt('重命名歌单', {
+            defaultValue: title,
+            onSubmit: async (v) => {
+              if (!v || v === title) return;
+              toast((await sync.renameUserList(p.plKey!, v)) ? '已重命名' : '服务器操作失败');
+            },
+          });
+        } },
+        { label: '删除歌单', danger: true, onPress: async () => {
+          toast((await sync.removeUserList(p.plKey!)) ? '已删除' : '服务器操作失败');
+          nav.goBack();
+        } },
         { label: '复制为可编辑本地副本', onPress: () => {
           library.create(title, songs);
           toast(`已创建本地副本「${title}」`);
         } },
-        { label: '删除本地副本与服务器副本的显示…', onPress: () => { toast('平台歌单由服务器自动恢复,删除请用复制副本替代'); } },
       ]);
       return;
     }

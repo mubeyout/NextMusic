@@ -2,7 +2,7 @@
 // 根因:Modal 新窗口在米电视上 D-pad 焦点不可靠(老板反复反馈"无法选中")——
 // 本组件走应用根节点 absolute 覆盖层 + HDTouch 行(原生焦点链,遥控实测稳)
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, BackHandler } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, BackHandler, Dimensions } from 'react-native';
 import { C } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { Icon } from '../theme/Icon';
@@ -90,7 +90,7 @@ export function HDActionHost() {
 
 const st = StyleSheet.create({
   scrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, elevation: 999 },
-  panel: { position: 'absolute', right: 60, top: 110, width: 340, maxHeight: 520, borderRadius: 18, backgroundColor: C.elev, borderWidth: 1, borderColor: C.border, padding: 14, gap: 8, elevation: 24 },
+  panel: { position: 'absolute', left: (Dimensions.get('window').width - 380) / 2, top: 180, width: 380, maxHeight: 560, borderRadius: 18, backgroundColor: C.elev, borderWidth: 1, borderColor: C.border, padding: 14, gap: 8, elevation: 24 }, // lx130(老板):屏幕中间
   head: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 2 },
   title: { color: C.text, fontSize: 14, fontWeight: '700', flex: 1 },
   x: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: C.inset },

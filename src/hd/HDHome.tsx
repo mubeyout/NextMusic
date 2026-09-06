@@ -6,7 +6,7 @@ import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
-import { C, H, SH, shadowOf, shadowOfSm } from './hdtokens';
+import { C, H, SH, haloOf } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { HDGrid } from './HDGrid';
 import { usePlayer } from '../state/PlayerProvider';
@@ -115,7 +115,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
           {/* 最近播放(lx88:横向 ScrollView 会裁切 zoom 溢出——小卡去 zoom 只留环;lx92:左右 padding 4 留出环的 2px 外溢,首尾卡选中不裁) */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -18, marginRight: -22 }} contentContainerStyle={{ gap: 10, paddingVertical: 16, paddingHorizontal: 18 }}>
             {recents.slice(0, 8).map((s, i) => (
-              <HDTouch key={`${s.source}_${s.songmid}_${i}`} style={[st.recCard, { boxShadow: shadowOfSm(s.name) }]} onPress={() => playSong(s, recents)}
+              <HDTouch key={`${s.source}_${s.songmid}_${i}`} style={st.recCard} haloColor={haloOf(s.name)} onPress={() => playSong(s, recents)}
                 focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 11 }}>
                 {s.img ? <Image source={{ uri: s.img }} style={st.recArt} />
                   : <View style={[st.recArt, { backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={14} color={C.text3} /></View>}
@@ -129,12 +129,12 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
         </Section>
       ) : null}
 
-      {/* 推荐歌单(五源聚合卡片 grid,桌面同构:等宽自适应+彩色投影) */}
+      {/* 推荐歌单(五源聚合,单行横滑 lx131) */}
       <Section title="推荐歌单" hint={recSource ? `五源聚合 · ${recSource}` : '五源聚合'} more="更多" onMore={() => onGotoSearch?.()}>
         {recPls.length ? (
-          <HDGrid min={126 * (H.font.sm / 10)}>
-            {recPls.slice(0, 12).map(pl => (
-              <HDTouch key={`${pl.source}_${pl.id}`} style={[st.plCard, { boxShadow: shadowOf(pl.name) }]} zoom={1.06} onPress={() => openRecPl(pl)}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingLeft: 2, paddingRight: 10, paddingVertical: 18 }}>
+            {recPls.slice(0, 10).map(pl => (
+              <HDTouch key={`${pl.source}_${pl.id}`} style={[st.plCard, { width: 148 }]} haloColor={haloOf(pl.name)} zoom={1.06} onPress={() => openRecPl(pl)}>
                 {pl.img
                   ? <Image source={{ uri: pl.img }} style={st.plArt} />
                   : <View style={[st.plArt, { backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
@@ -144,7 +144,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
                 </View>
               </HDTouch>
             ))}
-          </HDGrid>
+          </ScrollView>
         ) : (
           <View style={st.empty}>
             <Text style={st.emptyText}>推荐歌单加载中…</Text>
@@ -157,7 +157,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
         {playlists.length ? (
           <HDGrid min={126 * (H.font.sm / 10)}>
             {playlists.slice(0, 10).map(pl => (
-              <HDTouch key={pl.key} style={[st.plCard, { boxShadow: shadowOf(pl.name) }]} zoom={1.06} onPress={() => openPl(pl)}>
+              <HDTouch key={pl.key} style={st.plCard} haloColor={haloOf(pl.name)} zoom={1.06} onPress={() => openPl(pl)}>
                 <View style={{ position: 'relative' }}>
                   {pl.img
                     ? <Image source={{ uri: pl.img }} style={st.plArt} />
@@ -188,7 +188,7 @@ function BigCard({ colors, badge, title, sub, onPress, busy }: { colors: [string
   // lx73:BigCard 尺寸三层一致——渐变 absolute 铺底(fill 外框),内容行叠加其上;
   // 之前渐变做流式子项,width 100% 与 Pressable 互相依赖在 Android 解析为内容宽→环/渐变/外框三层各不相同
   return (
-    <HDTouch activeOpacity={0.9} onPress={onPress} zoom={1.04} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.card + 2 }} style={{ flex: 1, height: 88, borderRadius: H.radius.card, boxShadow: shadowOf(title) }}>
+    <HDTouch activeOpacity={0.9} onPress={onPress} zoom={1.04} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.card + 2 }} style={{ flex: 1, height: 88, borderRadius: H.radius.card }}>
       <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.bigBg} />
       <View style={st.big}>
         <Text style={st.bigBadge}>{badge}</Text>
