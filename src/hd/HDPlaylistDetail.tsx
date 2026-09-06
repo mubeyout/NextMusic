@@ -3,6 +3,7 @@
 // 参数与 phone PlaylistDetailScreen 同构:title/songs/meta/localId(本地歌单封面取第一首)
 import React, { useState } from 'react';
 import { hdActions } from './HDActions';
+import { HDCollect } from './HDCollect';
 import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -38,6 +39,7 @@ export function HDPlaylistDetailScreen() {
 
   const [dlBusy, setDlBusy] = useState(false);
   const [limit, setLimit] = useState(40); // lx104 懒加载行数(大歌单全渲染=TV 卡顿源)
+  const [collectFor, setCollectFor] = useState<SongItem | null>(null); // lx125:行内收藏→选歌单面板
   // lx106/lx121:移除单曲——本地/我喜欢的直改;服务器歌单直改;平台导入(tx_/wy_ id)写不持久→复制本地副本编辑
   const removeSong = (sg: SongItem) => {
     const label = p.love ? '取消收藏' : '从歌单移除';
@@ -84,16 +86,16 @@ export function HDPlaylistDetailScreen() {
     const removable = !!(local || p.love || p.plKey || library.all().some(q => q.name === title)); // lx116:按名可解析的收藏歌单也可移除
     hdActions.menu(`${sg.name} · ${sg.singer}`, [
       { label: '播放', onPress: () => playSong(sg, songs) },
-      { label: favd ? '取消收藏' : '收藏', onPress: async () => {
+      ...(favd ? [{ label: '取消收藏', danger: true, onPress: async () => {
         try {
-          await setFav(sg, !favd,
+          await setFav(sg, false,
             connected && token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined,
             connected && token ? () => sync.fetchLists() : undefined);
-          toast(favd ? '已取消收藏' : '已收藏到我喜欢的');
-          // 我喜欢的列表里取消收藏=行消失
-          if (p.love && favd) setSongs(prev => prev.filter(x => !(x.source === sg.source && x.songmid === sg.songmid)));
+          toast('已取消收藏');
+          if (p.love) setSongs(prev => prev.filter(x => !(x.source === sg.source && x.songmid === sg.songmid)));
         } catch { toast('操作失败'); }
-      } },
+      } }] : []),
+      { label: '收藏到歌单…', onPress: () => setCollectFor(sg) }, // lx125:选歌单(老板:无法选择歌单)
       { label: '下载', onPress: () => { try { enqueueDownload([sg]); toast('已加入下载队列'); } catch { toast('下载失败'); } } },
       ...(removable ? [{ label: p.love ? '取消收藏(移出列表)' : '从歌单移除', danger: true, onPress: () => removeSong(sg) }] : []),
     ]);
@@ -218,6 +220,8 @@ export function HDPlaylistDetailScreen() {
           <Text style={st.emptyText}>歌单是空的 —— 去「探索」搜索添加</Text>
         </View>
       )}
+      {/* lx125:收藏到歌单面板(行内入口) */}
+      {collectFor ? <HDCollect song={collectFor} onClose={() => setCollectFor(null)} /> : null}
     </View>
   );
 }

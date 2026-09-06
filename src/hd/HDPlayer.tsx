@@ -49,55 +49,34 @@ function HD_VINYL_SVG(img?: string): React.ReactNode {
 // lx100:频谱水波——围绕唱片的波浪形环带多层叠加(静态波浪 path,native rotate 让波纹沿圆周流动;
 // 三层不同半径/波数/速度/方向=水波互相穿插;禁用 overflow:米电视吃内容(坑133))
 const RING_ZONE = 340;
-const RINGS = [
-  { r: 128, halfW: 4, k: 9, amp: 5, col: 'rgb(34,211,238)', op: 0.65, dur: 9000, dir: 1 },
-  { r: 142, halfW: 4, k: 11, amp: 6, col: 'rgb(168,85,247)', op: 0.5, dur: 13000, dir: -1 },
-]; // lx105:双细环贴盘反向流转(9s/13s 肉眼可见)+呼吸缩放=律动;振幅收敛=精致
-/** 波浪环带(环形渐变填充):外缘波 + 内缘波(相位差 0.9)闭合 */
-function ringBandPath(rMid: number, halfW: number, k: number, amp: number, size: number): string {
-  const c = size / 2; const N = 96; const rOut = rMid + halfW; const rIn = Math.max(60, rMid - halfW);
-  let d = '';
-  for (let i = 0; i <= N; i++) {
-    const th = (i / N) * Math.PI * 2;
-    const rr = rOut + Math.sin(th * k) * amp;
-    d += (i === 0 ? 'M' : 'L') + (c + Math.cos(th) * rr).toFixed(1) + ' ' + (c + Math.sin(th) * rr).toFixed(1);
-  }
-  for (let i = N; i >= 0; i--) {
-    const th = (i / N) * Math.PI * 2;
-    const rr = rIn + Math.sin(th * k + 0.9) * amp;
-    d += 'L' + (c + Math.cos(th) * rr).toFixed(1) + ' ' + (c + Math.sin(th) * rr).toFixed(1);
-  }
-  return d + 'Z';
-}
-function WaveRings({ anims, breaths }: { anims: Animated.Value[]; breaths: Animated.Value[] }) {
+const P_N = 48;
+const P_R = 128;
+const P_AMP = 30;
+function ParticleRing({ bins, rot }: { bins: Animated.Value[]; rot: Animated.Value }) {
   const c = RING_ZONE / 2;
+  const deg = rot.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
   return (
     <View style={stWave.host} pointerEvents="none">
-      {RINGS.map((rg, i) => {
-        const fade = (rg.halfW + rg.amp + 5) / c;
-        const mid = rg.r / c;
-        return (
-          <Animated.View key={i} style={{
-            position: 'absolute', top: 0, left: 0, width: RING_ZONE, height: RING_ZONE,
-            transform: [
-              { rotate: anims[i].interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${360 * rg.dir}deg`] }) },
-              { scale: breaths[i].interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] }) }, // 呼吸/低音脉动
-            ],
-            opacity: breaths[i].interpolate({ inputRange: [0, 1], outputRange: [rg.op * 0.75, rg.op] }), // 明暗/高音
-          }}>
-            <Svg width={RING_ZONE} height={RING_ZONE} viewBox={`0 0 ${RING_ZONE} ${RING_ZONE}`}>
-              <Defs>
-                <RadialGradient id={`wg${i}`} cx={c} cy={c} r={c} gradientUnits="userSpaceOnUse">
-                  <Stop offset={Math.max(0, mid - fade)} stopColor={rg.col} stopOpacity="0" />
-                  <Stop offset={mid} stopColor={rg.col} stopOpacity={String(rg.op)} />
-                  <Stop offset={Math.min(1, mid + fade)} stopColor={rg.col} stopOpacity="0" />
-                </RadialGradient>
-              </Defs>
-              <Path d={ringBandPath(rg.r, rg.halfW, rg.k, rg.amp, RING_ZONE)} fill={`url(#wg${i})`} />
-            </Svg>
-          </Animated.View>
-        );
-      })}
+      <Animated.View style={{ position: 'absolute', top: 0, left: 0, width: RING_ZONE, height: RING_ZONE, transform: [{ rotate: deg }] }}>
+        {Array.from({ length: P_N }, (_, i) => {
+          const ang = (i / P_N) * 360;
+          const hue = Math.round(140 + (i / P_N) * 320) % 360;
+          const b = bins[Math.floor((i * bins.length) / P_N)];
+          const ty = b.interpolate({ inputRange: [0, 1], outputRange: [-P_R, -(P_R + P_AMP)] });
+          const sc = b.interpolate({ inputRange: [0, 1], outputRange: [0.55, 1.5] });
+          const op = b.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] });
+          return (
+            <View key={i} style={{ position: 'absolute', left: c - 3, top: c - 3, width: 6, height: 6, transform: [{ rotate: ang + 'deg' }] }}>
+              <Animated.View style={{
+                width: 6, height: 6, borderRadius: 3,
+                backgroundColor: `hsl(${hue}, 90%, 62%)`,
+                transform: [{ translateY: ty }, { scale: sc }],
+                opacity: op,
+              }} />
+            </View>
+          );
+        })}
+      </Animated.View>
     </View>
   );
 }
@@ -130,27 +109,25 @@ export function HDPlayer() {
   }, [playing, spin]);
   const spinDeg = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
 
-  // lx112:水波环驱动——旋转循环保留;呼吸=真频谱(Visualizer FFT:低音驱动内环 scale,高音驱动外环明暗)
-  // 权限拒绝/不支持:1.2s 无数据自动回退伪呼吸循环
-  const ringAnims = React.useRef(RINGS.map(() => new Animated.Value(0))).current;
-  const ringBreaths = React.useRef(RINGS.map(() => new Animated.Value(0.4))).current;
+  // lx125:粒子环驱动——rot 慢旋转;bins=FFT 24bin 事件平滑跟随;暂停回落;无权限 1.2s 后伪律动
+  const specBins = React.useRef(Array.from({ length: 24 }, () => new Animated.Value(0.08))).current;
+  const ringRot = React.useRef(new Animated.Value(0)).current;
   const ringLoops = React.useRef<Array<Animated.CompositeAnimation | null>>([]);
-  const breathLoops = React.useRef<Array<Animated.CompositeAnimation | null>>([]);
-  const stopBreath = () => { breathLoops.current.forEach(l => l?.stop()); breathLoops.current = []; };
+  const binLoops = React.useRef<Array<Animated.CompositeAnimation | null>>([]);
+  const stopBin = () => { binLoops.current.forEach(l => l?.stop()); binLoops.current = []; };
 
   React.useEffect(() => {
     if (playing) {
-      RINGS.forEach((rg, k) => {
-        if (ringLoops.current[k]) return;
-        const loop = Animated.loop(Animated.timing(ringAnims[k], { toValue: 1, duration: rg.dur, easing: Easing.linear, useNativeDriver: NATIVE }));
-        ringLoops.current[k] = loop;
+      if (!ringLoops.current.length) {
+        const loop = Animated.loop(Animated.timing(ringRot, { toValue: 1, duration: 14000, easing: Easing.linear, useNativeDriver: NATIVE }));
+        ringLoops.current[0] = loop;
         loop.start();
-      });
+      }
     } else {
       ringLoops.current.forEach(l => l?.stop());
       ringLoops.current = [];
-      stopBreath();
-      ringBreaths.forEach(b => Animated.timing(b, { toValue: 0.4, duration: 400, useNativeDriver: NATIVE }).start()); // lx115:暂停保持静态水波可见
+      stopBin();
+      specBins.forEach(b => Animated.timing(b, { toValue: 0.08, duration: 400, useNativeDriver: NATIVE }).start());
     }
   }, [playing]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -159,25 +136,25 @@ export function HDPlayer() {
     let specLive = false;
     const fallbackTimer = setTimeout(() => {
       if (specLive) return;
-      RINGS.forEach((rg, k) => {
-        if (breathLoops.current[k]) return;
-        const bd = 2400 + k * 500;
+      specBins.forEach((b, k) => {
+        if (binLoops.current[k]) return;
+        const dur = 500 + ((k * 137) % 500);
         const loop = Animated.loop(Animated.sequence([
-          Animated.timing(ringBreaths[k], { toValue: 1, duration: bd / 2, easing: Easing.inOut(Easing.sin), useNativeDriver: NATIVE }),
-          Animated.timing(ringBreaths[k], { toValue: 0.1, duration: bd / 2, easing: Easing.inOut(Easing.sin), useNativeDriver: NATIVE }),
+          Animated.timing(b, { toValue: 0.3 + ((k * 61) % 60) / 100, duration: dur, easing: Easing.inOut(Easing.sin), useNativeDriver: NATIVE }),
+          Animated.timing(b, { toValue: 0.1, duration: dur, easing: Easing.inOut(Easing.sin), useNativeDriver: NATIVE }),
         ]));
-        breathLoops.current[k] = loop;
+        binLoops.current[k] = loop;
         loop.start();
       });
     }, 1200);
-    const stopSpec = startSpectrum(bins => {
-      if (!specLive) { specLive = true; stopBreath(); }
-      const bass = ((bins[0] || 0) + (bins[1] || 0) + (bins[2] || 0)) / 3;
-      const hi = ((bins[15] || 0) + (bins[18] || 0) + (bins[21] || 0)) / 3;
-      Animated.timing(ringBreaths[0], { toValue: Math.min(1, 0.1 + bass * 1.25), duration: 90, useNativeDriver: NATIVE }).start();
-      Animated.timing(ringBreaths[1], { toValue: Math.min(1, 0.06 + hi * 1.5), duration: 90, useNativeDriver: NATIVE }).start();
+    const stopSpec = startSpectrum(arr => {
+      if (!specLive) { specLive = true; stopBin(); }
+      for (let k = 0; k < specBins.length; k++) {
+        const v = arr[k] || 0;
+        Animated.timing(specBins[k], { toValue: Math.min(1, 0.06 + v * 1.15), duration: 90, useNativeDriver: NATIVE }).start();
+      }
     });
-    return () => { clearTimeout(fallbackTimer); stopSpec(); stopBreath(); };
+    return () => { clearTimeout(fallbackTimer); stopSpec(); stopBin(); };
   }, [playing]); // eslint-disable-line react-hooks/exhaustive-deps
   React.useEffect(() => () => { ringLoops.current.forEach(l => l?.stop()); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -344,9 +321,9 @@ export function HDPlayer() {
 
       <View style={[st.main, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View style={st.artCol}>
-          {/* lx100:水波环三层围绕唱片旋转流动 */}
+          {/* lx125:粒子环(单圈 48 粒,FFT 分区驱动) */}
           <View style={st.vinylZone}>
-            <WaveRings anims={ringAnims} breaths={ringBreaths} />
+            <ParticleRing bins={specBins} rot={ringRot} />
             <View style={st.vinylWrap}>
               <Animated.Image
                 source={current.img ? { uri: current.img } : undefined}
