@@ -3,6 +3,8 @@
 // App SongItem:  {songmid, name, singer, source, interval, albumName, img, types, _types}
 // NOTE: req() auto-injects x-user-token when logged in (see server.ts)
 import { req, type SongItem } from './server';
+import { createMMKV } from 'react-native-mmkv';
+const kvSync = createMMKV({ id: 'nextmusic-sync-cache' });
 
 export interface LXSong {
   id?: string;
@@ -74,19 +76,36 @@ export function appToLx(s: SongItem): LXSong {
 }
 
 export const sync = {
+  /** lx104:上次快照缓存(MMKV)——冷启动侧栏/我的页秒出,后台刷新覆盖(大快照拉取慢=加载缓慢根因) */
+  cachedLists(): UserListsSnapshot | null {
+    try { return JSON.parse(kvSync.getString('snap') || 'null') as UserListsSnapshot | null; } catch { return null; }
+  },
   async fetchLists(): Promise<UserListsSnapshot | null> {
     try {
       const d = (await req('/api/user/list', { timeout: 10000 })) as UserListsSnapshot;
       console.log('[sync] user/list resp type:', typeof d, '| defaultList:', Array.isArray((d as any)?.defaultList) ? (d as any).defaultList.length : String((d as any)?.defaultList).slice(0, 40));
       if (!d || !Array.isArray(d.defaultList)) return null;
-      return { defaultList: d.defaultList, loveList: d.loveList || [], userList: d.userList || [] };
+      const snap = { defaultList: d.defaultList, loveList: d.loveList || [], userList: d.userList || [] };
+      try { kvSync.set('snap', JSON.stringify(snap)); } catch { /* 超大忽略 */ }
+      return snap;
     } catch (e) { console.log('[sync] fetchLists err:', (e as Error).message); return null; }
   },
   // lx101:歌单管理(双端共用)——服务器 userList 重命名/删除(fetch+改+push 整快照)
-  // lx102:本机歌单上传服务器(fetch+append+push)
+  // lx102/lx104:本机歌单上传服务器——同名歌单覆盖更新(防重复堆积)
   async uploadUserList(name: string, songs: SongItem[]): Promise<boolean> {
     const snap = await this.fetchLists(); if (!snap) return false;
-    snap.userList.push({ id: `ul-${Date.now()}`, name, list: songs.map(appToLx) });
+    const exist = snap.userList.find(x => x.name === name);
+    const entry = { id: exist?.id ?? `ul-${Date.now()}`, name, list: songs.map(appToLx) };
+    snap.userList = exist
+      ? snap.userList.map(x => (x.name === name ? entry : x))
+      : [...snap.userList, entry];
+    return this.pushLists(snap);
+  },
+  // lx106:服务器歌单移除单曲(收藏歌曲移除机制)
+  async removeSongFromUserList(id: string, song: SongItem): Promise<boolean> {
+    const snap = await this.fetchLists(); if (!snap) return false;
+    const u = snap.userList.find(x => x.id === id); if (!u) return false;
+    u.list = (u.list || []).filter(x => !(x.source === song.source && String(x.songmid) === String(song.songmid)));
     return this.pushLists(snap);
   },
   async renameUserList(id: string, name: string): Promise<boolean> {

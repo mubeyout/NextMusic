@@ -77,9 +77,9 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
     if (tab === 2 && albums == null && loggedIn) sync.libraryAlbums().then(setAlbums);
   }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const openSongs = (title: string, songs: SongItem[], cover?: string) => {
+  const openSongs = (title: string, songs: SongItem[], cover?: string, opts?: { love?: boolean; plKey?: string }) => {
     if (!songs.length) return;
-    nav.navigate('PlaylistDetail', { title, songs, cover, meta: `${songs.length} 首` });
+    nav.navigate('PlaylistDetail', { title, songs, cover, meta: `${songs.length} 首`, ...opts });
   };
 
   const openArtist = async (a: { name: string; id: string }) => {
@@ -153,7 +153,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
               <Text style={st.quickTitle}>最近播放</Text>
               <Text style={st.quickMeta}>{recents.length} 首</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={st.quickCard} activeOpacity={0.85} onPress={() => openSongs('我喜欢的', loveSongs)}>
+            <TouchableOpacity style={st.quickCard} activeOpacity={0.85} onPress={() => openSongs('我喜欢的', loveSongs, undefined, { love: true })}>
               <Text style={st.quickTitle}>我喜欢的</Text>
               <Text style={st.quickMeta}>{loveSongs.length} 首</Text>
             </TouchableOpacity>
@@ -214,7 +214,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
                   activeOpacity={0.85}
                   onPress={() => g.localId
                     ? nav.navigate('PlaylistDetail', { localId: g.localId, title: g.name, songs: g.songs, cover: g.img })
-                    : openSongs(g.name, g.songs, g.img)}
+                    : openSongs(g.name, g.songs, g.img, g.localId ? undefined : { plKey: g.key })}
                   onLongPress={() => {
                     if (g.localId) {
                       const pl = library.get(g.localId!);

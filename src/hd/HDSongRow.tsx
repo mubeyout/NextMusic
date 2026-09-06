@@ -7,10 +7,11 @@ import { C, H } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import type { SongItem } from '../services/server';
 
-export function HDSongRow({ song, index, onPress, playing, showAlbum = true, first }: {
+export function HDSongRow({ song, index, onPress, onLongPress, playing, showAlbum = true, first }: {
   song: SongItem;
   index?: number;
   onPress?: () => void;
+  onLongPress?: () => void; // lx106:长按=移除交互
   playing?: boolean;
   showAlbum?: boolean;
   first?: boolean;

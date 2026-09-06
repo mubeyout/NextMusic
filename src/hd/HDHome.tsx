@@ -59,7 +59,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
   const openPl = (pl: typeof playlists[number]) => {
     hdNav()?.navigate('PlaylistDetail', pl.localId
       ? { localId: pl.localId, title: pl.name, songs: pl.songs }
-      : { title: pl.name, songs: pl.songs, meta: `${pl.count} 首 · 同步歌单` });
+      : { title: pl.name, songs: pl.songs, meta: `${pl.count} 首 · 同步歌单`, plKey: pl.key });
   };
 
   // 每日推荐 = kg TOP500 前 30 首即播(真数据,动态找榜)

@@ -9,7 +9,6 @@ import { Icon } from '../theme/Icon';
 import { C, H, SH, fmtSec } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { usePlayer } from '../state/PlayerProvider';
-import { isFav, setFav } from '../state/favorites';
 import { useApp } from '../state/AppState';
 import { library } from '../state/library';
 import { dialog, toast } from '../components/Dialog';
@@ -17,6 +16,8 @@ import { getRecents } from '../state/recent';
 import { sync, lxToApp } from '../services/sync';
 import { hdNav, hdInnerRef } from './hdnav';
 import { useFav } from './useFav';
+import { mergeLocalLove } from '../state/favorites';
+import { HDCollect } from './HDCollect';
 import { NavigationContainer, DefaultTheme, StackActions, NavigationIndependentTree } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { HDHome } from './HDHome';
@@ -73,11 +74,29 @@ export function HDMain() {
   const [loveCount, setLoveCount] = useState<number | null>(null); // lx67:侧栏"我喜欢的"数量统计
   const { connected, token } = useApp();
 
-  // 歌单列表(本地+同步)与"我喜欢的"计数——lx91:合并为单次 fetchLists(原先两个 effect 各拉一次=双网络开销)
+  // 歌单列表(本地+同步)与"我喜欢的"计数——lx91 单次拉取;lx104:缓存秒出+我喜欢的去重+离线收藏合并
   useEffect(() => {
-    const local = library.all().map(p => ({ key: p.id, localId: p.id, name: p.name, count: p.songs.length, songs: p.songs as SongItem[] }));
+    // lx104:本地「我喜欢的」由专用入口展示,歌单组里去重(老板:快捷收藏合并)
+    const local = library.all()
+      .filter(p => p.name !== '我喜欢的')
+      .map(p => ({ key: p.id, localId: p.id, name: p.name, count: p.songs.length, songs: p.songs as SongItem[] }));
     setPls(local);
     if (!connected || !token) return;
+    // 快照缓存先行(大快照拉取慢——懒加载第一层:侧栏不等网)
+    const cached = sync.cachedLists();
+    if (cached) {
+      setLoveCount((cached.loveList || []).length);
+      setPls(prev => {
+        const has = new Set(prev.map(x => x.key));
+        return [...prev, ...(cached.userList || []).filter(u => !has.has(u.id)).map(u => ({
+          key: u.id, name: u.name, count: (u.list || []).length, songs: (u.list || []).map(lxToApp),
+        }))];
+      });
+    }
+    mergeLocalLove(
+      connected && token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined,
+      () => sync.fetchLists(),
+    );
     sync.fetchLists().then(s => {
       if (!s) return;
       setLoveCount((s.loveList || []).length);
@@ -122,10 +141,10 @@ export function HDMain() {
     ]);
   };
 
-  const openPl = (pl: { localId?: string; name: string; count: number; songs: SongItem[] }) => {
+  const openPl = (pl: { localId?: string; key: string; name: string; count: number; songs: SongItem[] }) => {
     railNav('PlaylistDetail', pl.localId
       ? { localId: pl.localId, title: pl.name, songs: pl.songs }
-      : { title: pl.name, songs: pl.songs, meta: `${pl.count} 首 · 同步歌单` });
+      : { title: pl.name, songs: pl.songs, meta: `${pl.count} 首 · 同步歌单`, plKey: pl.key });
   };
 
   // lx67:登录后拉"我喜欢的"数量(侧栏展示)——lx91 并入上方歌单 effect,此处留空
@@ -135,7 +154,7 @@ export function HDMain() {
     sync.fetchLists().then(s => {
       if (!s) return;
       const songs = (s.loveList || []).map(lxToApp);
-      railNav('PlaylistDetail', { title: '我喜欢的', songs, meta: `${songs.length} 首 · 同步收藏` });
+      railNav('PlaylistDetail', { title: '我喜欢的', songs, meta: `${songs.length} 首 · 同步收藏`, love: true });
     }).catch(() => {});
   };
 
@@ -277,45 +296,11 @@ function PlItem({ name, count, add, onPress, onLongPress }: { name: string; coun
   );
 }
 
-// lx101:播放条收藏钮(与播放页同一 useFav 逻辑,取消也同步服务器)
-function PlayBarFav() {
-  const { current } = usePlayer();
-  const { faved, toggle } = useFav(current);
-  return (
-    <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={toggle}>
-      <Icon name="heart" size={14} active={faved} color={faved ? C.brand : C.text2} />
-    </HDTouch>
-  );
-}
-
 // 桌面式播放条:左(封面+曲目+收藏) 中(控件+进度) 右(队列/投屏/详情)
 function HDPlayBar() {
   const { current, playing, position, duration, toggle, skipNext, skipPrev, queue, shuffle, repeat, setShuffle, cycleRepeat } = usePlayer();
-  // v1.2.0 播放条收藏(对齐播放页三同步链)
-  const { connected, token } = useApp();
-  const [faved, setFaved] = useState(false);
-  useEffect(() => {
-    if (!current) { setFaved(false); return; }
-    let dead = false;
-    let base = isFav(current);
-    if (connected && token) {
-      sync.fetchLists().then(s => {
-        if (dead || !s) return;
-        const key = `${current.source}_${current.songmid}`;
-        setFaved(base || s.loveList.some(x => x.id === key));
-      }).catch(() => setFaved(base));
-    } else setFaved(base);
-    return () => { dead = true; };
-  }, [current?.songmid, current?.source, connected, token]); // eslint-disable-line react-hooks/exhaustive-deps
-  const doFav = async () => {
-    if (!current) return;
-    setFaved(!faved);
-    try {
-      await setFav(current, !faved,
-        connected && token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined,
-        connected && token ? () => sync.fetchLists() : undefined);
-    } catch { setFaved(faved); }
-  };
+  const { faved } = useFav(current); // lx103:收藏态展示(操作走选歌单面板)
+  const [collectOpen, setCollectOpen] = useState(false);
   const pct = duration > 0 ? Math.min(1, position / duration) : 0;
 
   return (
@@ -331,8 +316,6 @@ function HDPlayBar() {
           <Text style={st.pbTitle} numberOfLines={1}>{current?.name ?? '未在播放'}</Text>
           <Text style={st.pbSub} numberOfLines={1}>{current ? `${current.singer}${current.albumName ? ` · ${current.albumName}` : ''}` : '从「探索」搜索或点击歌单开始'}</Text>
         </View>
-        {/* lx101:收藏上播放条(老板);空态隐藏 */}
-        {current ? <PlayBarFav /> : null}
       </View>
 
       {/* 中:控件 + 进度(两行同宽对齐——v1.1.6 修错位) */}
@@ -364,10 +347,10 @@ function HDPlayBar() {
         </View>
       </View>
 
-      {/* 右 */}
+      {/* 右:收藏(点按弹选歌单面板,对齐手机端) */}
       <View style={st.pbRight}>
-        <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={doFav}>
-          <Icon name="heart" size={14} color={faved ? '#FF5A76' : C.text2} />
+        <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={() => current && setCollectOpen(true)}>
+          <Icon name="heart" size={14} color={faved ? C.brand : C.text2} />
         </HDTouch>
         <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={() => hdNav()?.navigate('Queue')}>
           <Icon name="queue" size={14} color={C.text2} />
@@ -380,6 +363,7 @@ function HDPlayBar() {
           <Icon name="fullscreen" size={14} color={C.text2} />
         </HDTouch>
       </View>
+      {collectOpen && current ? <HDCollect song={current} onClose={() => setCollectOpen(false)} /> : null}
     </View>
   );
 }

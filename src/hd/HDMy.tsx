@@ -40,7 +40,7 @@ export function HDMy() {
 
   const syncPls = snap?.userList || [];
   const playlists = [
-    ...localPls.map(p => ({ key: p.id, localId: p.id, name: p.name, count: p.songs.length, img: p.cover || p.songs[0]?.img, songs: p.songs as SongItem[] })),
+    ...localPls.filter(p => p.name !== '我喜欢的').map(p => ({ key: p.id, localId: p.id, name: p.name, count: p.songs.length, img: p.cover || p.songs[0]?.img, songs: p.songs as SongItem[] })),
     ...syncPls.map(u => {
       const songs = (u.list || []).map(lxToApp);
       return { key: u.id, localId: undefined as string | undefined, name: u.name, count: songs.length, img: songs[0]?.img, songs };
@@ -77,7 +77,7 @@ export function HDMy() {
   const openPl = (pl: typeof playlists[number]) => {
     hdNav()?.navigate('PlaylistDetail', pl.localId
       ? { localId: pl.localId, title: pl.name, songs: pl.songs }
-      : { title: pl.name, songs: pl.songs, meta: `${pl.count} 首 · 同步歌单` });
+      : { title: pl.name, songs: pl.songs, meta: `${pl.count} 首 · 同步歌单`, plKey: pl.key });
   };
 
   return (

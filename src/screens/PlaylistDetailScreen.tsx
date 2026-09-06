@@ -10,6 +10,8 @@ import { CollectSheet } from '../components/CollectSheet';
 import { dialog, toast } from '../components/Dialog';
 import { PageHeader } from '../components/PageChrome';
 import { library } from '../state/library';
+import { sync } from '../services/sync';
+import { setFav } from '../state/favorites';
 import { usePlayer } from '../state/PlayerProvider';
 import { api, type SongItem, type SongListMeta } from '../services/server';
 import type { LocalPlaylist } from '../state/library';
@@ -42,7 +44,7 @@ export function PlaylistDetailScreen() {
   const route = useRoute();
   const p = route.params as Params;
   const { playSong, current } = usePlayer();
-  const { connected } = useApp();
+  const { connected, token } = useApp();
 
   const [songs, setSongs] = useState<SongItem[] | null>(null);
   const [info, setInfo] = useState<ListMeta | null>(null);
@@ -237,6 +239,21 @@ export function PlaylistDetailScreen() {
             ? { label: '已下载 ✓', onPress: () => {} }
             : { label: '下载', onPress: () => { enqueueDownload([actSong]); } },
           { label: '收藏到歌单', onPress: () => setCollect(true) },
+          ...((p as { love?: boolean }).love ? [{ label: '取消收藏', danger: true as const, onPress: () => {
+            setFav(actSong, false,
+              connected && token ? ((snap: any) => sync.pushLists(snap)) : undefined,
+              connected && token ? () => sync.fetchLists() : undefined);
+            setSongs(prev => (prev || []).filter(s => !(s.source === actSong.source && s.songmid === actSong.songmid)));
+            setTotal(t => Math.max(0, t - 1));
+            toast(`已取消收藏「${actSong.name}」`);
+          } }] : []),
+          ...((p as { plKey?: string }).plKey && !localPl ? [{ label: '从歌单移除', danger: true as const, onPress: async () => {
+            const ok = await sync.removeSongFromUserList((p as { plKey: string }).plKey, actSong);
+            if (!ok) { toast('服务器操作失败'); return; }
+            setSongs(prev => (prev || []).filter(s => !(s.source === actSong.source && s.songmid === actSong.songmid)));
+            setTotal(t => Math.max(0, t - 1));
+            toast(`已移除「${actSong.name}」`);
+          } }] : []),
           ...(localPl ? [{ label: '从本歌单移除', danger: true as const, onPress: () => {
             library.removeSong(localPl.id, actSong);
             setSongs(prev => (prev || []).filter(s => !(s.source === actSong.source && s.songmid === actSong.songmid)));
