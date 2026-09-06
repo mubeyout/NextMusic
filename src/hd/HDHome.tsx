@@ -109,10 +109,10 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
         <BigCard colors={['#0FA3A3', '#1ED760']} badge="雷达" title="私人雷达" sub="你循环过的歌,都在这里重逢" onPress={playRadar} />
       </View>
 
-      {/* 最近播放(lx88:横向 ScrollView 会裁切 zoom 溢出——小卡去 zoom 只留环) */}
       {recents.length ? (
         <Section title="最近播放" more="查看全部" onMore={() => hdNav()?.navigate('PlaylistDetail', { title: '最近播放', songs: recents, meta: `${recents.length} 首` })}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingVertical: 4 }}>
+          {/* 最近播放(lx88:横向 ScrollView 会裁切 zoom 溢出——小卡去 zoom 只留环;lx92:左右 padding 4 留出环的 2px 外溢,首尾卡选中不裁) */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingVertical: 4, paddingHorizontal: 4 }}>
             {recents.slice(0, 8).map((s, i) => (
               <HDTouch key={`${s.source}_${s.songmid}_${i}`} style={st.recCard} onPress={() => playSong(s, recents)}
                 focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 11 }}>
@@ -229,7 +229,7 @@ const st = StyleSheet.create({
   secHint: { color: C.text3, fontSize: H.font.xs },
   secMore: { color: C.brand, fontSize: H.font.sm },
   // v6(老板反馈):环必须贴附卡片几何——环宽=封面宽(去水平 padding),环圆角=封面圆角+2(描边外扩 2px,圆角同步外放才不显小)
-  recCard: { width: 92, gap: 4, paddingBottom: 8, borderRadius: 9 },
+  recCard: { width: 92, gap: 4, paddingBottom: 4, borderRadius: 9 }, // lx92:底 padding 8→4(老板:小字下空白多)
   recArt: { width: '100%', aspectRatio: 1, borderRadius: 9 },
   recName: { color: C.text, fontSize: H.font.xs, fontWeight: '500' },
   recSub: { color: C.text3, fontSize: 8 },
