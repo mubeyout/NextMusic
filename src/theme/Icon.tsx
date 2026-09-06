@@ -11,7 +11,7 @@ export type IconName =
   | 'heart' | 'add' | 'volume' | 'phone' | 'speaker' | 'tv' | 'comments'
   | 'check' | 'status' | 'user' | 'server'
   | 'palette' | 'cloud' | 'globe' | 'wave' | 'info' | 'folder' | 'refresh' | 'trash'
-  | 'podcast' | 'ranking' | 'history' | 'fullscreen';
+  | 'podcast' | 'ranking' | 'history' | 'fullscreen' | 'edit';
 
 // Figma semantic icons export two literal colors; map them to a requested color.
 function recolor(xml: string, color?: string): string {
