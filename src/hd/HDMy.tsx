@@ -126,9 +126,9 @@ const st = StyleSheet.create({
   fnSub: { color: C.text3, fontSize: 12 },
   secTitle: { color: C.text, fontSize: 22, fontWeight: '800' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 18 },
-  plCard: { gap: 5, paddingBottom: 8 },
-  plTexts: { alignSelf: 'center', width: '94%', gap: 3 },
-  plArt: { width: '100%', aspectRatio: 1, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  plCard: { gap: 5, paddingBottom: 7, borderRadius: 12, backgroundColor: C.surface }, // lx98:去 overflow(坑133)
+  plTexts: { alignSelf: 'stretch', paddingHorizontal: 8, gap: 3 },
+  plArt: { width: '100%', aspectRatio: 1, borderTopLeftRadius: 12, borderTopRightRadius: 12, alignItems: 'center', justifyContent: 'center' },
   plNew: { width: '100%', aspectRatio: 1, borderRadius: 16, backgroundColor: C.surface, borderWidth: 1, borderStyle: 'dashed', borderColor: C.border, alignItems: 'center', justifyContent: 'center', gap: 8 },
   plName: { color: C.text, fontSize: 16, fontWeight: '600' },
   plMeta: { color: C.text2, fontSize: 13 },

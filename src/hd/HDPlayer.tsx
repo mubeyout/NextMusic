@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, Animated, Easing } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import Svg, { Path } from 'react-native-svg';
 import { SpectrumRing } from './SpectrumRing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
@@ -43,6 +44,37 @@ function HD_VINYL_SVG(img?: string): React.ReactNode {
   );
 }
 
+// lx97:频谱水波——波浪形填充多层叠加(静态 SVG 波形 + native translateX 无缝滚动 + 层间相位/速度/透明度差)
+// lx97/lx99:频谱水波——全屏底部多层波浪填充叠加(屏幕边界天然裁切,禁用 overflow:米电视吃了它的内容)
+const WAVE_W = 1920; // 双周期(可见区 960×2),translateX -50% 无缝循环
+function wavePath(amp: number, phase: number, h: number): string {
+  const N = 56; let d = `M0 ${h}`;
+  for (let k = 0; k <= N; k++) {
+    const x = (k / N) * WAVE_W;
+    const y = h - 4 - (Math.sin((k / N) * Math.PI * 4 + phase) * 0.5 + 0.5) * amp;
+    d += ` L${x.toFixed(1)} ${y.toFixed(1)}`;
+  }
+  return d + ` L${WAVE_W} ${h} Z`;
+}
+const WAVES = [
+  { amp: 16, phase: 0, h: 74, bottom: 10, fill: 'rgba(34,211,238,.30)', dur: 6200 },
+  { amp: 22, phase: 2.2, h: 96, bottom: 0, fill: 'rgba(168,85,247,.22)', dur: 9400 },
+  { amp: 28, phase: 4.5, h: 118, bottom: -8, fill: 'rgba(244,114,182,.16)', dur: 12800 },
+];
+function WaveStack({ anims }: { anims: Animated.Value[] }) {
+  return (
+    <View style={stWave.host} pointerEvents="none">
+      {WAVES.map((w, k) => (
+        <Animated.View key={k} style={{ position: 'absolute', left: 0, bottom: w.bottom, width: WAVE_W, height: w.h, transform: [{ translateX: anims[k] }] }}>
+          <Svg width={WAVE_W} height={w.h} viewBox={`0 0 ${WAVE_W} ${w.h}`} preserveAspectRatio="none">
+            <Path d={wavePath(w.amp, w.phase, w.h)} fill={w.fill} />
+          </Svg>
+        </Animated.View>
+      ))}
+    </View>
+  );
+}
+
 export function HDPlayer() {
   const insets = useSafeAreaInsets();
   const nav = { goBack: () => hdNav()?.goBack(), navigate: (s: string) => hdNav()?.navigate(s) };
@@ -54,8 +86,6 @@ export function HDPlayer() {
   // v1.1.8 唱片旋转(18s/转;web 必须 JS driver——RNW Animated useNativeDriver 必 false,原生端 native driver 零 JS 开销)
   const spin = React.useRef(new Animated.Value(0)).current;
   // lx91:频谱 24 bar 全部 native driver(transform scaleY/translateY)——v3 的 height JS 动画每帧 24 次状态更新打满 JS 线程=卡顿真凶之一
-  const specAnims = React.useRef(Array.from({ length: 24 }, () => new Animated.Value(0.06))).current;
-  const specLoops = React.useRef<Array<Animated.CompositeAnimation | null>>([]);
   const NATIVE = Platform.OS !== 'web';
   const spinLoop = React.useRef<Animated.CompositeAnimation | null>(null);
   React.useEffect(() => {
@@ -70,33 +100,23 @@ export function HDPlayer() {
   }, [playing, spin]);
   const spinDeg = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
 
-  // lx91/lx93:频谱驱动——环绕环错相水波(每 bar 同周期+阶梯 delay,波纹绕圈传播);暂停全体回落基线
-  // scaleY 从中心缩,translateY 同步外推锚定内端——全部 native driver,JS 线程零参与
-  const SPEC_R0 = 120; // 环基半径(自唱片边缘外扩 6)
-  const SPEC_H = 26;
+  // lx97:多层波浪驱动——三层不同速度/相位 translateX 循环(播放滚动,暂停冻结);全 native
+  const waveAnims = React.useRef(WAVES.map(() => new Animated.Value(0))).current;
+  const waveLoops = React.useRef<Array<Animated.CompositeAnimation | null>>([]);
   React.useEffect(() => {
     if (playing) {
-      specAnims.forEach((a, i) => {
-        if (specLoops.current[i]) return;
-        const seed = (i * 2654435761) % 997;
-        const step = (to: number, ms: number) => Animated.timing(a, { toValue: to, duration: ms, easing: Easing.inOut(Easing.sin), useNativeDriver: NATIVE });
-        const loop = Animated.loop(Animated.sequence([
-          Animated.delay((i * 55) % 1400),
-          step(0.62 + ((seed * 7) % 26) / 100, 720),
-          step(0.16 + ((seed * 13) % 18) / 100, 660),
-          step(0.78 + ((seed * 3) % 18) / 100, 780),
-          step(0.22 + ((seed * 11) % 22) / 100, 700),
-        ]));
-        specLoops.current[i] = loop;
+      WAVES.forEach((w, k) => {
+        if (waveLoops.current[k]) return;
+        const loop = Animated.loop(Animated.timing(waveAnims[k], { toValue: -WAVE_W / 2, duration: w.dur, easing: Easing.linear, useNativeDriver: NATIVE }));
+        waveLoops.current[k] = loop;
         loop.start();
       });
     } else {
-      specLoops.current.forEach(l => l?.stop());
-      specLoops.current = [];
-      specAnims.forEach(a => Animated.timing(a, { toValue: 0.06, duration: 420, useNativeDriver: NATIVE }).start());
+      waveLoops.current.forEach(l => l?.stop());
+      waveLoops.current = [];
     }
   }, [playing]); // eslint-disable-line react-hooks/exhaustive-deps
-  React.useEffect(() => () => { specLoops.current.forEach(l => l?.stop()); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  React.useEffect(() => () => { waveLoops.current.forEach(l => l?.stop()); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     let dead = false;
@@ -267,6 +287,7 @@ export function HDPlayer() {
       {current.img ? <Image source={{ uri: current.img }} style={st.bgArt} blurRadius={60} resizeMode="cover" /> : null}
       <View style={st.bgVeil} />
       <LinearGradient colors={['rgba(4,6,5,0)', 'rgba(4,6,5,.62)']} locations={[0, 1]} style={st.bgBottomGrad} />
+      <WaveStack anims={waveAnims} />
 
       {/* 头部:返回按钮入流式布局(不再悬浮怪位) */}
       <View style={[st.header, { paddingTop: Math.max(insets.top, 12) }]}>
@@ -278,24 +299,7 @@ export function HDPlayer() {
 
       <View style={[st.main, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View style={st.artCol}>
-          {/* lx93:环绕唱片频谱环——色相环(绿→青→蓝→紫→洋红)+错相水波律动(全部 native transform) */}
           <View style={st.vinylZone}>
-            <View style={st.specRing} pointerEvents="none">
-              {specAnims.map((a, i) => {
-                const ang = (i / specAnims.length) * 360;
-                const hue = 140 + (i / specAnims.length) * 260;
-                const ty = a.interpolate({ inputRange: [0, 1], outputRange: [-(SPEC_R0 + 1), -(SPEC_R0 + SPEC_H / 2)] });
-                return (
-                  <View key={i} style={[st.ringSlot, { transform: [{ rotate: `${ang}deg` }] }] }>
-                    <Animated.View style={[st.ringBar, {
-                      backgroundColor: `hsl(${hue}, 85%, 62%)`,
-                      opacity: 0.5 + (i % 3) * 0.17,
-                      transform: [{ translateY: ty }, { scaleY: a }],
-                    }]} />
-                  </View>
-                );
-              })}
-            </View>
             <View style={st.vinylWrap}>
               <Animated.Image
                 source={current.img ? { uri: current.img } : undefined}
@@ -358,30 +362,32 @@ export function HDPlayer() {
           {/* lx89:控件单行(全屏 960dp 富余)——传输组+分隔+工具组,icon 純净排 */}
           <View style={st.ctrlRow}>
             <HDTouch style={st.cMode} onPress={() => setShuffle(!shuffle)}>
-              <Icon name="shuffle" size={20} active={shuffle} color={shuffle ? C.brand : C.text2} />
+              <Icon name="shuffle" size={20} active={shuffle} color={shuffle ? C.brand : '#ffffff99'} />
             </HDTouch>
             <HDTouch style={st.cMode} onPress={skipPrev}>
-              <Icon name="previous" size={26} color={C.text} />
+              <Icon name="previous" size={26} color="#ffffffee" />
             </HDTouch>
             <HDTouch style={st.cMain} onPress={toggle} focusStyle={st.cMainFocus}>
               <Icon name={playing ? 'pause' : 'play'} size={32} color={C.onBrand} />
             </HDTouch>
             <HDTouch style={st.cMode} onPress={skipNext}>
-              <Icon name="next" size={26} color={C.text} />
+              <Icon name="next" size={26} color="#ffffffee" />
             </HDTouch>
             <HDTouch style={st.cMode} onPress={cycleRepeat}>
-              <Icon name="repeat" size={20} active={repeat !== 'off'} color={repeat !== 'off' ? C.brand : C.text2} />
+              <Icon name="repeat" size={20} active={repeat !== 'off'} color={repeat !== 'off' ? C.brand : '#ffffff99'} />
             </HDTouch>
             <View style={st.ctrlDivider} />
             <HDTouch style={st.cTool} onPress={doFav}>
-              <Icon name="heart" size={19} color={faved ? C.brand : C.text2} />
+              <Icon name="heart" size={19} color={faved ? C.brand : '#ffffff99'} />
             </HDTouch>
             <HDTouch style={st.cTool} onPress={() => nav.navigate('Queue')}>
-              <Icon name="queue" size={19} color={C.text2} />
-              {queue.length ? <Text style={st.badge}>{queue.length}</Text> : null}
+              <Icon name="queue" size={19} color="#ffffffcc" />
+              {queue.length ? (
+                <View style={st.qBadge}><Text style={st.qBadgeText}>{queue.length > 99 ? '99+' : queue.length}</Text></View>
+              ) : null}
             </HDTouch>
             <HDTouch style={st.cTool} onPress={() => nav.navigate('Route')}>
-              <Icon name="devices" size={19} color={C.text2} />
+              <Icon name="devices" size={19} color="#ffffffcc" />
             </HDTouch>
           </View>
         </View>
@@ -401,9 +407,6 @@ const st = StyleSheet.create({
   backLabel: { color: '#ffffffcc', fontSize: 13, fontWeight: '600' },
   vinylWrap: { width: 228, height: 228, borderRadius: 114, backgroundColor: '#0d100e', borderWidth: 5, borderColor: '#161a17', alignItems: 'center', justifyContent: 'center', boxShadow: '0 18px 44px rgba(0,0,0,.55), 0 0 36px rgba(30,215,96,.14)' },
   vinylZone: { width: 300, height: 300, alignItems: 'center', justifyContent: 'center' },
-  specRing: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-  ringSlot: { position: 'absolute', left: (300 - 5) / 2, top: (300 - 26) / 2, width: 5, height: 26 },
-  ringBar: { width: 5, height: 26, borderRadius: 3 },
   vinylArt: { width: 150, height: 150, borderRadius: 75 },
   vinylHole: { position: 'absolute', width: 12, height: 12, borderRadius: 6, backgroundColor: '#0a0c0b', borderWidth: 3, borderColor: '#222823' },
   srcPill: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 24, borderRadius: 12, paddingHorizontal: 12, marginTop: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,.16)', backgroundColor: 'rgba(255,255,255,.06)' },
@@ -412,7 +415,7 @@ const st = StyleSheet.create({
   main: { flex: 1, flexDirection: 'row', paddingHorizontal: 52, paddingTop: 4, gap: 42 },
   artCol: { width: 280, alignItems: 'center', justifyContent: 'center' },
   artFallback: { backgroundColor: '#1E2722', alignItems: 'center', justifyContent: 'center' },
-  infoCol: { flex: 1, gap: 6 },
+  infoCol: { flex: 1, gap: 6, paddingTop: 22 }, // lx94:标题/歌词整体下移(老板:太高)
   title: { color: '#ffffff', fontSize: 25, fontWeight: '800' },
   sub: { color: '#ffffffb3', fontSize: 14 },
   lyricsBox: { flex: 1, gap: 8, justifyContent: 'center' }, // lx93:垂直居中(顶贴→太靠上),窗口 7 行填满空隙
@@ -434,7 +437,8 @@ const st = StyleSheet.create({
   cMainFocus: { borderWidth: 3, borderColor: '#FFFFFF', borderRadius: 33 },
   ctrlDivider: { width: 1, height: 26, backgroundColor: 'rgba(255,255,255,.14)', marginHorizontal: 2 },
   cTool: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#ffffff0d', alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
-  badge: { color: '#ffffffaa', fontSize: 11, marginLeft: 4, fontWeight: '600' },
+  qBadge: { position: 'absolute', top: -5, right: -7, minWidth: 17, height: 17, borderRadius: 9, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: '#0e1310' }, // lx95:队列数量优雅悬浮胶囊
+  qBadgeText: { color: '#0b0f0d', fontSize: 9, fontWeight: '800' },
 });
 
 // ===== 桌面(网易云参照)样式 =====
@@ -482,4 +486,9 @@ const stW = StyleSheet.create({
   toolCluster: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   tBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#ffffff0d', alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
   badge: { color: '#ffffff77', fontSize: 10, marginLeft: 3 },
+});
+
+// lx99:全屏底部波浪栈
+const stWave = StyleSheet.create({
+  host: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 150 },
 });

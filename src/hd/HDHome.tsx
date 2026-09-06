@@ -5,7 +5,7 @@ import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
-import { C, H, SH, shadowOf } from './hdtokens';
+import { C, H, SH, shadowOf, shadowOfSm } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { HDGrid } from './HDGrid';
 import { usePlayer } from '../state/PlayerProvider';
@@ -112,9 +112,9 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
       {recents.length ? (
         <Section title="最近播放" more="查看全部" onMore={() => hdNav()?.navigate('PlaylistDetail', { title: '最近播放', songs: recents, meta: `${recents.length} 首` })}>
           {/* 最近播放(lx88:横向 ScrollView 会裁切 zoom 溢出——小卡去 zoom 只留环;lx92:左右 padding 4 留出环的 2px 外溢,首尾卡选中不裁) */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingVertical: 4, paddingHorizontal: 4 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -18, marginRight: -22 }} contentContainerStyle={{ gap: 10, paddingVertical: 16, paddingHorizontal: 18 }}>
             {recents.slice(0, 8).map((s, i) => (
-              <HDTouch key={`${s.source}_${s.songmid}_${i}`} style={st.recCard} onPress={() => playSong(s, recents)}
+              <HDTouch key={`${s.source}_${s.songmid}_${i}`} style={[st.recCard, { boxShadow: shadowOfSm(s.name) }]} onPress={() => playSong(s, recents)}
                 focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 11 }}>
                 {s.img ? <Image source={{ uri: s.img }} style={st.recArt} />
                   : <View style={[st.recArt, { backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={14} color={C.text3} /></View>}
@@ -229,23 +229,23 @@ const st = StyleSheet.create({
   secHint: { color: C.text3, fontSize: H.font.xs },
   secMore: { color: C.brand, fontSize: H.font.sm },
   // v6(老板反馈):环必须贴附卡片几何——环宽=封面宽(去水平 padding),环圆角=封面圆角+2(描边外扩 2px,圆角同步外放才不显小)
-  recCard: { width: 92, gap: 4, paddingBottom: 4, borderRadius: 9 }, // lx92:底 padding 8→4(老板:小字下空白多)
+  recCard: { width: 92, gap: 4, paddingBottom: 4, borderRadius: 9, backgroundColor: C.surface }, // lx98:去 overflow(米电视丢重绘=内容消失);圆角由封面自带
   recArt: { width: '100%', aspectRatio: 1, borderRadius: 9 },
   recName: { color: C.text, fontSize: H.font.xs, fontWeight: '500' },
   recSub: { color: C.text3, fontSize: 8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   // 卡片内文字离边留气口(老板反馈:文字太贴边,左右和底部缺 padding)
-  plCard: { width: '100%', gap: 5, paddingBottom: 8 },
-  plArt: { width: '100%', aspectRatio: 1, borderRadius: 9 },
+  plCard: { width: '100%', gap: 5, paddingBottom: 7, borderRadius: 12, backgroundColor: C.surface }, // lx98:去 overflow;顶角由封面带
+  plArt: { width: '100%', aspectRatio: 1, borderTopLeftRadius: 12, borderTopRightRadius: 12 },
   plCount: { position: 'absolute', bottom: 5, right: 5, backgroundColor: 'rgba(0,0,0,.6)', borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
   plCountText: { color: '#fff', fontSize: 8 },
   plName: { color: C.text, fontSize: H.font.sm, fontWeight: '600' },
-  plArtFull: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 9 },
+  plArtFull: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   plVeil: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 9 },
   plTextsOverlay: { position: 'absolute', left: 8, right: 8, bottom: 7 },
   plNameOnArt: { color: '#FFFFFF', fontSize: H.font.sm, fontWeight: '700' },
   recSubOnArt: { color: '#FFFFFFCC', fontSize: 8 },
-  plTexts: { alignSelf: 'center', width: '94%', gap: 3 },
+  plTexts: { alignSelf: 'stretch', paddingHorizontal: 8, gap: 3 },
   empty: { height: 64, borderRadius: H.radius.card, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', gap: 8, flexDirection: 'row', paddingHorizontal: 14 },
   emptyText: { color: C.text3, fontSize: H.font.sm },
 });

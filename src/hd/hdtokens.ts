@@ -131,13 +131,24 @@ export const SH = {
 export const shadowOf = (seed: string) => {
   if (TV_LOW_GPU) return 'none';
   const h = [...seed].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
-  const s = 0.62, l = 0.42;
+  const s = 0.55, l = 0.5;
   const cH = (1 - Math.abs(2 * l - 1)) * s;
   const hp = h / 60, x = cH * (1 - Math.abs((hp % 2) - 1));
   const [r1, g1, b1] = hp < 1 ? [cH, x, 0] : hp < 2 ? [x, cH, 0] : hp < 3 ? [0, cH, x] : hp < 4 ? [0, x, cH] : hp < 5 ? [x, 0, cH] : [cH, 0, x];
   const m = l - cH / 2;
   const R = Math.round((r1 + m) * 255), G = Math.round((g1 + m) * 255), B = Math.round((b1 + m) * 255);
-  return `0 10px 30px rgba(${R},${G},${B},.34)`;
+  return `0 10px 30px rgba(${R},${G},${B},.15)`; // lx97(老板:太重)——.34→.15
+};
+// lx96:紧凑弥散投影——横向滚动行内小卡专用(30px 大弥散会被 ScrollView 裁切,需要 ≤16px 行内边距预算)
+export const shadowOfSm = (seed: string) => {
+  const h = [...seed].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
+  const s = 0.55, l = 0.5;
+  const cH = (1 - Math.abs(2 * l - 1)) * s;
+  const hp = h / 60, x = cH * (1 - Math.abs((hp % 2) - 1));
+  const [r1, g1, b1] = hp < 1 ? [cH, x, 0] : hp < 2 ? [x, cH, 0] : hp < 3 ? [0, cH, x] : hp < 4 ? [0, x, cH] : hp < 5 ? [x, 0, cH] : [cH, 0, x];
+  const m = l - cH / 2;
+  const R = Math.round((r1 + m) * 255), G = Math.round((g1 + m) * 255), B = Math.round((b1 + m) * 255);
+  return `0 5px 14px rgba(${R},${G},${B},.18)`;
 };
 // 玻璃磨砂面(桌面 --nm-glass 深色值;RN 无 backdrop-filter,用半透明+亮边近似)—— 已迁入 C.glass/C.glassStrong(浅色覆写需运行时查找,export let 在 Metro 下是值拷贝)
 // 兼容旧引用
