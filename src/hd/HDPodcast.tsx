@@ -83,7 +83,7 @@ export function HDPodcast() {
   return (
     <ScrollView
       style={st.screen}
-      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 22, paddingBottom: 26, gap: 16 }}
+      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 26, paddingBottom: 28, gap: 16 }}
       showsVerticalScrollIndicator={false}
     >
       <View style={st.head}>

@@ -99,7 +99,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
   return (
     <ScrollView
       style={st.screen}
-      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 22, paddingBottom: 26, gap: 18 }}
+      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 26, paddingBottom: 28, gap: 18 }}
       showsVerticalScrollIndicator={false}
     >
       <Text style={st.greet}>Hi,{greet}{connected && snap ? ',Mubey' : ''}</Text>

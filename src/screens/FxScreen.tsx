@@ -617,8 +617,8 @@ const st = StyleSheet.create({
   content: { paddingHorizontal: 20, paddingBottom: 40 },
 
   // 预设胶囊（横滚）
-  presetScroll: { gap: 8, paddingBottom: 6, paddingTop: 4, paddingHorizontal: 2, marginBottom: 12 }, // lx130:选中态留呼吸空间防裁切
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10, paddingHorizontal: 2 },
+  presetScroll: { gap: 8, paddingBottom: 8, paddingTop: 6, paddingHorizontal: 4, marginBottom: 12 }, // lx130:选中态留呼吸空间防裁切
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10, paddingHorizontal: 4 },
   chip: { paddingHorizontal: 14, height: 32, borderRadius: 16, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', marginVertical: 2, borderWidth: 2, borderColor: 'transparent' }, // lx130:透明边框占位——选中描边不再裁切文字
   chipOn: { backgroundColor: C.brand },
   chipText: { color: C.text2, fontSize: 12, fontWeight: '600' },

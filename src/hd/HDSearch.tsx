@@ -4,7 +4,7 @@ import { FocusBridge } from './HDMain';
 import { View, Text, StyleSheet, ScrollView, TextInput, Image, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
-import { C, H } from './hdtokens';
+import { C, H, shadowStyleOf } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { HDSongRow } from './HDSongRow';
 import { usePlayer } from '../state/PlayerProvider';
@@ -104,9 +104,9 @@ export function HDSearch() {
           <View style={{ gap: 18, marginTop: 6 }}>
             <View style={{ gap: 9 }}>
               <Text style={st.secTitle}>热门歌手</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingLeft: 2 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingLeft: 4, paddingRight: 10, paddingVertical: 10 }}>
                 {HOT_ARTISTS.map(a => (
-                  <HDTouch key={a.n} style={st.artistCard} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }} onPress={() => { setKw(a.n); search(a.n); }}>
+                  <HDTouch key={a.n} style={[st.artistCard, shadowStyleOf(a.n)]} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }} onPress={() => { setKw(a.n); search(a.n); }}>
                     <View style={[st.artistAvatar, { backgroundColor: a.c }]}><Text style={st.artistGlyph}>{a.n[0]}</Text></View>
                     <Text style={st.artistName} numberOfLines={1}>{a.n}</Text>
                   </HDTouch>

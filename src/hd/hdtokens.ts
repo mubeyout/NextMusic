@@ -151,7 +151,7 @@ export function shadowStyleOf(seed: string): { elevation: number; shadowColor: s
   const hp = h / 60, x = cH * (1 - Math.abs((hp % 2) - 1));
   const [r1, g1, b1] = hp < 1 ? [cH, x, 0] : hp < 2 ? [x, cH, 0] : hp < 3 ? [0, cH, x] : hp < 4 ? [0, x, cH] : hp < 5 ? [x, 0, cH] : [cH, 0, x];
   const m = l - cH / 2;
-  return { elevation: 12, shadowColor: `rgb(${Math.round((r1 + m) * 255)},${Math.round((g1 + m) * 255)},${Math.round((b1 + m) * 255)})` };
+  return { elevation: 8, shadowColor: `rgb(${Math.round((r1 + m) * 255)},${Math.round((g1 + m) * 255)},${Math.round((b1 + m) * 255)})` };
 }
 
 export function haloOf(seed: string): string {

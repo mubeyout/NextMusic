@@ -59,7 +59,7 @@ export function HDBoards() {
   return (
     <ScrollView
       style={st.screen}
-      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 22, paddingBottom: 26, gap: 12 }}
+      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 26, paddingBottom: 28, gap: 12 }}
       showsVerticalScrollIndicator={false}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
