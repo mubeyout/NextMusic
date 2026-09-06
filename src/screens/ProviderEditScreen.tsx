@@ -2,7 +2,7 @@
 // 选择类型页：Bold 22 标题 + 说明 + 5 张类型卡（#2B2B2B r12 h64，Medium 14 + 推荐/说明 11）
 // 连接页：说明 + Tab 容器(#1C1C1C r12 p4) + 输入卡(#2B2B2B r12: label 11 灰 + 值 14 白 + hint 10) + 测试连接/保存并开始索引 h46 r12
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator , Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon, BrandIcon } from '../theme/Icon';
@@ -16,11 +16,11 @@ import { dialog, toast } from '../components/Dialog';
 
 // 类型卡数据（对齐 Figma NM-REMOTE-SELECT-001）；注：核心后台 LX Server 属于「使用方式与账号」的连接服务器流程，不是第三方媒体库，不在此列
 // icon:HD 卡片用
-const TYPE_CARDS: { type: ProviderType; title: string; badge?: string; sub: string; icon: 'music' | 'tv' | 'wave' | 'cloud'; mbadge?: string; mcolor?: string }[] = [ // lx153:品牌色 monogram 徽标
-  { type: 'navidrome', title: 'Navidrome / Subsonic', badge: '推荐', sub: '优先走 Subsonic 1.16.1 / OpenSubsonic 兼容协议', icon: 'music', mbadge: 'N', mcolor: '#19A457' }, // Navidrome 品牌绿
-  { type: 'emby', title: 'Emby / Jellyfin', sub: '用户登录、音乐库选择、直放或服务端转码', icon: 'tv', mbadge: 'E', mcolor: '#52B54B' }, // Emby 品牌绿
+const TYPE_CARDS: { type: ProviderType; title: string; badge?: string; sub: string; icon: 'music' | 'tv' | 'wave' | 'cloud'; logo?: any }[] = [ // lx154:真品牌 logo 资产
+  { type: 'navidrome', title: 'Navidrome / Subsonic', badge: '推荐', sub: '优先走 Subsonic 1.16.1 / OpenSubsonic 兼容协议', icon: 'music', logo: require('../assets/brands/navidrome.png') }, // Navidrome 品牌绿
+  { type: 'emby', title: 'Emby / Jellyfin', sub: '用户登录、音乐库选择、直放或服务端转码', icon: 'tv', logo: require('../assets/brands/emby.png') }, // Emby 品牌绿
   { type: 'daoliyu', title: '道理鱼音乐', sub: '专有适配；可用时优先协商兼容协议', icon: 'wave' },
-  { type: 'webdav', title: 'WebDAV 音乐目录', sub: '直接读取远程文件；本地建立只读元数据索引', icon: 'cloud', mbadge: 'W', mcolor: '#3D7DE9' },
+  { type: 'webdav', title: 'WebDAV 音乐目录', sub: '直接读取远程文件；本地建立只读元数据索引', icon: 'cloud', logo: require('../assets/brands/webdav.png') },
 ];
 
 // 连接页说明 / 输入 hint（对齐 Figma NM-REMOTE-SUBSONIC-001）
@@ -116,8 +116,9 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                   glow={SH.brand}
                   onPress={() => pickType(c.type)}
                 >
-                  <View style={[hdSt.typeIcon, c.mcolor ? { backgroundColor: c.mcolor } : null]}>
-                    {c.mbadge ? <Text style={{ color: '#fff', fontSize: 26, fontWeight: '900' }}>{c.mbadge}</Text>
+                  <View style={hdSt.typeIcon}>
+                    {c.logo
+                      ? <Image source={c.logo} style={{ width: 44, height: 44, borderRadius: 10 }} resizeMode="contain" />
                       : <Icon name={c.icon} size={30} color={C.brandText} />}
                   </View>
                   <Text style={hdSt.typeTitle}>{c.title}</Text>

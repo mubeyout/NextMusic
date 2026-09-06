@@ -2,7 +2,7 @@
 // 根因:Modal 新窗口在米电视上 D-pad 焦点不可靠(老板反复反馈"无法选中")——
 // 本组件走应用根节点 absolute 覆盖层 + HDTouch 行(原生焦点链,遥控实测稳)
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, BackHandler, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, BackHandler, Dimensions, Modal } from 'react-native';
 import { C } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { Icon } from '../theme/Icon';
@@ -35,52 +35,52 @@ export function HDActionHost() {
   useEffect(() => { host = setReq; return () => { if (host === setReq) host = null; }; }, []);
   useEffect(() => { if (req?.input) setVal(req.input.defaultValue || ''); }, [req]);
   const close = () => setReq(null);
-  // lx114:BACK 关面板
   if (!req) return null;
   const submit = () => { const v = val.trim(); close(); if (v) req.input?.onSubmit(v); };
   return (
-    <View style={st.scrim}>
-      <Pressable style={StyleSheet.absoluteFill} focusable onPress={close} />
-      <View style={st.panel}>
-        <View style={st.head}>
-          <Text style={st.title} numberOfLines={1}>{req.title}</Text>
-          <HDTouch style={st.x} focusStyle={{ borderWidth: 1.5, borderColor: C.brand, borderRadius: 12 }} onPress={close}>
-            <Icon name="close" size={13} color={C.text2} />
-          </HDTouch>
-        </View>
-        {req.input ? (
-          <View style={st.inputRow}>
-            <TextInput
-              style={st.input}
-              value={val}
-              onChangeText={setVal}
-              placeholder={req.input.placeholder || ''}
-              placeholderTextColor={C.text3}
-              selectionColor={C.brand}
-              autoFocus={false}
-              focusable
-              onSubmitEditing={submit}
-            />
-            <HDTouch style={st.okBtn} focusStyle={{ borderWidth: 2, borderColor: '#fff', borderRadius: 10 }} onPress={submit} hasTVPreferredFocus>
-              <Text style={st.okText}>确定</Text>
+    <Modal transparent visible onRequestClose={close} animationType="none" statusBarTranslucent>
+      <View style={st.scrim}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={close} />
+        <View style={st.panel}>
+          <View style={st.head}>
+            <Text style={st.title} numberOfLines={1}>{req.title}</Text>
+            <HDTouch style={st.x} focusStyle={{ borderWidth: 1.5, borderColor: C.brand, borderRadius: 12 }} onPress={close}>
+              <Icon name="close" size={13} color={C.text2} />
             </HDTouch>
           </View>
-        ) : null}
-        {(req.items || []).map((it, i) => (
-          <HDTouch
-            key={it.label + i}
-            style={st.row}
-            focusStyle={{ borderWidth: 2, borderColor: it.danger ? '#FF6B6B' : C.brand, borderRadius: 11 }}
-            focusBg={C.inset}
-            hasTVPreferredFocus={!req.input && i === 0}
-            onPress={() => { close(); it.onPress?.(); }}
-          >
-            {it.icon ? <Icon name={it.icon as never} size={15} color={it.danger ? '#FF6B6B' : C.text2} /> : null}
-            <Text style={[st.rowText, it.danger && { color: '#FF6B6B' }]} numberOfLines={1}>{it.label}</Text>
-          </HDTouch>
-        ))}
+          {req.input ? (
+            <View style={st.inputRow}>
+              <TextInput
+                style={st.input}
+                value={val}
+                onChangeText={setVal}
+                placeholder={req.input.placeholder || ''}
+                placeholderTextColor={C.text3}
+                selectionColor={C.brand}
+                focusable
+                onSubmitEditing={submit}
+              />
+              <HDTouch style={st.okBtn} focusStyle={{ borderWidth: 2, borderColor: '#fff', borderRadius: 10 }} onPress={submit} hasTVPreferredFocus>
+                <Text style={st.okText}>确定</Text>
+              </HDTouch>
+            </View>
+          ) : null}
+          {(req.items || []).map((it, i) => (
+            <HDTouch
+              key={it.label + i}
+              style={st.row}
+              focusStyle={{ borderWidth: 2, borderColor: it.danger ? '#FF6B6B' : C.brand, borderRadius: 11 }}
+              focusBg={C.inset}
+              hasTVPreferredFocus={!req.input && i === 0}
+              onPress={() => { close(); it.onPress?.(); }}
+            >
+              {it.icon ? <Icon name={it.icon as never} size={15} color={it.danger ? '#FF6B6B' : C.text2} /> : null}
+              <Text style={[st.rowText, it.danger && { color: '#FF6B6B' }]} numberOfLines={1}>{it.label}</Text>
+            </HDTouch>
+          ))}
+        </View>
       </View>
-    </View>
+    </Modal>
   );
 }
 
