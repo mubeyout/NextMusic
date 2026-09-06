@@ -215,7 +215,7 @@ const st = StyleSheet.create({
   empty: { color: C.text3, fontSize: H.font.md, paddingVertical: 24, textAlign: 'center' },
   tip: { alignItems: 'center', gap: 10, paddingVertical: 60 },
   tipText: { color: C.text3, fontSize: H.font.md },
-  artistCard: { width: 88, height: 108, alignItems: 'center', justifyContent: 'center', gap: 8 }, // lx140:去边框容器,纯头像+名字
+  artistCard: { width: 90, height: 114, borderRadius: 14, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', gap: 8 }, // lx143:恢复圆角底卡——无背景时 elevation 轮廓异常+投影乱
   artistAvatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' }, // lx139:真照片(Image 圆形)
   artistGlyph: { color: '#FFFFFF', fontSize: 22, fontWeight: '800' },
   artistName: { color: C.text, fontSize: 11, fontWeight: '600' },
