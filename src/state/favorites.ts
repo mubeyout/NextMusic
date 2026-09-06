@@ -29,13 +29,14 @@ export async function setFav(s: SongItem, on: boolean, pushRemote?: (snap: any) 
       : pl.songs.filter(x => songKey(x) !== k);
     library.update(pl.id, { songs });
   } catch { /* ignore */ }
-  // 服务器 loveList 同步（登录时）
-  if (on && pushRemote && fetchSnap) {
+  // 服务器 loveList 双向同步（登录时）——lx101 修复:取消收藏也从服务器移除(原先只加不减,HD/手机取消后重拉又复活)
+  if (pushRemote && fetchSnap) {
     try {
       const snap = await fetchSnap();
-      if (snap && !snap.loveList.some((x: { id: string }) => x.id === k)) {
-        snap.loveList.unshift(s);
-        await pushRemote(snap);
+      if (snap) {
+        const has = snap.loveList.some((x: { id: string }) => x.id === k);
+        if (on && !has) { snap.loveList.unshift(s); await pushRemote(snap); }
+        else if (!on && has) { snap.loveList = snap.loveList.filter((x: { id: string }) => x.id !== k); await pushRemote(snap); }
       }
     } catch { /* ignore */ }
   }

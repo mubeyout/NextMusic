@@ -53,6 +53,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
   useEffect(() => { if (visible) setLocalCount(deviceTrackCount()); }, [visible]);
   // 长按歌单卡管理菜单（ActionSheet，与媒体库一致）
   const [actPl, setActPl] = useState<LocalPlaylist | null>(null);
+  const [actSyncPl, setActSyncPl] = useState<{ id: string; name: string; count: number } | null>(null); // lx101:同步歌单管理
 
   const loggedIn = connected && !!token;
   // 订阅本地歌单变更：导入/新建/删除后实时刷新（否则需冷启动才能看到）
@@ -136,7 +137,12 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
               <Text style={st.bannerTitle}>我的收藏</Text>
               <Text style={st.bannerMeta}>{totalPlaylists} 个歌单 · {totalSongs} 首歌曲</Text>
             </View>
-            <TouchableOpacity style={st.newBtn} onPress={() => nav.navigate('ImportPlaylist')}>
+            <TouchableOpacity style={st.newBtn} onPress={() => dialog.menu('新建歌单', [
+              { label: '空白歌单', onPress: () => {
+                dialog.prompt('新建歌单', { defaultValue: '', onSubmit: (v) => { const n = (v || '').trim(); if (n) { library.create(n); toast('已创建'); } } });
+              } },
+              { label: '导入平台歌单', onPress: () => nav.navigate('ImportPlaylist') },
+            ])}>
               <Text style={st.newBtnText}>＋ 新建</Text>
             </TouchableOpacity>
           </LinearGradient>
@@ -209,10 +215,15 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
                   onPress={() => g.localId
                     ? nav.navigate('PlaylistDetail', { localId: g.localId, title: g.name, songs: g.songs, cover: g.img })
                     : openSongs(g.name, g.songs, g.img)}
-                  onLongPress={g.localId ? () => {
-                    const pl = library.get(g.localId!);
-                    if (pl) setActPl(pl);
-                  } : undefined}
+                  onLongPress={() => {
+                    if (g.localId) {
+                      const pl = library.get(g.localId!);
+                      if (pl) setActPl(pl);
+                    } else {
+                      // lx101:同步歌单也可管理(服务器 userList 重命名/删除)
+                      setActSyncPl({ id: g.key, name: g.name, count: g.count });
+                    }
+                  }}
                 >                  {/* Figma 2154-730：自建歌单一律渐变抽象封面（不用歌曲专辑图） */}
                   <LinearGradient colors={COVER_GRADS[i % COVER_GRADS.length]} style={st.plCover}>
                     <Text style={st.plGlyph}>♫</Text>
@@ -308,6 +319,13 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
             },
           });
         } },
+        { label: '同步到服务器', onPress: () => {
+          const t = actPl!;
+          dialog.confirm('同步到服务器', `将「${t.name}」(${t.songs.length} 首)上传为服务器歌单？`, async () => {
+            toast((await sync.uploadUserList(t.name, t.songs)) ? '已同步到服务器' : '同步失败');
+            refresh();
+          });
+        } },
         { label: '删除歌单', danger: true, onPress: () => {
           dialog.confirm('删除歌单', `确定删除「${actPl.name}」？${actPl.songs.length} 首歌曲将从此歌单移除`, () => {
             library.remove(actPl.id);
@@ -316,6 +334,32 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
         } },
       ] : []}
     />
+
+      {/* lx101:同步歌单管理(服务器 userList) */}
+      <ActionSheet
+        visible={!!actSyncPl} onClose={() => setActSyncPl(null)}
+        title={actSyncPl?.name || '歌单'}
+        items={[
+          { label: '重命名歌单', onPress: () => {
+            const t = actSyncPl!;
+            dialog.prompt('重命名歌单', {
+              defaultValue: t.name,
+              onSubmit: async (v) => {
+                if (!v || v === t.name) return;
+                toast((await sync.renameUserList(t.id, v)) ? '已重命名' : '服务器操作失败');
+                refresh();
+              },
+            });
+          } },
+          { label: '删除歌单', danger: true, onPress: () => {
+            const t = actSyncPl!;
+            dialog.confirm('删除歌单', `确定删除「${t.name}」？${t.count} 首将从此歌单移除`, async () => {
+              toast((await sync.removeUserList(t.id)) ? '已删除' : '服务器操作失败');
+              refresh();
+            });
+          } },
+        ]}
+      />
     </>
   );
 }

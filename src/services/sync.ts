@@ -82,6 +82,22 @@ export const sync = {
       return { defaultList: d.defaultList, loveList: d.loveList || [], userList: d.userList || [] };
     } catch (e) { console.log('[sync] fetchLists err:', (e as Error).message); return null; }
   },
+  // lx101:歌单管理(双端共用)——服务器 userList 重命名/删除(fetch+改+push 整快照)
+  // lx102:本机歌单上传服务器(fetch+append+push)
+  async uploadUserList(name: string, songs: SongItem[]): Promise<boolean> {
+    const snap = await this.fetchLists(); if (!snap) return false;
+    snap.userList.push({ id: `ul-${Date.now()}`, name, list: songs.map(appToLx) });
+    return this.pushLists(snap);
+  },
+  async renameUserList(id: string, name: string): Promise<boolean> {
+    const snap = await this.fetchLists(); if (!snap) return false;
+    const u = snap.userList.find(x => x.id === id); if (!u) return false;
+    u.name = name; return this.pushLists(snap);
+  },
+  async removeUserList(id: string): Promise<boolean> {
+    const snap = await this.fetchLists(); if (!snap) return false;
+    snap.userList = snap.userList.filter(x => x.id !== id); return this.pushLists(snap);
+  },
   async pushLists(snap: UserListsSnapshot): Promise<boolean> {
     try {
       await req('/api/user/list', { method: 'POST', headers: { "Content-Type": "application/json" }, body: JSON.stringify(snap), timeout: 20000 });

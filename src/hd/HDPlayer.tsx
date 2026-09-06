@@ -1,9 +1,9 @@
 // HD 播放页 v3 —— 完全重构:无底部工具 bar,所有元素融入左右两列,沉浸式
 // v1 教训:固定尺寸溢出;v2 教训:深色底 panel 突兀(老板:粗糙,直接取消)
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, Animated, Easing, ScrollView } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Defs, Path, RadialGradient, Stop } from 'react-native-svg';
 import { SpectrumRing } from './SpectrumRing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
@@ -14,8 +14,11 @@ import { useApp } from '../state/AppState';
 import { api } from '../services/server';
 import { lxapi } from '../services/lxapi';
 import { parseLrc, mergeTranslation, findActiveLine, type LyricLine } from '../services/lyric';
+import { useFav } from './useFav';
+import { library } from '../state/library';
+import { addToPlaylist } from '../state/favorites';
 import { sync } from '../services/sync';
-import { isFav, setFav } from '../state/favorites';
+import { toast } from '../components/Dialog';
 import { hdNav } from './hdnav';
 
 
@@ -49,32 +52,51 @@ function HD_VINYL_SVG(img?: string): React.ReactNode {
 // 三层不同半径/波数/速度/方向=水波互相穿插;禁用 overflow:米电视吃内容(坑133))
 const RING_ZONE = 340;
 const RINGS = [
-  { r: 124, k: 6, amp: 5, sw: 8, stroke: 'rgba(34,211,238,.5)', dur: 26000, dir: 1 },
-  { r: 146, k: 9, amp: 7, sw: 10, stroke: 'rgba(168,85,247,.4)', dur: 19000, dir: -1 },
-  { r: 168, k: 12, amp: 9, sw: 12, stroke: 'rgba(244,114,182,.3)', dur: 33000, dir: 1 },
+  { r: 126, halfW: 7, k: 6, amp: 4, col: 'rgb(34,211,238)', op: 0.55, dur: 26000, dir: 1 },
+  { r: 148, halfW: 9, k: 9, amp: 5, col: 'rgb(168,85,247)', op: 0.45, dur: 19000, dir: -1 },
+  { r: 170, halfW: 12, k: 12, amp: 7, col: 'rgb(244,114,182)', op: 0.35, dur: 33000, dir: 1 },
 ];
-function ringPath(r: number, k: number, amp: number, size: number): string {
-  const c = size / 2; const N = 96; let d = '';
+/** 波浪环带(环形渐变填充):外缘波 + 内缘波(相位差 0.9)闭合 */
+function ringBandPath(rMid: number, halfW: number, k: number, amp: number, size: number): string {
+  const c = size / 2; const N = 96; const rOut = rMid + halfW; const rIn = Math.max(60, rMid - halfW);
+  let d = '';
   for (let i = 0; i <= N; i++) {
     const th = (i / N) * Math.PI * 2;
-    const rr = r + Math.sin(th * k) * amp;
+    const rr = rOut + Math.sin(th * k) * amp;
     d += (i === 0 ? 'M' : 'L') + (c + Math.cos(th) * rr).toFixed(1) + ' ' + (c + Math.sin(th) * rr).toFixed(1);
+  }
+  for (let i = N; i >= 0; i--) {
+    const th = (i / N) * Math.PI * 2;
+    const rr = rIn + Math.sin(th * k + 0.9) * amp;
+    d += 'L' + (c + Math.cos(th) * rr).toFixed(1) + ' ' + (c + Math.sin(th) * rr).toFixed(1);
   }
   return d + 'Z';
 }
 function WaveRings({ anims }: { anims: Animated.Value[] }) {
+  const c = RING_ZONE / 2;
   return (
     <View style={stWave.host} pointerEvents="none">
-      {RINGS.map((rg, i) => (
-        <Animated.View key={i} style={{
-          position: 'absolute', top: 0, left: 0, width: RING_ZONE, height: RING_ZONE,
-          transform: [{ rotate: anims[i].interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${360 * rg.dir}deg`] }) }],
-        }}>
-          <Svg width={RING_ZONE} height={RING_ZONE} viewBox={`0 0 ${RING_ZONE} ${RING_ZONE}`}>
-            <Path d={ringPath(rg.r, rg.k, rg.amp, RING_ZONE)} stroke={rg.stroke} strokeWidth={rg.sw} fill="none" strokeLinejoin="round" />
-          </Svg>
-        </Animated.View>
-      ))}
+      {RINGS.map((rg, i) => {
+        const fade = (rg.halfW + rg.amp + 5) / c;
+        const mid = rg.r / c;
+        return (
+          <Animated.View key={i} style={{
+            position: 'absolute', top: 0, left: 0, width: RING_ZONE, height: RING_ZONE,
+            transform: [{ rotate: anims[i].interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${360 * rg.dir}deg`] }) }],
+          }}>
+            <Svg width={RING_ZONE} height={RING_ZONE} viewBox={`0 0 ${RING_ZONE} ${RING_ZONE}`}>
+              <Defs>
+                <RadialGradient id={`wg${i}`} cx={c} cy={c} r={c} gradientUnits="userSpaceOnUse">
+                  <Stop offset={Math.max(0, mid - fade)} stopColor={rg.col} stopOpacity="0" />
+                  <Stop offset={mid} stopColor={rg.col} stopOpacity={String(rg.op)} />
+                  <Stop offset={Math.min(1, mid + fade)} stopColor={rg.col} stopOpacity="0" />
+                </RadialGradient>
+              </Defs>
+              <Path d={ringBandPath(rg.r, rg.halfW, rg.k, rg.amp, RING_ZONE)} fill={`url(#wg${i})`} />
+            </Svg>
+          </Animated.View>
+        );
+      })}
     </View>
   );
 }
@@ -85,7 +107,23 @@ export function HDPlayer() {
   const { current, playing, position, duration, toggle, skipNext, skipPrev, seekTo, shuffle, repeat, setShuffle, cycleRepeat, queue } = usePlayer();
   const { connected, token } = useApp();
   const [lyrics, setLyrics] = useState<LyricLine[] | null>(null);
-  const [faved, setFaved] = useState(false);
+  const { faved, toggle: toggleFav } = useFav(current); // lx101:收藏统一 hook(取消也同步服务器)
+  // lx102:收藏到歌单面板(长按收藏键)——与手机端 CollectSheet 同能力
+  const [collectOpen, setCollectOpen] = useState(false);
+  const [collectPls, setCollectPls] = useState<Array<{ key: string; localId?: string; name: string }>>([]);
+  useEffect(() => {
+    if (!collectOpen) return;
+    let dead = false;
+    const local = library.all().map(p => ({ key: p.id, localId: p.id, name: p.name }));
+    setCollectPls(local);
+    if (connected && token) {
+      sync.fetchLists().then(sp => {
+        if (dead || !sp) return;
+        setCollectPls([...local, ...(sp.userList || []).map(u => ({ key: u.id, name: u.name }))]);
+      }).catch(() => {});
+    }
+    return () => { dead = true; };
+  }, [collectOpen, connected, token]); // eslint-disable-line react-hooks/exhaustive-deps
   const trackW = React.useRef(0);
   // v1.1.8 唱片旋转(18s/转;web 必须 JS driver——RNW Animated useNativeDriver 必 false,原生端 native driver 零 JS 开销)
   const spin = React.useRef(new Animated.Value(0)).current;
@@ -122,19 +160,6 @@ export function HDPlayer() {
   }, [playing]); // eslint-disable-line react-hooks/exhaustive-deps
   React.useEffect(() => () => { ringLoops.current.forEach(l => l?.stop()); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    let dead = false;
-    if (!current) return;
-    let base = isFav(current);
-    if (connected && token) {
-      sync.fetchLists().then(s => {
-        if (dead || !s) return;
-        const key = `${current.source}_${current.songmid}`;
-        setFaved(base || s.loveList.some(x => x.id === key));
-      }).catch(() => setFaved(base));
-    } else setFaved(base);
-    return () => { dead = true; };
-  }, [current?.songmid, current?.source, connected, token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     setLyrics(null);
@@ -176,15 +201,7 @@ export function HDPlayer() {
   const activeIdx = lyrics ? findActiveLine(lyrics, position) : -1;
   const pct = duration > 0 ? Math.min(1, position / duration) : 0;
 
-  const doFav = async () => {
-    // v1.2.0 对齐手机端 CollectSheet.toggle:本地 MMKV+歌单+服务器 loveList 三同步
-    setFaved(!faved);
-    try {
-      await setFav(current, !faved,
-        connected && token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined,
-        connected && token ? () => sync.fetchLists() : undefined);
-    } catch { setFaved(faved); }
-  };
+  const doFav = toggleFav;
 
   // ===== 桌面(网易云参照):封面模糊铺底 + 大图/歌词双列 + 底部一体控制条 =====
   if (Platform.OS === 'web') {
@@ -387,7 +404,7 @@ export function HDPlayer() {
               <Icon name="repeat" size={20} active={repeat !== 'off'} color={repeat !== 'off' ? C.brand : '#ffffff99'} />
             </HDTouch>
             <View style={st.ctrlDivider} />
-            <HDTouch style={st.cTool} onPress={doFav}>
+            <HDTouch style={st.cTool} onPress={doFav} onLongPress={() => setCollectOpen(true)}>
               <Icon name="heart" size={19} color={faved ? C.brand : '#ffffff99'} />
             </HDTouch>
             <HDTouch style={st.cTool} onPress={() => nav.navigate('Queue')}>
@@ -402,6 +419,37 @@ export function HDPlayer() {
           </View>
         </View>
       </View>
+
+      {/* lx102:收藏到歌单面板(长按收藏键;HDTouch 行 D-pad 可用) */}
+      {collectOpen && current ? (
+        <View style={st.collectPanel}>
+          <Text style={st.collectTitle}>收藏到</Text>
+          <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+            <HDTouch style={st.collectRow} onPress={() => { toggleFav(); }}>
+              <Icon name="heart" size={15} active={faved} color={faved ? C.brand : '#ffffff99'} />
+              <Text style={[st.collectText, faved && { color: C.brand }]} numberOfLines={1}>我喜欢的{faved ? ' · 已收藏' : ''}</Text>
+            </HDTouch>
+            {collectPls.map(cp => (
+              <HDTouch key={cp.key} style={st.collectRow} onPress={async () => {
+                try {
+                  if (cp.localId) await addToPlaylist({ id: cp.localId }, current);
+                  else await addToPlaylist({ name: cp.name }, current,
+                    connected && token ? () => sync.fetchLists() : undefined,
+                    connected && token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined);
+                  toast(`已收藏到「${cp.name}」`);
+                } catch { toast('收藏失败'); }
+                setCollectOpen(false);
+              }}>
+                <Icon name="music" size={13} color="#ffffff77" />
+                <Text style={st.collectText} numberOfLines={1}>{cp.name}</Text>
+              </HDTouch>
+            ))}
+          </ScrollView>
+          <HDTouch style={st.collectClose} onPress={() => setCollectOpen(false)}>
+            <Text style={st.collectCloseText}>关闭</Text>
+          </HDTouch>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -447,6 +495,12 @@ const st = StyleSheet.create({
   cMainFocus: { borderWidth: 3, borderColor: '#FFFFFF', borderRadius: 33 },
   ctrlDivider: { width: 1, height: 26, backgroundColor: 'rgba(255,255,255,.14)', marginHorizontal: 2 },
   cTool: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#ffffff0d', alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
+  collectPanel: { position: 'absolute', right: 44, top: 92, width: 300, maxHeight: 400, borderRadius: 16, backgroundColor: 'rgba(10,14,12,.94)', borderWidth: 1, borderColor: 'rgba(255,255,255,.12)', padding: 12, gap: 8, zIndex: 40 },
+  collectTitle: { color: '#ffffffcc', fontSize: 13, fontWeight: '700', paddingHorizontal: 4 },
+  collectRow: { flexDirection: 'row', alignItems: 'center', gap: 9, height: 42, borderRadius: 10, backgroundColor: '#ffffff0d', paddingHorizontal: 12 },
+  collectText: { color: '#ffffffd9', fontSize: 13, flex: 1 },
+  collectClose: { height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff12' },
+  collectCloseText: { color: '#ffffffaa', fontSize: 12, fontWeight: '600' },
   qBadge: { position: 'absolute', top: -5, right: -7, minWidth: 17, height: 17, borderRadius: 9, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: '#0e1310' }, // lx95:队列数量优雅悬浮胶囊
   qBadgeText: { color: '#0b0f0d', fontSize: 9, fontWeight: '800' },
 });

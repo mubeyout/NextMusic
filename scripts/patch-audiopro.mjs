@@ -335,3 +335,20 @@ patch(
   '\tsuspend fun play(track: ReadableMap, options: ReadableMap) {\n\t\tval opts = extractPlaybackOptions(options)\n',
   '\tsuspend fun play(track: ReadableMap, options: ReadableMap) {\n\t\tflowPlayGeneration++ // [NextMusic-FX:err-race-bump] 新播放开始：作废错误清理挂起的延时 destroy\n\t\tval opts = extractPlaybackOptions(options)\n'
 );
+
+// lx101:通知栏小图标品牌化(老板:状态栏只有一个三角形)——库模块不能编译期引 app R,运行时 getIdentifier 解析
+// 幂等:兼容 原始 android.R / 早期坏补丁 com.mubeyworks R / 已打好 三种形态
+{
+  const p = base + 'AudioProPlaybackService.kt';
+  let s = readFileSync(p, 'utf8');
+  const RUNTIME = '.setSmallIcon(run { val __nm = resources.getIdentifier("nm_notif", "drawable", packageName); if (__nm != 0) __nm else android.R.drawable.ic_media_play })';
+  if (s.includes('__nm')) {
+    console.log('[patch-audiopro] notif-icon: already patched');
+  } else {
+    s = s.split('.setSmallIcon(com.mubeyworks.nextmusic.R.drawable.nm_notif)').join('.setSmallIcon(android.R.drawable.ic_media_play)');
+    s = s.split('.setSmallIcon(android.R.drawable.ic_media_play)').join(RUNTIME);
+    s = s.split('.setSmallIcon(android.R.drawable.ic_dialog_info)').join(RUNTIME);
+    writeFileSync(p, s);
+    console.log('[patch-audiopro] notif-icon: patched (runtime getIdentifier)');
+  }
+}

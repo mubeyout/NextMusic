@@ -1,5 +1,6 @@
 // HD 我的:账号卡 + 歌单网格 + 媒体库/下载/本地/设置入口(子页复用 phone Stack)
 import React, { useEffect, useState } from 'react';
+import { dialog, toast } from '../components/Dialog';
 import { View, Text, StyleSheet, ScrollView, Image, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
@@ -45,6 +46,33 @@ export function HDMy() {
       return { key: u.id, localId: undefined as string | undefined, name: u.name, count: songs.length, img: songs[0]?.img, songs };
     }),
   ];
+
+  // lx101:歌单长按管理——本机 library / 同步服务器 userList
+  const managePl = (pl: typeof playlists[number]) => {
+    dialog.menu(`管理「${pl.name}」`, [
+      ...(pl.localId && connected && token ? [{ label: '同步到服务器', onPress: () => {
+        dialog.confirm('同步到服务器', `将「${pl.name}」(${pl.count} 首)上传为服务器歌单？`, async () => {
+          toast((await sync.uploadUserList(pl.name, pl.songs)) ? '已同步到服务器' : '同步失败');
+        });
+      } }] : []),
+      { label: '重命名歌单', onPress: () => {
+        dialog.prompt('重命名歌单', {
+          defaultValue: pl.name,
+          onSubmit: async (v) => {
+            if (!v || v === pl.name) return;
+            if (pl.localId) { library.update(pl.localId, { name: v }); toast('已重命名'); }
+            else if (connected && token) toast((await sync.renameUserList(pl.key, v)) ? '已重命名' : '服务器操作失败');
+          },
+        });
+      } },
+      { label: '删除歌单', danger: true, onPress: () => {
+        dialog.confirm('删除歌单', `确定删除「${pl.name}」？${pl.count} 首将从此歌单移除`, async () => {
+          if (pl.localId) { library.remove(pl.localId); toast('已删除'); }
+          else if (connected && token) toast((await sync.removeUserList(pl.key)) ? '已删除' : '服务器操作失败');
+        });
+      } },
+    ]);
+  };
 
   const openPl = (pl: typeof playlists[number]) => {
     hdNav()?.navigate('PlaylistDetail', pl.localId
@@ -94,7 +122,7 @@ export function HDMy() {
         <Text style={st.secTitle}>{`歌单 · ${playlists.length}`}</Text>
         <HDGrid min={168 * K} gap={18} minCols={3}>
           {playlists.map((pl, i) => (
-            <HDTouch key={pl.key} style={st.plCard} zoom={1.06} onPress={() => openPl(pl)}>
+            <HDTouch key={pl.key} style={st.plCard} zoom={1.06} onPress={() => openPl(pl)} onLongPress={() => managePl(pl)}>
               {pl.img ? <Image source={{ uri: pl.img }} style={st.plArt} />
                 : <LinearGradient colors={GRADS[i % GRADS.length]} style={st.plArt}><Icon name="music" size={28} color="#FFFFFFAA" /></LinearGradient>}
               <View style={st.plTexts}>

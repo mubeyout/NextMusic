@@ -12,9 +12,11 @@ import { usePlayer } from '../state/PlayerProvider';
 import { isFav, setFav } from '../state/favorites';
 import { useApp } from '../state/AppState';
 import { library } from '../state/library';
+import { dialog, toast } from '../components/Dialog';
 import { getRecents } from '../state/recent';
 import { sync, lxToApp } from '../services/sync';
 import { hdNav, hdInnerRef } from './hdnav';
+import { useFav } from './useFav';
 import { NavigationContainer, DefaultTheme, StackActions, NavigationIndependentTree } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { HDHome } from './HDHome';
@@ -87,6 +89,39 @@ export function HDMain() {
     }).catch(() => {});
   }, [connected, token]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // lx101:歌单管理(长按)——本机 library 重命名/删除;同步歌单 fetch+push 服务器 userList
+  const managePl = (pl: { localId?: string; key: string; name: string; count: number; songs?: SongItem[] }) => {
+    dialog.menu(`管理「${pl.name}」`, [
+      ...(pl.localId && pl.songs && connected && token ? [{ label: '同步到服务器', onPress: () => {
+        dialog.confirm('同步到服务器', `将「${pl.name}」(${pl.count} 首)上传为服务器歌单？`, async () => {
+          toast((await sync.uploadUserList(pl.name, pl.songs!)) ? '已同步到服务器' : '同步失败');
+        });
+      } }] : []),
+      { label: '重命名歌单', onPress: () => {
+        dialog.prompt('重命名歌单', {
+          defaultValue: pl.name,
+          onSubmit: async (v) => {
+            if (!v || v === pl.name) return;
+            if (pl.localId) { library.update(pl.localId, { name: v }); toast('已重命名'); }
+            else if (connected && token) {
+              const ok = await sync.renameUserList(pl.key, v);
+              toast(ok ? '已重命名' : '服务器操作失败');
+            }
+          },
+        });
+      } },
+      { label: '删除歌单', danger: true, onPress: () => {
+        dialog.confirm('删除歌单', `确定删除「${pl.name}」？${pl.count} 首将从此歌单移除`, async () => {
+          if (pl.localId) { library.remove(pl.localId); toast('已删除'); }
+          else if (connected && token) {
+            const ok = await sync.removeUserList(pl.key);
+            toast(ok ? '已删除' : '服务器操作失败');
+          }
+        });
+      } },
+    ]);
+  };
+
   const openPl = (pl: { localId?: string; name: string; count: number; songs: SongItem[] }) => {
     railNav('PlaylistDetail', pl.localId
       ? { localId: pl.localId, title: pl.name, songs: pl.songs }
@@ -146,9 +181,14 @@ export function HDMain() {
           {/* 歌单 */}
           <Group label="歌单" top={8} />
           {pls.slice(0, 5).map(pl => (
-            <PlItem key={pl.key} name={pl.name} count={pl.count} onPress={() => openPl(pl)} />
+            <PlItem key={pl.key} name={pl.name} count={pl.count} onPress={() => openPl(pl)} onLongPress={() => managePl(pl)} />
           ))}
-          <PlItem name="新建歌单" add onPress={() => railNav('ImportPlaylist')} />
+          <PlItem name="新建歌单" add onPress={() => dialog.menu('新建歌单', [
+              { label: '空白歌单', onPress: () => {
+                dialog.prompt('新建歌单', { defaultValue: '', onSubmit: (v) => { const n = (v || '').trim(); if (n) { library.create(n); toast('已创建'); } } });
+              } },
+              { label: '导入平台歌单', onPress: () => railNav('ImportPlaylist') },
+            ])} />
         </ScrollView>
         {/* lx85:设置项不贴底——留出焦点环完整显示空间(老板:太靠底被裁切) */}
         {IS_WEB ? null : (
@@ -225,14 +265,25 @@ function NavItem({ icon, label, active, first, onPress }: { icon: string; label:
   );
 }
 
-function PlItem({ name, count, add, onPress }: { name: string; count?: number; add?: boolean; onPress: () => void }) {
+function PlItem({ name, count, add, onPress, onLongPress }: { name: string; count?: number; add?: boolean; onPress: () => void; onLongPress?: () => void }) {
   // 桌面版同构:单行(图标块 + 名字),计数折进后缀,保证文字与图标严格垂直居中
   return (
-    <HDTouch style={st.plItem} focusStyle={st.navFocus} onPress={onPress}>
+    <HDTouch style={st.plItem} focusStyle={st.navFocus} onPress={onPress} onLongPress={onLongPress}>
       {add
         ? <View style={st.plAddChip}><Icon name="add" size={12} color={C.text3} /></View>
         : <View style={st.plChip}><Icon name="music" size={10} color={C.text3} /></View>}
       <Text style={st.plName} numberOfLines={1}>{name}{count != null ? ` · ${count}` : ''}</Text>
+    </HDTouch>
+  );
+}
+
+// lx101:播放条收藏钮(与播放页同一 useFav 逻辑,取消也同步服务器)
+function PlayBarFav() {
+  const { current } = usePlayer();
+  const { faved, toggle } = useFav(current);
+  return (
+    <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={toggle}>
+      <Icon name="heart" size={14} active={faved} color={faved ? C.brand : C.text2} />
     </HDTouch>
   );
 }
@@ -280,6 +331,8 @@ function HDPlayBar() {
           <Text style={st.pbTitle} numberOfLines={1}>{current?.name ?? '未在播放'}</Text>
           <Text style={st.pbSub} numberOfLines={1}>{current ? `${current.singer}${current.albumName ? ` · ${current.albumName}` : ''}` : '从「探索」搜索或点击歌单开始'}</Text>
         </View>
+        {/* lx101:收藏上播放条(老板);空态隐藏 */}
+        {current ? <PlayBarFav /> : null}
       </View>
 
       {/* 中:控件 + 进度(两行同宽对齐——v1.1.6 修错位) */}
