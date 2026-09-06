@@ -59,19 +59,20 @@ export function HDCollect({ song, onClose }: { song: SongItem; onClose: () => vo
           <Icon name="heart" size={15} active={faved} color={faved ? C.brand : '#ffffff99'} />
           <Text style={[st.rowText, faved && { color: C.brand }]} numberOfLines={1}>我喜欢的{faved ? ' · 已收藏' : ''}</Text>
         </HDTouch>
-        <HDTouch style={st.row} onPress={async () => {
-          if (!faved) { toast('当前歌曲未收藏'); return; }
-          try {
-            await setFav(song, false,
-              connected && token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined,
-              connected && token ? () => sync.fetchLists() : undefined);
-            toast('已取消收藏');
-          } catch { toast('操作失败'); }
-          onClose();
-        }}>
-          <Icon name="close" size={14} color={faved ? '#FF6B6B' : C.text3} />
-          <Text style={[st.rowText, { color: faved ? '#FF6B6B' : C.text3 }]} numberOfLines={1}>取消收藏{faved ? '（移出我喜欢的）' : ''}</Text>
-        </HDTouch>
+        {faved ? (
+          <HDTouch style={st.row} onPress={async () => {
+            try {
+              await setFav(song, false,
+                connected && token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined,
+                connected && token ? () => sync.fetchLists() : undefined);
+              toast('已取消收藏');
+            } catch { toast('操作失败'); }
+            onClose();
+          }}>
+            <Icon name="close" size={14} color="#FF6B6B" />
+            <Text style={[st.rowText, { color: '#FF6B6B' }]} numberOfLines={1}>取消收藏（移出我喜欢的）</Text>
+          </HDTouch>
+        ) : null}
         {pls.map(cp => (
           <HDTouch key={cp.key} style={st.row} onPress={async () => {
             try {

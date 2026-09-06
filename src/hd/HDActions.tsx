@@ -7,7 +7,7 @@ import { C } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { Icon } from '../theme/Icon';
 
-export interface HDActionItem { label: string; danger?: boolean; onPress?: () => void; }
+export interface HDActionItem { label: string; danger?: boolean; onPress?: () => void; icon?: string; }
 export interface HDActionReq {
   title: string;
   items?: HDActionItem[];
@@ -75,6 +75,7 @@ export function HDActionHost() {
             hasTVPreferredFocus={!req.input && i === 0}
             onPress={() => { close(); it.onPress?.(); }}
           >
+            {it.icon ? <Icon name={it.icon as never} size={15} color={it.danger ? '#FF6B6B' : C.text2} /> : null}
             <Text style={[st.rowText, it.danger && { color: '#FF6B6B' }]} numberOfLines={1}>{it.label}</Text>
           </HDTouch>
         ))}

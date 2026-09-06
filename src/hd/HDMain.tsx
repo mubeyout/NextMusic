@@ -127,7 +127,7 @@ export function HDMain() {
   const managePl = (pl: { localId?: string; key: string; name: string; count: number; songs?: SongItem[] }) => {
     if (!pl.localId && isPlatformList(pl.key)) {
       hdActions.menu(`管理「${pl.name}」`, [
-        { label: '重命名歌单', onPress: () => {
+        { label: '重命名歌单', icon: 'edit', onPress: () => {
           hdActions.prompt('重命名歌单', { defaultValue: pl.name, onSubmit: async (v: string) => {
             if (!v || v === pl.name) return;
             toast((await sync.renameUserList(pl.key, v)) ? '已重命名' : '服务器操作失败');
@@ -136,7 +136,7 @@ export function HDMain() {
         { label: '删除歌单', danger: true, onPress: async () => {
           toast((await sync.removeUserList(pl.key)) ? '已删除' : '服务器操作失败');
         } },
-        { label: '复制为可编辑本地副本', onPress: () => { library.create(pl.name, pl.songs || []); toast(`已创建本地副本「${pl.name}」`); } },
+        { label: '复制为可编辑本地副本', icon: 'add', onPress: () => { library.create(pl.name, pl.songs || []); toast(`已创建本地副本「${pl.name}」`); } },
       ]);
       return;
     }
@@ -357,6 +357,7 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
           </HDTouch>
           <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={cycleRepeat}>
             <Icon name="repeat" size={13} active={repeat !== 'off'} color={repeat !== 'off' ? C.brand : C.text2} />
+            {repeat === 'one' ? <Text style={st.toolRepOne}>1</Text> : null}
           </HDTouch>
         </View>
         <View style={st.pbProgRow}>
@@ -428,6 +429,7 @@ const st = StyleSheet.create({
   pbSub: { color: C.text2, fontSize: H.font.sm },
   tool: { width: 26, height: 26, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
   toolFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 7 },
+  toolRepOne: { position: 'absolute', right: -1, top: -1, color: C.brand, fontSize: 8, fontWeight: '800' },
   playBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   playBtnFocus: { borderWidth: 2, borderColor: '#FFFFFF', borderRadius: 16 },
   pbTime: { color: C.text3, fontSize: 8, fontVariant: ['tabular-nums'], minWidth: 26 },

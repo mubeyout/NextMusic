@@ -55,7 +55,7 @@ export function HDMy() {
   // lx101:歌单长按管理——本机 library / 同步服务器 userList
   const managePl = (pl: typeof playlists[number]) => {
     hdActions.menu(`管理「${pl.name}」`, [
-      { label: '重命名歌单', onPress: () => {
+      { label: '重命名歌单', icon: 'edit', onPress: () => {
         hdActions.prompt('重命名歌单', {
           defaultValue: pl.name,
           onSubmit: async (v) => {

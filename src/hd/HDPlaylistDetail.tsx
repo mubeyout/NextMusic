@@ -85,7 +85,7 @@ export function HDPlaylistDetailScreen() {
     const favd = isFav(sg);
     const removable = !!(local || p.love || p.plKey || library.all().some(q => q.name === title)); // lx116:按名可解析的收藏歌单也可移除
     hdActions.menu(`${sg.name} · ${sg.singer}`, [
-      { label: '播放', onPress: () => playSong(sg, songs) },
+      { label: '播放', icon: 'play', onPress: () => playSong(sg, songs) },
       ...(favd ? [{ label: '取消收藏', danger: true, onPress: async () => {
         try {
           await setFav(sg, false,
@@ -95,8 +95,8 @@ export function HDPlaylistDetailScreen() {
           if (p.love) setSongs(prev => prev.filter(x => !(x.source === sg.source && x.songmid === sg.songmid)));
         } catch { toast('操作失败'); }
       } }] : []),
-      { label: '收藏到歌单…', onPress: () => setCollectFor(sg) }, // lx125:选歌单(老板:无法选择歌单)
-      { label: '下载', onPress: () => { try { enqueueDownload([sg]); toast('已加入下载队列'); } catch { toast('下载失败'); } } },
+      { label: '收藏到歌单…', icon: 'heart', onPress: () => setCollectFor(sg) }, // lx125:选歌单(老板:无法选择歌单)
+      { label: '下载', icon: 'download', onPress: () => { try { enqueueDownload([sg]); toast('已加入下载队列'); } catch { toast('下载失败'); } } },
       ...(removable ? [{ label: p.love ? '取消收藏(移出列表)' : '从歌单移除', danger: true, onPress: () => removeSong(sg) }] : []),
     ]);
   };
@@ -108,7 +108,7 @@ export function HDPlaylistDetailScreen() {
     if (!p.localId && p.plKey && isPlatformList(p.plKey)) {
       // 平台导入:重命名/删除不持久——只提供复制副本
       hdActions.menu(`管理「${title}」`, [
-        { label: '重命名歌单', onPress: () => {
+        { label: '重命名歌单', icon: 'edit', onPress: () => {
           hdActions.prompt('重命名歌单', {
             defaultValue: title,
             onSubmit: async (v) => {
@@ -121,7 +121,7 @@ export function HDPlaylistDetailScreen() {
           toast((await sync.removeUserList(p.plKey!)) ? '已删除' : '服务器操作失败');
           nav.goBack();
         } },
-        { label: '复制为可编辑本地副本', onPress: () => {
+        { label: '复制为可编辑本地副本', icon: 'add', onPress: () => {
           library.create(title, songs);
           toast(`已创建本地副本「${title}」`);
         } },

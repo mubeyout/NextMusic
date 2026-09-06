@@ -400,7 +400,6 @@ export function HDPlayer() {
             {/* lx151:循环三态(老板:缺单曲循环)——off 灰/all 绿/repeat-one 绿+角标1 */}
             <HDTouch style={st.cMode} onPress={cycleRepeat}>
               <Icon name="repeat" size={20} active={repeat !== 'off'} color={repeat !== 'off' ? C.brand : '#ffffff99'} />
-              {repeat === 'one' ? <Text style={st.repOne}>1</Text> : null}
             </HDTouch>
             <View style={st.ctrlDivider} />
             <HDTouch style={st.cTool} onPress={() => setCollectOpen(true)}>
@@ -464,7 +463,7 @@ const st = StyleSheet.create({
   cMode: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#ffffff14', alignItems: 'center', justifyContent: 'center' },
   cMain: { width: 66, height: 66, borderRadius: 33, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   cMainFocus: { borderWidth: 3, borderColor: '#FFFFFF', borderRadius: 33 },
-  repOne: { color: C.brand, fontSize: 9, fontWeight: '900', marginLeft: -4, marginTop: 2 },
+  repOne: { position: 'absolute', right: 8, top: 8, color: C.brand, fontSize: 9, fontWeight: '700' }, // 手机端同款角标位
   ctrlDivider: { width: 1, height: 26, backgroundColor: 'rgba(255,255,255,.14)', marginHorizontal: 2 },
   cTool: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#ffffff0d', alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
   qBadge: { position: 'absolute', top: -5, right: -7, minWidth: 17, height: 17, borderRadius: 9, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: '#0e1310' }, // lx95:队列数量优雅悬浮胶囊
