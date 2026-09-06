@@ -6,6 +6,11 @@ import { library } from './library';
 const kv = createMMKV({ id: 'nextmusic-fav' });
 const KEY = 'favs';
 
+// lx108:变更订阅——收藏状态实时反馈(播放页/播放条/MiniPlayer 各自实例联动)
+ type FavSub = () => void;
+const favSubs = new Set<FavSub>();
+function notifyFav() { favSubs.forEach(f => f()); }
+
 function loadSet(): Set<string> {
   try { return new Set(JSON.parse(kv.getString(KEY) || '[]') as string[]); } catch { return new Set(); }
 }
@@ -20,6 +25,7 @@ export async function setFav(s: SongItem, on: boolean, pushRemote?: (snap: any) 
   const k = songKey(s);
   if (on) set.add(k); else set.delete(k);
   kv.set(KEY, JSON.stringify([...set]));
+  notifyFav();
   // 本机「我喜欢的」歌单同步
   try {
     let pl = library.all().find(p => p.name === '我喜欢的');
@@ -90,3 +96,5 @@ export async function mergeLocalLove(pushRemote?: (snap: any) => Promise<unknown
     console.log('[fav] merged local love -> server:', missing.length);
   } catch { /* ignore */ }
 }
+
+export function subscribeFav(f: () => void): () => void { favSubs.add(f); return () => { favSubs.delete(f); }; }

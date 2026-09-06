@@ -12,7 +12,7 @@ import { parseLrc, mergeTranslation, findActiveLine, type LyricLine } from '../s
 import { sync, appToLx, lxToApp } from '../services/sync';
 import { useApp } from '../state/AppState';
 import { library } from '../state/library';
-import { isFav, setFav } from '../state/favorites';
+import { isFav, setFav, subscribeFav } from '../state/favorites';
 import { CollectSheet } from '../components/CollectSheet';
 import { ActionSheet } from '../components/ActionSheet';
 import { DeviceSheet } from './RouteScreen';
@@ -28,6 +28,8 @@ export function PlayerScreen() {
   const [lyrics, setLyrics] = useState<LyricLine[] | null>(null);
   const [faved, setFaved] = useState(false);
   const [faving, setFaving] = useState(false);
+  const [favTick, setFavTick] = useState(0);
+  useEffect(() => subscribeFav(() => setFavTick(t => t + 1)), []); // lx108:收藏变更联动
   const [collect, setCollect] = useState(false);
   const [more, setMore] = useState(false);
   const [deviceSheet, setDeviceSheet] = useState(false); // 设备选择：悬浮层（不再全屏跳页）
@@ -70,7 +72,7 @@ export function PlayerScreen() {
       });
     } else setFaved(base);
     return () => { dead = true; };
-  }, [current?.songmid, current?.source, connected, token, collect]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [current?.songmid, current?.source, connected, token, collect, favTick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     setLyrics(null);

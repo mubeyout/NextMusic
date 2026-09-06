@@ -60,11 +60,9 @@ export function HDMy() {
           },
         });
       } },
-      { label: '删除歌单', danger: true, onPress: () => {
-        dialog.confirm('删除歌单', `确定删除「${pl.name}」？${pl.count} 首将从此歌单移除`, async () => {
-          if (pl.localId) { library.remove(pl.localId); toast('已删除'); }
-          else if (connected && token) toast((await sync.removeUserList(pl.key)) ? '已删除' : '服务器操作失败');
-        });
+      { label: '删除歌单', danger: true, onPress: async () => {
+        if (pl.localId) { library.remove(pl.localId); toast('已删除'); }
+        else if (connected && token) toast((await sync.removeUserList(pl.key)) ? '已删除' : '服务器操作失败');
       } },
     ]);
   };

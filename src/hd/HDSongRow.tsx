@@ -7,11 +7,12 @@ import { C, H } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import type { SongItem } from '../services/server';
 
-export function HDSongRow({ song, index, onPress, onLongPress, playing, showAlbum = true, first }: {
+export function HDSongRow({ song, index, onPress, onLongPress, onAction, playing, showAlbum = true, first }: {
   song: SongItem;
   index?: number;
   onPress?: () => void;
-  onLongPress?: () => void; // lx106:长按=移除交互
+  onLongPress?: () => void; // lx106:长按=管理菜单
+  onAction?: () => void; // lx110:行尾"..."钮=管理菜单(可见交互,不依赖长按)
   playing?: boolean;
   showAlbum?: boolean;
   first?: boolean;
@@ -22,6 +23,7 @@ export function HDSongRow({ song, index, onPress, onLongPress, playing, showAlbu
       focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.row }}
       focusBg={C.hover}
       onPress={onPress}
+      onLongPress={onLongPress}
       disabled={!onPress}
       activeOpacity={0.7}
       hasTVPreferredFocus={first}
@@ -39,6 +41,11 @@ export function HDSongRow({ song, index, onPress, onLongPress, playing, showAlbu
       </View>
       <View style={st.srcTag}><Text style={st.srcTagText}>{song.source}</Text></View>
       <Text style={st.dur}>{playing ? '播放中' : song.interval}</Text>
+      {onAction ? (
+        <HDTouch style={st.act} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 11 }} onPress={onAction}>
+          <Icon name="more" size={13} color={C.text3} />
+        </HDTouch>
+      ) : null}
     </HDTouch>
   );
 }
@@ -57,4 +64,5 @@ const st = StyleSheet.create({
   srcTag: { backgroundColor: C.elev, borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
   srcTagText: { color: C.text3, fontSize: 7, fontWeight: '600', letterSpacing: 0.5 },
   dur: { color: C.text3, fontSize: H.font.sm, fontVariant: ['tabular-nums'], minWidth: 34, textAlign: 'right' },
+  act: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
 });

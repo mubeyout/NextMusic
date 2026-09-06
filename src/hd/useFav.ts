@@ -1,7 +1,7 @@
 // lx101:HD 收藏统一 hook——与手机端同源(isFav+setFav+服务器 loveList 双向)
 // 修 HD 收藏逻辑:此前取消收藏从不同步服务器,重拉即复活(与手机端表现不一致的根因)
 import { useEffect, useState } from 'react';
-import { isFav, setFav } from '../state/favorites';
+import { isFav, setFav, subscribeFav } from '../state/favorites';
 import { sync } from '../services/sync';
 import { useApp } from '../state/AppState';
 import type { SongItem } from '../services/server';
@@ -9,6 +9,8 @@ import type { SongItem } from '../services/server';
 export function useFav(song?: SongItem | null) {
   const { connected, token } = useApp();
   const [faved, setFaved] = useState(false);
+  const [favTick, setFavTick] = useState(0);
+  useEffect(() => subscribeFav(() => setFavTick(t => t + 1)), []); // lx108:收藏变更联动刷新
   useEffect(() => {
     let dead = false;
     if (!song) return;
@@ -20,7 +22,7 @@ export function useFav(song?: SongItem | null) {
       }).catch(() => { if (!dead) setFaved(base); });
     } else setFaved(base);
     return () => { dead = true; };
-  }, [song?.songmid, song?.source, connected, token]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [song?.songmid, song?.source, connected, token, favTick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggle = async () => {
     if (!song) return;

@@ -17,10 +17,11 @@ import { lxapi } from '../services/lxapi';
 import type { SongListMeta } from '../services/server';
 import { toast } from '../components/Dialog';
 import { hdNav } from './hdnav';
+import { BottomFocusAnchor } from './HDMain';
 import { cacheStale, cacheSet } from './hdcache';
 import type { SongItem } from '../services/server';
 
-export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
+export function HDHome({ onGotoSearch, bottomFocus }: { onGotoSearch?: () => void; bottomFocus?: number }) {
   const insets = useSafeAreaInsets();
   const { playSong } = usePlayer();
   const { connected, token } = useApp();
@@ -176,7 +177,8 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
           </HDTouch>
         )}
       </Section>
-    </ScrollView>
+            <BottomFocusAnchor tag={bottomFocus} />
+      </ScrollView>
   );
 }
 

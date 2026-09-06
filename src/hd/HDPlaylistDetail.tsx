@@ -91,14 +91,12 @@ export function HDPlaylistDetailScreen() {
           else if (connected && token) toast((await sync.renameUserList(p.plKey!, v)) ? '已重命名' : '服务器操作失败');
         } });
       } },
-      { label: '删除歌单', danger: true, onPress: () => {
-        dialog.confirm('删除歌单', `确定删除「${title}」？${songs.length} 首将从此歌单移除`, async () => {
-          if (p.localId) { library.remove(p.localId); toast('已删除'); nav.goBack(); }
-          else if (connected && token) {
-            toast((await sync.removeUserList(p.plKey!)) ? '已删除' : '服务器操作失败');
-            nav.goBack();
-          }
-        });
+      { label: '删除歌单', danger: true, onPress: async () => {
+        if (p.localId) { library.remove(p.localId); toast('已删除'); nav.goBack(); }
+        else if (connected && token) {
+          toast((await sync.removeUserList(p.plKey!)) ? '已删除' : '服务器操作失败');
+          nav.goBack();
+        }
       } },
     ]);
   };
@@ -167,7 +165,8 @@ export function HDPlaylistDetailScreen() {
             <HDSongRow key={`${s.source}_${s.songmid}_${i}`} song={s} index={i + 1} first={i === 0}
               playing={current?.songmid === s.songmid && current?.source === s.source}
               onPress={() => playSong(s, songs)}
-              onLongPress={local || p.love || p.plKey ? () => rowMenu(s) : undefined} />
+              onLongPress={local || p.love || p.plKey ? () => rowMenu(s) : undefined}
+              onAction={local || p.love || p.plKey ? () => rowMenu(s) : undefined} />
           ))}
           {limit < songs.length ? <Text style={st.more}>滚动加载更多({limit}/{songs.length})</Text> : null}
         </ScrollView>

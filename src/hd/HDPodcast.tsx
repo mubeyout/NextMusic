@@ -12,6 +12,7 @@ import { HDSongRow } from './HDSongRow';
 import { usePlayer } from '../state/PlayerProvider';
 import { lxapi } from '../services/lxapi';
 import { hdNav } from './hdnav';
+import { BottomFocusAnchor } from './HDMain';
 import { cacheStale, cacheSet } from './hdcache';
 import type { SongItem } from '../services/server';
 
@@ -35,7 +36,7 @@ const POD_GRADS: [string, string][] = [
   ['#D46A31', '#E89B3C'], ['#508BD9', '#6BC5D2'],
 ];
 
-export function HDPodcast() {
+export function HDPodcast({ bottomFocus }: { bottomFocus?: number }) {
   const insets = useSafeAreaInsets();
   const { playSong, current } = usePlayer();
   // lx91:陈旧缓存秒开(SWR)+ 8 频道并行拉取(原串行 for-await=8 次顺序网络往返,加载慢真凶)
@@ -131,7 +132,8 @@ export function HDPodcast() {
       ) : (
         <Text style={st.loadingText}>频道内容暂时无法加载,稍后再试</Text>
       )}
-    </ScrollView>
+            <BottomFocusAnchor tag={bottomFocus} />
+      </ScrollView>
   );
 }
 

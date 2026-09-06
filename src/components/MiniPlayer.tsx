@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useReducer, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
@@ -6,7 +6,7 @@ import { C } from '../theme/tokens';
 import { usePlayer } from '../state/PlayerProvider';
 import { ProgressBar } from './ProgressBar';
 import { CollectSheet } from './CollectSheet';
-import { isFav } from '../state/favorites';
+import { isFav, subscribeFav } from '../state/favorites';
 
 // Figma Player/Mini: 350x72 r=8, art 52x52 r=6, meta center-left, right icons
 export function MiniPlayer() {
@@ -15,6 +15,8 @@ export function MiniPlayer() {
   const [collect, setCollect] = useState(false);
   if (!current) return null;
   const pct = duration > 0 ? Math.min(1, position / duration) : 0;
+  const [, favTick] = useReducer((x: number) => x + 1, 0); // lx108:收藏变更联动
+  useEffect(() => subscribeFav(() => favTick()), []);
   const faved = isFav(current);
   return (
     <View style={st.wrap}>

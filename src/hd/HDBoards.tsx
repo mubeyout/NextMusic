@@ -11,6 +11,7 @@ import { lxapi } from '../services/lxapi';
 import type { SongItem } from '../services/server';
 import { toast } from '../components/Dialog';
 import { hdNav } from './hdnav';
+import { BottomFocusAnchor } from './HDMain';
 import { cacheStale, cacheSet } from './hdcache';
 
 type Board = { id: string; name: string; bangid: string; image?: string };
@@ -27,7 +28,7 @@ const ACCENTS: [string, string][] = [
   ['#D67A1F', '#6E3A1F'], ['#871FD6', '#3A1F5E'], ['#1FD6C0', '#1F5E5A'],
 ];
 
-export function HDBoards() {
+export function HDBoards({ bottomFocus }: { bottomFocus?: number }) {
   const insets = useSafeAreaInsets();
   const [src, setSrc] = useState('kg');
   // lx91:缓存回填——首帧就有卡(陈旧也先给,后台刷新覆盖);切源回访同 key 秒开
@@ -107,7 +108,8 @@ export function HDBoards() {
         </HDGrid>
       )}
       {boards != null && !boards.length ? <Text style={st.tipText}>榜单加载失败,切源重试</Text> : null}
-    </ScrollView>
+            <BottomFocusAnchor tag={bottomFocus} />
+      </ScrollView>
   );
 }
 
