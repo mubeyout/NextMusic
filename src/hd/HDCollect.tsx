@@ -77,10 +77,10 @@ export function HDCollect({ song, onClose }: { song: SongItem; onClose: () => vo
 }
 
 const st = StyleSheet.create({
-  panel: { position: 'absolute', right: 44, bottom: 90, width: 300, maxHeight: 400, borderRadius: 16, backgroundColor: 'rgba(10,14,12,.94)', borderWidth: 1, borderColor: 'rgba(255,255,255,.12)', padding: 12, gap: 8, zIndex: 60 },
+  panel: { position: 'absolute', right: 60, top: 180, width: 340, maxHeight: 460, borderRadius: 18, backgroundColor: C.elev, borderWidth: 1, borderColor: C.border, padding: 14, gap: 8, zIndex: 60, elevation: 24 }, // lx147:与 HDActions 同位同主题
   title: { color: '#ffffffcc', fontSize: 13, fontWeight: '700', paddingHorizontal: 4 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 9, height: 42, borderRadius: 10, backgroundColor: '#ffffff0d', paddingHorizontal: 12 },
-  rowText: { color: '#ffffffd9', fontSize: 13, flex: 1 },
-  close: { height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff12' },
-  closeText: { color: '#ffffffaa', fontSize: 12, fontWeight: '600' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 9, height: 44, borderRadius: 11, backgroundColor: C.inset, paddingHorizontal: 12 },
+  rowText: { color: C.text, fontSize: 13, fontWeight: '500', flex: 1 },
+  close: { height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: C.inset },
+  closeText: { color: C.text2, fontSize: 12, fontWeight: '600' },
 });

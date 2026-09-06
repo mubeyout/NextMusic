@@ -12,6 +12,7 @@ import { PageHeader } from '../components/PageChrome';
 import { loadSources, addSourceByUrl, addSourceFromFile, removeSource, toggleSource, activeSources, sourceHealthCheck, checkSourceUpdates, applySourceUpdate, applyUpdateFromAlert, type CustomSource } from '../services/customSource';
 import { onSourceUpdateAlert } from '../lx-engine/engine';
 import { dialog, toast } from '../components/Dialog';
+import { hdActions } from '../hd/HDActions';
 import SafX from 'react-native-saf-x';
 
 // 自定义音源:音源脚本本地沙箱运行,免登录即可播放
@@ -82,7 +83,7 @@ export function SourcesScreen() {
   }, []);
 
   const addByUrl = () => {
-    dialog.prompt('添加音源', {
+    (IS_HD ? hdActions : dialog).prompt('添加音源', {
       placeholder: '音源脚本 URL(https://…/xxx.js)',
       onSubmit: async v => {
         const u = v.trim();

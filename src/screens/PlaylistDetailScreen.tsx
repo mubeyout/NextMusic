@@ -8,6 +8,8 @@ import { SongRow } from '../components/SongRow';
 import { ActionSheet } from '../components/ActionSheet';
 import { CollectSheet } from '../components/CollectSheet';
 import { dialog, toast } from '../components/Dialog';
+import { IS_HD } from '../services/appversion';
+import { hdActions } from '../hd/HDActions';
 import { PageHeader } from '../components/PageChrome';
 import { library } from '../state/library';
 import { sync } from '../services/sync';
@@ -238,7 +240,7 @@ export function PlaylistDetailScreen() {
           { label: '歌单内搜索', onPress: () => setSearching(true) },
         ...((p as { plKey?: string }).plKey && !localPl ? [
           { label: '重命名歌单', onPress: () => {
-            dialog.prompt('重命名歌单', { defaultValue: p.title || '', onSubmit: async (v: string) => {
+            (IS_HD ? hdActions : dialog).prompt('重命名歌单', { defaultValue: p.title || '', onSubmit: async (v: string) => {
               if (!v) return;
               toast((await sync.renameUserList((p as { plKey: string }).plKey, v)) ? '已重命名' : '服务器操作失败');
             } });
@@ -302,7 +304,7 @@ export function PlaylistDetailScreen() {
     if (!localPl) return;
     const broken = localPl.songs.filter(s => isProviderSongSource(s.source) && !dlStore.pathFor(s) && !providerApi.streamFor(s));
     if (!broken.length) { toast('没有失效歌曲'); return; }
-    dialog.confirm(
+    (IS_HD ? hdActions : dialog).confirm(
       '移除失效歌曲',
       `检测到 ${broken.length} 首歌曲的媒体库连接已断开且无本地文件，是否从歌单移除？`,
       () => {
@@ -318,7 +320,7 @@ export function PlaylistDetailScreen() {
 
   function renamePl() {
     if (!localPl) return;
-    dialog.prompt('重命名歌单', {
+    (IS_HD ? hdActions : dialog).prompt('重命名歌单', {
       defaultValue: localPl.name,
       onSubmit: (v) => {
         if (!v) return;
@@ -332,7 +334,7 @@ export function PlaylistDetailScreen() {
 
   function deletePl() {
     if (!localPl) return;
-    dialog.confirm('删除歌单', `确定删除「${localPl.name}」？${localPl.songs.length} 首歌曲将从此歌单移除`, () => {
+    (IS_HD ? hdActions : dialog).confirm('删除歌单', `确定删除「${localPl.name}」？${localPl.songs.length} 首歌曲将从此歌单移除`, () => {
       library.remove(localPl.id);
       toast('歌单已删除');
       nav.goBack();

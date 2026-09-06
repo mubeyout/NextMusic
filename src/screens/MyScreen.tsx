@@ -9,6 +9,8 @@ import { PillTabs } from '../components/PillTabs';
 import { EmptyState } from '../components/PageChrome';
 import { ActionSheet } from '../components/ActionSheet';
 import { dialog, toast } from '../components/Dialog';
+import { IS_HD } from '../services/appversion';
+import { hdActions } from '../hd/HDActions';
 import { SongRow } from '../components/SongRow';
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
@@ -139,9 +141,9 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
               <Text style={st.bannerTitle}>我的收藏</Text>
               <Text style={st.bannerMeta}>{totalPlaylists} 个歌单 · {totalSongs} 首歌曲</Text>
             </View>
-            <TouchableOpacity style={st.newBtn} onPress={() => dialog.menu('新建歌单', [
+            <TouchableOpacity style={st.newBtn} onPress={() => (IS_HD ? hdActions : dialog).menu('新建歌单', [
               { label: '空白歌单', onPress: () => {
-                dialog.prompt('新建歌单', { defaultValue: '', onSubmit: (v) => { const n = (v || '').trim(); if (n) { library.create(n); toast('已创建'); } } });
+                (IS_HD ? hdActions : dialog).prompt('新建歌单', { defaultValue: '', onSubmit: (v) => { const n = (v || '').trim(); if (n) { library.create(n); toast('已创建'); } } });
               } },
               { label: '导入平台歌单', onPress: () => nav.navigate('ImportPlaylist') },
             ])}>
@@ -312,7 +314,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
       title={actPl?.name || '歌单'}
       items={actPl ? [
         { label: '重命名歌单', onPress: () => {
-          dialog.prompt('重命名歌单', {
+          (IS_HD ? hdActions : dialog).prompt('重命名歌单', {
             defaultValue: actPl.name,
             onSubmit: (v) => {
               if (!v || v === actPl.name) return;
@@ -322,7 +324,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
           });
         } },
         { label: '删除歌单', danger: true, onPress: () => {
-          dialog.confirm('删除歌单', `确定删除「${actPl.name}」？${actPl.songs.length} 首歌曲将从此歌单移除`, () => {
+          (IS_HD ? hdActions : dialog).confirm('删除歌单', `确定删除「${actPl.name}」？${actPl.songs.length} 首歌曲将从此歌单移除`, () => {
             library.remove(actPl.id);
             toast('歌单已删除');
           }, '删除', '取消');
@@ -337,7 +339,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
         items={[
           { label: '重命名歌单', onPress: () => {
             const t = actSyncPl!;
-            dialog.prompt('重命名歌单', {
+            (IS_HD ? hdActions : dialog).prompt('重命名歌单', {
               defaultValue: t.name,
               onSubmit: async (v) => {
                 if (!v || v === t.name) return;
@@ -348,7 +350,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
           } },
           { label: '删除歌单', danger: true, onPress: () => {
             const t = actSyncPl!;
-            dialog.confirm('删除歌单', `确定删除「${t.name}」？${t.count} 首将从此歌单移除`, async () => {
+            (IS_HD ? hdActions : dialog).confirm('删除歌单', `确定删除「${t.name}」？${t.count} 首将从此歌单移除`, async () => {
               toast((await sync.removeUserList(t.id)) ? '已删除' : '服务器操作失败');
               refresh();
             });
