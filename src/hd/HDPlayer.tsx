@@ -45,29 +45,33 @@ function HD_VINYL_SVG(img?: string): React.ReactNode {
 }
 
 // lx97:频谱水波——波浪形填充多层叠加(静态 SVG 波形 + native translateX 无缝滚动 + 层间相位/速度/透明度差)
-// lx97/lx99:频谱水波——全屏底部多层波浪填充叠加(屏幕边界天然裁切,禁用 overflow:米电视吃了它的内容)
-const WAVE_W = 1920; // 双周期(可见区 960×2),translateX -50% 无缝循环
-function wavePath(amp: number, phase: number, h: number): string {
-  const N = 56; let d = `M0 ${h}`;
-  for (let k = 0; k <= N; k++) {
-    const x = (k / N) * WAVE_W;
-    const y = h - 4 - (Math.sin((k / N) * Math.PI * 4 + phase) * 0.5 + 0.5) * amp;
-    d += ` L${x.toFixed(1)} ${y.toFixed(1)}`;
-  }
-  return d + ` L${WAVE_W} ${h} Z`;
-}
-const WAVES = [
-  { amp: 16, phase: 0, h: 74, bottom: 10, fill: 'rgba(34,211,238,.30)', dur: 6200 },
-  { amp: 22, phase: 2.2, h: 96, bottom: 0, fill: 'rgba(168,85,247,.22)', dur: 9400 },
-  { amp: 28, phase: 4.5, h: 118, bottom: -8, fill: 'rgba(244,114,182,.16)', dur: 12800 },
+// lx100:频谱水波——围绕唱片的波浪形环带多层叠加(静态波浪 path,native rotate 让波纹沿圆周流动;
+// 三层不同半径/波数/速度/方向=水波互相穿插;禁用 overflow:米电视吃内容(坑133))
+const RING_ZONE = 340;
+const RINGS = [
+  { r: 124, k: 6, amp: 5, sw: 8, stroke: 'rgba(34,211,238,.5)', dur: 26000, dir: 1 },
+  { r: 146, k: 9, amp: 7, sw: 10, stroke: 'rgba(168,85,247,.4)', dur: 19000, dir: -1 },
+  { r: 168, k: 12, amp: 9, sw: 12, stroke: 'rgba(244,114,182,.3)', dur: 33000, dir: 1 },
 ];
-function WaveStack({ anims }: { anims: Animated.Value[] }) {
+function ringPath(r: number, k: number, amp: number, size: number): string {
+  const c = size / 2; const N = 96; let d = '';
+  for (let i = 0; i <= N; i++) {
+    const th = (i / N) * Math.PI * 2;
+    const rr = r + Math.sin(th * k) * amp;
+    d += (i === 0 ? 'M' : 'L') + (c + Math.cos(th) * rr).toFixed(1) + ' ' + (c + Math.sin(th) * rr).toFixed(1);
+  }
+  return d + 'Z';
+}
+function WaveRings({ anims }: { anims: Animated.Value[] }) {
   return (
     <View style={stWave.host} pointerEvents="none">
-      {WAVES.map((w, k) => (
-        <Animated.View key={k} style={{ position: 'absolute', left: 0, bottom: w.bottom, width: WAVE_W, height: w.h, transform: [{ translateX: anims[k] }] }}>
-          <Svg width={WAVE_W} height={w.h} viewBox={`0 0 ${WAVE_W} ${w.h}`} preserveAspectRatio="none">
-            <Path d={wavePath(w.amp, w.phase, w.h)} fill={w.fill} />
+      {RINGS.map((rg, i) => (
+        <Animated.View key={i} style={{
+          position: 'absolute', top: 0, left: 0, width: RING_ZONE, height: RING_ZONE,
+          transform: [{ rotate: anims[i].interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${360 * rg.dir}deg`] }) }],
+        }}>
+          <Svg width={RING_ZONE} height={RING_ZONE} viewBox={`0 0 ${RING_ZONE} ${RING_ZONE}`}>
+            <Path d={ringPath(rg.r, rg.k, rg.amp, RING_ZONE)} stroke={rg.stroke} strokeWidth={rg.sw} fill="none" strokeLinejoin="round" />
           </Svg>
         </Animated.View>
       ))}
@@ -100,23 +104,23 @@ export function HDPlayer() {
   }, [playing, spin]);
   const spinDeg = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
 
-  // lx97:多层波浪驱动——三层不同速度/相位 translateX 循环(播放滚动,暂停冻结);全 native
-  const waveAnims = React.useRef(WAVES.map(() => new Animated.Value(0))).current;
-  const waveLoops = React.useRef<Array<Animated.CompositeAnimation | null>>([]);
+  // lx100:水波环驱动——三层 rotate 循环(播放流动,暂停冻结);0→1 映射 360deg,循环回跳=同角度无缝
+  const ringAnims = React.useRef(RINGS.map(() => new Animated.Value(0))).current;
+  const ringLoops = React.useRef<Array<Animated.CompositeAnimation | null>>([]);
   React.useEffect(() => {
     if (playing) {
-      WAVES.forEach((w, k) => {
-        if (waveLoops.current[k]) return;
-        const loop = Animated.loop(Animated.timing(waveAnims[k], { toValue: -WAVE_W / 2, duration: w.dur, easing: Easing.linear, useNativeDriver: NATIVE }));
-        waveLoops.current[k] = loop;
+      RINGS.forEach((rg, k) => {
+        if (ringLoops.current[k]) return;
+        const loop = Animated.loop(Animated.timing(ringAnims[k], { toValue: 1, duration: rg.dur, easing: Easing.linear, useNativeDriver: NATIVE }));
+        ringLoops.current[k] = loop;
         loop.start();
       });
     } else {
-      waveLoops.current.forEach(l => l?.stop());
-      waveLoops.current = [];
+      ringLoops.current.forEach(l => l?.stop());
+      ringLoops.current = [];
     }
   }, [playing]); // eslint-disable-line react-hooks/exhaustive-deps
-  React.useEffect(() => () => { waveLoops.current.forEach(l => l?.stop()); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  React.useEffect(() => () => { ringLoops.current.forEach(l => l?.stop()); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     let dead = false;
@@ -287,7 +291,6 @@ export function HDPlayer() {
       {current.img ? <Image source={{ uri: current.img }} style={st.bgArt} blurRadius={60} resizeMode="cover" /> : null}
       <View style={st.bgVeil} />
       <LinearGradient colors={['rgba(4,6,5,0)', 'rgba(4,6,5,.62)']} locations={[0, 1]} style={st.bgBottomGrad} />
-      <WaveStack anims={waveAnims} />
 
       {/* 头部:返回按钮入流式布局(不再悬浮怪位) */}
       <View style={[st.header, { paddingTop: Math.max(insets.top, 12) }]}>
@@ -299,7 +302,9 @@ export function HDPlayer() {
 
       <View style={[st.main, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View style={st.artCol}>
+          {/* lx100:水波环三层围绕唱片旋转流动 */}
           <View style={st.vinylZone}>
+            <WaveRings anims={ringAnims} />
             <View style={st.vinylWrap}>
               <Animated.Image
                 source={current.img ? { uri: current.img } : undefined}
@@ -406,14 +411,14 @@ const st = StyleSheet.create({
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, borderRadius: 17, paddingHorizontal: 14, backgroundColor: '#ffffff14' },
   backLabel: { color: '#ffffffcc', fontSize: 13, fontWeight: '600' },
   vinylWrap: { width: 228, height: 228, borderRadius: 114, backgroundColor: '#0d100e', borderWidth: 5, borderColor: '#161a17', alignItems: 'center', justifyContent: 'center', boxShadow: '0 18px 44px rgba(0,0,0,.55), 0 0 36px rgba(30,215,96,.14)' },
-  vinylZone: { width: 300, height: 300, alignItems: 'center', justifyContent: 'center' },
+  vinylZone: { width: RING_ZONE, height: RING_ZONE, alignItems: 'center', justifyContent: 'center' },
   vinylArt: { width: 150, height: 150, borderRadius: 75 },
   vinylHole: { position: 'absolute', width: 12, height: 12, borderRadius: 6, backgroundColor: '#0a0c0b', borderWidth: 3, borderColor: '#222823' },
   srcPill: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 24, borderRadius: 12, paddingHorizontal: 12, marginTop: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,.16)', backgroundColor: 'rgba(255,255,255,.06)' },
   srcDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.brand },
   srcTag: { color: '#ffffffaa', fontSize: 10, letterSpacing: 2, fontWeight: '600' },
   main: { flex: 1, flexDirection: 'row', paddingHorizontal: 52, paddingTop: 4, gap: 42 },
-  artCol: { width: 280, alignItems: 'center', justifyContent: 'center' },
+  artCol: { width: 344, alignItems: 'center', justifyContent: 'center' },
   artFallback: { backgroundColor: '#1E2722', alignItems: 'center', justifyContent: 'center' },
   infoCol: { flex: 1, gap: 6, paddingTop: 22 }, // lx94:标题/歌词整体下移(老板:太高)
   title: { color: '#ffffff', fontSize: 25, fontWeight: '800' },
@@ -488,7 +493,7 @@ const stW = StyleSheet.create({
   badge: { color: '#ffffff77', fontSize: 10, marginLeft: 3 },
 });
 
-// lx99:全屏底部波浪栈
+// lx100:水波环容器(vinylZone 内满铺)
 const stWave = StyleSheet.create({
-  host: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 150 },
+  host: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
 });

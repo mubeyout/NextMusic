@@ -14,18 +14,12 @@ export function SpectrumRing({ size, playing }: { size: number; playing: boolean
     const w = globalThis as unknown as { __nmAudio?: unknown; __nmActx?: { createAnalyser: () => { disconnect: () => void } | null; resume?: () => { catch(_: unknown): void } } | null };
     const audio = w.__nmAudio;
     if (!audio) return;
-    let an: { disconnect: () => void } | null = null;
-    try {
-      // 复用 audio-pro shim 已建的 AudioContext(其分析器可并联;直接自建会断 MediaElementSource 单源限制)
-      const ctx = w.__nmActx;
-      if (ctx) {
-        an = ctx.createAnalyser();
-        (an as unknown as { fftSize: number; smoothingTimeConstant: number }).fftSize = 256;
-        (an as unknown as { smoothingTimeConstant: number }).smoothingTimeConstant = 0.78;
-        ctx.resume?.()?.catch?.(() => {});
-      }
-    } catch { /* 分析器不可用 → 静态 */ }
+    // v1.2.0:直接取 audio-pro shim 已并联进信号链的 __nmAnalyser(tap 挂在 panNode 后);
+    // 自建悬空 analyser 无数据(恒 0)——波浪不动的根因
+    const w2 = globalThis as unknown as { __nmAnalyser?: unknown };
+    const an = w2.__nmAnalyser as { disconnect: () => void } | undefined ?? null;
     ref.current.an = an;
+    try { (w.__nmActx as unknown as { resume?: () => { catch(_: unknown): void } } | undefined)?.resume?.()?.catch?.(() => {}); } catch { /* ignore */ }
     const data = new (globalThis as never as { Uint8Array: new (n: number) => number[] }).Uint8Array(an ? (an as unknown as { frequencyBinCount: number }).frequencyBinCount : 8);
     const tick = () => {
       if (ref.current.an) {
