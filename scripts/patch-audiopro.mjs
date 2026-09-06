@@ -352,3 +352,19 @@ patch(
     console.log('[patch-audiopro] notif-icon: patched (runtime getIdentifier)');
   }
 }
+
+// lx115:服务暴露 audioSessionId(频谱播放 session)
+try {
+  const p = base + 'AudioProPlaybackService.kt';
+  let s = readFileSync(p, 'utf8');
+  if (!s.includes('playerAudioSession')) {
+    const anchor = s.indexOf('\t\t\t\t.build()\n\t\tplayer.setHandleAudioBecomingNoisy(true)');
+    if (anchor < 0) throw new Error('build anchor not found');
+    s = s.slice(0, anchor) + '\t\t\t\t.build()\n\t\tplayerAudioSession = player\n' + s.slice(anchor + '\t\t\t\t.build()\n'.length);
+    const clsAnchor = s.indexOf('class AudioProPlaybackService');
+    const brace = s.indexOf('{', clsAnchor);
+    s = s.slice(0, brace + 1) + '\n\tcompanion object {\n\t\t// lx115:暴露播放 ExoPlayer 的 audioSessionId(频谱用播放 session;全局混音在米电视采集恒零)\n\t\t@Volatile var playerAudioSession: androidx.media3.exoplayer.ExoPlayer? = null\n\t\tfun currentAudioSessionId(): Int = try { playerAudioSession?.audioSessionId ?: 0 } catch (_: Throwable) { 0 }\n\t}\n' + s.slice(brace + 1);
+    writeFileSync(p, s);
+    console.log('[patch-audiopro] audio-session-id: patched');
+  } else console.log('[patch-audiopro] audio-session-id: already');
+} catch (e) { console.log('[patch-audiopro] audio-session-id skip:', e.message); }

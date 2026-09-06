@@ -19,7 +19,11 @@ class VisualizerModule(reactContext: ReactApplicationContext) : ReactContextBase
     fun start(promise: Promise) {
         try {
             if (viz != null) { promise.resolve(true); return }
-            val v = Visualizer(0) // 0 = 全局输出混音(不依赖具体播放器 session)
+            // lx115:优先播放 session(米电视全局混音采集恒零);拿不到回落全局
+            val sessionId = try {
+                dev.rnap.reactnativeaudiopro.AudioProPlaybackService.currentAudioSessionId()
+            } catch (_: Throwable) { 0 }
+            val v = if (sessionId != 0) Visualizer(sessionId) else Visualizer(0)
             v.captureSize = 256   // → 128 FFT bins
             v.setDataCaptureListener(object : Visualizer.OnDataCaptureListener {
                 var last = 0L
