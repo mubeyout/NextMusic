@@ -128,7 +128,7 @@ export function HDSearch() {
           <View style={{ gap: 18, marginTop: 6 }}>
             <View style={{ gap: 9 }}>
               <Text style={st.secTitle}>热门歌手</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: 12, paddingLeft: 28, paddingRight: 12, paddingVertical: 10 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: 12, paddingLeft: 28, paddingRight: 12, paddingTop: 6, paddingBottom: 16 }}>
                 {HOT_ARTISTS.map(a => (
                   <HDTouch key={a.n} style={[st.artistCard, shadowStyleOf(a.n)]} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }} onPress={() => { setKw(a.n); search(a.n); }}>
                     {artistImgs[a.n]
@@ -215,7 +215,7 @@ const st = StyleSheet.create({
   empty: { color: C.text3, fontSize: H.font.md, paddingVertical: 24, textAlign: 'center' },
   tip: { alignItems: 'center', gap: 10, paddingVertical: 60 },
   tipText: { color: C.text3, fontSize: H.font.md },
-  artistCard: { width: 92, height: 118, borderRadius: 14, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', gap: 8, padding: 8 },
+  artistCard: { width: 88, height: 108, alignItems: 'center', justifyContent: 'center', gap: 8 }, // lx140:去边框容器,纯头像+名字
   artistAvatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' }, // lx139:真照片(Image 圆形)
   artistGlyph: { color: '#FFFFFF', fontSize: 22, fontWeight: '800' },
   artistName: { color: C.text, fontSize: 11, fontWeight: '600' },
