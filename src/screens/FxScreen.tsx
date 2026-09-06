@@ -614,7 +614,7 @@ const st = StyleSheet.create({
   syncDotOn: { backgroundColor: C.brand },
   syncText: { color: C.text2, fontSize: 10, fontWeight: '600' },
 
-  content: { paddingHorizontal: 20, paddingBottom: 40 },
+  content: { paddingHorizontal: 24, paddingBottom: 40, paddingTop: 8 },
 
   // 预设胶囊（横滚）
   presetScroll: { gap: 8, paddingBottom: 8, paddingTop: 6, paddingHorizontal: 4, marginBottom: 12 }, // lx130:选中态留呼吸空间防裁切
@@ -625,10 +625,10 @@ const st = StyleSheet.create({
   chipTextOn: { color: C.onBrand, fontWeight: '800' },
   chipAdd: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', borderColor: C.strokeStrong, alignItems: 'center', justifyContent: 'center' },
   chipAddText: { color: C.text3, fontSize: 15, fontWeight: '800', lineHeight: 17 },
-  modeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
+  modeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14, paddingHorizontal: 2 },
   modeCell: { width: '31%', flexGrow: 0, flexShrink: 0 },
-  modeCard: { borderRadius: 12, backgroundColor: C.surface2, paddingHorizontal: 6, paddingVertical: 10, alignItems: 'center', minHeight: 62, justifyContent: 'center' },
-  modeCardOn: { backgroundColor: C.brand },
+  modeCard: { borderRadius: 12, backgroundColor: C.surface2, paddingHorizontal: 8, paddingVertical: 10, alignItems: 'center', minHeight: 62, justifyContent: 'center', borderWidth: 2, borderColor: 'transparent', margin: 2 }, // lx138:边距+透明描边占位,选中不裁切
+  modeCardOn: { backgroundColor: C.brand, borderColor: C.brandSoft },
   modeName: { color: C.text, fontSize: 14, fontWeight: '700' },
   modeNameOn: { color: C.onBrand },
   modeDesc: { color: C.text3, fontSize: 10, marginTop: 2, textAlign: 'center' },

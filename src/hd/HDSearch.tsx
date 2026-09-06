@@ -9,6 +9,7 @@ import { HDTouch } from './HDTouch';
 import { HDSongRow } from './HDSongRow';
 import { usePlayer } from '../state/PlayerProvider';
 import { lxapi } from '../services/lxapi';
+import { createMMKV } from 'react-native-mmkv';
 import type { SongItem } from '../services/server';
 
 const SOURCES: { id: SearchSrc; label: string }[] = [
@@ -27,9 +28,32 @@ const HOT_ARTISTS = [
   { n: '王菲', c: '#E91E8C' }, { n: '陶喆', c: '#1ED760' },
 ];
 const GENRES = ['华语流行', '粤语经典', '摇滚', '民谣', '电子', '古风', '爵士', '嘻哈', '轻音乐', '影视原声', 'K-POP', '乡村'];
+const artistImgKv = createMMKV({ id: 'nextmusic-hd-artist-img' });
+
 const HOT_WORDS = ['晴天', '后来', '海阔天空', '孤勇者', '起风了', '稻香', '红日', '月半小夜曲', '泡沫', '岁月神偷'];
 
 export function HDSearch() {
+  // lx139:热门歌手真照片头像——搜每位歌手取首曲封面缓存 MMKV
+  const [artistImgs, setArtistImgs] = useState<Record<string, string>>(() => {
+    try { return JSON.parse(artistImgKv.getString('m') || '{}'); } catch { return {}; }
+  });
+  useEffect(() => {
+    let dead = false;
+    (async () => {
+      const m = { ...artistImgs };
+      for (const a of HOT_ARTISTS) {
+        if (m[a.n]) continue;
+        try {
+          const r = await lxapi.search(a.n, 'kw', 1, 1);
+          if (r[0]?.img) m[a.n] = r[0].img;
+        } catch { /* 单个失败跳过 */ }
+      }
+      if (dead) return;
+      setArtistImgs(m);
+      try { artistImgKv.set('m', JSON.stringify(m)); } catch { /* ignore */ }
+    })();
+    return () => { dead = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const insets = useSafeAreaInsets();
   const { playSong, current } = usePlayer();
   const [kw, setKw] = useState('');
@@ -104,10 +128,12 @@ export function HDSearch() {
           <View style={{ gap: 18, marginTop: 6 }}>
             <View style={{ gap: 9 }}>
               <Text style={st.secTitle}>热门歌手</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingLeft: 4, paddingRight: 10, paddingVertical: 10 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: 12, paddingLeft: 28, paddingRight: 12, paddingVertical: 10 }}>
                 {HOT_ARTISTS.map(a => (
                   <HDTouch key={a.n} style={[st.artistCard, shadowStyleOf(a.n)]} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }} onPress={() => { setKw(a.n); search(a.n); }}>
-                    <View style={[st.artistAvatar, { backgroundColor: a.c }]}><Text style={st.artistGlyph}>{a.n[0]}</Text></View>
+                    {artistImgs[a.n]
+                      ? <Image source={{ uri: artistImgs[a.n] }} style={st.artistAvatar} />
+                      : <View style={[st.artistAvatar, { backgroundColor: a.c }]}><Text style={st.artistGlyph}>{a.n[0]}</Text></View>}
                     <Text style={st.artistName} numberOfLines={1}>{a.n}</Text>
                   </HDTouch>
                 ))}
@@ -190,7 +216,7 @@ const st = StyleSheet.create({
   tip: { alignItems: 'center', gap: 10, paddingVertical: 60 },
   tipText: { color: C.text3, fontSize: H.font.md },
   artistCard: { width: 92, height: 118, borderRadius: 14, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', gap: 8, padding: 8 },
-  artistAvatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
+  artistAvatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' }, // lx139:真照片(Image 圆形)
   artistGlyph: { color: '#FFFFFF', fontSize: 22, fontWeight: '800' },
   artistName: { color: C.text, fontSize: 11, fontWeight: '600' },
   genrePill: { paddingHorizontal: 16, height: 32, borderRadius: 16, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },

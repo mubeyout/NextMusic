@@ -132,7 +132,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
       {/* 推荐歌单(五源聚合,单行横滑 lx131) */}
       <Section title="推荐歌单" hint={recSource ? `五源聚合 · ${recSource}` : '五源聚合'} more="更多" onMore={() => onGotoSearch?.()}>
         {recPls.length ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingLeft: 2, paddingRight: 10, paddingVertical: 20 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: 12, paddingLeft: 26, paddingRight: 12, paddingVertical: 20 }}>
             {recPls.slice(0, 10).map(pl => (
               <HDTouch key={`${pl.source}_${pl.id}`} style={[st.plCard, { width: 148 }, shadowStyleOf(pl.name)]} zoom={1.06} onPress={() => openRecPl(pl)}>
                 {pl.img
