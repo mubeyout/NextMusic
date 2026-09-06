@@ -27,9 +27,9 @@ export function HDTouch({ style, focusStyle, focusBg, glow, zoom, haloColor, act
   const flat = (StyleSheet.flatten(style as ViewStyle | ViewStyle[]) || {}) as { borderRadius?: number };
   // v6(lx75b): border 环(米电视渲染稳定) + padding 负补偿抵消 border 占位——环外扩 2px 描边,内容零位移
   // v5 overlay 在米电视 Pressable 内不渲染(同 overflow 裁剪家族 bug),废弃
-  const autoRing: ViewStyle = { borderWidth: 2, borderColor: C.brand, borderRadius: (flat.borderRadius ?? 12) + (haloColor ? 6 : 0) };
-  // lx132:光晕描边(内容零位移:内容自身不变,border 外扩视觉即光晕)
-  const haloStyle: ViewStyle | null = null; // lx133:描边方案废弃(效果差),光晕由 HDHalo 包装提供
+  const baseRing: ViewStyle = { borderWidth: 2, borderColor: 'transparent', borderRadius: (flat.borderRadius ?? 12) + (haloColor ? 6 : 0) };
+  const autoRing: ViewStyle = { borderColor: C.brand }; // lx142:常驻透明描边,聚焦只换色——布局/outline 恒定,无残框
+  const haloStyle: ViewStyle | null = null;
   return (
     <Pressable
       focusable
@@ -38,10 +38,10 @@ export function HDTouch({ style, focusStyle, focusBg, glow, zoom, haloColor, act
       onBlur={() => setFocus(false)}
       style={({ pressed }: { pressed: boolean }) => [
         style as ViewStyle | ViewStyle[] | undefined,
+        baseRing,
         haloStyle,
         pressed && { opacity: activeOpacity },
         focus && (focusStyle === undefined ? autoRing : focusStyle === false ? null : focusStyle),
-        focus && focusStyle !== false && { margin: -2 }, // border 占 2px 布局,margin -2 外缩抵消——总占位不变,描边画在原边界,内容不动
         focus && zoom != null && { transform: [{ scale: zoom }] }, // lx129:transform 仅聚焦时挂——常驻 scale(1) 强制硬件层,Android boxShadow 投影消失真凶(彩色弥散投影随卡保留,不另加暗影)
         focus && focusBg != null && { backgroundColor: focusBg },
         focus && glow != null && !TV_LOW_GPU && { boxShadow: glow },
