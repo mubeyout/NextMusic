@@ -232,28 +232,19 @@ export function PlaylistDetailScreen() {
       <View style={st.miniDock} pointerEvents="box-none">
         <MiniPlayer />
       </View>
-      {/* 歌单管理菜单：ActionSheet（自定义 sheet，交互与单曲菜单一致） */}
+      {/* 歌单管理菜单：ActionSheet（自定义 sheet，交互与单曲菜单一致）
+          lx158:重命名/删除去重——单入口，本地歌单走本地，纯服务器歌单(plKey)走服务器，榜单/我喜欢的不显示 */}
       <ActionSheet
         visible={plMenu} onClose={() => setPlMenu(false)}
         title={localPl?.name || '歌单'}
         items={[
           { label: '歌单内搜索', onPress: () => setSearching(true) },
-        ...((p as { plKey?: string }).plKey && !localPl ? [
-          { label: '重命名歌单', onPress: () => {
-            (IS_HD ? hdActions : dialog).prompt('重命名歌单', { defaultValue: p.title || '', onSubmit: async (v: string) => {
-              if (!v) return;
-              toast((await sync.renameUserList((p as { plKey: string }).plKey, v)) ? '已重命名' : '服务器操作失败');
-            } });
-          } },
-          { label: '删除歌单', danger: true, onPress: async () => {
-            toast((await sync.removeUserList((p as { plKey: string }).plKey)) ? '已删除' : '服务器操作失败');
-            nav.goBack();
-          } },
-        ] : []),
           ...(localPl?.remoteId ? [{ label: syncing ? '同步中…' : '重新同步歌单', onPress: () => resyncPl() }] : []),
           ...(localPl?.songs.some(s => isProviderSongSource(s.source)) ? [{ label: '移除失效歌曲', onPress: () => cleanBroken() }] : []),
-          { label: '重命名歌单', onPress: () => renamePl() },
-          { label: '删除歌单', danger: true, onPress: () => deletePl() },
+          ...(localPl || (p as { plKey?: string }).plKey ? [
+            { label: '重命名歌单', onPress: () => (localPl ? renamePl() : renameSrvPl()) },
+            { label: '删除歌单', danger: true as const, onPress: () => (localPl ? deletePl() : deleteSrvPl()) },
+          ] : []),
         ]}
       />
       <ActionSheet
@@ -264,34 +255,25 @@ export function PlaylistDetailScreen() {
             ? { label: '已下载 ✓', onPress: () => {} }
             : { label: '下载', onPress: () => { enqueueDownload([actSong]); } },
           { label: '收藏到歌单', onPress: () => setCollect(true) },
-          ...((p as { love?: boolean }).love ? [{ label: '取消收藏', danger: true as const, onPress: () => {
+          // lx158:移除类去重——恰好一个入口:本地歌单→从本歌单移除;纯服务器歌单→从歌单移除;我喜欢的→取消收藏
+          ...(localPl ? [{ label: '从本歌单移除', danger: true as const, onPress: () => {
+            library.removeSong(localPl.id, actSong);
+            setSongs(prev => (prev || []).filter(s => !(s.source === actSong.source && s.songmid === actSong.songmid)));
+            setTotal(t => Math.max(0, t - 1));
+            toast(`已移除「${actSong.name}」`);
+          } }] : (p as { plKey?: string }).plKey ? [{ label: '从歌单移除', danger: true as const, onPress: async () => {
+            const ok = await sync.removeSongFromUserList((p as { plKey: string }).plKey, actSong);
+            if (!ok) { toast('服务器操作失败'); return; }
+            setSongs(prev => (prev || []).filter(s => !(s.source === actSong.source && s.songmid === actSong.songmid)));
+            setTotal(t => Math.max(0, t - 1));
+            toast(`已移除「${actSong.name}」`);
+          } }] : (p as { love?: boolean }).love ? [{ label: '取消收藏', danger: true as const, onPress: () => {
             setFav(actSong, false,
               connected && token ? ((snap: any) => sync.pushLists(snap)) : undefined,
               connected && token ? () => sync.fetchLists() : undefined);
             setSongs(prev => (prev || []).filter(s => !(s.source === actSong.source && s.songmid === actSong.songmid)));
             setTotal(t => Math.max(0, t - 1));
             toast(`已取消收藏「${actSong.name}」`);
-          } }] : []),
-          ...((p as { plKey?: string }).plKey && !localPl ? [{ label: '从歌单移除', danger: true as const, onPress: async () => {
-            const ok = await sync.removeSongFromUserList((p as { plKey: string }).plKey, actSong);
-            if (!ok) { toast('服务器操作失败'); return; }
-            setSongs(prev => (prev || []).filter(s => !(s.source === actSong.source && s.songmid === actSong.songmid)));
-            setTotal(t => Math.max(0, t - 1));
-            toast(`已移除「${actSong.name}」`);
-          } }] : []),
-          ...((localPl || (p as { plKey?: string }).plKey || (p as { love?: boolean }).love) ? [{ label: localPl ? '从本歌单移除' : '从歌单移除', danger: true as const, onPress: async () => {
-            if (localPl) library.removeSong(localPl.id, actSong);
-            else if ((p as { plKey?: string }).plKey) {
-              if (!(await sync.removeSongFromUserList((p as { plKey: string }).plKey, actSong))) { toast('服务器操作失败'); return; }
-            } else {
-              // 按名兜底(收藏歌单从任意入口打开)
-              const localByName = library.all().find(q => q.name === (p.title || ''));
-              if (localByName) library.removeSong(localByName.id, actSong);
-              else if (connected && token && p.title && !(await sync.removeSongFromUserListByName(p.title, actSong))) { toast('未找到对应收藏歌单'); return; }
-            }
-            setSongs(prev => (prev || []).filter(s => !(s.source === actSong.source && s.songmid === actSong.songmid)));
-            setTotal(t => Math.max(0, t - 1));
-            toast(`已移除「${actSong.name}」`);
           } }] : []),
         ] : []}
       />
@@ -316,6 +298,18 @@ export function PlaylistDetailScreen() {
       },
       '移除',
     );
+  }
+
+  // lx158:纯服务器歌单(plKey)的重命名/删除——从旧菜单内联代码提取
+  function renameSrvPl() {
+    (IS_HD ? hdActions : dialog).prompt('重命名歌单', { defaultValue: p.title || '', onSubmit: async (v: string) => {
+      if (!v) return;
+      toast((await sync.renameUserList((p as { plKey: string }).plKey!, v)) ? '已重命名' : '服务器操作失败');
+    } });
+  }
+  async function deleteSrvPl() {
+    toast((await sync.removeUserList((p as { plKey: string }).plKey!)) ? '已删除' : '服务器操作失败');
+    nav.goBack();
   }
 
   function renamePl() {

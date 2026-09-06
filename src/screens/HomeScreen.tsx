@@ -183,7 +183,7 @@ function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
   };
   const openRecent = () => nav.navigate('PlaylistDetail', { title: '最近播放', songs: recents, meta: `${recents.length} 首` });
   const openLove = () => {
-    if (loveSongs) nav.navigate('PlaylistDetail', { title: '我喜欢的', songs: loveSongs, meta: `${loveSongs.length} 首` });
+    if (loveSongs) nav.navigate('PlaylistDetail', { title: '我喜欢的', songs: loveSongs, meta: `${loveSongs.length} 首`, love: true });
     else nav.navigate('PlaylistDetail', { title: '我喜欢的', songs: [], meta: '登录后同步' });
   };
 

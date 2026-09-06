@@ -9,10 +9,11 @@ import { usePlayer } from '../state/PlayerProvider';
 import { api } from '../services/server';
 import { lxapi } from '../services/lxapi';
 import { parseLrc, mergeTranslation, findActiveLine, type LyricLine } from '../services/lyric';
-import { sync, appToLx, lxToApp } from '../services/sync';
+import { sync, appToLx, lxToApp, lxNormKey } from '../services/sync';
+import { isFav, songKey } from '../state/favorites';
 import { useApp } from '../state/AppState';
 import { library } from '../state/library';
-import { isFav, setFav, subscribeFav } from '../state/favorites';
+import { useFav } from '../hd/useFav'; // lx157:统一收藏 hook(本地MMKV+歌单+服务器三源实时联动,替代手搓 effect)
 import { CollectSheet } from '../components/CollectSheet';
 import { ActionSheet } from '../components/ActionSheet';
 import { DeviceSheet } from './RouteScreen';
@@ -26,10 +27,7 @@ export function PlayerScreen() {
   const { current, playing, position, duration, toggle, skipNext, skipPrev, seekTo, shuffle, repeat, setShuffle, cycleRepeat } = usePlayer();
   const { connected, token } = useApp();
   const [lyrics, setLyrics] = useState<LyricLine[] | null>(null);
-  const [faved, setFaved] = useState(false);
-  const [faving, setFaving] = useState(false);
-  const [favTick, setFavTick] = useState(0);
-  useEffect(() => subscribeFav(() => setFavTick(t => t + 1)), []); // lx108:收藏变更联动
+  const { faved, toggle: toggleFav } = useFav(current); // lx157:收藏状态三源实时联动(isFav+歌单+服务器快照,取订刷新)
   const [collect, setCollect] = useState(false);
   const [more, setMore] = useState(false);
   const [deviceSheet, setDeviceSheet] = useState(false); // 设备选择：悬浮层（不再全屏跳页）
@@ -59,20 +57,26 @@ export function PlayerScreen() {
   const openCollect = () => { if (current) setCollect(true); };
   // CollectSheet 内部完成收藏/取消（同步服务器 + 本机歌单）
 
-  useEffect(() => {
-    let dead = false;
+  // lx157:是否收录在任意歌单(本地或服务器)——心钮分流用
+  const hasPlCollect = (s: { source: string; songmid: string }) => {
+    const k = `${s.source}_${s.songmid}`;
+    const snapNow = sync.cachedLists();
+    return library.all().some(pl => (pl.songs || []).some(x => songKey(x) === k))
+      || (snapNow?.userList || []).some(u => (u.list || []).some(x => lxNormKey(x as never) === k));
+  };
+  // 心钮已收藏→直接移除(高频单步);未收藏→打开收藏面板(低频多选)
+  const doUnfav = async () => {
     if (!current) return;
-    let base = isFav(current);
-    if (connected && token) {
-      sync.fetchLists().then(s => {
-        if (dead || !s) return;
-        const key = `${current.source}_${current.songmid}`;
-        const remote = s.loveList.some(x => x.id === key);
-        setFaved(base || remote);
-      });
-    } else setFaved(base);
-    return () => { dead = true; };
-  }, [current?.songmid, current?.source, connected, token, collect, favTick]); // eslint-disable-line react-hooks/exhaustive-deps
+    const inPl = hasPlCollect(current);
+    await toggleFav();
+    toast(inPl ? '已移出「我喜欢的」· 仍收藏于歌单' : '已取消收藏');
+  };
+  // 心钮总入口:未收藏→面板;仅歌单收录(非我喜欢的)→面板里移除;我喜欢的在→一键移除
+  const heartPress = () => {
+    if (!current) return;
+    if (!faved || (!isFav(current) && hasPlCollect(current))) return openCollect();
+    doUnfav();
+  };
 
   useEffect(() => {
     setLyrics(null);
@@ -238,7 +242,7 @@ export function PlayerScreen() {
             <Text style={st.pSub} numberOfLines={1}>{current.singer}  ·  {current._types?.flac ? 'SQ 无损' : '128k'}</Text>
           </View>
           <View style={st.pActions}>
-            <TouchableOpacity style={st.pIcon} hitSlop={6} onPress={openCollect}>
+            <TouchableOpacity style={st.pIcon} hitSlop={6} onPress={heartPress}>
               <Icon name="heart" size={20} active={faved} color={faved ? '#FF5A76' : C.text} />
             </TouchableOpacity>
             <TouchableOpacity

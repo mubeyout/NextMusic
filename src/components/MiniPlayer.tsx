@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
@@ -6,18 +6,18 @@ import { C } from '../theme/tokens';
 import { usePlayer } from '../state/PlayerProvider';
 import { ProgressBar } from './ProgressBar';
 import { CollectSheet } from './CollectSheet';
-import { isFav, subscribeFav } from '../state/favorites';
+import { useFav } from '../hd/useFav'; // lx157:收藏状态统一三源联动
+import { isFav } from '../state/favorites';
+import { toast } from './Dialog';
 
 // Figma Player/Mini: 350x72 r=8, art 52x52 r=6, meta center-left, right icons
 export function MiniPlayer() {
   const { current, playing, position, duration, toggle, cast } = usePlayer();
   const nav = useNavigation() as { navigate: (s: string) => void };
   const [collect, setCollect] = useState(false);
+  const { faved, toggle: toggleFav } = useFav(current); // hooks 全在早退前(修复 hooks 顺序闪退)
   if (!current) return null;
   const pct = duration > 0 ? Math.min(1, position / duration) : 0;
-  const [, favTick] = useReducer((x: number) => x + 1, 0); // lx108:收藏变更联动
-  useEffect(() => subscribeFav(() => favTick()), []);
-  const faved = isFav(current);
   return (
     <View style={st.wrap}>
       <TouchableOpacity activeOpacity={0.9} style={st.card} onPress={() => nav.navigate('Player')}>
@@ -32,7 +32,8 @@ export function MiniPlayer() {
           <TouchableOpacity style={st.iconBtn} hitSlop={6} onPress={() => nav.navigate('Route')}>
             <Icon name="devices" size={20} color={cast ? C.brand : C.text} />
           </TouchableOpacity>
-          <TouchableOpacity style={st.iconBtn} hitSlop={6} onPress={() => setCollect(true)}>
+          {/* lx157:未收藏→面板;仅歌单收录→面板里移除;我喜欢的在→一键取消 */}
+          <TouchableOpacity style={st.iconBtn} hitSlop={6} onPress={() => (faved && isFav(current) ? (toggleFav(), toast('已取消收藏')) : setCollect(true))}>
             <Icon name="heart" size={20} active={faved} color={faved ? '#FF5A76' : C.text} />
           </TouchableOpacity>
           <TouchableOpacity style={st.playBtn} hitSlop={4} onPress={toggle}>

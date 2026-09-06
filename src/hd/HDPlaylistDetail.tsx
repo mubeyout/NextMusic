@@ -97,7 +97,9 @@ export function HDPlaylistDetailScreen() {
       } }] : []),
       { label: '收藏到歌单…', icon: 'heart', onPress: () => setCollectFor(sg) }, // lx125:选歌单(老板:无法选择歌单)
       { label: '下载', icon: 'download', onPress: () => { try { enqueueDownload([sg]); toast('已加入下载队列'); } catch { toast('下载失败'); } } },
-      ...(removable ? [{ label: p.love ? '取消收藏(移出列表)' : '从歌单移除', danger: true, onPress: () => removeSong(sg) }] : []),
+      // lx158:去重——我喜欢的页由上方「取消收藏」承担(含移出列表);未收藏态(仅服务器侧)兑底用 removeSong;其余可移除歌单只留一个「从歌单移除」
+      ...(p.love && !favd ? [{ label: '取消收藏', danger: true, onPress: () => removeSong(sg) }] : []),
+      ...(removable && !p.love ? [{ label: '从歌单移除', danger: true, onPress: () => removeSong(sg) }] : []),
     ]);
   };
 
