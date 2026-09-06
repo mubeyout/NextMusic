@@ -50,11 +50,6 @@ export function HDMy() {
   // lx101:歌单长按管理——本机 library / 同步服务器 userList
   const managePl = (pl: typeof playlists[number]) => {
     dialog.menu(`管理「${pl.name}」`, [
-      ...(pl.localId && connected && token ? [{ label: '同步到服务器', onPress: () => {
-        dialog.confirm('同步到服务器', `将「${pl.name}」(${pl.count} 首)上传为服务器歌单？`, async () => {
-          toast((await sync.uploadUserList(pl.name, pl.songs)) ? '已同步到服务器' : '同步失败');
-        });
-      } }] : []),
       { label: '重命名歌单', onPress: () => {
         dialog.prompt('重命名歌单', {
           defaultValue: pl.name,

@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { NativeModules, AppState , Platform } from 'react-native';
 import { AudioPro, AudioProContentType, AudioProEventType, AudioProState } from 'react-native-audio-pro';
+import { library } from './library';
 import { createMMKV } from 'react-native-mmkv';
 import type { SongItem } from '../services/server';
 import { api } from '../services/server';
@@ -15,6 +16,7 @@ import { pushRecent } from './recent';
 import { navRef } from '../navRef';
 import { dialog, toast } from '../components/Dialog';
 import { dlna, googleCast, audioRoute, type DlnaDevice, type CastDevice } from '../services/audioroute';
+import { sync } from '../services/sync';
 
 const modeKv = createMMKV({ id: 'nextmusic-playmode' });
 const playbackKv = createMMKV({ id: 'nextmusic-playback' }); // 恢复上次播放状态快照
@@ -106,7 +108,27 @@ function trackToAudioPro(t: QueueTrack, url: string, headers?: Record<string, st
 // 注：headers 通过 play(track, {headers}) 传入，track 内仅作存档
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
-  const { token } = useApp();
+  const { token , connected } = useApp();
+  // lx107:本机歌单自动同步(老板:同步是自动的,不要手动选项)——登录后 library 变更去抖镜像上传
+  React.useEffect(() => {
+    if (!connected || !token) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const mirror = async () => {
+      try {
+        const pls = library.all()
+          .filter(p => p.name !== '我喜欢的' && p.songs && p.songs.length)
+          .map(p => ({ name: p.name, songs: p.songs as SongItem[] }));
+        if (pls.length) await sync.mirrorLibrary(pls);
+      } catch { /* 网络失败等下轮变更再试 */ }
+    };
+    const unsub = library.subscribe(() => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(mirror, 2500);
+    });
+    timer = setTimeout(mirror, 3000); // 登录即首轮
+    return () => { unsub(); if (timer) clearTimeout(timer); };
+  }, [connected, token]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const tokenRef = useRef(token); tokenRef.current = token;
   const [queue, setQueue] = useState<QueueTrack[]>([]);
   const [current, setCurrent] = useState<QueueTrack | null>(null);

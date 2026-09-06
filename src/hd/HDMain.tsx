@@ -111,11 +111,6 @@ export function HDMain() {
   // lx101:歌单管理(长按)——本机 library 重命名/删除;同步歌单 fetch+push 服务器 userList
   const managePl = (pl: { localId?: string; key: string; name: string; count: number; songs?: SongItem[] }) => {
     dialog.menu(`管理「${pl.name}」`, [
-      ...(pl.localId && pl.songs && connected && token ? [{ label: '同步到服务器', onPress: () => {
-        dialog.confirm('同步到服务器', `将「${pl.name}」(${pl.count} 首)上传为服务器歌单？`, async () => {
-          toast((await sync.uploadUserList(pl.name, pl.songs!)) ? '已同步到服务器' : '同步失败');
-        });
-      } }] : []),
       { label: '重命名歌单', onPress: () => {
         dialog.prompt('重命名歌单', {
           defaultValue: pl.name,

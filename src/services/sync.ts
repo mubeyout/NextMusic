@@ -108,6 +108,22 @@ export const sync = {
     u.list = (u.list || []).filter(x => !(x.source === song.source && String(x.songmid) === String(song.songmid)));
     return this.pushLists(snap);
   },
+  // lx107:本机歌单自动镜像(老板:同步是自动的)——一次 fetch 批量 upsert,一次 push;按名匹配,服务器独立歌单不动
+  async mirrorLibrary(playlists: { name: string; songs: SongItem[] }[]): Promise<boolean> {
+    const snap = await this.fetchLists(); if (!snap) return false;
+    let changed = false;
+    for (const pl of playlists) {
+      const list = pl.songs.map(appToLx);
+      const exist = snap.userList.find(x => x.name === pl.name);
+      if (exist) {
+        if (JSON.stringify(exist.list || []) !== JSON.stringify(list)) { exist.list = list; changed = true; }
+      } else {
+        snap.userList.push({ id: `ul-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, name: pl.name, list });
+        changed = true;
+      }
+    }
+    return changed ? this.pushLists(snap) : true;
+  },
   async renameUserList(id: string, name: string): Promise<boolean> {
     const snap = await this.fetchLists(); if (!snap) return false;
     const u = snap.userList.find(x => x.id === id); if (!u) return false;

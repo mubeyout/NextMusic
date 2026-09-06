@@ -319,13 +319,6 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
             },
           });
         } },
-        { label: '同步到服务器', onPress: () => {
-          const t = actPl!;
-          dialog.confirm('同步到服务器', `将「${t.name}」(${t.songs.length} 首)上传为服务器歌单？`, async () => {
-            toast((await sync.uploadUserList(t.name, t.songs)) ? '已同步到服务器' : '同步失败');
-            refresh();
-          });
-        } },
         { label: '删除歌单', danger: true, onPress: () => {
           dialog.confirm('删除歌单', `确定删除「${actPl.name}」？${actPl.songs.length} 首歌曲将从此歌单移除`, () => {
             library.remove(actPl.id);

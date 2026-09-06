@@ -11,7 +11,7 @@ import { HDTouch } from './HDTouch';
 import { HDSongRow } from './HDSongRow';
 import { usePlayer } from '../state/PlayerProvider';
 import { library } from '../state/library';
-import { setFav } from '../state/favorites';
+import { setFav, isFav } from '../state/favorites';
 import { enqueueDownload } from '../services/downloads';
 import { toast, dialog } from '../components/Dialog';
 import { sync } from '../services/sync';
@@ -37,7 +37,7 @@ export function HDPlaylistDetailScreen() {
 
   const [dlBusy, setDlBusy] = useState(false);
   const [limit, setLimit] = useState(40); // lx104 懒加载行数(大歌单全渲染=TV 卡顿源)
-  // lx106:歌曲移除(长按行)——本地 library/我喜欢的 loveList/服务器 userList 三路
+  // lx106:移除单曲(本地 library/我喜欢的/服务器 userList)
   const removeSong = (sg: SongItem) => {
     const label = p.love ? '取消收藏' : '从歌单移除';
     dialog.confirm(label, `确定将「${sg.name}」${p.love ? '移出我喜欢的' : '移出本歌单'}？`, async () => {
@@ -58,16 +58,32 @@ export function HDPlaylistDetailScreen() {
     });
   };
 
+  // lx107:歌曲行长按管理菜单(播放/收藏切换/下载/移除)
+  const rowMenu = (sg: SongItem) => {
+    const favd = isFav(sg);
+    const removable = !!(local || p.love || p.plKey);
+    dialog.menu(`${sg.name} · ${sg.singer}`, [
+      { label: '播放', onPress: () => playSong(sg, songs) },
+      { label: favd ? '取消收藏' : '收藏', onPress: async () => {
+        try {
+          await setFav(sg, !favd,
+            connected && token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined,
+            connected && token ? () => sync.fetchLists() : undefined);
+          toast(favd ? '已取消收藏' : '已收藏到我喜欢的');
+          // 我喜欢的列表里取消收藏=行消失
+          if (p.love && favd) setSongs(prev => prev.filter(x => !(x.source === sg.source && x.songmid === sg.songmid)));
+        } catch { toast('操作失败'); }
+      } },
+      { label: '下载', onPress: () => { try { enqueueDownload([sg]); toast('已加入下载队列'); } catch { toast('下载失败'); } } },
+      ...(removable ? [{ label: p.love ? '取消收藏(移出列表)' : '从歌单移除', danger: true, onPress: () => removeSong(sg) }] : []),
+    ]);
+  };
+
   // lx104:显式歌单管理入口(本地/服务器歌单都支持)
   const { connected, token } = useApp();
   const manage = () => {
     if (!p.localId && !p.plKey) { toast('该歌单请在歌单列表长按管理'); return; }
     dialog.menu(`管理「${title}」`, [
-      ...(p.localId ? [{ label: '同步到服务器', onPress: () => {
-        dialog.confirm('同步到服务器', `将「${title}」(${songs.length} 首)上传为服务器歌单？`, async () => {
-          toast((await sync.uploadUserList(title, songs)) ? '已同步到服务器' : '同步失败');
-        });
-      } }] : []),
       { label: '重命名歌单', onPress: () => {
         dialog.prompt('重命名歌单', { defaultValue: title, onSubmit: async (v) => {
           if (!v || v === title) return;
@@ -107,12 +123,7 @@ export function HDPlaylistDetailScreen() {
         <HDTouch style={st.backBtn} onPress={nav.goBack}>
           <Icon name="back" size={18} color={C.text2} />
         </HDTouch>
-        {(p.localId || p.plKey) ? (
-          <HDTouch style={[st.backBtn, { marginLeft: 6 }]} onPress={manage}>
-            <Icon name="settings" size={15} color={C.text2} />
-            <Text style={{ color: C.text2, fontSize: 11, marginLeft: 3, fontWeight: '600' }}>管理</Text>
-          </HDTouch>
-        ) : null}
+
         {cover
           ? <Image source={{ uri: cover }} style={st.cover} />
           : <View style={[st.cover, { backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={40} color={C.text3} /></View>}
@@ -133,6 +144,12 @@ export function HDPlaylistDetailScreen() {
               {dlBusy ? <ActivityIndicator size="small" color={C.text2} /> : <Icon name="download" size={11} color={C.text} />}
               <Text style={st.btnText}>下载全部</Text>
             </HDTouch>
+            {(p.localId || p.plKey) ? (
+              <HDTouch style={st.btn} onPress={manage}>
+                <Icon name="settings" size={11} color={C.text} />
+                <Text style={st.btnText}>管理</Text>
+              </HDTouch>
+            ) : null}
           </View>
         </View>
       </View>
@@ -150,7 +167,7 @@ export function HDPlaylistDetailScreen() {
             <HDSongRow key={`${s.source}_${s.songmid}_${i}`} song={s} index={i + 1} first={i === 0}
               playing={current?.songmid === s.songmid && current?.source === s.source}
               onPress={() => playSong(s, songs)}
-              onLongPress={local || p.love || p.plKey ? () => removeSong(s) : undefined} />
+              onLongPress={local || p.love || p.plKey ? () => rowMenu(s) : undefined} />
           ))}
           {limit < songs.length ? <Text style={st.more}>滚动加载更多({limit}/{songs.length})</Text> : null}
         </ScrollView>
