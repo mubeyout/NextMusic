@@ -37,8 +37,7 @@ export function HDTouch({ style, focusStyle, focusBg, glow, zoom, activeOpacity 
         pressed && { opacity: activeOpacity },
         focus && (focusStyle === undefined ? autoRing : focusStyle === false ? null : focusStyle),
         focus && focusStyle !== false && { margin: -2 }, // border 占 2px 布局,margin -2 外缩抵消——总占位不变,描边画在原边界,内容不动
-        zoom != null && { transform: [{ scale: focus ? zoom : 1 }] }, // lx87:卡片聚焦放大悬浮
-        focus && zoom != null && !TV_LOW_GPU && { boxShadow: '0 16px 32px rgba(0,0,0,.55)' }, // 悬浮投影抬升(低 GPU 忽略)
+        zoom != null && { transform: [{ scale: focus ? zoom : 1 }] }, // lx87:卡片聚焦放大悬浮(彩色弥散投影随卡保留,不另加暗影)
         focus && focusBg != null && { backgroundColor: focusBg },
         focus && glow != null && !TV_LOW_GPU && { boxShadow: glow },
       ]}

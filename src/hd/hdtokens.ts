@@ -31,7 +31,7 @@ export const C: Record<string, string> = {
 
 export const T = { light: false };
 // TV/车机性能开关:小米电视实测彩色投影+聚焦 glow 重绘掉帧;网格卡投影与 glow 全降级
-export const TV_LOW_GPU = true;
+export const TV_LOW_GPU = false; // lx93(老板要求):彩色弥散投影回归——vc81 动画全 native driver+懒挂载后 GPU 预算够
 
 function mixHex(a: string, b: string, k: number): string {
   const A = [1, 3, 5].map(i => parseInt(a.slice(i, i + 2), 16));

@@ -70,20 +70,22 @@ export function HDPlayer() {
   }, [playing, spin]);
   const spinDeg = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
 
-  // lx91:频谱驱动——每根 bar 独立 native-driven transform 循环(错相伪随机);暂停全体回落基线。
-  // scaleY 从中心细缩,translateY=(1-a)*29 同步下移锚底——两者都 native driver,JS 线程零参与
+  // lx91/lx93:频谱驱动——环绕环错相水波(每 bar 同周期+阶梯 delay,波纹绕圈传播);暂停全体回落基线
+  // scaleY 从中心缩,translateY 同步外推锚定内端——全部 native driver,JS 线程零参与
+  const SPEC_R0 = 120; // 环基半径(自唱片边缘外扩 6)
+  const SPEC_H = 26;
   React.useEffect(() => {
     if (playing) {
       specAnims.forEach((a, i) => {
         if (specLoops.current[i]) return;
         const seed = (i * 2654435761) % 997;
-        const dur = 300 + (seed % 380);
-        const step = (to: number, ms: number) => Animated.timing(a, { toValue: to, duration: ms, easing: Easing.inOut(Easing.quad), useNativeDriver: NATIVE });
+        const step = (to: number, ms: number) => Animated.timing(a, { toValue: to, duration: ms, easing: Easing.inOut(Easing.sin), useNativeDriver: NATIVE });
         const loop = Animated.loop(Animated.sequence([
-          step(0.3 + ((seed * 7) % 58) / 100, dur),
-          step(0.08 + ((seed * 13) % 26) / 100, dur * 0.8),
-          step(0.55 + ((seed * 3) % 38) / 100, dur * 0.9),
-          step(0.12 + ((seed * 11) % 30) / 100, dur * 0.75),
+          Animated.delay((i * 55) % 1400),
+          step(0.62 + ((seed * 7) % 26) / 100, 720),
+          step(0.16 + ((seed * 13) % 18) / 100, 660),
+          step(0.78 + ((seed * 3) % 18) / 100, 780),
+          step(0.22 + ((seed * 11) % 22) / 100, 700),
         ]));
         specLoops.current[i] = loop;
         loop.start();
@@ -276,26 +278,33 @@ export function HDPlayer() {
 
       <View style={[st.main, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View style={st.artCol}>
-          <View style={st.vinylWrap}>
-            <Animated.Image
-              source={current.img ? { uri: current.img } : undefined}
-              style={[st.vinylArt, { transform: [{ rotate: spinDeg }] }]}
-              resizeMode="cover"
-            />
-            {!current.img ? <View style={[st.vinylArt, st.artFallback]}><Icon name="music" size={52} color={C.text3} /></View> : null}
-            <View style={st.vinylHole} />
-          </View>
-          {/* lx91:活频谱——native transform 驱动(scaleY+translateY 锚底),高度固定不再每帧 setState */}
-          <View style={st.spectrum} pointerEvents="none">
-            {specAnims.map((a, i) => {
-              const ty = a.interpolate({ inputRange: [0, 1], outputRange: [27, 0] }); // (1-a)*27.5 锚底补偿(高55/2)
-              return (
-                <Animated.View key={i} style={[st.specBar, {
-                  backgroundColor: C.brand, opacity: 0.26 + (i % 5) * 0.13,
-                  transform: [{ translateY: ty }, { scaleY: a }],
-                }]} />
-              );
-            })}
+          {/* lx93:环绕唱片频谱环——色相环(绿→青→蓝→紫→洋红)+错相水波律动(全部 native transform) */}
+          <View style={st.vinylZone}>
+            <View style={st.specRing} pointerEvents="none">
+              {specAnims.map((a, i) => {
+                const ang = (i / specAnims.length) * 360;
+                const hue = 140 + (i / specAnims.length) * 260;
+                const ty = a.interpolate({ inputRange: [0, 1], outputRange: [-(SPEC_R0 + 1), -(SPEC_R0 + SPEC_H / 2)] });
+                return (
+                  <View key={i} style={[st.ringSlot, { transform: [{ rotate: `${ang}deg` }] }] }>
+                    <Animated.View style={[st.ringBar, {
+                      backgroundColor: `hsl(${hue}, 85%, 62%)`,
+                      opacity: 0.5 + (i % 3) * 0.17,
+                      transform: [{ translateY: ty }, { scaleY: a }],
+                    }]} />
+                  </View>
+                );
+              })}
+            </View>
+            <View style={st.vinylWrap}>
+              <Animated.Image
+                source={current.img ? { uri: current.img } : undefined}
+                style={[st.vinylArt, { transform: [{ rotate: spinDeg }] }]}
+                resizeMode="cover"
+              />
+              {!current.img ? <View style={[st.vinylArt, st.artFallback]}><Icon name="music" size={52} color={C.text3} /></View> : null}
+              <View style={st.vinylHole} />
+            </View>
           </View>
           <View style={st.srcPill}>
             <View style={st.srcDot} />
@@ -309,8 +318,8 @@ export function HDPlayer() {
 
           <View style={st.lyricsBox}>
             {lyrics ? (
-              lyrics.slice(Math.max(0, activeIdx - 2), activeIdx + 4).map((l, i) => {
-                const idx = Math.max(0, activeIdx - 2) + i;
+              lyrics.slice(Math.max(0, activeIdx - 3), activeIdx + 4).map((l, i) => {
+                const idx = Math.max(0, activeIdx - 3) + i;
                 const on = idx === activeIdx;
                 return (
                   <TouchableOpacity key={idx} disabled={!on || !l.t} onPress={() => l.t && seekTo(l.t + 0.3)} activeOpacity={0.7}>
@@ -391,8 +400,10 @@ const st = StyleSheet.create({
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, borderRadius: 17, paddingHorizontal: 14, backgroundColor: '#ffffff14' },
   backLabel: { color: '#ffffffcc', fontSize: 13, fontWeight: '600' },
   vinylWrap: { width: 228, height: 228, borderRadius: 114, backgroundColor: '#0d100e', borderWidth: 5, borderColor: '#161a17', alignItems: 'center', justifyContent: 'center', boxShadow: '0 18px 44px rgba(0,0,0,.55), 0 0 36px rgba(30,215,96,.14)' },
-  spectrum: { flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: 58, marginTop: 20 },
-  specBar: { width: 6, borderRadius: 3, height: 55 },
+  vinylZone: { width: 300, height: 300, alignItems: 'center', justifyContent: 'center' },
+  specRing: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  ringSlot: { position: 'absolute', left: (300 - 5) / 2, top: (300 - 26) / 2, width: 5, height: 26 },
+  ringBar: { width: 5, height: 26, borderRadius: 3 },
   vinylArt: { width: 150, height: 150, borderRadius: 75 },
   vinylHole: { position: 'absolute', width: 12, height: 12, borderRadius: 6, backgroundColor: '#0a0c0b', borderWidth: 3, borderColor: '#222823' },
   srcPill: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 24, borderRadius: 12, paddingHorizontal: 12, marginTop: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,.16)', backgroundColor: 'rgba(255,255,255,.06)' },
@@ -404,7 +415,7 @@ const st = StyleSheet.create({
   infoCol: { flex: 1, gap: 6 },
   title: { color: '#ffffff', fontSize: 25, fontWeight: '800' },
   sub: { color: '#ffffffb3', fontSize: 14 },
-  lyricsBox: { flex: 1, gap: 8, justifyContent: 'flex-start', paddingTop: 12 },
+  lyricsBox: { flex: 1, gap: 8, justifyContent: 'center' }, // lx93:垂直居中(顶贴→太靠上),窗口 7 行填满空隙
   lyric: { color: '#ffffff7d', fontSize: 17, lineHeight: 24, fontWeight: '500' },
   lyricOn: { color: '#ffffff', fontSize: 22, lineHeight: 31, fontWeight: '800', textShadowColor: 'rgba(255,255,255,.3)', textShadowRadius: 12, textShadowOffset: { width: 0, height: 0 } },
   lyricTr: { color: '#FFFFFF55', fontSize: 12, lineHeight: 17, marginTop: 2 },
