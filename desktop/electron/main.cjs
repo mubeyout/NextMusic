@@ -40,8 +40,8 @@ function startMediaProxy() {
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 1440,
-    height: 860,
+    width: Number(process.env.NM_W) || 1440,
+    height: Number(process.env.NM_H) || 860,
     minWidth: 1080,
     minHeight: 640,
     backgroundColor: '#121212',

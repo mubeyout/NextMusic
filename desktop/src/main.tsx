@@ -1,6 +1,7 @@
 // NextMusic Desktop renderer 入口：HD 形态（与 Android hd flavor 同一 UI/业务层）
 import './polyfills';
 import { mountCtxMenu } from './ctxmenu';
+import { mountKbNav } from './kbnav';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from '../../App';
@@ -32,6 +33,7 @@ applyZoom();
 onSettings(applyZoom);
 
 mountCtxMenu();
+mountKbNav();
 (function mountWindowChrome() {
   const nm = (window as never as Record<string, unknown>).nmDesktop as
     | { platform: string; minimize: () => void; toggleMaximize: () => void; close: () => void; setTbStyle?: (s: unknown) => void }

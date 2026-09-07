@@ -1,15 +1,32 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 import { View, Text, Pressable, StyleSheet, Image } from 'react-native';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import type { SongItem } from '../services/server';
+import { registerKbRow } from '../hd/hdkeyboard';
 
 // Figma Song Row: 350x46, art 46x46 r=6, title 13 w500 / sub 10, duration right, more icon 20
 // extra: 右侧操作位（下载按钮等）；不传则显示 more 图标
 export function SongRow({ song, onPress, playing, extra }: { song: SongItem; onPress?: () => void; playing?: boolean; extra?: React.ReactNode }) {
   const [focus, setFocus] = useState(false); // lx145:TV D-pad 光标(队列页无选中态)
+  const kbRef = useRef<unknown>(null);
+  // D3 A2:键盘导航注册(队列/媒体库浏览行;web only,native 注册表无人读)
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    return registerKbRow({
+      measure: (cb) => {
+        const el = kbRef.current as unknown as { getBoundingClientRect?: () => { width: number; height: number; left: number; top: number } } | null;
+        if (el && el.getBoundingClientRect) { const r = el.getBoundingClientRect(); cb(0, 0, r.width, r.height, r.left, r.top); }
+        else cb(0, 0, 0, 0, 0, 0);
+      },
+      play: () => onPress?.(),
+      menu: undefined, // 队列行 A3 菜单 v1.2.4 后续接入
+    });
+  }, [song.songmid, song.source]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <Pressable
+      ref={kbRef as never}
       style={({ pressed }: { pressed: boolean }) => [
         st.row, st.ringBase, focus && st.ringOn, pressed && { opacity: 0.7 },
       ]}

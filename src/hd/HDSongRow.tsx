@@ -2,7 +2,7 @@
 // v4 老板反馈:行占满整行、文字留 padding、焦点/选中态贴附不生硬、播放中品牌绿
 // v1.2.4 D1(A1,IS_WEB):hover 行内三钮(♡收藏/＋队列/⋯菜单)+封面▶视觉引导+右键菜单(A3)
 //     TV 零 diff:全部 web 分支,onHover/contextmenu 仅 web 挂载
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Image, Platform } from 'react-native';
 import { Icon } from '../theme/Icon';
 import { C, H } from './hdtokens';
@@ -13,6 +13,7 @@ import { toast } from '../components/Dialog';
 import type { SongItem } from '../services/server';
 import type { CtxMenuItem } from './hdctxmenu';
 import { setHoverMenu } from './hdctxmenu';
+import { registerKbRow } from './hdkeyboard';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -47,6 +48,20 @@ export function HDSongRow({ song, index, onPress, onLongPress, onAction, playing
     setHov(false);
     setHoverMenu(null);
   };
+  // D3 A2:键盘导航注册(web only——registerKbRow 恒可用但仅 desktop 壳消费;native 注册表无人读=零行为)
+  useEffect(() => {
+    if (!IS_WEB) return;
+    return registerKbRow({
+      measure: (cb) => {
+        // RNW View ref=DOM 元素(无 measureInWindow),直读 getBoundingClientRect
+        const el = hovBtnsRef.current as unknown as { getBoundingClientRect?: () => { width: number; height: number; left: number; top: number } } | null;
+        if (el && el.getBoundingClientRect) { const r = el.getBoundingClientRect(); cb(0, 0, r.width, r.height, r.left, r.top); }
+        else cb(0, 0, 0, 0, 0, 0);
+      },
+      play: () => onPress?.(),
+      menu: buildMenu ? () => buildMenu(song) : undefined,
+    });
+  }, [song.songmid, song.source, !!buildMenu]); // eslint-disable-line react-hooks/exhaustive-deps
   const openMenu = (x: number, y: number) => {
     if (!buildMenu) { onAction?.(); return; }
     (globalThis as never as { __nmCtxMenu?: (x: number, y: number, items: CtxMenuItem[]) => void }).__nmCtxMenu?.(x, y, buildMenu(song));

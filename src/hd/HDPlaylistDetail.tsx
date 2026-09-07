@@ -214,7 +214,7 @@ export function HDPlaylistDetailScreen() {
 
       {/* ===== 歌曲列表(全宽行 + 焦点选中态) ===== */}
       {songs.length ? (
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 22, paddingTop: 8, paddingBottom: 20 + H.playbar, gap: 2 }} showsVerticalScrollIndicator={false}
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 22, paddingTop: 8, paddingBottom: 20 + H.playbar, gap: 2, ...(Platform.OS === 'web' ? { maxWidth: 1160, width: '100%', alignSelf: 'center' as const } : null) }} showsVerticalScrollIndicator={false}
           onScroll={e => {
             const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
             if (layoutMeasurement.height + contentOffset.y > contentSize.height - 600) setLimit(n => (n < songs.length ? n + 40 : n));
