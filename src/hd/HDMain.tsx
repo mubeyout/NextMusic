@@ -192,14 +192,12 @@ export function HDMain() {
           contentContainerStyle={{ paddingTop: 8, paddingBottom: 10, gap: 2 }}
           showsVerticalScrollIndicator={false}
         >
-          {IS_WEB ? null : (
-            <View style={st.brandRow}>
-              <Image source={require('../assets/brand/mark.png')} style={st.logoMark} />
-              <View style={{ flex: 1 }}>
-                <Text style={st.brandName}>Next<Text style={{ color: C.brand }}>Music</Text></Text>
-              </View>
+          <View style={st.brandRow}>
+            <Image source={require('../assets/brand/mark.png')} style={st.logoMark} />
+            <View style={{ flex: 1 }}>
+              <Text style={st.brandName}>Next<Text style={{ color: C.brand }}>Music</Text></Text>
             </View>
-          )}
+          </View>
 
           {/* 发现 */}
           <Group label="发现" />
@@ -230,11 +228,9 @@ export function HDMain() {
             ])} />
         </ScrollView>
         {/* lx85:设置项不贴底——留出焦点环完整显示空间(老板:太靠底被裁切) */}
-        {IS_WEB ? null : (
-          <View style={st.settingsDock}>
-            <NavItem icon="settings" label="设置" onPress={() => hdNav()?.navigate('Settings')} />
-          </View>
-        )}
+        <View style={st.settingsDock}>
+          <NavItem icon="settings" label="设置" onPress={() => hdNav()?.navigate('Settings')} />
+        </View>
       </View>
 
       {/* ===== 内容区(lx84:嵌套栈——内页只在此切换,侧栏恒固定) ===== */}

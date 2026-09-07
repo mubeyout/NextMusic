@@ -32,101 +32,104 @@ onSettings(applyZoom);
 
 (function mountWindowChrome() {
   const nm = (window as never as Record<string, unknown>).nmDesktop as
-    | { platform: string; minimize: () => void; toggleMaximize: () => void; close: () => void }
+    | { platform: string; minimize: () => void; toggleMaximize: () => void; close: () => void; setTbStyle?: (s: unknown) => void }
     | undefined;
   const isMac = nm?.platform === 'darwin';
+  const isWin = nm?.platform === 'win32';
 
-  // 主题感知(浅色/深色工具栏材质):主题切换走整页 reload,挂载时读一次即可
+  // 主题感知(挂载读一次;主题切换走整页 reload)
   let isLight = false;
   try {
     const raw = localStorage.getItem('nmk:nextmusic-settings:settings');
     if (raw) isLight = !!(JSON.parse(raw) as { light?: boolean }).light;
   } catch { /* ignore */ }
 
-  // ===== 全局布局 CSS:40px 工具栏占位(所有内容下移),侧栏常驻让位 =====
-  // 平台差异化:v1.2.2——mac 品牌居中(HIG:工具栏中央放标题,红绿灯区留空);
-  //            win/linux 品牌靠左(Fluent:标题栏左侧),右侧齿轮+三钮
+  // win:原生 overlay 符号色随主题(浅色下白色不可读)
+  if (isWin) {
+    nm?.setTbStyle?.(isLight
+      ? { color: '#00000000', symbolColor: '#26282C' }
+      : { color: '#00000000', symbolColor: '#ffffffcc' });
+  }
+
+  // ===== v1.2.3 顶部轨道(A2/W2):无标题栏 =====
+  //  40px 通栏拖拽轨道:左 174px 侧栏同色(视觉上侧栏贯通到窗口顶——mac 红绿灯在此行),右侧透明(内容头部区拖拽;win 三键原生 overlay 悬于行尾)
   const css = document.createElement('style');
   css.id = 'nm-desktop-chrome';
   css.textContent = [
-    '#root > div { top: 40px !important; height: calc(100% - 40px) !important; }',
-    '#root > div > div:nth-of-type(n+2) { left: 174px !important; right: 0 !important; width: auto !important; }',
-    '#root > div > div:nth-of-type(n+2) > div { left: 0 !important; }',
-    '#nm-titlebar { position:fixed; top:0; left:0; right:0; height:40px; display:flex; align-items:center;',
-    '  -webkit-app-region:drag; z-index:2147483600;',
-    isLight
-      ? 'background:rgba(246,247,249,.72); border-bottom:.5px solid rgba(31,35,41,.10); color:#26282C;'
-      : 'background:rgba(18,18,18,.55); border-bottom:.5px solid rgba(255,255,255,.08); color:#ffffffcc;',
-    '  backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); }',
-    '#nm-titlebar * { -webkit-app-region:no-drag; }',
-    '#nm-titlebar .tb-btn { transition:background .12s, color .12s; }',
-    /* mac:中央品牌 */
-    '#nm-tb-brand.mac { position:absolute; left:50%; transform:translateX(-50%); }',
+    '#nm-toprail { position:fixed; top:0; left:0; right:0; height:40px; display:flex; z-index:2147483600;',
+    '  -webkit-app-region:drag; }',
+    '#nm-toprail .rail-side { width:174px; flex:0 0 auto;',
+    '  background:' + (isLight ? '#F6F7F9' : '#121212') + ';',
+    '  border-right:.5px solid ' + (isLight ? 'rgba(31,35,41,.10)' : 'rgba(255,255,255,.08)') + '; }',
+    '#nm-toprail .rail-main { flex:1; }',
+    '#nm-toprail * { -webkit-app-region:no-drag; }',
   ].join('\n');
   document.head.appendChild(css);
 
-  const bar = document.createElement('div');
-  bar.id = 'nm-titlebar';
-  const txt = isLight ? '#26282C' : '#ffffffcc';
-
-  // 品牌:win/linux 左贴边;mac 居中(class=mac)
-  const brand = document.createElement('div');
-  brand.id = 'nm-tb-brand';
-  if (isMac) brand.className = 'mac';
-  brand.style.cssText = ['display:flex','align-items:center','gap:8px','padding:0 14px','height:100%',
-    'font-family:system-ui,-apple-system,sans-serif','font-weight:800','font-size:13px','letter-spacing:.2px',
-    `color:${txt}`,'user-select:none','white-space:nowrap'].join(';');
-  const dot = document.createElement('span');
-  dot.textContent = '\u25CF';
-  dot.style.cssText = 'color:#1ED760;font-size:14px;line-height:1';
-  const name = document.createElement('span');
-  name.textContent = 'NextMusic';
-  brand.appendChild(dot); brand.appendChild(name);
-  if (!isMac) bar.appendChild(brand); // mac:居中品牌后插(顺序无关,绝对定位)
-
-  // mac 左上 84px 红绿灯区:纯拖拽(不放假元素占位)
-  if (isMac) {
-    const lights = document.createElement('div');
-    lights.style.cssText = 'width:84px;height:100%;flex:0 0 auto;-webkit-app-region:drag;';
-    bar.appendChild(lights);
+  // ===== v1.2.3 卡片几何 JS 直控 =====
+  // 并行重构后栈卡片序=DOM 序但 Main 不一定是首张(Boot 壳在前)——CSS nth-of-type 会误偏 Main(双栏 bug 根因)。
+  // 识别:含品牌 mark 图的卡片=Main(全宽,仅让位顶部轨道);其余=内页(左让 174 侧栏)。
+  function applyCardLock() {
+    // 从品牌 mark 图反查 Main 卡片(确定性)——卡片=mark 的最近 absolute 全尺寸祖先
+    const mark = Array.from(document.images).find((im) => (im.src || '').includes('mark') && im.getBoundingClientRect().width > 0);
+    if (!mark) return;
+    let appCard: HTMLElement | null = mark as HTMLElement;
+    while (appCard && appCard !== document.body) {
+      const st = getComputedStyle(appCard);
+      if (st.position === 'absolute' && appCard.getBoundingClientRect().width > 800) break;
+      appCard = appCard.parentElement;
+    }
+    if (!appCard || appCard === document.body) return;
+    const parent = appCard.parentElement;
+    if (!parent) return;
+    for (const cd of Array.from(parent.children) as HTMLElement[]) {
+      if (cd.id === 'nm-toprail' || cd.tagName !== 'DIV') continue;
+      const isMain = !!cd.querySelector('img[src*="mark"]');
+      cd.style.top = '40px';
+      cd.style.height = 'calc(100% - 40px)';
+      if (isMain) {
+        cd.style.left = '0px'; cd.style.right = '0px'; cd.style.width = 'auto'; cd.style.marginLeft = '';
+      } else {
+        cd.style.left = '174px'; cd.style.right = '0px'; cd.style.width = 'auto';
+      }
+    }
   }
+  let lockQueued = false;
+  const scheduleLock = () => {
+    if (lockQueued) return;
+    lockQueued = true;
+    requestAnimationFrame(() => { lockQueued = false; applyCardLock(); });
+  };
+  new MutationObserver(scheduleLock).observe(document.body, { childList: true, subtree: true });
+  applyCardLock();
 
+  const rail = document.createElement('div');
+  rail.id = 'nm-toprail';
+  const side = document.createElement('div');
+  side.className = 'rail-side';
+  const mainArea = document.createElement('div');
+  mainArea.className = 'rail-main';
+  rail.appendChild(side); rail.appendChild(mainArea);
 
-
-  if (isMac) bar.appendChild(brand); // mac 居中品牌(在 lights 后 append,绝对定位无所谓序)
-
-  // 设置齿轮:右侧(margin-left:auto 推到最右;win 在三钮左侧因三钮已 append——顺序:brand,grp?,gear → gear auto 后于 grp 即在 grp 右?不——auto 推 gear 到行尾,grp 在 gear 前)
-  const gear = document.createElement('div');
-  gear.title = '设置';
-  gear.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.08a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.08a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.08a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
-  gear.style.cssText = ['margin-left:auto','display:flex','align-items:center','justify-content:center','width:36px','height:40px','cursor:pointer',`color:${isLight ? '#62676e' : '#ffffff99'}`,'transition:color .12s'].join(';');
-  gear.addEventListener('mouseenter', () => { gear.style.color = isLight ? '#26282C' : '#fff'; });
-  gear.addEventListener('mouseleave', () => { gear.style.color = isLight ? '#62676e' : '#ffffff99'; });
-  gear.addEventListener('click', () => {
-    const g = (globalThis as never as Record<string, { navigate?: (s: string) => boolean }>).nmNav;
-    g?.navigate?.('Settings');
-  });
-  bar.appendChild(gear);
-  // win/linux:三钮组最后 append(gear 的 margin-left:auto 把 gear+grp 整体推右——gear 在三钮左)
-  if (!isMac && nm) {
-    // win/linux:右三钮(Fluent:46px 宽,close 悬停红)
+  // linux:无原生 overlay,DOM 三键悬于轨道行尾(W2 同位)
+  if (!isMac && !isWin && nm) {
     const btns: Array<[string, string, () => void]> = [
       ['\u2015', 'rgba(255,255,255,.10)', () => nm.minimize()],
       ['\u25a1', 'rgba(255,255,255,.10)', () => nm.toggleMaximize()],
       ['\u2715', '#e81123', () => nm.close()],
     ];
     const grp = document.createElement('div');
-    grp.style.cssText = ['display:flex','height:100%'].join(';');
+    grp.style.cssText = ['position:absolute','right:0','top:0','display:flex','height:40px'].join(';');
     for (const [label, hoverBg, fn] of btns) {
       const b = document.createElement('div');
-      b.className = 'tb-btn';
       b.textContent = label;
-      b.style.cssText = ['display:flex','align-items:center','justify-content:center','width:46px','height:40px','cursor:pointer',`color:${isLight ? '#42464c' : '#ffffffb0'}`,'font-size:13px','user-select:none'].join(';');
-      b.addEventListener('mouseenter', () => { b.style.background = hoverBg; b.style.color = isLight ? '#fff' : '#fff'; });
-      b.addEventListener('mouseleave', () => { b.style.background = 'transparent'; b.style.color = isLight ? '#42464c' : '#ffffffb0'; });
+      b.style.cssText = ['display:flex','align-items:center','justify-content:center','width:46px','height:40px','cursor:pointer','color:' + (isLight ? '#42464c' : '#ffffffb0'),'font-size:13px','user-select:none','transition:background .12s'].join(';');
+      b.addEventListener('mouseenter', () => { b.style.background = hoverBg; });
+      b.addEventListener('mouseleave', () => { b.style.background = 'transparent'; });
       b.addEventListener('click', fn);
       grp.appendChild(b);
     }
-    bar.appendChild(grp);
-  }  document.body.appendChild(bar);
+    rail.appendChild(grp);
+  }
+  document.body.appendChild(rail);
 })();

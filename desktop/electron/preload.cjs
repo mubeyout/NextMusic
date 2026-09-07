@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('nmDesktop', {
   minimize: () => ipcRenderer.invoke('nm:win', 'min'),
   toggleMaximize: () => ipcRenderer.invoke('nm:win', 'max'),
   close: () => ipcRenderer.invoke('nm:win', 'close'),
+  setTbStyle: (style) => ipcRenderer.invoke('nm:tbstyle', style),  // v1.2.3 win:主题感知 overlay
   // v1.1.7 桌面文件能力(SAF/blob-util 的 Electron 对应实现)
   openFile: () => ipcRenderer.invoke('nm:openFile'),
   saveFile: (o) => ipcRenderer.invoke('nm:saveFile', o),   // {path}|null(SAF createDocument 桌面对应)

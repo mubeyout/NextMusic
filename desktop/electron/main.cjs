@@ -47,7 +47,15 @@ function createWindow() {
     backgroundColor: '#121212',
     autoHideMenuBar: true,
     // 无边框融入应用设计:mac 保留系统红绿灯叠放(hiddenInset);win/linux 全无边框(应用内自绘控制钮)
-    ...(process.platform === 'darwin' ? { titleBarStyle: 'hiddenInset' } : { frame: false }),
+    // v1.2.3 平台窗口策略(老板设计 A2/W2):
+    //  mac: hiddenInset + trafficLightPosition——红绿灯定位进侧栏列顶部(x=20 居 174px 侧栏内,y=14 居 40px 轨道)
+    //  win: hidden + titleBarOverlay——无独立标题栏,系统三键原生悬于内容区行尾(悬停/贴边/snap 原生品质)
+    //  linux: 全无边框(renderer DOM 三键,同 W2 视觉位)
+    ...(process.platform === 'darwin'
+      ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 20, y: 14 } }
+      : process.platform === 'win32'
+        ? { titleBarStyle: 'hidden', titleBarOverlay: { height: 40, color: '#00000000', symbolColor: '#ffffffcc' } }
+        : { frame: false }),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -71,6 +79,11 @@ function createWindow() {
 }
 
 // 窗口控制 IPC(应用内自绘按钮用)
+// v1.2.3 win:主题感知 titleBarOverlay(浅色主题白符号看不清)
+ipcMain.handle('nm:tbstyle', (_e, style) => {
+  const w = BrowserWindow.getAllWindows()[0];
+  try { w?.setTitleBarOverlay(style); } catch { /* 非 win 平台无此 API */ }
+});
 ipcMain.handle('nm:win', (e, act) => {
   const w = BrowserWindow.fromWebContents(e.sender);
   if (!w) return;
