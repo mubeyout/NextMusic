@@ -58,11 +58,12 @@ onSettings(applyZoom);
   css.textContent = [
     '#nm-toprail { position:fixed; top:0; left:0; right:0; height:40px; display:flex; z-index:2147483600;',
     '  -webkit-app-region:drag; }',
-    '#nm-toprail .rail-side { width:174px; flex:0 0 auto;',
+    '#nm-toprail .rail-side { width:174px; flex:0 0 auto; -webkit-app-region:drag;',
     '  background:' + (isLight ? '#F6F7F9' : '#121212') + ';',
     '  border-right:.5px solid ' + (isLight ? 'rgba(31,35,41,.10)' : 'rgba(255,255,255,.08)') + '; }',
-    '#nm-toprail .rail-main { flex:1; }',
-    '#nm-toprail * { -webkit-app-region:no-drag; }',
+    '#nm-toprail .rail-main { flex:1; -webkit-app-region:drag; }',
+    /* 只对按钮挖 no-drag 孔(rail-side/rail-main 恒为拖拽面——`*` 全 no-drag 会废掉整行拖拽,清单坑②) */
+    '#nm-toprail .rail-btns, #nm-toprail .rail-btns * { -webkit-app-region:no-drag; }',
   ].join('\n');
   document.head.appendChild(css);
 
@@ -119,6 +120,7 @@ onSettings(applyZoom);
       ['\u2715', '#e81123', () => nm.close()],
     ];
     const grp = document.createElement('div');
+    grp.className = 'rail-btns';
     grp.style.cssText = ['position:absolute','right:0','top:0','display:flex','height:40px'].join(';');
     for (const [label, hoverBg, fn] of btns) {
       const b = document.createElement('div');
