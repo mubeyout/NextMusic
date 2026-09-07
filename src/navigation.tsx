@@ -109,7 +109,7 @@ export function RootNavigator() {
       if (IS_HD) {
         hdActions.menu('退出应用', [
           { label: '取消', icon: 'close' },
-          { label: '退出', icon: 'close', danger: true, onPress: () => BackHandler.exitApp() },
+          { label: '退出', icon: 'back', danger: true, onPress: () => BackHandler.exitApp() }, // lx159:退出用 back(箭头离场),不再与取消重复 close
         ]);
       } else {
         toast('再按一次返回键退出');

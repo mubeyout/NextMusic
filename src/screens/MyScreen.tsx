@@ -142,10 +142,10 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
               <Text style={st.bannerMeta}>{totalPlaylists} 个歌单 · {totalSongs} 首歌曲</Text>
             </View>
             <TouchableOpacity style={st.newBtn} onPress={() => (IS_HD ? hdActions : dialog).menu('新建歌单', [
-              { label: '空白歌单', onPress: () => {
+              { label: '空白歌单', icon: 'add', onPress: () => { // lx159:补齐 icon(与 HDMain 同款菜单一致)
                 (IS_HD ? hdActions : dialog).prompt('新建歌单', { defaultValue: '', onSubmit: (v) => { const n = (v || '').trim(); if (n) { library.create(n); toast('已创建'); } } });
               } },
-              { label: '导入平台歌单', onPress: () => nav.navigate('ImportPlaylist') },
+              { label: '导入平台歌单', icon: 'download', onPress: () => nav.navigate('ImportPlaylist') },
             ])}>
               <Text style={st.newBtnText}>＋ 新建</Text>
             </TouchableOpacity>

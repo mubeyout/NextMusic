@@ -154,7 +154,7 @@ export function HDMain() {
           },
         });
       } },
-      { label: '删除歌单', danger: true, onPress: async () => {
+      { label: '删除歌单', icon: 'trash', danger: true, onPress: async () => {
         if (pl.localId) { library.remove(pl.localId); toast('已删除'); }
         else if (connected && token) toast((await sync.removeUserList(pl.key)) ? '已删除' : '服务器操作失败');
       } },

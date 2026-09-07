@@ -86,7 +86,7 @@ export function HDPlaylistDetailScreen() {
     const removable = !!(local || p.love || p.plKey || library.all().some(q => q.name === title)); // lx116:按名可解析的收藏歌单也可移除
     hdActions.menu(`${sg.name} · ${sg.singer}`, [
       { label: '播放', icon: 'play', onPress: () => playSong(sg, songs) },
-      ...(favd ? [{ label: '取消收藏', danger: true, onPress: async () => {
+      ...(favd ? [{ label: '取消收藏', icon: 'heart', danger: true, onPress: async () => {
         try {
           await setFav(sg, false,
             connected && token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined,
@@ -95,11 +95,11 @@ export function HDPlaylistDetailScreen() {
           if (p.love) setSongs(prev => prev.filter(x => !(x.source === sg.source && x.songmid === sg.songmid)));
         } catch { toast('操作失败'); }
       } }] : []),
-      { label: '收藏到歌单…', icon: 'heart', onPress: () => setCollectFor(sg) }, // lx125:选歌单(老板:无法选择歌单)
+      { label: '收藏到歌单…', icon: 'add', onPress: () => setCollectFor(sg) }, // lx159:add(避免与取消收藏重复 heart);lx125:选歌单(老板:无法选择歌单)
       { label: '下载', icon: 'download', onPress: () => { try { enqueueDownload([sg]); toast('已加入下载队列'); } catch { toast('下载失败'); } } },
       // lx158:去重——我喜欢的页由上方「取消收藏」承担(含移出列表);未收藏态(仅服务器侧)兑底用 removeSong;其余可移除歌单只留一个「从歌单移除」
-      ...(p.love && !favd ? [{ label: '取消收藏', danger: true, onPress: () => removeSong(sg) }] : []),
-      ...(removable && !p.love ? [{ label: '从歌单移除', danger: true, onPress: () => removeSong(sg) }] : []),
+      ...(p.love && !favd ? [{ label: '取消收藏', icon: 'heart', danger: true, onPress: () => removeSong(sg) }] : []),
+      ...(removable && !p.love ? [{ label: '从歌单移除', icon: 'close', danger: true, onPress: () => removeSong(sg) }] : []),
     ]);
   };
 
@@ -119,7 +119,7 @@ export function HDPlaylistDetailScreen() {
             },
           });
         } },
-        { label: '删除歌单', danger: true, onPress: async () => {
+        { label: '删除歌单', icon: 'trash', danger: true, onPress: async () => {
           toast((await sync.removeUserList(p.plKey!)) ? '已删除' : '服务器操作失败');
           nav.goBack();
         } },
@@ -138,7 +138,7 @@ export function HDPlaylistDetailScreen() {
           else if (connected && token) toast((await sync.renameUserList(p.plKey!, v)) ? '已重命名' : '服务器操作失败');
         } });
       } },
-      { label: '删除歌单', danger: true, onPress: async () => {
+      { label: '删除歌单', icon: 'trash', danger: true, onPress: async () => {
         if (p.localId) { library.remove(p.localId); toast('已删除'); nav.goBack(); }
         else if (connected && token) {
           toast((await sync.removeUserList(p.plKey!)) ? '已删除' : '服务器操作失败');

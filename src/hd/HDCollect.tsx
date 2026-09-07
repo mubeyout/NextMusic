@@ -5,8 +5,7 @@ import { View, Text, ScrollView, StyleSheet, Dimensions, Pressable, Modal } from
 import { Icon } from '../theme/Icon';
 import { C } from './hdtokens';
 import { HDTouch } from './HDTouch';
-import { useFav } from './useFav';
-import { addToPlaylist, setFav } from '../state/favorites';
+import { addToPlaylist, setFav, isFav } from '../state/favorites';
 import { library } from '../state/library';
 import { sync, subscribeSync } from '../services/sync';
 import { useApp } from '../state/AppState';
@@ -15,7 +14,14 @@ import type { SongItem } from '../services/server';
 
 export function HDCollect({ song, onClose }: { song: SongItem; onClose: () => void }) {
   const { connected, token } = useApp();
-  const { faved, toggle } = useFav(song);
+  // lx159:面板内「我喜欢的」行走纯 love 语义(isFav/setFav)——useFav.toggle 是 love-OR-歌单语义,
+  // 歌仅收录在歌单时会显示已收藏但点击无效果;面板另有歌单行管收录,语义分家
+  const loved = isFav(song);
+  const toggleLove = async () => {
+    await setFav(song, !loved,
+      connected && token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined,
+      connected && token ? () => sync.fetchLists() : undefined);
+  };
   // lx149:BACK 关闭 + 焦点脱离 2.6s 自动关
   const songKey = `${song.source}_${song.songmid}`;
   const [, syncTick] = useReducer((x: number) => x + 1, 0);
@@ -57,40 +63,39 @@ export function HDCollect({ song, onClose }: { song: SongItem; onClose: () => vo
             </HDTouch>
           </View>
           <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingVertical: 2 }}>
-            <HDTouch style={st.row} onPress={toggle} hasTVPreferredFocus>
-              <Icon name="heart" size={15} active={faved} color={faved ? C.brand : C.text2} />
-              <Text style={[st.rowText, faved && { color: C.brand }]} numberOfLines={1}>我喜欢的{faved ? ' · 已收藏' : ''}</Text>
+            <HDTouch style={st.row} onPress={toggleLove} hasTVPreferredFocus>
+              <Icon name="heart" size={15} active={loved} color={loved ? C.brand : C.text2} />
+              <Text style={[st.rowText, loved && { color: C.brand }]} numberOfLines={1}>我喜欢的{loved ? ' · 已收藏' : ''}</Text>
             </HDTouch>
-            {faved ? (
-              <HDTouch style={st.row} onPress={async () => {
-                try {
-                  await setFav(song, false,
-                    connected && token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined,
-                    connected && token ? () => sync.fetchLists() : undefined);
-                  toast('已取消收藏');
-                } catch { toast('操作失败'); }
-                onClose();
-              }}>
-                <Icon name="close" size={14} color="#FF6B6B" />
-                <Text style={[st.rowText, { color: '#FF6B6B' }]} numberOfLines={1}>取消收藏（移出我喜欢的）</Text>
-              </HDTouch>
-            ) : null}
-            {pls.map(cp => (
-              <HDTouch key={cp.key} style={st.row} onPress={async () => {
-                try {
-                  if (cp.localId) await addToPlaylist({ id: cp.localId }, song);
-                  else await addToPlaylist({ name: cp.name }, song,
-                    connected && token ? () => sync.fetchLists() : undefined,
-                    connected && token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined);
-                  toast(`已收藏到「${cp.name}」`);
-                } catch { toast('收藏失败'); }
-                onClose();
-              }}>
-                <Icon name="music" size={13} color={C.text3} />
-                <Text style={st.rowText} numberOfLines={1}>{cp.name}</Text>
-                {inPl(cp) ? <Icon name="check" size={13} active color={C.brand} /> : null}
-              </HDTouch>
-            ))}
+            {/* lx159:删「取消收藏（移出我喜欢的）」重复行——上行本身即 toggle,同义两入口属重复操作 */}
+            {pls.map(cp => {
+              const has = inPl(cp);
+              return (
+                <HDTouch key={cp.key} style={st.row} onPress={async () => {
+                  try {
+                    if (has) {
+                      // lx159:已收录行点击=移除(对齐手机 CollectSheet 双向)
+                      if (cp.localId) { library.removeSong(cp.localId, song); toast(`已从「${cp.name}」移除`); }
+                      else if (connected && token) {
+                        const ok = await sync.removeSongFromUserListByName(cp.name, song);
+                        toast(ok ? `已从「${cp.name}」移除` : '服务器操作失败');
+                      }
+                    } else {
+                      if (cp.localId) await addToPlaylist({ id: cp.localId }, song);
+                      else await addToPlaylist({ name: cp.name }, song,
+                        connected && token ? () => sync.fetchLists() : undefined,
+                        connected && token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined);
+                      toast(`已收藏到「${cp.name}」`);
+                    }
+                  } catch { toast('操作失败'); }
+                  onClose();
+                }}>
+                  <Icon name="music" size={13} color={C.text3} />
+                  <Text style={st.rowText} numberOfLines={1}>{cp.name}</Text>
+                  {has ? <Icon name="check" size={13} active color={C.brand} /> : null}
+                </HDTouch>
+              );
+            })}
           </ScrollView>
         </View>
       </View>

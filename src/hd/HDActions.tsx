@@ -24,7 +24,8 @@ export const hdActions = {
     host?.({ title, input: opts });
   },
   confirm(title: string, message: string, onOk: () => void) {
-    host?.({ title: title + (message ? `\n${message}` : ''), items: [{ label: '取消' }, { label: '确定', onPress: onOk }] });
+    // lx159:confirm 生成项也带 icon(与 menu 统一;close/check 语义固定)
+    host?.({ title: title + (message ? `\n${message}` : ''), items: [{ label: '取消', icon: 'close' }, { label: '确定', icon: 'check', onPress: onOk }] });
   },
   close() { host?.(null); },
 };
@@ -94,6 +95,7 @@ const st = StyleSheet.create({
   input: { flex: 1, height: 42, borderRadius: 10, backgroundColor: C.inset, borderWidth: 1, borderColor: C.border, paddingHorizontal: 12, color: C.text, fontSize: 13 },
   okBtn: { height: 42, borderRadius: 10, backgroundColor: C.brand, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
   okText: { color: '#0b0f0d', fontSize: 12, fontWeight: '800' },
-  row: { height: 44, borderRadius: 11, backgroundColor: C.inset, justifyContent: 'center', paddingHorizontal: 14 },
+  // lx159(老板):icon+文字左右排布(原默认 column 上下堆叠不合理);左对齐菜单范式
+  row: { height: 44, borderRadius: 11, backgroundColor: C.inset, flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 14 },
   rowText: { color: C.text, fontSize: 13, fontWeight: '600' },
 });
