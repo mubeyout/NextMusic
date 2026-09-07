@@ -30,7 +30,7 @@ const ASSET_MODULES: Record<string, unknown> = { 'autoeq_pack.json': autoeqPack 
 
 // 形态 = HD（车机/TV 横版 UI，桌面同构）；后续可细分 desktop 差异
 const NM = NativeModules as Record<string, unknown>;
-NM.AppVersionInfo = { versionName: '1.2.3', versionCode: 87, flavor: 'hd' };
+NM.AppVersionInfo = { versionName: '1.2.4', versionCode: 88, flavor: 'hd' };
 
 // 原生能力占位（空对象：调用处已有 undefined 防御/try-catch；NativeEventEmitter 空对象在 RNW 宽松）
 for (const m of ['NMScanner', 'NMDownloader', 'BlurModule', 'AppRestart', 'VersionModule']) {
