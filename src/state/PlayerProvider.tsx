@@ -56,6 +56,10 @@ interface PlayerCtx {
   stopCast: () => void;
   /** lx43：切换本机输出设备后重建音频管线（setPreferredDevice 需 track 重建才生效） */
   rebuildAudio: () => void;
+  /** v1.2.4 D1:追加队列尾(不动当前播放) */
+  appendQueue: (songs: SongItem[]) => void;
+  /** v1.2.4 D1:插到当前曲之后(下一首播) */
+  playNextUp: (song: SongItem) => void;
 }
 
 const Ctx = createContext<PlayerCtx>(null as unknown as PlayerCtx);
@@ -438,6 +442,23 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     await resolveAndPlay(items[idx]);
   }, [resolveAndPlay]);
 
+  // v1.2.4 D1(A1/A3):队列增量操作——纯新增 API,现有行为零变化
+  /** 追加到队列尾部(不改变当前播放) */
+  const appendQueue = useCallback((songs: SongItem[]) => {
+    if (!songs.length) return;
+    const add = songs.map(toTrack).filter(t => !queueRef.current.some(q => q.uid === t.uid || (q.songmid === t.songmid && q.source === t.source)));
+    if (!add.length) return;
+    queueRef.current = [...queueRef.current, ...add];
+    setQueue(queueRef.current);
+  }, []);
+  /** 下一首播:插到当前曲之后(不立即切歌) */
+  const playNextUp = useCallback((song: SongItem) => {
+    const t = toTrack(song);
+    if (queueRef.current.some(q => q.songmid === t.songmid && q.source === t.source)) return;
+    const at = Math.min(idxRef.current + 1, queueRef.current.length);
+    queueRef.current = [...queueRef.current.slice(0, at), t, ...queueRef.current.slice(at)];
+    setQueue(queueRef.current);
+  }, []);
   // Global event wiring
   useEffect(() => {
     const sub = AudioPro.addEventListener(ev => {
@@ -736,7 +757,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, [cast, goTo]);
 
   return (
-    <Ctx.Provider value={{ queue, current, playing, position, duration, shuffle, repeat, setShuffle, cycleRepeat, playSong, toggle, skipNext, skipPrev, seekTo, clearQueue, cast, startCast, stopCast, rebuildAudio }}>
+    <Ctx.Provider value={{ queue, current, playing, position, duration, shuffle, repeat, setShuffle, cycleRepeat, playSong, toggle, skipNext, skipPrev, seekTo, clearQueue, cast, startCast, stopCast, rebuildAudio, appendQueue, playNextUp }}>
       {children}
     </Ctx.Provider>
   );

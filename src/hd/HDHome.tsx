@@ -1,6 +1,6 @@
 // HD 首页 —— 桌面版 HomeScreen 结构:问候 + 双大卡(每日推荐/私人雷达)
 // + 最近播放横滚 + 我的歌单网格;全部真数据真播放
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FocusBridge } from './HDMain';
 import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,7 +9,9 @@ import { Icon } from '../theme/Icon';
 import { C, H, SH, shadowStyleOf } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { HDGrid } from './HDGrid';
+import { Platform } from 'react-native';
 import { usePlayer } from '../state/PlayerProvider';
+const IS_WEB = Platform.OS === 'web';
 import { useApp } from '../state/AppState';
 import { library, type LocalPlaylist } from '../state/library';
 import { getRecents } from '../state/recent';
@@ -134,6 +136,9 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
         {recPls.length ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: 12, paddingLeft: 26, paddingRight: 12, paddingTop: 6, paddingBottom: 16 }}>
             {recPls.slice(0, 10).map(pl => (
+              IS_WEB ? (
+                <PlCardWeb key={`${pl.source}_${pl.id}`} width={148} pl={pl} onOpen={() => openRecPl(pl)} onPlay={() => openRecPl(pl)} />
+              ) : (
               <HDTouch key={`${pl.source}_${pl.id}`} style={[st.plCard, { width: 148 }, shadowStyleOf(pl.name)]} zoom={1.06} onPress={() => openRecPl(pl)}>
                 {pl.img
                   ? <Image source={{ uri: pl.img }} style={st.plArt} />
@@ -143,6 +148,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
                   <Text style={st.recSub} numberOfLines={1}>{pl.author || (pl.play_count ? `▶ ${pl.play_count}` : '')}</Text>
                 </View>
               </HDTouch>
+              )
             ))}
           </ScrollView>
         ) : (
@@ -157,6 +163,9 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
         {playlists.length ? (
           <HDGrid min={126 * (H.font.sm / 10)}>
             {playlists.slice(0, 10).map(pl => (
+              IS_WEB ? (
+                <PlCardWeb key={pl.key} pl={pl} onOpen={() => openPl(pl)} onPlay={() => { if (pl.songs?.length) playSong(pl.songs[0], pl.songs); }} />
+              ) : (
               <HDTouch key={pl.key} style={[st.plCard, shadowStyleOf(pl.name)]} zoom={1.06} onPress={() => openPl(pl)}>
                 <View style={{ position: 'relative' }}>
                   {pl.img
@@ -168,6 +177,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
                   <Text style={st.plName} numberOfLines={1}>{pl.name}</Text>
                 </View>
               </HDTouch>
+              )
             ))}
           </HDGrid>
         ) : (
@@ -237,7 +247,9 @@ const st = StyleSheet.create({
   recSub: { color: C.text3, fontSize: 8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   // 卡片内文字离边留气口(老板反馈:文字太贴边,左右和底部缺 padding)
-  plCard: { width: '100%', gap: 5, paddingBottom: 7, borderRadius: 12, backgroundColor: C.surface }, // lx98:去 overflow;顶角由封面带
+  plCard: { width: '100%', gap: 5, paddingBottom: 7, borderRadius: 12, backgroundColor: C.surface },
+  plMask: { position: 'absolute', top: 0, left: 0, right: 0, height: 126, backgroundColor: 'rgba(0,0,0,.38)', borderRadius: 12 },
+  plPlay: { position: 'absolute', right: 7, bottom: 7, width: 44, height: 44, borderRadius: 22, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }, // lx98:去 overflow;顶角由封面带
   plArt: { width: '100%', aspectRatio: 1, borderTopLeftRadius: 12, borderTopRightRadius: 12 },
   plCount: { position: 'absolute', bottom: 5, right: 5, backgroundColor: 'rgba(0,0,0,.6)', borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
   plCountText: { color: '#fff', fontSize: 8 },
@@ -251,3 +263,31 @@ const st = StyleSheet.create({
   empty: { height: 64, borderRadius: H.radius.card, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', gap: 8, flexDirection: 'row', paddingHorizontal: 14 },
   emptyText: { color: C.text3, fontSize: H.font.sm },
 });
+
+
+// v1.2.4 D1 A1b(仅 web):歌单卡 hover——封面遮罩+右下 44px 绿圆播放钮(150ms ease-out 上浮);
+// 点钮=播放全部,点卡其余=进详情。TV 不渲染本组件(走上方原 HDTouch 分支,零 diff)
+function PlCardWeb({ pl, width, onOpen, onPlay }: { pl: { name: string; img?: string; count?: number; author?: string; play_count?: string }; width?: number; onOpen: () => void; onPlay: () => void }) {
+  const [hov, setHov] = useState(false);
+  const t = useRef<ReturnType<typeof setTimeout> | null>(null);
+  return (
+    <HDTouch style={[st.plCard, width != null && { width }]} zoom={1.06} onPress={onOpen}
+      {...({ onHoverIn: () => { t.current && clearTimeout(t.current); t.current = setTimeout(() => setHov(true), 100); }, onHoverOut: () => { t.current && clearTimeout(t.current); setHov(false); } } as Record<string, unknown>)}>
+      <View style={{ position: 'relative' }}>
+        {pl.img
+          ? <Image source={{ uri: pl.img }} style={st.plArt} />
+          : <View style={[st.plArt, { backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
+        <View style={st.plCount}><Text style={st.plCountText}>▶ {pl.count}</Text></View>
+        {/* A1b 遮罩+播放钮 */}
+        <View pointerEvents={hov ? 'auto' : 'none'} style={[st.plMask, { opacity: hov ? 1 : 0 }]} />
+        <HDTouch style={[st.plPlay, { opacity: hov ? 1 : 0, transform: [{ translateY: hov ? 0 : 6 }] }]} onPress={onPlay}>
+          <Icon name="play" size={17} color={C.onBrand} />
+        </HDTouch>
+      </View>
+      <View style={st.plTexts}>
+        <Text style={st.plName} numberOfLines={1}>{pl.name}</Text>
+        {pl.author || pl.play_count ? <Text style={st.recSub} numberOfLines={1}>{pl.author || (pl.play_count ? `▶ ${pl.play_count}` : '')}</Text> : null}
+      </View>
+    </HDTouch>
+  );
+}

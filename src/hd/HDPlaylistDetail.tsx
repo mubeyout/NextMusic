@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { hdActions } from './HDActions';
 import { HDCollect } from './HDCollect';
-import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator } from 'react-native';
+import { Platform, View, Text, StyleSheet, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
@@ -12,6 +12,8 @@ import { C, H, SH } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { HDSongRow } from './HDSongRow';
 import { usePlayer } from '../state/PlayerProvider';
+import { songMenu } from './hdmenubuilders';
+import { hdNav } from './hdnav';
 import { library } from '../state/library';
 import { setFav, isFav } from '../state/favorites';
 import { enqueueDownload } from '../services/downloads';
@@ -27,7 +29,7 @@ export function HDPlaylistDetailScreen() {
   const nav = useNavigation() as { goBack: () => void };
   const route = useRoute();
   const p = route.params as Params;
-  const { playSong, current } = usePlayer();
+  const { playSong, current, appendQueue, playNextUp } = usePlayer();
 
   // 本地歌单:进页时重读(支持返回后刷新);远端歌单:songs 直传
   const local = p.localId ? library.get(p.localId) : null;
@@ -224,7 +226,12 @@ export function HDPlaylistDetailScreen() {
               playing={current?.songmid === s.songmid && current?.source === s.source}
               onPress={() => playSong(s, songs)}
               onLongPress={() => rowMenu(s)}
-              onAction={() => rowMenu(s)} />
+              onAction={() => rowMenu(s)}
+              buildMenu={Platform.OS === 'web' ? (sg) => songMenu(sg, songs, {
+                playSong, appendQueue, playNextUp,
+                navigate: (scr: string) => hdNav()?.navigate(scr as never),
+                connected, token,
+              }) : undefined} />
           ))}
           {limit < songs.length ? <Text style={st.more}>滚动加载更多({limit}/{songs.length})</Text> : null}
         </ScrollView>
