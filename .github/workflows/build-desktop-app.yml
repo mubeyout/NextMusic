@@ -41,6 +41,8 @@ jobs:
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
       - name: Upload artifacts
+        # 免费版 artifact 配额 ~500MB，三平台产物必撞；本步骤只是备份，直传 release 才是主链路，故允许失败
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: desktop-${{ matrix.os }}
