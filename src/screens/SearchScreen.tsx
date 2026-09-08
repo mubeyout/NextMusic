@@ -131,7 +131,7 @@ export function SearchScreen() {
       <View style={st.pillWrap}>
         {/* lx163:搜索类型——歌曲/歌手/专辑 */}
         <PillTabs tabs={['歌曲', '歌手', '专辑']} active={mode === 'song' ? 0 : mode === 'singer' ? 1 : 2}
-          onChange={i => { const m = (['song', 'singer', 'album'] as const)[i]; setMode(m); if (kw.trim()) search(kw.trim(), source, m); }} />
+          onChange={i => { const m = (['song', 'singer', 'album'] as const)[i]; setMode(m); setAllFailed(false); setErr(null); if (kw.trim()) search(kw.trim(), source, m); }} />
         <View style={{ height: 6 }} />
         <PillTabs tabs={SOURCES.map(s => s.label)} active={SOURCES.findIndex(s => s.id === source)}
           onChange={i => switchSource(SOURCES[i].id)} />

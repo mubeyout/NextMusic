@@ -70,7 +70,7 @@ export function ArtistDetailScreen() {
                     ? <Image source={{ uri: al.img }} style={st.albumArt} />
                     : <View style={[st.albumArt, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={26} color={C.text3} /></View>}
                   <Text style={st.albumName} numberOfLines={1}>{al.name}</Text>
-                  {al.publishTime ? <Text style={st.albumYear} numberOfLines={1}>{String(al.publishTime).slice(0, 10)}</Text> : null}
+                  {al.publishTime ? <Text style={st.albumYear} numberOfLines={1}>{/\d{10,}/.test(String(al.publishTime)) ? new Date(Number(al.publishTime)).getFullYear() : String(al.publishTime).slice(0, 10)}</Text> : null}
                 </Row>
               ))}
             </View>

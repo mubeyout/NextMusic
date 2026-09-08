@@ -166,18 +166,26 @@ export const api = {
   async albumSongs(id: string, source = 'wy'): Promise<SongItem[]> {
     try { return (await req(`/api/music/albumSongs?id=${encodeURIComponent(id)}&source=${source}`)) as SongItem[]; } catch { return []; }
   },
-  // lx163:歌手/专辑搜索(服务器 type=singer/album;字段与 web 端一致)
+  // lx163:歌手/专辑搜索(服务器 type=singer/album;仅 wy/tx 支持,失败自动换源兑底)
   async searchSingers(kw: string, source = 'kw', page = 1, limit = 30): Promise<{ id: string; name: string; img?: string; source?: string }[]> {
-    try {
-      const d = (await req(`/api/music/search?name=${encodeURIComponent(kw)}&source=${source}&type=singer&page=${page}&limit=${limit}`)) as { list?: { id?: string | number; name: string; picUrl?: string; avatar?: string; img?: string; source?: string }[] };
-      return (d.list || []).map(a => ({ id: String(a.id ?? a.name), name: a.name, img: a.picUrl || a.avatar || a.img, source: a.source || source }));
-    } catch { return []; }
+    const trySrc = async (src: string) => {
+      const d = (await req(`/api/music/search?name=${encodeURIComponent(kw)}&source=${src}&type=singer&page=${page}&limit=${limit}`)) as { list?: { id?: string | number; name: string; picUrl?: string; avatar?: string; img?: string; source?: string }[] };
+      return (d.list || []).map(a => ({ id: String(a.id ?? a.name), name: a.name, img: a.picUrl || a.avatar || a.img, source: a.source || src }));
+    };
+    for (const src of [source, 'wy', 'tx']) {
+      try { const r = await trySrc(src); if (r.length) return r; } catch { /* 该源不支持/失败,换下一个 */ }
+    }
+    return [];
   },
   async searchAlbums(kw: string, source = 'kw', page = 1, limit = 30): Promise<{ id: string; name: string; singer?: string; img?: string; source?: string }[]> {
-    try {
-      const d = (await req(`/api/music/search?name=${encodeURIComponent(kw)}&source=${source}&type=album&page=${page}&limit=${limit}`)) as { list?: { id?: string | number; name: string; singer?: string; picUrl?: string; img?: string; source?: string }[] };
-      return (d.list || []).map(a => ({ id: String(a.id ?? a.name), name: a.name, singer: a.singer, img: a.picUrl || a.img, source: a.source || source }));
-    } catch { return []; }
+    const trySrc = async (src: string) => {
+      const d = (await req(`/api/music/search?name=${encodeURIComponent(kw)}&source=${src}&type=album&page=${page}&limit=${limit}`)) as { list?: { id?: string | number; name: string; singer?: string; artistName?: string; picUrl?: string; img?: string; source?: string }[] };
+      return (d.list || []).map(a => ({ id: String(a.id ?? a.name), name: a.name, singer: a.singer || a.artistName, img: a.picUrl || a.img, source: a.source || src }));
+    };
+    for (const src of [source, 'wy', 'tx']) {
+      try { const r = await trySrc(src); if (r.length) return r; } catch { /* 同上 */ }
+    }
+    return [];
   },
   async artistAlbums(id: string, source = 'wy'): Promise<{ id: string; name: string; img?: string; publishTime?: string }[]> {
     try {
