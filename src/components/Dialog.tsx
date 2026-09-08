@@ -181,7 +181,7 @@ export function DialogHost() {
                       hasTVPreferredFocus={bi === 0}
                       onPress={() => close(b)}
                     >
-                      <Text style={[s.btnText, b.style !== 'cancel' && s.btnMainText, b.style === 'destructive' && { color: '#FF6B6B' }]}>
+                      <Text style={[s.btnText, b.style !== 'cancel' && s.btnMainText]}> {/* lx163i(老板):绿底主钮文字恒白——destructive 不再覆盖红字(红字绿底辣眼睛);红字语义保留给底部菜单行(btnColor) */}
                         {b.text}
                       </Text>
                     </DTouch>

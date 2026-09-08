@@ -34,7 +34,7 @@ function T(props: { style?: unknown; onPress?: () => void; disabled?: boolean; c
 
 export function SourcesScreen() {
   const insets = useSafeAreaInsets();
-  const nav = useNavigation() as { goBack: () => void };
+  const nav = useNavigation() as { goBack: () => void; popToTop: () => void; reset: (o: unknown) => void; navigate: (s: string) => void; };
   const [sources, setSources] = useState<CustomSource[]>([]);
   const [busy, setBusy] = useState(false);
   // 音源健康检查:id -> testing | ok | fail(含错误详情)
@@ -220,7 +220,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 // ---------- 账号页(原实现) ----------
 export function AccountScreen() {
   const insets = useSafeAreaInsets();
-  const nav = useNavigation() as { goBack: () => void; navigate: (s: string) => void; reset: (o: unknown) => void };
+  const nav = useNavigation() as { goBack: () => void; navigate: (s: string) => void; reset: (o: unknown) => void; popToTop: () => void; };
   const { connected, base, username, token, setAuth, disconnectServer } = useApp();
   const host = (base || '').replace(/^https?:\/\//, '');
 
@@ -282,7 +282,7 @@ export function AccountScreen() {
                     onPress: () => {
                       disconnectServer();
                       toast('已断开服务器，回到本地模式');
-                      nav.reset({ index: 0, routes: [{ name: 'Main' }] });
+                      nav.popToTop(); // lx163i:reset 重建栈会白闪一帧,popToTop 弹回根不重建
                     },
                   },
                 ],
