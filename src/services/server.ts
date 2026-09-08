@@ -63,6 +63,10 @@ async function reqOnce(path: string, init: RequestInit & { base?: string; timeou
         await new Promise<void>(res => setTimeout(() => res(), 600));
         return reqOnce(path, init, attempt + 1);
       }
+      // lx163g:401=token 失效(服务器重建/换密)——用存档凭据自动重登一次并重放(attempt 1→2,登录请求自身 attempt=5 不进)
+      if (r.status === 401 && attempt < 2 && !path.includes('/api/user/login')) {
+        if (await tryRelogin()) return reqOnce(path, init, 2);
+      }
       throw Object.assign(new Error('HTTP ' + r.status), { status: r.status, data });
     }
     return data;
@@ -84,6 +88,35 @@ export const store = {
   base: '',
   token: '',
 };
+
+// lx163g:登录凭据持久化(可选)——服务器重建/换 token 后 401 自动重登,歌单不再集体蒸发
+import { createMMKV } from 'react-native-mmkv';
+const credKv = createMMKV({ id: 'nextmusic-creds' });
+export function saveCreds(username: string, password: string) {
+  if (username && password) credKv.set('c', JSON.stringify({ username, password }));
+}
+export function clearCreds() { credKv.set('c', ''); }
+function readCreds(): { username: string; password: string } | null {
+  try { return JSON.parse(credKv.getString('c') || 'null'); } catch { return null; }
+}
+let reloginInFlight: Promise<boolean> | null = null;
+async function tryRelogin(): Promise<boolean> {
+  const c = readCreds();
+  if (!c || !store.base) return false;
+  if (reloginInFlight) return reloginInFlight;
+  reloginInFlight = (async () => {
+    try {
+      const r = (await reqOnce('/api/user/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(c), timeout: 10000,
+      }, 5)) as { token?: string }; // attempt=5:绕过 500 重试分支直达
+      if (r?.token) { store.token = r.token; return true; }
+      return false;
+    } catch { return false; }
+    finally { setTimeout(() => { reloginInFlight = null; }, 1000); }
+  })();
+  return reloginInFlight;
+}
 
 export const api = {
   async probe(base: string): Promise<ServerConfig> {
@@ -202,11 +235,13 @@ export const api = {
     } catch { return []; }
   },
   async login(username: string, password: string): Promise<{ success: boolean; token: string; username: string }> {
-    return req('/api/user/login', {
+    const r = (await req('/api/user/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
-    }) as Promise<{ success: boolean; token: string; username: string }>;
+    })) as { success: boolean; token: string; username: string };
+    if (r?.token) saveCreds(username, password); // lx163g:登录成功即存档(供 401 自动重登)
+    return r;
   },
   // 创建服务器用户（需服务器 frontend 授权码，对应控制台 x-frontend-auth）
   async createUser(name: string, password: string, frontendAuth: string, base?: string): Promise<true> {

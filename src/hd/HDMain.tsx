@@ -105,20 +105,27 @@ export function HDMain() {
   // lx162(老板):本地歌单删/改名后侧栏立即消失——library 变更信号进列表 effect 依赖
   const [, libTick] = useReducer((x: number) => x + 1, 0);
   useEffect(() => library.subscribe(() => libTick()), []);
+  // lx163f(TV 卡顿):本地变更(libTick)只重算本地段,不再触发 MB 级缓存读+网络拉取;
+  // 服务器信号(connected/token/syncTick)才走完整链路。之前每次收藏/歌单操作都全量拉→弱芯片 D-pad 卡顿
+  const mainTrig = useRef({ connected: null as boolean | null, token: null as string | null, syncTick: -1 });
   useEffect(() => {
+    const serverDirty = mainTrig.current.connected !== connected || mainTrig.current.token !== token || mainTrig.current.syncTick !== syncTick;
+    mainTrig.current = { connected, token, syncTick };
     // lx104:本地「我喜欢的」由专用入口展示,歌单组里去重(老板:快捷收藏合并)
     const local = library.all()
       .filter(p => p.name !== '我喜欢的')
       .map(p => ({ key: p.id, localId: p.id, name: p.name, count: p.songs.length, songs: p.songs as SongItem[] }));
-    setPls(local);
-    if (!connected || !token) return;
-    // 快照缓存先行(大快照拉取慢——懒加载第一层:侧栏不等网)
+    const localNames = new Set(local.map(x => x.name));
+    // 本地段重算:保留 prev 里的服务器段(名字去重),本地副本优先
+    setPls(prev => [...local, ...prev.filter(x => !x.localId && !localNames.has(x.name))]);
+    if (!serverDirty || !connected || !token) return;
+    // ↓ 仅服务器信号变化才走:缓存先行 + 网络拉取
     const cached = sync.cachedLists();
     if (cached) {
       setLoveCount((cached.loveList || []).length);
       setPls(prev => {
         const has = new Set(prev.map(x => x.key));
-        return [...prev, ...(cached.userList || []).filter(u => !has.has(u.id)).map(u => ({
+        return [...prev.filter(x => x.localId), ...(cached.userList || []).filter(u => !has.has(u.id)).map(u => ({
           key: u.id, name: u.name, count: (u.list || []).length, songs: (u.list || []).map(lxToApp),
         }))];
       });
@@ -133,7 +140,6 @@ export function HDMain() {
         count: (u.list || []).length,
         songs: (u.list || []).map(lxToApp),
       }));
-      const localNames = new Set(local.map(x => x.name)); // lx121:本地副本优先(平台导入 copy-on-write 后,本地才是可编辑真身)
       setPls([...local, ...serverPls.filter(u => !localNames.has(u.name))]);
     }).catch(() => {});
   }, [connected, token, syncTick, libTick]); // eslint-disable-line react-hooks/exhaustive-deps

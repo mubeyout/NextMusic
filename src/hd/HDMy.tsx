@@ -36,8 +36,13 @@ export function HDMy() {
   const [syncing, setSyncing] = useState(false);
   const providerCount = providers.all().length;
 
+  // lx163f(TV 卡顿):本地变更只重读本机列表;网络拉取仅在 connected/syncTick 变化时走(此前每次收藏操作都全量拉)
+  const myTrig = useRef({ connected: null as boolean | null, syncTick: -1 });
   const refresh = () => {
+    const serverDirty = myTrig.current.connected !== connected || myTrig.current.syncTick !== syncTick;
+    myTrig.current = { connected, syncTick };
     setLocalPls(library.all());
+    if (!serverDirty) return;
     setSyncing(true);
     if (connected && token) {
       sync.fetchLists().then(setSnap).catch(() => {}).finally(() => setSyncing(false));

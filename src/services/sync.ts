@@ -118,7 +118,7 @@ export const sync = {
         if (json !== lastSnapJson) { kvSync.set('snap', json); lastSnapJson = json; }
       } catch { /* 超大忽略 */ }
       return snap;
-    } catch (e) { console.log('[sync] fetchLists err:', (e as Error).message); return null; }
+    } catch { return null; }
   },
   // lx101:歌单管理(双端共用)——服务器 userList 重命名/删除(fetch+改+push 整快照)
   // lx102/lx104:本机歌单上传服务器——同名歌单覆盖更新(防重复堆积)

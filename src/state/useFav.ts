@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { isFav, setFav, subscribeFav } from './favorites';
 import { library } from './library';
 import { sync, subscribeSync, lxNormKey } from '../services/sync';
+
+// lx163f:自愈节流状态(模块级,所有 useFav 实例共享)
+const useFavHealState = { last: 0, inflight: null as Promise<void> | null };
 import { useApp } from './AppState';
 import type { SongItem } from '../services/server';
 
@@ -29,8 +32,15 @@ export function useFav(song?: SongItem | null) {
     const inLocalPl = library.all().some(pl => (pl.songs as SongItem[]).some(x => lxNormKey(x) === key));
     if (snap) {
       check(snap);
-      // lx163:缓存自愈——后台补拉一次,删歌单/服务器侧变更后陈旧缓存不再永久撑红心(老板:播放页/mini 状态不同步根因)
-      if (connected && token) sync.fetchLists().then(s2 => { if (!dead && s2) check(s2); }).catch(() => {});
+      // lx163:缓存自愈——后台补拉;lx163f(TV 卡顿):20s 冷却+全 app 共享在飞请求,
+      // 之前 N 个 useFav 实例(播放条/播放页/行内)每次切歌各拉一次全量快照(网络+MB级JSON),TV 弱芯片直接卡
+      if (connected && token && Date.now() - useFavHealState.last > 20000 && !useFavHealState.inflight) {
+        useFavHealState.last = Date.now();
+        useFavHealState.inflight = sync.fetchLists()
+          .then(s2 => { if (!dead && s2) check(s2); })
+          .catch(() => {})
+          .finally(() => { useFavHealState.inflight = null; });
+      }
     }
     else if (connected && token) {
       sync.fetchLists().then(s => { if (!dead) check(s); }).catch(() => { if (!dead) setFaved(isFav(song) || inLocalPl); });
