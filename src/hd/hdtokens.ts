@@ -103,7 +103,10 @@ export const H = {
 };
 
 // 按 uiScale 重算 H(H 保持同一引用,属性覆写——引用处 import { H } 不变)
+// v1.2.6(老板:胶囊+分割线错位):web 跳过——桌面缩放唯一源是 CSS zoom(main.tsx applyZoom),
+// tokens 再乘一遍 = 双重缩放:侧栏 217.5 CSS vs 轨道/卡片锁 174 CSS 硬编码,品牌条越轨成"胶囊"、分割线错开 55px
 export function applyHdScale(uiScale?: string) {
+  if (Platform.OS === 'web') return;
   const k = scaleOf(uiScale);
   const f = { xs: 9, sm: 10, md: 11, lg: 12, xl: 15, hero: 21 };
   (Object.keys(f) as (keyof typeof f)[]).forEach(key => { H.font[key] = f[key] * k; });

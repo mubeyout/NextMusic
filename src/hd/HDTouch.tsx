@@ -5,11 +5,14 @@
 //
 // v4:焦点环自动贴附 —— 从元素自身样式读 borderRadius,环与元素同圆角(老板反馈「描边不贴附」);
 //     可选 glow(聚焦时彩色弥散投影)与 focusBg(选中态背景提亮)。
+// v1.2.6 桌面(老板:选中改 hover 不需要描边):web 端焦点环/glow 全部不渲染(点击出现绿框=TV 交互),
+//     新增 hoverBg prop——web hover 时背景提亮(桌面态);TV 端零变化。
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import { Platform, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 import { C, TV_LOW_GPU } from './hdtokens';
+const IS_WEB = Platform.OS === 'web';
 type Props = React.ComponentProps<typeof Pressable> & {
-  /** 聚焦时附加样式;不传 = 自动贴附环(元素圆角 + 2px 品牌描边);传 false = 无视觉 */
+  /** 聚焦时附加样式;不传 = 自动贴附环(元素圆角 + 2px 品牌描边);传 false = 无视觉;仅 TV 渲染 */
   focusStyle?: false | ViewStyle | ViewStyle[];
   /** 聚焦时背景提亮色(选中态);默认不动背景 */
   focusBg?: string;
@@ -19,21 +22,32 @@ type Props = React.ComponentProps<typeof Pressable> & {
   zoom?: number;
   /** lx132:彩色弥散光晕(描边式,替代不稳定的 boxShadow)——传 haloOf(seed) 结果 */
   haloColor?: string;
+  /** v1.2.6 web:hover 背景色(桌面选中态;TV 忽略) */
+  hoverBg?: string | false;
   activeOpacity?: number;
 };
 
-export function HDTouch({ style, focusStyle, focusBg, glow, zoom, haloColor, activeOpacity = 0.8, children, ...rest }: Props) {
+export function HDTouch({ style, focusStyle, focusBg, glow, zoom, haloColor, hoverBg, activeOpacity = 0.8, children, ...rest }: Props) {
   const [focus, setFocus] = useState(false);
+  const [hov, setHov] = useState(false);
   const flat = (StyleSheet.flatten(style as ViewStyle | ViewStyle[]) || {}) as { borderRadius?: number };
   // v6(lx75b): border 环(米电视渲染稳定) + padding 负补偿抵消 border 占位——环外扩 2px 描边,内容零位移
   // v5 overlay 在米电视 Pressable 内不渲染(同 overflow 裁剪家族 bug),废弃
   const baseRing: ViewStyle = { borderWidth: 2, borderColor: 'transparent', borderRadius: (flat.borderRadius ?? 12) + (haloColor ? 6 : 0) };
   const autoRing: ViewStyle = { borderColor: C.brand }; // lx142:常驻透明描边,聚焦只换色——布局/outline 恒定,无残框
   const haloStyle: ViewStyle | null = null;
+  // v1.2.6:合并外部 hover 处理器(PlCardWeb 等自管 hover 的组件)
+  const restIn = rest.onHoverIn as (() => void) | undefined;
+  const restOut = rest.onHoverOut as (() => void) | undefined;
+  if (IS_WEB) { delete rest.onHoverIn; delete rest.onHoverOut; }
   return (
     <Pressable
       focusable
       {...rest}
+      {...(IS_WEB ? {
+        onHoverIn: () => { setHov(true); restIn?.(); },
+        onHoverOut: () => { setHov(false); restOut?.(); },
+      } : {})}
       onFocus={() => setFocus(true)}
       onBlur={() => setFocus(false)}
       style={({ pressed }: { pressed: boolean }) => [
@@ -41,10 +55,13 @@ export function HDTouch({ style, focusStyle, focusBg, glow, zoom, haloColor, act
         baseRing,
         haloStyle,
         pressed && { opacity: activeOpacity },
-        focus && (focusStyle === undefined ? autoRing : focusStyle === false ? null : focusStyle),
-        focus && zoom != null && { transform: [{ scale: zoom }] }, // lx129:transform 仅聚焦时挂——常驻 scale(1) 强制硬件层,Android boxShadow 投影消失真凶(彩色弥散投影随卡保留,不另加暗影)
-        focus && focusBg != null && { backgroundColor: focusBg },
-        focus && glow != null && !TV_LOW_GPU && { boxShadow: glow },
+        // v1.2.6 桌面:hover 背景(选中态)——不需要描边
+        IS_WEB && hov && hoverBg != null && hoverBg !== false && { backgroundColor: hoverBg },
+        // TV:焦点环/glow/zoom(原逻辑零变化;web 全部不渲染)
+        !IS_WEB && focus && (focusStyle === undefined ? autoRing : focusStyle === false ? null : focusStyle),
+        !IS_WEB && focus && zoom != null && { transform: [{ scale: zoom }] }, // lx129:transform 仅聚焦时挂——常驻 scale(1) 强制硬件层,Android boxShadow 投影消失真凶(彩色弥散投影随卡保留,不另加暗影)
+        !IS_WEB && focus && focusBg != null && { backgroundColor: focusBg },
+        !IS_WEB && focus && glow != null && !TV_LOW_GPU && { boxShadow: glow },
       ]}
     >
       {children}

@@ -96,20 +96,9 @@ export function HDPodcast() {
         {POD_CHANNELS.map((ch, ci) => {
           const f = feeds[ch.id] || [];
           // lx88(老板反馈):底角也要圆角——卡加底色+全圆角 12(overflow 裁剪封面),环统一 14
+          // v1.2.6:抽 PodCard——web hover 投影/上浮;TV 结构不变
           return (
-            <HDTouch key={ch.id} style={[st.card, shadowStyleOf(ch.name)]} zoom={1.06} onPress={() => openChannel(ch)} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }}>
-              <LinearGradient colors={POD_GRADS[ci % POD_GRADS.length]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.cardCover}>
-                <Icon name="podcast" size={30} color="#FFFFFF" />
-                <View style={{ flex: 1 }} />
-                <HDTouch style={st.cardPlay} onPress={() => playChannel(ch)} focusStyle={{ borderWidth: 2, borderColor: '#FFFFFF', borderRadius: 15 }} activeOpacity={0.8}>
-                  <Icon name="play" size={13} color="#FFFFFF" />
-                </HDTouch>
-              </LinearGradient>
-              <View style={st.cardBody}>
-                <Text style={st.cardName} numberOfLines={1}>{ch.name}</Text>
-                <Text style={st.cardSub} numberOfLines={1}>{f.length ? `${f.length} 期 · ${f[0].name}` : ch.sub}</Text>
-              </View>
-            </HDTouch>
+            <PodCard key={ch.id} ch={ch} ci={ci} count={f.length} firstName={f[0]?.name} onOpen={() => openChannel(ch)} onPlay={() => playChannel(ch)} />
           );
         })}
       </HDGrid>
@@ -134,6 +123,29 @@ export function HDPodcast() {
       )}
                        <FocusBridge active />
       </ScrollView>
+  );
+}
+
+
+// v1.2.6:播客频道卡抽组件——web hover 投影/上浮+overflow 修渐变圆角;TV 原分支逐字保留
+function PodCard({ ch, ci, count, firstName, onOpen, onPlay }: { ch: { id: string; name: string; sub: string }; ci: number; count: number; firstName?: string; onOpen: () => void; onPlay: () => void }) {
+  const hc = useHoverCard(ch.name);
+  return (
+    <HDTouch style={[st.card, shadowStyleOf(ch.name), IS_WEB && hc.cardStyle, IS_WEB && { overflow: 'hidden' as const }]} zoom={1.06} onPress={onOpen} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }}
+      ref={IS_WEB ? (hc.elRef as never) : undefined}
+      {...(IS_WEB ? { onHoverIn: hc.onHoverIn, onHoverOut: hc.onHoverOut } : {})}>
+      <LinearGradient colors={POD_GRADS[ci % POD_GRADS.length]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.cardCover}>
+        <Icon name="podcast" size={30} color="#FFFFFF" />
+        <View style={{ flex: 1 }} />
+        <HDTouch style={st.cardPlay} onPress={onPlay} focusStyle={{ borderWidth: 2, borderColor: '#FFFFFF', borderRadius: 15 }} hoverBg={'rgba(255,255,255,.16)'} activeOpacity={0.8}>
+          <Icon name="play" size={13} color="#FFFFFF" />
+        </HDTouch>
+      </LinearGradient>
+      <View style={st.cardBody}>
+        <Text style={st.cardName} numberOfLines={1}>{ch.name}</Text>
+        <Text style={st.cardSub} numberOfLines={1}>{count ? `${count} 期 · ${firstName}` : ch.sub}</Text>
+      </View>
+    </HDTouch>
   );
 }
 

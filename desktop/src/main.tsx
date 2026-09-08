@@ -72,7 +72,7 @@ mountKbNav();
     '  -webkit-app-region:drag; }',
     '#nm-toprail .rail-side { width:174px; flex:0 0 auto; -webkit-app-region:drag;',
     '  background:' + (isMac ? (isLight ? '#F6F7F9' : '#121212') : 'transparent') + ';',
-    '  border-right:.5px solid ' + (isLight ? 'rgba(31,35,41,.10)' : 'rgba(255,255,255,.08)') + '; }',
+    '  border-right:1px solid ' + (isLight ? 'rgba(31,35,41,.10)' : 'rgba(255,255,255,.08)') + '; }',
     '#nm-toprail .rail-main { flex:1; -webkit-app-region:drag; }',
     /* 只对按钮挖 no-drag 孔(rail-side/rail-main 恒为拖拽面——`*` 全 no-drag 会废掉整行拖拽,清单坑②) */
     '#nm-toprail .rail-btns, #nm-toprail .rail-btns * { -webkit-app-region:no-drag; }',
@@ -80,6 +80,22 @@ mountKbNav();
     '.nm-card { transition: transform .16s ease, box-shadow .16s ease; }',
   ].join('\n');
   document.head.appendChild(css);
+
+  // v1.2.6(老板:横向一行滚动要适合桌面):滚轮纵向→容器横向滚动——
+  // 光标在横向行(推荐歌单/最近播放等)上时,滚轮直接横向翻,不再需要拖拽/Shift
+  document.addEventListener('wheel', (e) => {
+    if (e.ctrlKey || e.deltaY === 0 || e.deltaX !== 0) return;
+    let n: HTMLElement | null = e.target as HTMLElement;
+    for (let i = 0; i < 8 && n && n !== document.body; i++) {
+      const st = getComputedStyle(n);
+      if ((st.overflowX === 'auto' || st.overflowX === 'scroll') && n.scrollWidth > n.clientWidth + 4) {
+        n.scrollLeft += e.deltaY;
+        e.preventDefault();
+        return;
+      }
+      n = n.parentElement;
+    }
+  }, { passive: false });
 
   // ===== v1.2.3 卡片几何 JS 直控 =====
   // 并行重构后栈卡片序=DOM 序但 Main 不一定是首张(Boot 壳在前)——CSS nth-of-type 会误偏 Main(双栏 bug 根因)。

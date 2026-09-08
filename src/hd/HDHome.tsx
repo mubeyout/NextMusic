@@ -115,9 +115,14 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
       {recents.length ? (
         <Section title="最近播放" more="查看全部" onMore={() => hdNav()?.navigate('PlaylistDetail', { title: '最近播放', songs: recents, meta: `${recents.length} 首` })}>
           {/* 最近播放(lx88:横向 ScrollView 会裁切 zoom 溢出——小卡去 zoom 只留环;lx92:左右 padding 4 留出环的 2px 外溢,首尾卡选中不裁) */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: 10, paddingLeft: 26, paddingRight: 12, paddingTop: 6, paddingBottom: 16 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: 10, paddingLeft: 26, paddingRight: 12, paddingTop: IS_WEB ? 10 : 6, paddingBottom: IS_WEB ? 26 : 16 }}>
             {recents.slice(0, 8).map((s, i) => (
-              <HDTouch key={`${s.source}_${s.songmid}_${i}`} style={[st.recCard, shadowStyleOf(s.name), IS_WEB && webCardShadow(s.name) as never]} onPress={() => playSong(s, recents)}
+              IS_WEB ? (
+                <PlCardWeb key={`${s.source}_${s.songmid}_${i}`} width={96} compact
+                  pl={{ name: s.name, img: s.img, author: s.singer }}
+                  onOpen={() => playSong(s, recents)} onPlay={() => playSong(s, recents)} />
+              ) : (
+              <HDTouch key={`${s.source}_${s.songmid}_${i}`} style={[st.recCard, shadowStyleOf(s.name)]} onPress={() => playSong(s, recents)}
                 focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 11 }}>
                 {s.img ? <Image source={{ uri: s.img }} style={st.recArt} />
                   : <View style={[st.recArt, { backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={14} color={C.text3} /></View>}
@@ -126,6 +131,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
                   <Text style={st.recSub} numberOfLines={1}>{s.singer}</Text>
                 </View>
               </HDTouch>
+              )
             ))}
           </ScrollView>
         </Section>
@@ -134,7 +140,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
       {/* 推荐歌单(五源聚合,单行横滑 lx131) */}
       <Section title="推荐歌单" hint={recSource ? `五源聚合 · ${recSource}` : '五源聚合'} more="更多" onMore={() => onGotoSearch?.()}>
         {recPls.length ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: 12, paddingLeft: 26, paddingRight: 12, paddingTop: 6, paddingBottom: 16 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: 12, paddingLeft: 26, paddingRight: 12, paddingTop: IS_WEB ? 10 : 6, paddingBottom: IS_WEB ? 26 : 16 }}>
             {recPls.slice(0, 10).map(pl => (
               IS_WEB ? (
                 <PlCardWeb key={`${pl.source}_${pl.id}`} width={148} pl={pl} onOpen={() => openRecPl(pl)} onPlay={() => openRecPl(pl)} />
@@ -212,7 +218,7 @@ function BigCard({ colors, badge, title, sub, onPress, busy }: { colors: [string
     <HDTouch activeOpacity={0.9} onPress={onPress} zoom={1.04}
       ref={elRef as never}
       focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.card + 2 }}
-      style={{ flex: 1, height: IS_WEB ? 104 : 88, borderRadius: H.radius.card, ...(webSh || {}), ...(hov && IS_WEB ? { transform: [{ translateY: -4 }] } : {}) }}
+      style={{ flex: 1, height: IS_WEB ? 104 : 88, borderRadius: H.radius.card, ...(IS_WEB ? st.bigCardWeb : {}), ...(webSh || {}), ...(hov && IS_WEB ? { transform: [{ translateY: -4 }] } : {}) }}
       {...(IS_WEB ? { onHoverIn: () => { t.current && clearTimeout(t.current); t.current = setTimeout(() => setHov(true), 80); }, onHoverOut: () => { t.current && clearTimeout(t.current); setHov(false); } } as Record<string, unknown> : {})}>
       <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.bigBg} />
       <View style={st.big}>
@@ -247,6 +253,9 @@ const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   greet: { color: C.text, fontSize: H.font.hero, fontWeight: '800' },
   bigBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: H.radius.card },
+  // v1.2.6:web 圆角真修——react-native-linear-gradient 在 RNW 不吃 borderRadius(实测卡角方形),
+  // 卡根 overflow hidden 直接裁(老板:每日推荐/私人雷达圆角没有了);TV 不动(原生正常)
+  bigCardWeb: { overflow: 'hidden' as const, borderRadius: 12 },
   big: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 14, gap: 13, borderRadius: H.radius.card },
   bigBadge: { color: '#fff', fontSize: 18, fontWeight: '800', opacity: 0.92 },
   bigTitle: { color: '#fff', fontSize: H.font.xl, fontWeight: '700' },
@@ -263,6 +272,7 @@ const st = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   // 卡片内文字离边留气口(老板反馈:文字太贴边,左右和底部缺 padding)
   plCard: { width: '100%', gap: 5, paddingBottom: 7, borderRadius: 12, backgroundColor: C.surface },
+  plCardSm: { gap: 3, paddingBottom: 4 },
   plMask: { position: 'absolute', top: 0, left: 0, right: 0, height: 126, backgroundColor: 'rgba(0,0,0,.38)', borderRadius: 12 },
   plPlay: { position: 'absolute', right: 7, bottom: 7, width: 44, height: 44, borderRadius: 22, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }, // lx98:去 overflow;顶角由封面带
   plArt: { width: '100%', aspectRatio: 1, borderTopLeftRadius: 12, borderTopRightRadius: 12 },
@@ -284,7 +294,7 @@ const st = StyleSheet.create({
 // v1.2.4 D1 A1b + v1.2.5 视觉保真(仅 web):歌单卡——彩色弥散投影(RNW 靠 shadow* 四件套,
 // shadowStyleOf 的 elevation 在 web 不渲染)+hover 上浮/投影加深(.nm-card CSS 过渡)+封面遮罩+
 // 右下 44px 绿圆播放钮(150ms ease-out 上浮);点钮=播放全部,点卡其余=进详情。TV 不渲染本组件
-function PlCardWeb({ pl, width, onOpen, onPlay }: { pl: { name: string; img?: string; count?: number; author?: string; play_count?: string }; width?: number; onOpen: () => void; onPlay: () => void }) {
+function PlCardWeb({ pl, width, compact, onOpen, onPlay }: { pl: { name: string; img?: string; count?: number; author?: string; play_count?: string }; width?: number; compact?: boolean; onOpen: () => void; onPlay: () => void }) {
   const [hov, setHov] = useState(false);
   const t = useRef<ReturnType<typeof setTimeout> | null>(null);
   const elRef = useRef<View | null>(null); // RNW View ref=DOM(坑131)——挂 .nm-card 过渡类
@@ -296,18 +306,18 @@ function PlCardWeb({ pl, width, onOpen, onPlay }: { pl: { name: string; img?: st
   return (
     <HDTouch
       ref={elRef as never}
-      style={[st.plCard, width != null && { width }, shadow, hov && { transform: [{ translateY: -4 }, { scale: 1.02 }] }]}
+      style={[st.plCard, compact && st.plCardSm, width != null && { width }, shadow, hov && { transform: [{ translateY: -4 }, { scale: 1.02 }] }]}
       zoom={1.06} onPress={onOpen}
       {...({ onHoverIn: () => { t.current && clearTimeout(t.current); t.current = setTimeout(() => setHov(true), 80); }, onHoverOut: () => { t.current && clearTimeout(t.current); setHov(false); } } as Record<string, unknown>)}>
       <View style={{ position: 'relative' }}>
         {pl.img
           ? <Image source={{ uri: pl.img }} style={st.plArt} />
           : <View style={[st.plArt, { backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
-        <View style={[st.plCount, IS_WEB && st.plCountWeb]}><Text style={st.plCountText}>▶ {pl.count}</Text></View>
-        {/* A1b 遮罩+播放钮 */}
+        {pl.count != null ? <View style={[st.plCount, IS_WEB && st.plCountWeb]}><Text style={st.plCountText}>▶ {pl.count}</Text></View> : null}
+        {/* A1b 遮罩+播放钮(compact 模式 32px,标准 44px) */}
         <View pointerEvents={hov ? 'auto' : 'none'} style={[st.plMask, { opacity: hov ? 1 : 0 }]} />
-        <HDTouch style={[st.plPlay, { opacity: hov ? 1 : 0, transform: [{ translateY: hov ? 0 : 6 }] }]} onPress={onPlay}>
-          <Icon name="play" size={17} color={C.onBrand} />
+        <HDTouch style={[st.plPlay, compact && { width: 32, height: 32, borderRadius: 16 }, { opacity: hov ? 1 : 0, transform: [{ translateY: hov ? 0 : 6 }] }]} onPress={onPlay}>
+          <Icon name="play" size={compact ? 13 : 17} color={C.onBrand} />
         </HDTouch>
       </View>
       <View style={st.plTexts}>

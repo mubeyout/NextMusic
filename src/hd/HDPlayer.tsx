@@ -221,9 +221,11 @@ export function HDPlayer() {
 
         <View style={stW.body}>
           <View style={stW.artCol}>
+            {/* v1.2.6(老板:频谱波浪/唱片乱):环尺寸 == 唱片外径(SpectrumRing inner=R+2% 假设唱片贴满盒,
+             * 之前环 344/唱片 312 → 波浪内缘离唱片 24px 悬空);两者同 320,波浪贴着唱片外缘 */}
             <View style={stW.vinylZone}>
-              <SpectrumRing size={344} playing={playing} />
-              {HD_VINYL_SVG(current?.img, 312, playing)}
+              <SpectrumRing size={320} playing={playing} />
+              {HD_VINYL_SVG(current?.img, 320, playing)}
             </View>
             <View style={stW.srcPill}>
               <View style={stW.srcDot} />
@@ -508,7 +510,7 @@ const stW = StyleSheet.create({
   backLabel: { color: C.text2, fontSize: 13, fontWeight: '600' },
   body: { flex: 1, flexDirection: 'row', paddingHorizontal: 64, gap: 56, alignItems: 'center' },
   artCol: { flex: 0.92, alignItems: 'center' },
-  vinylZone: { width: 344, height: 344, alignItems: 'center', justifyContent: 'center' },
+  vinylZone: { width: 320, height: 320, alignItems: 'center', justifyContent: 'center' },
   srcPill: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 24, borderRadius: 12, marginTop: 18, paddingHorizontal: 12, borderWidth: 1, borderColor: C.border, backgroundColor: C.input },
   srcDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.brand },
   srcTag: { color: C.text2, fontSize: 10, letterSpacing: 2, fontWeight: '600' },

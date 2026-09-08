@@ -5,9 +5,12 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Image } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
-import { C, H, shadowStyleOf } from './hdtokens';
+import { C, H, shadowStyleOf, webCardShadow } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { HDGrid } from './HDGrid';
+import { useHoverCard } from './hdweb';
+import { Platform } from 'react-native';
+const IS_WEB = Platform.OS === 'web';
 import { lxapi } from '../services/lxapi';
 import type { SongItem } from '../services/server';
 import { toast } from '../components/Dialog';
@@ -83,33 +86,44 @@ export function HDBoards() {
         <View style={st.tip}><ActivityIndicator color={C.brand} size="large" /><Text style={st.tipText}>榜单加载中…</Text></View>
       ) : (
         // lx83(老板反馈):封面顶角补圆角随卡 12——卡全圆角,环统一 14 贴附;zoom 悬浮放大
+        // v1.2.6 web:彩色投影+hover 上浮(老板:卡片要 hover;elevation 在 RNW 不渲染)+overflow hidden 修渐变圆角
         <HDGrid min={128 * (H.font.sm / 10)}>
           {boards.map((b, i) => (
-            <HDTouch key={b.id} onPress={() => openBoard(b)} activeOpacity={0.85} zoom={1.06}
-              style={[st.card, shadowStyleOf(b.name)]}
-              focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }}
->
-              {b.image ? (
-                <Image source={{ uri: b.image }} style={st.cardCover} />
-              ) : (
-                <LinearGradient colors={ACCENTS[i % ACCENTS.length]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.cardCover}>
-                  <Icon name="ranking" size={42} color="#FFFFFFB3" />
-                </LinearGradient>
-              )}
-              <View style={st.cardChipWrapper}>
-                <View style={st.cardChip}><Text style={st.cardChipText}>{SOURCES.find(s => s.key === src)?.label ?? src}</Text></View>
-              </View>
-              <View style={st.cardBody}>
-                <Text style={st.cardName} numberOfLines={2}>{b.name}</Text>
-                <Text style={st.cardSub} numberOfLines={1}>{SOURCES.find(s => s.key === src)?.label} · 实时榜单</Text>
-              </View>
-            </HDTouch>
+            <BoardCard key={b.id} b={b} i={i} src={src} busy={busy} onOpen={() => openBoard(b)} />
           ))}
         </HDGrid>
       )}
       {boards != null && !boards.length ? <Text style={st.tipText}>榜单加载失败,切源重试</Text> : null}
                        <FocusBridge active />
       </ScrollView>
+  );
+}
+
+// v1.2.6:榜单卡抽组件——web 侧 hover 投影/上浮+overflow 修圆角;TV 原分支逐字保留
+function BoardCard({ b, i, src, onOpen }: { b: Board; i: number; src: string; busy: boolean; onOpen: () => void }) {
+  const hc = useHoverCard(b.name);
+  return (
+    <HDTouch onPress={onOpen} activeOpacity={0.85} zoom={1.06}
+      ref={IS_WEB ? (hc.elRef as never) : undefined}
+      {...(IS_WEB ? { onHoverIn: hc.onHoverIn, onHoverOut: hc.onHoverOut } : {})}
+      style={[st.card, shadowStyleOf(b.name), IS_WEB && hc.cardStyle, IS_WEB && { overflow: 'hidden' as const }]}
+      focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }}
+    >
+      {b.image ? (
+        <Image source={{ uri: b.image }} style={st.cardCover} />
+      ) : (
+        <LinearGradient colors={ACCENTS[i % ACCENTS.length]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.cardCover}>
+          <Icon name="ranking" size={42} color="#FFFFFFB3" />
+        </LinearGradient>
+      )}
+      <View style={st.cardChipWrapper}>
+        <View style={st.cardChip}><Text style={st.cardChipText}>{SOURCES.find(s => s.key === src)?.label ?? src}</Text></View>
+      </View>
+      <View style={st.cardBody}>
+        <Text style={st.cardName} numberOfLines={2}>{b.name}</Text>
+        <Text style={st.cardSub} numberOfLines={1}>{SOURCES.find(s => s.key === src)?.label} · 实时榜单</Text>
+      </View>
+    </HDTouch>
   );
 }
 

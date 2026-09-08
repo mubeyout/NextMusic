@@ -18,7 +18,7 @@ export function LinearGradient({ colors, start = { x: 0, y: 0 }, end = { x: 1, y
   const angle = Math.round((Math.atan2(dy, dx) * 180) / Math.PI + 90 + 360) % 360;
   const flat = StyleSheet.flatten(style as never) as Record<string, unknown> | undefined;
   return (
-    <div style={{ position: 'relative', ...(flat as object) }}>
+    <div style={{ position: 'relative', overflow: 'hidden', ...(flat as object) }}>
       <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(${angle}deg, ${colors.join(', ')})`, pointerEvents: 'none' }} />
       {children}
     </div>
