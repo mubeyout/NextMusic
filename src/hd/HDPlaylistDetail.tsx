@@ -21,14 +21,16 @@ import { toast, dialog } from '../components/Dialog';
 import { sync, isPlatformList } from '../services/sync';
 import { useApp } from '../state/AppState';
 import type { SongItem } from '../services/server';
+import { isArtistFav, toggleArtistFav, useArtistFavTick, type ArtistFav } from '../state/artistFavs'; // lx161
 
-interface Params { title?: string; songs?: SongItem[]; meta?: string; localId?: string; plKey?: string; love?: boolean; }
+interface Params { title?: string; songs?: SongItem[]; meta?: string; localId?: string; plKey?: string; love?: boolean; artist?: ArtistFav; }
 
 export function HDPlaylistDetailScreen() {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void };
   const route = useRoute();
   const p = route.params as Params;
+  useArtistFavTick(); // lx161:歌手收藏状态联动(菜单标签即时翻转)
   const { playSong, current, appendQueue, playNextUp } = usePlayer();
 
   // 本地歌单:进页时重读(支持返回后刷新);远端歌单:songs 直传
@@ -133,6 +135,9 @@ export function HDPlaylistDetailScreen() {
       return;
     }
     hdActions.menu(`管理「${title}」`, [
+      ...(p.artist ? [{ label: isArtistFav(p.artist) ? '取消收藏歌手' : '收藏歌手', icon: 'user', onPress: () => {
+        toggleArtistFav(p.artist!).then(on => toast(on ? `已收藏 ${p.artist!.name}` : `已取消收藏 ${p.artist!.name}`)).catch(() => toast('服务器写入失败'));
+      } }] : []), // lx161:歌手页收藏互通
       { label: '重命名歌单', icon: 'edit', onPress: () => {
         hdActions.prompt('重命名歌单', { defaultValue: title, onSubmit: async (v) => {
           if (!v || v === title) return;

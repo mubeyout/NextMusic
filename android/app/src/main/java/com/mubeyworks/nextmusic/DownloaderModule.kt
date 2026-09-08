@@ -1,6 +1,10 @@
 package com.mubeyworks.nextmusic
 
 import android.os.Environment
+import android.content.ContentValues
+import android.provider.MediaStore
+import android.graphics.BitmapFactory
+import android.util.Base64
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
@@ -33,6 +37,43 @@ class DownloaderModule(reactContext: ReactApplicationContext) : ReactContextBase
 
     @ReactMethod
     fun cancelDownload(key: String) { cancelled[key] = true }
+
+    // lx161:歌词卡片——base64 PNG 存入相册(MediaStore,Android 10+ 免权限;旧版落 Pictures 目录)
+    @ReactMethod
+    fun saveBase64ToGallery(b64: String, displayName: String, promise: Promise) {
+        exec.execute {
+            try {
+                val data = if (b64.contains(",")) b64.substringAfter(",") else b64
+                val bytes = Base64.decode(data, Base64.DEFAULT)
+                val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                    ?: throw IllegalArgumentException("not an image")
+                val name = if (displayName.endsWith(".png")) displayName else "$displayName.png"
+                val cv = ContentValues().apply {
+                    put(MediaStore.Images.Media.DISPLAY_NAME, name)
+                    put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+                    if (android.os.Build.VERSION.SDK_INT >= 29) {
+                        put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/NextMusic")
+                        put(MediaStore.Images.Media.IS_PENDING, 1)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        val dir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "NextMusic")
+                        if (!dir.exists()) dir.mkdirs()
+                        put(MediaStore.Images.Media.DATA, File(dir, name).absolutePath)
+                    }
+                }
+                val uri = reactApplicationContext.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, cv)
+                    ?: throw IllegalStateException("insert failed")
+                reactApplicationContext.contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
+                if (android.os.Build.VERSION.SDK_INT >= 29) {
+                    cv.clear(); cv.put(MediaStore.Images.Media.IS_PENDING, 0)
+                    reactApplicationContext.contentResolver.update(uri, cv, null, null)
+                }
+                promise.resolve(uri.toString())
+            } catch (e: Exception) {
+                promise.reject("SAVE_IMG", e.message ?: "save failed", e)
+            }
+        }
+    }
 
     // vc82：公共音乐目录下载（MediaStore Music/NextMusic，Android 10+；文件管理器可见、卸载不删）
     @ReactMethod

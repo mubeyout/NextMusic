@@ -14,6 +14,7 @@ import { PageHeader } from '../components/PageChrome';
 import { library } from '../state/library';
 import { sync } from '../services/sync';
 import { setFav } from '../state/favorites';
+import { isArtistFav, toggleArtistFav, useArtistFavTick, type ArtistFav } from '../state/artistFavs'; // lx161:歌手收藏
 import { usePlayer } from '../state/PlayerProvider';
 import { api, type SongItem, type SongListMeta } from '../services/server';
 import type { LocalPlaylist } from '../state/library';
@@ -59,6 +60,8 @@ export function PlaylistDetailScreen() {
   const [kw, setKw] = useState('');
   const [searching, setSearching] = useState(false);
   const localPl = p.localId ? library.get(p.localId) : null;
+  const artistTick = useArtistFavTick(); // lx161:歌手收藏状态联动
+  const artist = (p as { artist?: ArtistFav }).artist;
   const [collect, setCollect] = useState(false);
   const [pdLimit, setPdLimit] = useState(40); // lx135:增量渲染(大歌单全渲染卡顿)
   const [, force] = useState(0);
@@ -239,6 +242,10 @@ export function PlaylistDetailScreen() {
         title={localPl?.name || '歌单'}
         items={[
           { label: '歌单内搜索', onPress: () => setSearching(true) },
+          // lx161:歌手页(从收藏歌手/歌手入口打开)——收藏/取消收藏歌手,与 web 端同源多端互通
+          ...(artist ? [{ label: isArtistFav(artist) ? '取消收藏歌手' : '收藏歌手', onPress: () => {
+            toggleArtistFav(artist).then(on => toast(on ? `已收藏 ${artist.name}` : `已取消收藏 ${artist.name}`)).catch(() => toast('服务器写入失败'));
+          } }] : []),
           ...(localPl?.remoteId ? [{ label: syncing ? '同步中…' : '重新同步歌单', onPress: () => resyncPl() }] : []),
           ...(localPl?.songs.some(s => isProviderSongSource(s.source)) ? [{ label: '移除失效歌曲', onPress: () => cleanBroken() }] : []),
           ...(localPl || (p as { plKey?: string }).plKey ? [

@@ -15,6 +15,7 @@ import { useApp } from '../state/AppState';
 import { library } from '../state/library';
 import { useFav } from '../state/useFav'; // lx157:统一收藏 hook(本地MMKV+歌单+服务器三源实时联动,替代手搓 effect)
 import { CollectSheet } from '../components/CollectSheet';
+import { LyricCardModal } from '../components/LyricCardModal'; // lx161:歌词卡片
 import { ActionSheet } from '../components/ActionSheet';
 import { DeviceSheet } from './RouteScreen';
 import { enqueueDownload, downloads as dlStore, downloadProgress, subscribeDownloads } from '../services/downloads';
@@ -30,6 +31,7 @@ export function PlayerScreen() {
   const { faved, toggle: toggleFav } = useFav(current); // lx157:收藏状态三源实时联动(isFav+歌单+服务器快照,取订刷新)
   const [collect, setCollect] = useState(false);
   const [more, setMore] = useState(false);
+  const [cardOpen, setCardOpen] = useState(false); // lx161:歌词卡片
   const [deviceSheet, setDeviceSheet] = useState(false); // 设备选择：悬浮层（不再全屏跳页）
   const [, forceDl] = useState(0);
   useEffect(() => subscribeDownloads(() => forceDl(n => n + 1)), []);
@@ -298,6 +300,7 @@ export function PlayerScreen() {
             : { label: '下载这首歌', onPress: () => { enqueueDownload([current]); toast(`已加入下载队列 · ${current.name}`); } },
           { label: '收藏到歌单', onPress: openCollect },
           { label: '查看播放队列', onPress: () => nav.navigate('Queue') },
+          { label: '歌词卡片', onPress: () => setCardOpen(true) }, // lx161:歌词卡片分享
           { label: '均衡器与音效', onPress: () => nav.navigate('Fx') },
           { label: '选择播放设备', onPress: () => setDeviceSheet(true) },
           { label: '播放器设置', onPress: () => nav.navigate('PlayerSettings') },
@@ -305,6 +308,7 @@ export function PlayerScreen() {
       />
 
       <DeviceSheet visible={deviceSheet} onClose={() => setDeviceSheet(false)} />
+      <LyricCardModal visible={cardOpen} onClose={() => setCardOpen(false)} song={current} lyrics={lyrics} positionSec={position} />
     </View>
   );
 }

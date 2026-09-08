@@ -103,6 +103,7 @@ export function HDMy() {
       <View style={{ flexDirection: 'row', paddingHorizontal: 34, gap: 16 }}>
         {[
           { icon: 'music' as const, label: '媒体库', sub: `${providerCount} 个连接`, to: 'MediaLibs' },
+          { icon: 'user' as const, label: '收藏歌手', sub: '多端同步', to: 'ArtistFavs' }, // lx161:服务器歌手收藏入口
           { icon: 'download' as const, label: '下载管理', sub: '离线歌曲', to: 'Downloads' },
           { icon: 'headphones' as const, label: '本地音乐', sub: '设备扫描', to: 'DeviceMusic' },
           { icon: 'settings' as const, label: '设置', sub: '音源/音效/主题', to: 'Settings' },

@@ -34,6 +34,7 @@ import { PlayerSettingsScreen } from '../screens/PlayerSettingsScreen';
 import { ImportPlaylistScreen } from '../screens/ImportPlaylistScreen';
 import { FxScreen } from '../screens/FxScreen';
 import { MediaLibsScreen, ProviderBrowseRoute } from '../screens/MediaLibsScreen';
+import { ArtistFavScreen } from '../screens/ArtistFavScreen'; // lx161:收藏歌手
 import { ProviderEditScreen } from '../screens/ProviderEditScreen';
 import { ProviderDetailScreen } from '../screens/ProviderDetailScreen';
 import { DownloadsScreen } from '../screens/DownloadsScreen';
@@ -230,7 +231,7 @@ export function HDMain() {
           {/* 我的乐库 */}
           <Group label="我的乐库" top={8} />
           <NavItem icon="server" label="媒体库" onPress={() => railNav('MediaLibs')} />
-          <HDTouch style={st.navItem} focusStyle={st.navFocus} onPress={openFavorites}>
+          <HDTouch style={st.navItem} focusStyle={st.navFocus} hoverBg={IS_WEB ? C.hover : false} onPress={openFavorites}>
             <Icon name="heart" size={16} color={C.text2} />
             <Text style={st.navLabel} numberOfLines={1}>我喜欢的{loveCount != null ? ` · ${loveCount}` : ''}</Text>
           </HDTouch>
@@ -272,6 +273,7 @@ export function HDMain() {
             <InnerStack.Screen name="ImportPlaylist" component={ImportPlaylistScreen} />
             <InnerStack.Screen name="Fx" component={FxScreen} />
             <InnerStack.Screen name="MediaLibs" component={MediaLibsScreen} />
+            <InnerStack.Screen name="ArtistFavs" component={ArtistFavScreen} />
             <InnerStack.Screen name="ProviderEdit" component={ProviderEditScreen} />
             <InnerStack.Screen name="ProviderBrowse" component={ProviderBrowseRoute} />
             <InnerStack.Screen name="ProviderDetail" component={ProviderDetailScreen} />
@@ -331,7 +333,7 @@ function Group({ label, top = 4 }: { label: string; top?: number }) {
 
 function NavItem({ icon, label, active, first, onPress }: { icon: string; label: string; active?: boolean; first?: boolean; onPress: () => void }) {
   return (
-    <HDTouch style={[st.navItem, active && st.navItemOn]} focusStyle={st.navFocus} hasTVPreferredFocus={first}
+    <HDTouch style={[st.navItem, active && st.navItemOn]} focusStyle={st.navFocus} hoverBg={IS_WEB && !active ? C.hover : false} hasTVPreferredFocus={first}
       onPress={onPress}>
       <Icon name={icon as never} size={16} color={active ? C.text : C.text2} />
       <Text style={[st.navLabel, active && { fontWeight: '700', color: C.text }]} numberOfLines={1}>{label}</Text>
@@ -342,7 +344,7 @@ function NavItem({ icon, label, active, first, onPress }: { icon: string; label:
 function PlItem({ name, count, add, onPress, onLongPress }: { name: string; count?: number; add?: boolean; onPress: () => void; onLongPress?: () => void }) {
   // 桌面版同构:单行(图标块 + 名字),计数折进后缀,保证文字与图标严格垂直居中
   return (
-    <HDTouch style={st.plItem} focusStyle={st.navFocus} onPress={onPress} onLongPress={onLongPress}>
+    <HDTouch style={st.plItem} focusStyle={st.navFocus} hoverBg={IS_WEB ? C.hover : false} onPress={onPress} onLongPress={onLongPress}>
       {add
         ? <View style={st.plAddChip}><Icon name="add" size={12} color={C.text3} /></View>
         : <View style={st.plChip}><Icon name="music" size={10} color={C.text3} /></View>}
@@ -375,20 +377,20 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
       {/* 中:控件 + 进度(两行同宽对齐——v1.1.6 修错位) */}
       <View style={st.pbCenter}>
         <View style={st.pbCtrls}>
-          <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={() => setShuffle(!shuffle)}>
+          <HDTouch style={st.tool} focusStyle={st.toolFocus} hoverBg={IS_WEB ? C.hover : false} onPress={() => setShuffle(!shuffle)}>
             <Icon name="shuffle" size={13} active={shuffle} color={shuffle ? C.brand : C.text2} />
           </HDTouch>
-          <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={skipPrev}>
+          <HDTouch style={st.tool} focusStyle={st.toolFocus} hoverBg={IS_WEB ? C.hover : false} onPress={skipPrev}>
             <Icon name="previous" size={15} color={C.text} />
           </HDTouch>
           <HDTouch style={st.playBtn} focusStyle={st.playBtnFocus} glow={SH.brand} onPress={toggle}
             onLayout={e => { const h = (e.nativeEvent as unknown as { target: number }).target; if (h && h !== pbBridgeHandle) { pbBridgeHandle = h; pbBridgeSubs.forEach(f => f()); } }}>
             <Icon name={playing ? 'pause' : 'play'} size={15} color={C.onBrand} />
           </HDTouch>
-          <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={skipNext}>
+          <HDTouch style={st.tool} focusStyle={st.toolFocus} hoverBg={IS_WEB ? C.hover : false} onPress={skipNext}>
             <Icon name="next" size={15} color={C.text} />
           </HDTouch>
-          <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={cycleRepeat}>
+          <HDTouch style={st.tool} focusStyle={st.toolFocus} hoverBg={IS_WEB ? C.hover : false} onPress={cycleRepeat}>
             <Icon name="repeat" size={13} active={repeat !== 'off'} color={repeat !== 'off' ? C.brand : C.text2} />
             {repeat === 'one' ? <Text style={st.toolRepOne}>1</Text> : null}
           </HDTouch>
@@ -405,17 +407,17 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
 
       {/* 右:收藏(点按弹选歌单面板,对齐手机端) */}
       <View style={st.pbRight}>
-        <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={() => current && onCollect?.(current)}>
+        <HDTouch style={st.tool} focusStyle={st.toolFocus} hoverBg={IS_WEB ? C.hover : false} onPress={() => current && onCollect?.(current)}>
           <Icon name="heart" size={14} color={faved ? C.brand : C.text2} />
         </HDTouch>
-        <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={() => hdNav()?.navigate('Queue')}>
+        <HDTouch style={st.tool} focusStyle={st.toolFocus} hoverBg={IS_WEB ? C.hover : false} onPress={() => hdNav()?.navigate('Queue')}>
           <Icon name="queue" size={14} color={C.text2} />
           {queue.length ? <View style={st.badge}><Text style={st.badgeText}>{queue.length > 99 ? '99' : queue.length}</Text></View> : null}
         </HDTouch>
-        <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={() => hdNav()?.navigate('Route')}>
+        <HDTouch style={st.tool} focusStyle={st.toolFocus} hoverBg={IS_WEB ? C.hover : false} onPress={() => hdNav()?.navigate('Route')}>
           <Icon name="devices" size={14} color={C.text2} />
         </HDTouch>
-        <HDTouch style={st.tool} focusStyle={st.toolFocus} onPress={() => hdNav()?.navigate('Player')}>
+        <HDTouch style={st.tool} focusStyle={st.toolFocus} hoverBg={IS_WEB ? C.hover : false} onPress={() => hdNav()?.navigate('Player')}>
           <Icon name="fullscreen" size={14} color={C.text2} />
         </HDTouch>
       </View>

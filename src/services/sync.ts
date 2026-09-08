@@ -168,12 +168,19 @@ export const sync = {
       return true;
     } catch { return false; }
   },
-  async libraryArtists(): Promise<{ name: string; id: string; img?: string; count?: number }[]> {
+  async libraryArtists(): Promise<{ name: string; id: string; source?: string; img?: string; count?: number }[]> {
     try {
-      const d = (await req('/api/user/library/artists')) as { list?: { name: string; id?: string; img?: string; count?: number }[] } | { name: string; id: string; img?: string; count?: number }[];
+      const d = (await req('/api/user/library/artists')) as { list?: { name: string; id?: string; source?: string; img?: string; count?: number }[] } | { name: string; id?: string; source?: string; img?: string; count?: number }[];
       const list = Array.isArray(d) ? d : d.list || [];
-      return list.map(a => ({ name: a.name, id: String(a.id ?? a.name), img: a.img, count: a.count }));
+      return list.map(a => ({ name: a.name, id: String(a.id ?? a.name), source: a.source, img: a.img, count: a.count }));
     } catch { return []; }
+  },
+  // lx161:歌手收藏写入(服务器 API 为全量覆盖)——web 端同款接口,多端互通
+  async pushLibraryArtists(list: { name: string; id: string; source?: string; img?: string; count?: number }[]): Promise<boolean> {
+    try {
+      await req('/api/user/library/artists', { method: 'POST', headers: { "Content-Type": "application/json" }, body: JSON.stringify(list), timeout: 15000 });
+      return true;
+    } catch { return false; }
   },
   async libraryAlbums(): Promise<{ name: string; singer?: string; id: string; img?: string }[]> {
     try {

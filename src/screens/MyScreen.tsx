@@ -12,6 +12,7 @@ import { dialog, toast } from '../components/Dialog';
 import { IS_HD } from '../services/appversion';
 import { hdActions } from '../hd/HDActions';
 import { SongRow } from '../components/SongRow';
+import { isArtistFav, toggleArtistFav, refreshArtistFavs, useArtistFavTick, type ArtistFav } from '../state/artistFavs'; // lx161:歌手收藏
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
 import { library, type LocalPlaylist } from '../state/library';
@@ -45,7 +46,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
 
   const [snap, setSnap] = useState<UserListsSnapshot | null>(null);
   const [syncing, setSyncing] = useState(false);
-  const [artists, setArtists] = useState<{ name: string; id: string; img?: string; count?: number }[] | null>(null);
+  const [artists, setArtists] = useState<{ name: string; id: string; source?: string; img?: string; count?: number }[] | null>(null);
   const [albums, setAlbums] = useState<{ name: string; singer?: string; id: string; img?: string }[] | null>(null);
   const [recents, setRecents] = useState<SongItem[]>([]);
   const [dlList, setDlList] = useState(dlStore.all());
@@ -74,19 +75,20 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
 
   useEffect(() => { if (visible) refresh(); }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const artistTick = useArtistFavTick(); // lx161:收藏变更联动(取消后列表即时刷新)
   useEffect(() => {
-    if (tab === 1 && artists == null && loggedIn) sync.libraryArtists().then(setArtists);
+    if (tab === 1 && loggedIn) refreshArtistFavs().then(l => { if (l.length || artists != null) setArtists(l); }); // lx161:取消收藏后列表即时同步
     if (tab === 2 && albums == null && loggedIn) sync.libraryAlbums().then(setAlbums);
-  }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [tab, artistTick]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const openSongs = (title: string, songs: SongItem[], cover?: string, opts?: { love?: boolean; plKey?: string }) => {
+  const openSongs = (title: string, songs: SongItem[], cover?: string, opts?: { love?: boolean; plKey?: string; artist?: ArtistFav }) => {
     if (!songs.length) return;
     nav.navigate('PlaylistDetail', { title, songs, cover, meta: `${songs.length} 首`, ...opts });
   };
 
-  const openArtist = async (a: { name: string; id: string }) => {
-    const songs = await api.artistSongs(a.id, 'wy');
-    openSongs(a.name, songs);
+  const openArtist = async (a: { name: string; id: string; source?: string; img?: string }) => {
+    const songs = await api.artistSongs(a.id, a.source || 'wy');
+    openSongs(a.name, songs, a.img, { artist: a }); // lx161:透传歌手元数据,详情页可收藏
   };
   const openAlbum = async (a: { name: string; id: string; singer?: string; img?: string }) => {
     const songs = await api.albumSongs(a.id, 'wy');
@@ -255,6 +257,10 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
                   <Text style={st.rowName} numberOfLines={1}>{a.name}</Text>
                   <Text style={st.rowMeta}>{a.count != null ? `${a.count} 首歌曲` : '点击查看歌曲'}</Text>
                 </View>
+                {/* lx161:取消收藏(服务器同步) */}
+                <TouchableOpacity hitSlop={8} onPress={() => toggleArtistFav(a).then(on => toast(on ? `已收藏 ${a.name}` : `已取消收藏 ${a.name}`)).catch(() => toast('服务器写入失败'))}>
+                  <Icon name="heart" size={20} active={isArtistFav(a)} color={isArtistFav(a) ? '#FF5A76' : C.text2} />
+                </TouchableOpacity>
                 <Icon name="next" size={18} color={C.text2} />
               </TouchableOpacity>
             )) : <Text style={st.empty}>暂无收藏歌手</Text>}
