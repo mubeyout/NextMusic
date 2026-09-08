@@ -103,10 +103,19 @@ function bumpSync() { syncSubs.forEach(f => f()); }
 
 export const sync = {
   /** lx104:上次快照缓存(MMKV)——冷启动侧栏/我的页秒出,后台刷新覆盖(大快照拉取慢=加载缓慢根因) */
+  _snapCache: null as UserListsSnapshot | null | undefined, // lx163h:快照解析缓存(与 lastSnapJson 绑定)
   cachedLists(): UserListsSnapshot | null {
-    try { return JSON.parse(kvSync.getString('snap') || 'null') as UserListsSnapshot | null; } catch { return null; }
+    if (this._snapCache !== undefined) return this._snapCache; // undefined=未解析,null=无快照
+    try { this._snapCache = JSON.parse(kvSync.getString('snap') || 'null') as UserListsSnapshot | null; } catch { this._snapCache = null; }
+    return this._snapCache;
   },
-  async fetchLists(): Promise<UserListsSnapshot | null> {
+  _lastFetchAt: 0, // lx163h:拉取 TTL——前台切换/多界面并发不再人人打服务器
+  async fetchLists(opts?: { force?: boolean }): Promise<UserListsSnapshot | null> {
+    // 20s 内有人拉过且内容非空→直接复用(手动刷新传 force)
+    if (!opts?.force && Date.now() - this._lastFetchAt < 20000) {
+      const c = this.cachedLists();
+      if (c && (c.defaultList?.length || c.userList?.length)) return c;
+    }
     try {
       const d = (await req('/api/user/list', { timeout: 10000 })) as UserListsSnapshot;
       console.log('[sync] user/list resp type:', typeof d, '| defaultList:', Array.isArray((d as any)?.defaultList) ? (d as any).defaultList.length : String((d as any)?.defaultList).slice(0, 40));
@@ -115,8 +124,9 @@ export const sync = {
       // lx126 卡顿优化:内容未变跳过 MB 级 stringify+MMKV 写(全量快照 400+ 歌时 JS 线程卡顿源)
       try {
         const json = JSON.stringify(snap);
-        if (json !== lastSnapJson) { kvSync.set('snap', json); lastSnapJson = json; }
+        if (json !== lastSnapJson) { kvSync.set('snap', json); lastSnapJson = json; this._snapCache = snap; }
       } catch { /* 超大忽略 */ }
+      this._lastFetchAt = Date.now();
       return snap;
     } catch { return null; }
   },

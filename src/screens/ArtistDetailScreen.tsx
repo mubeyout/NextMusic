@@ -16,6 +16,9 @@ import type { SongItem } from '../services/server';
 
 const Row = IS_HD ? HDTouch : TouchableOpacity;
 
+// lx163h:歌手详情数据缓存(模块级,跨导航存活)
+const artCache = new Map<string, { at: number; songs: SongItem[]; albums: { id: string; name: string; img?: string; publishTime?: string }[] }>();
+
 export function ArtistDetailScreen() {
   const nav = useNavigation() as { navigate: (s: string, p?: object) => void; goBack: () => void };
   const p = useRoute().params as { artist: ArtistFav };
@@ -26,8 +29,17 @@ export function ArtistDetailScreen() {
   useArtistFavTick();
 
   useEffect(() => {
-    api.artistSongs(artist.id, artist.source || 'wy').then(setSongs);
-    api.artistAlbums(artist.id, artist.source || 'wy').then(setAlbums);
+    // lx163h:LRU 缓存(10min)——重进歌手页秒出,不重拉
+    const k = `${artist.source || 'wy'}_${artist.id}`;
+    const hit = artCache.get(k);
+    if (hit && Date.now() - hit.at < 600000) { setSongs(hit.songs); setAlbums(hit.albums); return; }
+    Promise.all([
+      api.artistSongs(artist.id, artist.source || 'wy').catch(() => [] as never),
+      api.artistAlbums(artist.id, artist.source || 'wy').catch(() => [] as never),
+    ]).then(([songs, albums]) => {
+      setSongs(songs); setAlbums(albums);
+      artCache.set(k, { at: Date.now(), songs, albums });
+    });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const favd = isArtistFav(artist);
@@ -55,7 +67,7 @@ export function ArtistDetailScreen() {
         {/* 热门歌曲 */}
         <Text style={st.sec}>热门歌曲</Text>
         {songs == null ? <View style={{ paddingVertical: 30, alignItems: 'center' }}><ActivityIndicator color={C.brand} /></View>
-          : songs.length ? songs.slice(0, 30).map((s, i) => (
+          : songs.length ? songs.slice(0, IS_HD ? 20 : 30).map((s, i) => (
             <SongRow key={`${s.source}-${s.songmid}-${i}`} song={s} onPress={() => playSong(s, songs.slice(0, 30))}
               playing={false} />
           )) : <Text style={st.empty}>暂无歌曲</Text>}

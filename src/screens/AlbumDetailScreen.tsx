@@ -16,6 +16,9 @@ import { toast } from '../components/Dialog';
 import { usePlayer } from '../state/PlayerProvider';
 import { isAlbumFav, toggleAlbumFav, useAlbumFavTick, type AlbumFav } from '../state/albumFavs';
 
+// lx163h:专辑详情数据缓存(模块级)
+const albCache = new Map<string, { at: number; songs: SongItem[] }>();
+
 export function AlbumDetailScreen() {
   const nav = useNavigation() as { goBack: () => void };
   const p = useRoute().params as { album: AlbumFav };
@@ -24,7 +27,16 @@ export function AlbumDetailScreen() {
   const [songs, setSongs] = useState<SongItem[] | null>(null);
   useAlbumFavTick();
 
-  useEffect(() => { api.albumSongs(album.id, album.source || 'wy').then(setSongs); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    // lx163h:LRU 缓存(10min)
+    const k = `${album.source || 'wy'}_${album.id}`;
+    const hit = albCache.get(k);
+    if (hit && Date.now() - hit.at < 600000) { setSongs(hit.songs); return; }
+    api.albumSongs(album.id, album.source || 'wy').then(songs => {
+      setSongs(songs);
+      albCache.set(k, { at: Date.now(), songs });
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const favd = isAlbumFav(album);
   return (

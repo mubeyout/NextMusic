@@ -24,8 +24,9 @@ function App() {
     // WebView 就绪后重载已启用的自定义音源脚本
     engine.setActiveSources(loadSources());
     // lx163:回前台全量拉服务器快照并广播——服务器/其他端操作过的增删改在本端即时落地(双向同步拉半边)
+    let lastBump = 0;
     const sub = RNAppState.addEventListener('change', s => {
-      if (s === 'active' && httpStore.base && httpStore.token) refetchAndBump();
+      if (s === 'active' && httpStore.base && httpStore.token && Date.now() - lastBump > 30000) { lastBump = Date.now(); refetchAndBump(); }
     });
     return () => sub.remove();
   }, []);

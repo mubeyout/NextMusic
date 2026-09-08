@@ -587,12 +587,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // —— 恢复上次播放状态（基本设置 → 启动 → 恢复上次播放状态）——
-  // 持久化：队列/当前曲/索引在变化时节流写入（不含进度，恢复后从 0 开始，避免取链/版权失效时卡启动）
+  // 持久化：队列/当前曲/索引在变化时节流写入；lx163h:快照序列化再加 5s 节流(此前 position 每秒打点→每秒 200 首全量 stringify,弱芯片 JS 线程常态卡)
   const persistSnapshot = useRef<number>(0);
   useEffect(() => {
     const t = setTimeout(() => {
       try {
         if (queue.length && current) {
+          if (Date.now() - persistSnapshot.current < 5000) return; // 5s 内已写过,跳过重序列化(pos 丢最近 4s,可接受)
+          persistSnapshot.current = Date.now();
           // pos/p/d:断点续播(settings.__rr 时消费)与桌面冷启动恢复(web 默认带进度);手机冷启动仍从 0,避免取链失效卡启动
           playbackKv.set('snapshot', JSON.stringify({ q: queue.slice(0, 200), i: idxRef.current, pos: Math.floor(position), p: playing, d: Math.floor(duration) }));
         } else playbackKv.set('snapshot', '');

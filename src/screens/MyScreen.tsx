@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, RefreshControl, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -66,11 +66,14 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
   useEffect(() => library.subscribe(() => setLibTick(t => t + 1)), []);
   const localPlaylists = library.all();
 
-  const refresh = useCallback(async () => {
+  const lastFetch = useRef(0); // lx163h:30s 内不重复全量拉(每次切 tab 都打服务器的根修)
+  const refresh = useCallback(async (force = false) => {
     setRecents(getRecents());
     if (!loggedIn) { setSnap(null); return; }
+    if (!force && snap && Date.now() - lastFetch.current < 30000) return;
+    lastFetch.current = Date.now();
     setSyncing(true);
-    const s = await sync.fetchLists();
+    const s = await sync.fetchLists({ force });
     setSnap(s);
     setSyncing(false);
   }, [loggedIn]);
@@ -125,7 +128,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
       style={{ backgroundColor: C.bg }}
       contentContainerStyle={[st.content, { paddingTop: insets.top + 24, paddingBottom: 24 }]}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={syncing} onRefresh={refresh} tintColor={C.brand} />}
+      refreshControl={<RefreshControl refreshing={syncing} onRefresh={() => refresh(true)} tintColor={C.brand} />}
     >
       <View style={st.headerRow}>
         <Text style={st.title}>我的音乐</Text>
