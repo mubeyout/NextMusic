@@ -1,7 +1,7 @@
 // HD(车机/TV)主壳 —— 对齐桌面版:左侧 174dp 侧栏(发现/我的乐库/歌单 三组)
 // + 内容区(层叠保状态) + 底部 64dp 桌面式播放条
 // 业务层(播放引擎/音源/媒体库)全复用 phone 版,仅 UI 形态不同
-import React, { useEffect, useReducer, useState } from 'react';
+import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, Platform } from 'react-native';
 const IS_WEB = Platform.OS === 'web';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

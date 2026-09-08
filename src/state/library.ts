@@ -23,7 +23,8 @@ const kv = createMMKV({ id: 'nextmusic-library' });
 let _cache: LocalPlaylist[] | null = null; // lx163h:解析缓存(writeAll 失效)——23 处调用点原先每次都 JSON.parse,弱芯片上高频卡顿源
 function readAll(): LocalPlaylist[] {
   if (_cache) return _cache;
-  try { _cache = JSON.parse(kv.getString('playlists') || '[]'); return _cache; } catch { _cache = []; return []; }
+  try { const v = JSON.parse(kv.getString('playlists') || '[]') as LocalPlaylist[]; _cache = Array.isArray(v) ? v : []; } catch { _cache = []; }
+  return _cache;
 }
 
 // 变更订阅：让「我的」页等界面在导入/新建/删除后实时刷新

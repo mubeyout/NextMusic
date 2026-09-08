@@ -1,5 +1,5 @@
 // HD 我的:账号卡 + 歌单网格 + 媒体库/下载/本地/设置入口(子页复用 phone Stack)
-import React, { useEffect, useReducer, useState } from 'react';
+import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { toast } from '../components/Dialog';
 import { hdActions } from './HDActions';
 import { View, Text, StyleSheet, ScrollView, Image, RefreshControl } from 'react-native';
