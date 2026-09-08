@@ -175,6 +175,25 @@ export const shadowOfSm = (seed: string) => {
   const R = Math.round((r1 + m) * 255), G = Math.round((g1 + m) * 255), B = Math.round((b1 + m) * 255);
   return `0 5px 14px rgba(${R},${G},${B},.26)`;
 };
+
+// v1.2.5 桌面:web 卡片彩色弥散投影——shadowStyleOf(elevation+shadowColor)在 RNW 不渲染(桌面卡片变灰块的真因);
+// RNW 会把 iOS 系 shadow* 四件套转成 CSS box-shadow,与 shadowOf 同色公式
+import { Platform } from 'react-native';
+export function webCardShadow(seed: string, lift = false): Record<string, string | number | { width: number; height: number }> | null {
+  if (Platform.OS !== 'web') return null;
+  const h = [...seed].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
+  const s2 = 0.58, l = 0.5;
+  const cH = (1 - Math.abs(2 * l - 1)) * s2;
+  const hp = h / 60, x = cH * (1 - Math.abs((hp % 2) - 1));
+  const [r1, g1, b1] = hp < 1 ? [cH, x, 0] : hp < 2 ? [x, cH, 0] : hp < 3 ? [0, cH, x] : hp < 4 ? [0, x, cH] : hp < 5 ? [x, 0, cH] : [cH, 0, x];
+  const m = l - cH / 2;
+  return {
+    shadowColor: `rgb(${Math.round((r1 + m) * 255)},${Math.round((g1 + m) * 255)},${Math.round((b1 + m) * 255)})`,
+    shadowOffset: { width: 0, height: lift ? 14 : 8 },
+    shadowOpacity: lift ? 0.34 : 0.22,
+    shadowRadius: lift ? 24 : 15,
+  };
+}
 // 玻璃磨砂面(桌面 --nm-glass 深色值;RN 无 backdrop-filter,用半透明+亮边近似)—— 已迁入 C.glass/C.glassStrong(浅色覆写需运行时查找,export let 在 Metro 下是值拷贝)
 // 兼容旧引用
 export const GLASS_REF = { get face() { return C.glass; }, get strong() { return C.glassStrong; } };

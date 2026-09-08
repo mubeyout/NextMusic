@@ -1,10 +1,10 @@
 // lx101:HD 收藏统一 hook——与手机端同源(isFav+setFav+服务器 loveList 双向)
 // 修 HD 收藏逻辑:此前取消收藏从不同步服务器,重拉即复活(与手机端表现不一致的根因)
 import { useEffect, useState } from 'react';
-import { isFav, setFav, subscribeFav } from '../state/favorites';
-import { library } from '../state/library';
+import { isFav, setFav, subscribeFav } from './favorites';
+import { library } from './library';
 import { sync, subscribeSync, lxNormKey } from '../services/sync';
-import { useApp } from '../state/AppState';
+import { useApp } from './AppState';
 import type { SongItem } from '../services/server';
 
 export function useFav(song?: SongItem | null) {

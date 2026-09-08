@@ -1,18 +1,23 @@
-// HD 屏外导航辅助:hdNav() 分流——内页(设置族除外)进 HDMain 内容区嵌套栈,左侧导航恒固定
-// lx84(老板定夺):所有内页只在右侧内容区切换;Settings 族仍走根栈全屏
+// HD 屏外导航辅助:hdNav() 分流——内页进 HDMain 内容区嵌套栈,左侧导航恒固定
+// lx84(老板定夺):TV 所有内页只在右侧内容区切换;Settings 族仍走根栈全屏
+// v1.2.5 桌面(老板:设置也作为内页加载,左边导航固定):web 侧设置族/播放页全部进嵌套栈,
+// 根栈只剩启动流(Boot/Server/Auth/Main)——侧栏在任何页面都活跃可点
+import { Platform } from 'react-native';
 import { createNavigationContainerRef } from '@react-navigation/native';
 import { navRef } from '../navRef';
 
 // HDMain 内容区嵌套栈(独立 NavigationContainer;未挂时=冷启动 Boot 阶段,全部落根栈)
 export const hdInnerRef = createNavigationContainerRef<ReactNavigation.RootParamList>();
 
-// 根栈专属:启动流 + 播放页(lx89 老板定夺:播放页像设置一样单独一屏全屏) + 设置族
-const ROOT_ONLY = new Set([
-  'Boot', 'Server', 'Auth', 'Main', 'Player',
-  'Settings', 'BasicSettings', 'Theme', 'About',
-  'Manual', 'DeployGuide', 'Faq', 'Changelog',
-  'BackupSettings', 'DownloadsSettings',
-]);
+// 根栈专属:启动流 + (TV:播放页/设置族全屏——lx89 老板定夺)
+const ROOT_ONLY = new Set(Platform.OS === 'web'
+  ? ['Boot', 'Server', 'Auth', 'Main']
+  : [
+      'Boot', 'Server', 'Auth', 'Main', 'Player',
+      'Settings', 'BasicSettings', 'Theme', 'About',
+      'Manual', 'DeployGuide', 'Faq', 'Changelog',
+      'BackupSettings', 'DownloadsSettings',
+    ]);
 
 type LooseNav = { navigate: (s: string, p?: object) => void; goBack: () => void; canGoBack?: () => boolean } | null;
 

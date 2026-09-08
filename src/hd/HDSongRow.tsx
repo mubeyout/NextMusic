@@ -7,7 +7,7 @@ import { View, Text, StyleSheet, Image, Platform } from 'react-native';
 import { Icon } from '../theme/Icon';
 import { C, H } from './hdtokens';
 import { HDTouch } from './HDTouch';
-import { useFav } from './useFav';
+import { useFav } from '../state/useFav';
 import { usePlayer } from '../state/PlayerProvider';
 import { toast } from '../components/Dialog';
 import type { SongItem } from '../services/server';

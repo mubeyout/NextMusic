@@ -7,21 +7,22 @@ import Svg, { Defs, Path, RadialGradient, Stop } from 'react-native-svg';
 import { SpectrumRing } from './SpectrumRing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
-import { C, fmtSec } from './hdtokens';
+import { C, T, fmtSec } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
 import { api } from '../services/server';
 import { lxapi } from '../services/lxapi';
 import { parseLrc, mergeTranslation, findActiveLine, type LyricLine } from '../services/lyric';
-import { useFav } from './useFav';
+import { useFav } from '../state/useFav';
 import { startSpectrum } from '../services/visualizer';
 import { HDCollect } from './HDCollect';
 import { hdNav } from './hdnav';
 
 
 // 唱片 SVG 纯 DOM 版(react-native-svg 的 web shim forwardRef 与 RNW 混用会 React#130,直出 DOM 稳)
-function HD_VINYL_SVG(img?: string): React.ReactNode {
+// v1.2.5:size 参数化 + nm-vinyl-spin CSS 旋转接入(此前 web 唱片根本不转——nm-vinyl-css 注入了却没人用)
+function HD_VINYL_SVG(img?: string, size = 300, playing?: boolean): React.ReactNode {
   const h = React.createElement;
   const rg = h('radialGradient', { id: 'hdSheen', cx: '0.32', cy: '0.26', r: '0.95' }, [
     h('stop', { key: 'a', offset: '0', stopColor: '#FFFFFF', stopOpacity: '0.10' }),
@@ -32,7 +33,7 @@ function HD_VINYL_SVG(img?: string): React.ReactNode {
     [149, '#0A0A0D', 1], [143, '#FFFFFF0A', 1], [136, '#FFFFFF08', 1.5], [129, '#FFFFFF0F', 1],
     [122, '#FFFFFF06', 1.5], [115, '#FFFFFF12', 1], [108, '#FFFFFF08', 1.5], [101, '#FFFFFF14', 1], [90, '#FFFFFF0D', 1],
   ];
-  return h('svg', { width: 300, height: 300, viewBox: '0 0 300 300' },
+  return h('svg', { width: size, height: size, viewBox: '0 0 300 300', className: 'nm-vinyl-spin' + (playing ? '' : ' nm-vinyl-paused') },
     h('defs', null, rg),
     ...circles.map(([r, col, sw], i) => h('circle', { key: 'c' + i, cx: 150, cy: 150, r, fill: r === 149 ? col : 'none', stroke: col, strokeWidth: sw })),
     h('path', { d: 'M33 107 A125 125 0 0 1 107 33', stroke: '#FFFFFF1F', strokeWidth: 3, strokeLinecap: 'round', fill: 'none' }),
@@ -87,8 +88,7 @@ export function HDPlayer() {
   const { current, playing, position, duration, toggle, skipNext, skipPrev, seekTo, shuffle, repeat, setShuffle, cycleRepeat, queue } = usePlayer();
   const { connected, token } = useApp();
   const [lyrics, setLyrics] = useState<LyricLine[] | null>(null);
-  const { faved, toggle: toggleFav } = useFav(current); // lx101:收藏统一 hook(取消也同步服务器)
-  const doFav = toggleFav; // web 分支工具条仍用直切
+  const { faved } = useFav(current); // lx101:收藏统一 hook(faved 态;操作走选歌单面板,与 TV 同源)
   // lx103:收藏到歌单面板(点按收藏键即弹,对齐手机端)
   const [collectOpen, setCollectOpen] = useState(false);
   const trackW = React.useRef(0);
@@ -200,28 +200,35 @@ export function HDPlayer() {
   const pct = duration > 0 ? Math.min(1, position / duration) : 0;
 
 
-  // ===== 桌面(网易云参照):封面模糊铺底 + 大图/歌词双列 + 底部一体控制条 =====
+  // ===== v1.2.5 桌面播放页重排(老板:布局太草率):主题感知(浅色不再白条+黑页拼接) + 头部行内返回
+  // + 唱片列(频谱环+旋转唱片+源胶囊) + 歌词列(上下渐隐遮罩) + 居中 dock(进度带播放头,控件居中/工具靠右)
   if (Platform.OS === 'web') {
-    const lines = lyrics ? lyrics.slice(Math.max(0, activeIdx - 5), activeIdx + 5) : [];
-    const lineBase = lyrics ? Math.max(0, activeIdx - 5) : 0;
+    const lines = lyrics ? lyrics.slice(Math.max(0, activeIdx - 4), activeIdx + 5) : [];
+    const lineBase = lyrics ? Math.max(0, activeIdx - 4) : 0;
+    const maskRgb = T.light ? 'rgba(246,247,249' : 'rgba(10,12,11';
     return (
       <View style={stW.screen}>
         {current.img ? <Image source={{ uri: current.img }} style={stW.bgArt} blurRadius={90} resizeMode="cover" /> : null}
         <View style={stW.bgVeil} />
-        <HDTouch style={stW.back} onPress={nav.goBack} focusStyle={st.focus}>
-          <Icon name="back" size={19} color="#ffffffcc" />
-        </HDTouch>
+
+        {/* 头部:返回入流式行(不再悬浮圆钮) */}
+        <View style={stW.top}>
+          <HDTouch style={stW.back} onPress={nav.goBack} focusStyle={st.focus}>
+            <Icon name="back" size={16} color={C.text2} />
+            <Text style={stW.backLabel}>返回</Text>
+          </HDTouch>
+        </View>
 
         <View style={stW.body}>
           <View style={stW.artCol}>
-            {/* v1.1.8:圆形旋转唱片 + 频谱动效环(老板:酷炫) */}
             <View style={stW.vinylZone}>
-              <SpectrumRing size={340} playing={playing} />
-              {Platform.OS === 'web' ? (
-                HD_VINYL_SVG(current?.img)
-              ) : null}
+              <SpectrumRing size={344} playing={playing} />
+              {HD_VINYL_SVG(current?.img, 312, playing)}
             </View>
-            <Text style={stW.srcTag}>{current.source.toUpperCase()}</Text>
+            <View style={stW.srcPill}>
+              <View style={stW.srcDot} />
+              <Text style={stW.srcTag}>{current.source.toUpperCase()}</Text>
+            </View>
           </View>
 
           <View style={stW.infoCol}>
@@ -239,10 +246,13 @@ export function HDPlayer() {
                 );
               }) : (
                 <View style={stW.noLyric}>
-                  <Icon name="music" size={30} color="#ffffff66" />
+                  <Icon name="music" size={30} color={T.light ? '#8B9199' : '#ffffff66'} />
                   <Text style={stW.noLyricText}>暂无歌词</Text>
                 </View>
               )}
+              {/* 歌词上下渐隐(盖住窗口边缘行,避免硬切) */}
+              <LinearGradient colors={[maskRgb + ',1)', maskRgb + ',0)']} locations={[0, 1]} style={stW.maskTop} pointerEvents="none" />
+              <LinearGradient colors={[maskRgb + ',0)', maskRgb + ',1)']} locations={[0, 1]} style={stW.maskBottom} pointerEvents="none" />
             </View>
           </View>
         </View>
@@ -262,44 +272,51 @@ export function HDPlayer() {
             >
               <View style={[stW.trackFill, { flex: pct }]} />
               <View style={[stW.trackRest, { flex: 1 - pct }]} />
+              <View style={[stW.playhead, { left: `${pct * 100}%` }]} />
             </TouchableOpacity>
             <Text style={stW.time}>{fmtSec(duration)}</Text>
           </View>
           <View style={stW.ctrlRow}>
+            <View style={stW.sideSpacer} />
             <View style={stW.ctrlCluster}>
               <HDTouch style={stW.cBtn} onPress={() => setShuffle(!shuffle)} focusStyle={st.focus}>
-                <Icon name="shuffle" size={17} active={shuffle} color={shuffle ? C.brand : '#ffffff99'} />
+                <Icon name="shuffle" size={17} active={shuffle} color={shuffle ? C.brand : C.text2} />
               </HDTouch>
               <HDTouch style={stW.cBtn} onPress={skipPrev} focusStyle={st.focus}>
-                <Icon name="previous" size={22} color="#ffffffee" />
+                <Icon name="previous" size={22} color={C.text} />
               </HDTouch>
               <HDTouch style={stW.cMain} onPress={toggle} focusStyle={stW.cMainFocus}>
-                <Icon name={playing ? 'pause' : 'play'} size={26} color="#0b0f0d" />
+                <Icon name={playing ? 'pause' : 'play'} size={26} color={C.onBrand} />
               </HDTouch>
               <HDTouch style={stW.cBtn} onPress={skipNext} focusStyle={st.focus}>
-                <Icon name="next" size={22} color="#ffffffee" />
+                <Icon name="next" size={22} color={C.text} />
               </HDTouch>
               <HDTouch style={stW.cBtn} onPress={cycleRepeat} focusStyle={st.focus}>
-                <Icon name="repeat" size={17} active={repeat !== 'off'} color={repeat !== 'off' ? C.brand : '#ffffff99'} />
+                <Icon name="repeat" size={17} active={repeat !== 'off'} color={repeat !== 'off' ? C.brand : C.text2} />
               </HDTouch>
             </View>
-            <View style={stW.toolCluster}>
-              <HDTouch style={stW.tBtn} onPress={doFav} focusStyle={st.focus}>
-                <Icon name="heart" size={17} color={faved ? C.brand : '#ffffff99'} />
-              </HDTouch>
-              <HDTouch style={stW.tBtn} onPress={() => nav.navigate('Comments')} focusStyle={st.focus}>
-                <Icon name="comments" size={17} color="#ffffff99" />
-              </HDTouch>
-              <HDTouch style={stW.tBtn} onPress={() => nav.navigate('Queue')} focusStyle={st.focus}>
-                <Icon name="queue" size={17} color="#ffffff99" />
-                {queue.length ? <Text style={stW.badge}>{queue.length}</Text> : null}
-              </HDTouch>
-              <HDTouch style={stW.tBtn} onPress={() => nav.navigate('Route')} focusStyle={st.focus}>
-                <Icon name="devices" size={17} color="#ffffff99" />
-              </HDTouch>
+            <View style={[stW.sideSpacer, { alignItems: 'flex-end' }]}>
+              <View style={stW.toolCluster}>
+                <HDTouch style={stW.tBtn} onPress={() => setCollectOpen(true)} focusStyle={st.focus}>
+                  <Icon name="heart" size={17} color={faved ? C.brand : C.text2} />
+                </HDTouch>
+                <HDTouch style={stW.tBtn} onPress={() => nav.navigate('Comments')} focusStyle={st.focus}>
+                  <Icon name="comments" size={17} color={C.text2} />
+                </HDTouch>
+                <HDTouch style={stW.tBtn} onPress={() => nav.navigate('Queue')} focusStyle={st.focus}>
+                  <Icon name="queue" size={17} color={C.text2} />
+                  {queue.length ? <Text style={stW.badge}>{queue.length}</Text> : null}
+                </HDTouch>
+                <HDTouch style={stW.tBtn} onPress={() => nav.navigate('Route')} focusStyle={st.focus}>
+                  <Icon name="devices" size={17} color={C.text2} />
+                </HDTouch>
+              </View>
             </View>
           </View>
         </View>
+
+        {/* lx103:收藏到歌单面板(与 TV 同源) */}
+        {collectOpen && current ? <HDCollect song={current} onClose={() => setCollectOpen(false)} /> : null}
       </View>
     );
   }
@@ -481,41 +498,48 @@ if (Platform.OS === 'web' && typeof (globalThis as { document?: unknown }).docum
   doc.head.appendChild(el);
 }
 const stW = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#0a0c0b' },
-  bgArt: { position: 'absolute', top: -60, left: -60, right: -60, bottom: -60, width: '120%', height: '120%', opacity: 0.5 },
-  bgVeil: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(6,8,7,0.72)' },
-  back: { position: 'absolute', top: 42, left: 22, zIndex: 5, width: 38, height: 38, borderRadius: 19, backgroundColor: '#ffffff14', alignItems: 'center', justifyContent: 'center' },
-  body: { flex: 1, flexDirection: 'row', paddingHorizontal: 72, paddingTop: 74, gap: 52, alignItems: 'center' },
-  artCol: { flex: 0.9, alignItems: 'center' },
-  vinylZone: { width: 340, height: 340, alignItems: 'center', justifyContent: 'center' },
-  vinylSpinWrap: { width: 300, height: 300 },
-  vinylLabel: { position: 'absolute', top: 106, left: 106, width: 88, height: 88, borderRadius: 44 },
-  art: { width: '86%', aspectRatio: 1, borderRadius: 14, maxHeight: 400, maxWidth: 400, shadowColor: '#000', shadowOpacity: 0.55, shadowRadius: 34, shadowOffset: { width: 0, height: 16 } },
-  srcTag: { color: '#ffffff66', fontSize: 11, marginTop: 14, letterSpacing: 2 },
-  infoCol: { flex: 1.1, alignSelf: 'stretch', justifyContent: 'center', gap: 8 },
-  title: { color: '#ffffff', fontSize: 27, fontWeight: '800' },
-  sub: { color: '#ffffffb0', fontSize: 14, marginBottom: 10 },
-  lyrics: { minHeight: 320, gap: 13, justifyContent: 'center' },
-  lyric: { color: '#ffffff59', fontSize: 17, lineHeight: 25, fontWeight: '500' },
-  lyricOn: { color: '#ffffff', fontSize: 22, lineHeight: 32, fontWeight: '800' },
-  lyricTr: { color: '#ffffff38', fontSize: 12, lineHeight: 17, marginTop: 1 },
-  lyricTrOn: { color: '#ffffff70' },
+  // v1.2.5 重排:全部主题感知(此前硬编码深色——浅色主题下左侧白侧栏条+纯黑播放页拼接);
+  // 布局:头部行内返回 / 唱片列+歌词列 / 居中 dock(进度+播放头,控件居中、工具靠右)
+  screen: { flex: 1, backgroundColor: C.bg },
+  bgArt: { position: 'absolute', top: -60, left: -60, right: -60, bottom: -60, width: '120%', height: '120%', opacity: T.light ? 0.35 : 0.5 },
+  bgVeil: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: T.light ? 'rgba(246,247,249,.86)' : 'rgba(7,9,8,.74)' },
+  top: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10, height: 52, zIndex: 5 },
+  back: { flexDirection: 'row', alignItems: 'center', gap: 7, height: 34, borderRadius: 17, paddingHorizontal: 14, backgroundColor: C.hover },
+  backLabel: { color: C.text2, fontSize: 13, fontWeight: '600' },
+  body: { flex: 1, flexDirection: 'row', paddingHorizontal: 64, gap: 56, alignItems: 'center' },
+  artCol: { flex: 0.92, alignItems: 'center' },
+  vinylZone: { width: 344, height: 344, alignItems: 'center', justifyContent: 'center' },
+  srcPill: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 24, borderRadius: 12, marginTop: 18, paddingHorizontal: 12, borderWidth: 1, borderColor: C.border, backgroundColor: C.input },
+  srcDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.brand },
+  srcTag: { color: C.text2, fontSize: 10, letterSpacing: 2, fontWeight: '600' },
+  infoCol: { flex: 1.08, alignSelf: 'stretch', justifyContent: 'center', gap: 8 },
+  title: { color: C.text, fontSize: 28, fontWeight: '800' },
+  sub: { color: C.text2, fontSize: 14, marginBottom: 12 },
+  lyrics: { minHeight: 300, gap: 12, justifyContent: 'center' },
+  lyric: { color: T.light ? '#26282C99' : '#FFFFFF73', fontSize: 16, lineHeight: 24, fontWeight: '500' },
+  lyricOn: { color: C.text, fontSize: 21, lineHeight: 31, fontWeight: '800' },
+  lyricTr: { color: T.light ? '#26282C55' : '#FFFFFF45', fontSize: 12, lineHeight: 17, marginTop: 1 },
+  lyricTrOn: { color: T.light ? '#26282C99' : '#FFFFFF8C' },
+  maskTop: { position: 'absolute', top: -8, left: -16, right: -16, height: 44, zIndex: 2 },
+  maskBottom: { position: 'absolute', bottom: -8, left: -16, right: -16, height: 44, zIndex: 2 },
   noLyric: { alignItems: 'center', gap: 10, marginTop: 30 },
-  noLyricText: { color: '#ffffff55', fontSize: 13 },
-  dock: { paddingHorizontal: 56, paddingBottom: 26, gap: 10 },
-  progRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  time: { color: '#ffffff99', fontSize: 12, fontVariant: ['tabular-nums'], width: 44, textAlign: 'center' },
-  track: { flex: 1, height: 5, flexDirection: 'row', borderRadius: 3 },
+  noLyricText: { color: T.light ? '#8B9199' : '#ffffff55', fontSize: 13 },
+  dock: { paddingHorizontal: 48, paddingBottom: 22, gap: 12 },
+  progRow: { alignSelf: 'center', width: '100%', maxWidth: 640, flexDirection: 'row', alignItems: 'center', gap: 14 },
+  time: { color: C.text2, fontSize: 12, fontVariant: ['tabular-nums'], width: 44, textAlign: 'center' },
+  track: { flex: 1, height: 6, flexDirection: 'row', borderRadius: 3 },
   trackFill: { backgroundColor: C.brand, borderRadius: 3 },
-  trackRest: { backgroundColor: '#ffffff26', borderRadius: 3 },
-  ctrlRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  ctrlCluster: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  cBtn: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#ffffff10', alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
-  cMain: { width: 64, height: 64, borderRadius: 32, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
-  cMainFocus: { borderWidth: 3, borderColor: '#ffffffaa', borderRadius: 32 },
-  toolCluster: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  tBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#ffffff0d', alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
-  badge: { color: '#ffffff77', fontSize: 10, marginLeft: 3 },
+  trackRest: { backgroundColor: C.track, borderRadius: 3 },
+  playhead: { position: 'absolute', top: -4, width: 13, height: 13, borderRadius: 7, backgroundColor: C.brand, borderWidth: 2.5, borderColor: '#ffffff', marginLeft: -7, shadowColor: C.brand, shadowOpacity: 0.75, shadowRadius: 12, shadowOffset: { width: 0, height: 0 } },
+  ctrlRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+  sideSpacer: { flex: 1 },
+  ctrlCluster: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  cBtn: { width: 46, height: 46, borderRadius: 23, backgroundColor: C.hover, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
+  cMain: { width: 64, height: 64, borderRadius: 32, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', shadowColor: C.brand, shadowOpacity: 0.38, shadowRadius: 18, shadowOffset: { width: 0, height: 6 } },
+  cMainFocus: { borderWidth: 3, borderColor: T.light ? '#FFFFFF' : '#ffffffaa', borderRadius: 32 },
+  toolCluster: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  tBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.hover, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
+  badge: { color: C.text2, fontSize: 10, marginLeft: 3 },
 });
 
 // lx100:水波环容器(vinylZone 内满铺)

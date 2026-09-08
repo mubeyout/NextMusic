@@ -13,7 +13,7 @@ import { sync, appToLx, lxToApp, lxNormKey } from '../services/sync';
 import { isFav, songKey } from '../state/favorites';
 import { useApp } from '../state/AppState';
 import { library } from '../state/library';
-import { useFav } from '../hd/useFav'; // lx157:统一收藏 hook(本地MMKV+歌单+服务器三源实时联动,替代手搓 effect)
+import { useFav } from '../state/useFav'; // lx157:统一收藏 hook(本地MMKV+歌单+服务器三源实时联动,替代手搓 effect)
 import { CollectSheet } from '../components/CollectSheet';
 import { ActionSheet } from '../components/ActionSheet';
 import { DeviceSheet } from './RouteScreen';

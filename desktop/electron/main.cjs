@@ -47,14 +47,14 @@ function createWindow() {
     backgroundColor: '#121212',
     autoHideMenuBar: true,
     // 无边框融入应用设计:mac 保留系统红绿灯叠放(hiddenInset);win/linux 全无边框(应用内自绘控制钮)
-    // v1.2.3 平台窗口策略(老板设计 A2/W2):
-    //  mac: hiddenInset + trafficLightPosition——红绿灯定位进侧栏列顶部(x=20 居 174px 侧栏内,y=14 居 40px 轨道)
+    // v1.2.5 平台窗口策略(A2/W2,轨道 40→36——老板:brand 在导航占太高):
+    //  mac: hiddenInset + trafficLightPosition——红绿灯定位进侧栏列顶部(x=20 居 174px 侧栏内,y=11 居 36px 轨道)
     //  win: hidden + titleBarOverlay——无独立标题栏,系统三键原生悬于内容区行尾(悬停/贴边/snap 原生品质)
     //  linux: 全无边框(renderer DOM 三键,同 W2 视觉位)
     ...(process.platform === 'darwin'
-      ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 20, y: 14 } }
+      ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 20, y: 11 } }
       : process.platform === 'win32'
-        ? { titleBarStyle: 'hidden', titleBarOverlay: { height: 40, color: '#00000000', symbolColor: '#ffffffcc' } }
+        ? { titleBarStyle: 'hidden', titleBarOverlay: { height: 36, color: '#00000000', symbolColor: '#ffffffcc' } }
         : { frame: false }),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),

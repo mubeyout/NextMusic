@@ -6,7 +6,7 @@ import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
-import { C, H, SH, shadowStyleOf } from './hdtokens';
+import { C, H, SH, shadowStyleOf, webCardShadow } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { HDGrid } from './HDGrid';
 import { Platform } from 'react-native';
@@ -117,7 +117,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
           {/* 最近播放(lx88:横向 ScrollView 会裁切 zoom 溢出——小卡去 zoom 只留环;lx92:左右 padding 4 留出环的 2px 外溢,首尾卡选中不裁) */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: 10, paddingLeft: 26, paddingRight: 12, paddingTop: 6, paddingBottom: 16 }}>
             {recents.slice(0, 8).map((s, i) => (
-              <HDTouch key={`${s.source}_${s.songmid}_${i}`} style={[st.recCard, shadowStyleOf(s.name)]} onPress={() => playSong(s, recents)}
+              <HDTouch key={`${s.source}_${s.songmid}_${i}`} style={[st.recCard, shadowStyleOf(s.name), IS_WEB && webCardShadow(s.name) as never]} onPress={() => playSong(s, recents)}
                 focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 11 }}>
                 {s.img ? <Image source={{ uri: s.img }} style={st.recArt} />
                   : <View style={[st.recArt, { backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={14} color={C.text3} /></View>}
@@ -194,11 +194,26 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
 
 // 桌面 BigCard:渐变 + 左徽标 + 标题/副标题 + 右圆钮
 // v6(老板反馈):选中环圆角要比卡片圆角大(卡片 R=11,环=13)——描边画在卡边界外 2px,圆角同步 +2 才贴着弯过去
+// v1.2.5 桌面:web 加高(104)+彩色弥散投影+hover 上浮(主题/投影跟色系);TV 分支尺寸不变
 function BigCard({ colors, badge, title, sub, onPress, busy }: { colors: [string, string]; badge: string; title: string; sub: string; onPress: () => void; busy?: boolean }) {
-  // lx73:BigCard 尺寸三层一致——渐变 absolute 铺底(fill 外框),内容行叠加其上;
-  // 之前渐变做流式子项,width 100% 与 Pressable 互相依赖在 Android 解析为内容宽→环/渐变/外框三层各不相同
+  const [hov, setHov] = useState(false);
+  const t = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const elRef = useRef<View | null>(null);
+  useEffect(() => {
+    const el = elRef.current as unknown as HTMLElement | null;
+    if (el && el.classList) el.classList.add('nm-card');
+  }, []);
+  const rgb = (hex: string) => { const n = parseInt(hex.slice(1), 16); return `rgb(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255})`; };
+  const webSh: Record<string, unknown> | null = IS_WEB ? {
+    shadowColor: rgb(colors[1]), shadowOffset: { width: 0, height: hov ? 14 : 8 },
+    shadowOpacity: hov ? 0.42 : 0.26, shadowRadius: hov ? 26 : 16,
+  } : null;
   return (
-    <HDTouch activeOpacity={0.9} onPress={onPress} zoom={1.04} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.card + 2 }} style={{ flex: 1, height: 88, borderRadius: H.radius.card }}>
+    <HDTouch activeOpacity={0.9} onPress={onPress} zoom={1.04}
+      ref={elRef as never}
+      focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.card + 2 }}
+      style={{ flex: 1, height: IS_WEB ? 104 : 88, borderRadius: H.radius.card, ...(webSh || {}), ...(hov && IS_WEB ? { transform: [{ translateY: -4 }] } : {}) }}
+      {...(IS_WEB ? { onHoverIn: () => { t.current && clearTimeout(t.current); t.current = setTimeout(() => setHov(true), 80); }, onHoverOut: () => { t.current && clearTimeout(t.current); setHov(false); } } as Record<string, unknown> : {})}>
       <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.bigBg} />
       <View style={st.big}>
         <Text style={st.bigBadge}>{badge}</Text>
@@ -253,6 +268,7 @@ const st = StyleSheet.create({
   plArt: { width: '100%', aspectRatio: 1, borderTopLeftRadius: 12, borderTopRightRadius: 12 },
   plCount: { position: 'absolute', bottom: 5, right: 5, backgroundColor: 'rgba(0,0,0,.6)', borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
   plCountText: { color: '#fff', fontSize: 8 },
+  plCountWeb: { top: 6, right: 6, bottom: undefined, borderRadius: 999, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: 'rgba(0,0,0,.58)' },
   plName: { color: C.text, fontSize: H.font.sm, fontWeight: '600' },
   plArtFull: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   plVeil: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 9 },
@@ -265,19 +281,29 @@ const st = StyleSheet.create({
 });
 
 
-// v1.2.4 D1 A1b(仅 web):歌单卡 hover——封面遮罩+右下 44px 绿圆播放钮(150ms ease-out 上浮);
-// 点钮=播放全部,点卡其余=进详情。TV 不渲染本组件(走上方原 HDTouch 分支,零 diff)
+// v1.2.4 D1 A1b + v1.2.5 视觉保真(仅 web):歌单卡——彩色弥散投影(RNW 靠 shadow* 四件套,
+// shadowStyleOf 的 elevation 在 web 不渲染)+hover 上浮/投影加深(.nm-card CSS 过渡)+封面遮罩+
+// 右下 44px 绿圆播放钮(150ms ease-out 上浮);点钮=播放全部,点卡其余=进详情。TV 不渲染本组件
 function PlCardWeb({ pl, width, onOpen, onPlay }: { pl: { name: string; img?: string; count?: number; author?: string; play_count?: string }; width?: number; onOpen: () => void; onPlay: () => void }) {
   const [hov, setHov] = useState(false);
   const t = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const elRef = useRef<View | null>(null); // RNW View ref=DOM(坑131)——挂 .nm-card 过渡类
+  useEffect(() => {
+    const el = elRef.current as unknown as HTMLElement | null;
+    if (el && el.classList) el.classList.add('nm-card');
+  }, []);
+  const shadow = webCardShadow(pl.name || 'pl', hov);
   return (
-    <HDTouch style={[st.plCard, width != null && { width }]} zoom={1.06} onPress={onOpen}
-      {...({ onHoverIn: () => { t.current && clearTimeout(t.current); t.current = setTimeout(() => setHov(true), 100); }, onHoverOut: () => { t.current && clearTimeout(t.current); setHov(false); } } as Record<string, unknown>)}>
+    <HDTouch
+      ref={elRef as never}
+      style={[st.plCard, width != null && { width }, shadow, hov && { transform: [{ translateY: -4 }, { scale: 1.02 }] }]}
+      zoom={1.06} onPress={onOpen}
+      {...({ onHoverIn: () => { t.current && clearTimeout(t.current); t.current = setTimeout(() => setHov(true), 80); }, onHoverOut: () => { t.current && clearTimeout(t.current); setHov(false); } } as Record<string, unknown>)}>
       <View style={{ position: 'relative' }}>
         {pl.img
           ? <Image source={{ uri: pl.img }} style={st.plArt} />
           : <View style={[st.plArt, { backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
-        <View style={st.plCount}><Text style={st.plCountText}>▶ {pl.count}</Text></View>
+        <View style={[st.plCount, IS_WEB && st.plCountWeb]}><Text style={st.plCountText}>▶ {pl.count}</Text></View>
         {/* A1b 遮罩+播放钮 */}
         <View pointerEvents={hov ? 'auto' : 'none'} style={[st.plMask, { opacity: hov ? 1 : 0 }]} />
         <HDTouch style={[st.plPlay, { opacity: hov ? 1 : 0, transform: [{ translateY: hov ? 0 : 6 }] }]} onPress={onPlay}>

@@ -55,19 +55,22 @@ mountKbNav();
       : { color: '#00000000', symbolColor: '#ffffffcc' });
   }
 
-  // ===== v1.2.3 顶部轨道(A2/W2):无标题栏 =====
-  //  40px 通栏拖拽轨道:左 174px 侧栏同色(视觉上侧栏贯通到窗口顶——mac 红绿灯在此行),右侧透明(内容头部区拖拽;win 三键原生 overlay 悬于行尾)
+  // ===== v1.2.5 顶部轨道 36px(A2/W2):无标题栏 =====
+  //  36px 通栏拖拽轨道:左 174px 侧栏区(win/linux 透明——React 品牌行负 margin 顶入轨道,拖拽面仍在;
+  // mac 不透明——红绿灯在此行,品牌行在轨道下方第二行),右侧透明(内容头部区拖拽;win 三键原生 overlay 悬于行尾)
   const css = document.createElement('style');
   css.id = 'nm-desktop-chrome';
   css.textContent = [
-    '#nm-toprail { position:fixed; top:0; left:0; right:0; height:40px; display:flex; z-index:2147483600;',
+    '#nm-toprail { position:fixed; top:0; left:0; right:0; height:36px; display:flex; z-index:2147483600;',
     '  -webkit-app-region:drag; }',
     '#nm-toprail .rail-side { width:174px; flex:0 0 auto; -webkit-app-region:drag;',
-    '  background:' + (isLight ? '#F6F7F9' : '#121212') + ';',
+    '  background:' + (isMac ? (isLight ? '#F6F7F9' : '#121212') : 'transparent') + ';',
     '  border-right:.5px solid ' + (isLight ? 'rgba(31,35,41,.10)' : 'rgba(255,255,255,.08)') + '; }',
     '#nm-toprail .rail-main { flex:1; -webkit-app-region:drag; }',
     /* 只对按钮挖 no-drag 孔(rail-side/rail-main 恒为拖拽面——`*` 全 no-drag 会废掉整行拖拽,清单坑②) */
     '#nm-toprail .rail-btns, #nm-toprail .rail-btns * { -webkit-app-region:no-drag; }',
+    /* v1.2.5 卡片 hover 过渡(React inline style 变化→CSS 过渡接管) */
+    '.nm-card { transition: transform .16s ease, box-shadow .16s ease; }',
   ].join('\n');
   document.head.appendChild(css);
 
@@ -90,8 +93,8 @@ mountKbNav();
     for (const cd of Array.from(parent.children) as HTMLElement[]) {
       if (cd.id === 'nm-toprail' || cd.tagName !== 'DIV') continue;
       const isMain = !!cd.querySelector('img[src*="mark"]');
-      cd.style.top = '40px';
-      cd.style.height = 'calc(100% - 40px)';
+      cd.style.top = '36px';
+      cd.style.height = 'calc(100% - 36px)';
       if (isMain) {
         cd.style.left = '0px'; cd.style.right = '0px'; cd.style.width = 'auto'; cd.style.marginLeft = '';
       } else {
@@ -125,11 +128,11 @@ mountKbNav();
     ];
     const grp = document.createElement('div');
     grp.className = 'rail-btns';
-    grp.style.cssText = ['position:absolute','right:0','top:0','display:flex','height:40px'].join(';');
+    grp.style.cssText = ['position:absolute','right:0','top:0','display:flex','height:36px'].join(';');
     for (const [label, hoverBg, fn] of btns) {
       const b = document.createElement('div');
       b.textContent = label;
-      b.style.cssText = ['display:flex','align-items:center','justify-content:center','width:46px','height:40px','cursor:pointer','color:' + (isLight ? '#42464c' : '#ffffffb0'),'font-size:13px','user-select:none','transition:background .12s'].join(';');
+      b.style.cssText = ['display:flex','align-items:center','justify-content:center','width:46px','height:36px','cursor:pointer','color:' + (isLight ? '#42464c' : '#ffffffb0'),'font-size:13px','user-select:none','transition:background .12s'].join(';');
       b.addEventListener('mouseenter', () => { b.style.background = hoverBg; });
       b.addEventListener('mouseleave', () => { b.style.background = 'transparent'; });
       b.addEventListener('click', fn);

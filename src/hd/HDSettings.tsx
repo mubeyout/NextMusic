@@ -94,7 +94,7 @@ export function HDSettingsScreen() {
   return (
     <ScrollView
       style={st.screen}
-      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 30, paddingBottom: 30, gap: 14 }}
+      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 30, paddingBottom: 30, gap: 14, ...(IS_WEB ? { maxWidth: 880, width: '100%', alignSelf: 'center' } : {}) }}
       showsVerticalScrollIndicator={false}
     >
       <View style={st.head}>

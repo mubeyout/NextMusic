@@ -6,7 +6,7 @@ import { C } from '../theme/tokens';
 import { usePlayer } from '../state/PlayerProvider';
 import { ProgressBar } from './ProgressBar';
 import { CollectSheet } from './CollectSheet';
-import { useFav } from '../hd/useFav'; // lx157:收藏状态统一三源联动
+import { useFav } from '../state/useFav'; // lx157:收藏状态统一三源联动
 import { isFav } from '../state/favorites';
 import { toast } from './Dialog';
 

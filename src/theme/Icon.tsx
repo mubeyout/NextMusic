@@ -1,4 +1,5 @@
 import React from 'react';
+import { Platform } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { ICONS } from './icon-data';
 import { BRAND_ICONS } from './brand-icons';
@@ -37,6 +38,9 @@ export function Icon({
   if (!xml) return null;
   // 未显式传色：active 变体跟随主题品牌色；default 跟随正文色（深色=#FFFFFF 与原图一致，浅色=深色图标）
   xml = recolor(xml, color ?? (active ? C.brand : C.text));
+  // v1.2.5 桌面:部分图标 xml 烘了 width/height 属性——RNW 下 svg 高度会吃 xml 属性(实测 16×24,
+  // 「为我推荐」active 图标下坠 5px 的真因)。web 剥掉,让 props 的 width/height 独占;原生不受影响
+  if (Platform.OS === 'web') xml = xml.replace(/<svg\s([^>]*?)\s*(width="\d+"\s+height="\d+")/, '<svg $1');
   return <SvgXml xml={xml} width={size} height={size} />;
 }
 

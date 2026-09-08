@@ -16,7 +16,7 @@ import { hdActions } from './HDActions';
 import { getRecents } from '../state/recent';
 import { sync, lxToApp , subscribeSync , isPlatformList } from '../services/sync';
 import { hdNav, hdInnerRef } from './hdnav';
-import { useFav } from './useFav';
+import { useFav } from '../state/useFav';
 import { HDCollect } from './HDCollect';
 import { NavigationContainer, DefaultTheme, StackActions, NavigationIndependentTree } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -24,7 +24,7 @@ import { HDHome } from './HDHome';
 import { HDSearch } from './HDSearch';
 import { HDBoards } from './HDBoards';
 import { HDPodcast } from './HDPodcast';
-// lx84:内容区嵌套栈内页(侧栏恒固定,内页只在右侧切换;设置族除外走根栈)
+// lx84:内容区嵌套栈内页(侧栏恒固定,内页只在右侧切换;TV 设置族走根栈,v1.2.5 起 web 也内页化)
 import { HDPlayer } from './HDPlayer';
 import { HDPlaylistDetailScreen } from './HDPlaylistDetail';
 import { HDAuthLoginScreen } from './HDAuthLogin';
@@ -43,6 +43,10 @@ import { SearchScreen } from '../screens/SearchScreen';
 import { RoutePage } from '../screens/RouteScreen';
 import { SourcesScreen, AccountScreen } from '../screens/SourcesAccountScreens';
 import { AuthSignupScreen } from '../screens/AuthSignupScreen';
+// v1.2.5 桌面:设置族内页化——侧栏恒固定,设置也在内容区加载(老板);TV 仍走根栈全屏(lx84 定夺不变)
+import { HDSettingsScreen } from './HDSettings';
+import { BasicSettingsScreen, ThemeScreen, AboutScreen, DownloadsSettingsScreen, BackupSettingsScreen } from '../screens/SettingSubScreens';
+import { ManualScreen, DeployGuideScreen, FaqScreen, ChangelogScreen } from '../screens/HelpScreens';
 import type { SongItem } from '../services/server';
 
 // 对齐桌面版侧栏:发现 = 为我推荐/播客/探索/榜单
@@ -79,6 +83,10 @@ const railNav = (s: string, p?: object) => {
   hdInnerPop();
   hdNav()?.navigate(s, p);
 };
+
+// v1.2.5 桌面平台探测(win/linux 品牌行顶入轨道,mac 轨道留给红绿灯)
+const NM_PLAT = IS_WEB ? String((globalThis as unknown as { nmDesktop?: { platform?: string } }).nmDesktop?.platform || '') : '';
+const NM_MAC = NM_PLAT === 'darwin';
 
 export function HDMain() {
   const insets = useSafeAreaInsets();
@@ -187,27 +195,30 @@ export function HDMain() {
     <View style={st.screen}>
       {/* ===== 侧栏(桌面版结构) ===== */}
       <View style={IS_WEB ? st.sidebarWrapWeb : st.sidebarWrap}>
+        {IS_WEB ? (
+          /* v1.2.5 桌面(老板:brand 在导航占太高):品牌行独立于滚动区——
+           * win/linux 负 margin 顶入 36px 顶部轨道(轨道透明,整行仍是拖拽面,品牌不可点无副作用);
+           * mac 轨道留给红绿灯,品牌行紧在轨道下方 */
+          <View style={NM_MAC ? st.brandRowMac : st.brandRowRail}>
+            <Image source={require('../assets/brand/mark.png')} style={NM_MAC ? st.logoMarkMac : st.logoMarkRail} />
+            <View style={{ flex: 1 }}>
+              <Text style={st.brandNameWeb}>Next<Text style={{ color: C.brand }}>Music</Text></Text>
+            </View>
+          </View>
+        ) : null}
         <ScrollView
           style={{ flex: 1, backgroundColor: C.bg }}
-          contentContainerStyle={{ paddingTop: 8, paddingBottom: 10, gap: 2 }}
+          contentContainerStyle={{ paddingTop: IS_WEB ? 4 : 8, paddingBottom: 10, gap: 2 }}
           showsVerticalScrollIndicator={false}
         >
-          {IS_WEB ? (
-            /* v1.2.3 桌面:logo 侧栏第二行(mac 红绿灯/顶部轨道下方) */
+          {!IS_WEB ? (
             <View style={st.brandRow}>
               <Image source={require('../assets/brand/mark.png')} style={st.logoMark} />
               <View style={{ flex: 1 }}>
                 <Text style={st.brandName}>Next<Text style={{ color: C.brand }}>Music</Text></Text>
               </View>
             </View>
-          ) : (
-            <View style={st.brandRow}>
-              <Image source={require('../assets/brand/mark.png')} style={st.logoMark} />
-              <View style={{ flex: 1 }}>
-                <Text style={st.brandName}>Next<Text style={{ color: C.brand }}>Music</Text></Text>
-              </View>
-            </View>
-          )}
+          ) : null}
 
           {/* 发现 */}
           <Group label="发现" />
@@ -238,16 +249,10 @@ export function HDMain() {
             ])} />
         </ScrollView>
         {/* lx85:设置项不贴底——留出焦点环完整显示空间(老板:太靠底被裁切) */}
-        {IS_WEB ? (
-          /* v1.2.3 桌面:设置回侧栏底部(工具栏已撤) */
-          <View style={st.settingsDock}>
-            <NavItem icon="settings" label="设置" onPress={() => hdNav()?.navigate('Settings')} />
-          </View>
-        ) : (
-          <View style={st.settingsDock}>
-            <NavItem icon="settings" label="设置" onPress={() => hdNav()?.navigate('Settings')} />
-          </View>
-        )}
+        {/* v1.2.5:设置也走 railNav(内页化,侧栏恒固定)——TV 仍根栈全屏 */}
+        <View style={st.settingsDock}>
+          <NavItem icon="settings" label="设置" onPress={() => railNav('Settings')} />
+        </View>
       </View>
 
       {/* ===== 内容区(lx84:嵌套栈——内页只在此切换,侧栏恒固定) ===== */}
@@ -275,6 +280,21 @@ export function HDMain() {
             <InnerStack.Screen name="DeviceMusic" component={DeviceMusicScreen} />
             <InnerStack.Screen name="Sources" component={SourcesScreen} />
             <InnerStack.Screen name="Account" component={AccountScreen} />
+            {/* v1.2.5 桌面:设置族内页化(老板:设置也作为内页加载,左边导航固定);TV 不注册,仍走根栈全屏 */}
+            {IS_WEB ? (
+              <>
+                <InnerStack.Screen name="Settings" component={HDSettingsScreen} />
+                <InnerStack.Screen name="BasicSettings" component={BasicSettingsScreen} />
+                <InnerStack.Screen name="Theme" component={ThemeScreen} />
+                <InnerStack.Screen name="About" component={AboutScreen} />
+                <InnerStack.Screen name="Manual" component={ManualScreen} />
+                <InnerStack.Screen name="DeployGuide" component={DeployGuideScreen} />
+                <InnerStack.Screen name="Faq" component={FaqScreen} />
+                <InnerStack.Screen name="Changelog" component={ChangelogScreen} />
+                <InnerStack.Screen name="BackupSettings" component={BackupSettingsScreen} />
+                <InnerStack.Screen name="DownloadsSettings" component={DownloadsSettingsScreen} />
+              </>
+            ) : null}
             <InnerStack.Screen name="AuthLogin" component={HDAuthLoginScreen} />
             <InnerStack.Screen name="AuthSignup" component={AuthSignupScreen} />
           </InnerStack.Navigator>
@@ -306,7 +326,7 @@ function TabsHost({ tab, setTab }: { tab: number; setTab: (i: number) => void })
 }
 
 function Group({ label, top = 4 }: { label: string; top?: number }) {
-  return <Text style={[st.group, { marginTop: top + 5 }]}>{label}</Text>;
+  return <Text style={[st.group, { marginTop: top + 5 }, IS_WEB && { paddingHorizontal: 18 }]}>{label}</Text>;
 }
 
 function NavItem({ icon, label, active, first, onPress }: { icon: string; label: string; active?: boolean; first?: boolean; onPress: () => void }) {
@@ -412,6 +432,12 @@ const st = StyleSheet.create({
   logoMark: { width: 38, height: 41 },
   logoText: { color: C.onBrand, fontSize: 13, fontWeight: '800' },
   brandName: { color: C.text, fontSize: 15, fontWeight: '800' },
+  // v1.2.5 桌面品牌行(老板:brand 在导航占太高)——win/linux 顶入 36px 轨道,mac 在轨道下方紧凑行
+  brandRowRail: { flexDirection: 'row', alignItems: 'center', gap: 9, height: 36, marginTop: -36, paddingHorizontal: 18, marginBottom: 2 },
+  brandRowMac: { flexDirection: 'row', alignItems: 'center', gap: 9, height: 40, paddingHorizontal: 18 },
+  logoMarkRail: { width: 21, height: 23 },
+  logoMarkMac: { width: 26, height: 28 },
+  brandNameWeb: { color: C.text, fontSize: 13.5, fontWeight: '800', letterSpacing: 0.2 },
   settingsDock: { paddingHorizontal: 0, paddingVertical: 6 },
   group: { fontSize: 9, color: C.text3, paddingHorizontal: 12, paddingTop: 5, paddingBottom: 3, letterSpacing: 1, fontWeight: '600' },
   navItem: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 8, paddingHorizontal: 10, height: 35, borderRadius: 9 },
