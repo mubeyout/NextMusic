@@ -5,6 +5,11 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { PageHeader } from '../components/PageChrome';
+import { HDTouch } from '../hd/HDTouch';
+import { IS_HD } from '../services/appversion';
+
+// lx163d:遥控适配——HD 用 HDTouch 焦点环,phone 保持 TouchableOpacity
+const Row = IS_HD ? HDTouch : TouchableOpacity;
 import { SongRow } from '../components/SongRow';
 import { api, type SongItem } from '../services/server';
 import { toast } from '../components/Dialog';
@@ -33,10 +38,12 @@ export function AlbumDetailScreen() {
           <View style={{ flex: 1 }}>
             <Text style={st.name} numberOfLines={2}>{album.name}</Text>
             <Text style={st.meta} numberOfLines={1}>{album.singer || ''} · {songs ? `${songs.length} 首` : '加载中…'}</Text>
-            <TouchableOpacity style={st.favBtn} hitSlop={4} onPress={() => toggleAlbumFav(album).then(on => toast(on ? '已收藏专辑' : '已取消收藏')).catch(() => toast('服务器写入失败'))}>
+            <Row style={st.favBtn} hitSlop={4} hasTVPreferredFocus={IS_HD}
+              focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 15 }}
+              onPress={() => toggleAlbumFav(album).then(on => toast(on ? '已收藏专辑' : '已取消收藏')).catch(() => toast('服务器写入失败'))}>
               <Icon name="heart" size={16} active={favd} color={favd ? '#FF5A76' : C.text2} />
               <Text style={[st.favText, favd && { color: '#FF5A76' }]}>{favd ? '已收藏' : '收藏专辑'}</Text>
-            </TouchableOpacity>
+            </Row>
           </View>
         </View>
 

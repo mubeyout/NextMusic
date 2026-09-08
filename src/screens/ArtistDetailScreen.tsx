@@ -44,9 +44,12 @@ export function ArtistDetailScreen() {
             <Text style={st.name} numberOfLines={1}>{artist.name}</Text>
             <Text style={st.meta}>{(artist.source || 'wy').toUpperCase()} · {songs ? `${songs.length} 首热门` : '加载中…'}</Text>
           </View>
-          <TouchableOpacity hitSlop={8} onPress={() => toggleArtistFav(artist).then(on => toast(on ? `已收藏 ${artist.name}` : `已取消收藏`)).catch(() => toast('服务器写入失败'))}>
+          {/* lx163d:遥控适配——HD 用 HDTouch 焦点环 */}
+          <Row hitSlop={8} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 18 }} hasTVPreferredFocus={IS_HD}
+            onPress={() => toggleArtistFav(artist).then(on => toast(on ? `已收藏 ${artist.name}` : `已取消收藏`)).catch(() => toast('服务器写入失败'))}
+            style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}>
             <Icon name="heart" size={26} active={favd} color={favd ? '#FF5A76' : C.text2} />
-          </TouchableOpacity>
+          </Row>
         </View>
 
         {/* 热门歌曲 */}
