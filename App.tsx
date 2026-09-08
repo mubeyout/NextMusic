@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StatusBar } from 'react-native';
+import { StatusBar, AppState as RNAppState } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 // 主题已在 theme/tokens.ts 模块加载期应用（早于一切组件/StyleSheet 创建）
@@ -13,6 +13,8 @@ import { RootNavigator } from './src/navigation';
 import { DialogHost } from './src/components/Dialog';
 import { IS_HD } from './src/services/appversion';
 import { HDActionHost } from './src/hd/HDActions';
+import { refetchAndBump } from './src/services/sync';
+import { store as httpStore } from './src/services/server';
 
 function App() {
   useEffect(() => {
@@ -21,6 +23,11 @@ function App() {
     initFx();
     // WebView 就绪后重载已启用的自定义音源脚本
     engine.setActiveSources(loadSources());
+    // lx163:回前台全量拉服务器快照并广播——服务器/其他端操作过的增删改在本端即时落地(双向同步拉半边)
+    const sub = RNAppState.addEventListener('change', s => {
+      if (s === 'active' && httpStore.base && httpStore.token) refetchAndBump();
+    });
+    return () => sub.remove();
   }, []);
 
   return (

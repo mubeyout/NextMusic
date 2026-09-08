@@ -27,7 +27,11 @@ export function useFav(song?: SongItem | null) {
       setFaved(isFav(song) || inLocalPl || (s2?.loveList || []).some(x => x.id === key) || inRemotePl);
     };
     const inLocalPl = library.all().some(pl => (pl.songs as SongItem[]).some(x => lxNormKey(x) === key));
-    if (snap) check(snap);
+    if (snap) {
+      check(snap);
+      // lx163:缓存自愈——后台补拉一次,删歌单/服务器侧变更后陈旧缓存不再永久撑红心(老板:播放页/mini 状态不同步根因)
+      if (connected && token) sync.fetchLists().then(s2 => { if (!dead && s2) check(s2); }).catch(() => {});
+    }
     else if (connected && token) {
       sync.fetchLists().then(s => { if (!dead) check(s); }).catch(() => { if (!dead) setFaved(isFav(song) || inLocalPl); });
     } else setFaved(isFav(song) || inLocalPl);

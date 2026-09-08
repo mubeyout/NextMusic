@@ -13,6 +13,8 @@ import { IS_HD } from '../services/appversion';
 import { hdActions } from '../hd/HDActions';
 import { SongRow } from '../components/SongRow';
 import { isArtistFav, toggleArtistFav, refreshArtistFavs, useArtistFavTick, type ArtistFav } from '../state/artistFavs'; // lx161:歌手收藏
+import { isAlbumFav, toggleAlbumFav, refreshAlbumFavs, useAlbumFavTick } from '../state/albumFavs'; // lx163:专辑收藏
+import { playlistSync } from '../state/playlistSync'; // lx163:歌单 CRUD 双向同步
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
 import { library, type LocalPlaylist } from '../state/library';
@@ -76,23 +78,22 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
   useEffect(() => { if (visible) refresh(); }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const artistTick = useArtistFavTick(); // lx161:收藏变更联动(取消后列表即时刷新)
+  const albumTick = useAlbumFavTick(); // lx163:专辑收藏联动
   useEffect(() => {
     if (tab === 1 && loggedIn) refreshArtistFavs().then(l => { if (l.length || artists != null) setArtists(l); }); // lx161:取消收藏后列表即时同步
-    if (tab === 2 && albums == null && loggedIn) sync.libraryAlbums().then(setAlbums);
-  }, [tab, artistTick]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (tab === 2 && loggedIn) refreshAlbumFavs().then(l => { if (l.length || albums != null) setAlbums(l); }); // lx163:取消后即时同步
+  }, [tab, artistTick, albumTick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const openSongs = (title: string, songs: SongItem[], cover?: string, opts?: { love?: boolean; plKey?: string; artist?: ArtistFav }) => {
     if (!songs.length) return;
     nav.navigate('PlaylistDetail', { title, songs, cover, meta: `${songs.length} 首`, ...opts });
   };
 
-  const openArtist = async (a: { name: string; id: string; source?: string; img?: string }) => {
-    const songs = await api.artistSongs(a.id, a.source || 'wy');
-    openSongs(a.name, songs, a.img, { artist: a }); // lx161:透传歌手元数据,详情页可收藏
+  const openArtist = (a: { name: string; id: string; source?: string; img?: string }) => {
+    nav.navigate('ArtistDetail', { artist: a }); // lx163:歌手内页(热门+专辑+收藏)
   };
-  const openAlbum = async (a: { name: string; id: string; singer?: string; img?: string }) => {
-    const songs = await api.albumSongs(a.id, 'wy');
-    openSongs(a.name, songs, a.img);
+  const openAlbum = (a: { name: string; id: string; singer?: string; img?: string }) => {
+    nav.navigate('AlbumDetail', { album: a }); // lx163:专辑内页
   };
 
   const loveSongs = snap ? snap.loveList.map(lxToApp) : [];
@@ -145,7 +146,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
             </View>
             <TouchableOpacity style={st.newBtn} onPress={() => (IS_HD ? hdActions : dialog).menu('新建歌单', [
               { label: '空白歌单', icon: 'add', onPress: () => { // lx159:补齐 icon(与 HDMain 同款菜单一致)
-                (IS_HD ? hdActions : dialog).prompt('新建歌单', { defaultValue: '', onSubmit: (v) => { const n = (v || '').trim(); if (n) { library.create(n); toast('已创建'); } } });
+                (IS_HD ? hdActions : dialog).prompt('新建歌单', { defaultValue: '', onSubmit: (v) => { const n = (v || '').trim(); if (n) { playlistSync.create(n).then(() => toast('已创建')); } } }); // lx163:同步服务器
               } },
               { label: '导入平台歌单', icon: 'download', onPress: () => nav.navigate('ImportPlaylist') },
             ])}>
@@ -230,10 +231,14 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
                       setActSyncPl({ id: g.key, name: g.name, count: g.count });
                     }
                   }}
-                >                  {/* Figma 2154-730：自建歌单一律渐变抽象封面（不用歌曲专辑图） */}
-                  <LinearGradient colors={COVER_GRADS[i % COVER_GRADS.length]} style={st.plCover}>
-                    <Text style={st.plGlyph}>♫</Text>
-                  </LinearGradient>
+                >                  {/* lx163(老板):真实封面优先(首曲专辑图),无图兑底渐变抽象封面 */}
+                  {g.img ? (
+                    <Image source={{ uri: g.img }} style={st.plCover} />
+                  ) : (
+                    <LinearGradient colors={COVER_GRADS[i % COVER_GRADS.length]} style={st.plCover}>
+                      <Text style={st.plGlyph}>♫</Text>
+                    </LinearGradient>
+                  )}
                   <Text style={st.plName} numberOfLines={1}>{g.name}</Text>
                   <Text style={st.plMeta} numberOfLines={1}>{g.count} 首</Text>
                 </TouchableOpacity>
@@ -279,6 +284,10 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
                   <Text style={st.rowName} numberOfLines={1}>{a.name}</Text>
                   <Text style={st.rowMeta} numberOfLines={1}>{a.singer || ''}</Text>
                 </View>
+                {/* lx163:取消收藏专辑(服务器同步) */}
+                <TouchableOpacity hitSlop={8} onPress={() => toggleAlbumFav(a).then(on => toast(on ? `已收藏《${a.name}》` : `已取消收藏《${a.name}》`)).catch(() => toast('服务器写入失败'))}>
+                  <Icon name="heart" size={20} active={isAlbumFav(a)} color={isAlbumFav(a) ? '#FF5A76' : C.text2} />
+                </TouchableOpacity>
                 <Icon name="next" size={18} color={C.text2} />
               </TouchableOpacity>
             )) : <Text style={st.empty}>暂无收藏专辑</Text>}
@@ -324,15 +333,13 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
             defaultValue: actPl.name,
             onSubmit: (v) => {
               if (!v || v === actPl.name) return;
-              library.update(actPl.id, { name: v });
-              toast('已重命名');
+              playlistSync.rename(actPl.id, v).then(() => toast('已重命名')); // lx163:同步服务器
             },
           });
         } },
         { label: '删除歌单', danger: true, onPress: () => {
           (IS_HD ? hdActions : dialog).confirm('删除歌单', `确定删除「${actPl.name}」？${actPl.songs.length} 首歌曲将从此歌单移除`, () => {
-            library.remove(actPl.id);
-            toast('歌单已删除');
+            playlistSync.remove(actPl.id).then(() => toast('歌单已删除')); // lx163:同步服务器
           }, '删除', '取消');
         } },
       ] : []}

@@ -5,7 +5,7 @@ import { AudioPro, AudioProContentType, AudioProEventType, AudioProState } from 
 import { library } from './library';
 import { createMMKV } from 'react-native-mmkv';
 import type { SongItem } from '../services/server';
-import { api } from '../services/server';
+import { api, store as httpStore } from '../services/server';
 import { lxapi } from '../services/lxapi';
 import { customGetMusicUrl, activeSources } from '../services/customSource';
 import { providerApi, providers, PROVIDER_META, type ProviderType } from '../services/providers';
@@ -13,10 +13,10 @@ import { downloads as dlStore } from '../services/downloads';
 import { settings } from '../services/settings';
 import { useApp } from './AppState';
 import { pushRecent } from './recent';
+import { sync, appToLx, lxToApp } from '../services/sync'; // lx163:播放列表同步(defaultList)
 import { navRef } from '../navRef';
 import { dialog, toast } from '../components/Dialog';
 import { dlna, googleCast, audioRoute, type DlnaDevice, type CastDevice } from '../services/audioroute';
-import { sync } from '../services/sync';
 
 const modeKv = createMMKV({ id: 'nextmusic-playmode' });
 const playbackKv = createMMKV({ id: 'nextmusic-playback' }); // 恢复上次播放状态快照
@@ -145,6 +145,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const tokenRef = useRef(token); tokenRef.current = token;
   const [queue, setQueue] = useState<QueueTrack[]>([]);
+  const queuePushTimer = useRef<ReturnType<typeof setTimeout> | null>(null); // lx163:队列推送节流
   const [current, setCurrent] = useState<QueueTrack | null>(null);
   const [playing, setPlaying] = useState(false);
   const [position, setPosition] = useState(0);
@@ -598,6 +599,23 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       } catch { /* 超大队列放弃快照 */ }
     }, 1500);
     persistSnapshot.current = Date.now();
+    // lx163:播放列表同步——队列变化(节流 3s)推服务器 defaultList(他端/网页可恢复);冷启本地空队列时从服务器拉回
+    if (queue.length) {
+      clearTimeout(queuePushTimer.current);
+      queuePushTimer.current = setTimeout(() => {
+        if (!httpStore.base || !httpStore.token) return;
+        (async () => {
+          try {
+            const snap = await sync.fetchLists();
+            if (!snap) return;
+            const lxq = queue.slice(0, 300).map(appToLx);
+            if (JSON.stringify((snap.defaultList || []).map((x: { id?: string }) => x.id)) === JSON.stringify(lxq.map((x: { id?: string }) => x.id))) return;
+            snap.defaultList = lxq;
+            await sync.pushLists(snap);
+          } catch { /* ignore */ }
+        })();
+      }, 3000);
+    }
     return () => clearTimeout(t);
   }, [queue, current]);
   // 恢复/自愈：JS 重建（Activity 被系统回收后重开）而原生前台服务仍在播/暂停时，lib 的 internalStore 已归零，
@@ -676,6 +694,16 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
               }
             }
           } catch { /* 坏会话忽略 */ }
+        } else if (httpStore.base && httpStore.token) {
+          // lx163:本地无快照→从服务器 defaultList 恢复队列(他端/网页推上来的播放列表,暂停态展示不自动播)
+          try {
+            const s = await sync.fetchLists();
+            if (!dead && s?.defaultList?.length && !queueRef.current.length) {
+              const q = s.defaultList.map(lxToApp).map(t => ({ ...t, uid: `${t.source}-${t.songmid}-${++seq}` }));
+              queueRef.current = q; setQueue(q);
+              idxRef.current = 0; setCurrent(q[0]);
+            }
+          } catch { /* ignore */ }
         }
       } catch { /* 坏快照忽略 */ }
     };

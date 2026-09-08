@@ -166,6 +166,25 @@ export const api = {
   async albumSongs(id: string, source = 'wy'): Promise<SongItem[]> {
     try { return (await req(`/api/music/albumSongs?id=${encodeURIComponent(id)}&source=${source}`)) as SongItem[]; } catch { return []; }
   },
+  // lx163:歌手/专辑搜索(服务器 type=singer/album;字段与 web 端一致)
+  async searchSingers(kw: string, source = 'kw', page = 1, limit = 30): Promise<{ id: string; name: string; img?: string; source?: string }[]> {
+    try {
+      const d = (await req(`/api/music/search?name=${encodeURIComponent(kw)}&source=${source}&type=singer&page=${page}&limit=${limit}`)) as { list?: { id?: string | number; name: string; picUrl?: string; avatar?: string; img?: string; source?: string }[] };
+      return (d.list || []).map(a => ({ id: String(a.id ?? a.name), name: a.name, img: a.picUrl || a.avatar || a.img, source: a.source || source }));
+    } catch { return []; }
+  },
+  async searchAlbums(kw: string, source = 'kw', page = 1, limit = 30): Promise<{ id: string; name: string; singer?: string; img?: string; source?: string }[]> {
+    try {
+      const d = (await req(`/api/music/search?name=${encodeURIComponent(kw)}&source=${source}&type=album&page=${page}&limit=${limit}`)) as { list?: { id?: string | number; name: string; singer?: string; picUrl?: string; img?: string; source?: string }[] };
+      return (d.list || []).map(a => ({ id: String(a.id ?? a.name), name: a.name, singer: a.singer, img: a.picUrl || a.img, source: a.source || source }));
+    } catch { return []; }
+  },
+  async artistAlbums(id: string, source = 'wy'): Promise<{ id: string; name: string; img?: string; publishTime?: string }[]> {
+    try {
+      const d = (await req(`/api/music/artistAlbums?id=${encodeURIComponent(id)}&source=${source}`)) as { list?: { id?: string | number; name: string; img?: string; picUrl?: string; publishTime?: string }[] };
+      return (d.list || []).map(a => ({ id: String(a.id ?? a.name), name: a.name, img: a.img || a.picUrl, publishTime: a.publishTime }));
+    } catch { return []; }
+  },
   async login(username: string, password: string): Promise<{ success: boolean; token: string; username: string }> {
     return req('/api/user/login', {
       method: 'POST',

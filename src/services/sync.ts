@@ -94,6 +94,11 @@ export function appToLx(s: SongItem): LXSong {
  type SyncSub = () => void;
 const syncSubs = new Set<SyncSub>();
 export function subscribeSync(f: SyncSub): () => void { syncSubs.add(f); return () => { syncSubs.delete(f); }; }
+// lx163:前台全量拉取并广播——服务器侧或他端操作后回前台即同步(双向闭环的拉半边)
+export async function refetchAndBump(): Promise<void> {
+  try { await sync.fetchLists(); } catch { /* ignore */ }
+  bumpSync();
+}
 function bumpSync() { syncSubs.forEach(f => f()); }
 
 export const sync = {
@@ -179,6 +184,13 @@ export const sync = {
   async pushLibraryArtists(list: { name: string; id: string; source?: string; img?: string; count?: number }[]): Promise<boolean> {
     try {
       await req('/api/user/library/artists', { method: 'POST', headers: { "Content-Type": "application/json" }, body: JSON.stringify(list), timeout: 15000 });
+      return true;
+    } catch { return false; }
+  },
+  // lx163:专辑收藏写入(全量覆盖)——与 artists 同模式多端互通
+  async pushLibraryAlbums(list: { name: string; singer?: string; id: string; source?: string; img?: string }[]): Promise<boolean> {
+    try {
+      await req('/api/user/library/albums', { method: 'POST', headers: { "Content-Type": "application/json" }, body: JSON.stringify(list), timeout: 15000 });
       return true;
     } catch { return false; }
   },

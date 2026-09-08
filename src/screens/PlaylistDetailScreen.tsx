@@ -12,8 +12,10 @@ import { IS_HD } from '../services/appversion';
 import { hdActions } from '../hd/HDActions';
 import { PageHeader } from '../components/PageChrome';
 import { library } from '../state/library';
-import { sync } from '../services/sync';
+import { sync, appToLx } from '../services/sync';
 import { setFav } from '../state/favorites';
+import { setFavBatch } from '../state/favorites';
+import { playlistSync } from '../state/playlistSync';
 import { isArtistFav, toggleArtistFav, useArtistFavTick, type ArtistFav } from '../state/artistFavs'; // lx161:歌手收藏
 import { usePlayer } from '../state/PlayerProvider';
 import { api, type SongItem, type SongListMeta } from '../services/server';
@@ -56,6 +58,7 @@ export function PlaylistDetailScreen() {
   const [busy, setBusy] = useState(false);
   const [actSong, setActSong] = useState<SongItem | null>(null);
   const [plMenu, setPlMenu] = useState(false);
+  const [plCollect, setPlCollect] = useState(false); // lx163:收藏歌单(整单批量)
   const [syncing, setSyncing] = useState(false);
   const [kw, setKw] = useState('');
   const [searching, setSearching] = useState(false);
@@ -197,8 +200,8 @@ export function PlaylistDetailScreen() {
           <TouchableOpacity style={st.action} onPress={() => { if (songs?.length) { const n = enqueueDownload(songs); toast(n ? `${n} 首加入下载队列` : '歌内歌曲均已下载'); } }}>
             <Icon name="download" size={20} color={C.text2} /><Text style={st.actionText}>下载全部</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={st.action} onPress={() => setCollect(true)} disabled={!songs?.length}>
-            <Icon name="heart" size={20} color={C.text2} /><Text style={st.actionText}>收藏全部</Text>
+          <TouchableOpacity style={st.action} onPress={() => setPlCollect(true)} disabled={!songs?.length}>
+            <Icon name="heart" size={20} color={C.text2} /><Text style={st.actionText}>收藏歌单</Text>
           </TouchableOpacity>
           {p.remoteId && !localPl ? (
             <TouchableOpacity style={st.action} onPress={importPl} disabled={!songs?.length}>
@@ -264,7 +267,7 @@ export function PlaylistDetailScreen() {
           { label: '收藏到歌单', onPress: () => setCollect(true) },
           // lx158:移除类去重——恰好一个入口:本地歌单→从本歌单移除;纯服务器歌单→从歌单移除;我喜欢的→取消收藏
           ...(localPl ? [{ label: '从本歌单移除', danger: true as const, onPress: () => {
-            library.removeSong(localPl.id, actSong);
+            playlistSync.removeSong(localPl.id, actSong); // lx163:镜像服务器
             setSongs(prev => (prev || []).filter(s => !(s.source === actSong.source && s.songmid === actSong.songmid)));
             setTotal(t => Math.max(0, t - 1));
             toast(`已移除「${actSong.name}」`);
@@ -285,6 +288,39 @@ export function PlaylistDetailScreen() {
         ] : []}
       />
       <CollectSheet song={actSong} visible={collect} onClose={() => { setCollect(false); setActSong(null); }} />
+
+      {/* lx163:收藏歌单——整单批量收藏到目标(我喜欢的/本地/服务器歌单),一次推送 */}
+      <ActionSheet
+        visible={plCollect} onClose={() => setPlCollect(false)}
+        title={`收藏歌单 · ${total} 首`}
+        items={[
+          { label: '我喜欢的', onPress: async () => {
+            const n = await setFavBatch(shown, true,
+              connected && token ? ((snap: any) => sync.pushLists(snap)) : undefined,
+              connected && token ? () => sync.fetchLists() : undefined,
+              appToLx);
+            toast(n ? `已收藏 ${n} 首到「我喜欢的」` : '均已收藏');
+            setPlCollect(false);
+          } },
+          ...library.all().filter(p => p.name !== '我喜欢的').map(p => ({
+            label: p.songs.length ? `${p.name}(${p.songs.length})` : p.name,
+            onPress: async () => {
+              await playlistSync.addSongs(p.id, shown);
+              toast(`已收藏到「${p.name}」`);
+              setPlCollect(false);
+            },
+          })),
+          ...(connected && token ? [{ label: '＋ 新建歌单', onPress: () => {
+            (IS_HD ? hdActions : dialog).prompt('新建歌单', { defaultValue: p.title || '', onSubmit: async (v: string) => {
+              const n = (v || '').trim();
+              if (!n) return;
+              await playlistSync.create(n, shown);
+              toast(`已创建「${n}」并收藏 ${shown.length} 首`);
+              setPlCollect(false);
+            } });
+          } }] : []),
+        ]}
+      />
     </View>
   );
 

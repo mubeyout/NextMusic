@@ -24,15 +24,8 @@ export function ArtistFavScreen() {
     refreshArtistFavs().then(l => setList(l));
   }, []);
 
-  const openArtist = async (a: ArtistFav) => {
-    if (busy) return;
-    setBusy(a.id);
-    try {
-      const songs = await api.artistSongs(a.id, a.source || 'wy');
-      if (!songs.length) { toast('没有找到该歌手的歌曲'); setBusy(null); return; }
-      nav.navigate('PlaylistDetail', { title: a.name, songs, cover: a.img, meta: `${songs.length} 首`, artist: a });
-    } catch { toast('获取歌手歌曲失败'); }
-    setBusy(null);
+  const openArtist = (a: ArtistFav) => {
+    nav.navigate('ArtistDetail', { artist: a }); // lx163:歌手内页(热门+专辑+收藏)
   };
 
   return (

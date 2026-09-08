@@ -11,6 +11,7 @@ import { HDTouch } from './HDTouch';
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
 import { library } from '../state/library';
+import { playlistSync } from '../state/playlistSync'; // lx163
 import { toast } from '../components/Dialog';
 import { hdActions } from './HDActions';
 import { getRecents } from '../state/recent';
@@ -35,6 +36,8 @@ import { ImportPlaylistScreen } from '../screens/ImportPlaylistScreen';
 import { FxScreen } from '../screens/FxScreen';
 import { MediaLibsScreen, ProviderBrowseRoute } from '../screens/MediaLibsScreen';
 import { ArtistFavScreen } from '../screens/ArtistFavScreen'; // lx161:收藏歌手
+import { ArtistDetailScreen } from '../screens/ArtistDetailScreen';
+import { AlbumDetailScreen } from '../screens/AlbumDetailScreen';
 import { ProviderEditScreen } from '../screens/ProviderEditScreen';
 import { ProviderDetailScreen } from '../screens/ProviderDetailScreen';
 import { DownloadsScreen } from '../screens/DownloadsScreen';
@@ -158,7 +161,7 @@ export function HDMain() {
           defaultValue: pl.name,
           onSubmit: async (v) => {
             if (!v || v === pl.name) return;
-            if (pl.localId) { library.update(pl.localId, { name: v }); toast('已重命名'); }
+            if (pl.localId) { void playlistSync.rename(pl.localId, v).then(() => toast('已重命名')); } // lx163:镜像服务器
             else if (connected && token) {
               const ok = await sync.renameUserList(pl.key, v);
               toast(ok ? '已重命名' : '服务器操作失败');
@@ -167,7 +170,7 @@ export function HDMain() {
         });
       } },
       { label: '删除歌单', icon: 'trash', danger: true, onPress: async () => {
-        if (pl.localId) { library.remove(pl.localId); toast('已删除'); }
+        if (pl.localId) { void playlistSync.remove(pl.localId).then(() => toast('已删除')); } // lx163:镜像服务器
         else if (connected && token) toast((await sync.removeUserList(pl.key)) ? '已删除' : '服务器操作失败');
       } },
     ]);
@@ -277,6 +280,8 @@ export function HDMain() {
             <InnerStack.Screen name="Fx" component={FxScreen} />
             <InnerStack.Screen name="MediaLibs" component={MediaLibsScreen} />
             <InnerStack.Screen name="ArtistFavs" component={ArtistFavScreen} />
+            <InnerStack.Screen name="ArtistDetail" component={ArtistDetailScreen} />
+            <InnerStack.Screen name="AlbumDetail" component={AlbumDetailScreen} />
             <InnerStack.Screen name="ProviderEdit" component={ProviderEditScreen} />
             <InnerStack.Screen name="ProviderBrowse" component={ProviderBrowseRoute} />
             <InnerStack.Screen name="ProviderDetail" component={ProviderDetailScreen} />

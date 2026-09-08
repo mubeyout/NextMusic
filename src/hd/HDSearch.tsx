@@ -11,6 +11,8 @@ import { usePlayer } from '../state/PlayerProvider';
 import { lxapi } from '../services/lxapi';
 import { createMMKV } from 'react-native-mmkv';
 import type { SongItem } from '../services/server';
+import { api } from '../services/server';
+import { hdNav } from './hdnav';
 
 const SOURCES: { id: SearchSrc; label: string }[] = [
   { id: 'kw', label: '酷我' },
@@ -58,15 +60,20 @@ export function HDSearch() {
   const { playSong, current } = usePlayer();
   const [kw, setKw] = useState('');
   const [source, setSource] = useState<SearchSrc>('kw');
+  const [mode, setMode] = useState<'song' | 'singer' | 'album'>('song'); // lx163:搜索类型
+  const [singers, setSingers] = useState<{ id: string; name: string; img?: string; source?: string }[] | null>(null);
+  const [albums, setAlbums] = useState<{ id: string; name: string; singer?: string; img?: string; source?: string }[] | null>(null);
   const [results, setResults] = useState<SongItem[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const search = async (q: string, src = source) => {
+  const search = async (q: string, src = source, m = mode) => {
     const query = q.trim();
     if (!query) return;
     setBusy(true); setErr(null);
     try {
+      if (m === 'singer') { setSingers(await api.searchSingers(query, src)); return; } // lx163:服务器 extendSearch
+      if (m === 'album') { setAlbums(await api.searchAlbums(query, src)); return; }
       setResults(await lxapi.search(query, src));
     } catch {
       setErr('搜索失败:无法连接音源');
@@ -88,6 +95,19 @@ export function HDSearch() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {/* lx163:类型 pill 歌曲/歌手/专辑 */}
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {([['song', '歌曲'], ['singer', '歌手'], ['album', '专辑']] as const).map(([m, label]) => (
+            <HDTouch
+              key={m}
+              style={[st.pill, mode === m && st.pillOn]}
+              focusStyle={mode === m ? { borderWidth: 2, borderColor: C.brandSoft } : st.pillFocus}
+              onPress={() => { setMode(m); setSingers(null); setAlbums(null); if (kw.trim().length >= 2) search(kw, source, m); }}
+            >
+              <Text style={[st.pillLabel, mode === m && st.pillLabelOn]}>{label}</Text>
+            </HDTouch>
+          ))}
+        </View>
         {/* 源 pill(桌面式 999 圆角) */}
         <View style={{ flexDirection: 'row', gap: 8 }}>
           {SOURCES.map(s => (
@@ -163,8 +183,40 @@ export function HDSearch() {
           </View>
         ) : null}
 
+        {/* lx163:歌手结果 */}
+        {mode === 'singer' && singers != null ? (
+          <View style={{ gap: 2 }}>
+            <Text style={st.secTitle}>{`「${kw}」的歌手`}</Text>
+            {(singers || []).map(a => (
+              <HDTouch key={a.id} style={st.resRow} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }}
+                onPress={() => hdNav()?.navigate('ArtistDetail', { artist: { id: a.id, name: a.name, img: a.img, source: a.source || source } })}>
+                {a.img ? <Image source={{ uri: a.img }} style={st.resRound} /> : <View style={[st.resRound, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Text style={{ color: C.text2, fontSize: 14, fontWeight: '700' }}>{a.name[0]}</Text></View>}
+                <Text style={st.resName} numberOfLines={1}>{a.name}</Text>
+                <Text style={st.srcTag}>{(a.source || source).toUpperCase()}</Text>
+              </HDTouch>
+            ))}
+            {!singers.length && !busy ? <Text style={st.empty}>没有找到相关歌手</Text> : null}
+          </View>
+        ) : null}
+        {/* lx163:专辑结果 */}
+        {mode === 'album' && albums != null ? (
+          <View style={{ gap: 2 }}>
+            <Text style={st.secTitle}>{`「${kw}」的专辑`}</Text>
+            {(albums || []).map(al => (
+              <HDTouch key={al.id} style={st.resRow} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }}
+                onPress={() => hdNav()?.navigate('AlbumDetail', { album: { id: al.id, name: al.name, singer: al.singer, img: al.img, source: al.source || source } })}>
+                {al.img ? <Image source={{ uri: al.img }} style={st.resSquare} /> : <View style={[st.resSquare, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
+                <View style={{ flex: 1 }}>
+                  <Text style={st.resName} numberOfLines={1}>{al.name}</Text>
+                  {al.singer ? <Text style={st.sub} numberOfLines={1}>{al.singer}</Text> : null}
+                </View>
+              </HDTouch>
+            ))}
+            {!albums.length && !busy ? <Text style={st.empty}>没有找到相关专辑</Text> : null}
+          </View>
+        ) : null}
         {/* 结果 */}
-        {results != null ? (
+        {mode === 'song' && results != null ? (
           <View style={{ gap: 2 }}>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 7, marginBottom: 6 }}>
               <Text style={st.secTitle}>{err ? '搜索失败' : `「${kw}」的结果`}</Text>
@@ -224,4 +276,8 @@ const st = StyleSheet.create({
   hotPill: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 13, height: 34, borderRadius: 12, backgroundColor: C.surface },
   hotIdx: { color: C.text3, fontSize: 11, fontWeight: '800', fontVariant: ['tabular-nums'] },
   hotText: { color: C.text, fontSize: 12, fontWeight: '500' },
+  resRow: { flexDirection: 'row', alignItems: 'center', gap: 11, minHeight: 54, paddingHorizontal: 8, borderRadius: 10 },
+  resRound: { width: 42, height: 42, borderRadius: 21 },
+  resSquare: { width: 42, height: 42, borderRadius: 7 },
+  resName: { flex: 1, color: C.text, fontSize: H.font.md, fontWeight: '600' },
 });

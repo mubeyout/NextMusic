@@ -1,11 +1,16 @@
 import React, { ComponentRef, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { PillTabs } from '../components/PillTabs';
 import { SongRow } from '../components/SongRow';
+import { ActionSheet } from '../components/ActionSheet';
+import { CollectSheet } from '../components/CollectSheet';
+import { toast } from '../components/Dialog';
+import { enqueueDownload, downloads as dlStore } from '../services/downloads';
+import { api } from '../services/server';
 import { StateOverlayCard } from '../components/StateOverlayCard';
 import { usePlayer } from '../state/PlayerProvider';
 import { lxapi } from '../services/lxapi';
@@ -33,6 +38,11 @@ export function SearchScreen() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [allFailed, setAllFailed] = useState(false);
+  const [mode, setMode] = useState<'song' | 'singer' | 'album'>('song'); // lx163:搜索类型
+  const [singers, setSingers] = useState<{ id: string; name: string; img?: string; source?: string }[] | null>(null);
+  const [albums, setAlbums] = useState<{ id: string; name: string; singer?: string; img?: string; source?: string }[] | null>(null);
+  const [actSong, setActSong] = useState<SongItem | null>(null); // lx163:搜索行 ⋯ 菜单
+  const [collect, setCollect] = useState(false);
   const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
 
   useEffect(() => {
@@ -41,11 +51,24 @@ export function SearchScreen() {
     return () => clearTimeout(t);
   }, []);
 
-  const search = async (q: string, src = source) => {
+  const search = async (q: string, src = source, m = mode) => {
     const query = q.trim();
     if (!query) return;
     setBusy(true); setErr(null); setAllFailed(false);
     try {
+      // lx163:歌手/专辑走服务器 extendSearch;歌曲仍内置引擎直连(免费免登录)
+      if (m === 'singer') {
+        const r = await api.searchSingers(query, src);
+        setSingers(r);
+        if (!r.length) setAllFailed(true);
+        return;
+      }
+      if (m === 'album') {
+        const r = await api.searchAlbums(query, src);
+        setAlbums(r);
+        if (!r.length) setAllFailed(true);
+        return;
+      }
       // 搜索走内置引擎直连平台公开 API，永远免费免登录（只有播放取链才需要音源/登录）
       const r = await lxapi.search(query, src);
       if (r.length === 0) {
@@ -76,6 +99,7 @@ export function SearchScreen() {
     setSource(s);
     if (kw.trim().length >= 2) search(kw, s);
   };
+  const navTo = useNavigation() as { navigate: (s: string, p?: object) => void };
 
   return (
     <View style={st.screen}>
@@ -105,6 +129,10 @@ export function SearchScreen() {
       </View>
 
       <View style={st.pillWrap}>
+        {/* lx163:搜索类型——歌曲/歌手/专辑 */}
+        <PillTabs tabs={['歌曲', '歌手', '专辑']} active={mode === 'song' ? 0 : mode === 'singer' ? 1 : 2}
+          onChange={i => { const m = (['song', 'singer', 'album'] as const)[i]; setMode(m); if (kw.trim()) search(kw.trim(), source, m); }} />
+        <View style={{ height: 6 }} />
         <PillTabs tabs={SOURCES.map(s => s.label)} active={SOURCES.findIndex(s => s.id === source)}
           onChange={i => switchSource(SOURCES[i].id)} />
       </View>
@@ -114,6 +142,28 @@ export function SearchScreen() {
           <View style={st.center}><ActivityIndicator color={C.brand} size="large" /></View>
         ) : err ? (
           <Text style={st.errText}>{err}</Text>
+        ) : mode === 'singer' ? (
+          /* lx163:歌手结果 */
+          singers && singers.length ? singers.map(a => (
+            <TouchableOpacity key={a.id} style={st.singerRow} activeOpacity={0.8} onPress={() => navTo.navigate('ArtistDetail', { artist: { id: a.id, name: a.name, img: a.img, source: a.source || source } })}>
+              {a.img ? <Image source={{ uri: a.img }} style={st.round} /> : <View style={[st.round, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Text style={{ color: C.text2, fontSize: 16, fontWeight: '700' }}>{a.name.slice(0, 1)}</Text></View>}
+              <Text style={st.singerName} numberOfLines={1}>{a.name}</Text>
+              <Text style={st.singerSrc}>{(a.source || source).toUpperCase()}</Text>
+              <Icon name="next" size={18} color={C.text2} />
+            </TouchableOpacity>
+          )) : <Text style={st.errText}>没有找到相关歌手</Text>
+        ) : mode === 'album' ? (
+          /* lx163:专辑结果 */
+          albums && albums.length ? albums.map(al => (
+            <TouchableOpacity key={al.id} style={st.singerRow} activeOpacity={0.8} onPress={() => navTo.navigate('AlbumDetail', { album: { id: al.id, name: al.name, singer: al.singer, img: al.img, source: al.source || source } })}>
+              {al.img ? <Image source={{ uri: al.img }} style={st.square} /> : <View style={[st.square, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={22} color={C.text3} /></View>}
+              <View style={{ flex: 1 }}>
+                <Text style={st.singerName} numberOfLines={1}>{al.name}</Text>
+                {al.singer ? <Text style={st.singerSrc} numberOfLines={1}>{al.singer}</Text> : null}
+              </View>
+              <Icon name="next" size={18} color={C.text2} />
+            </TouchableOpacity>
+          )) : <Text style={st.errText}>没有找到相关专辑</Text>
         ) : results && results.length > 0 ? (
           <>
             <View style={st.sectionRow}>
@@ -123,7 +173,8 @@ export function SearchScreen() {
             {results.map((s, i) => (
               <SongRow key={s.source + String(s.songmid) + i} song={s}
                 playing={current?.songmid === s.songmid}
-                onPress={() => playSong(s, results)} />
+                onPress={() => playSong(s, results)}
+                onMore={() => setActSong(s)} />
             ))}
           </>
         ) : results && results.length === 0 && !allFailed ? (
@@ -135,6 +186,19 @@ export function SearchScreen() {
           </View>
         ) : null}
       </ScrollView>
+
+      {/* lx163:搜索行操作菜单(收藏到歌单/下载) */}
+      <ActionSheet
+        visible={!!actSong} onClose={() => setActSong(null)}
+        title={actSong ? `${actSong.name} · ${actSong.singer}` : ''}
+        items={actSong ? [
+          dlStore.isDownloaded(actSong)
+            ? { label: '已下载 ✓', onPress: () => {} }
+            : { label: '下载', onPress: () => { enqueueDownload([actSong]); } },
+          { label: '收藏到歌单', onPress: () => setCollect(true) },
+        ] : []}
+      />
+      <CollectSheet song={actSong} visible={collect} onClose={() => { setCollect(false); setActSong(null); }} />
 
       {allFailed && (
         <View style={st.overlay} pointerEvents="box-none">
@@ -157,6 +221,11 @@ export function SearchScreen() {
 }
 
 const st = StyleSheet.create({
+  singerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60 },
+  round: { width: 44, height: 44, borderRadius: 22 },
+  square: { width: 44, height: 44, borderRadius: 8 },
+  singerName: { flex: 1, color: C.text, fontSize: 14, fontWeight: '600' },
+  singerSrc: { color: C.text2, fontSize: 10 },
   screen: { flex: 1, backgroundColor: C.bg },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, marginBottom: 12 },
   searchBox: {

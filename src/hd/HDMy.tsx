@@ -11,6 +11,7 @@ import { HDTouch } from './HDTouch';
 import { HDGrid } from './HDGrid';
 import { useApp } from '../state/AppState';
 import { library, type LocalPlaylist } from '../state/library';
+import { playlistSync } from '../state/playlistSync'; // lx163
 import { sync, lxToApp, type UserListsSnapshot , subscribeSync } from '../services/sync';
 import { providers } from '../services/providers';
 import { hdNav } from './hdnav';
@@ -63,13 +64,13 @@ export function HDMy() {
           defaultValue: pl.name,
           onSubmit: async (v) => {
             if (!v || v === pl.name) return;
-            if (pl.localId) { library.update(pl.localId, { name: v }); toast('已重命名'); }
+            if (pl.localId) { void playlistSync.rename(pl.localId, v).then(() => toast('已重命名')); } // lx163:镜像服务器
             else if (connected && token) toast((await sync.renameUserList(pl.key, v)) ? '已重命名' : '服务器操作失败');
           },
         });
       } },
       { label: '删除歌单', icon: 'trash', danger: true, onPress: async () => {
-        if (pl.localId) { library.remove(pl.localId); toast('已删除'); }
+        if (pl.localId) { void playlistSync.remove(pl.localId).then(() => toast('已删除')); } // lx163:镜像服务器
         else if (connected && token) toast((await sync.removeUserList(pl.key)) ? '已删除' : '服务器操作失败');
       } },
     ]);

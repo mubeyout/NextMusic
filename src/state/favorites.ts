@@ -53,6 +53,45 @@ export async function setFav(s: SongItem, on: boolean, pushRemote?: (snap: any) 
   }
 }
 
+// lx163:批量收藏(整单收藏)——一次写本地+一次推送服务器,避免逐首 N 次网络往返
+export async function setFavBatch(songs: SongItem[], on: boolean, pushRemote?: (snap: any) => Promise<unknown>, fetchSnap?: () => Promise<any>, toLx?: (s: SongItem) => any): Promise<number> {
+  const set = loadSet();
+  let changed = 0;
+  for (const s of songs) {
+    const k = songKey(s);
+    if (on ? !set.has(k) : set.has(k)) { if (on) set.add(k); else set.delete(k); changed++; }
+  }
+  kv.set(KEY, JSON.stringify([...set]));
+  notifyFav();
+  // 本机「我喜欢的」歌单同步
+  try {
+    let pl = library.all().find(p => p.name === '我喜欢的');
+    if (!pl && on) pl = library.create('我喜欢的');
+    if (pl) {
+      const keys = new Set(songs.map(songKey));
+      const merged = on
+        ? [...songs.filter(s => !pl!.songs.some(x => songKey(x) === songKey(s))), ...pl.songs]
+        : pl.songs.filter(x => !keys.has(songKey(x)));
+      library.update(pl.id, { songs: merged });
+    }
+  } catch { /* ignore */ }
+  // 服务器 loveList 一次推送(条目转 LX 形态,与 web 端一致)
+  if (pushRemote && fetchSnap) {
+    try {
+      const snap = await fetchSnap();
+      if (snap) {
+        const keys = new Set(songs.map(songKey));
+        const asLx = (s: SongItem) => (toLx ? toLx(s) : { id: songKey(s), ...s });
+        snap.loveList = on
+          ? [...songs.map(asLx), ...(snap.loveList || []).filter((x: { id?: string }) => !keys.has(x.id || ''))]
+          : (snap.loveList || []).filter((x: { id?: string }) => !keys.has(x.id || ''));
+        await pushRemote(snap);
+      }
+    } catch { /* ignore */ }
+  }
+  return changed;
+}
+
 // 收藏到任意歌单：登录 → 服务器 userList；未登录 → 本机歌单
 export async function addToPlaylist(plKey: 'love' | { id: string } | { name: string }, song: SongItem, fetchSnap?: () => Promise<any>, pushSnap?: (s: any) => Promise<unknown>): Promise<void> {
   if (plKey === 'love') return setFav(song, true, pushSnap, fetchSnap);

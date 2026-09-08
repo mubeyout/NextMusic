@@ -7,8 +7,8 @@ import type { SongItem } from '../services/server';
 import { registerKbRow } from '../hd/hdkeyboard';
 
 // Figma Song Row: 350x46, art 46x46 r=6, title 13 w500 / sub 10, duration right, more icon 20
-// extra: 右侧操作位（下载按钮等）；不传则显示 more 图标
-export function SongRow({ song, onPress, playing, extra }: { song: SongItem; onPress?: () => void; playing?: boolean; extra?: React.ReactNode }) {
+// extra: 右侧操作位（下载按钮等）；onMore: ⋯ 菜单回调(不传且无 extra 则不渲染 ⋯——lx163 老板:死图标等于欺骗)
+export function SongRow({ song, onPress, playing, extra, onMore }: { song: SongItem; onPress?: () => void; playing?: boolean; extra?: React.ReactNode; onMore?: () => void }) {
   const [focus, setFocus] = useState(false); // lx145:TV D-pad 光标(队列页无选中态)
   const kbRef = useRef<unknown>(null);
   // D3 A2:键盘导航注册(队列/媒体库浏览行;web only,native 注册表无人读)
@@ -44,9 +44,13 @@ export function SongRow({ song, onPress, playing, extra }: { song: SongItem; onP
         </Text>
       </View>
       <Text style={st.dur}>{playing ? '正在播放' : song.interval}</Text>
-      <View style={st.more}>
-        {extra != null ? extra : <Icon name="more" size={20} color={C.text2} />}
-      </View>
+      {extra != null ? (
+        <View style={st.more}>{extra}</View>
+      ) : onMore ? (
+        <Pressable hitSlop={10} style={st.more} onPress={(e) => { e.stopPropagation?.(); onMore(); }}>
+          <Icon name="more" size={20} color={C.text2} />
+        </Pressable>
+      ) : null}
     </Pressable>
   );
 }

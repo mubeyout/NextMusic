@@ -6,6 +6,7 @@ import { Icon } from '../theme/Icon';
 import { C } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { addToPlaylist, setFav, isFav } from '../state/favorites';
+import { playlistSync } from '../state/playlistSync';
 import { library } from '../state/library';
 import { sync, subscribeSync } from '../services/sync';
 import { useApp } from '../state/AppState';
@@ -74,14 +75,14 @@ export function HDCollect({ song, onClose }: { song: SongItem; onClose: () => vo
                 <HDTouch key={cp.key} style={st.row} onPress={async () => {
                   try {
                     if (has) {
-                      // lx159:已收录行点击=移除(对齐手机 CollectSheet 双向)
-                      if (cp.localId) { library.removeSong(cp.localId, song); toast(`已从「${cp.name}」移除`); }
+                      // lx159:已收录行点击=移除(对齐手机 CollectSheet 双向);lx163:镜像服务器
+                      if (cp.localId) { await playlistSync.removeSong(cp.localId, song); toast(`已从「${cp.name}」移除`); }
                       else if (connected && token) {
                         const ok = await sync.removeSongFromUserListByName(cp.name, song);
                         toast(ok ? `已从「${cp.name}」移除` : '服务器操作失败');
                       }
                     } else {
-                      if (cp.localId) await addToPlaylist({ id: cp.localId }, song);
+                      if (cp.localId) await playlistSync.addSongs(cp.localId, [song]);
                       else await addToPlaylist({ name: cp.name }, song,
                         connected && token ? () => sync.fetchLists() : undefined,
                         connected && token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined);

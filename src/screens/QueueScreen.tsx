@@ -22,15 +22,20 @@ function T(props: { style?: unknown; onPress?: () => void; disabled?: boolean; c
   );
 }
 import { SongRow } from '../components/SongRow';
+import { ActionSheet } from '../components/ActionSheet';
+import { CollectSheet } from '../components/CollectSheet';
 import { hdActions } from '../hd/HDActions';
 import { usePlayer } from '../state/PlayerProvider';
 import { PageHeader, EmptyState } from '../components/PageChrome';
 import { dialog, toast } from '../components/Dialog';
-import { enqueueDownload } from '../services/downloads';
+import { enqueueDownload, downloads as dlStore } from '../services/downloads';
+import type { SongItem } from '../services/server';
 
 // Figma 03·播放队列: header + now playing card + list
 export function QueueScreen() {
   const [limit, setLimit] = useState(40);
+  const [actSong, setActSong] = useState<SongItem | null>(null); // lx163:队列行 ⋯ 菜单
+  const [collect, setCollect] = useState(false);
   const nav = useNavigation() as { goBack: () => void };
   const { queue, current, playSong, position, duration, clearQueue } = usePlayer();
 
@@ -85,7 +90,7 @@ export function QueueScreen() {
         {upcoming.length ? (
           <View style={st.list}>
             {upcoming.slice(0, limit).map((t, i) => (
-              <SongRow key={t.uid || i} song={t} onPress={() => playSong(t, queue)} />
+              <SongRow key={t.uid || i} song={t} onPress={() => playSong(t, queue)} onMore={() => setActSong(t)} />
             ))}
           </View>
         ) : (
@@ -93,6 +98,18 @@ export function QueueScreen() {
         )}
         {limit < upcoming.length ? <Text style={{ color: '#999', fontSize: 11, textAlign: 'center', paddingVertical: 8 }}>滚动加载更多({limit}/{upcoming.length})</Text> : null}
       </ScrollView>
+      {/* lx163:队列行操作菜单(收藏到歌单/下载)——⋯ 从死图标变真按钮 */}
+      <ActionSheet
+        visible={!!actSong} onClose={() => setActSong(null)}
+        title={actSong ? `${actSong.name} · ${actSong.singer}` : ''}
+        items={actSong ? [
+          dlStore.isDownloaded(actSong)
+            ? { label: '已下载 ✓', onPress: () => {} }
+            : { label: '下载', onPress: () => { enqueueDownload([actSong]); } },
+          { label: '收藏到歌单', onPress: () => setCollect(true) },
+        ] : []}
+      />
+      <CollectSheet song={actSong} visible={collect} onClose={() => { setCollect(false); setActSong(null); }} />
     </LinearGradient>
   );
 }

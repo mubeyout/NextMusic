@@ -6,6 +6,7 @@ import { C } from '../theme/tokens';
 import { useApp } from '../state/AppState';
 import { library } from '../state/library';
 import { isFav, setFav, addToPlaylist, songKey } from '../state/favorites';
+import { playlistSync } from '../state/playlistSync'; // lx163:本地歌单操作镜像服务器
 import { sync, lxNormKey } from '../services/sync';
 import { toast } from './Dialog';
 import type { SongItem } from '../services/server';
@@ -70,13 +71,13 @@ export function CollectSheet({ song, visible, onClose }: { song: SongItem | null
       onClose();
     }
   };
-  // lx157:本机歌单行——同上
+  // lx163:本机歌单行——同上;加/减均镜像服务器
   const toggleLocal = async (id: string, name: string, has: boolean) => {
     if (has) {
-      library.removeSong(id, song);
+      await playlistSync.removeSong(id, song);
       toast(`已从「${name}」移除`);
     } else {
-      await addToPlaylist({ id }, song);
+      await playlistSync.addSongs(id, [song]);
       toast('已收藏');
       onClose();
     }
