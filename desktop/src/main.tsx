@@ -47,6 +47,8 @@ mountKbNav();
     const raw = localStorage.getItem('nmk:nextmusic-settings:settings');
     if (raw) isLight = !!(JSON.parse(raw) as { light?: boolean }).light;
   } catch { /* ignore */ }
+  // v1.2.5:body 底色随主题——顶部轨道(透明)与内容卡上方区域透出的底,浅色下不再是裸 #121212 深条
+  document.body.style.background = isLight ? '#F6F7F9' : '#121212';
 
   // win:原生 overlay 符号色随主题(浅色下白色不可读)
   if (isWin) {

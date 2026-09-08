@@ -249,9 +249,9 @@ export function HDMain() {
             ])} />
         </ScrollView>
         {/* lx85:设置项不贴底——留出焦点环完整显示空间(老板:太靠底被裁切) */}
-        {/* v1.2.5:设置也走 railNav(内页化,侧栏恒固定)——TV 仍根栈全屏 */}
+        {/* v1.2.5:web 设置也走 railNav(内页化,侧栏恒固定);TV 保持原 navigate——零行为差异 */}
         <View style={st.settingsDock}>
-          <NavItem icon="settings" label="设置" onPress={() => railNav('Settings')} />
+          <NavItem icon="settings" label="设置" onPress={() => (IS_WEB ? railNav('Settings') : hdNav()?.navigate('Settings'))} />
         </View>
       </View>
 
@@ -432,9 +432,10 @@ const st = StyleSheet.create({
   logoMark: { width: 38, height: 41 },
   logoText: { color: C.onBrand, fontSize: 13, fontWeight: '800' },
   brandName: { color: C.text, fontSize: 15, fontWeight: '800' },
-  // v1.2.5 桌面品牌行(老板:brand 在导航占太高)——win/linux 顶入 36px 轨道,mac 在轨道下方紧凑行
-  brandRowRail: { flexDirection: 'row', alignItems: 'center', gap: 9, height: 36, marginTop: -36, paddingHorizontal: 18, marginBottom: 2 },
-  brandRowMac: { flexDirection: 'row', alignItems: 'center', gap: 9, height: 40, paddingHorizontal: 18 },
+  // v1.2.5 桌面品牌行(老板:brand 在导航占太高)——win/linux 顶入 36px 轨道,mac 在轨道下方紧凑行;
+  // 自带底色:负 margin 顶出 Main 卡的区域透出的是 body 底色,浅色主题下会拼出深条
+  brandRowRail: { flexDirection: 'row', alignItems: 'center', gap: 9, height: 36, marginTop: -36, paddingHorizontal: 18, marginBottom: 2, backgroundColor: C.bg },
+  brandRowMac: { flexDirection: 'row', alignItems: 'center', gap: 9, height: 40, paddingHorizontal: 18, backgroundColor: C.bg },
   logoMarkRail: { width: 21, height: 23 },
   logoMarkMac: { width: 26, height: 28 },
   brandNameWeb: { color: C.text, fontSize: 13.5, fontWeight: '800', letterSpacing: 0.2 },
