@@ -1,7 +1,10 @@
 // HD 播客页 —— 对齐桌面版 PodcastScreen:8 主题频道渐变卡横滚 + 热门节目列表
 // 数据复用 phone HomePodcast 逻辑:逐频道 lxapi.search 聚合长音频内容
 import React, { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { FocusBridge } from './HDMain';
+import { useHoverCard } from './hdweb'; // lx162 补:并行会话漏导入(v1.2.6 播客卡 web hover,缺失=HD 播客页运行时崩溃)
+const IS_WEB = Platform.OS === 'web';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
