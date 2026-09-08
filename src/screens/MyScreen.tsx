@@ -80,8 +80,8 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
   const artistTick = useArtistFavTick(); // lx161:收藏变更联动(取消后列表即时刷新)
   const albumTick = useAlbumFavTick(); // lx163:专辑收藏联动
   useEffect(() => {
-    if (tab === 1 && loggedIn) refreshArtistFavs().then(l => { if (l.length || artists != null) setArtists(l); }); // lx161:取消收藏后列表即时同步
-    if (tab === 2 && loggedIn) refreshAlbumFavs().then(l => { if (l.length || albums != null) setAlbums(l); }); // lx163:取消后即时同步
+    if (tab === 1 && loggedIn) refreshArtistFavs().then(setArtists); // lx163:空列表也是终态,不再守卫(守卫导致首载空时永远转圈)
+    if (tab === 2 && loggedIn) refreshAlbumFavs().then(setAlbums); // lx163:同上(空列表终态)
   }, [tab, artistTick, albumTick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const openSongs = (title: string, songs: SongItem[], cover?: string, opts?: { love?: boolean; plKey?: string; artist?: ArtistFav }) => {
@@ -268,7 +268,8 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
                 </TouchableOpacity>
                 <Icon name="next" size={18} color={C.text2} />
               </TouchableOpacity>
-            )) : <Text style={st.empty}>暂无收藏歌手</Text>}
+            )) : <Text style={st.empty}>暂无收藏歌手
+去「搜索」选「歌手」标签搜喜欢的歌手，点进内页即可收藏</Text>}
         </View>
       )}
 
@@ -290,7 +291,8 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
                 </TouchableOpacity>
                 <Icon name="next" size={18} color={C.text2} />
               </TouchableOpacity>
-            )) : <Text style={st.empty}>暂无收藏专辑</Text>}
+            )) : <Text style={st.empty}>暂无收藏专辑
+去「搜索」选「专辑」标签搜专辑，点进内页即可收藏</Text>}
         </View>
       )}
 
