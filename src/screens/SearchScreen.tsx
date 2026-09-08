@@ -13,6 +13,10 @@ import { enqueueDownload, downloads as dlStore } from '../services/downloads';
 import { api } from '../services/server';
 import { StateOverlayCard } from '../components/StateOverlayCard';
 import { usePlayer } from '../state/PlayerProvider';
+import { createMMKV } from 'react-native-mmkv';
+const histKv = createMMKV({ id: 'nextmusic-search-history' });
+// lx163b:热搜词(空闲态,与 HD 端同源精选)
+const HOT_WORDS = ['周杰伦', '林俊杰', '邓紫棋', 'Taylor Swift', 'Beyond', '陈奕迅', '孙燕姿', '伍佰'];
 import { lxapi } from '../services/lxapi';
 import type { SongItem } from '../services/server';
 
@@ -38,9 +42,10 @@ export function SearchScreen() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [allFailed, setAllFailed] = useState(false);
-  const [mode, setMode] = useState<'song' | 'singer' | 'album'>('song'); // lx163:搜索类型
+  const [mode, setMode] = useState<'all' | 'song' | 'singer' | 'album'>('all'); // lx163b:综合搜索流(默认)
   const [singers, setSingers] = useState<{ id: string; name: string; img?: string; source?: string }[] | null>(null);
   const [albums, setAlbums] = useState<{ id: string; name: string; singer?: string; img?: string; source?: string }[] | null>(null);
+  const [history, setHistory] = useState<string[]>(() => { try { return JSON.parse(histKv.getString('h') || '[]'); } catch { return []; } });
   const [actSong, setActSong] = useState<SongItem | null>(null); // lx163:搜索行 ⋯ 菜单
   const [collect, setCollect] = useState(false);
   const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
@@ -55,7 +60,21 @@ export function SearchScreen() {
     const query = q.trim();
     if (!query) return;
     setBusy(true); setErr(null); setAllFailed(false);
+    // lx163b:搜索历史(去重置顶,留 10 条)
+    const h = [query, ...history.filter(x => x !== query)].slice(0, 10);
+    setHistory(h); histKv.set('h', JSON.stringify(h));
     try {
+      if (m === 'all') {
+        // lx163b:综合流——三路并行,各分区独立落地(单路慢/挂不拖全局)
+        const [sg, ar, al] = await Promise.all([
+          lxapi.search(query, src).catch(() => [] as SongItem[]),
+          api.searchSingers(query, src).catch(() => [] as never),
+          api.searchAlbums(query, src).catch(() => [] as never),
+        ]);
+        setResults(sg); setSingers(ar); setAlbums(al);
+        if (!sg.length && !ar.length && !al.length) setAllFailed(true);
+        return;
+      }
       // lx163:歌手/专辑走服务器 extendSearch;歌曲仍内置引擎直连(免费免登录)
       if (m === 'singer') {
         const r = await api.searchSingers(query, src);
@@ -127,12 +146,16 @@ export function SearchScreen() {
       </View>
 
       <View style={st.pillWrap}>
-        {/* lx163:搜索类型——歌曲/歌手/专辑 */}
-        <PillTabs tabs={['歌曲', '歌手', '专辑']} active={mode === 'song' ? 0 : mode === 'singer' ? 1 : 2}
-          onChange={i => { const m = (['song', 'singer', 'album'] as const)[i]; setMode(m); setAllFailed(false); setErr(null); if (kw.trim()) search(kw.trim(), source, m); }} />
-        <View style={{ height: 6 }} />
-        <PillTabs tabs={SOURCES.map(s => s.label)} active={SOURCES.findIndex(s => s.id === source)}
-          onChange={i => switchSource(SOURCES[i].id)} />
+        {/* lx163b:综合/歌曲/歌手/专辑 四态;源 pills 只在歌曲模式显示(源只影响歌曲直连引擎,歌手/专辑智能选源) */}
+        <PillTabs tabs={['综合', '歌曲', '歌手', '专辑']} active={mode === 'all' ? 0 : mode === 'song' ? 1 : mode === 'singer' ? 2 : 3}
+          onChange={i => { const m = (['all', 'song', 'singer', 'album'] as const)[i]; setMode(m); setAllFailed(false); setErr(null); if (kw.trim()) search(kw.trim(), source, m); }} />
+        {mode === 'song' ? (
+          <>
+            <View style={{ height: 6 }} />
+            <PillTabs tabs={SOURCES.map(s => s.label)} active={SOURCES.findIndex(s => s.id === source)}
+              onChange={i => switchSource(SOURCES[i].id)} />
+          </>
+        ) : null}
       </View>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 140 }}>
@@ -140,6 +163,63 @@ export function SearchScreen() {
           <View style={st.center}><ActivityIndicator color={C.brand} size="large" /></View>
         ) : err ? (
           <Text style={st.errText}>{err}</Text>
+        ) : mode === 'all' ? (
+          /* lx163b:综合流——歌手横滑卡 + 专辑横滑卡 + 歌曲前 6 + 查看全部 */
+          <View style={{ gap: 4 }}>
+            {(singers || []).length ? (
+              <>
+                <Text style={st.allSecTitle}>歌手</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingVertical: 4 }}>
+                  {(singers || []).slice(0, 8).map(a => (
+                    <TouchableOpacity key={a.id} style={st.allArtistCard} activeOpacity={0.85}
+                      onPress={() => navTo.navigate('ArtistDetail', { artist: { id: a.id, name: a.name, img: a.img, source: a.source || source } })}>
+                      {a.img
+                        ? <Image source={{ uri: a.img }} style={st.allRound} />
+                        : <View style={[st.allRound, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Text style={{ color: C.text2, fontSize: 18, fontWeight: '700' }}>{a.name.slice(0, 1)}</Text></View>}
+                      <Text style={st.allCardName} numberOfLines={1}>{a.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </>
+            ) : null}
+            {(albums || []).length ? (
+              <>
+                <Text style={st.allSecTitle}>专辑</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingVertical: 4 }}>
+                  {(albums || []).slice(0, 8).map(al => (
+                    <TouchableOpacity key={al.id} style={st.allAlbumCard} activeOpacity={0.85}
+                      onPress={() => navTo.navigate('AlbumDetail', { album: { id: al.id, name: al.name, singer: al.singer, img: al.img, source: al.source || source } })}>
+                      {al.img
+                        ? <Image source={{ uri: al.img }} style={st.allSquare} />
+                        : <View style={[st.allSquare, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={26} color={C.text3} /></View>}
+                      <Text style={st.allCardName} numberOfLines={1}>{al.name}</Text>
+                      {al.singer ? <Text style={st.allCardSub} numberOfLines={1}>{al.singer}</Text> : null}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </>
+            ) : null}
+            {results && results.length ? (
+              <>
+                <Text style={st.allSecTitle}>歌曲{results.length > 6 ? ` · ${results.length} 首` : ''}</Text>
+                {results.slice(0, 6).map((s, i) => (
+                  <SongRow key={s.source + String(s.songmid) + i} song={s}
+                    playing={current?.songmid === s.songmid}
+                    onPress={() => playSong(s, results)}
+                    onMore={() => setActSong(s)} />
+                ))}
+                {results.length > 6 ? (
+                  <TouchableOpacity style={st.allMore} onPress={() => setMode('song')}>
+                    <Text style={st.allMoreText}>查看全部 {results.length} 首</Text>
+                    <Icon name="chevronright" size={14} color={C.text2} />
+                  </TouchableOpacity>
+                ) : null}
+              </>
+            ) : null}
+            {!busy && !(singers || []).length && !(albums || []).length && !(results || []).length ? (
+              <Text style={st.errText}>没有找到相关内容，换个关键词试试</Text>
+            ) : null}
+          </View>
         ) : mode === 'singer' ? (
           /* lx163:歌手结果 */
           singers && singers.length ? singers.map(a => (
@@ -178,9 +258,37 @@ export function SearchScreen() {
         ) : results && results.length === 0 && !allFailed ? (
           <Text style={st.errText}>没有找到相关内容，换个关键词试试</Text>
         ) : !results ? (
-          <View style={st.center}>
-            <Icon name="search" size={40} color={C.text3} />
-            <Text style={st.hintText}>输入关键词开始搜索</Text>
+          /* lx163b:空闲态——搜索历史 + 热搜词 */
+          <View style={{ gap: 14, paddingTop: 8 }}>
+            {history.length ? (
+              <View style={{ gap: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={st.allSecTitle}>搜索历史</Text>
+                  <View style={{ flex: 1 }} />
+                  <TouchableOpacity hitSlop={6} onPress={() => { setHistory([]); histKv.set('h', '[]'); }}>
+                    <Icon name="close" size={14} color={C.text3} />
+                  </TouchableOpacity>
+                </View>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  {history.map(w => (
+                    <TouchableOpacity key={w} style={st.chip} onPress={() => { setKw(w); search(w); }}>
+                      <Text style={st.chipText} numberOfLines={1}>{w}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            ) : null}
+            <View style={{ gap: 8 }}>
+              <Text style={st.allSecTitle}>大家都在搜</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {HOT_WORDS.map((w, i) => (
+                  <TouchableOpacity key={w} style={st.chip} onPress={() => { setKw(w); search(w); }}>
+                    <Text style={[st.chipIdx, i < 3 && { color: C.brand }]}>{i + 1}</Text>
+                    <Text style={st.chipText} numberOfLines={1}>{w}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
           </View>
         ) : null}
       </ScrollView>
@@ -220,6 +328,18 @@ export function SearchScreen() {
 
 const st = StyleSheet.create({
   singerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60 },
+  allSecTitle: { color: C.text, fontSize: 14, fontWeight: '700', marginTop: 8 },
+  allArtistCard: { width: 76, alignItems: 'center', gap: 6 },
+  allRound: { width: 64, height: 64, borderRadius: 32 },
+  allAlbumCard: { width: 104, gap: 5 },
+  allSquare: { width: 104, height: 104, borderRadius: 10 },
+  allCardName: { color: C.text, fontSize: 11, fontWeight: '600', alignSelf: 'stretch', textAlign: 'center' },
+  allCardSub: { color: C.text2, fontSize: 10, alignSelf: 'stretch', textAlign: 'center' },
+  allMore: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 12 },
+  allMoreText: { color: C.text2, fontSize: 12, fontWeight: '600' },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.surface2, borderRadius: 14, paddingHorizontal: 13, height: 30 },
+  chipText: { color: C.text, fontSize: 12, fontWeight: '500', maxWidth: 160 },
+  chipIdx: { color: C.text3, fontSize: 11, fontWeight: '800' },
   round: { width: 44, height: 44, borderRadius: 22 },
   square: { width: 44, height: 44, borderRadius: 8 },
   singerName: { flex: 1, color: C.text, fontSize: 14, fontWeight: '600' },
