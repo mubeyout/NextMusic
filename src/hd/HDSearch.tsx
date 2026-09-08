@@ -59,7 +59,6 @@ export function HDSearch() {
   const insets = useSafeAreaInsets();
   const { playSong, current } = usePlayer();
   const [kw, setKw] = useState('');
-  const [source, setSource] = useState<SearchSrc>('kw');
   const [mode, setMode] = useState<'song' | 'singer' | 'album'>('song'); // lx163:搜索类型
   const [singers, setSingers] = useState<{ id: string; name: string; img?: string; source?: string }[] | null>(null);
   const [albums, setAlbums] = useState<{ id: string; name: string; singer?: string; img?: string; source?: string }[] | null>(null);
@@ -67,14 +66,22 @@ export function HDSearch() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const search = async (q: string, src = source, m = mode) => {
+  const search = async (q: string, m = mode) => {
     const query = q.trim();
     if (!query) return;
     setBusy(true); setErr(null);
     try {
-      if (m === 'singer') { setSingers(await api.searchSingers(query, src)); return; } // lx163:服务器 extendSearch
-      if (m === 'album') { setAlbums(await api.searchAlbums(query, src)); return; }
-      setResults(await lxapi.search(query, src));
+      if (m === 'singer') { setSingers(await api.searchSingers(query, 'kw')); return; } // lx163:服务器 extendSearch
+      if (m === 'album') { setAlbums(await api.searchAlbums(query, 'kw')); return; }
+      // lx163e:五源并行聚合,交错去重(与手机端同策略)
+      const lists = await Promise.all(SOURCES.map(s => lxapi.search(query, s.id).catch(() => [] as SongItem[])));
+      const seen = new Set<string>(); const merged: SongItem[] = [];
+      for (let i = 0; i < 4; i++) for (const list of lists) {
+        const s = list[i]; if (!s) continue;
+        const k = `${s.name}|${s.singer}`;
+        if (seen.has(k)) continue; seen.add(k); merged.push(s);
+      }
+      setResults(merged);
     } catch {
       setErr('搜索失败:无法连接音源');
       setResults([]);
@@ -102,28 +109,12 @@ export function HDSearch() {
               key={m}
               style={[st.pill, mode === m && st.pillOn]}
               focusStyle={mode === m ? { borderWidth: 2, borderColor: C.brandSoft } : st.pillFocus}
-              onPress={() => { setMode(m); setSingers(null); setAlbums(null); if (kw.trim().length >= 2) search(kw, source, m); }}
+              onPress={() => { setMode(m); setSingers(null); setAlbums(null); if (kw.trim().length >= 2) search(kw, m); }}
             >
               <Text style={[st.pillLabel, mode === m && st.pillLabelOn]}>{label}</Text>
             </HDTouch>
           ))}
         </View>
-        {/* 源 pill(桌面式 999 圆角) */}
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          {SOURCES.map(s => (
-            <HDTouch
-              key={s.id}
-              style={[st.pill, source === s.id && st.pillOn]}
-              focusStyle={source === s.id ? { borderWidth: 2, borderColor: C.brandSoft } : st.pillFocus}
-              onPress={() => { setSource(s.id); if (kw.trim().length >= 2) search(kw, s.id); }}
-            >
-              <Text style={[st.pillLabel, source === s.id && st.pillLabelOn]}>{s.label}</Text>
-            </HDTouch>
-          ))}
-          <View style={{ flex: 1 }} />
-          {busy ? <ActivityIndicator color={C.brand} size="small" style={{ marginRight: 4 }} /> : null}
-        </View>
-
         {/* 搜索框 */}
         <View style={st.searchRow}>
           <Icon name="search" size={15} color={C.text3} />
@@ -189,10 +180,10 @@ export function HDSearch() {
             <Text style={st.secTitle}>{`「${kw}」的歌手`}</Text>
             {(singers || []).map(a => (
               <HDTouch key={a.id} style={st.resRow} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }}
-                onPress={() => hdNav()?.navigate('ArtistDetail', { artist: { id: a.id, name: a.name, img: a.img, source: a.source || source } })}>
+                onPress={() => hdNav()?.navigate('ArtistDetail', { artist: { id: a.id, name: a.name, img: a.img, source: a.source || 'wy' } })}>
                 {a.img ? <Image source={{ uri: a.img }} style={st.resRound} /> : <View style={[st.resRound, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Text style={{ color: C.text2, fontSize: 14, fontWeight: '700' }}>{a.name[0]}</Text></View>}
                 <Text style={st.resName} numberOfLines={1}>{a.name}</Text>
-                <Text style={st.srcTag}>{(a.source || source).toUpperCase()}</Text>
+                <Text style={st.srcTag}>{(a.source || 'wy').toUpperCase()}</Text>
               </HDTouch>
             ))}
             {!singers.length && !busy ? <Text style={st.empty}>没有找到相关歌手</Text> : null}
@@ -204,7 +195,7 @@ export function HDSearch() {
             <Text style={st.secTitle}>{`「${kw}」的专辑`}</Text>
             {(albums || []).map(al => (
               <HDTouch key={al.id} style={st.resRow} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }}
-                onPress={() => hdNav()?.navigate('AlbumDetail', { album: { id: al.id, name: al.name, singer: al.singer, img: al.img, source: al.source || source } })}>
+                onPress={() => hdNav()?.navigate('AlbumDetail', { album: { id: al.id, name: al.name, singer: al.singer, img: al.img, source: al.source || 'wy' } })}>
                 {al.img ? <Image source={{ uri: al.img }} style={st.resSquare} /> : <View style={[st.resSquare, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
                 <View style={{ flex: 1 }}>
                   <Text style={st.resName} numberOfLines={1}>{al.name}</Text>
@@ -220,7 +211,7 @@ export function HDSearch() {
           <View style={{ gap: 2 }}>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 7, marginBottom: 6 }}>
               <Text style={st.secTitle}>{err ? '搜索失败' : `「${kw}」的结果`}</Text>
-              <Text style={st.secHint}>{err ? '' : `${results.length} 条 · 源:${source}`}</Text>
+              <Text style={st.secHint}>{err ? '' : `${results.length} 条 · 五源聚合`}</Text>
             </View>
             {err ? <Text style={st.empty}>{err}</Text> : null}
             {(results || []).map((s, i) => (

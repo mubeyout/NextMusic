@@ -37,7 +37,6 @@ export function SearchScreen() {
   const nav = useNavigation() as { goBack: () => void };
   const { playSong, current } = usePlayer();
   const [kw, setKw] = useState('');
-  const [source, setSource] = useState<SearchSrc>('kw');
   const [results, setResults] = useState<SongItem[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -55,7 +54,7 @@ export function SearchScreen() {
     return () => clearTimeout(t);
   }, []);
 
-  const search = async (q: string, src = source) => {
+  const search = async (q: string) => {
     const query = q.trim();
     if (!query) return;
     setBusy(true); setErr(null); setAllFailed(false); setShowAllSongs(false);
@@ -63,12 +62,18 @@ export function SearchScreen() {
     const h = [query, ...history.filter(x => x !== query)].slice(0, 10);
     setHistory(h); histKv.set('h', JSON.stringify(h));
     try {
-      // lx163c:恒综合流——歌曲(直连引擎,源可换) + 歌手/专辑(服务器,智能选源)三路并行,单路挂不拖全局
-      const [sg, ar, al] = await Promise.all([
-        lxapi.search(query, src).catch(() => [] as SongItem[]),
-        api.searchSingers(query, src).catch(() => [] as never),
-        api.searchAlbums(query, src).catch(() => [] as never),
+      // lx163e:聚合搜索——五源并行取歌曲,交错合并去重(同名同歌手取先到);歌手/专辑服务器智能选源
+      const [lists, ar, al] = await Promise.all([
+        Promise.all(SOURCES.map(s => lxapi.search(query, s.id).catch(() => [] as SongItem[]))),
+        api.searchSingers(query, 'kw').catch(() => [] as never),
+        api.searchAlbums(query, 'kw').catch(() => [] as never),
       ]);
+      const seen = new Set<string>(); const sg: SongItem[] = [];
+      for (let i = 0; i < 4; i++) for (const list of lists) {
+        const s = list[i]; if (!s) continue;
+        const k = `${s.name}|${s.singer}`;
+        if (seen.has(k)) continue; seen.add(k); sg.push(s);
+      }
       setResults(sg); setSingers(ar); setAlbums(al);
       if (!sg.length && !ar.length && !al.length) setAllFailed(true);
     } catch {
@@ -90,17 +95,8 @@ export function SearchScreen() {
   const scrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
   const secY = useRef({ song: 0, singer: 0, album: 0 });
   const [showAllSongs, setShowAllSongs] = useState(false);
-  const [srcSheet, setSrcSheet] = useState(false);
   const anchor = (k: 'song' | 'singer' | 'album') => {
     scrollRef.current?.scrollTo({ y: Math.max(0, secY.current[k] - 46), animated: true });
-  };
-  const switchSource = async (s: SearchSrc) => { // 只重拉歌曲(源只影响歌曲直连引擎)
-    setSource(s); setSrcSheet(false);
-    if (kw.trim().length >= 2) {
-      setBusy(true);
-      try { setResults(await lxapi.search(kw.trim(), s)); } catch { setErr('搜索失败：无法连接音源'); }
-      setBusy(false);
-    }
   };
   const navTo = useNavigation() as { navigate: (s: string, p?: object) => void };
 
@@ -194,11 +190,7 @@ export function SearchScreen() {
               <View onLayout={e => { secY.current.song = e.nativeEvent.layout.y; }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Text style={st.allSecTitle}>歌曲 · {results.length} 首</Text>
-                  <View style={{ flex: 1 }} />
-                  <TouchableOpacity style={st.srcPill} onPress={() => setSrcSheet(true)}>
-                    <Text style={st.srcPillText}>{SOURCES.find(s => s.id === source)?.label || source}</Text>
-                    <Icon name="chevronright" size={12} color={C.text2} />
-                  </TouchableOpacity>
+                  <View style={st.aggBadge}><Text style={st.aggText}>五源聚合</Text></View>
                 </View>
                 {(showAllSongs ? results : results.slice(0, 6)).map((s, i) => (
                   <SongRow key={s.source + String(s.songmid) + i} song={s}
@@ -220,7 +212,7 @@ export function SearchScreen() {
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingVertical: 4 }}>
                   {(singers || []).map(a => (
                     <TouchableOpacity key={a.id} style={st.allArtistCard} activeOpacity={0.85}
-                      onPress={() => navTo.navigate('ArtistDetail', { artist: { id: a.id, name: a.name, img: a.img, source: a.source || source } })}>
+                      onPress={() => navTo.navigate('ArtistDetail', { artist: { id: a.id, name: a.name, img: a.img, source: a.source || 'wy' } })}>
                       {a.img
                         ? <Image source={{ uri: a.img }} style={st.allRound} />
                         : <View style={[st.allRound, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Text style={{ color: C.text2, fontSize: 18, fontWeight: '700' }}>{a.name.slice(0, 1)}</Text></View>}
@@ -236,7 +228,7 @@ export function SearchScreen() {
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingVertical: 4 }}>
                   {(albums || []).map(al => (
                     <TouchableOpacity key={al.id} style={st.allAlbumCard} activeOpacity={0.85}
-                      onPress={() => navTo.navigate('AlbumDetail', { album: { id: al.id, name: al.name, singer: al.singer, img: al.img, source: al.source || source } })}>
+                      onPress={() => navTo.navigate('AlbumDetail', { album: { id: al.id, name: al.name, singer: al.singer, img: al.img, source: al.source || 'wy' } })}>
                       {al.img
                         ? <Image source={{ uri: al.img }} style={st.allSquare} />
                         : <View style={[st.allSquare, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={26} color={C.text3} /></View>}
@@ -268,15 +260,6 @@ export function SearchScreen() {
       />
       <CollectSheet song={actSong} visible={collect} onClose={() => { setCollect(false); setActSong(null); }} />
 
-      {/* lx163c:源选择(内聚歌曲区)——只影响歌曲直连引擎 */}
-      <ActionSheet
-        visible={srcSheet} onClose={() => setSrcSheet(false)}
-        title="歌曲搜索源"
-        items={SOURCES.map(s => ({
-          label: s.label, selected: s.id === source,
-          onPress: () => switchSource(s.id),
-        }))}
-      />
 
       {allFailed && (
         <View style={st.overlay} pointerEvents="box-none">
@@ -303,8 +286,8 @@ const st = StyleSheet.create({
   anchorBar: { flexGrow: 0, paddingVertical: 8 },
   anchorChip: { backgroundColor: C.surface2, borderRadius: 14, paddingHorizontal: 13, height: 30, justifyContent: 'center' },
   anchorText: { color: C.text, fontSize: 12, fontWeight: '600' },
-  srcPill: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: C.surface2, borderRadius: 12, paddingHorizontal: 10, height: 26 },
-  srcPillText: { color: C.text2, fontSize: 11, fontWeight: '600' },
+  aggBadge: { backgroundColor: C.surface2, borderRadius: 9, paddingHorizontal: 8, paddingVertical: 3 },
+  aggText: { color: C.text2, fontSize: 10, fontWeight: '700' },
   allSecTitle: { color: C.text, fontSize: 14, fontWeight: '700', marginTop: 8 },
   allArtistCard: { width: 76, alignItems: 'center', gap: 6 },
   allRound: { width: 64, height: 64, borderRadius: 32 },
