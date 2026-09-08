@@ -106,9 +106,12 @@ export function SearchScreen() {
     } finally { setBusy(false); }
   };
 
-  // debounce 自动搜索（与原探索页一致）
+  // debounce 自动搜索（与原探索页一致）；清空输入回空闲态（三路结果一并清，综合流默认态也能回 chips）
   useEffect(() => {
-    const t = setTimeout(() => { if (kw.trim().length >= 2) search(kw); }, 600);
+    const t = setTimeout(() => {
+      if (!kw.trim()) { setResults(null); setSingers(null); setAlbums(null); setAllFailed(false); return; }
+      if (kw.trim().length >= 2) search(kw);
+    }, 600);
     return () => clearTimeout(t);
   }, [kw]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -117,6 +120,41 @@ export function SearchScreen() {
     if (kw.trim().length >= 2) search(kw, s);
   };
   const navTo = useNavigation() as { navigate: (s: string, p?: object) => void };
+
+  // lx163b:空闲态（搜索历史 + 热搜词）——四态共用：未搜索过/输入已清空时展示
+  const idlePane = (
+    <View style={{ gap: 14, paddingTop: 8 }}>
+      {history.length ? (
+        <View style={{ gap: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={st.allSecTitle}>搜索历史</Text>
+            <View style={{ flex: 1 }} />
+            <TouchableOpacity hitSlop={6} onPress={() => { setHistory([]); histKv.set('h', '[]'); }}>
+              <Icon name="close" size={14} color={C.text3} />
+            </TouchableOpacity>
+          </View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {history.map(w => (
+              <TouchableOpacity key={w} style={st.chip} onPress={() => { setKw(w); search(w); }}>
+                <Text style={st.chipText} numberOfLines={1}>{w}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      ) : null}
+      <View style={{ gap: 8 }}>
+        <Text style={st.allSecTitle}>大家都在搜</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {HOT_WORDS.map((w, i) => (
+            <TouchableOpacity key={w} style={st.chip} onPress={() => { setKw(w); search(w); }}>
+              <Text style={[st.chipIdx, i < 3 && { color: C.brand }]}>{i + 1}</Text>
+              <Text style={st.chipText} numberOfLines={1}>{w}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
 
   return (
     <View style={st.screen}>
@@ -138,7 +176,7 @@ export function SearchScreen() {
             autoCorrect={false}
           />
           {kw ? (
-            <TouchableOpacity hitSlop={8} onPress={() => { setKw(''); setResults(null); }}>
+            <TouchableOpacity hitSlop={8} onPress={() => setKw('')}>
               <Icon name="close" size={16} color={C.text3} />
             </TouchableOpacity>
           ) : null}
@@ -216,9 +254,10 @@ export function SearchScreen() {
                 ) : null}
               </>
             ) : null}
-            {!busy && !(singers || []).length && !(albums || []).length && !(results || []).length ? (
-              <Text style={st.errText}>没有找到相关内容，换个关键词试试</Text>
-            ) : null}
+            {singers === null && albums === null && results === null ? idlePane
+              : !(singers || []).length && !(albums || []).length && !(results || []).length ? (
+                <Text style={st.errText}>没有找到相关内容，换个关键词试试</Text>
+              ) : null}
           </View>
         ) : mode === 'singer' ? (
           /* lx163:歌手结果 */
@@ -229,7 +268,7 @@ export function SearchScreen() {
               <Text style={st.singerSrc}>{(a.source || source).toUpperCase()}</Text>
               <Icon name="next" size={18} color={C.text2} />
             </TouchableOpacity>
-          )) : <Text style={st.errText}>没有找到相关歌手</Text>
+          )) : singers === null ? idlePane : <Text style={st.errText}>没有找到相关歌手</Text>
         ) : mode === 'album' ? (
           /* lx163:专辑结果 */
           albums && albums.length ? albums.map(al => (
@@ -241,7 +280,7 @@ export function SearchScreen() {
               </View>
               <Icon name="next" size={18} color={C.text2} />
             </TouchableOpacity>
-          )) : <Text style={st.errText}>没有找到相关专辑</Text>
+          )) : albums === null ? idlePane : <Text style={st.errText}>没有找到相关专辑</Text>
         ) : results && results.length > 0 ? (
           <>
             <View style={st.sectionRow}>
@@ -257,40 +296,7 @@ export function SearchScreen() {
           </>
         ) : results && results.length === 0 && !allFailed ? (
           <Text style={st.errText}>没有找到相关内容，换个关键词试试</Text>
-        ) : !results ? (
-          /* lx163b:空闲态——搜索历史 + 热搜词 */
-          <View style={{ gap: 14, paddingTop: 8 }}>
-            {history.length ? (
-              <View style={{ gap: 8 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={st.allSecTitle}>搜索历史</Text>
-                  <View style={{ flex: 1 }} />
-                  <TouchableOpacity hitSlop={6} onPress={() => { setHistory([]); histKv.set('h', '[]'); }}>
-                    <Icon name="close" size={14} color={C.text3} />
-                  </TouchableOpacity>
-                </View>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                  {history.map(w => (
-                    <TouchableOpacity key={w} style={st.chip} onPress={() => { setKw(w); search(w); }}>
-                      <Text style={st.chipText} numberOfLines={1}>{w}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            ) : null}
-            <View style={{ gap: 8 }}>
-              <Text style={st.allSecTitle}>大家都在搜</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                {HOT_WORDS.map((w, i) => (
-                  <TouchableOpacity key={w} style={st.chip} onPress={() => { setKw(w); search(w); }}>
-                    <Text style={[st.chipIdx, i < 3 && { color: C.brand }]}>{i + 1}</Text>
-                    <Text style={st.chipText} numberOfLines={1}>{w}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          </View>
-        ) : null}
+        ) : !results ? idlePane : null}
       </ScrollView>
 
       {/* lx163:搜索行操作菜单(收藏到歌单/下载) */}

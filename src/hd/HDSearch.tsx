@@ -137,7 +137,7 @@ export function HDSearch() {
             onSubmitEditing={() => search(kw)}
           />
           {kw ? (
-            <HDTouch style={st.clearBtn} focusStyle={false} onPress={() => { setKw(''); setResults(null); }}>
+            <HDTouch style={st.clearBtn} focusStyle={false} onPress={() => { setKw(''); setResults(null); setSingers(null); setAlbums(null); }}>
               <Icon name="close" size={13} color={C.text2} />
             </HDTouch>
           ) : null}
