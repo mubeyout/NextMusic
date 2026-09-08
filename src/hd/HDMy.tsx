@@ -1,5 +1,5 @@
 // HD 我的:账号卡 + 歌单网格 + 媒体库/下载/本地/设置入口(子页复用 phone Stack)
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useReducer, useState } from 'react';
 import { toast } from '../components/Dialog';
 import { hdActions } from './HDActions';
 import { View, Text, StyleSheet, ScrollView, Image, RefreshControl } from 'react-native';
@@ -29,6 +29,9 @@ export function HDMy() {
   const [snap, setSnap] = useState<UserListsSnapshot | null>(null);
   const [syncTick, setSyncTick] = useState(0);
   useEffect(() => subscribeSync(() => setSyncTick(t => t + 1)), []);
+  // lx162(老板):本地歌单删/改名后不再赖屏——library 变更直接重读本机列表,免重启
+  const [, libTick] = useReducer((x: number) => x + 1, 0);
+  useEffect(() => library.subscribe(() => { setLocalPls(library.all()); libTick(); }), []);
   const [syncing, setSyncing] = useState(false);
   const providerCount = providers.all().length;
 
@@ -39,7 +42,7 @@ export function HDMy() {
       sync.fetchLists().then(setSnap).catch(() => {}).finally(() => setSyncing(false));
     } else setSyncing(false);
   };
-  useEffect(refresh, [connected]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(refresh, [connected, syncTick, libTick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const syncPls = snap?.userList || [];
   const localClean = localPls.filter(p => p.name !== '我喜欢的');

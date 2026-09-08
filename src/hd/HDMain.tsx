@@ -1,7 +1,7 @@
 // HD(车机/TV)主壳 —— 对齐桌面版:左侧 174dp 侧栏(发现/我的乐库/歌单 三组)
 // + 内容区(层叠保状态) + 底部 64dp 桌面式播放条
 // 业务层(播放引擎/音源/媒体库)全复用 phone 版,仅 UI 形态不同
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useReducer, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, Platform } from 'react-native';
 const IS_WEB = Platform.OS === 'web';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -99,6 +99,9 @@ export function HDMain() {
   // 歌单列表(本地+同步)与"我喜欢的"计数——lx91 单次拉取;lx104:缓存秒出+我喜欢的去重+离线收藏合并
   const [syncTick, setSyncTick] = useState(0);
   useEffect(() => subscribeSync(() => setSyncTick(t => t + 1)), []); // lx117:服务器快照变更重拉(删除/移除后侧栏不再复活)
+  // lx162(老板):本地歌单删/改名后侧栏立即消失——library 变更信号进列表 effect 依赖
+  const [, libTick] = useReducer((x: number) => x + 1, 0);
+  useEffect(() => library.subscribe(() => libTick()), []);
   useEffect(() => {
     // lx104:本地「我喜欢的」由专用入口展示,歌单组里去重(老板:快捷收藏合并)
     const local = library.all()
@@ -130,7 +133,7 @@ export function HDMain() {
       const localNames = new Set(local.map(x => x.name)); // lx121:本地副本优先(平台导入 copy-on-write 后,本地才是可编辑真身)
       setPls([...local, ...serverPls.filter(u => !localNames.has(u.name))]);
     }).catch(() => {});
-  }, [connected, token, syncTick]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [connected, token, syncTick, libTick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // lx101:歌单管理(长按)——本机 library 重命名/删除;同步歌单 fetch+push 服务器 userList
   const managePl = (pl: { localId?: string; key: string; name: string; count: number; songs?: SongItem[] }) => {
