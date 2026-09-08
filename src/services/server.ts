@@ -169,8 +169,10 @@ export const api = {
   // lx163:歌手/专辑搜索(服务器 type=singer/album;仅 wy/tx 支持,失败自动换源兑底)
   async searchSingers(kw: string, source = 'kw', page = 1, limit = 30): Promise<{ id: string; name: string; img?: string; source?: string }[]> {
     const trySrc = async (src: string) => {
-      const d = (await req(`/api/music/search?name=${encodeURIComponent(kw)}&source=${src}&type=singer&page=${page}&limit=${limit}`)) as { list?: { id?: string | number; name: string; picUrl?: string; avatar?: string; img?: string; source?: string }[] };
-      return (d.list || []).map(a => ({ id: String(a.id ?? a.name), name: a.name, img: a.picUrl || a.avatar || a.img, source: a.source || src }));
+      // lx163:服务器 type=singer 返回裸数组(wy/tx 实测),兼容 {list} 包装形态
+      const d = (await req(`/api/music/search?name=${encodeURIComponent(kw)}&source=${src}&type=singer&page=${page}&limit=${limit}`)) as { list?: { id?: string | number; name: string; picUrl?: string; avatar?: string; img?: string; source?: string }[] } | { id?: string | number; name: string; picUrl?: string; avatar?: string; img?: string; source?: string }[];
+      const arr = Array.isArray(d) ? d : (d.list || []);
+      return arr.map(a => ({ id: String(a.id ?? a.name), name: a.name, img: a.picUrl || a.avatar || a.img, source: a.source || src }));
     };
     for (const src of [source, 'wy', 'tx']) {
       try { const r = await trySrc(src); if (r.length) return r; } catch { /* 该源不支持/失败,换下一个 */ }
@@ -179,8 +181,10 @@ export const api = {
   },
   async searchAlbums(kw: string, source = 'kw', page = 1, limit = 30): Promise<{ id: string; name: string; singer?: string; img?: string; source?: string }[]> {
     const trySrc = async (src: string) => {
-      const d = (await req(`/api/music/search?name=${encodeURIComponent(kw)}&source=${src}&type=album&page=${page}&limit=${limit}`)) as { list?: { id?: string | number; name: string; singer?: string; artistName?: string; picUrl?: string; img?: string; source?: string }[] };
-      return (d.list || []).map(a => ({ id: String(a.id ?? a.name), name: a.name, singer: a.singer || a.artistName, img: a.picUrl || a.img, source: a.source || src }));
+      // lx163:同 singer,album 也是裸数组
+      const d = (await req(`/api/music/search?name=${encodeURIComponent(kw)}&source=${src}&type=album&page=${page}&limit=${limit}`)) as { list?: { id?: string | number; name: string; singer?: string; artistName?: string; picUrl?: string; img?: string; source?: string }[] } | { id?: string | number; name: string; singer?: string; artistName?: string; picUrl?: string; img?: string; source?: string }[];
+      const arr = Array.isArray(d) ? d : (d.list || []);
+      return arr.map(a => ({ id: String(a.id ?? a.name), name: a.name, singer: a.singer || a.artistName, img: a.picUrl || a.img, source: a.source || src }));
     };
     for (const src of [source, 'wy', 'tx']) {
       try { const r = await trySrc(src); if (r.length) return r; } catch { /* 同上 */ }
