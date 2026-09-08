@@ -164,7 +164,11 @@ export const api = {
     try { return (await req(`/api/music/artistSongs?id=${encodeURIComponent(id)}&source=${source}`)) as SongItem[]; } catch { return []; }
   },
   async albumSongs(id: string, source = 'wy'): Promise<SongItem[]> {
-    try { return (await req(`/api/music/albumSongs?id=${encodeURIComponent(id)}&source=${source}`)) as SongItem[]; } catch { return []; }
+    // lx163:服务器 albumSongs 实测返回 {list} 包装(与 artistSongs 裸数组不同),兼容双形态
+    try {
+      const d = (await req(`/api/music/albumSongs?id=${encodeURIComponent(id)}&source=${source}`)) as SongItem[] | { list?: SongItem[] };
+      return Array.isArray(d) ? d : (d.list || []);
+    } catch { return []; }
   },
   // lx163:歌手/专辑搜索(服务器 type=singer/album;仅 wy/tx 支持,失败自动换源兑底)
   async searchSingers(kw: string, source = 'kw', page = 1, limit = 30): Promise<{ id: string; name: string; img?: string; source?: string }[]> {
