@@ -47,8 +47,13 @@ mountKbNav();
     const raw = localStorage.getItem('nmk:nextmusic-settings:settings');
     if (raw) isLight = !!(JSON.parse(raw) as { light?: boolean }).light;
   } catch { /* ignore */ }
-  // v1.2.5:body 底色随主题——顶部轨道(透明)与内容卡上方区域透出的底,浅色下不再是裸 #121212 深条
-  document.body.style.background = isLight ? '#F6F7F9' : '#121212';
+  // v1.2.5:body/#root/html 底色随主题——顶部轨道(透明)与内容卡上方区域透出的底,浅色下不再是裸 #121212 深条
+  // (index.html 给 html/body/#root 三者都烘了 #121212,只改 body 会被 #root 盖住——实测)
+  const themeBg = isLight ? '#F6F7F9' : '#121212';
+  document.body.style.background = themeBg;
+  document.documentElement.style.background = themeBg;
+  const rootEl = document.getElementById('root');
+  if (rootEl) rootEl.style.background = 'transparent';
 
   // win:原生 overlay 符号色随主题(浅色下白色不可读)
   if (isWin) {
