@@ -60,13 +60,11 @@ export function SearchScreen() {
       if (m === 'singer') {
         const r = await api.searchSingers(query, src);
         setSingers(r);
-        if (!r.length) setAllFailed(true);
-        return;
+        return; // lx163:空结果由列表区空态文案展示,不弹音源错误卡(语义不同)
       }
       if (m === 'album') {
         const r = await api.searchAlbums(query, src);
         setAlbums(r);
-        if (!r.length) setAllFailed(true);
         return;
       }
       // 搜索走内置引擎直连平台公开 API，永远免费免登录（只有播放取链才需要音源/登录）
