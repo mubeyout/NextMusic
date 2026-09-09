@@ -176,7 +176,7 @@ export const shadowOfSm = (seed: string) => {
   const [r1, g1, b1] = hp < 1 ? [cH, x, 0] : hp < 2 ? [x, cH, 0] : hp < 3 ? [0, cH, x] : hp < 4 ? [0, x, cH] : hp < 5 ? [x, 0, cH] : [cH, 0, x];
   const m = l - cH / 2;
   const R = Math.round((r1 + m) * 255), G = Math.round((g1 + m) * 255), B = Math.round((b1 + m) * 255);
-  return `0 5px 14px rgba(${R},${G},${B},.26)`;
+  return `0 5px 14px rgba(${R},${G},${B},.13)`; // lx167:减淡50%
 };
 
 // v1.2.5 桌面:web 卡片彩色弥散投影——shadowStyleOf(elevation+shadowColor)在 RNW 不渲染(桌面卡片变灰块的真因);
@@ -193,8 +193,8 @@ export function webCardShadow(seed: string, lift = false): Record<string, string
   return {
     shadowColor: `rgb(${Math.round((r1 + m) * 255)},${Math.round((g1 + m) * 255)},${Math.round((b1 + m) * 255)})`,
     shadowOffset: { width: 0, height: lift ? 14 : 8 },
-    shadowOpacity: lift ? 0.34 : 0.22,
-    shadowRadius: lift ? 24 : 15,
+    shadowOpacity: lift ? 0.17 : 0.11, // lx167(老板):投影减淡 50%
+    shadowRadius: lift ? 20 : 12,
   };
 }
 // 玻璃磨砂面(桌面 --nm-glass 深色值;RN 无 backdrop-filter,用半透明+亮边近似)—— 已迁入 C.glass/C.glassStrong(浅色覆写需运行时查找,export let 在 Metro 下是值拷贝)

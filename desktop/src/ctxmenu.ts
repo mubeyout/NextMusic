@@ -23,7 +23,7 @@ export function mountCtxMenu() {
   let open = false;
   const menu = document.createElement('div');
   const sub = document.createElement('div');
-  menu.style.cssText = `position:absolute;min-width:196px;background:${surface};border:1px solid ${border};border-radius:10px;padding:5px;box-shadow:0 12px 32px rgba(0,0,0,.5);pointer-events:auto;`;
+  menu.style.cssText = `position:absolute;min-width:196px;background:${surface};border:1px solid ${border};border-radius:10px;padding:5px;box-shadow:0 12px 32px rgba(0,0,0,.25);pointer-events:auto;`;
   sub.style.cssText = menu.style.cssText;
   host.appendChild(menu);
   host.appendChild(sub);

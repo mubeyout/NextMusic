@@ -89,22 +89,22 @@ export function AuthLoginScreen() {
 }
 
 const st = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: C.bg, paddingHorizontal: 20 },
+  screen: { flex: 1, backgroundColor: C.bg, paddingHorizontal: 20, alignSelf: 'center', width: '100%', maxWidth: 470 }, // lx167:列宽上限
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   brandDot: { width: 17, height: 17, borderRadius: 9, backgroundColor: C.brand },
   brandName: { color: C.text, fontSize: 15, lineHeight: 18, fontWeight: '700' },
   header: { gap: 5 },
-  title: { color: C.text, fontSize: 26, lineHeight: 31, fontWeight: '700' },
+  title: { color: C.text, fontSize: 21, lineHeight: 26, fontWeight: '700' }, // lx167:稍小精致
   subtitle: { color: C.text2, fontSize: 12, lineHeight: 14 },
-  card: { borderRadius: 14, backgroundColor: C.surface, padding: 16, gap: 8 },
+  card: { borderRadius: 12, backgroundColor: C.surface, padding: 14, gap: 8 }, // lx167:紧凑
   stepRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   stepBadge: { width: 18, height: 18, borderRadius: 9, backgroundColor: C.stroke, alignItems: 'center', justifyContent: 'center' },
   stepBadgeText: { color: C.brandText, fontSize: 11, lineHeight: 13, fontWeight: '700' },
   fieldLabel: { color: C.text, fontSize: 12, lineHeight: 14, fontWeight: '500', flex: 1 },
   okTag: { color: C.brandText, fontSize: 11, lineHeight: 13, fontWeight: '600' },
-  input: { height: 46, borderRadius: 12, backgroundColor: C.surface2, paddingHorizontal: 14, justifyContent: 'center' },
+  input: { height: 42, borderRadius: 11, backgroundColor: C.surface2, paddingHorizontal: 13, justifyContent: 'center' },
   inputText: { color: C.text, fontSize: 13, padding: 0 },
-  btnPrimary: { height: 46, borderRadius: 12, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
+  btnPrimary: { height: 42, borderRadius: 11, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   btnPrimaryText: { color: C.onBrand, fontSize: 14, lineHeight: 17, fontWeight: '500' },
   err: { color: '#FF6B6B', fontSize: 12, lineHeight: 15, textAlign: 'center' },
   backLink: { height: 44, alignItems: 'center', justifyContent: 'center' },
