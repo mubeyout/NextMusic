@@ -1,5 +1,5 @@
 // HD 榜单页 —— 桌面版风格:五源 pill + 榜单卡片网格,点击拉榜进 PlaylistDetail(复用)
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FocusBridge } from './HDMain';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -100,8 +100,29 @@ export function HDBoards() {
 }
 
 // v1.2.6:榜单卡抽组件——web 侧 hover 投影/上浮+overflow 修圆角;TV 原分支逐字保留
+// v1.2.7(老板:缺封面):SDK getBoards 只有 id/name/bangid(kg/wy filterBoardsData 无图)——
+// web 卡可见时懒拉榜首曲封面(真数据,lxapi 10min 缓存复用);TV 不动
 function BoardCard({ b, i, src, onOpen }: { b: Board; i: number; src: string; busy: boolean; onOpen: () => void }) {
   const hc = useHoverCard(b.name);
+  const [cover, setCover] = useState<string | null>(null);
+  const seen = useRef(false);
+  const coverRef = useRef<View | null>(null);
+  useEffect(() => {
+    if (!IS_WEB || seen.current || b.image) return;
+    const el = coverRef.current as unknown as HTMLElement | null;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver((es) => {
+      if (!es.some(e => e.isIntersecting)) return;
+      io.disconnect(); seen.current = true;
+      import('../services/lxapi').then(({ lxapi }) =>
+        lxapi.leaderboardList(b.bangid, src, 1).then(list => {
+          const img = list?.[0]?.img;
+          if (img) setCover(img);
+        }).catch(() => {})).catch(() => {});
+    }, { rootMargin: '120px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [b.bangid, src]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <HDTouch onPress={onOpen} activeOpacity={0.85} zoom={1.06}
       ref={IS_WEB ? (hc.elRef as never) : undefined}
@@ -109,13 +130,15 @@ function BoardCard({ b, i, src, onOpen }: { b: Board; i: number; src: string; bu
       style={[st.card, shadowStyleOf(b.name), IS_WEB && hc.cardStyle, IS_WEB && { overflow: 'hidden' as const }]}
       focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }}
     >
-      {b.image ? (
-        <Image source={{ uri: b.image }} style={st.cardCover} />
-      ) : (
-        <LinearGradient colors={ACCENTS[i % ACCENTS.length]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.cardCover}>
-          <Icon name="ranking" size={42} color="#FFFFFFB3" />
-        </LinearGradient>
-      )}
+      <View ref={coverRef as never} style={{ width: '100%' }}>
+        {(IS_WEB ? cover : null) || b.image ? (
+          <Image source={{ uri: (IS_WEB ? cover : null) || b.image }} style={st.cardCover} />
+        ) : (
+          <LinearGradient colors={ACCENTS[i % ACCENTS.length]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.cardCover}>
+            <Icon name="ranking" size={42} color="#FFFFFFB3" />
+          </LinearGradient>
+        )}
+      </View>
       <View style={st.cardChipWrapper}>
         <View style={st.cardChip}><Text style={st.cardChipText}>{SOURCES.find(s => s.key === src)?.label ?? src}</Text></View>
       </View>

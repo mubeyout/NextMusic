@@ -88,6 +88,21 @@ const railNav = (s: string, p?: object) => {
   hdNav()?.navigate(s, p);
 };
 
+// v1.2.7 桌面(老板:全面核查统一,更适配桌面规范):phone 桥接屏缩放适配层——
+// HD 屏 token=桌面px×0.75,phone 屏是原生 px;v1.2.6 缩放源修正后并排密度差一截(设置子页字体特大)。
+// 全部桥接 phone 屏(队列/评论/Fx/媒体库族/下载/榜单广场/搜索/设置族/账号族)包 0.75 缩放,与 HD 屏密度统一;
+// TV/原生侧原样返回组件,零 diff。Route(投屏弹层)除外——absolute 弹层定位不适用 transform 缩放
+const withPhoneScale = (Cmp: React.ComponentType<Record<string, unknown>>) => {
+  if (!IS_WEB) return Cmp;
+  const W = (props: Record<string, unknown>) => (
+    <View style={{ flex: 1, transform: [{ scale: 0.75 }], transformOrigin: 'top left', width: '133.3334%', height: '133.3334%' }}>
+      <Cmp {...props} />
+    </View>
+  );
+  W.displayName = 'PhoneScale';
+  return W;
+};
+
 // v1.2.5 桌面平台探测(win/linux 品牌行顶入轨道,mac 轨道留给红绿灯)
 const NM_PLAT = IS_WEB ? String((globalThis as unknown as { nmDesktop?: { platform?: string } }).nmDesktop?.platform || '') : '';
 const NM_MAC = NM_PLAT === 'darwin';
@@ -276,43 +291,43 @@ export function HDMain() {
           <InnerStack.Navigator screenOptions={{ headerShown: false, animation: 'none', contentStyle: { backgroundColor: C.bg }, freezeOnBlur: true }}>
             <InnerStack.Screen name="Tabs">{() => <TabsHost tab={tab} setTab={setTab} />}</InnerStack.Screen>
             <InnerStack.Screen name="Player" component={HDPlayer} />
-            <InnerStack.Screen name="Queue" component={QueueScreen} />
+            <InnerStack.Screen name="Queue" component={withPhoneScale(QueueScreen)} />
             <InnerStack.Screen name="Route" component={RoutePage} options={{ presentation: 'transparentModal' }} />
-            <InnerStack.Screen name="Comments" component={CommentsScreen} />
+            <InnerStack.Screen name="Comments" component={withPhoneScale(CommentsScreen)} />
             <InnerStack.Screen name="PlaylistDetail" component={HDPlaylistDetailScreen} />
-            <InnerStack.Screen name="Search" component={SearchScreen} />
-            <InnerStack.Screen name="PlayerSettings" component={PlayerSettingsScreen} />
-            <InnerStack.Screen name="ImportPlaylist" component={ImportPlaylistScreen} />
-            <InnerStack.Screen name="Fx" component={FxScreen} />
-            <InnerStack.Screen name="MediaLibs" component={MediaLibsScreen} />
+            <InnerStack.Screen name="Search" component={withPhoneScale(SearchScreen)} />
+            <InnerStack.Screen name="PlayerSettings" component={withPhoneScale(PlayerSettingsScreen)} />
+            <InnerStack.Screen name="ImportPlaylist" component={withPhoneScale(ImportPlaylistScreen)} />
+            <InnerStack.Screen name="Fx" component={withPhoneScale(FxScreen)} />
+            <InnerStack.Screen name="MediaLibs" component={withPhoneScale(MediaLibsScreen)} />
             <InnerStack.Screen name="ArtistFavs" component={ArtistFavScreen} />
             <InnerStack.Screen name="ArtistDetail" component={ArtistDetailScreen} />
             <InnerStack.Screen name="AlbumDetail" component={AlbumDetailScreen} />
-            <InnerStack.Screen name="ProviderEdit" component={ProviderEditScreen} />
-            <InnerStack.Screen name="ProviderBrowse" component={ProviderBrowseRoute} />
-            <InnerStack.Screen name="ProviderDetail" component={ProviderDetailScreen} />
-            <InnerStack.Screen name="Downloads" component={DownloadsScreen} />
-            <InnerStack.Screen name="BoardsSquare" component={BoardsSquareScreen} />
-            <InnerStack.Screen name="DeviceMusic" component={DeviceMusicScreen} />
-            <InnerStack.Screen name="Sources" component={SourcesScreen} />
-            <InnerStack.Screen name="Account" component={AccountScreen} />
+            <InnerStack.Screen name="ProviderEdit" component={withPhoneScale(ProviderEditScreen)} />
+            <InnerStack.Screen name="ProviderBrowse" component={withPhoneScale(ProviderBrowseRoute)} />
+            <InnerStack.Screen name="ProviderDetail" component={withPhoneScale(ProviderDetailScreen)} />
+            <InnerStack.Screen name="Downloads" component={withPhoneScale(DownloadsScreen)} />
+            <InnerStack.Screen name="BoardsSquare" component={withPhoneScale(BoardsSquareScreen)} />
+            <InnerStack.Screen name="DeviceMusic" component={withPhoneScale(DeviceMusicScreen)} />
+            <InnerStack.Screen name="Sources" component={withPhoneScale(SourcesScreen)} />
+            <InnerStack.Screen name="Account" component={withPhoneScale(AccountScreen)} />
             {/* v1.2.5 桌面:设置族内页化(老板:设置也作为内页加载,左边导航固定);TV 不注册,仍走根栈全屏 */}
             {IS_WEB ? (
               <>
                 <InnerStack.Screen name="Settings" component={HDSettingsScreen} />
-                <InnerStack.Screen name="BasicSettings" component={BasicSettingsScreen} />
-                <InnerStack.Screen name="Theme" component={ThemeScreen} />
-                <InnerStack.Screen name="About" component={AboutScreen} />
-                <InnerStack.Screen name="Manual" component={ManualScreen} />
-                <InnerStack.Screen name="DeployGuide" component={DeployGuideScreen} />
-                <InnerStack.Screen name="Faq" component={FaqScreen} />
-                <InnerStack.Screen name="Changelog" component={ChangelogScreen} />
-                <InnerStack.Screen name="BackupSettings" component={BackupSettingsScreen} />
-                <InnerStack.Screen name="DownloadsSettings" component={DownloadsSettingsScreen} />
+                <InnerStack.Screen name="BasicSettings" component={withPhoneScale(BasicSettingsScreen)} />
+                <InnerStack.Screen name="Theme" component={withPhoneScale(ThemeScreen)} />
+                <InnerStack.Screen name="About" component={withPhoneScale(AboutScreen)} />
+                <InnerStack.Screen name="Manual" component={withPhoneScale(ManualScreen)} />
+                <InnerStack.Screen name="DeployGuide" component={withPhoneScale(DeployGuideScreen)} />
+                <InnerStack.Screen name="Faq" component={withPhoneScale(FaqScreen)} />
+                <InnerStack.Screen name="Changelog" component={withPhoneScale(ChangelogScreen)} />
+                <InnerStack.Screen name="BackupSettings" component={withPhoneScale(BackupSettingsScreen)} />
+                <InnerStack.Screen name="DownloadsSettings" component={withPhoneScale(DownloadsSettingsScreen)} />
               </>
             ) : null}
             <InnerStack.Screen name="AuthLogin" component={HDAuthLoginScreen} />
-            <InnerStack.Screen name="AuthSignup" component={AuthSignupScreen} />
+            <InnerStack.Screen name="AuthSignup" component={withPhoneScale(AuthSignupScreen)} />
           </InnerStack.Navigator>
         </NavigationContainer>
         </NavigationIndependentTree>

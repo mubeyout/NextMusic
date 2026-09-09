@@ -1,7 +1,7 @@
 {
   "name": "nextmusic-desktop",
   "private": true,
-  "version": "1.2.6",
+  "version": "1.2.7",
   "description": "NextMusic Desktop — 主仓 RN(HD 形态) + react-native-web + Electron 壳",
   "main": "electron/main.cjs",
   "scripts": {

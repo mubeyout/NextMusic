@@ -122,6 +122,19 @@ export function RootNavigator() {
   }, []);
 
   // v1.1.9 桌面侧栏常驻:内页 contentStyle 让位左侧 174px 侧栏(native-stack 官方 option,web/原生都识别;原生端 {} 空对象无影响)
+// v1.2.7 桌面:phone 桥接屏缩放适配(启动流 Server/Auth 两屏)——与 HDMain.withPhoneScale 同则;
+// phone 原生侧原样返回
+const withPhoneScale = (Cmp: React.ComponentType<Record<string, unknown>>) => {
+  if (Platform.OS !== 'web') return Cmp;
+  const W = (props: Record<string, unknown>) => (
+    <View style={{ flex: 1, transform: [{ scale: 0.75 }], transformOrigin: 'top left', width: '133.3334%', height: '133.3334%' }}>
+      <Cmp {...props} />
+    </View>
+  );
+  W.displayName = 'PhoneScale';
+  return W;
+};
+
 const SIDEBAR_LOCK_CONTENT: { marginLeft?: number; backgroundColor?: string } = Platform.OS === 'web' ? { marginLeft: 174 } : {};
 return (
     <NavigationContainer ref={navRef} theme={navTheme}>
@@ -129,8 +142,8 @@ return (
       {/* lx57:转场最终方案 none(直切)——lx49 fade 后一加实测仍有"变亮一下"(两页半透明叠加的固有特性,31→66→35);直切零中间态,物理上无闪。速度感也更快 */}
       <Stack.Navigator initialRouteName={initial} screenOptions={{ headerShown: false, animation: 'none', contentStyle: { backgroundColor: C.bg }, freezeOnBlur: true }}>
         <Stack.Screen name="Boot" component={IS_HD ? HDBootScreen : BootScreen} />
-        <Stack.Screen name="Server" component={ServerScreen} />
-        <Stack.Screen name="Auth" component={AuthScreen} />
+        <Stack.Screen name="Server" component={withPhoneScale(ServerScreen)} />
+        <Stack.Screen name="Auth" component={withPhoneScale(AuthScreen)} />
         <Stack.Screen name="AuthLogin" component={IS_HD ? HDAuthLoginScreen : AuthLoginScreen} />
         <Stack.Screen name="AuthSignup" component={AuthSignupScreen} />
         <Stack.Screen name="Main" component={IS_HD ? HDMain : MainTabs} />
