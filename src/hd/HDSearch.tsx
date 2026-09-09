@@ -4,6 +4,7 @@ import { FocusBridge } from './HDMain';
 import { View, Text, StyleSheet, ScrollView, TextInput, Image, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
+import LinearGradient from 'react-native-linear-gradient';
 import { C, H, shadowStyleOf } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { HDSongRow } from './HDSongRow';
@@ -30,6 +31,17 @@ const HOT_ARTISTS = [
   { n: '王菲', c: '#E91E8C' }, { n: '陶喆', c: '#1ED760' },
 ];
 const GENRES = ['华语流行', '粤语经典', '摇滚', '民谣', '电子', '古风', '爵士', '嘻哈', '轻音乐', '影视原声', 'K-POP', '乡村'];
+// lx164(老板:HD 探索补齐手机端内容)——热门主题大卡/按场景/按语言
+const THEME_CARDS = [
+  { zh: '流行', en: 'POP', from: '#852e52', to: '#401438' },
+  { zh: '摇滚', en: 'ROCK', from: '#85331a', to: '#33171f' },
+  { zh: '电子', en: 'ELECTRONIC', from: '#146b85', to: '#142e52' },
+  { zh: '嘻哈', en: 'HIP-HOP', from: '#733894', to: '#241f47' },
+  { zh: '爵士', en: 'JAZZ', from: '#1f7a57', to: '#14382e' },
+  { zh: '古典', en: 'CLASSICAL', from: '#7a591f', to: '#332414' },
+];
+const SCENES = ['通勤', '学习', '运动', '派对', '睡眠', '旅行'];
+const LANGS = ['华语', '欧美', '日韩', '拉丁'];
 const artistImgKv = createMMKV({ id: 'nextmusic-hd-artist-img' });
 
 const HOT_WORDS = ['晴天', '后来', '海阔天空', '孤勇者', '起风了', '稻香', '红日', '月半小夜曲', '泡沫', '岁月神偷'];
@@ -64,6 +76,7 @@ export function HDSearch() {
   const [albums, setAlbums] = useState<{ id: string; name: string; singer?: string; img?: string; source?: string }[] | null>(null);
   const [results, setResults] = useState<SongItem[] | null>(null);
   const [busy, setBusy] = useState(false);
+  const [weekly, setWeekly] = useState<SongItem[]>([]); // lx164:本周精选(TOP500 前 8)
   const [err, setErr] = useState<string | null>(null);
 
   const search = async (q: string, m = mode) => {
@@ -93,6 +106,16 @@ export function HDSearch() {
     const t = setTimeout(() => { if (kw.trim().length >= 2) search(kw); }, 600);
     return () => clearTimeout(t);
   }, [kw]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // lx164:本周精选 = TOP500 前 8(与手机探索页同源)
+  useEffect(() => {
+    if (weekly.length) return;
+    lxapi.leaderboardBoards().then(bs => {
+      const top = bs.find(b => /TOP/i.test(b.name)) || bs[0];
+      if (!top) return;
+      lxapi.leaderboardList(top.bangid).then(list => setWeekly((list || []).slice(0, 8)));
+    }).catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <View style={st.screen}>
@@ -150,6 +173,56 @@ export function HDSearch() {
                 ))}
               </ScrollView>
             </View>
+            {/* lx164:热门主题大卡(渐变,对齐手机探索页)——替原分类发现 pills */}
+            <View style={{ gap: 9 }}>
+              <Text style={st.secTitle}>热门主题</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: 12, paddingLeft: 28, paddingRight: 12, paddingTop: 6, paddingBottom: 16 }}>
+                {THEME_CARDS.map(g => (
+                  <HDTouch key={g.zh} style={[st.themeCard, shadowStyleOf(g.zh)]} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }} onPress={() => { setKw(g.zh); search(g.zh); }}>
+                    <LinearGradient colors={[g.from, g.to]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.themeGrad}>
+                      <Text style={st.themeZh}>{g.zh}</Text>
+                      <Text style={st.themeEn}>{g.en}</Text>
+                    </LinearGradient>
+                  </HDTouch>
+                ))}
+              </ScrollView>
+            </View>
+            {/* lx164:按场景 */}
+            <View style={{ gap: 9 }}>
+              <Text style={st.secTitle}>按场景</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {SCENES.map(g => (
+                  <HDTouch key={g} style={st.genrePill} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 15 }} onPress={() => { setKw(g); search(g); }}>
+                    <Text style={st.genreText}>{g}</Text>
+                  </HDTouch>
+                ))}
+              </View>
+            </View>
+            {/* lx164:按语言 */}
+            <View style={{ gap: 9 }}>
+              <Text style={st.secTitle}>按语言</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {LANGS.map(g => (
+                  <HDTouch key={g} style={st.genrePill} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 15 }} onPress={() => { setKw(g); search(g); }}>
+                    <Text style={st.genreText}>{g}</Text>
+                  </HDTouch>
+                ))}
+              </View>
+            </View>
+            {/* lx164:本周精选(TOP500 前 8,与手机探索页同源) */}
+            {weekly.length ? (
+              <View style={{ gap: 2 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 7 }}>
+                  <Text style={st.secTitle}>本周精选</Text>
+                  <Text style={st.secHint}>{weekly.length} 首</Text>
+                </View>
+                {weekly.map((s, i) => (
+                  <HDSongRow key={`${s.source}_${s.songmid}_${i}`} song={s} index={i + 1}
+                    playing={current?.songmid === s.songmid && current?.source === s.source}
+                    onPress={() => playSong(s, weekly)} />
+                ))}
+              </View>
+            ) : null}
             <View style={{ gap: 9 }}>
               <Text style={st.secTitle}>分类发现</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -258,6 +331,10 @@ const st = StyleSheet.create({
   empty: { color: C.text3, fontSize: H.font.md, paddingVertical: 24, textAlign: 'center' },
   tip: { alignItems: 'center', gap: 10, paddingVertical: 60 },
   tipText: { color: C.text3, fontSize: H.font.md },
+  themeCard: { width: 168, height: 96, borderRadius: 14, overflow: 'hidden' }, // lx164:热门主题渐变大卡
+  themeGrad: { flex: 1, padding: 14, justifyContent: 'flex-end', gap: 2 },
+  themeZh: { color: '#FFFFFF', fontSize: 20, fontWeight: '800' },
+  themeEn: { color: '#FFFFFF99', fontSize: 9, letterSpacing: 2, fontWeight: '700' },
   artistCard: { width: 90, height: 114, borderRadius: 14, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', gap: 8 }, // lx143:恢复圆角底卡——无背景时 elevation 轮廓异常+投影乱
   artistAvatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' }, // lx139:真照片(Image 圆形)
   artistGlyph: { color: '#FFFFFF', fontSize: 22, fontWeight: '800' },
