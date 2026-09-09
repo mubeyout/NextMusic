@@ -13,6 +13,7 @@ import { IS_HD } from '../services/appversion';
 import { sync, lxToApp, subscribeSync } from '../services/sync';
 import { lxapi } from '../services/lxapi';
 import { toast } from '../components/Dialog';
+import { hdActions } from '../hd/HDActions';
 import { usePlayer } from '../state/PlayerProvider';
 import { isFav, setFav, songKey } from '../state/favorites';
 import { isArtistFav, toggleArtistFav, refreshArtistFavs, useArtistFavTick, type ArtistFav } from '../state/artistFavs';
@@ -101,7 +102,12 @@ export function MyFavoritesScreen() {
             renderItem={({ item: s }) => (
               <SongRow song={s} playing={current?.songmid === s.songmid && current?.source === s.source}
                 onPress={() => playSong(s, songs)}
-                extra={(
+                onLongPress={IS_HD ? () => hdActions.menu(`${s.name} · ${s.singer}`, [
+                  { label: '取消收藏', icon: 'heart', danger: true, onPress: () => unfav(s) }, // lx167d(老板):TV 长按管理
+                ]) : undefined}
+                extra={IS_HD ? (
+                  <Icon name="heart" size={20} active color="#FF5A76" /> /* TV:状态指示器,管理走长按 */
+                ) : (
                   <TouchableOpacity hitSlop={8} onPress={() => unfav(s)}>
                     <Icon name="heart" size={20} active color="#FF5A76" />
                   </TouchableOpacity>
@@ -118,15 +124,22 @@ export function MyFavoritesScreen() {
               return (
                 <Row style={st.row} activeOpacity={0.85}
                   focusStyle={IS_HD ? { borderWidth: 2, borderColor: C.brand, borderRadius: 12 } : undefined}
+                  onLongPress={IS_HD ? () => hdActions.menu(`${a.name}`, [
+                    { label: isArtistFav(a) ? '取消收藏' : '收藏', icon: 'heart', danger: isArtistFav(a), onPress: () => toggleArtistFav(a).then(on => toast(on ? `已收藏 ${a.name}` : '已取消收藏')).catch(() => toast('服务器写入失败')) },
+                  ]) : undefined}
                   onPress={() => nav.navigate('ArtistDetail', { artist: a })}>
                   {a.img ? <Image source={{ uri: a.img }} style={st.round} /> : <View style={[st.round, st.avaFallback]}><Text style={st.glyph}>{a.name.slice(0, 1)}</Text></View>}
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={st.name} numberOfLines={1}>{a.name}</Text>
                     <Text style={st.meta}>{a.count != null ? `${a.count} 首歌曲` : '点击查看'}</Text>
                   </View>
-                  <TouchableOpacity hitSlop={8} onPress={() => toggleArtistFav(a).then(on => toast(on ? `已收藏 ${a.name}` : '已取消收藏')).catch(() => toast('服务器写入失败'))}>
-                    <Icon name="heart" size={20} active={favd} color={favd ? '#FF5A76' : C.text2} />
-                  </TouchableOpacity>
+                  {IS_HD ? (
+                    <Icon name="heart" size={20} active={favd} color={favd ? '#FF5A76' : C.text2} /> /* lx167d:TV 指示器 */
+                  ) : (
+                    <TouchableOpacity hitSlop={8} onPress={() => toggleArtistFav(a).then(on => toast(on ? `已收藏 ${a.name}` : '已取消收藏')).catch(() => toast('服务器写入失败'))}>
+                      <Icon name="heart" size={20} active={favd} color={favd ? '#FF5A76' : C.text2} />
+                    </TouchableOpacity>
+                  )}
                 </Row>
               );
             }} />
@@ -141,15 +154,22 @@ export function MyFavoritesScreen() {
               return (
                 <Row style={st.row} activeOpacity={0.85}
                   focusStyle={IS_HD ? { borderWidth: 2, borderColor: C.brand, borderRadius: 12 } : undefined}
+                  onLongPress={IS_HD ? () => hdActions.menu(`${a.name}`, [
+                    { label: isAlbumFav(a) ? '取消收藏' : '收藏', icon: 'heart', danger: isAlbumFav(a), onPress: () => toggleAlbumFav(a).then(on => toast(on ? '已收藏' : '已取消收藏')).catch(() => toast('服务器写入失败')) },
+                  ]) : undefined}
                   onPress={() => nav.navigate('AlbumDetail', { album: a })}>
                   {a.img ? <Image source={{ uri: a.img }} style={st.square} /> : <View style={[st.square, st.avaFallback]}><Icon name="music" size={22} color={C.text3} /></View>}
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={st.name} numberOfLines={1}>{a.name}</Text>
                     <Text style={st.meta} numberOfLines={1}>{a.singer || ''}</Text>
                   </View>
-                  <TouchableOpacity hitSlop={8} onPress={() => toggleAlbumFav(a).then(on => toast(on ? '已收藏' : '已取消收藏')).catch(() => toast('服务器写入失败'))}>
-                    <Icon name="heart" size={20} active={favd} color={favd ? '#FF5A76' : C.text2} />
-                  </TouchableOpacity>
+                  {IS_HD ? (
+                    <Icon name="heart" size={20} active={favd} color={favd ? '#FF5A76' : C.text2} /> /* lx167d:TV 指示器 */
+                  ) : (
+                    <TouchableOpacity hitSlop={8} onPress={() => toggleAlbumFav(a).then(on => toast(on ? '已收藏' : '已取消收藏')).catch(() => toast('服务器写入失败'))}>
+                      <Icon name="heart" size={20} active={favd} color={favd ? '#FF5A76' : C.text2} />
+                    </TouchableOpacity>
+                  )}
                 </Row>
               );
             }} />
