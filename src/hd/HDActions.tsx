@@ -87,7 +87,7 @@ export function HDActionHost() {
 
 const st = StyleSheet.create({
   scrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, elevation: 999 }, // lx150:捕捉器 focusable——光标脱离面板即关
-  panel: { position: 'absolute', left: (Dimensions.get('window').width - 380) / 2, top: 180, width: 380, maxHeight: 560, borderRadius: 18, backgroundColor: C.elev, borderWidth: 1, borderColor: C.border, padding: 14, gap: 8, elevation: 24 }, // lx130(老板):屏幕中间
+  panel: { position: 'absolute', left: (Dimensions.get('window').width - 380) / 2, top: 180, width: 380, maxHeight: 560, borderRadius: 18, backgroundColor: C.elev, borderWidth: 1, borderColor: C.border, padding: 14, gap: 8, elevation: 12 }, // lx130(老板):屏幕中间
   head: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 2 },
   title: { color: C.text, fontSize: 14, fontWeight: '700', flex: 1 },
   x: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: C.inset },
