@@ -301,8 +301,8 @@ export function HDMain() {
             <InnerStack.Screen name="Fx" component={withPhoneScale(FxScreen)} />
             <InnerStack.Screen name="MediaLibs" component={withPhoneScale(MediaLibsScreen)} />
             <InnerStack.Screen name="ArtistFavs" component={ArtistFavScreen} />
-            <InnerStack.Screen name="ArtistDetail" component={ArtistDetailScreen} />
-            <InnerStack.Screen name="AlbumDetail" component={AlbumDetailScreen} />
+            <InnerStack.Screen name="ArtistDetail" component={withPhoneScale(ArtistDetailScreen)} />
+            <InnerStack.Screen name="AlbumDetail" component={withPhoneScale(AlbumDetailScreen)} />
             <InnerStack.Screen name="ProviderEdit" component={withPhoneScale(ProviderEditScreen)} />
             <InnerStack.Screen name="ProviderBrowse" component={withPhoneScale(ProviderBrowseRoute)} />
             <InnerStack.Screen name="ProviderDetail" component={withPhoneScale(ProviderDetailScreen)} />
