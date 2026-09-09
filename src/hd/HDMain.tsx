@@ -37,6 +37,7 @@ import { FxScreen } from '../screens/FxScreen';
 import { MediaLibsScreen, ProviderBrowseRoute } from '../screens/MediaLibsScreen';
 import { ArtistFavScreen } from '../screens/ArtistFavScreen'; // lx161:收藏歌手
 import { ArtistDetailScreen } from '../screens/ArtistDetailScreen';
+import { AlbumFavScreen } from '../screens/AlbumFavScreen'; // v1.2.9 桌面:收藏专辑入口
 import { AlbumDetailScreen } from '../screens/AlbumDetailScreen';
 import { ProviderEditScreen } from '../screens/ProviderEditScreen';
 import { ProviderDetailScreen } from '../screens/ProviderDetailScreen';
@@ -258,6 +259,8 @@ export function HDMain() {
           {/* 我的乐库 */}
           <Group label="我的乐库" top={8} />
           <NavItem icon="server" label="媒体库" onPress={() => railNav('MediaLibs')} />
+          <NavItem icon="user" label="收藏歌手" onPress={() => railNav('ArtistFavs')} />
+          <NavItem icon="music" label="收藏专辑" onPress={() => railNav('AlbumFavs')} />
           <HDTouch style={st.navItem} focusStyle={st.navFocus} hoverBg={IS_WEB ? C.hover : false} onPress={openFavorites}>
             <Icon name="heart" size={16} color={C.text2} />
             <Text style={st.navLabel} numberOfLines={1}>我喜欢的{loveCount != null ? ` · ${loveCount}` : ''}</Text>
@@ -300,7 +303,8 @@ export function HDMain() {
             <InnerStack.Screen name="ImportPlaylist" component={withPhoneScale(ImportPlaylistScreen)} />
             <InnerStack.Screen name="Fx" component={withPhoneScale(FxScreen)} />
             <InnerStack.Screen name="MediaLibs" component={withPhoneScale(MediaLibsScreen)} />
-            <InnerStack.Screen name="ArtistFavs" component={ArtistFavScreen} />
+            <InnerStack.Screen name="ArtistFavs" component={withPhoneScale(ArtistFavScreen)} />
+            <InnerStack.Screen name="AlbumFavs" component={withPhoneScale(AlbumFavScreen)} />
             <InnerStack.Screen name="ArtistDetail" component={withPhoneScale(ArtistDetailScreen)} />
             <InnerStack.Screen name="AlbumDetail" component={withPhoneScale(AlbumDetailScreen)} />
             <InnerStack.Screen name="ProviderEdit" component={withPhoneScale(ProviderEditScreen)} />
