@@ -209,7 +209,7 @@ const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   header: { height: 72, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20 },
   hBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  hTitle: { flex: 1, textAlign: 'center', color: C.text, fontSize: 16, lineHeight: 19, fontWeight: '500' },
+  hTitle: { flex: 1, color: C.text, fontSize: 16, lineHeight: 19, fontWeight: '500' }, // lx166 居左
   songRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, gap: 12, marginBottom: 12 },
   songName: { color: C.text, fontSize: 15, lineHeight: 22, fontWeight: '700' },
   commentCount: { color: C.text2, fontSize: 11, lineHeight: 16 },

@@ -283,7 +283,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 12 },
-  title: { color: C.text, fontSize: 22, fontWeight: '700', flex: 1, textAlign: 'center' },
+  title: { color: C.text, fontSize: 22, fontWeight: '700', flex: 1 }, // lx166 居左
   content: { paddingHorizontal: 16, paddingBottom: 40, gap: 10 },
   desc: { color: C.text2, fontSize: 11, lineHeight: 16 },
 

@@ -225,7 +225,7 @@ export function ImportPlaylistScreen() {
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   header: { height: 40, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 10 },
-  title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700', textAlign: 'center' },
+  title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700' }, // lx166 居左
   stepsRow: { flexDirection: 'row', gap: 6 },
   stepPill: { flex: 1, height: 26, borderRadius: 13, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   stepPillOn: { backgroundColor: C.selTint },

@@ -92,7 +92,7 @@ export function DownloadsScreen() {
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   header: { height: 64, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 6 },
-  title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700', textAlign: 'center' },
+  title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700' }, // lx166 居左
   stat: { color: C.text2, fontSize: 11, lineHeight: 15, marginBottom: 12 },
   failCard: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.failTint, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 10 },
   failTitle: { flex: 1, color: '#FF9B9B', fontSize: 11, lineHeight: 15 },

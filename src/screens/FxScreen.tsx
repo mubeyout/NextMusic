@@ -608,7 +608,7 @@ export function FxScreen() {
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 12 },
-  title: { color: C.text, fontSize: 20, fontWeight: '800', flex: 1, textAlign: 'center' },
+  title: { color: C.text, fontSize: 20, fontWeight: '800', flex: 1 }, // lx166 居左
   syncBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, width: 26 + 46, justifyContent: 'flex-end' },
   syncDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.text3 },
   syncDotOn: { backgroundColor: C.brand },

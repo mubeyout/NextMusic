@@ -528,7 +528,7 @@ const hd = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, marginBottom: 10 },
   backBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   addBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, color: C.text, fontSize: 20, fontWeight: '800', textAlign: 'center' },
+  title: { flex: 1, color: C.text, fontSize: 20, fontWeight: '800' }, // lx166 居左
   intro: { fontSize: 13, lineHeight: 19 },
   row: { minHeight: 78, paddingVertical: 12 },
   rowIconWrap: { width: 46, height: 46, borderRadius: 13 },

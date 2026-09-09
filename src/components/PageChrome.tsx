@@ -44,7 +44,7 @@ export function EmptyState({ icon, title, sub }: { icon?: IconName; title: strin
 const h = StyleSheet.create({
   wrap: { minHeight: 64, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 6 },
   sideBtn: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, color: C.text, fontSize: 22, lineHeight: 30, fontWeight: '700', textAlign: 'center', marginHorizontal: 4 },
+  title: { flex: 1, color: C.text, fontSize: 22, lineHeight: 30, fontWeight: '700', marginHorizontal: 4 }, // lx166(老板):全局标题居左统一(原居中)
 });
 
 const e = StyleSheet.create({

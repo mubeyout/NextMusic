@@ -328,7 +328,7 @@ const st = StyleSheet.create({
   ghostBtnText: { color: C.text2, fontSize: 12, fontWeight: '600' },
   screen: { flex: 1, backgroundColor: C.bg },
   header: { height: 40, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 10 },
-  title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700', textAlign: 'center' },
+  title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700' }, // lx166 居左
   row: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12 },
   rowDivide: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.strokeFaint, marginTop: 8, paddingTop: 8 },
   rowLabel: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '500' },
@@ -365,7 +365,7 @@ const st = StyleSheet.create({
 const hd = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, marginBottom: 10 },
   backBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, color: C.text, fontSize: 20, fontWeight: '800', textAlign: 'center' },
+  title: { flex: 1, color: C.text, fontSize: 20, fontWeight: '800' }, // lx166 居左
   hint: { fontSize: 13, lineHeight: 19 },
   srcRow: { paddingVertical: 14, gap: 14 },
   srcIcon: { width: 46, height: 46, borderRadius: 13 },

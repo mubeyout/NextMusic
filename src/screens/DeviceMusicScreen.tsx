@@ -143,7 +143,7 @@ export function DeviceMusicScreen() {
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   header: { height: 64, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 6 },
-  title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700', textAlign: 'center' },
+  title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700' }, // lx166 居左
   scanCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.surface, borderRadius: 14, padding: 16 },
   scanTitle: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '600' },
   scanSub: { color: C.text2, fontSize: 11, lineHeight: 15, marginTop: 4 },
