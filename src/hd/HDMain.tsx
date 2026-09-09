@@ -38,6 +38,7 @@ import { MediaLibsScreen, ProviderBrowseRoute } from '../screens/MediaLibsScreen
 import { ArtistFavScreen } from '../screens/ArtistFavScreen'; // lx161:收藏歌手
 import { ArtistDetailScreen } from '../screens/ArtistDetailScreen';
 import { AlbumFavScreen } from '../screens/AlbumFavScreen'; // v1.2.9 桌面:收藏专辑入口
+import { MyFavoritesScreen } from '../screens/MyFavoritesScreen'; // lx165:我的收藏合并页
 import { AlbumDetailScreen } from '../screens/AlbumDetailScreen';
 import { ProviderEditScreen } from '../screens/ProviderEditScreen';
 import { ProviderDetailScreen } from '../screens/ProviderDetailScreen';
@@ -259,11 +260,10 @@ export function HDMain() {
           {/* 我的乐库 */}
           <Group label="我的乐库" top={8} />
           <NavItem icon="server" label="媒体库" onPress={() => railNav('MediaLibs')} />
-          <NavItem icon="user" label="收藏歌手" onPress={() => railNav('ArtistFavs')} />
-          <NavItem icon="music" label="收藏专辑" onPress={() => railNav('AlbumFavs')} />
-          <HDTouch style={st.navItem} focusStyle={st.navFocus} hoverBg={IS_WEB ? C.hover : false} onPress={openFavorites}>
+          {/* lx165(老板):我喜欢的+收藏歌手+收藏专辑 三入口并一——内页三 tab,行内 ♥ 即管理 */}
+          <HDTouch style={st.navItem} focusStyle={st.navFocus} hoverBg={IS_WEB ? C.hover : false} onPress={() => railNav('MyFavorites')}>
             <Icon name="heart" size={16} color={C.text2} />
-            <Text style={st.navLabel} numberOfLines={1}>我喜欢的{loveCount != null ? ` · ${loveCount}` : ''}</Text>
+            <Text style={st.navLabel} numberOfLines={1}>我的收藏{loveCount != null ? ` · ${loveCount}` : ''}</Text>
           </HDTouch>
           <NavItem icon="history" label="播放历史" onPress={openHistory} />
 
@@ -305,6 +305,7 @@ export function HDMain() {
             <InnerStack.Screen name="MediaLibs" component={withPhoneScale(MediaLibsScreen)} />
             <InnerStack.Screen name="ArtistFavs" component={withPhoneScale(ArtistFavScreen)} />
             <InnerStack.Screen name="AlbumFavs" component={withPhoneScale(AlbumFavScreen)} />
+            <InnerStack.Screen name="MyFavorites" component={withPhoneScale(MyFavoritesScreen)} />
             <InnerStack.Screen name="ArtistDetail" component={withPhoneScale(ArtistDetailScreen)} />
             <InnerStack.Screen name="AlbumDetail" component={withPhoneScale(AlbumDetailScreen)} />
             <InnerStack.Screen name="ProviderEdit" component={withPhoneScale(ProviderEditScreen)} />
