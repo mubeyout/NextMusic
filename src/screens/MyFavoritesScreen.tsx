@@ -11,6 +11,7 @@ import { SongRow } from '../components/SongRow';
 import { HDTouch } from '../hd/HDTouch';
 import { IS_HD } from '../services/appversion';
 import { sync, lxToApp, subscribeSync } from '../services/sync';
+import { lxapi } from '../services/lxapi';
 import { toast } from '../components/Dialog';
 import { usePlayer } from '../state/PlayerProvider';
 import { isFav, setFav, songKey } from '../state/favorites';
@@ -42,6 +43,21 @@ export function MyFavoritesScreen() {
     return subscribeSync(load);
   }, [connected, token]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // lx167c(老板):收藏歌曲缺封面→音源搜同名补图(懒补全,缺图的才搜,最多10首)
+  useEffect(() => {
+    if (!songs?.length) return;
+    const missing = songs.filter(s => !s.img).slice(0, 10);
+    if (!missing.length) return;
+    let dead = false;
+    missing.forEach(s => {
+      lxapi.search(`${s.name} ${s.singer}`, s.source || 'kw').then((r: { img?: string }[]) => {
+        if (dead || !r?.[0]?.img) return;
+        setSongs(prev => (prev || []).map(x => (x.source === s.source && x.songmid === s.songmid ? { ...x, img: (r[0] as { img?: string }).img } : x)));
+      }).catch(() => {});
+    });
+    return () => { dead = true; };
+  }, [songs != null && songs.every(s => s.img)]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (tab === 1 && artists == null) refreshArtistFavs().then(setArtists);
     if (tab === 2 && albums == null) refreshAlbumFavs().then(setAlbums);
@@ -61,7 +77,21 @@ export function MyFavoritesScreen() {
     <View style={st.screen}>
       <PageHeader title="我的收藏" onBack={() => nav.goBack()} />
       <View style={{ paddingHorizontal: 16 }}>
-        <PillTabs tabs={tabs} active={tab} onChange={setTab} />
+        {IS_HD ? (
+          /* lx167c(老板):TV 遥控可达——HDTouch 焦点 pills(PillTabs 是手机组件无焦点) */
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {tabs.map((t, i) => (
+              <HDTouch key={t} style={[st.tvPill, tab === i && st.tvPillOn]}
+                focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }}
+                hasTVPreferredFocus={i === 0}
+                onPress={() => setTab(i)}>
+                <Text style={[st.tvPillText, tab === i && { color: C.onBrand, fontWeight: '700' }]}>{t}</Text>
+              </HDTouch>
+            ))}
+          </View>
+        ) : (
+          <PillTabs tabs={tabs} active={tab} onChange={setTab} />
+        )}
       </View>
       {tab === 0 ? (
         songs == null ? <View style={st.center}><ActivityIndicator color={C.brand} /></View>
@@ -134,6 +164,9 @@ const st = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { color: C.text2, fontSize: 13, lineHeight: 20, textAlign: 'center', paddingVertical: 40 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 62, paddingHorizontal: 12, borderRadius: 12 },
+  tvPill: { borderRadius: 14, paddingHorizontal: 16, height: 32, backgroundColor: C.surface2, justifyContent: 'center' },
+  tvPillOn: { backgroundColor: C.brand },
+  tvPillText: { color: C.text2, fontSize: 12 },
   round: { width: 46, height: 46, borderRadius: 23 },
   square: { width: 46, height: 46, borderRadius: 8 },
   avaFallback: { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
