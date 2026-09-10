@@ -88,7 +88,8 @@ function TabBarManual({ tab, setTab }: { tab: number; setTab: (i: number) => voi
 
 export function RootNavigator() {
   const { mode } = useApp();
-  const initial = !mode ? 'Boot' : 'Main';
+  // 服务端 web 播放器不需要启动向导:直进主界面(本地模式);原生端保留三卡引导
+  const initial = !mode ? (Platform.OS === 'web' ? 'Main' : 'Boot') : 'Main';
 
   // Android hardware back fallback: pop the stack instead of letting the OS
   // send the whole task to background (observed on LG V40 / RN 0.87 New Arch).
