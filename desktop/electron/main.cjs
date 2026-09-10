@@ -38,8 +38,18 @@ function startMediaProxy() {
   server.listen(PROXY_PORT, '127.0.0.1');
 }
 
-// v1.2.12(Leo P0-5):菜单栏清空——autoHideMenuBar 只藏不灭,Alt 仍闪英文默认菜单
-try { Menu.setApplicationMenu(null); } catch { /* mac 保留系统菜单场景 */ }
+// v1.2.12b(Leo 验收打回2):菜单栏——win/linux null 根治 Alt 闪;mac 保留系统菜单但给最小中文版
+// (原无条件 null 会砍 mac 顶部 Electron 名/Cmd+Q 集成——platform-spec:三平台统一 null,macOS 除外)
+if (process.platform === 'darwin') {
+  Menu.setApplicationMenu(Menu.buildFromTemplate([
+    { role: 'appMenu', label: 'NextMusic' },
+    { role: 'editMenu', label: '编辑' },
+    { role: 'windowMenu', label: '窗口' },
+    { role: 'help', label: '帮助' },
+  ]));
+} else {
+  Menu.setApplicationMenu(null);
+}
 // v1.2.12(Leo P0-4):窗口状态记忆——bounds 持久化(手动,零依赖)
 const winStateFile = () => require('path').join(app.getPath('userData'), 'window-state.json');
 function loadWinState() {
@@ -87,10 +97,11 @@ function createWindow() {
   win.webContents.on('render-process-gone', (_e, d) => console.log('[gone]', d.reason));
   // 外链走系统浏览器
   win.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
+  // v1.2.12b(Leo 验收打回1):窗口状态存取移出 dev 分支——正式包同样生效(原先只在 VITE_DEV 内=release 没修)
+  win.on('close', () => saveWinState(win));
+  if (saved?.maximized) win.maximize(); // 恢复最大化
   if (!app.isPackaged && process.env.VITE_DEV) {
-    win.on('close', () => saveWinState(win)); // v1.2.12:P0-4
-  if (saved?.maximized) win.maximize(); // v1.2.12:P0-4:恢复最大化
-  win.loadURL('http://127.0.0.1:5199');
+    win.loadURL('http://127.0.0.1:5199');
   } else {
     win.loadURL('nmapp://local/index.html');
   }
