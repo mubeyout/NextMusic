@@ -87,6 +87,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   // sync http store
   httpStore.base = base || '';
   httpStore.token = token || '';
+  httpStore.username = username || ''; // 持久化恢复时同步 http store(私有源归属)
 
   useEffect(() => {
     kv.set('app', JSON.stringify({ mode, base, token, username }));
