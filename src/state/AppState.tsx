@@ -120,14 +120,14 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       setServerConfig(cfg);
       setModeState('server');
     },
-    setAuth: (t, u) => { setToken(t); setUsername(u); httpStore.token = t || ''; },
+    setAuth: (t, u) => { setToken(t); setUsername(u); httpStore.token = t || ''; httpStore.username = u || ''; },
     disconnectServer: () => {
       setBase(null);
       setToken(null);
       setUsername(null);
       setServerConfig(null);
       httpStore.base = '';
-      httpStore.token = '';
+      httpStore.token = ''; httpStore.username = '';
       setModeState('local');
     },
   };

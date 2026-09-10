@@ -49,11 +49,27 @@ export function SourcesScreen() {
   const loadServerSources = () => { api.csList().then(setServerSources).catch(() => setServerSources([])); };
   const csAddByUrl = () => {
     (IS_HD ? hdActions : dialog).prompt('添加服务器音源', {
-      placeholder: '音源脚本 URL(上传到服务器,所有端共享)',
+      placeholder: '音源脚本 URL(上传到服务器)',
       onSubmit: async v => {
         const u = v.trim(); if (!u) return;
         try { await api.csAddUrl(u); toast('已上传到服务器'); loadServerSources(); }
-        catch (e) { dialog.alert('添加失败', (e as Error).message); }
+        catch (e) {
+          const msg = (e as Error).message || '';
+          if (/403|管理员|受限/.test(msg)) promptAdminAuth('添加公共音源需要管理员密码');
+          else dialog.alert('添加失败', msg);
+        }
+      },
+    });
+  };
+  // 原版对齐: 公共源管理需管理员密码(会话级,存 api.csAdminAuth,不落盘)
+  const promptAdminAuth = (reason: string) => {
+    (IS_HD ? hdActions : dialog).prompt(reason, {
+      placeholder: '管理员密码(后台管理密码)',
+      onSubmit: async v => {
+        const pw = v.trim(); if (!pw) return;
+        api.csAdminAuth = pw;
+        toast('已记录管理员密码,请重试操作');
+        loadServerSources();
       },
     });
   };
@@ -183,7 +199,7 @@ export function SourcesScreen() {
               <Text style={st.ghostBtnText}>删除</Text>
             </T>
           </View>
-        )) : <Text style={[st.hint, IS_HD && hd.hint]}>暂无服务器音源(未连接服务器或未上传)</Text>}
+        )) : <Text style={[st.hint, IS_HD && hd.hint]}>暂无服务器音源(未上传,或已开启公开限制需登录/管理员)</Text>}
         <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
           <T style={[st.ghostBtn, IS_HD && hd.ghostBtn]} onPress={csAddByUrl}>
             <Text style={st.ghostBtnText}>URL 添加到服务器</Text>

@@ -87,6 +87,7 @@ function enqueue<T>(job: () => Promise<T>): Promise<T> {
 export const store = {
   base: '',
   token: '',
+  username: '',
 };
 
 // lx163g:登录凭据持久化(可选)——服务器重建/换 token 后 401 自动重登,歌单不再集体蒸发
@@ -157,24 +158,35 @@ export const api = {
 
 
 
-  // ===== 服务器端自定义音源(原版 /api/custom-source/*, 全端共享) =====
+  // ===== 服务器端自定义音源(原版三态鉴权对齐) =====
+  // 原版语义: 公共源(owner=open)管理需管理员密码;登录用户管理自己名下私有源;开了 enablePublicRestriction 全部要求登录
+  // auth: 已登录 → req() 自动带 x-user-token(私有源); 管理员 → 额外带 x-frontend-auth(公共源)
+  csAdminAuth: '' as string | null, // 管理员密码(会话内存,不持久化)
+  csHeaders(): Record<string, string> {
+    const h: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (api.csAdminAuth) h['x-frontend-auth'] = api.csAdminAuth;
+    return h;
+  },
   async csList(): Promise<{ id: string; name: string; version: string; enabled: boolean; channels: string[] }[]> {
-    try { return (await req('/api/custom-source/list')) as never; } catch { return []; }
+    try {
+      const q = store.token && store.username ? `?username=${encodeURIComponent(store.username)}` : '';
+      return (await req('/api/custom-source/list' + q, { headers: api.csHeaders() })) as never;
+    } catch { return []; }
   },
   async csUpload(filename: string, script: string): Promise<void> {
-    await req('/api/custom-source/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename, script }) });
+    await req('/api/custom-source/upload', { method: 'POST', headers: api.csHeaders(), body: JSON.stringify({ filename, content: script, username: store.username || undefined }) });
   },
   async csAddUrl(url: string): Promise<void> {
-    await req('/api/custom-source/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) });
+    await req('/api/custom-source/upload', { method: 'POST', headers: api.csHeaders(), body: JSON.stringify({ url, username: store.username || undefined }) });
   },
   async csToggle(id: string, enabled: boolean): Promise<void> {
-    await req('/api/custom-source/toggle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, enabled }) });
+    await req('/api/custom-source/toggle', { method: 'POST', headers: api.csHeaders(), body: JSON.stringify({ id, enabled, username: store.username || undefined }) });
   },
   async csDelete(id: string): Promise<void> {
-    await req('/api/custom-source/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    await req('/api/custom-source/delete', { method: 'POST', headers: api.csHeaders(), body: JSON.stringify({ id, username: store.username || undefined }) });
   },
   async csReorder(ids: string[]): Promise<void> {
-    await req('/api/custom-source/reorder', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }) });
+    await req('/api/custom-source/reorder', { method: 'POST', headers: api.csHeaders(), body: JSON.stringify({ ids, username: store.username || undefined }) });
   },
   // ===== 播放器设置云同步(v2 对齐: /api/user/settings) =====
   async settingsPush(data: unknown): Promise<void> {
