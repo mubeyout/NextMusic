@@ -98,8 +98,10 @@ const railNav = (s: string, p?: object) => {
 const withPhoneScale = (Cmp: React.ComponentType<Record<string, unknown>>) => {
   if (!IS_WEB) return Cmp;
   const W = (props: Record<string, unknown>) => (
-    <View style={{ flex: 1, transform: [{ scale: 0.75 }], transformOrigin: 'top left', width: '133.3334%', height: '133.3334%' }}>
-      <Cmp {...props} />
+    <View style={{ flex: 1, overflow: 'hidden' }}>
+      <View style={{ flex: 1, transform: [{ scale: 0.75 }], transformOrigin: 'top left', width: '133.3334%', height: '133.3334%' }}>
+        <Cmp {...props} />
+      </View>
     </View>
   );
   W.displayName = 'PhoneScale';
@@ -478,9 +480,9 @@ const st = StyleSheet.create({
   brandName: { color: C.text, fontSize: 15, fontWeight: '800' },
   // v1.2.5 桌面品牌行(老板:brand 在导航占太高)——win/linux 顶入 36px 轨道,mac 在轨道下方紧凑行;
   // 自带底色:负 margin 顶出 Main 卡的区域透出的是 body 底色,浅色主题下会拼出深条
-  brandRowRail: { flexDirection: 'row', alignItems: 'center', gap: 9, height: 36, marginTop: -36, paddingHorizontal: 18, marginBottom: 2, backgroundColor: C.bg },
-  brandRowMac: { flexDirection: 'row', alignItems: 'center', gap: 9, height: 40, paddingHorizontal: 18, backgroundColor: C.bg },
-  logoMarkRail: { width: 21, height: 23 },
+  brandRowRail: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 36, marginTop: -36, marginHorizontal: 8, paddingHorizontal: 10, marginBottom: 2, backgroundColor: C.bg },
+  brandRowMac: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 40, marginHorizontal: 8, paddingHorizontal: 10, backgroundColor: C.bg },
+  logoMarkRail: { width: 20, height: 22 },
   logoMarkMac: { width: 26, height: 28 },
   brandNameWeb: { color: C.text, fontSize: 13.5, fontWeight: '800', letterSpacing: 0.2 },
   settingsDock: { paddingHorizontal: 0, paddingVertical: 6 },
