@@ -298,15 +298,21 @@ function PlCardWeb({ pl, width, compact, onOpen, onPlay }: { pl: { name: string;
   const [hov, setHov] = useState(false);
   const t = useRef<ReturnType<typeof setTimeout> | null>(null);
   const elRef = useRef<View | null>(null); // RNW View ref=DOM(坑131)——挂 .nm-card 过渡类
+  const maskRef = useRef<View | null>(null); // v1.2.11 动效规范:遮罩/播放钮 150ms ease(原为瞬变)
+  const playRef = useRef<View | null>(null);
   useEffect(() => {
     const el = elRef.current as unknown as HTMLElement | null;
     if (el && el.classList) el.classList.add('nm-card');
+    for (const r of [maskRef, playRef]) {
+      const c = r.current as unknown as HTMLElement | null;
+      if (c && c.style) c.style.transition = 'opacity .15s ease, transform .15s ease';
+    }
   }, []);
   const shadow = webCardShadow(pl.name || 'pl', hov);
   return (
     <HDTouch
       ref={elRef as never}
-      style={[st.plCard, compact && st.plCardSm, width != null && { width }, shadow, hov && { transform: [{ translateY: -4 }, { scale: 1.02 }] }]}
+      style={[st.plCard, compact && st.plCardSm, width != null && { width }, shadow, hov && { transform: [{ translateY: -3 }, { scale: 1.02 }] }]}
       zoom={1.06} onPress={onOpen}
       {...({ onHoverIn: () => { t.current && clearTimeout(t.current); t.current = setTimeout(() => setHov(true), 80); }, onHoverOut: () => { t.current && clearTimeout(t.current); setHov(false); } } as Record<string, unknown>)}>
       <View style={{ position: 'relative' }}>
@@ -315,8 +321,8 @@ function PlCardWeb({ pl, width, compact, onOpen, onPlay }: { pl: { name: string;
           : <View style={[st.plArt, { backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
         {pl.count != null ? <View style={[st.plCount, IS_WEB && st.plCountWeb]}><Text style={st.plCountText}>▶ {pl.count}</Text></View> : null}
         {/* A1b 遮罩+播放钮(compact 模式 32px,标准 44px) */}
-        <View pointerEvents={hov ? 'auto' : 'none'} style={[st.plMask, { opacity: hov ? 1 : 0 }]} />
-        <HDTouch style={[st.plPlay, compact && { width: 32, height: 32, borderRadius: 16 }, { opacity: hov ? 1 : 0, transform: [{ translateY: hov ? 0 : 6 }] }]} onPress={onPlay}>
+        <View ref={maskRef} pointerEvents={hov ? 'auto' : 'none'} style={[st.plMask, { opacity: hov ? 1 : 0 }]} />
+        <HDTouch ref={playRef} style={[st.plPlay, compact && { width: 32, height: 32, borderRadius: 16 }, { opacity: hov ? 1 : 0, transform: [{ translateY: hov ? 0 : 6 }] }]} onPress={onPlay}>
           <Icon name="play" size={compact ? 13 : 17} color={C.onBrand} />
         </HDTouch>
       </View>

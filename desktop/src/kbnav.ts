@@ -11,7 +11,7 @@ export function mountKbNav() {
   // 指示条
   const bar = document.createElement('div');
   bar.id = 'nm-kbbar';
-  bar.style.cssText = 'position:fixed;width:3px;border-radius:2px;background:#1ED760;z-index:2147483602;pointer-events:none;opacity:0;transition:top .08s ease-out,height .08s ease-out;left:0;';
+  bar.style.cssText = 'position:fixed;width:3px;border-radius:2px;background:#1ED760;z-index:2147483602;pointer-events:none;opacity:0;left:0;'; // v1.2.11 动效规范:键盘焦点零动画(高频操作禁过渡)——移除原 top/height .08s 滑动
   document.body.appendChild(bar);
 
   let idx = -1;              // 键盘焦点索引(-1=未激活)
