@@ -201,3 +201,20 @@ mountKbNav();
   }
   document.body.appendChild(rail);
 })();
+
+
+// web 全局错误红条(部署版排障:未捕获错误显示为顶部红条,便于定位线上崩溃)
+if (typeof window !== 'undefined') {
+  const showErr = (msg: string) => {
+    let bar = document.getElementById('nm-web-errbar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'nm-web-errbar';
+      bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#F2545B;color:#fff;font:12px/1.6 monospace;padding:8px 14px;white-space:pre-wrap;max-height:30vh;overflow:auto';
+      (document.body || document.documentElement).appendChild(bar);
+    }
+    bar.textContent = msg;
+  };
+  window.addEventListener('error', (e: ErrorEvent) => { showErr('Error: ' + (e.message || 'unknown') + (e.filename ? `\n  at ${e.filename}:${e.lineno}` : '')); });
+  window.addEventListener('unhandledrejection', (e: PromiseRejectionEvent) => { showErr('Promise: ' + String((e.reason as Error)?.message || e.reason)); });
+}

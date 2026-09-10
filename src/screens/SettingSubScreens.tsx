@@ -203,18 +203,26 @@ export function AboutScreen() {
   return (
     <PageShell title="关于与帮助" onBack={() => nav.goBack()}>
       {Platform.OS === 'web' ? (
-        <Section title="服务端">
+        <Section title="版本">
+          <StaticRow label="Web 播放器" value={`NextMusic HD ${APP_VERSION}`} />
           <StaticRow label="服务器" value={srvInfo?.connected ? (srvInfo.name || '已连接') : '本地模式(未连接)'} />
           {srvInfo?.version ? <StaticRow label="服务端版本" value={srvInfo.version} /> : null}
           <ActionRow label="后台管理" value="/admin/" onPress={() => { if (typeof window !== 'undefined') window.open('/admin/', '_blank'); }} />
-          <StaticRow label="原作" value="lxserver(XCQ0607) / lx-music-sync-server" />
         </Section>
       ) : null}
-      <Section title="版本">
-        <StaticRow label="当前版本" value={APP_VERSION} />
-        <ActionRow label={checking ? '正在检查…' : '检查更新'} onPress={checkUpdate} />
-        <ActionRow label="更新日志" onPress={() => nav.navigate('Changelog')} />
-      </Section>
+      {Platform.OS === 'web' ? (
+        <Section title="开源与致谢">
+          <StaticRow label="核心" value="lxserver 2.0.1 (XCQ0607)" />
+          <StaticRow label="根源" value="lyswhut/lx-music-sync-server" />
+        </Section>
+      ) : null}
+      {Platform.OS === 'web' ? null : (
+        <Section title="版本">
+          <StaticRow label="当前版本" value={APP_VERSION} />
+          <ActionRow label={checking ? '正在检查…' : '检查更新'} onPress={checkUpdate} />
+          <ActionRow label="更新日志" onPress={() => nav.navigate('Changelog')} />
+        </Section>
+      )}
       <Section title="帮助">
         <NavRow label="使用手册" value="功能速览" onPress={() => nav.navigate('Manual')} />
         <NavRow label="服务器部署指南" value="lxserver" onPress={() => nav.navigate('DeployGuide')} />
