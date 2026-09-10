@@ -154,6 +154,25 @@ export const api = {
       return (await req('/api/music/lyric' + q)) as { lyric?: string; tlyric?: string; rlyric?: string; lxlyric?: string; lrc?: string };
     } catch { return {}; }
   },
+
+  // ===== 服务器缓存管理(v2 web 功能对齐) =====
+  async cacheStats(): Promise<{ totalSize: number; fileCount: number }> {
+    try { return ((await req('/api/music/cache/stats')) as { data?: { totalSize: number; fileCount: number } }).data || { totalSize: 0, fileCount: 0 }; }
+    catch { return { totalSize: 0, fileCount: 0 }; }
+  },
+  async cacheList(): Promise<{ name: string; size: number }[]> {
+    try { return ((await req('/api/music/cache/list')) as { data?: { name: string; size: number }[] }).data || []; }
+    catch { return []; }
+  },
+  async cacheClear(): Promise<void> {
+    await req('/api/music/cache/clear', { method: 'POST' });
+  },
+  async cacheDownload(songInfo: SongItem, url: string, quality = '320k'): Promise<void> {
+    await req('/api/music/cache/download', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ songInfo, url, quality }),
+    });
+  },
   async songListTags(): Promise<{ tags: { name: string; list: { id: string; name: string }[] }[] }> {
     try {
       const r = await req('/api/music/songList/tags') as unknown as { tags?: { name: string; list: { id: string; name: string }[] } };

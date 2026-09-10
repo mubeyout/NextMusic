@@ -24,6 +24,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { HDHome } from './HDHome';
 import { HDSearch } from './HDSearch';
 import { HDBoards } from './HDBoards';
+import { HDDiscover } from './HDDiscover';
 import { HDPodcast } from './HDPodcast';
 // lx84:内容区嵌套栈内页(侧栏恒固定,内页只在右侧切换;TV 设置族走根栈,v1.2.5 起 web 也内页化)
 import { HDPlayer } from './HDPlayer';
@@ -257,6 +258,9 @@ export function HDMain() {
               onPress={() => { setTab(i); hdInnerPop(); }} />
           ))}
 
+          {/* 歌单广场(v2 对齐):发现族入口 */}
+          <NavItem icon="explore" label="歌单广场" onPress={() => railNav('Discover')} />
+
           {/* 我的乐库 */}
           <Group label="我的乐库" top={8} />
           <NavItem icon="server" label="媒体库" onPress={() => railNav('MediaLibs')} />
@@ -313,6 +317,7 @@ export function HDMain() {
             <InnerStack.Screen name="ProviderDetail" component={withPhoneScale(ProviderDetailScreen)} />
             <InnerStack.Screen name="Downloads" component={withPhoneScale(DownloadsScreen)} />
             <InnerStack.Screen name="BoardsSquare" component={withPhoneScale(BoardsSquareScreen)} />
+            <InnerStack.Screen name="Discover" component={HDDiscover} />
             <InnerStack.Screen name="DeviceMusic" component={withPhoneScale(DeviceMusicScreen)} />
             <InnerStack.Screen name="Sources" component={withPhoneScale(SourcesScreen)} />
             <InnerStack.Screen name="Account" component={withPhoneScale(AccountScreen)} />
