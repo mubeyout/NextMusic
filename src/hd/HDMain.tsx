@@ -111,6 +111,7 @@ const withPhoneScale = (Cmp: React.ComponentType<Record<string, unknown>>) => {
 // v1.2.5 桌面平台探测(win/linux 品牌行顶入轨道,mac 轨道留给红绿灯)
 const NM_PLAT = IS_WEB ? String((globalThis as unknown as { nmDesktop?: { platform?: string } }).nmDesktop?.platform || '') : '';
 const NM_MAC = NM_PLAT === 'darwin';
+const HAS_DESKTOP_BRIDGE = !!NM_PLAT; // 空串=纯浏览器(服务端部署),Electron web=平台字符串
 
 export function HDMain() {
   const insets = useSafeAreaInsets();
@@ -232,7 +233,7 @@ export function HDMain() {
           /* v1.2.5 桌面(老板:brand 在导航占太高):品牌行独立于滚动区——
            * win/linux 负 margin 顶入 36px 顶部轨道(轨道透明,整行仍是拖拽面,品牌不可点无副作用);
            * mac 轨道留给红绿灯,品牌行紧在轨道下方 */
-          <View style={NM_MAC ? st.brandRowMac : st.brandRowRail}>
+          <View style={(NM_MAC || !HAS_DESKTOP_BRIDGE) ? st.brandRowMac : st.brandRowRail}>
             <Image source={require('../assets/brand/mark.png')} style={NM_MAC ? st.logoMarkMac : st.logoMarkRail} />
             <View style={{ flex: 1 }}>
               <Text style={st.brandNameWeb}>Next<Text style={{ color: C.brand }}>Music</Text></Text>
