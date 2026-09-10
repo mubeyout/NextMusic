@@ -1,7 +1,7 @@
 // HD 登录页(横版):表单结构与 ProviderEdit(媒体库添加)同构 —— desc + Tab 容器 + 输入卡(label/值/hint) + 测试连接/主按钮双钮
 // 逻辑与 phone AuthLoginScreen 一致:第一步连接服务器(地址),第二步登录该服务器账号
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, ActivityIndicator } from 'react-native';
+import { Platform, View, Text, StyleSheet, ScrollView, TextInput, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { navRef } from '../navRef';
@@ -20,7 +20,11 @@ export function HDAuthLoginScreen() {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void; reset: (o: unknown) => void };
   const { base, connectServer, setAuth, setMode } = useApp();
-  const [addr, setAddr] = useState(base || recentKv.getString('last') || '');
+  // web 服务端部署形态:默认地址=本站(原版 v2 同款 location.origin),免手填;原生端保持历史/手填
+  const defaultAddr = Platform.OS === 'web'
+    ? (base || recentKv.getString('last') || (typeof location !== 'undefined' ? location.origin : ''))
+    : (base || recentKv.getString('last') || '');
+  const [addr, setAddr] = useState(defaultAddr);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState<'' | 'test' | 'login' | 'register'>('');
@@ -42,8 +46,9 @@ export function HDAuthLoginScreen() {
 
   const connectedHere = !!base && normalizeBase(addr || base) === normalizeBase(base);
 
+  const effAddr = () => addr.trim() || (Platform.OS === 'web' && typeof location !== 'undefined' ? location.origin : '');
   const ensureConn = async () => {
-    if (!connectedHere) await connectServer(addr.trim());
+    if (!connectedHere) await connectServer(effAddr());
   };
 
   // 测试连接(对齐 ProviderEdit testConn:只验证地址可达,不登录)
@@ -51,7 +56,7 @@ export function HDAuthLoginScreen() {
     if (!addr.trim()) { setErr('请先输入服务器地址'); return; }
     setBusy('test'); setErr(null);
     try {
-      await connectServer(addr.trim());
+      await connectServer(effAddr());
       setTested(true);
       toast('连接测试通过');
     } catch (e) {
@@ -80,7 +85,7 @@ export function HDAuthLoginScreen() {
   const goLocal = () => { setMode('local'); navRef.current?.reset({ index: 0, routes: [{ name: 'Main' }] }); };
 
   const register = async () => {
-    if (!addr.trim()) { setErr('请先输入服务器地址'); return; }
+    if (!addr.trim() && Platform.OS !== 'web') { setErr('请先输入服务器地址'); return; }
     if (!regUser.trim() || !regPwd || !regCode) { setErr('请完整填写管理员密码与账号信息'); return; }
     if (regPwd !== regPwd2) { setErr('两次输入的密码不一致'); return; }
     setBusy('register'); setErr(null);
