@@ -57,6 +57,11 @@ export function HDSettingsScreen() {
 
   const QUALITY_OPTS: string[] = ['128k', '320k', 'flac'];
 
+  // v2 功能对齐:服务器缓存管理面板
+  const [cacheOpen, setCacheOpen] = useState(false);
+  const [cacheStats, setCacheStats] = useState<{ totalSize: number; fileCount: number } | null>(null);
+  const loadCacheStats = () => { api.cacheStats().then(setCacheStats).catch(() => setCacheStats({ totalSize: 0, fileCount: 0 })); };
+
   const rows: Record<Tab, RowDef[]> = {
     '外观与界面': [
       { kind: 'toggle', icon: 'palette', title: '纯黑背景', desc: 'OLED 友好的纯黑底色(仅深色模式)', value: s.pureBlack, onToggle: () => { settings.set('pureBlack', !s.pureBlack); if (IS_WEB) { hdWebReload(); } else hdRestart(playing); } },
@@ -82,7 +87,10 @@ export function HDSettingsScreen() {
       { kind: 'select', icon: 'queue', title: '同时下载数', desc: '下载任务并发数', value: String(s.maxConcurrent), options: ['1', '2', '3', '5'], onPick: v => settings.set('maxConcurrent', Number(v)) },
       { kind: 'toggle', icon: 'heart', title: '备份歌单', desc: '云备份时包含本地歌单', value: s.backupPlaylists, onToggle: () => settings.set('backupPlaylists', !s.backupPlaylists) },
       { kind: 'nav', title: '云备份(WebDAV)', desc: '配置 WebDAV,备份/恢复全部数据', icon: 'cloud', to: 'BackupSettings' },
+      { kind: 'toggle', icon: 'cloud', title: '播放设置自动备份', desc: '音质/主题/播放开关等随账号云端同步,多端一致', value: s.syncSettingsCloud ?? true, onToggle: () => settings.set('syncSettingsCloud' as never, !(s.syncSettingsCloud ?? true) as never) },
+      { kind: 'nav', title: '立即同步播放设置', desc: '上传当前播放设置到服务器账号', icon: 'refresh', action: () => { api.settingsPush({ playQuality: s.playQuality, downloadQuality: s.downloadQuality, light: s.light, pureBlack: s.pureBlack, accent: s.accent }).then(() => toast('已上传到服务器账号')).catch(() => toast('同步失败(未连接服务器)')); } },
       { kind: 'nav', title: '下载管理', desc: '查看下载队列与失败重试', icon: 'download', to: 'Downloads' },
+      { kind: 'nav', title: '服务器缓存管理', desc: '缓存统计 · 缓存列表 · 一键清空', icon: 'server', action: () => { setCacheOpen(true); loadCacheStats(); } },
     ],
     '关于': [
       { kind: 'info', icon: 'info', title: '版本', desc: IS_HD ? 'HD 车机/电视版' : undefined, value: APP_VERSION },
@@ -91,7 +99,33 @@ export function HDSettingsScreen() {
     ],
   };
 
+  const fmtBytes = (n: number) => n > 1024 * 1024 * 1024 ? (n / 1024 ** 3).toFixed(2) + ' GB' : n > 1024 * 1024 ? (n / 1024 ** 2).toFixed(1) + ' MB' : (n / 1024).toFixed(1) + ' KB';
+
   return (
+    <>
+    {cacheOpen ? (
+      <View style={st.cacheMask}>
+        <View style={st.cachePanel}>
+          <Text style={st.cacheTitle}>服务器缓存管理</Text>
+          <Text style={st.cacheInfo}>
+            {cacheStats ? `${cacheStats.fileCount} 个文件 · ${fmtBytes(cacheStats.totalSize)} · 歌曲播放时可缓存到服务器存储` : '统计加载中…'}
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
+            <HDTouch style={st.cacheBtn} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }} onPress={() => { loadCacheStats(); toast('已刷新'); }}>
+              <Text style={st.cacheBtnText}>刷新统计</Text>
+            </HDTouch>
+            <HDTouch style={[st.cacheBtn, { borderColor: '#F2545B66' }]} focusStyle={{ borderWidth: 2, borderColor: '#F2545B', borderRadius: 10 }} onPress={() => {
+              api.cacheClear().then(() => { toast('服务器缓存已清空'); loadCacheStats(); }).catch(() => toast('清空失败(未连接服务器)'));
+            }}>
+              <Text style={[st.cacheBtnText, { color: '#F2545B' }]}>清空缓存</Text>
+            </HDTouch>
+            <HDTouch style={[st.cacheBtn, { backgroundColor: C.brand, borderColor: C.brand }]} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }} onPress={() => setCacheOpen(false)}>
+              <Text style={[st.cacheBtnText, { color: C.onBrand }]}>关闭</Text>
+            </HDTouch>
+          </View>
+        </View>
+      </View>
+    ) : null}
     <ScrollView
       style={st.screen}
       contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 30, paddingBottom: 30, gap: 14, ...(IS_WEB ? { maxWidth: 880, width: '100%', alignSelf: 'center' } : {}) }}
@@ -120,6 +154,7 @@ export function HDSettingsScreen() {
         {rows[tab].map((r, i) => <SettingsRow key={`${r.title}_${i}`} row={r} />)}
       </View>
     </ScrollView>
+    </>
   );
 }
 
@@ -176,6 +211,12 @@ function SettingsRow({ row }: { row: RowDef }) {
 }
 
 const st = StyleSheet.create({
+  cacheMask: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,.55)', zIndex: 100, alignItems: 'center', justifyContent: 'center' },
+  cachePanel: { width: 420, maxWidth: '90%', backgroundColor: C.elev, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, padding: 22, gap: 4 },
+  cacheTitle: { color: C.text, fontSize: 17, fontWeight: '800' },
+  cacheInfo: { color: C.text2, fontSize: 12, lineHeight: 18 },
+  cacheBtn: { flex: 1, height: 38, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
+  cacheBtnText: { color: C.text, fontSize: 12.5, fontWeight: '600' },
   screen: { flex: 1, backgroundColor: C.bg },
   head: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   backBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },

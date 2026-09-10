@@ -176,6 +176,14 @@ function applyFx(cfg: FxCfg) {
 
 export const AudioPro = {
   configure(_opts: Record<string, unknown>): void { /* 桌面无需 content type / progress 间隔配置 */ },
+  setPlaybackSpeed(speed: number): void {
+    // web shim: HTML5 Audio playbackRate (0.25–2.0)
+    const r = Math.min(2.0, Math.max(0.25, speed));
+    audio.playbackRate = r;
+  },
+  getPlaybackSpeed(): number {
+    return audio.playbackRate || 1.0;
+  },
   play(track: Track, opts: PlayOpts = {}): void {
     curTrack = track; headers = opts.headers;
     ensureGraph(); actx?.resume?.().catch(() => {});

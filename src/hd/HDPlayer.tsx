@@ -7,6 +7,8 @@ import Svg, { Defs, Path, RadialGradient, Stop } from 'react-native-svg';
 import { SpectrumRing } from './SpectrumRing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
+import { settings } from '../services/settings';
+import { LyricCardModal } from '../components/LyricCardModal';
 import { C, T, fmtSec } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { usePlayer } from '../state/PlayerProvider';
@@ -90,12 +92,14 @@ function ParticleRing({ bins, rot }: { bins: Animated.Value[]; rot: Animated.Val
 export function HDPlayer() {
   const insets = useSafeAreaInsets();
   const nav = { goBack: () => hdNav()?.goBack(), navigate: (s: string) => hdNav()?.navigate(s) };
-  const { current, playing, position, duration, toggle, skipNext, skipPrev, seekTo, shuffle, repeat, setShuffle, cycleRepeat, queue } = usePlayer();
+  const { current, playing, position, duration, toggle, skipNext, skipPrev, seekTo, shuffle, repeat, setShuffle, cycleRepeat, queue, speed, setSpeed, sleepRemain, enableSleep } = usePlayer();
   const { connected, token } = useApp();
   const [lyrics, setLyrics] = useState<LyricLine[] | null>(null);
   const { faved } = useFav(current); // lx101:收藏统一 hook(faved 态;操作走选歌单面板,与 TV 同源)
   // lx103:收藏到歌单面板(点按收藏键即弹,对齐手机端)
   const [collectOpen, setCollectOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState<null | 'quality' | 'speed' | 'sleep'>(null); // v2 功能对齐:音质/倍速/睡眠
+  const [cardOpen, setCardOpen] = useState(false); // v2 功能对齐:歌词卡片分享
   const trackW = React.useRef(0);
   // v1.2.11(老板:整体重排):唱片区实测方形(onLayout),尺寸自适应窗口,上限 440
   const [vsize, setVsize] = useState(0);
@@ -333,6 +337,7 @@ export function HDPlayer() {
 
         {/* lx103:收藏到歌单面板(与 TV 同源) */}
         {collectOpen && current ? <HDCollect song={current} onClose={() => setCollectOpen(false)} /> : null}
+      {cardOpen && current ? <LyricCardModal visible onClose={() => setCardOpen(false)} song={current} lyrics={lyrics} positionSec={position} /> : null}
       </View>
     );
   }
@@ -448,17 +453,70 @@ export function HDPlayer() {
             <HDTouch style={st.cTool} onPress={() => nav.navigate('Route')}>
               <Icon name="devices" size={19} color="#ffffffcc" />
             </HDTouch>
+            <HDTouch style={st.cTool} onPress={() => setPanelOpen(panelOpen === 'quality' ? null : 'quality')}>
+              <Text style={st.cToolText}>{settings.get().playQuality === 'flac' ? 'SQ' : settings.get().playQuality}</Text>
+            </HDTouch>
+            <HDTouch style={st.cTool} onPress={() => setPanelOpen(panelOpen === 'speed' ? null : 'speed')}>
+              <Text style={st.cToolText}>{speed.toFixed(2).replace(/0$/, '')}x</Text>
+            </HDTouch>
+            <HDTouch style={st.cTool} onPress={() => setPanelOpen(panelOpen === 'sleep' ? null : 'sleep')}>
+              <Text style={[st.cToolText, sleepRemain != null && { color: C.brand }]}>{sleepRemain != null ? `${Math.floor(sleepRemain / 60)}:${String(sleepRemain % 60).padStart(2, '0')}` : '定时'}</Text>
+            </HDTouch>
+            <HDTouch style={st.cTool} onPress={() => setCardOpen(true)}>
+              <Text style={st.cToolText}>卡片</Text>
+            </HDTouch>
           </View>
+
+          {/* v2 功能对齐:音质/倍速/睡眠 面板 */}
+          {panelOpen === 'quality' ? (
+            <View style={st.panelRow}>
+              {(['128k', '320k', 'flac'] as const).map(q => (
+                <HDTouch key={q} style={[st.panelPill, settings.get().playQuality === q && st.panelPillOn]}
+                  onPress={() => { settings.set('playQuality', q); setPanelOpen(null); }}>
+                  <Text style={[st.panelPillText, settings.get().playQuality === q && { color: C.onBrand }]}>{q === 'flac' ? '无损' : q === '320k' ? '320k' : '128k'}</Text>
+                </HDTouch>
+              ))}
+            </View>
+          ) : null}
+          {panelOpen === 'speed' ? (
+            <View style={st.panelRow}>
+              {[0.5, 0.75, 1, 1.25, 1.5, 2].map(v => (
+                <HDTouch key={v} style={[st.panelPill, speed === v && st.panelPillOn]}
+                  onPress={() => { setSpeed(v); setPanelOpen(null); }}>
+                  <Text style={[st.panelPillText, speed === v && { color: C.onBrand }]}>{v}x</Text>
+                </HDTouch>
+              ))}
+            </View>
+          ) : null}
+          {panelOpen === 'sleep' ? (
+            <View style={st.panelRow}>
+              {[15, 30, 60, 90].map(v => (
+                <HDTouch key={v} style={[st.panelPill, sleepRemain != null && st.panelPillOn]}
+                  onPress={() => { enableSleep(v); setPanelOpen(null); }}>
+                  <Text style={[st.panelPillText, sleepRemain != null && { color: C.onBrand }]}>{v} 分钟</Text>
+                </HDTouch>
+              ))}
+              <HDTouch style={st.panelPill} onPress={() => { enableSleep(null); setPanelOpen(null); }}>
+                <Text style={st.panelPillText}>取消定时</Text>
+              </HDTouch>
+            </View>
+          ) : null}
         </View>
       </View>
 
       {/* lx103:收藏到歌单面板(共享组件) */}
       {collectOpen && current ? <HDCollect song={current} onClose={() => setCollectOpen(false)} /> : null}
+      {cardOpen && current ? <LyricCardModal visible onClose={() => setCardOpen(false)} song={current} lyrics={lyrics} positionSec={position} /> : null}
     </View>
   );
 }
 
 const st = StyleSheet.create({
+  cToolText: { color: '#ffffffcc', fontSize: 11, fontWeight: '700' },
+  panelRow: { flexDirection: 'row', gap: 8, justifyContent: 'center', marginTop: 14 },
+  panelPill: { borderRadius: 999, paddingHorizontal: 14, height: 30, backgroundColor: '#ffffff14', alignItems: 'center', justifyContent: 'center' },
+  panelPillOn: { backgroundColor: C.brand },
+  panelPillText: { color: '#ffffffcc', fontSize: 12, fontWeight: '600' },
   screen: { flex: 1, backgroundColor: '#0a0c0b' },
   bgArt: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.5 },
   bgVeil: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(6,8,7,.62)' },

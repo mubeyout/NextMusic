@@ -37,7 +37,7 @@ export function QueueScreen() {
   const [actSong, setActSong] = useState<SongItem | null>(null); // lx163:队列行 ⋯ 菜单
   const [collect, setCollect] = useState(false);
   const nav = useNavigation() as { goBack: () => void };
-  const { queue, current, playSong, position, duration, clearQueue } = usePlayer();
+  const { queue, current, playSong, position, duration, clearQueue, reorderQueue } = usePlayer();
 
   const upcoming = current ? queue.filter(t => t.songmid !== current.songmid) : queue;
   const pct = duration > 0 ? Math.min(1, position / duration) : 0;
@@ -107,6 +107,9 @@ export function QueueScreen() {
             ? { label: '已下载 ✓', onPress: () => {} }
             : { label: '下载', onPress: () => { enqueueDownload([actSong]); } },
           { label: '收藏到歌单', onPress: () => setCollect(true) },
+          { label: '上移一位', onPress: () => { const i = queue.findIndex(t => t.uid === actSong.uid); if (i > 0) reorderQueue(i, i - 1); } },
+          { label: '下移一位', onPress: () => { const i = queue.findIndex(t => t.uid === actSong.uid); if (i >= 0 && i < queue.length - 1) reorderQueue(i, i + 1); } },
+          { label: '从队列移除', danger: true as const, onPress: () => { const i = queue.findIndex(t => t.uid === actSong.uid); if (i >= 0) reorderQueue(i, -2); } },
         ] : []}
       />
       <CollectSheet song={actSong} visible={collect} onClose={() => { setCollect(false); setActSong(null); }} />

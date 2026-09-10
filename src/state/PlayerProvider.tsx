@@ -60,6 +60,14 @@ interface PlayerCtx {
   appendQueue: (songs: SongItem[]) => void;
   /** v1.2.4 D1:插到当前曲之后(下一首播) */
   playNextUp: (song: SongItem) => void;
+  /** web 播放器功能对齐:队列排序(拖拽/上下移) */
+  reorderQueue: (from: number, to: number) => void;
+  /** web 播放器功能对齐:倍速(0.25-2.0) */
+  speed: number;
+  setSpeed: (v: number) => void;
+  /** web 播放器功能对齐:睡眠定时(剩余秒;null=未启用) */
+  sleepRemain: number | null;
+  enableSleep: (minutes: number | null) => void;
 }
 
 const Ctx = createContext<PlayerCtx>(null as unknown as PlayerCtx);
@@ -786,8 +794,58 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     return () => { alive = false; clearInterval(iv); };
   }, [cast, goTo]);
 
-  return (
-    <Ctx.Provider value={{ queue, current, playing, position, duration, shuffle, repeat, setShuffle, cycleRepeat, playSong, toggle, skipNext, skipPrev, seekTo, clearQueue, cast, startCast, stopCast, rebuildAudio, appendQueue, playNextUp }}>
+  // ===== web 播放器功能对齐:队列排序 =====
+  const reorderQueue = useCallback((from: number, to: number) => {
+    setQueue(q => {
+      if (from < 0 || from >= q.length) return q;
+      if (to === -2) { // 约定语义:移除该曲目
+        const nq = q.filter((_, i) => i !== from);
+        const cur = q[idxRef.current];
+        if (cur && q[from] === cur) return q; // 不移除正在播放曲目
+        if (from < idxRef.current) idxRef.current = Math.max(0, idxRef.current - 1);
+        return nq;
+      }
+      if (to < 0 || to >= q.length || from === to) return q;
+      const nq = [...q];
+      const [it] = nq.splice(from, 1);
+      nq.splice(to, 0, it);
+      // 修正当前索引指向同一曲目
+      const cur = q[idxRef.current];
+      const nIdx = Math.max(0, nq.findIndex(t => t === cur));
+      idxRef.current = nIdx;
+      return nq;
+    });
+  }, []);
+
+  // ===== web 播放器功能对齐:倍速 + 睡眠定时 =====
+  const [speed, setSpeedState] = useState(1.0);
+  const setSpeed = useCallback((v: number) => {
+    const r = Math.min(2.0, Math.max(0.25, v));
+    setSpeedState(r);
+    try { (AudioPro as unknown as { setPlaybackSpeed?: (s: number) => void }).setPlaybackSpeed?.(r); } catch { /* 原生无该 API 时忽略 */ }
+  }, []);
+  const [sleepRemain, setSleepRemain] = useState<number | null>(null);
+  const sleepTick = useRef<ReturnType<typeof setInterval> | null>(null);
+  const enableSleep = useCallback((minutes: number | null) => {
+    if (sleepTick.current) { clearInterval(sleepTick.current); sleepTick.current = null; }
+    if (minutes == null || minutes <= 0) { setSleepRemain(null); return; }
+    setSleepRemain(Math.round(minutes * 60));
+    sleepTick.current = setInterval(() => {
+      setSleepRemain(prev => {
+        if (prev == null) return null;
+        if (prev <= 1) {
+          // 到点:暂停并清定时
+          AudioPro.pause();
+          if (sleepTick.current) { clearInterval(sleepTick.current); sleepTick.current = null; }
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
+  useEffect(() => () => { if (sleepTick.current) clearInterval(sleepTick.current); }, []);
+
+  return (    <Ctx.Provider value={{ queue, current, playing, position, duration, shuffle, repeat, setShuffle, cycleRepeat, playSong, toggle, skipNext, skipPrev, seekTo, clearQueue, cast, startCast, stopCast, rebuildAudio, appendQueue, playNextUp, reorderQueue, speed, setSpeed, sleepRemain, enableSleep }}>
       {children}
     </Ctx.Provider>
   );

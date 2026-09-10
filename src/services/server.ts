@@ -155,6 +155,17 @@ export const api = {
     } catch { return {}; }
   },
 
+
+  // ===== 播放器设置云同步(v2 对齐: /api/user/settings) =====
+  async settingsPush(data: unknown): Promise<void> {
+    await req('/api/user/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+  },
+  async settingsPull(): Promise<Record<string, unknown> | null> {
+    try {
+      const d = (await req('/api/user/settings')) as Record<string, unknown> | '';
+      return (d && typeof d === 'object' && Object.keys(d).length) ? d : null;
+    } catch { return null; }
+  },
   // ===== 服务器缓存管理(v2 web 功能对齐) =====
   async cacheStats(): Promise<{ totalSize: number; fileCount: number }> {
     try { return ((await req('/api/music/cache/stats')) as { data?: { totalSize: number; fileCount: number } }).data || { totalSize: 0, fileCount: 0 }; }
