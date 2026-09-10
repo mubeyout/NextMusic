@@ -395,7 +395,19 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       if (!url && token) {
         try { url = (await api.musicUrl(t, quality)).url || null; } catch { url = null; }
       }
-      if (!url) throw new Error('no url');
+      if (!url) {
+        // v2 对齐:失败自动下一曲(防卡死)
+        const st = settings.get();
+        if (st.enableAutoSkipOnError && queueRef.current.length > 1) { setTimeout(() => { goTo(idxRef.current + 1); }, 300); }
+        throw new Error('no url');
+      }
+      // v2 对齐:播放成功后缓存歌曲到服务器(后台,不打扰播放)
+      try {
+        const st2 = settings.get();
+        if (st2.enableServerCache && tokenRef.current && !isProviderSource(t)) {
+          api.cacheDownload(t, url, quality).catch(() => {});
+        }
+      } catch { /* 缓存失败不影响播放 */ }
       playOrCast(t, url);
       setCurrent(t);
     } catch (e) {

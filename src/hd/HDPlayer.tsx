@@ -193,7 +193,8 @@ export function HDPlayer() {
       }
       if (dead || !raw) return;
       let lines = parseLrc(raw);
-      if (r.tlyric) lines = mergeTranslation(lines, r.tlyric);
+      const st = settings.get();
+      if (r.tlyric && st.showLyricTranslation) lines = mergeTranslation(lines, r.tlyric);
       if (lines.length) setLyrics(lines);
     })();
     return () => { dead = true; };
