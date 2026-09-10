@@ -482,8 +482,8 @@ const st = StyleSheet.create({
   // 自带底色:负 margin 顶出 Main 卡的区域透出的是 body 底色,浅色主题下会拼出深条
   brandRowRail: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 36, marginTop: -36, marginHorizontal: 8, paddingHorizontal: 10, marginBottom: 2, backgroundColor: C.bg },
   brandRowMac: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 40, marginHorizontal: 8, paddingHorizontal: 10, backgroundColor: C.bg },
-  logoMarkRail: { width: 20, height: 22 },
-  logoMarkMac: { width: 26, height: 28 },
+  logoMarkRail: { width: 16, height: 17.5 }, // 槽位=nav icon 16px,文字起点与导航严格对齐(老板:logo 后没对齐)
+  logoMarkMac: { width: 18, height: 19.75 }, // mac 轨道区稍大,仍对齐 nav 槽
   brandNameWeb: { color: C.text, fontSize: 13.5, fontWeight: '800', letterSpacing: 0.2 },
   settingsDock: { paddingHorizontal: 0, paddingVertical: 6 },
   group: { fontSize: 9, color: C.text3, paddingHorizontal: 12, paddingTop: 5, paddingBottom: 3, letterSpacing: 1, fontWeight: '600' },
