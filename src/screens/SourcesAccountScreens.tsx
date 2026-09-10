@@ -9,7 +9,7 @@ import { HDTouch } from '../hd/HDTouch';
 import { useApp } from '../state/AppState';
 import { SubPage } from '../components/SubPage';
 import { PageHeader } from '../components/PageChrome';
-import { api } from '../services/server';
+import { api, store } from '../services/server';
 import { loadSources, addSourceByUrl, addSourceFromFile, removeSource, toggleSource, activeSources, sourceHealthCheck, checkSourceUpdates, applySourceUpdate, applyUpdateFromAlert, type CustomSource } from '../services/customSource';
 import { onSourceUpdateAlert } from '../lx-engine/engine';
 import { dialog, toast } from '../components/Dialog';
@@ -44,91 +44,45 @@ export function SourcesScreen() {
 
   const refresh = () => { setSources(loadSources()); loadServerSources(); };
   useEffect(refresh, []);
-  // ===== 服务器端音源(原版对齐: /api/custom-source/*, 全端共享) =====
+  // ===== 服务器端音源(原版三态鉴权 + 共享/私有, /api/custom-source/*) =====
   const [serverSources, setServerSources] = useState<{ id: string; name: string; version: string; enabled: boolean; channels: string[] }[]>([]);
+  const [adminOk, setAdminOk] = useState(false); // 管理员密码已验证(会话级)
   const loadServerSources = () => { api.csList().then(setServerSources).catch(() => setServerSources([])); };
-  const csAddByUrl = () => {
-    (IS_HD ? hdActions : dialog).prompt('添加服务器音源', {
-      placeholder: '音源脚本 URL(上传到服务器)',
+  // 任何服务器音源管理操作前的门卫:必须先验管理员密码(与后台 /api/admin/verify 同源)
+  const gateAdmin = (action: () => void) => {
+    if (api.csAdminAuth) { action(); return; }
+    (IS_HD ? hdActions : dialog).prompt('需要管理员密码', {
+      placeholder: '输入后台管理密码(验证一次,本次会话有效)',
+      onSubmit: async v => {
+        const pw = v.trim(); if (!pw) return;
+        const ok = await api.csVerifyAdmin(pw);
+        setAdminOk(ok);
+        toast(ok ? '管理员验证通过' : '密码错误');
+        if (ok) action();
+      },
+    });
+  };
+  // 上传:URL 添加,共享/私有二选一(原版语义: 共享=公共源 _open, 私有=登录用户名下)
+  const csAddByUrl = () => gateAdmin(() => {
+    (IS_HD ? hdActions : dialog).menu('添加服务器音源', [
+      { label: '共享音源(全端可用)', icon: 'globe', onPress: () => promptUrl(true) },
+      ...(store.token && store.username ? [{ label: `私有音源(仅 ${store.username})`, icon: 'user', onPress: () => promptUrl(false) }] : []),
+    ]);
+  });
+  const promptUrl = (share: boolean) => {
+    (IS_HD ? hdActions : dialog).prompt(share ? '添加共享音源' : '添加私有音源', {
+      placeholder: '音源脚本 URL(https://…/xxx.js)',
       onSubmit: async v => {
         const u = v.trim(); if (!u) return;
-        try { await api.csAddUrl(u); toast('已上传到服务器'); loadServerSources(); }
+        try { await api.csAddUrl(u, share); toast(share ? '已上传为共享音源' : `已上传到 ${store.username} 名下`); loadServerSources(); }
         catch (e) {
           const msg = (e as Error).message || '';
-          if (/403|管理员|受限/.test(msg)) promptAdminAuth('添加公共音源需要管理员密码');
+          if (/403|管理员|受限/.test(msg)) { setAdminOk(false); gateAdmin(() => {}); }
           else dialog.alert('添加失败', msg);
         }
       },
     });
   };
-  // 原版对齐: 公共源管理需管理员密码(会话级,存 api.csAdminAuth,不落盘)
-  const promptAdminAuth = (reason: string) => {
-    (IS_HD ? hdActions : dialog).prompt(reason, {
-      placeholder: '管理员密码(后台管理密码)',
-      onSubmit: async v => {
-        const pw = v.trim(); if (!pw) return;
-        api.csAdminAuth = pw;
-        toast('已记录管理员密码,请重试操作');
-        loadServerSources();
-      },
-    });
-  };
-
-  // vc85/88:音源更新——①LX 预埋协议(脚本自带 version 端点自检,init 时 send updateAlert,引擎转发)
-  // ②直连 @version 比对(MusicFree 类)
-  useEffect(() => {
-    let dead = false;
-    const off = onSourceUpdateAlert((srcId, info) => {
-      if (dead) return;
-      const s = loadSources().find(x => x.id === srcId);
-      const name = s?.name ?? '音源';
-      if (!info.updateUrl) { toast(`${name}:${info.log || '发现新版本'}`); return; }
-      dialog.alert(
-        '音源有新版本',
-        `「${name}」\n${info.log || '发现新版本'}\n\n一键更新覆盖?`,
-        [
-          { text: '稍后', style: 'cancel' },
-          {
-            text: '一键更新',
-            onPress: () => {
-              applyUpdateFromAlert(srcId, info.updateUrl!)
-                .then(v => { toast(`已更新到 v${v}`); refresh(); })
-                .catch(e => dialog.alert('更新失败', (e as Error).message));
-            },
-          },
-        ],
-      );
-    });
-    (async () => {
-      try {
-        const ups = await checkSourceUpdates();
-        if (dead || !ups.length) return;
-        dialog.alert('音源有新版本', ups.map(u => `「${u.src.name}」v${u.src.version} → v${u.version}`).join('\n'), [
-          { text: '稍后', style: 'cancel' },
-          { text: '一键全部更新', onPress: () => { ups.forEach(applySourceUpdate); refresh(); toast(`已更新 ${ups.length} 个音源`); } },
-        ]);
-      } catch { /* ignore */ }
-    })();
-    return () => { dead = true; off(); };
-  }, []);
-
-  const addByUrl = () => {
-    (IS_HD ? hdActions : dialog).prompt('添加音源', {
-      placeholder: '音源脚本 URL(https://…/xxx.js)',
-      onSubmit: async v => {
-        const u = v.trim();
-        if (!u) return;
-        try {
-          const s = await addSourceByUrl(u);
-          toast(`已添加 ${s.name} v${s.version}`);
-          refresh();
-        } catch (e) {
-          dialog.alert('添加失败', (e as Error).message);
-        }
-      },
-    });
-  };
-
   // vc88:手动导入音源文件(SAF 选 .js)
   const importFile = async () => {
     try {
@@ -180,10 +134,10 @@ export function SourcesScreen() {
         showsVerticalScrollIndicator={false}
       >
       <Section title="服务器音源(全端共享)">
-        <Text style={[st.hint, IS_HD && hd.hint]}>音源脚本保存在服务器,所有登录端共享;服务器端执行,本机无需运行脚本。</Text>
+        <Text style={[st.hint, IS_HD && hd.hint]}>音源脚本保存在服务器,服务器端执行。共享音源全端可用(需管理员);私有音源仅自己可见。</Text>
         {serverSources.length ? serverSources.map(cs => (
           <View key={cs.id} style={[st.srcRow, IS_HD && hd.srcRow]}>
-            <T style={[st.srcIcon, IS_HD && hd.srcIcon]} onPress={() => { api.csToggle(cs.id, !cs.enabled).then(loadServerSources).catch(() => toast('操作失败')); }}>
+            <T style={[st.srcIcon, IS_HD && hd.srcIcon]} onPress={() => gateAdmin(() => { api.csToggle(cs.id, !cs.enabled).then(loadServerSources).catch(() => { toast('操作失败'); setAdminOk(false); }); })}>
               <Icon name="wave" size={IS_HD ? 22 : 18} color={cs.enabled ? C.brand : C.text3} />
             </T>
             <View style={st.srcMeta}>
@@ -193,15 +147,15 @@ export function SourcesScreen() {
             <T style={[st.ghostBtn, IS_HD && hd.ghostBtn, { height: 30, paddingHorizontal: 10 }]} onPress={() => {
               dialog.alert('删除服务器音源', `确定删除「${cs.name}」? 所有端将不再可用。`, [
                 { text: '取消', style: 'cancel' },
-                { text: '删除', onPress: () => { api.csDelete(cs.id).then(loadServerSources).catch(() => toast('删除失败')); } },
+                { text: '删除', onPress: () => gateAdmin(() => { api.csDelete(cs.id).then(loadServerSources).catch(() => { toast('删除失败'); setAdminOk(false); }); }) },
               ]);
             }}>
               <Text style={st.ghostBtnText}>删除</Text>
             </T>
           </View>
-        )) : <Text style={[st.hint, IS_HD && hd.hint]}>暂无服务器音源(未上传,或已开启公开限制需登录/管理员)</Text>}
+        )) : <Text style={[st.hint, IS_HD && hd.hint]}>暂无服务器音源(未上传)。管理服务器音源需先验证管理员密码。</Text>}
         <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
-          <T style={[st.ghostBtn, IS_HD && hd.ghostBtn]} onPress={csAddByUrl}>
+          <T style={[st.ghostBtn, IS_HD && hd.ghostBtn]} onPress={() => gateAdmin(() => csAddByUrl())}>
             <Text style={st.ghostBtnText}>URL 添加到服务器</Text>
           </T>
         </View>

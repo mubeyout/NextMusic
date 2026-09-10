@@ -173,11 +173,25 @@ export const api = {
       return (await req('/api/custom-source/list' + q, { headers: api.csHeaders() })) as never;
     } catch { return []; }
   },
-  async csUpload(filename: string, script: string): Promise<void> {
-    await req('/api/custom-source/upload', { method: 'POST', headers: api.csHeaders(), body: JSON.stringify({ filename, content: script, username: store.username || undefined }) });
+  /** share=true 公共源(全端共享,服务端 username 缺省→_open, 需管理员); false=登录用户私有源 */
+  async csUpload(filename: string, script: string, share = true): Promise<void> {
+    const body: Record<string, unknown> = { filename, content: script };
+    if (!share && store.username) body.username = store.username;
+    await req('/api/custom-source/upload', { method: 'POST', headers: api.csHeaders(), body: JSON.stringify(body) });
   },
-  async csAddUrl(url: string): Promise<void> {
-    await req('/api/custom-source/upload', { method: 'POST', headers: api.csHeaders(), body: JSON.stringify({ url, username: store.username || undefined }) });
+  async csAddUrl(url: string, share = true): Promise<void> {
+    const body: Record<string, unknown> = { url };
+    if (!share && store.username) body.username = store.username;
+    await req('/api/custom-source/upload', { method: 'POST', headers: api.csHeaders(), body: JSON.stringify(body) });
+  },
+  /** 管理员密码验证(/api/admin/verify), 通过则缓存到会话供后续公共源操作 */
+  async csVerifyAdmin(password: string): Promise<boolean> {
+    try {
+      const r = (await req('/api/admin/verify', { method: 'POST', headers: { 'x-frontend-auth': password } })) as { success?: boolean };
+      const ok = !!r?.success;
+      api.csAdminAuth = ok ? password : null;
+      return ok;
+    } catch { api.csAdminAuth = null; return false; }
   },
   async csToggle(id: string, enabled: boolean): Promise<void> {
     await req('/api/custom-source/toggle', { method: 'POST', headers: api.csHeaders(), body: JSON.stringify({ id, enabled, username: store.username || undefined }) });
