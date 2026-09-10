@@ -9,6 +9,7 @@ import { HDTouch } from '../hd/HDTouch';
 import { useApp } from '../state/AppState';
 import { SubPage } from '../components/SubPage';
 import { PageHeader } from '../components/PageChrome';
+import { api } from '../services/server';
 import { loadSources, addSourceByUrl, addSourceFromFile, removeSource, toggleSource, activeSources, sourceHealthCheck, checkSourceUpdates, applySourceUpdate, applyUpdateFromAlert, type CustomSource } from '../services/customSource';
 import { onSourceUpdateAlert } from '../lx-engine/engine';
 import { dialog, toast } from '../components/Dialog';
@@ -41,8 +42,21 @@ export function SourcesScreen() {
   type Health = { st: 'testing'; msg?: string } | { st: 'ok' | 'fail'; msg: string };
   const [health, setHealth] = useState<Record<string, Health>>({});
 
-  const refresh = () => setSources(loadSources());
+  const refresh = () => { setSources(loadSources()); loadServerSources(); };
   useEffect(refresh, []);
+  // ===== 服务器端音源(原版对齐: /api/custom-source/*, 全端共享) =====
+  const [serverSources, setServerSources] = useState<{ id: string; name: string; version: string; enabled: boolean; channels: string[] }[]>([]);
+  const loadServerSources = () => { api.csList().then(setServerSources).catch(() => setServerSources([])); };
+  const csAddByUrl = () => {
+    (IS_HD ? hdActions : dialog).prompt('添加服务器音源', {
+      placeholder: '音源脚本 URL(上传到服务器,所有端共享)',
+      onSubmit: async v => {
+        const u = v.trim(); if (!u) return;
+        try { await api.csAddUrl(u); toast('已上传到服务器'); loadServerSources(); }
+        catch (e) { dialog.alert('添加失败', (e as Error).message); }
+      },
+    });
+  };
 
   // vc85/88:音源更新——①LX 预埋协议(脚本自带 version 端点自检,init 时 send updateAlert,引擎转发)
   // ②直连 @version 比对(MusicFree 类)
@@ -149,6 +163,34 @@ export function SourcesScreen() {
         contentContainerStyle={[{ paddingHorizontal: 20, paddingBottom: insets.bottom + 28 }, IS_HD && { maxWidth: 900, alignSelf: 'center', width: '100%' }]}
         showsVerticalScrollIndicator={false}
       >
+      <Section title="服务器音源(全端共享)">
+        <Text style={[st.hint, IS_HD && hd.hint]}>音源脚本保存在服务器,所有登录端共享;服务器端执行,本机无需运行脚本。</Text>
+        {serverSources.length ? serverSources.map(cs => (
+          <View key={cs.id} style={[st.srcRow, IS_HD && hd.srcRow]}>
+            <T style={[st.srcIcon, IS_HD && hd.srcIcon]} onPress={() => { api.csToggle(cs.id, !cs.enabled).then(loadServerSources).catch(() => toast('操作失败')); }}>
+              <Icon name="wave" size={IS_HD ? 22 : 18} color={cs.enabled ? C.brand : C.text3} />
+            </T>
+            <View style={st.srcMeta}>
+              <Text style={[st.srcName, IS_HD && hd.srcName]} numberOfLines={1}>{cs.name} <Text style={st.srcVer}>v{cs.version}</Text></Text>
+              <Text style={[st.srcSub, IS_HD && hd.srcSub]} numberOfLines={1}>{(cs.channels || []).join(' / ') || '服务器音源'} · 点击图标{cs.enabled ? '停用' : '启用'}</Text>
+            </View>
+            <T style={[st.ghostBtn, IS_HD && hd.ghostBtn, { height: 30, paddingHorizontal: 10 }]} onPress={() => {
+              dialog.alert('删除服务器音源', `确定删除「${cs.name}」? 所有端将不再可用。`, [
+                { text: '取消', style: 'cancel' },
+                { text: '删除', onPress: () => { api.csDelete(cs.id).then(loadServerSources).catch(() => toast('删除失败')); } },
+              ]);
+            }}>
+              <Text style={st.ghostBtnText}>删除</Text>
+            </T>
+          </View>
+        )) : <Text style={[st.hint, IS_HD && hd.hint]}>暂无服务器音源(未连接服务器或未上传)</Text>}
+        <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+          <T style={[st.ghostBtn, IS_HD && hd.ghostBtn]} onPress={csAddByUrl}>
+            <Text style={st.ghostBtnText}>URL 添加到服务器</Text>
+          </T>
+        </View>
+      </Section>
+
       <Section title="自定义音源">
         <Text style={[st.hint, IS_HD && hd.hint]}>音源脚本在本机沙箱运行,添加后无需登录即可播放。支持 LX Music 音源协议与 MusicFree 插件;更新由音源内置检查自动提醒。</Text>
         {sources.length ? sources.map(s => {

@@ -156,6 +156,26 @@ export const api = {
   },
 
 
+
+  // ===== 服务器端自定义音源(原版 /api/custom-source/*, 全端共享) =====
+  async csList(): Promise<{ id: string; name: string; version: string; enabled: boolean; channels: string[] }[]> {
+    try { return (await req('/api/custom-source/list')) as never; } catch { return []; }
+  },
+  async csUpload(filename: string, script: string): Promise<void> {
+    await req('/api/custom-source/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename, script }) });
+  },
+  async csAddUrl(url: string): Promise<void> {
+    await req('/api/custom-source/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) });
+  },
+  async csToggle(id: string, enabled: boolean): Promise<void> {
+    await req('/api/custom-source/toggle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, enabled }) });
+  },
+  async csDelete(id: string): Promise<void> {
+    await req('/api/custom-source/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+  },
+  async csReorder(ids: string[]): Promise<void> {
+    await req('/api/custom-source/reorder', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }) });
+  },
   // ===== 播放器设置云同步(v2 对齐: /api/user/settings) =====
   async settingsPush(data: unknown): Promise<void> {
     await req('/api/user/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });

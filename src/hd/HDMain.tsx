@@ -287,6 +287,9 @@ export function HDMain() {
         {/* v1.2.5:web 设置也走 railNav(内页化,侧栏恒固定);TV 保持原 navigate——零行为差异 */}
         <View style={st.settingsDock}>
           <NavItem icon="settings" label="设置" onPress={() => (IS_WEB ? railNav('Settings') : hdNav()?.navigate('Settings'))} />
+          {IS_WEB ? (
+            <NavItem icon="server" label="后台管理" onPress={() => { window.open('/admin/', '_blank'); }} />
+          ) : null}
         </View>
       </View>
 
