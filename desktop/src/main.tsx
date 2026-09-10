@@ -40,6 +40,9 @@ mountKbNav();
     | undefined;
   const isMac = nm?.platform === 'darwin';
   const isWin = nm?.platform === 'win32';
+  // web 服务端部署形态:无 Electron 桥——不注入窗口轨道(toprail)。
+  // 此前误注入: rail-side(174px) 右边框发丝线悬在侧栏上方,与侧栏自身边线错位(老板:logo 后有条没对齐的线)
+  if (!nm) return;
 
   // 主题感知(挂载读一次;主题切换走整页 reload)
   let isLight = false;
@@ -79,9 +82,10 @@ mountKbNav();
     // v1.2.11(老板:mac 红绿灯上面有条形胶囊):rail-side 改恒透明+mac 去右边框——
     // 之前 mac 不透明条(174×36+右边框发丝线)在侧栏色上方读作独立胶囊;现在透出的 body 底
     // 与侧栏 C.bg 三主题一致(深 #121212/浅 #F6F7F9/纯黑 #000),红绿灯直接浮在侧栏同色底上,无胶囊感
+    // v1.2.13(老板:桌面也错位):分割线统一由侧栏自身 border 提供,轨道不再画框——
+    // 两条线(轨道框+侧栏框)在 zoom 非 100% 时相差零点几像素,读作双线/错位;rail-side 恒透明
     '#nm-toprail .rail-side { width:174px; flex:0 0 auto; -webkit-app-region:drag;',
-    '  background:transparent;',
-    '  border-right:' + (isMac ? 'none' : '1px solid ' + (isLight ? 'rgba(31,35,41,.10)' : 'rgba(255,255,255,.08)')) + '; }',
+    '  background:transparent; border-right:none; }',
     '#nm-toprail .rail-main { flex:1; -webkit-app-region:drag; }',
     /* 只对按钮挖 no-drag 孔(rail-side/rail-main 恒为拖拽面——`*` 全 no-drag 会废掉整行拖拽,清单坑②) */
     '#nm-toprail .rail-btns, #nm-toprail .rail-btns * { -webkit-app-region:no-drag; }',
