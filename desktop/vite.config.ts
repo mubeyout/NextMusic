@@ -41,7 +41,11 @@ export default defineConfig({
       { find: /^react-native$/, replacement: `${SHIMS}/rn.ts` },
     ],
   },
-  define: { 'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development') },
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+    'process.env.APP_FLAVOR': JSON.stringify('hd'),
+    'process.env.APP_VERSION': JSON.stringify(require('./package.json').version),
+  },
   server: { port: 5199, strictPort: true },
   build: { outDir: R('dist'), emptyOutDir: true, chunkSizeWarningLimit: 4096 },
 });

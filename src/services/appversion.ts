@@ -3,10 +3,13 @@ import { NativeModules } from 'react-native';
 
 const native = NativeModules.AppVersionInfo as { versionName?: string; versionCode?: number; flavor?: string } | undefined;
 
+// web 构建(vite define 注入,与 desktop/package.json 同源);原生读 BuildConfig;兜底回退
+const webVersion = (process as unknown as { env?: { APP_VERSION?: string; APP_FLAVOR?: string } }).env?.APP_VERSION;
 export const APP_VERSION = native?.versionName
   ? `${native.versionName} (${native.versionCode})`
-  : '1.0.3';
+  : webVersion || '1.2.12';
 
 // UI 形态：hd = 车机/TV 横屏壳（独立包名），phone = 手机竖版
-export const APP_FLAVOR: 'phone' | 'hd' = native?.flavor === 'hd' ? 'hd' : 'phone';
+const webFlavor = (process as unknown as { env?: { APP_FLAVOR?: string } }).env?.APP_FLAVOR;
+export const APP_FLAVOR: 'phone' | 'hd' = native?.flavor === 'hd' || webFlavor === 'hd' ? 'hd' : 'phone';
 export const IS_HD = APP_FLAVOR === 'hd';
