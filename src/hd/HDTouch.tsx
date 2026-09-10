@@ -43,7 +43,7 @@ export function HDTouch({ style, focusStyle, focusBg, glow, zoom, haloColor, hov
   const restOut = rest.onHoverOut as (() => void) | undefined;
   if (IS_WEB) { delete rest.onHoverIn; delete rest.onHoverOut; }
   return (
-    <Pressable
+    <Pressable className={IS_WEB ? 'nm-press' : undefined}
       focusable
       {...rest}
       {...(IS_WEB ? {

@@ -7,6 +7,11 @@ import { library } from '../state/library';
 import { sync } from '../services/sync';
 import { enqueueDownload } from '../services/downloads';
 import { toast } from '../components/Dialog';
+import { Platform } from 'react-native';
+const IS_WEB_L = Platform.OS === 'web';
+
+// v1.2.12(Leo P0-3):平台快捷键分派——nmDesktop 桥(HDMain 同款),非 web 恒 mac 风格无所谓(TV 无菜单快捷键)
+const nmIsMac = !IS_WEB_L || String((globalThis as unknown as { nmDesktop?: { platform?: string } }).nmDesktop?.platform || '') === 'darwin';
 
 interface MenuDeps {
   playSong: (s: SongItem, list?: SongItem[]) => Promise<void>;
@@ -25,7 +30,7 @@ export function songMenu(song: SongItem, list: SongItem[], deps: MenuDeps): CtxM
   const noUrl = local === false && !song.songmid; // 无 id 取链必败
   return [
     { key: 'play', label: '播放', shortcut: 'Enter', disabled: noUrl, onPress: () => { deps.playSong(song, list); } },
-    { key: 'next', label: '下一首播', shortcut: '\u2318\u21B5', disabled: noUrl, onPress: () => { deps.playNextUp(song); toast('下一首将播放'); } },
+    { key: 'next', label: '下一首播', shortcut: nmIsMac ? '\u2318\u21B5' : 'Ctrl+\u21B5', disabled: noUrl, onPress: () => { deps.playNextUp(song); toast('下一首将播放'); } }, // v1.2.12:平台分派
     { key: 'queue', label: inQueue ? '已在队列' : '加入队列', disabled: inQueue || noUrl, onPress: () => { deps.appendQueue([song]); toast('已加入队列'); } },
     { key: 'fav', label: isFav(song) ? '取消收藏' : '收藏', onPress: async () => {
       try {

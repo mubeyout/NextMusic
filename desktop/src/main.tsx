@@ -88,6 +88,9 @@ mountKbNav();
     /* v1.2.5 卡片 hover 过渡(React inline style 变化→CSS 过渡接管)——lx170:接 easing token(Leo motion-spec 基准) */
     ':root { --nm-ease-out: cubic-bezier(0.23,1,0.32,1); --nm-ease-hover: cubic-bezier(0.25,0.1,0.25,1); --nm-ease-in-out: cubic-bezier(0.77,0,0.175,1); }',
     '.nm-card { transition: transform .16s var(--nm-ease-hover), box-shadow .16s var(--nm-ease-hover); }',
+    /* v1.2.12(Leo P0-1/2):HDTouch 按压平滑 + 可点区域 pointer 手型 */
+    '.nm-press { transition: transform .12s var(--nm-ease-hover); cursor: pointer; }',
+    '.nm-card { cursor: pointer; }',
     /* ===== v1.2.11 三平台规范层 ===== */
     /* 细滚动条(mac overlay 质感;win/linux 取代 Chromium 粗条),主题感知(主题切换=整页 reload) */
     '::-webkit-scrollbar { width: 12px; height: 12px; }',

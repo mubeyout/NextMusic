@@ -89,7 +89,12 @@ export function mountCtxMenu() {
     const r = anchor.getBoundingClientRect();
     place(sub, r.right + 4, r.top - 5);
     sub.style.transformOrigin = 'left center'; // lx170:子菜单从锚行左侧生长
+    // v1.2.12(Leo P1-8):子菜单补与主菜单同款过渡(origin-aware scale.95→1 + fade 150ms)
+    sub.style.transition = 'transform .15s cubic-bezier(0.23,1,0.32,1), opacity .15s cubic-bezier(0.23,1,0.32,1)';
     sub.style.display = 'block';
+    sub.style.opacity = '0';
+    sub.style.transform = 'scale(.95)';
+    requestAnimationFrame(() => { sub.style.opacity = '1'; sub.style.transform = 'scale(1)'; });
   };
 
   let closeT = 0;

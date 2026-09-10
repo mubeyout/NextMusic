@@ -38,10 +38,26 @@ function startMediaProxy() {
   server.listen(PROXY_PORT, '127.0.0.1');
 }
 
+// v1.2.12(Leo P0-5):菜单栏清空——autoHideMenuBar 只藏不灭,Alt 仍闪英文默认菜单
+try { Menu.setApplicationMenu(null); } catch { /* mac 保留系统菜单场景 */ }
+// v1.2.12(Leo P0-4):窗口状态记忆——bounds 持久化(手动,零依赖)
+const winStateFile = () => require('path').join(app.getPath('userData'), 'window-state.json');
+function loadWinState() {
+  try { return JSON.parse(require('fs').readFileSync(winStateFile(), 'utf8')); } catch { return null; }
+}
+function saveWinState(win) {
+  try {
+    const b = win.getNormalBounds ? win.getNormalBounds() : win.getBounds();
+    require('fs').writeFileSync(winStateFile(), JSON.stringify({ x: b.x, y: b.y, width: b.width, height: b.height, maximized: win.isMaximized() }));
+  } catch { /* ignore */ }
+}
+
 function createWindow() {
+  const saved = loadWinState();
   const win = new BrowserWindow({
-    width: Number(process.env.NM_W) || 1440,
-    height: Number(process.env.NM_H) || 860,
+    x: saved?.x, y: saved?.y,
+    width: Number(process.env.NM_W) || saved?.width || 1440,
+    height: Number(process.env.NM_H) || saved?.height || 860,
     minWidth: 1080,
     minHeight: 640,
     backgroundColor: '#121212',
@@ -72,7 +88,9 @@ function createWindow() {
   // 外链走系统浏览器
   win.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
   if (!app.isPackaged && process.env.VITE_DEV) {
-    win.loadURL('http://127.0.0.1:5199');
+    win.on('close', () => saveWinState(win)); // v1.2.12:P0-4
+  if (saved?.maximized) win.maximize(); // v1.2.12:P0-4:恢复最大化
+  win.loadURL('http://127.0.0.1:5199');
   } else {
     win.loadURL('nmapp://local/index.html');
   }

@@ -218,7 +218,7 @@ function BigCard({ colors, badge, title, sub, onPress, busy }: { colors: [string
     <HDTouch activeOpacity={0.9} onPress={onPress} zoom={1.04}
       ref={elRef as never}
       focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.card + 2 }}
-      style={{ flex: 1, height: IS_WEB ? 104 : 88, borderRadius: H.radius.card, ...(IS_WEB ? st.bigCardWeb : {}), ...(webSh || {}), ...(hov && IS_WEB ? { transform: [{ translateY: -4 }] } : {}) }}
+      style={{ flex: 1, height: IS_WEB ? 104 : 88, borderRadius: H.radius.card, ...(IS_WEB ? st.bigCardWeb : {}), ...(webSh || {}), ...(hov && IS_WEB ? { transform: [{ translateY: -3 }] } : {}) }}
       {...(IS_WEB ? { onHoverIn: () => { t.current && clearTimeout(t.current); t.current = setTimeout(() => setHov(true), 80); }, onHoverOut: () => { t.current && clearTimeout(t.current); setHov(false); } } as Record<string, unknown> : {})}>
       <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.bigBg} />
       <View style={st.big}>
