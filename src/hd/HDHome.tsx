@@ -35,12 +35,15 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
   const [recPls, setRecPls] = useState<SongListMeta[]>(() => cacheStale<SongListMeta[]>('home.recPls') || []);
   const [recSource, setRecSource] = useState(() => cacheStale<string>('home.recSource') || '');
 
-  useEffect(() => {
+  const [recFail, setRecFail] = useState(false);
+  const loadRec = () => {
+    setRecFail(false);
     lxapi.songListAuto('', '5', 1, 18).then(r => {
       setRecPls(r.list); setRecSource(r.source);
       cacheSet('home.recPls', r.list); cacheSet('home.recSource', r.source);
-    }).catch(() => {});
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }).catch(() => setRecFail(true)); // 失败不再永远转圈:显示重试入口
+  };
+  useEffect(() => { loadRec(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const refresh = () => {
     setLocalPls(library.all());
@@ -159,7 +162,10 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
           </ScrollView>
         ) : (
           <View style={st.empty}>
-            <Text style={st.emptyText}>推荐歌单加载中…</Text>
+            <Text style={st.emptyText}>{recFail ? '推荐歌单加载失败 · 音源无响应' : '推荐歌单加载中…'}</Text>
+            {recFail ? <HDTouch style={st.retryBtn} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 999 }} onPress={loadRec}>
+              <Text style={st.retryText}>重试</Text>
+            </HDTouch> : null}
           </View>
         )}
       </Section>
@@ -250,6 +256,8 @@ function Section({ title, hint, more, onMore, children }: { title: string; hint?
 }
 
 const st = StyleSheet.create({
+  retryBtn: { marginTop: 10, borderRadius: 999, paddingHorizontal: 20, height: 30, backgroundColor: C.elev, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
+  retryText: { color: C.text2, fontSize: H.font.sm },
   screen: { flex: 1, backgroundColor: C.bg },
   greet: { color: C.text, fontSize: H.font.hero, fontWeight: '800' },
   bigBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: H.radius.card },

@@ -1,6 +1,19 @@
 // Direct-to-platform browse APIs via LxEngine sandbox (no server involved).
 // Mirrors lxserver route semantics (/api/music/search|hotSearch|songList|leaderboard|comment|lyric).
 import { engine } from '../lx-engine/engine';
+import { Platform } from 'react-native';
+// web 服务端部署形态(纯浏览器,非 Electron):本地 iframe 引擎的 fetch 被浏览器 CORS 拦截,
+// 音源调用全部转发服务器端 API(同源,服务端执行) —— Electron/原生仍走本地引擎
+const WEB_SERVER_MODE = Platform.OS === 'web' && typeof navigator !== 'undefined' && !/electron/i.test(navigator.userAgent);
+async function srvGet(path: string, timeoutMs = 15000): Promise<any> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const r = await fetch(path, { signal: ctrl.signal } as RequestInit);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
 import type { SongItem, SongListMeta } from './server';
 
 // --- normalizeSongInfo (same as lxserver server.js) ---
@@ -84,7 +97,9 @@ async function resolveSongListSource(force = false): Promise<string> {
   const probe = (async () => {
     for (const s of SL_CHAIN) {
       try {
-        const r = await engine.sdk<any>([s, 'songList', 'getList'], ['5', '', 1], 12000);
+        const r: any = WEB_SERVER_MODE
+          ? await srvGet(`/api/music/songList/list?source=${s}&sorttype=5&page=1`)
+          : await engine.sdk<any>([s, 'songList', 'getList'], ['5', '', 1], 12000);
         if (Array.isArray(r?.list) && r.list.length) {
           CACHE.set(`sll:${s}:5::1`, { at: Date.now(), data: r }); // 探测结果直接种进缓存，首页同 key 零额外请求
           if (s !== slSrc) console.log(`[lxapi] songList source → ${s} (${r.list.length})`);
@@ -121,7 +136,9 @@ export const lxapi = {
   async search(name: string, source = 'kw', page = 1, limit = 20): Promise<SongItem[]> {
     return cached(`sr:${source}:${name}:${page}:${limit}`, 10 * 60_000, async () => {
       try {
-        const r = await engine.sdk<{ list?: any[] }>([source, 'musicSearch', 'search'], [name, page, limit]);
+        const r: any = WEB_SERVER_MODE
+          ? await srvGet(`/api/music/search?name=${encodeURIComponent(name)}&source=${source}&page=${page}&limit=${limit}`)
+          : await engine.sdk<{ list?: any[] }>([source, 'musicSearch', 'search'], [name, page, limit]);
         // eslint-disable-next-line no-console
         console.log(`[lxapi] search ${source} "${name}": ${(r?.list || []).length} raw items`);
         return (r?.list || []).map(normalize);
@@ -134,7 +151,9 @@ export const lxapi = {
 
   async tipSearch(name: string, source = 'kw'): Promise<string[]> {
     try {
-      const r = await engine.sdk<any>([source, 'tipSearch', 'search'], [name]);
+      const r: any = WEB_SERVER_MODE
+          ? await srvGet(`/api/music/tipSearch?name=${encodeURIComponent(name)}&source=${source}`)
+          : await engine.sdk<any>([source, 'tipSearch', 'search'], [name]);
       return Array.isArray(r) ? r : [];
     } catch { return []; }
   },
@@ -142,7 +161,9 @@ export const lxapi = {
   async hotSearch(source = 'mg'): Promise<string[]> {
     return cached(`hs:${source}`, 10 * 60_000, async () => {
       try {
-        const r = await engine.sdk<any>([source, 'hotSearch', 'getList'], []);
+        const r: any = WEB_SERVER_MODE
+          ? await srvGet(`/api/music/hotSearch?source=${source}`)
+          : await engine.sdk<any>([source, 'hotSearch', 'getList'], []);
         if (Array.isArray(r)) return r.slice(0, 30);
         if (r && Array.isArray((r as any).source?.data)) return (r as any).source.data.slice(0, 30);
         if (r && Array.isArray((r as any).source)) return ((r as any).source as any[]).map((x: any) => x.name || '').filter(Boolean).slice(0, 30);
@@ -154,7 +175,9 @@ export const lxapi = {
   async songListTags(source = 'wy'): Promise<{ tags: { name: string; list: { id: string; name: string }[] }[]; hotTag?: { id: string; name: string }[]; sortList?: unknown }> {
     return cached(`slt:${source}`, 30 * 60_000, async () => {
       try {
-        const r = await engine.sdk<any>([source, 'songList', 'getTags'], []);
+        const r: any = WEB_SERVER_MODE
+          ? await srvGet(`/api/music/songList/tags?source=${source}`)
+          : await engine.sdk<any>([source, 'songList', 'getTags'], []);
         // wy/tx 返回 {tags:[{name,list}]}；mg/kg 返回 {hotTag:[{id,name}]}——两种形态都保留
         let sortList: unknown;
         try { sortList = await engine.sdk<any>([source, 'songList', 'sortList'], []); } catch { /* tx/mg/kg 无此方法，非致命 */ }
@@ -167,7 +190,9 @@ export const lxapi = {
     return cached(`sll:${source}:${sortId}:${tagId}:${page}`, 5 * 60_000, async () => {
       try {
         void limit;
-        return await engine.sdk<any>([source, 'songList', 'getList'], [sortId, tagId, page]);
+        if (WEB_SERVER_MODE) return await srvGet(`/api/music/songList/list?source=${source}&sorttype=${sortId}&tag=${encodeURIComponent(tagId)}&page=${page}`);
+        if (WEB_SERVER_MODE) return await srvGet(`/api/music/songList/list?source=${source}&sorttype=${sortId}&tag=${encodeURIComponent(tagId)}&page=${page}`);
+      return await engine.sdk<any>([source, 'songList', 'getList'], [sortId, tagId, page]);
       } catch (e) { console.log('[lxapi] songListList fail', (e as Error).message); return {}; }
     });
   },
@@ -185,7 +210,9 @@ export const lxapi = {
   async songListDetail(id: string, page = 1, source = 'wy'): Promise<{ list?: SongItem[]; page?: number; limit?: number; total?: number; source?: string; info?: SongListMeta }> {
     return cached(`sld:${source}:${id}:${page}`, 10 * 60_000, async () => {
       try {
-        const r = await engine.sdk<any>([source, 'songList', 'getListDetail'], [id, page]);
+        const r: any = WEB_SERVER_MODE
+          ? await srvGet(`/api/music/songList/detail?source=${source}&id=${encodeURIComponent(id)}&page=${page}`)
+          : await engine.sdk<any>([source, 'songList', 'getListDetail'], [id, page]);
         if (r && Array.isArray(r.list)) r.list = r.list.map(normalize);
         return r || {};
       } catch { return {}; }
@@ -195,7 +222,9 @@ export const lxapi = {
   async leaderboardBoards(source = 'kg'): Promise<{ id: string; name: string; bangid: string; image?: string }[]> {
     return cached(`lbb:${source}`, 30 * 60_000, async () => {
       try {
-        const r = await engine.sdk<any>([source, 'leaderboard', 'getBoards'], []);
+        const r: any = WEB_SERVER_MODE
+        ? await srvGet(`/api/music/leaderboard/boards?source=${source}`)
+        : await engine.sdk<any>([source, 'leaderboard', 'getBoards'], []);
         return Array.isArray(r?.list) ? r.list : [];
       } catch (e) { console.log('[lxapi] leaderboardBoards fail', (e as Error).message); return []; }
     });
@@ -204,7 +233,9 @@ export const lxapi = {
   async leaderboardList(bangid: string, source = 'kg', page = 1): Promise<SongItem[]> {
     return cached(`lbl:${source}:${bangid}:${page}`, 10 * 60_000, async () => {
       try {
-        const r = await engine.sdk<any>([source, 'leaderboard', 'getList'], [bangid, page]);
+        const r: any = WEB_SERVER_MODE
+        ? await srvGet(`/api/music/leaderboard/list?source=${source}&bangid=${encodeURIComponent(bangid)}&page=${page}`)
+        : await engine.sdk<any>([source, 'leaderboard', 'getList'], [bangid, page]);
         return Array.isArray(r?.list) ? r.list.map(normalize) : [];
       } catch { return []; }
     });
@@ -213,6 +244,10 @@ export const lxapi = {
   async comment(songInfo: SongItem, type: 'hot' | 'new' = 'hot', page = 1, limit = 20): Promise<{ source?: string; comments?: any[]; total?: number; allPage?: number; limit?: number }> {
     try {
       const method = type === 'hot' ? 'getHotComment' : 'getComment';
+      if (WEB_SERVER_MODE) {
+        const q = `?source=${songInfo.source}&songmid=${encodeURIComponent(songInfo.songmid)}&name=${encodeURIComponent(songInfo.name)}&singer=${encodeURIComponent(songInfo.singer)}&hash=${encodeURIComponent(songInfo.hash || '')}`;
+        return (await srvGet('/api/music/comment' + q)) as never;
+      }
       return await engine.sdk<any>([songInfo.source, 'comment', method], [normalize({ ...songInfo }), page, limit]);
     } catch { return {}; }
   },
@@ -236,7 +271,9 @@ export const lxapi = {
       // （旧代码 [source,'lyric','getLyric'] 会报 "reading 'lyric'"，一直靠服务器 fallback 顶着）
       // 坑75：wy/kg/kw 的 getLyric 返回的是 lxserver request 包装对象 {promise, cancelHttp}，
       // 不是裸歌词 —— 必须解包 await r.promise，否则 lyric/lxlyric 恒空（媒体库歌无服务器 fallback 才暴露）
-      let r: any = await engine.sdk<any>([songInfo.source, 'getLyric'], [info]);
+      let r: any = WEB_SERVER_MODE
+        ? await srvGet(`/api/music/lyric?source=${songInfo.source}&songmid=${encodeURIComponent(songInfo.songmid)}&name=${encodeURIComponent(songInfo.name)}&singer=${encodeURIComponent(songInfo.singer)}&hash=${encodeURIComponent(songInfo.hash || '')}&interval=${encodeURIComponent(songInfo.interval || '')}`)
+        : await engine.sdk<any>([songInfo.source, 'getLyric'], [info]);
       if (r && typeof r.promise?.then === 'function') r = await r.promise;
       else if (r && typeof r.then === 'function') r = await r;
       return r || {};
