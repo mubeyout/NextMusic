@@ -28,7 +28,8 @@ export function SongRow({ song, onPress, playing, extra, onMore, onLongPress }: 
     <Pressable
       ref={kbRef as never}
       style={({ pressed }: { pressed: boolean }) => [
-        st.row, st.ringBase, focus && st.ringOn, pressed && { opacity: 0.7 },
+        st.row, st.ringBase, focus && st.ringOn,
+        pressed && { opacity: 0.72, transform: [{ scale: 0.985 }] }, // lx168:按压反馈全站统一(轻缩+透明)
       ]}
       onPress={onPress} onLongPress={onLongPress} disabled={!onPress}
       focusable={!!onPress}

@@ -1,5 +1,5 @@
 import React, { ComponentRef, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Image, Animated, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
@@ -44,6 +44,8 @@ export function SearchScreen() {
   const [singers, setSingers] = useState<{ id: string; name: string; img?: string; source?: string }[] | null>(null);
   const [albums, setAlbums] = useState<{ id: string; name: string; singer?: string; img?: string; source?: string }[] | null>(null);
   const [history, setHistory] = useState<string[]>(() => { try { return JSON.parse(histKv.getString('h') || '[]'); } catch { return []; } });
+  const [fadeA] = useState(new Animated.Value(1)); // lx168:结果区淡入
+  useEffect(() => { if (busy) fadeA.setValue(0.35); else Animated.timing(fadeA, { toValue: 1, duration: 200, useNativeDriver: Platform.OS !== 'web' }).start(); }, [busy]); // eslint-disable-line react-hooks/exhaustive-deps
   const [actSong, setActSong] = useState<SongItem | null>(null); // lx163:搜索行 ⋯ 菜单
   const [collect, setCollect] = useState(false);
   const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
@@ -179,6 +181,8 @@ export function SearchScreen() {
         </ScrollView>
       ) : null}
       <ScrollView ref={scrollRef} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 140 }}>
+        {/* lx168:结果首载淡入(硬切→180ms) */}
+        <Animated.View style={{ opacity: fadeA, flex: 1 }}>
         {busy ? (
           <View style={st.center}><ActivityIndicator color={C.brand} size="large" /></View>
         ) : err ? (
@@ -245,6 +249,7 @@ export function SearchScreen() {
               ) : null}
           </View>
         )}
+        </Animated.View>
       </ScrollView>
 
       {/* lx163:搜索行操作菜单(收藏到歌单/下载) */}

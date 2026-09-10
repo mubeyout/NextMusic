@@ -73,9 +73,16 @@ export function PlayerScreen() {
     await toggleFav();
     toast(inPl ? '已移出「我喜欢的」· 仍收藏于歌单' : '已取消收藏');
   };
+  // lx168:♥ 弹跳反馈(动效评审)
+  const heartScale = useRef(new Animated.Value(1)).current;
+  const popHeart = () => {
+    heartScale.setValue(0.65);
+    Animated.spring(heartScale, { toValue: 1, friction: 4, tension: 40, useNativeDriver: Platform.OS !== 'web' }).start();
+  };
   // 心钮总入口:未收藏→面板;仅歌单收录(非我喜欢的)→面板里移除;我喜欢的在→一键移除
   const heartPress = () => {
     if (!current) return;
+    popHeart();
     if (!faved || (!isFav(current) && hasPlCollect(current))) return openCollect();
     doUnfav();
   };
@@ -245,7 +252,9 @@ export function PlayerScreen() {
           </View>
           <View style={st.pActions}>
             <TouchableOpacity style={st.pIcon} hitSlop={6} onPress={heartPress}>
-              <Icon name="heart" size={20} active={faved} color={faved ? '#FF5A76' : C.text} />
+              <Animated.Text style={{ transform: [{ scale: heartScale }] }}>
+                <Icon name="heart" size={20} active={faved} color={faved ? '#FF5A76' : C.text} />
+              </Animated.Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={st.pIcon}
