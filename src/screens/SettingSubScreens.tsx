@@ -1,6 +1,6 @@
 // 设置子页（全部真实功能：持久化 + 可操作）
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, NativeModules, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, NativeModules, Linking, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import RNBlobUtil from 'react-native-blob-util';
@@ -17,6 +17,7 @@ import { load as loadAppPersist, type RunMode } from '../state/AppState';
 import { library } from '../state/library';
 import { downloads as dlStore, fmtBytes, downloadFails, clearFails, subscribeDownloads } from '../services/downloads';
 import { APP_VERSION, IS_HD } from '../services/appversion';
+import { api } from '../services/server';
 
 // ---------- 基本设置 ----------
 export function BasicSettingsScreen() {
@@ -190,8 +191,25 @@ export function AboutScreen() {
     } finally { setChecking(false); }
   };
 
+  // 服务端部署形态(web):展示服务器信息(与后台管理台关于页同源)
+  const [srvInfo, setSrvInfo] = useState<{ version?: string; name?: string; connected?: boolean } | null>(null);
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    api.probe(typeof location !== 'undefined' ? location.origin : '').then((cfg: Record<string, unknown>) => {
+      setSrvInfo({ version: String(cfg.version || cfg.buildHash || 'lxserver'), name: String(cfg.serverName || 'NextMusic Server'), connected: true });
+    }).catch(() => setSrvInfo({ connected: false }));
+  }, []);
+
   return (
     <PageShell title="关于与帮助" onBack={() => nav.goBack()}>
+      {Platform.OS === 'web' ? (
+        <Section title="服务端">
+          <StaticRow label="服务器" value={srvInfo?.connected ? (srvInfo.name || '已连接') : '本地模式(未连接)'} />
+          {srvInfo?.version ? <StaticRow label="服务端版本" value={srvInfo.version} /> : null}
+          <ActionRow label="后台管理" value="/admin/" onPress={() => { if (typeof window !== 'undefined') window.open('/admin/', '_blank'); }} />
+          <StaticRow label="原作" value="lxserver(XCQ0607) / lx-music-sync-server" />
+        </Section>
+      ) : null}
       <Section title="版本">
         <StaticRow label="当前版本" value={APP_VERSION} />
         <ActionRow label={checking ? '正在检查…' : '检查更新'} onPress={checkUpdate} />
