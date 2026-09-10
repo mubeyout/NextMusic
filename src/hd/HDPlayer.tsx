@@ -22,6 +22,9 @@ import { hdNav } from './hdnav';
 
 // 唱片 SVG 纯 DOM 版(react-native-svg 的 web shim forwardRef 与 RNW 混用会 React#130,直出 DOM 稳)
 // v1.2.5:size 参数化 + nm-vinyl-spin CSS 旋转接入(此前 web 唱片根本不转——nm-vinyl-css 注入了却没人用)
+// v1.2.11(老板:封面太小+波浪圈不对齐):①封面 label 88→132(44% 唱片径,网易云规格)加标环;
+// ②svg 绝对定位(top/left 0)与频谱环同一坐标系——两兄弟节点 flex 纵排在 320 盒里曾各被排到 ±160px(不同心真因);
+// ③圆形底盘投影( borderRadius 50% 否则方影)
 function HD_VINYL_SVG(img?: string, size = 300, playing?: boolean): React.ReactNode {
   const h = React.createElement;
   const rg = h('radialGradient', { id: 'hdSheen', cx: '0.32', cy: '0.26', r: '0.95' }, [
@@ -33,15 +36,17 @@ function HD_VINYL_SVG(img?: string, size = 300, playing?: boolean): React.ReactN
     [149, '#0A0A0D', 1], [143, '#FFFFFF0A', 1], [136, '#FFFFFF08', 1.5], [129, '#FFFFFF0F', 1],
     [122, '#FFFFFF06', 1.5], [115, '#FFFFFF12', 1], [108, '#FFFFFF08', 1.5], [101, '#FFFFFF14', 1], [90, '#FFFFFF0D', 1],
   ];
-  return h('svg', { width: size, height: size, viewBox: '0 0 300 300', className: 'nm-vinyl-spin' + (playing ? '' : ' nm-vinyl-paused') },
+  return h('svg', { width: size, height: size, viewBox: '0 0 300 300', className: 'nm-vinyl-spin' + (playing ? '' : ' nm-vinyl-paused'),
+    style: { position: 'absolute', top: 0, left: 0, borderRadius: '50%', boxShadow: '0 26px 70px rgba(0,0,0,.4), 0 0 54px rgba(30,215,96,.08)' } as never },
     h('defs', null, rg),
     ...circles.map(([r, col, sw], i) => h('circle', { key: 'c' + i, cx: 150, cy: 150, r, fill: r === 149 ? col : 'none', stroke: col, strokeWidth: sw })),
     h('path', { d: 'M33 107 A125 125 0 0 1 107 33', stroke: '#FFFFFF1F', strokeWidth: 3, strokeLinecap: 'round', fill: 'none' }),
     h('path', { d: 'M246 185 A102 102 0 0 1 168 250', stroke: '#FFFFFF17', strokeWidth: 4, strokeLinecap: 'round', fill: 'none' }),
     h('circle', { cx: 150, cy: 150, r: 149, fill: 'url(#hdSheen)' }),
     h('circle', { cx: 150, cy: 150, r: 88, fill: '#101312' }),
-    h('image', { href: img || undefined, x: 106, y: 106, width: 88, height: 88, clipPath: undefined,
-      style: { borderRadius: 44 } as never }),
+    h('circle', { cx: 150, cy: 150, r: 70, fill: 'none', stroke: '#FFFFFF16', strokeWidth: 1.5 }),
+    h('image', { href: img || undefined, x: 84, y: 84, width: 132, height: 132, clipPath: undefined,
+      style: { borderRadius: 66 } as never }),
     h('circle', { cx: 150, cy: 150, r: 6, fill: '#000' }),
   );
 }
@@ -92,6 +97,8 @@ export function HDPlayer() {
   // lx103:收藏到歌单面板(点按收藏键即弹,对齐手机端)
   const [collectOpen, setCollectOpen] = useState(false);
   const trackW = React.useRef(0);
+  // v1.2.11(老板:整体重排):唱片区实测方形(onLayout),尺寸自适应窗口,上限 440
+  const [vsize, setVsize] = useState(0);
   // v1.1.8 唱片旋转(18s/转;web 必须 JS driver——RNW Animated useNativeDriver 必 false,原生端 native driver 零 JS 开销)
   const spin = React.useRef(new Animated.Value(0)).current;
   // lx91:频谱 24 bar 全部 native driver(transform scaleY/translateY)——v3 的 height JS 动画每帧 24 次状态更新打满 JS 线程=卡顿真凶之一
@@ -221,11 +228,18 @@ export function HDPlayer() {
 
         <View style={stW.body}>
           <View style={stW.artCol}>
-            {/* v1.2.6(老板:频谱波浪/唱片乱):环尺寸 == 唱片外径(SpectrumRing inner=R+2% 假设唱片贴满盒,
-             * 之前环 344/唱片 312 → 波浪内缘离唱片 24px 悬空);两者同 320,波浪贴着唱片外缘 */}
-            <View style={stW.vinylZone}>
-              <SpectrumRing size={320} playing={playing} />
-              {HD_VINYL_SVG(current?.img, 320, playing)}
+            {/* v1.2.11 全重排:实测方形盒内,频谱环+唱片都绝对定位 inset 0 → 严格同心;
+             * 尺寸随窗口自适应(旧固定 320 且两个 flow 子节点被 flex column 排到 ±160px 不同心) */}
+            <View style={stW.vinylArea} onLayout={e => {
+              const s = Math.min(Math.floor(e.nativeEvent.layout.width), Math.floor(e.nativeEvent.layout.height), 440);
+              if (s > 60 && Math.abs(s - vsize) > 1) setVsize(s);
+            }}>
+              {vsize > 60 ? (
+                <View style={{ width: vsize, height: vsize }}>
+                  <SpectrumRing size={vsize} playing={playing} />
+                  {HD_VINYL_SVG(current?.img, vsize, playing)}
+                </View>
+              ) : null}
             </View>
             <View style={stW.srcPill}>
               <View style={stW.srcDot} />
@@ -281,35 +295,35 @@ export function HDPlayer() {
           <View style={stW.ctrlRow}>
             <View style={stW.sideSpacer} />
             <View style={stW.ctrlCluster}>
-              <HDTouch style={stW.cBtn} onPress={() => setShuffle(!shuffle)} focusStyle={st.focus}>
+              <HDTouch style={stW.cBtn} onPress={() => setShuffle(!shuffle)} focusStyle={st.focus} hoverBg={C.hover}>
                 <Icon name="shuffle" size={17} active={shuffle} color={shuffle ? C.brand : C.text2} />
               </HDTouch>
-              <HDTouch style={stW.cBtn} onPress={skipPrev} focusStyle={st.focus}>
+              <HDTouch style={stW.cBtn} onPress={skipPrev} focusStyle={st.focus} hoverBg={C.hover}>
                 <Icon name="previous" size={22} color={C.text} />
               </HDTouch>
               <HDTouch style={stW.cMain} onPress={toggle} focusStyle={stW.cMainFocus}>
                 <Icon name={playing ? 'pause' : 'play'} size={26} color={C.onBrand} />
               </HDTouch>
-              <HDTouch style={stW.cBtn} onPress={skipNext} focusStyle={st.focus}>
+              <HDTouch style={stW.cBtn} onPress={skipNext} focusStyle={st.focus} hoverBg={C.hover}>
                 <Icon name="next" size={22} color={C.text} />
               </HDTouch>
-              <HDTouch style={stW.cBtn} onPress={cycleRepeat} focusStyle={st.focus}>
+              <HDTouch style={stW.cBtn} onPress={cycleRepeat} focusStyle={st.focus} hoverBg={C.hover}>
                 <Icon name="repeat" size={17} active={repeat !== 'off'} color={repeat !== 'off' ? C.brand : C.text2} />
               </HDTouch>
             </View>
             <View style={[stW.sideSpacer, { alignItems: 'flex-end' }]}>
               <View style={stW.toolCluster}>
-                <HDTouch style={stW.tBtn} onPress={() => setCollectOpen(true)} focusStyle={st.focus}>
+                <HDTouch style={stW.tBtn} onPress={() => setCollectOpen(true)} focusStyle={st.focus} hoverBg={C.hover}>
                   <Icon name="heart" size={17} color={faved ? C.brand : C.text2} />
                 </HDTouch>
-                <HDTouch style={stW.tBtn} onPress={() => nav.navigate('Comments')} focusStyle={st.focus}>
+                <HDTouch style={stW.tBtn} onPress={() => nav.navigate('Comments')} focusStyle={st.focus} hoverBg={C.hover}>
                   <Icon name="comments" size={17} color={C.text2} />
                 </HDTouch>
-                <HDTouch style={stW.tBtn} onPress={() => nav.navigate('Queue')} focusStyle={st.focus}>
+                <HDTouch style={stW.tBtn} onPress={() => nav.navigate('Queue')} focusStyle={st.focus} hoverBg={C.hover}>
                   <Icon name="queue" size={17} color={C.text2} />
                   {queue.length ? <Text style={stW.badge}>{queue.length}</Text> : null}
                 </HDTouch>
-                <HDTouch style={stW.tBtn} onPress={() => nav.navigate('Route')} focusStyle={st.focus}>
+                <HDTouch style={stW.tBtn} onPress={() => nav.navigate('Route')} focusStyle={st.focus} hoverBg={C.hover}>
                   <Icon name="devices" size={17} color={C.text2} />
                 </HDTouch>
               </View>
@@ -508,13 +522,13 @@ const stW = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10, height: 52, zIndex: 5 },
   back: { flexDirection: 'row', alignItems: 'center', gap: 7, height: 34, borderRadius: 17, paddingHorizontal: 14, backgroundColor: C.hover },
   backLabel: { color: C.text2, fontSize: 13, fontWeight: '600' },
-  body: { flex: 1, flexDirection: 'row', paddingHorizontal: 64, gap: 56, alignItems: 'center' },
-  artCol: { flex: 0.92, alignItems: 'center' },
-  vinylZone: { width: 320, height: 320, alignItems: 'center', justifyContent: 'center' },
-  srcPill: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 24, borderRadius: 12, marginTop: 18, paddingHorizontal: 12, borderWidth: 1, borderColor: C.border, backgroundColor: C.input },
+  body: { flex: 1, flexDirection: 'row', paddingHorizontal: 64, gap: 56, alignItems: 'stretch' },
+  artCol: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  vinylArea: { flex: 1, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center' },
+  srcPill: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 24, borderRadius: 12, marginTop: 16, paddingHorizontal: 12, borderWidth: 1, borderColor: C.border, backgroundColor: C.input },
   srcDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.brand },
   srcTag: { color: C.text2, fontSize: 10, letterSpacing: 2, fontWeight: '600' },
-  infoCol: { flex: 1.08, alignSelf: 'stretch', justifyContent: 'center', gap: 8 },
+  infoCol: { flex: 1, alignSelf: 'stretch', justifyContent: 'center', gap: 8 },
   title: { color: C.text, fontSize: 28, fontWeight: '800' },
   sub: { color: C.text2, fontSize: 14, marginBottom: 12 },
   lyrics: { minHeight: 300, gap: 12, justifyContent: 'center' },

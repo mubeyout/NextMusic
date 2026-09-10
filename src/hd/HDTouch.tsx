@@ -25,9 +25,11 @@ type Props = React.ComponentProps<typeof Pressable> & {
   /** v1.2.6 web:hover 背景色(桌面选中态;TV 忽略) */
   hoverBg?: string | false;
   activeOpacity?: number;
+  /** lx170(动效 standard 档):web 按压缩放(行类大面积交互用更轻的 0.985,钮类默认 0.97);TV 忽略 */
+  pressScale?: number;
 };
 
-export function HDTouch({ style, focusStyle, focusBg, glow, zoom, haloColor, hoverBg, activeOpacity = 0.8, children, ...rest }: Props) {
+export function HDTouch({ style, focusStyle, focusBg, glow, zoom, haloColor, hoverBg, activeOpacity = 0.8, pressScale = 0.97, children, ...rest }: Props) {
   const [focus, setFocus] = useState(false);
   const [hov, setHov] = useState(false);
   const flat = (StyleSheet.flatten(style as ViewStyle | ViewStyle[]) || {}) as { borderRadius?: number };
@@ -55,6 +57,9 @@ export function HDTouch({ style, focusStyle, focusBg, glow, zoom, haloColor, hov
         baseRing,
         haloStyle,
         pressed && { opacity: activeOpacity },
+        // v1.2.11 桌面按压反馈:轻微缩底(hover 上浮/平铺都可叠加,松手即回)——TV 零变化
+        // lx170:pressScale 可调(行 0.985/钮 0.97,动效 standard 档)
+        pressed && IS_WEB && { transform: [{ scale: pressScale }] },
         // v1.2.6 桌面:hover 背景(选中态)——不需要描边
         IS_WEB && hov && hoverBg != null && hoverBg !== false && { backgroundColor: hoverBg },
         // TV:焦点环/glow/zoom(原逻辑零变化;web 全部不渲染)

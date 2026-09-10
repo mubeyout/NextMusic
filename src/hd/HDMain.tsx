@@ -397,7 +397,7 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
     <View style={st.playbar}>
       {/* 左 */}
       <View style={st.pbLeft}>
-        <HDTouch style={st.pbCoverTouch} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 9 }} onPress={() => hdNav()?.navigate('Player')}>
+        <HDTouch style={st.pbCoverTouch} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 9 }} hoverBg={IS_WEB ? C.hover : false} onPress={() => hdNav()?.navigate('Player')}>
           {current?.img
             ? <Image source={{ uri: current.img }} style={st.pbArt} />
             : <View style={[st.pbArt, { backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' }]}><Text style={{ color: C.text3, fontSize: 14 }}>♪</Text></View>}

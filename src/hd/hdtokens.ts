@@ -73,11 +73,11 @@ export function applyHdTheme() {
     C.brandSoft = acc ? mixHex(acc, '#000000', 0.22) : '#1DB455';
     C.glass = 'rgba(255,255,255,.68)';
     C.glassStrong = 'rgba(255,255,255,.8)';
-    // 投影浅色化(桌面 --nm-shadow-* 浅色同源)
-    SH.card = '0 12px 36px rgba(31,35,41,.10)';
-    SH.pop = '0 18px 52px rgba(31,35,41,.18)';
-    SH.brand = '0 6px 22px rgba(29,180,85,.26)';
-    SH.focus = '0 4px 16px rgba(29,180,85,.20)';
+    // 投影浅色化(桌面 --nm-shadow-* 浅色同源)——v1.2.11 同步再降 50%
+    SH.card = '0 12px 36px rgba(31,35,41,.05)';
+    SH.pop = '0 18px 52px rgba(31,35,41,.09)';
+    SH.brand = '0 6px 22px rgba(29,180,85,.13)';
+    SH.focus = '0 4px 16px rgba(29,180,85,.10)';
   }
 }
 // applyHdTheme() 的调用在文件末尾(SH 等 const 先于执行,避免 TDZ)
@@ -120,12 +120,23 @@ export function applyHdScale(uiScale?: string) {
 export const fmtSec = (s: number) =>
   `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
+// ---------- lx170(动效 standard 档,Leo motion-spec 基准):easing token 唯一源 ----------
+// CSS 侧(main.tsx :root --nm-ease-*)与 RN Animated 侧(数组→Easing.bezier)同源;换档改这里
+export const EASE = {
+  out: [0.23, 1, 0.32, 1],
+  hover: [0.25, 0.1, 0.25, 1],
+  inOut: [0.77, 0, 0.175, 1],
+} as const;
+// 桌面动效时长档位(standard;后续换档调这里)
+export const MOTION = { enter: 150, exit: 100, hover: 160 } as const;
+
 // 彩色弥散投影(对齐桌面 --nm-shadow-*;RN 0.76+ New Arch boxShadow 字符串语法)
 export const SH = {
-  card: '0 8px 28px rgba(0,0,0,.5)',
-  brand: '0 6px 22px rgba(30,215,96,.35)',
-  pop: '0 12px 32px rgba(0,0,0,.6)',
-  focus: '0 4px 16px rgba(30,215,96,.25)',
+  // v1.2.11(老板):弥散投影再降 50%(card .5→.25 / pop .6→.3 / brand .35→.18 / focus .25→.12)
+  card: '0 8px 28px rgba(0,0,0,.25)',
+  brand: '0 6px 22px rgba(30,215,96,.18)',
+  pop: '0 12px 32px rgba(0,0,0,.3)',
+  focus: '0 4px 16px rgba(30,215,96,.12)',
 };
 
 // ---------- 桌面 9280 对齐(2026-09-01 老板:样式交互 1:1) ----------
@@ -140,7 +151,7 @@ export const shadowOf = (seed: string) => {
   const [r1, g1, b1] = hp < 1 ? [cH, x, 0] : hp < 2 ? [x, cH, 0] : hp < 3 ? [0, cH, x] : hp < 4 ? [0, x, cH] : hp < 5 ? [x, 0, cH] : [cH, 0, x];
   const m = l - cH / 2;
   const R = Math.round((r1 + m) * 255), G = Math.round((g1 + m) * 255), B = Math.round((b1 + m) * 255);
-  return `0 10px 30px rgba(${R},${G},${B},.24)`; // lx128:.34 太重 .15 看不见——中间值
+  return `0 10px 30px rgba(${R},${G},${B},.12)`; // v1.2.11(老板):再降 50%(lx128 曾 .34→.24)
 };
 // lx96:紧凑弥散投影——横向滚动行内小卡专用(30px 大弥散会被 ScrollView 裁切,需要 ≤16px 行内边距预算)
 // lx132:彩色弥散光晕(描边式)——RN Android boxShadow 在米电视 GPU 不稳定(红色巨影实测渲染失败);
@@ -165,7 +176,7 @@ export function haloOf(seed: string): string {
   const [r1, g1, b1] = hp < 1 ? [cH, x, 0] : hp < 2 ? [x, cH, 0] : hp < 3 ? [0, cH, x] : hp < 4 ? [0, x, cH] : hp < 5 ? [x, 0, cH] : [cH, 0, x];
   const m = l - cH / 2;
   const R = Math.round((r1 + m) * 255), G = Math.round((g1 + m) * 255), B = Math.round((b1 + m) * 255);
-  return `rgba(${R},${G},${B},0.10)`; // lx167b:光晕减半
+  return `rgba(${R},${G},${B},0.05)`; // v1.2.11(老板):再降 50%(lx167b 曾 0.20→0.10)
 }
 
 export const shadowOfSm = (seed: string) => {
@@ -176,7 +187,7 @@ export const shadowOfSm = (seed: string) => {
   const [r1, g1, b1] = hp < 1 ? [cH, x, 0] : hp < 2 ? [x, cH, 0] : hp < 3 ? [0, cH, x] : hp < 4 ? [0, x, cH] : hp < 5 ? [x, 0, cH] : [cH, 0, x];
   const m = l - cH / 2;
   const R = Math.round((r1 + m) * 255), G = Math.round((g1 + m) * 255), B = Math.round((b1 + m) * 255);
-  return `0 5px 14px rgba(${R},${G},${B},.13)`; // lx167:减淡50%
+  return `0 5px 14px rgba(${R},${G},${B},.065)`; // v1.2.11(老板):再降 50%(lx167 曾 .13)
 };
 
 // v1.2.5 桌面:web 卡片彩色弥散投影——shadowStyleOf(elevation+shadowColor)在 RNW 不渲染(桌面卡片变灰块的真因);
@@ -193,7 +204,7 @@ export function webCardShadow(seed: string, lift = false): Record<string, string
   return {
     shadowColor: `rgb(${Math.round((r1 + m) * 255)},${Math.round((g1 + m) * 255)},${Math.round((b1 + m) * 255)})`,
     shadowOffset: { width: 0, height: lift ? 14 : 8 },
-    shadowOpacity: lift ? 0.17 : 0.11, // lx167(老板):投影减淡 50%
+    shadowOpacity: lift ? 0.085 : 0.055, // v1.2.11(老板):弥散投影再降 50%(lx167 曾 0.11/0.17)
     shadowRadius: lift ? 20 : 12,
   };
 }

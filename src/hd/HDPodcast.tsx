@@ -131,18 +131,33 @@ export function HDPodcast() {
 
 
 // v1.2.6:播客频道卡抽组件——web hover 投影/上浮+overflow 修渐变圆角;TV 原分支逐字保留
+// v1.2.11(老板):web 与 HD 分流——web 版 icon 居中大号+光晕圆底(HD 保持左上角小 icon+右下播放钮)
 function PodCard({ ch, ci, count, firstName, onOpen, onPlay }: { ch: { id: string; name: string; sub: string }; ci: number; count: number; firstName?: string; onOpen: () => void; onPlay: () => void }) {
   const hc = useHoverCard(ch.name);
+  const playBtn = (web: boolean) => (
+    <HDTouch style={web ? st.cardPlayWeb : st.cardPlay} onPress={onPlay} focusStyle={{ borderWidth: 2, borderColor: '#FFFFFF', borderRadius: web ? 17 : 15 }} hoverBg={'rgba(255,255,255,.16)'} activeOpacity={0.8}>
+      <Icon name="play" size={13} color="#FFFFFF" />
+    </HDTouch>
+  );
   return (
     <HDTouch style={[st.card, shadowStyleOf(ch.name), IS_WEB && hc.cardStyle, IS_WEB && { overflow: 'hidden' as const }]} zoom={1.06} onPress={onOpen} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }}
       ref={IS_WEB ? (hc.elRef as never) : undefined}
       {...(IS_WEB ? { onHoverIn: hc.onHoverIn, onHoverOut: hc.onHoverOut } : {})}>
-      <LinearGradient colors={POD_GRADS[ci % POD_GRADS.length]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.cardCover}>
-        <Icon name="podcast" size={30} color="#FFFFFF" />
-        <View style={{ flex: 1 }} />
-        <HDTouch style={st.cardPlay} onPress={onPlay} focusStyle={{ borderWidth: 2, borderColor: '#FFFFFF', borderRadius: 15 }} hoverBg={'rgba(255,255,255,.16)'} activeOpacity={0.8}>
-          <Icon name="play" size={13} color="#FFFFFF" />
-        </HDTouch>
+      <LinearGradient colors={POD_GRADS[ci % POD_GRADS.length]} start={{ x: 0, y: 0 }} end={IS_WEB ? { x: 0.4, y: 1 } : { x: 1, y: 1 }} style={IS_WEB ? st.cardCoverWeb : st.cardCover}>
+        {IS_WEB ? (
+          <>
+            <View style={st.coverHaloWeb} pointerEvents="none">
+              <Icon name="podcast" size={38} color="#FFFFFF" />
+            </View>
+            {playBtn(true)}
+          </>
+        ) : (
+          <>
+            <Icon name="podcast" size={30} color="#FFFFFF" />
+            <View style={{ flex: 1 }} />
+            {playBtn(false)}
+          </>
+        )}
       </LinearGradient>
       <View style={st.cardBody}>
         <Text style={st.cardName} numberOfLines={1}>{ch.name}</Text>
@@ -158,9 +173,12 @@ const st = StyleSheet.create({
   title: { color: C.text, fontSize: H.font.hero, fontWeight: '800' },
   sub: { color: C.text3, fontSize: H.font.sm },
   card: { gap: 5, borderRadius: 12, backgroundColor: C.surface, overflow: 'hidden' },
-  cardCoverWrap: { borderRadius: 12 },
-  cardBody: { paddingHorizontal: 8, paddingBottom: 8, paddingTop: 0, gap: 3 },
   cardCover: { width: '100%', aspectRatio: 1.35, padding: 12, flexDirection: 'row', alignItems: 'flex-start' },
+  // v1.2.11 web 版封面:更竖的幅面+icon 居中+光晕圆底(与 HD 左上角小 icon 分流)
+  cardCoverWeb: { width: '100%', aspectRatio: 1.2, alignItems: 'center', justifyContent: 'center' },
+  coverHaloWeb: { width: 82, height: 82, borderRadius: 41, backgroundColor: 'rgba(255,255,255,.16)', alignItems: 'center', justifyContent: 'center' },
+  cardPlayWeb: { position: 'absolute', right: 12, bottom: 12, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,.24)', alignItems: 'center', justifyContent: 'center' },
+  cardBody: { paddingHorizontal: 8, paddingBottom: 8, paddingTop: 0, gap: 3 },
   cardPlay: { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,.22)', alignItems: 'center', justifyContent: 'center' },
   cardName: { color: C.text, fontSize: H.font.sm, fontWeight: '700' },
   cardSub: { color: C.text3, fontSize: H.font.xs },

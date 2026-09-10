@@ -66,10 +66,17 @@ export function HDSongRow({ song, index, onPress, onLongPress, onAction, playing
     if (!buildMenu) { onAction?.(); return; }
     (globalThis as never as { __nmCtxMenu?: (x: number, y: number, items: CtxMenuItem[]) => void }).__nmCtxMenu?.(x, y, buildMenu(song));
   };
+  // lx170(动效 standard 档):行即大按钮——按压 scale(.985)+透明 0.7 带 120ms 过渡(web;行内 DOM 钩子挂 transition)
+  const rowEl = useRef<View | null>(null);
+  useEffect(() => {
+    const el = rowEl.current as unknown as HTMLElement | null;
+    if (el && el.style) el.style.transition = 'transform .12s var(--nm-ease-hover), opacity .12s var(--nm-ease-hover), background-color .12s linear';
+  }, []);
 
   return (
     <View style={st.rowWrap}>
     <HDTouch
+      ref={rowEl as never}
       style={[st.row, IS_WEB && hov && { backgroundColor: C.hover }]}
       focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.row }}
       focusBg={C.hover}
@@ -77,6 +84,7 @@ export function HDSongRow({ song, index, onPress, onLongPress, onAction, playing
       onLongPress={onLongPress}
       disabled={!onPress}
       activeOpacity={0.7}
+      pressScale={0.985}
       hasTVPreferredFocus={first}
       {...(IS_WEB ? {
         onHoverIn: () => onHoverIn(),

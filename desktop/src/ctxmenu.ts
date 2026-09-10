@@ -23,8 +23,12 @@ export function mountCtxMenu() {
   let open = false;
   const menu = document.createElement('div');
   const sub = document.createElement('div');
-  menu.style.cssText = `position:absolute;min-width:196px;background:${surface};border:1px solid ${border};border-radius:10px;padding:5px;box-shadow:0 12px 32px rgba(0,0,0,.25);pointer-events:auto;`;
+  menu.style.cssText = `position:absolute;min-width:196px;background:${surface};border:1px solid ${border};border-radius:10px;padding:5px;box-shadow:0 12px 32px rgba(0,0,0,.125);pointer-events:auto;`; // v1.2.11(老板):再降 50%
   sub.style.cssText = menu.style.cssText;
+  // v1.2.11(老板:mac 红绿灯上面的长条胶囊真因):壳初始必须隐藏——否则空菜单壳(min-width+padding≈208×15)
+  // 从启动起就显示在 (0,0),恰好压在红绿灯上方,读作“长条形胶囊”;首次 close 前一直可见
+  menu.style.display = 'none';
+  sub.style.display = 'none';
   host.appendChild(menu);
   host.appendChild(sub);
 
@@ -76,6 +80,7 @@ export function mountCtxMenu() {
     el.style.left = px + 'px';
     el.style.top = py + 'px';
     el.style.visibility = 'visible';
+    return { px, py };
   };
 
   const showSub = (parent: CtxMenuItem, anchor: HTMLElement) => {
@@ -83,13 +88,18 @@ export function mountCtxMenu() {
     (parent.children || []).forEach(c => { if (!c.hidden) sub.appendChild(itemEl(c, false)); });
     const r = anchor.getBoundingClientRect();
     place(sub, r.right + 4, r.top - 5);
+    sub.style.transformOrigin = 'left center'; // lx170:子菜单从锚行左侧生长
     sub.style.display = 'block';
   };
 
+  let closeT = 0;
   const close = () => {
     open = false;
-    menu.style.display = 'none';
-    sub.style.display = 'none';
+    // lx170(动效 standard 档):exit 100ms 快于 enter(150ms)——淡出后再隐藏;reduced-motion 下 CSS 层已禁过渡,超时隐藏保底
+    menu.style.opacity = '0';
+    sub.style.opacity = '0';
+    clearTimeout(closeT);
+    closeT = setTimeout(() => { menu.style.display = 'none'; sub.style.display = 'none'; }, 100);
     host.style.pointerEvents = 'none';
   };
 
@@ -102,12 +112,19 @@ export function mountCtxMenu() {
   menu.addEventListener('mouseleave', () => { sub.style.display = 'none'; });
 
   (globalThis as never as Record<string, unknown>).__nmCtxMenu = (x: number, y: number, items: CtxMenuItem[]) => {
+    clearTimeout(closeT); // lx170:exit 中途重开——取消隐藏定时器,避免新菜单刚起播就被藏
     menu.textContent = '';
     sub.style.display = 'none';
     const vis = items.filter(i => !i.hidden);
     vis.forEach(it => menu.appendChild(itemEl(it, true)));
-    place(menu, x, y);
+    const { px, py } = place(menu, x, y);
     menu.style.display = 'block';
+    // lx170(动效 standard 档):origin-aware 入场——从右键触发点 scale(.95)→1+淡入 150ms(禁 center 缩放)
+    menu.style.transformOrigin = `${x - px}px ${y - py}px`;
+    menu.style.transition = 'transform .15s cubic-bezier(0.23,1,0.32,1), opacity .15s cubic-bezier(0.23,1,0.32,1)';
+    menu.style.transform = 'scale(.95)';
+    menu.style.opacity = '0';
+    requestAnimationFrame(() => { menu.style.transform = 'scale(1)'; menu.style.opacity = '1'; });
     host.style.pointerEvents = 'auto';
     open = true;
   };

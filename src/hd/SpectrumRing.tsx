@@ -65,8 +65,10 @@ export function SpectrumRing({ size, playing }: { size: number; playing: boolean
   }
   d += ' Z';
   const h = React.createElement;
-  const ring = h('div', { style: { width: size, height: size, position: 'relative', pointerEvents: 'none' } as never },
-    h('svg', { width: size, height: size, viewBox: `0 0 ${size} ${size}`, style: { position: 'absolute', inset: 0, overflow: 'visible' } as never },
+  // v1.2.11(老板:波浪圈与唱片不同心):外层 div 改绝对定位(top/left 0)——与唱片 svg 同一坐标系,
+  // 此前作为普通 flow 子节点与 svg 纵排,RNW View 默认 column 把两者各推离中心 ±size/2
+  const ring = h('div', { style: { width: size, height: size, position: 'absolute', top: 0, left: 0, pointerEvents: 'none' } as never },
+    h('svg', { width: size, height: size, viewBox: `0 0 ${size} ${size}`, className: 'nm-wave-ring', style: { position: 'absolute', inset: 0, overflow: 'visible' } as never },
       h('defs', null,
         h('radialGradient', { id: 'nmWave', cx: '50%', cy: '50%', r: '50%' },
           h('stop', { offset: '72%', stopColor: C.brand, stopOpacity: '0.06' }),
