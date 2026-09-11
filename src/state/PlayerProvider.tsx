@@ -444,6 +444,29 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         if (!url && quality !== '128k' && settings.get().enableAutoDegradeQuality !== false) {
           try { url = (await api.musicUrl(t, '128k')).url || null; } catch { url = null; }
         }
+        // 自动换源(原版 enableAutoSwitchSource): 当前源取链失败 → kw 在线搜同名替换播放
+        if (!url && settings.get().enableAutoSwitchSource !== false && t.source !== 'kw') {
+          try {
+            const hits = await api.search(`${t.name} ${t.singer || ''}`.trim(), 'kw');
+            const hit = hits?.[0];
+            if (hit && String(hit.songmid) !== String(t.songmid)) {
+              const hu = (await api.musicUrl(hit, quality)).url;
+              if (hu) {
+                toast(`已自动换源播放:${hit.name} - ${hit.singer}(kw)`);
+                const replaced = toTrack(hit);
+                const q = [...queueRef.current];
+                if (q.length) q[idxRef.current] = replaced;
+                queueRef.current = q.length ? q : [replaced];
+                setQueue(queueRef.current);
+                idxRef.current = q.length ? idxRef.current : 0;
+                playOrCast(replaced, hu);
+                setCurrent(replaced);
+                failStreak = 0;
+                return;
+              }
+            }
+          } catch { /* 换源失败继续走失败流程 */ }
+        }
         // 回退: 服务器无该源时再试本地引擎(Electron/原生)
         if (!url && !webSrvMode) {
           try { url = await customGetMusicUrl(t, quality); } catch { url = null; }
