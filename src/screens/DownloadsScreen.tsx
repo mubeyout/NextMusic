@@ -53,9 +53,9 @@ export function DownloadsScreen() {
         <View style={{ backgroundColor: '#1E2422', borderRadius: 12, padding: 14, marginBottom: 12, gap: 4 }}>
           <Text style={{ color: '#7ee2a8', fontSize: 13, fontWeight: '700' }}>服务器缓存模式</Text>
           <Text style={{ color: '#9aa5a0', fontSize: 11.5, lineHeight: 17 }}>
-            Web 版下载的歌曲缓存到服务器存储目录(cache),再次播放无需外部流量。{'\n'}
-            缓存配额与 LRU 自动清理:后台「设置 · 存储备份 · 缓存与空间」;{'\n'}
-            缓存列表与清空:后台「下载与备份 · 服务器缓存管理」。
+            当前模式:服务器缓存(Web)。点「下载」=歌曲永久缓存到服务器 /server/data,再次播放零流量,不占浏览器空间;{'\n'}
+            与原生端差别:手机/TV 为本地文件模式(下载到设备可离线),Web 不落盘、服务器统一管理;{'\n'}
+            配额与 LRU 自动清理:后台「设置 · 存储备份 · 缓存与空间」;缓存列表与清空:后台「下载与备份 · 服务器缓存管理」。
           </Text>
           {cacheStat ? <Text style={{ color: '#9aa5a0', fontSize: 11 }}>当前占用 {cacheStat.fileCount} 个文件 · {fmtBytes(cacheStat.totalSize)}</Text> : null}
         </View>
