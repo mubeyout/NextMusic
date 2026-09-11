@@ -302,7 +302,9 @@ export function HDPlayer() {
             )}
           </View>
 
-          <View style={st.progRow}>
+        </View>
+        </View>
+          <View style={[st.progRow, IS_WEB && st.progRowWeb]}>
             <Text style={[st.time, IS_WEB && { minWidth: 42 }]}>{fmtSec(position)}</Text>
             <TouchableOpacity
               style={[st.trackWrap, IS_WEB && { height: 6, borderRadius: 3 }]}
@@ -413,8 +415,6 @@ export function HDPlayer() {
               </HDTouch>
             </View>
           ) : null}
-        </View>
-        </View>
       </View>
 
       {/* lx103:收藏到歌单面板(共享组件) */}
@@ -468,13 +468,14 @@ const st = StyleSheet.create({
   noLyric: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
   noLyricText: { color: '#ffffff80', fontSize: 13 },
   progRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
+  progRowWeb: { width: '100%', marginBottom: 10 }, // v3.6:全宽(参照 playbar)
   time: { color: '#ffffffb3', fontSize: 12, fontVariant: ['tabular-nums'], width: 42, textAlign: 'center' },
   trackWrap: { flex: 1, height: 5, flexDirection: 'row', borderRadius: 3 },
   trackFill: { backgroundColor: C.brand, borderRadius: 3 },
   trackRest: { backgroundColor: '#ffffff2e', borderRadius: 3 },
   playhead: { position: 'absolute', top: -4, width: 13, height: 13, borderRadius: 7, backgroundColor: C.brand, borderWidth: 2.5, borderColor: '#ffffff', marginLeft: -7, boxShadow: '0 0 12px rgba(30,215,96,.75)' },
   ctrlRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  ctrlRowWeb: { flexWrap: 'wrap', justifyContent: 'center', gap: 14, marginTop: 20 },
+  ctrlRowWeb: { flexWrap: 'wrap', justifyContent: 'center', gap: 8, columnGap: 22, marginTop: 0 }, // v3.6:贴底紧凑(参照 playbar)
   cMainWeb: { width: 60, height: 60, borderRadius: 30, boxShadow: '0 8px 30px rgba(30,215,96,.4)' }, // Spotify 大播放键
   ctrlDividerWeb: { opacity: .7 },
   cMode: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#ffffff14', alignItems: 'center', justifyContent: 'center' },
