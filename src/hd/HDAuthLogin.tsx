@@ -1,7 +1,7 @@
 // HD 登录页(横版):表单结构与 ProviderEdit(媒体库添加)同构 —— desc + Tab 容器 + 输入卡(label/值/hint) + 测试连接/主按钮双钮
 // 逻辑与 phone AuthLoginScreen 一致:第一步连接服务器(地址),第二步登录该服务器账号
 import React, { useEffect, useState } from 'react';
-import { Platform, View, Text, StyleSheet, ScrollView, TextInput, ActivityIndicator } from 'react-native';
+import { Platform, View, Text, StyleSheet, ScrollView, TextInput, ActivityIndicator, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { navRef } from '../navRef';
@@ -148,103 +148,116 @@ export function HDAuthLoginScreen() {
   };
 
   return (
-    <View style={[st.screen, { paddingTop: Math.min(insets.top, 20) + 8 }]}>
-      {/* 头部:返回 + 居中标题(ProviderEdit 同构) */}
+    <View style={[st.screen, { paddingTop: Math.min(insets.top, 20) + 6 }]}>
+      {/* 头部:返回 + 标题(左对齐,与其他 HD 子页一致) */}
       <View style={st.header}>
         <HDTouch style={st.backBtn} onPress={nav.goBack} focusStyle={st.focus}>
-          <Icon name="back" size={20} color={C.text2} />
+          <Icon name="back" size={17} color={C.text2} />
         </HDTouch>
         <Text style={st.title}>连接服务器</Text>
-        <View style={{ width: 52 }} />
       </View>
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={IS_WEB ? { maxWidth: 460, alignSelf: 'center', width: '100%', paddingHorizontal: 24, paddingBottom: 34, gap: 12 } : { maxWidth: 860, alignSelf: 'center', width: '100%', paddingHorizontal: 24, paddingBottom: 34, gap: 14 }}
+        contentContainerStyle={{ paddingHorizontal: 26, paddingBottom: 34, alignItems: 'center' }}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={st.desc}>账号保存在服务器上:先填服务器地址(可先测试),再输入该服务器上的账号密码。</Text>
+        {/* 桌面双栏:左品牌说明 + 右表单卡(HD 密度,对齐桌面登录页形态) */}
+        <View style={st.cols}>
 
-        {/* 登录 / 创建账号 Tab 容器(ProviderEdit tabsWrap 同构) */}
-        <View style={st.tabsWrap}>
-          <HDTouch style={[st.tab, tab === 'login' && st.tabOn]} onPress={() => setTab('login')} focusStyle={st.tabFocus} hasTVPreferredFocus>
-            <Text style={[st.tabText, tab === 'login' && st.tabTextOn]}>登录</Text>
-          </HDTouch>
-          <HDTouch style={[st.tab, tab === 'register' && st.tabOn]} onPress={() => setTab('register')} focusStyle={st.tabFocus}>
-            <Text style={[st.tabText, tab === 'register' && st.tabTextOn]}>创建账号</Text>
-          </HDTouch>
-        </View>
-
-        {inputCard('服务器地址', addr, setAddr, 'http://IP:端口 或域名', {
-          kbd: 'url',
-          hint: '与媒体库添加一致:支持 IP / 域名,自动补全协议',
-          right: connectedHere || tested ? <Text style={st.okTag}>✓ 已连接</Text> : null,
-        })}
-
-        {tab === 'login' ? (
-          <>
-            {inputCard('用户名', username, setUsername, 'music_user', {})}
-            {inputCard('密码', password, setPassword, '••••••••', { secure: true, hint: '凭证保存到系统安全存储;输入完成按确认键直接登录', onSubmit: login })}
-          </>
-        ) : (
-          <>
-            {inputCard('管理员密码', regCode, setRegCode, '服务器控制台密码', { secure: true })}
-            {inputCard('新用户名', regUser, setRegUser, '2 字符以上', {})}
-            {inputCard('设置密码', regPwd, setRegPwd, '至少 6 位', { secure: true })}
-            {inputCard('确认密码', regPwd2, setRegPwd2, '再输入一次', { secure: true, onSubmit: register })}
-          </>
-        )}
-
-        {tested ? (
-          <View style={st.infoCard}>
-            <Text style={st.infoTitle}>连接测试通过</Text>
-            <Text style={st.inputHint}>继续填写账号即可登录</Text>
-          </View>
-        ) : null}
-
-        {err ? <Text style={st.err}>{err}</Text> : null}
-
-        {/* 按钮行:测试连接 ghost + 主按钮(ProviderEdit btnRow 同构) */}
-        <View style={st.btnRow}>
-          <HDTouch style={st.btnGhost} focusStyle={st.btnGhostFocus} focusBg={C.hover} onPress={testConn} disabled={!!busy}>
-            {busy === 'test' ? <ActivityIndicator color={C.text} size="large" /> : <Text style={st.btnGhostText}>测试连接</Text>}
-          </HDTouch>
-          <HDTouch style={st.btnPrimary} focusStyle={st.btnPrimaryFocus} onPress={tab === 'login' ? login : register} disabled={!!busy}>
-            {busy === 'login' || busy === 'register'
-              ? <ActivityIndicator color={C.onBrand} size="large" />
-              : <Text style={st.btnPrimaryText}>{tab === 'login' ? (connectedHere || tested ? '登 录' : '连接并登录') : '创建并登录'}</Text>}
-          </HDTouch>
-        </View>
-
-        {!IS_WEB ? (
-          <HDTouch style={st.btnGhostFull} onPress={goLocal} focusStyle={st.btnGhostFocus}>
-            <Text style={st.btnGhostText}>先本地使用(之后可再连接)</Text>
-          </HDTouch>
-        ) : null}
-
-        {/* 常用服务器常显 + 最近连接(TV 无键盘,一键填入;历史里的坏地址可无视直接点常用行) */}
-        <View style={{ gap: 8 }}>
-          <Text style={st.inputLabel}>{history.length ? '最近连接' : '常用服务器'}</Text>
-          {(history.length ? history.slice(0, 4) : QUICK).map(h => (
-              <HDTouch key={h} style={st.histRow} onPress={() => setAddr(h)} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 16 }}>
-                <Icon name="server" size={14} color={C.text3} />
-                <Text style={st.histText} numberOfLines={1}>{h}</Text>
-                <Icon name="chevronright" size={12} color={C.text3} />
-              </HDTouch>
-            ))}
-          {history.length ? (
-            <View style={{ gap: 8, marginTop: 6 }}>
-              <Text style={st.inputLabel}>常用服务器</Text>
-              {QUICK.filter(q => !history.slice(0, 4).includes(q)).map(q => (
-                <HDTouch key={q} style={st.histRow} onPress={() => setAddr(q)} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 16 }}>
-                  <Icon name="server" size={14} color={C.text3} />
-                  <Text style={st.histText} numberOfLines={1}>{q}</Text>
-                  <Icon name="chevronright" size={12} color={C.text3} />
-                </HDTouch>
+          {/* 左栏:品牌/特性(窄屏隐藏) */}
+          {!IS_WEB ? null : (
+            <View style={st.heroPane}>
+              <Image source={require('../assets/brand/mark.png')} style={st.heroMark} />
+              <Text style={st.heroTitle}>同步你的音乐世界</Text>
+              <Text style={st.heroSub}>登录服务器账号后:</Text>
+              {[
+                '歌单与收藏多端实时同步',
+                '服务器端音源直接播放',
+                '播放进度与音效配置云同步',
+                '快照备份与数据管理',
+              ].map(f => (
+                <View key={f} style={st.featRow}>
+                  <Icon name="check" size={12} color={C.brand} />
+                  <Text style={st.featText}>{f}</Text>
+                </View>
               ))}
             </View>
-          ) : null}
+          )}
+
+          {/* 右栏:表单卡 */}
+          <View style={st.formPane}>
+            {/* Tab */}
+            <View style={st.tabsWrap}>
+              <HDTouch style={[st.tab, tab === 'login' && st.tabOn]} onPress={() => setTab('login')} focusStyle={st.tabFocus} hasTVPreferredFocus>
+                <Text style={[st.tabText, tab === 'login' && st.tabTextOn]}>登录</Text>
+              </HDTouch>
+              <HDTouch style={[st.tab, tab === 'register' && st.tabOn]} onPress={() => setTab('register')} focusStyle={st.tabFocus}>
+                <Text style={[st.tabText, tab === 'register' && st.tabTextOn]}>创建账号</Text>
+              </HDTouch>
+            </View>
+
+            {inputCard('服务器地址', addr, setAddr, 'http://IP:端口 或域名', {
+              kbd: 'url',
+              hint: '支持 IP / 域名,自动补全协议',
+              right: connectedHere || tested ? <Text style={st.okTag}>已连接</Text> : null,
+            })}
+
+            {tab === 'login' ? (
+              <>
+                {inputCard('用户名', username, setUsername, 'music_user', {})}
+                {inputCard('密码', password, setPassword, '········', { secure: true, hint: '凭证安全存储;输入完成按确认直接登录', onSubmit: login })}
+              </>
+            ) : (
+              <>
+                {inputCard('管理员密码', regCode, setRegCode, '服务器控制台密码', { secure: true })}
+                {inputCard('新用户名', regUser, setRegUser, '2 字符以上', {})}
+                {inputCard('设置密码', regPwd, setRegPwd, '至少 6 位', { secure: true })}
+                {inputCard('确认密码', regPwd2, setRegPwd2, '再输入一次', { secure: true, onSubmit: register })}
+              </>
+            )}
+
+            {tested ? (
+              <View style={st.infoRow}>
+                <Icon name="check" size={13} color={C.brand} />
+                <Text style={st.infoText}>连接测试通过,继续填写账号即可登录</Text>
+              </View>
+            ) : null}
+
+            {err ? <Text style={st.err}>{err}</Text> : null}
+
+            <View style={st.btnRow}>
+              <HDTouch style={st.btnGhost} focusStyle={st.btnFocusGhost} hoverBg={IS_WEB ? C.hover : false} onPress={testConn} disabled={!!busy}>
+                {busy === 'test' ? <ActivityIndicator color={C.text} size="small" /> : <Text style={st.btnGhostText}>测试连接</Text>}
+              </HDTouch>
+              <HDTouch style={st.btnPrimary} focusStyle={st.btnFocusPrimary} hoverBg={false} onPress={tab === 'login' ? login : register} disabled={!!busy}>
+                {busy === 'login' || busy === 'register'
+                  ? <ActivityIndicator color={C.onBrand} size="small" />
+                  : <Text style={st.btnPrimaryText}>{tab === 'login' ? '登 录' : '创建并登录'}</Text>}
+              </HDTouch>
+            </View>
           </View>
+        </View>
+
+        {/* 历史 */}
+        {history.length ? (
+          <View style={st.histWrap}>
+            <Text style={st.histTitle}>最近连接</Text>
+            {history.slice(0, 4).map(h => (
+              <HDTouch key={h} style={st.histRow} focusStyle={st.btnFocusGhost} hoverBg={IS_WEB ? C.hover : false}
+                onPress={() => { setAddr(h); setTested(false); }}>
+                <Icon name="server" size={13} color={C.text3} />
+                <Text style={st.histText} numberOfLines={1}>{h.replace(/^https?:\/\//, '')}</Text>
+              </HDTouch>
+            ))}
+          </View>
+        ) : null}
+
+        {!IS_WEB ? (
+          <HDTouch style={st.localBtn} onPress={goLocal} focusStyle={st.btnFocusGhost} hoverBg={IS_WEB ? C.hover : false}>
+            <Text style={st.localText}>先本地使用(之后可再连接)</Text>
+          </HDTouch>
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -252,37 +265,46 @@ export function HDAuthLoginScreen() {
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingBottom: 12, gap: 10 },
-  backBtn: { width: 52, height: 52, borderRadius: 16, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
-  focus: { borderWidth: 2, borderColor: C.brand, borderRadius: 16 },
-  title: { flex: 1, color: C.text, fontSize: 22, fontWeight: '800', textAlign: 'center' },
-  desc: { color: C.text2, fontSize: 13, lineHeight: 18 },
-  // Tab 容器(ProviderEdit tabsWrap 同构)
-  tabsWrap: { flexDirection: 'row', backgroundColor: C.elev, borderRadius: 14, padding: 5, gap: 5, height: 54 },
-  tab: { flex: 1, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  tabOn: { backgroundColor: C.surface },
-  tabFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 10 },
-  tabText: { color: C.text3, fontSize: 14, fontWeight: '500' },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 26, paddingBottom: 10, gap: 10 },
+  backBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
+  focus: { borderWidth: 2, borderColor: C.brand, borderRadius: 10 },
+  title: { color: C.text, fontSize: 15, fontWeight: '700' },
+  // 双栏(HD 密度): 左 240 品牌面板 + 右 400 表单;窄屏(web<720 简化为仅表单由 hero 隐藏逻辑处理)
+  cols: { flexDirection: 'row', gap: 40, alignItems: 'stretch', justifyContent: 'center', width: '100%', maxWidth: 760, flexWrap: 'wrap' },
+  heroPane: { width: 240, paddingTop: 18, gap: 10 },
+  heroMark: { width: 44, height: 48 },
+  heroTitle: { color: C.text, fontSize: 20, fontWeight: '800', lineHeight: 26 },
+  heroSub: { color: C.text2, fontSize: 12, marginTop: 6 },
+  featRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  featText: { color: C.text2, fontSize: 12, lineHeight: 20 },
+  formPane: { width: 400, maxWidth: '100%', backgroundColor: C.surface, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 20, gap: 12 },
+  tabsWrap: { flexDirection: 'row', backgroundColor: C.elev, borderRadius: 10, padding: 4, gap: 4 },
+  tab: { flex: 1, height: 34, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  tabOn: { backgroundColor: C.bg },
+  tabFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 8 },
+  tabText: { color: C.text3, fontSize: 12.5, fontWeight: '500' },
   tabTextOn: { color: C.text, fontWeight: '700' },
-  // 输入卡(ProviderEdit hdSt.inputCard 同构)
-  inputCard: { backgroundColor: C.surface, borderRadius: 16, paddingHorizontal: 20, paddingVertical: 14, gap: 6 },
+  inputCard: { backgroundColor: C.elev, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, gap: 4 },
   labelRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  inputLabel: { color: C.text2, fontSize: 13, flex: 1 },
-  okTag: { color: C.brand, fontSize: 13, fontWeight: '600' },
-  inputValue: { color: C.text, fontSize: 16, paddingVertical: 6 },
-  inputHint: { color: C.text3, fontSize: 11 },
-  infoCard: { backgroundColor: C.surface, borderRadius: 16, paddingHorizontal: 20, paddingVertical: 14, gap: 4 },
-  infoTitle: { color: C.text, fontSize: 15, fontWeight: '600' },
-  err: { color: C.danger, fontSize: 14, lineHeight: 19 },
-  // 按钮(ProviderEdit btnRow 同构:ghost flex1 + primary flex1.4)
-  btnRow: { flexDirection: 'row', gap: 12, marginTop: 4 },
-  btnGhost: { flex: 1, height: 58, borderRadius: 14, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
-  btnGhostFull: { height: 54, borderRadius: 14, borderWidth: 1.5, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
-  btnGhostFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 14 },
-  btnGhostText: { color: C.text, fontSize: 16, fontWeight: '600' },
-  btnPrimary: { flex: 1.4, height: 58, borderRadius: 14, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
-  btnPrimaryFocus: { borderWidth: 2.5, borderColor: C.text, borderRadius: 14 },
-  btnPrimaryText: { color: C.onBrand, fontSize: 16, fontWeight: '700' },
-  histRow: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 48, borderRadius: 16, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, paddingHorizontal: 16 },
-  histText: { color: C.text2, fontSize: 13, flex: 1 },
+  inputLabel: { color: C.text2, fontSize: 11.5, flex: 1 },
+  okTag: { color: C.brand, fontSize: 11.5, fontWeight: '600' },
+  inputValue: { color: C.text, fontSize: 14, paddingVertical: 4 },
+  inputHint: { color: C.text3, fontSize: 10 },
+  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  infoText: { color: C.brand, fontSize: 12 },
+  err: { color: C.danger, fontSize: 12, lineHeight: 17 },
+  btnRow: { flexDirection: 'row', gap: 10 },
+  btnGhost: { flex: 1, height: 42, borderRadius: 11, backgroundColor: C.elev, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
+  btnPrimary: { flex: 1.4, height: 42, borderRadius: 11, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
+  btnFocusGhost: { borderWidth: 2, borderColor: C.brand, borderRadius: 11 },
+  btnFocusPrimary: { borderWidth: 2, borderColor: C.text, borderRadius: 11 },
+  btnGhostText: { color: C.text, fontSize: 13, fontWeight: '600' },
+  btnPrimaryText: { color: C.onBrand, fontSize: 13, fontWeight: '700' },
+  histWrap: { width: 400, maxWidth: '100%', marginTop: 14, gap: 6 },
+  histTitle: { color: C.text3, fontSize: 11, marginBottom: 2 },
+  histRow: { flexDirection: 'row', alignItems: 'center', gap: 9, height: 38, borderRadius: 10, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, paddingHorizontal: 13 },
+  histText: { color: C.text2, fontSize: 12.5, flex: 1 },
+  localBtn: { marginTop: 16, height: 40, borderRadius: 11, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 22 },
+  localText: { color: C.text2, fontSize: 12.5, fontWeight: '500' },
 });
+
