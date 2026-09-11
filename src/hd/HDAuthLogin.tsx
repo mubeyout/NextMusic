@@ -18,6 +18,48 @@ import { toast } from '../components/Dialog';
 
 const recentKv = createMMKV({ id: 'nextmusic-server-history' });
 
+// 输入卡独立组件: 自持 hooks(原先闭包内 hooks 挂父组件,login/register 卡数不同导致 React#310)
+function InputCard({ label, value, set, ph, opts, onDirty }: {
+  label: string; value: string; set: (v: string) => void; ph: string;
+  opts?: { secure?: boolean; hint?: boolean; right?: React.ReactNode; kbd?: 'url' | 'default'; onSubmit?: () => void; hintText?: string };
+  onDirty?: () => void;
+}) {
+  const ref = React.useRef<React.ComponentRef<typeof TextInput>>(null);
+  const [ime, setIme] = React.useState(false);
+  React.useEffect(() => { if (ime) ref.current?.focus(); }, [ime]);
+  const card = (
+    <View style={st.inputCard}>
+      <View style={st.labelRow}>
+        <Text style={st.inputLabel}>{label}</Text>
+        {opts?.right}
+      </View>
+      <TextInput
+        ref={ref}
+        style={st.inputValue}
+        placeholder={ph}
+        placeholderTextColor={C.text3}
+        value={value}
+        onChangeText={v => { set(v); onDirty?.(); }}
+        autoCapitalize="none" autoCorrect={false}
+        secureTextEntry={opts?.secure}
+        keyboardType={opts?.kbd === 'url' ? 'url' : 'default'}
+        returnKeyType={opts?.onSubmit ? 'done' : 'next'}
+        onSubmitEditing={opts?.onSubmit}
+        focusable={!IS_HD || ime}
+        showSoftInputOnFocus={!IS_HD ? undefined : ime}
+        onBlur={() => setIme(false)}
+      />
+      {opts?.hintText ? <Text style={st.inputHint}>{opts.hintText}</Text> : null}
+    </View>
+  );
+  if (!IS_HD) return card;
+  return (
+    <HDTouch style={{ borderRadius: 12 }} onPress={() => setIme(true)} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12 }}>
+      {card}
+    </HDTouch>
+  );
+}
+
 export function HDAuthLoginScreen() {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void; reset: (o: unknown) => void };
@@ -110,42 +152,7 @@ export function HDAuthLoginScreen() {
 
   // TV/车机:输入卡整体 HDTouch 聚焦导航,OK 才进输入态并弹 IME
   // 坑:showSoftInputOnFocus=false 会连手动 focus() 的键盘一起拦(老板实测无法弹出)——OK 时动态放开
-  const inputCard = (label: string, value: string, set: (v: string) => void, ph: string, opts?: { secure?: boolean; hint?: string; right?: React.ReactNode; kbd?: 'url' | 'default'; onSubmit?: () => void }) => {
-    const ref = React.useRef<React.ComponentRef<typeof TextInput>>(null);
-    const [ime, setIme] = React.useState(false);
-    React.useEffect(() => { if (ime) ref.current?.focus(); }, [ime]);
-    const card = (
-      <View style={st.inputCard}>
-        <View style={st.labelRow}>
-          <Text style={st.inputLabel}>{label}</Text>
-          {opts?.right}
-        </View>
-        <TextInput
-          ref={ref}
-          style={st.inputValue}
-          placeholder={ph}
-          placeholderTextColor={C.text3}
-          value={value}
-          onChangeText={v => { set(v); setTested(false); }}
-          autoCapitalize="none" autoCorrect={false}
-          secureTextEntry={opts?.secure}
-          keyboardType={opts?.kbd === 'url' ? 'url' : 'default'}
-          returnKeyType={opts?.onSubmit ? 'done' : 'next'}
-          onSubmitEditing={opts?.onSubmit}
-          focusable={!IS_HD || ime}
-          showSoftInputOnFocus={!IS_HD ? undefined : ime}
-          onBlur={() => setIme(false)}
-        />
-        {opts?.hint ? <Text style={st.inputHint}>{opts.hint}</Text> : null}
-      </View>
-    );
-    if (!IS_HD) return card;
-    return (
-      <HDTouch style={{ borderRadius: 16 }} onPress={() => setIme(true)} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 16 }}>
-        {card}
-      </HDTouch>
-    );
-  };
+
 
   return (
     <View style={[st.screen, { paddingTop: Math.min(insets.top, 20) + 6 }]}>
@@ -159,7 +166,7 @@ export function HDAuthLoginScreen() {
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: 26, paddingBottom: 34, alignItems: 'center' }}
+        contentContainerStyle={{ paddingHorizontal: 26, paddingBottom: 34, paddingTop: 20, alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
       >
         {/* 桌面双栏:左品牌说明 + 右表单卡(HD 密度,对齐桌面登录页形态) */}
@@ -197,23 +204,19 @@ export function HDAuthLoginScreen() {
               </HDTouch>
             </View>
 
-            {inputCard('服务器地址', addr, setAddr, 'http://IP:端口 或域名', {
-              kbd: 'url',
-              hint: '支持 IP / 域名,自动补全协议',
-              right: connectedHere || tested ? <Text style={st.okTag}>已连接</Text> : null,
-            })}
+            <InputCard label="服务器地址" value={addr} set={setAddr} ph="http://IP:端口 或域名" onDirty={() => setTested(false)} opts={{ kbd: 'url', hintText: '支持 IP / 域名,自动补全协议', right: connectedHere || tested ? <Text style={st.okTag}>已连接</Text> : null }} />
 
             {tab === 'login' ? (
               <>
-                {inputCard('用户名', username, setUsername, 'music_user', {})}
-                {inputCard('密码', password, setPassword, '········', { secure: true, hint: '凭证安全存储;输入完成按确认直接登录', onSubmit: login })}
+                <InputCard label="用户名" value={username} set={setUsername} ph="music_user" onDirty={() => setTested(false)} />
+                <InputCard label="密码" value={password} set={setPassword} ph="········" opts={{ secure: true, hintText: '凭证安全存储;按确认直接登录', onSubmit: login }} onDirty={() => setTested(false)} />
               </>
             ) : (
               <>
-                {inputCard('管理员密码', regCode, setRegCode, '服务器控制台密码', { secure: true })}
-                {inputCard('新用户名', regUser, setRegUser, '2 字符以上', {})}
-                {inputCard('设置密码', regPwd, setRegPwd, '至少 6 位', { secure: true })}
-                {inputCard('确认密码', regPwd2, setRegPwd2, '再输入一次', { secure: true, onSubmit: register })}
+                <InputCard label="管理员密码" value={regCode} set={setRegCode} ph="服务器控制台密码" opts={{ secure: true }} onDirty={() => setTested(false)} />
+                <InputCard label="新用户名" value={regUser} set={setRegUser} ph="2 字符以上" onDirty={() => setTested(false)} />
+                <InputCard label="设置密码" value={regPwd} set={setRegPwd} ph="至少 6 位" opts={{ secure: true }} onDirty={() => setTested(false)} />
+                <InputCard label="确认密码" value={regPwd2} set={setRegPwd2} ph="再输入一次" opts={{ secure: true, onSubmit: register }} onDirty={() => setTested(false)} />
               </>
             )}
 
