@@ -469,11 +469,11 @@ export function HDPlayer() {
             <HDTouch style={st.cTool} onPress={() => setCardOpen(true)}>
               <Text style={st.cToolText}>卡片</Text>
             </HDTouch>
-            <HDTouch style={st.cTool} onPress={() => nav.navigate('Comments')}>
-              <Text style={st.cToolText}>评论</Text>
+            <HDTouch style={st.cTool} onPress={() => nav.navigate('Comments')} title="评论">
+              <Icon name="comments" size={19} color="#ffffffcc" />
             </HDTouch>
-            <HDTouch style={st.cTool} onPress={() => nav.navigate('Fx')}>
-              <Text style={st.cToolText}>音效</Text>
+            <HDTouch style={st.cTool} onPress={() => nav.navigate('Fx')} title="均衡器与音效">
+              <Icon name="sliders" size={19} color="#ffffffcc" />
             </HDTouch>
           </View>
 
