@@ -100,7 +100,8 @@ export function HDPlayer() {
     window.addEventListener('resize', onR);
     return () => window.removeEventListener('resize', onR);
   }, []);
-  const vinylSize = IS_WEB ? Math.min(320, Math.round(winH * 0.34)) : 228; // 设计稿:黑胶为主视觉 // 缩小一半(老板)
+  const vinylSize = IS_WEB ? Math.min(320, Math.round(winH * 0.34)) : 228; // 设计稿:黑胶为主视觉
+  const ringSize = vinylSize + Math.round(vinylSize * 0.06); // 波浪环(黑胶 106%) // 缩小一半(老板)
 
   const insets = useSafeAreaInsets();
   const nav = { goBack: () => hdNav()?.goBack(), navigate: (s: string) => hdNav()?.navigate(s) };
@@ -247,9 +248,11 @@ export function HDPlayer() {
         <View style={st.rowWrap}>
         <View style={[st.artCol, IS_WEB && st.artColWeb]}>
           {/* lx125:粒子环(单圈 48 粒,FFT 分区驱动) */}
-          {(<View style={st.vinylZone}>
+          {(<View style={[st.vinylZone, IS_WEB && { width: ringSize, height: ringSize }]}>
             {IS_WEB
-              ? <SpectrumRing size={vinylSize + Math.round(vinylSize * 0.06)} playing={playing} /> /* v3.4:波浪频谱环(web,音频 analyser 驱动) */
+              ? <View style={{ position: 'absolute', top: '50%', left: '50%', transform: [{ translateX: -ringSize / 2 }, { translateY: -ringSize / 2 }] }}>
+                  <SpectrumRing size={ringSize} playing={playing} />
+                </View> /* v3.4:波浪环绝对定位·与黑胶同心重叠 */
               : <ParticleRing bins={specBins} rot={ringRot} />}
             {IS_WEB ? (
               /* v3.3(老板:黑胶没质感):web 换 HD_VINYL_SVG——纹理沟槽+光泽+封面内嵌,真黑胶质感 */
@@ -446,7 +449,7 @@ const st = StyleSheet.create({
   srcDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.brand },
   srcTag: { color: '#ffffffaa', fontSize: 10, letterSpacing: 2, fontWeight: '600' },
   main: { flex: 1, flexDirection: 'row', paddingHorizontal: 52, paddingTop: 4, gap: 42 },
-  mainWeb: { flexDirection: 'column', paddingHorizontal: '5%', gap: 20 },
+  mainWeb: { flexDirection: 'column', paddingHorizontal: '5%', gap: 20, justifyContent: 'flex-end' }, // v3.5:行2(进度+控件)紧贴页面底部
   rowWrap: { flex: 1, flexDirection: 'row', gap: '10%', alignItems: 'center', minWidth: 0 }, // 行1:黑胶(左半靠右)|10%|标题歌词(右半靠左)
   artCol: { width: 344, alignItems: 'center', justifyContent: 'center' },
   artFallback: { backgroundColor: '#1E2722', alignItems: 'center', justifyContent: 'center' },
