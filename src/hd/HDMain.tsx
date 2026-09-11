@@ -10,6 +10,7 @@ import { C, H, SH, fmtSec } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
+import { providers } from '../services/providers';
 import { library } from '../state/library';
 import { playlistSync } from '../state/playlistSync'; // lx163
 import { toast } from '../components/Dialog';
@@ -117,7 +118,15 @@ export function HDMain() {
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<number>(0);
   const [pls, setPls] = useState<{ key: string; localId?: string; name: string; count: number; songs: SongItem[] }[]>([]);
-  const [loveCount, setLoveCount] = useState<number | null>(null); // lx67:侧栏"我喜欢的"数量统计
+  const [loveCount, setLoveCount] = useState<number | null>(null);
+  const [pbCollect, setPbCollect] = useState<import('../services/server').SongItem | null>(null);
+  const [providerAccts, setProviderAccts] = useState<import('../services/providers').ProviderAcct[]>([]);
+  useEffect(() => {
+    const upd = () => setProviderAccts((providers as unknown as { all: () => import('../services/providers').ProviderAcct[] }).all());
+    upd();
+    const t = setInterval(upd, 3000); // 轻轮询(连接/删除后侧栏即时反映)
+    return () => clearInterval(t);
+  }, []); // lx67:侧栏"我喜欢的"数量统计
   const { connected, token } = useApp();
 
   // 歌单列表(本地+同步)与"我喜欢的"计数——lx91 单次拉取;lx104:缓存秒出+我喜欢的去重+离线收藏合并
@@ -267,6 +276,14 @@ export function HDMain() {
           {/* 我的乐库 */}
           <Group label="我的乐库" top={8} />
           <NavItem icon="server" label="媒体库" onPress={() => railNav('MediaLibs')} />
+          {/* v3:已连接媒体库账号直入口(Emby/Jellyfin/Navidrome/WebDAV/道理鱼) */}
+          {providerAccts.map(pa => (
+            <HDTouch key={pa.id} style={[st.navItem, { paddingLeft: 34 }]} focusStyle={st.navFocus} hoverBg={IS_WEB ? C.hover : false}
+              onPress={() => railNav('ProviderBrowse', { acctId: pa.id })}>
+              <Icon name="music" size={16} color={C.text2} />
+              <Text style={st.navLabel} numberOfLines={1}>{pa.name}</Text>
+            </HDTouch>
+          ))}
           {/* lx165(老板):我喜欢的+收藏歌手+收藏专辑 三入口并一——内页三 tab,行内 ♥ 即管理 */}
           <HDTouch style={st.navItem} focusStyle={st.navFocus} hoverBg={IS_WEB ? C.hover : false} onPress={() => railNav('MyFavorites')}>
             <Icon name="heart" size={16} color={C.text2} />
@@ -346,6 +363,11 @@ export function HDMain() {
             <InnerStack.Screen name="AuthSignup" component={withPhoneScale(AuthSignupScreen)} />
           </InnerStack.Navigator>
         </NavigationContainer>
+
+        <View style={{ position: 'absolute', left: H.sidebar, right: 0, bottom: 0, zIndex: 30 }} collapsable={false}>
+          <HDPlayBar onCollect={setPbCollect} />
+        </View>
+        {pbCollect ? <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, zIndex: 999 }}><HDCollect song={pbCollect} onClose={() => setPbCollect(null)} /></View> : null}
         </NavigationIndependentTree>
       </View>
     </View>
@@ -356,7 +378,14 @@ export function HDMain() {
 // lx91:懒挂载——首访才渲染(冷启动只挂 Home,不再四 tab 同时开火 8+ 网络请求);访问后保持存活
 function TabsHost({ tab, setTab }: { tab: number; setTab: (i: number) => void }) {
   const [visited, setVisited] = useState<number[]>([0]);
-  const [pbCollect, setPbCollect] = useState<import('../services/server').SongItem | null>(null); // lx148:播放条收藏面板(全屏层)
+  const [pbCollect, setPbCollect] = useState<import('../services/server').SongItem | null>(null);
+  const [providerAccts, setProviderAccts] = useState<import('../services/providers').ProviderAcct[]>([]);
+  useEffect(() => {
+    const upd = () => setProviderAccts((providers as unknown as { all: () => import('../services/providers').ProviderAcct[] }).all());
+    upd();
+    const t = setInterval(upd, 3000); // 轻轮询(连接/删除后侧栏即时反映)
+    return () => clearInterval(t);
+  }, []); // lx148:播放条收藏面板(全屏层)
   useEffect(() => { setVisited(v => (v.includes(tab) ? v : [...v, tab])); }, [tab]);
   return (
     <View style={{ flex: 1 }}>
@@ -366,7 +395,6 @@ function TabsHost({ tab, setTab }: { tab: number; setTab: (i: number) => void })
         <View style={[st.tabHost, tab !== 2 && st.tabOff]}>{visited.includes(2) ? <HDSearch /> : null}</View>
         <View style={[st.tabHost, tab !== 3 && st.tabOff]}>{visited.includes(3) ? <HDBoards /> : null}</View>
       </View>
-      <HDPlayBar onCollect={setPbCollect} />
       {pbCollect ? <View style={{ position: 'absolute', top: 0, bottom: 0, left: -H.sidebar, right: 0, zIndex: 999 }}><HDCollect song={pbCollect} onClose={() => setPbCollect(null)} /></View> : null}
     </View>
   );

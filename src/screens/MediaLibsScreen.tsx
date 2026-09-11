@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Icon, BrandIcon } from '../theme/Icon';
 import { C } from '../theme/tokens';
+import { Platform } from 'react-native';
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
 import { PillTabs } from '../components/PillTabs';
@@ -48,6 +49,8 @@ function T(props: { style?: unknown; onPress?: () => void; onLongPress?: () => v
     </TouchableOpacity>
   );
 }
+
+const IS_WEB = Platform.OS === 'web';
 
 export function MediaLibsScreen() {
   const insets = useSafeAreaInsets();
@@ -347,7 +350,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                 <View style={st.albumGrid}>
                   {(albums.data || []).map(al => (
                     <TouchableOpacity
-                      key={al.id} style={st.albumCell} activeOpacity={0.85}
+                      key={al.id} style={[st.albumCell, IS_WEB && st.albumCellWeb]} activeOpacity={0.85}
                       onPress={() => nav.navigate('ProviderDetail', {
                         acctId: acct.id, kind: 'album', id: al.id, name: al.name, cover: al.cover,
                         sub: [al.artist, al.songCount ? `${al.songCount}首` : null].filter(Boolean).join(' · ') || undefined,
@@ -488,6 +491,7 @@ const st = StyleSheet.create({
   // 专辑网格
   albumGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   albumCell: { width: '31%', gap: 4 },
+  albumCellWeb: { width: '15.5%' }, // web 6 列(0.75 zoom 下 31%=2列过大,加密 4 倍)
   albumCover: { width: '100%', aspectRatio: 1, borderRadius: 10, backgroundColor: C.surface2 },
   albumFallback: { alignItems: 'center', justifyContent: 'center' },
   albumGlyph: { color: C.text2, fontSize: 24, fontWeight: '700' },
