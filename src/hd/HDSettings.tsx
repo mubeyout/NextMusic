@@ -117,7 +117,7 @@ export function HDSettingsScreen() {
       { kind: 'toggle', icon: 'heart', title: '本地歌词缓存', desc: '已加载歌词存本地', value: s.enableLyricCache, onToggle: () => settings.set('enableLyricCache', !s.enableLyricCache) },
       { kind: 'toggle', icon: 'heart', title: '播放链接缓存', desc: '缓存取链结果', value: s.enableSongUrlCache, onToggle: () => settings.set('enableSongUrlCache', !s.enableSongUrlCache) },
       { kind: 'toggle', icon: 'download', title: '下载嵌入歌词', desc: '标签+.lrc 写入文件', value: s.embedLyricToFile, onToggle: () => settings.set('embedLyricToFile', !s.embedLyricToFile) },
-      { kind: 'toggle', icon: 'download', title: '仅下载模式', desc: '不直接播放在线流,仅缓存后播', value: s.enableOnlyDownloadMode, onToggle: () => settings.set('enableOnlyDownloadMode', !s.enableOnlyDownloadMode) },
+      { kind: 'toggle', icon: 'download', title: '下载独立目录', desc: '开启:手动下载的文件与播放缓存分开存放(下载→/server/data/music,缓存→/server/data/cache/用户名);关闭:两者同写缓存目录', value: s.enableOnlyDownloadMode, onToggle: () => settings.set('enableOnlyDownloadMode', !s.enableOnlyDownloadMode) },
       { kind: 'toggle', icon: 'refresh', title: '下载目录歌曲洗版', desc: '自动替换为高音质版本', value: s.enableRemaster, onToggle: () => settings.set('enableRemaster', !s.enableRemaster) },
       { kind: 'toggle', icon: 'wave', title: '自动更新网络歌单', desc: '定时检测歌单变更', value: s.autoUpdateNetworkList, onToggle: () => settings.set('autoUpdateNetworkList', !s.autoUpdateNetworkList) },
       { kind: 'select', icon: 'globe', title: '歌单检测间隔', desc: '网络歌单自动检测', value: s.networkListAutoCheckInterval, options: ['30m', '1h', '3h', '6h', '12h', '1d'], onPick: v => settings.set('networkListAutoCheckInterval', v) },
