@@ -102,7 +102,7 @@ export function HDSettingsScreen() {
     ],
     '下载与备份': [
       { kind: 'info', icon: 'info', title: '下载模式', desc: IS_WEB
-        ? 'Web 版·服务器缓存模式:点「下载」=歌曲永久缓存到服务器存储(再次播放零流量,不占浏览器空间);缓存目录=容器 /server/data;配额/LRU 清理/缓存列表→后台·设置·存储备份'
+        ? 'Web 版·服务器缓存模式:点「下载」=歌曲永久缓存到服务器(再次播放零流量,不占浏览器空间)。缓存目录=/server/data/cache/用户名;下载目录=/server/data/music;配额/LRU/缓存列表→后台·设置·存储备份'
         : '原生端·本地文件模式:下载保存到设备存储(下载管理可查看/删除,可离线播放);开启下方「缓存歌曲到服务器」后同时写服务器,双备份', value: IS_WEB ? '服务器缓存' : '本地文件' },
       { kind: 'select', icon: 'music', title: '下载音质', desc: '下载歌曲保存的音质档位', value: s.downloadQuality, options: QUALITY_OPTS, onPick: v => settings.set('downloadQuality', v as Quality) },
       { kind: 'select', icon: 'queue', title: '同时下载数', desc: '下载任务并发数', value: String(s.maxConcurrent), options: ['1', '2', '3', '5'], onPick: v => settings.set('maxConcurrent', Number(v)) },
@@ -111,7 +111,7 @@ export function HDSettingsScreen() {
       { kind: 'toggle', icon: 'cloud', title: '播放设置自动备份', desc: '音质/主题/播放开关等随账号云端同步,多端一致', value: s.syncSettingsCloud ?? true, onToggle: () => settings.set('syncSettingsCloud' as never, !(s.syncSettingsCloud ?? true) as never) },
       { kind: 'nav', title: '立即同步播放设置', desc: '上传当前播放设置到服务器账号', icon: 'refresh', action: () => { api.settingsPush({ playQuality: s.playQuality, downloadQuality: s.downloadQuality, light: s.light, pureBlack: s.pureBlack, accent: s.accent }).then(() => toast('已上传到服务器账号')).catch(() => toast('同步失败(未连接服务器)')); } },
       { kind: 'nav', title: '下载管理', desc: '查看下载队列与失败重试', icon: 'download', to: 'Downloads' },
-      { kind: 'toggle', icon: 'cloud', title: '缓存歌曲到服务器', desc: '播放时缓存文件,弱网流畅 · Docker:缓存写入容器 /server/data(宿主机路径=启动 -v 映射)', value: s.enableServerCache, onToggle: () => settings.set('enableServerCache', !s.enableServerCache) },
+      { kind: 'toggle', icon: 'cloud', title: '缓存歌曲到服务器', desc: '播放时缓存文件,弱网流畅 · 缓存目录=/server/data/cache/用户名(宿主机路径=启动 -v 映射)', value: s.enableServerCache, onToggle: () => settings.set('enableServerCache', !s.enableServerCache) },
       { kind: 'toggle', icon: 'cloud', title: '缓存歌词到服务器', desc: '多端同步极速加载', value: s.enableServerLyricCache, onToggle: () => settings.set('enableServerLyricCache', !s.enableServerLyricCache) },
       { kind: 'toggle', icon: 'heart', title: '优先播放缓存', desc: '有缓存直接用,失效自动重取', value: s.preferServerCache, onToggle: () => settings.set('preferServerCache', !s.preferServerCache) },
       { kind: 'toggle', icon: 'heart', title: '本地歌词缓存', desc: '已加载歌词存本地', value: s.enableLyricCache, onToggle: () => settings.set('enableLyricCache', !s.enableLyricCache) },

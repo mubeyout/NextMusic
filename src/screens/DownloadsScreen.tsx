@@ -19,6 +19,8 @@ export function DownloadsScreen() {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void };
   const { playSong, current } = usePlayer();
+  const [cacheStat, setCacheStat] = useState<{ totalSize: number; fileCount: number } | null>(null);
+  useEffect(() => { fetch('/api/music/cache/stats').then(r => r.json()).then(d => setCacheStat(d?.data || d)).catch(() => {}); }, []);
   const [list, setList] = useState(dlStore.all());
   const [, force] = useState(0);
 
@@ -53,7 +55,7 @@ export function DownloadsScreen() {
         <View style={{ backgroundColor: '#1E2422', borderRadius: 12, padding: 14, marginBottom: 12, gap: 4 }}>
           <Text style={{ color: '#7ee2a8', fontSize: 13, fontWeight: '700' }}>服务器缓存模式</Text>
           <Text style={{ color: '#9aa5a0', fontSize: 11.5, lineHeight: 17 }}>
-            当前模式:服务器缓存(Web)。点「下载」=歌曲永久缓存到服务器 /server/data,再次播放零流量,不占浏览器空间;{'\n'}
+            当前模式:服务器缓存(Web)。点「下载」=歌曲永久缓存到服务器,再次播放零流量,不占浏览器空间。缓存目录:/server/data/cache/用户名 · 下载目录:/server/data/music;{'\n'}
             与原生端差别:手机/TV 为本地文件模式(下载到设备可离线),Web 不落盘、服务器统一管理;{'\n'}
             配额与 LRU 自动清理:后台「设置 · 存储备份 · 缓存与空间」;缓存列表与清空:后台「下载与备份 · 服务器缓存管理」。
           </Text>
