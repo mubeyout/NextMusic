@@ -46,7 +46,7 @@ export function SourcesScreen() {
   useEffect(refresh, []);
   // ===== 服务器端音源(原版三态鉴权 + 共享/私有, /api/custom-source/*) =====
   const [serverSources, setServerSources] = useState<{ id: string; name: string; version: string; enabled: boolean; channels: string[] }[]>([]);
-  const loadServerSources = () => { api.csList().then(l => setServerSources(l.filter(x => x.enabled !== false))).catch(() => setServerSources([])); };
+  const loadServerSources = () => { api.csList().then(setServerSources).catch(() => setServerSources([])); };
   // 服务器音源: 播放器/客户端端只读+启停;管理(上传/删除)走后台 /admin/
   // vc88:手动导入音源文件(SAF 选 .js)
   // 本地引擎音源 URL 添加(15:54 整理时误删函数体,调用点残留致 ReferenceError——找回)
@@ -119,15 +119,17 @@ export function SourcesScreen() {
       {/* 服务器音源区: 有可用音源才渲染(空/未配置/全部禁用/未连接 → 整块不显示,省得占位) */}
       {serverSources.length ? (
       <Section title="服务器音源">
-        <Text style={[st.hint, IS_HD && hd.hint]}>保存在服务器端执行的共享音源 · 管理(添加/删除)在服务器后台</Text>
+        <Text style={[st.hint, IS_HD && hd.hint]}>服务器端共享音源 · 点击图标启用/停用 · 添加/删除在服务器后台</Text>
         {serverSources.map(cs => (
           <View key={cs.id} style={[st.srcRow, IS_HD && hd.srcRow]}>
-            <View style={[st.srcIcon, IS_HD && hd.srcIcon]}>
-              <Icon name="wave" size={IS_HD ? 22 : 18} color={C.brand} />
-            </View>
+            <T style={[st.srcIcon, IS_HD && hd.srcIcon]} onPress={() => {
+              api.csToggle(cs.id, !(cs.enabled !== false)).then(loadServerSources).catch(() => toast('操作失败(需登录)'));
+            }}>
+              <Icon name="wave" size={IS_HD ? 22 : 18} color={cs.enabled !== false ? C.brand : C.text3} />
+            </T>
             <View style={st.srcMeta}>
               <Text style={[st.srcName, IS_HD && hd.srcName]} numberOfLines={1}>{cs.name} <Text style={st.srcVer}>v{cs.version}</Text></Text>
-              <Text style={[st.srcSub, IS_HD && hd.srcSub]} numberOfLines={1}>{(cs.channels || []).join(' / ') || '服务器音源'} · 启用中</Text>
+              <Text style={[st.srcSub, IS_HD && hd.srcSub]} numberOfLines={1}>{(cs.channels || []).join(' / ') || '服务器音源'} · {cs.enabled !== false ? '启用中 · 点击停用' : '已停用 · 点击启用'}</Text>
             </View>
           </View>
         ))}
