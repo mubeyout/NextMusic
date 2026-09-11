@@ -52,6 +52,18 @@ function T(props: { style?: unknown; onPress?: () => void; onLongPress?: () => v
 
 const IS_WEB = Platform.OS === 'web';
 
+
+// 封面渐变库(无封面 fallback,App 端同款 6 组): 按名字 hash 选色
+const COVER_GRADS: [string, string][] = [
+  ['#1F8061', '#6B2973'], ['#6B2980', '#1F578A'], ['#8C401F', '#217A5C'],
+  ['#2B4F9E', '#6B2973'], ['#1F578A', '#1F8061'], ['#217A5C', '#8C401F'],
+];
+function coverGrad(name?: string) {
+  let h = 0; for (let i = 0; i < (name || '').length; i++) h = (name || '').charCodeAt(i) + ((h << 5) - h);
+  const g = COVER_GRADS[Math.abs(h) % COVER_GRADS.length];
+  return { background: `linear-gradient(135deg, ${g[0]}, ${g[1]})` } as const;
+}
+
 export function MediaLibsScreen() {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string, p?: object) => void };
@@ -357,7 +369,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                       })}
                     >
                       {al.cover ? <Image source={{ uri: al.cover }} style={st.albumCover} />
-                        : <View style={[st.albumCover, st.albumFallback]}><Text style={st.albumGlyph}>♫</Text></View>}
+                        : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(al.name)]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
                       <Text style={st.albumName} numberOfLines={1}>{al.name}</Text>
                       <Text style={st.albumMeta} numberOfLines={1}>{al.artist || ''}{al.songCount ? ` · ${al.songCount}首` : ''}</Text>
                     </TouchableOpacity>
@@ -415,7 +427,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                     onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'playlist', id: pl.id, name: pl.name, cover: pl.cover, sub: pl.songCount ? `${pl.songCount} 首` : undefined })}
                   >
                     {pl.cover ? <Image source={{ uri: pl.cover }} style={st.artistArt} />
-                      : <View style={[st.artistArt, st.albumFallback]}><Text style={st.albumGlyph}>♫</Text></View>}
+                      : <View style={[st.artistArt, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name)]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={st.artistName} numberOfLines={1}>{pl.name}</Text>
                       <Text style={st.artistMeta} numberOfLines={1}>{pl.songCount ? `${pl.songCount} 首` : ''}</Text>

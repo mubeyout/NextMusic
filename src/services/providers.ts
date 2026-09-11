@@ -349,13 +349,13 @@ export const providerApi = {
       }));
     }
     if (PROTOCOL[a.type] === 'emby' || PROTOCOL[a.type] === 'jellyfin') {
-      const d = (await embyFetch(a, `/Users/${a.userId}/Items?IncludeItemTypes=MusicAlbum&Recursive=true&SortBy=SortName&Limit=300&Fields=PrimaryImageAspectRatio`)) as { Items?: Record<string, unknown>[] };
+      const d = (await embyFetch(a, `/Users/${a.userId}/Items?IncludeItemTypes=MusicAlbum&Recursive=true&SortBy=SortName&Limit=300&Fields=PrimaryImageAspectRatio,ImageTags`)) as { Items?: Record<string, unknown>[] };
       return (d.Items || []).map(it => ({
         id: String(it.Id), name: String(it.Name || ''),
         artist: it.AlbumArtist ? String(it.AlbumArtist) : (it.Artists ? String((it.Artists as string[])[0] || '') : undefined),
         songCount: it.ChildCount ? Number(it.ChildCount) : undefined,
         year: it.ProductionYear ? Number(it.ProductionYear) : undefined,
-        cover: `${embyRoot(a)}/Items/${it.Id}/Images/Primary?maxWidth=300${a.token ? `&api_key=${a.token}` : ''}`,
+        cover: ((it.ImageTags as Record<string, string> | undefined)?.Primary) ? `${embyRoot(a)}/Items/${it.Id}/Images/Primary?maxWidth=300${a.token ? `&api_key=${a.token}` : ''}` : undefined, // 仅 Primary 存在才构造(无封面请求 404→灰块)
       }));
     }
     return [];
@@ -401,7 +401,7 @@ export const providerApi = {
         id: String(it.Id), name: String(it.Name || ''),
         songCount: it.ChildCount ? Number(it.ChildCount) : undefined,
         year: it.ProductionYear ? Number(it.ProductionYear) : undefined,
-        cover: `${embyRoot(a)}/Items/${it.Id}/Images/Primary?maxWidth=300${a.token ? `&api_key=${a.token}` : ''}`,
+        cover: ((it.ImageTags as Record<string, string> | undefined)?.Primary) ? `${embyRoot(a)}/Items/${it.Id}/Images/Primary?maxWidth=300${a.token ? `&api_key=${a.token}` : ''}` : undefined, // 仅 Primary 存在才构造(无封面请求 404→灰块)
       }));
     }
     return [];
