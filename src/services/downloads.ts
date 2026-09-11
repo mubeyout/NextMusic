@@ -258,6 +258,38 @@ export function enqueueDownload(songs: SongItem[]): number {
   return n;
 }
 
+// ===== web 服务端部署形态(原版对齐): 下载=服务器缓存 =====
+// 原版 v2 语义: 歌曲文件缓存到服务器存储(cache/download),再次播放零流量;
+// 目录在后台「设置·存储备份」管理(缓存位置 root/data + LRU 配额),不在浏览器选目录
+let webDlBusy = false;
+export async function webDownloadToServer(songs: SongItem[], quality = '320k'): Promise<{ ok: number; fail: number }> {
+  if (webDlBusy) throw new Error('已有下载任务进行中');
+  webDlBusy = true;
+  let ok = 0, fail = 0;
+  try {
+    for (const s of songs) {
+      if (s.source === 'device') continue;
+      try {
+        // 先取链再缓存(服务端要求 url 一起提交)
+        const r = await fetch('/api/music/url', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ songInfo: { source: s.source, songmid: s.songmid, name: s.name, singer: s.singer, hash: s.hash, interval: s.interval }, type: quality }),
+        }).then(x => x.json());
+        if (!r.url) throw new Error('取链失败');
+        await fetch('/api/music/cache/download', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ songInfo: { source: s.source, songmid: s.songmid, name: s.name, singer: s.singer }, url: r.url, quality }),
+        });
+        ok++;
+      } catch { fail++; }
+    }
+  } finally { webDlBusy = false; }
+  return { ok, fail };
+}
+export function isWebServerMode(): boolean {
+  return typeof navigator !== 'undefined' && typeof window !== 'undefined' && !/electron/i.test(navigator.userAgent) && !!(window as { ReactNativeWebView?: unknown }).ReactNativeWebView === false && 'requestAnimationFrame' in window;
+}
+
 export function fmtBytes(n: number): string {
   if (n >= 1 << 30) return (n / (1 << 30)).toFixed(2) + ' GB';
   if (n >= 1 << 20) return (n / (1 << 20)).toFixed(1) + ' MB';

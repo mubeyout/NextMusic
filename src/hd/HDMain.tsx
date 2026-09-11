@@ -97,12 +97,12 @@ const railNav = (s: string, p?: object) => {
 // TV/原生侧原样返回组件,零 diff。Route(投屏弹层)除外——absolute 弹层定位不适用 transform 缩放
 export const withPhoneScale = (Cmp: React.ComponentType<Record<string, unknown>>) => {
   if (!IS_WEB) return Cmp;
+  // web: CSS zoom 替代 transform scale——zoom 参与布局,ScrollView 尺寸/滚轮坐标自动适配
+  // (transform 0.75 下 RNW ScrollView 计算布局尺寸按未缩放值,底部内容不可达=裁切,老板实测)
   const W = (props: Record<string, unknown>) => (
-    <View style={{ flex: 1, overflow: 'hidden' }}>
-      <View style={{ flex: 1, transform: [{ scale: 0.75 }], transformOrigin: 'top left', width: '133.3334%', height: '133.3334%' }}>
-        <Cmp {...props} />
-      </View>
-    </View>
+    <div style={{ width: '100%', height: '100%', zoom: 0.75, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <Cmp {...props} />
+    </div>
   );
   W.displayName = 'PhoneScale';
   return W;

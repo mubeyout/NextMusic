@@ -16,7 +16,8 @@ import { songMenu } from './hdmenubuilders';
 import { hdNav } from './hdnav';
 import { library } from '../state/library';
 import { setFav, isFav } from '../state/favorites';
-import { enqueueDownload } from '../services/downloads';
+import { enqueueDownload, webDownloadToServer, isWebServerMode } from '../services/downloads';
+const serverCacheDirHint = '服务器缓存目录(后台·设置·存储备份可查)';
 import { toast, dialog } from '../components/Dialog';
 import { sync, isPlatformList } from '../services/sync';
 import { useApp } from '../state/AppState';
@@ -100,7 +101,7 @@ export function HDPlaylistDetailScreen() {
         } catch { toast('操作失败'); }
       } }] : []),
       { label: '收藏到歌单…', icon: 'add', onPress: () => setCollectFor(sg) }, // lx159:add(避免与取消收藏重复 heart);lx125:选歌单(老板:无法选择歌单)
-      { label: '下载', icon: 'download', onPress: () => { try { enqueueDownload([sg]); toast('已加入下载队列'); } catch { toast('下载失败'); } } },
+      { label: '下载', icon: 'download', onPress: async () => { try { if (isWebServerMode()) { const r = await webDownloadToServer([sg]); toast(r.ok ? `已缓存到服务器(${serverCacheDirHint})` : '缓存失败:取链失败'); } else { enqueueDownload([sg]); toast('已加入下载队列'); } } catch (e) { toast('下载失败:' + (e as Error).message); } } },
       // lx158:去重——我喜欢的页由上方「取消收藏」承担(含移出列表);未收藏态(仅服务器侧)兑底用 removeSong;其余可移除歌单只留一个「从歌单移除」
       ...(p.love && !favd ? [{ label: '取消收藏', icon: 'heart', danger: true, onPress: () => removeSong(sg) }] : []),
       ...(removable && !p.love ? [{ label: '从歌单移除', icon: 'close', danger: true, onPress: () => removeSong(sg) }] : []),
@@ -163,7 +164,8 @@ export function HDPlaylistDetailScreen() {
   const downloadAll = async () => {
     if (!songs.length) { toast('歌单为空'); return; }
     setDlBusy(true);
-    try { const n = enqueueDownload(songs); toast(`已加入下载队列:${n} 首`); }
+    try { if (isWebServerMode()) { toast('正在缓存到服务器…'); const r = await webDownloadToServer(songs); toast(`缓存完成:${r.ok} 首${r.fail ? ` · 失败 ${r.fail}` : ''}(目录:${serverCacheDirHint})`); }
+  else { const n = enqueueDownload(songs); toast(`已加入下载队列:${n} 首`); } }
     catch (e) { toast(`下载失败:${(e as Error).message.slice(0, 40)}`); }
     finally { setDlBusy(false); }
   };
