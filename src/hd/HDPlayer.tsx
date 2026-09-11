@@ -374,7 +374,7 @@ export function HDPlayer() {
       <View style={[st.main, IS_WEB && st.mainWeb, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View style={st.artCol}>
           {/* lx125:粒子环(单圈 48 粒,FFT 分区驱动) */}
-          <View style={st.vinylZone}>
+          {IS_WEB ? null : (<View style={st.vinylZone}>
             <ParticleRing bins={specBins} rot={ringRot} />
             <View style={[st.vinylWrap, IS_WEB && { width: vinylSize, height: vinylSize, borderRadius: vinylSize / 2 }]}>
               <Animated.Image
@@ -385,7 +385,12 @@ export function HDPlayer() {
               {!current.img ? <View style={[st.vinylArt, st.artFallback]}><Icon name="music" size={52} color={C.text3} /></View> : null}
               <View style={st.vinylHole} />
             </View>
-          </View>
+          </View>)}
+          {IS_WEB ? (
+            <View style={[st.webArtCard, { width: vinylSize, height: vinylSize }]}>
+              {current.img ? <Image source={{ uri: current.img }} style={st.webArtImg} /> : <View style={[st.webArtImg, { backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={56} color={C.text3} /></View>}
+            </View>
+          ) : null}
           <View style={st.srcPill}>
             <View style={st.srcDot} />
             <Text style={st.srcTag}>{current.source.toUpperCase()}</Text>
@@ -393,8 +398,8 @@ export function HDPlayer() {
         </View>
 
         <View style={st.infoCol}>
-          <Text style={st.title} numberOfLines={1}>{current.name}</Text>
-          <Text style={st.sub} numberOfLines={1}>{current.singer}{current.albumName ? ` · ${current.albumName}` : ''}</Text>
+          <Text style={[st.title, IS_WEB && st.titleWeb]} numberOfLines={1}>{current.name}</Text>
+          <Text style={[st.sub, IS_WEB && st.subWeb]} numberOfLines={1}>{current.singer}{current.albumName ? ` · ${current.albumName}` : ''}</Text>
 
           <View style={[st.lyricsBox, IS_WEB && { maxHeight: Math.round(winH * 0.5), overflow: 'hidden' }]}>
             {lyrics ? (
@@ -417,9 +422,9 @@ export function HDPlayer() {
           </View>
 
           <View style={st.progRow}>
-            <Text style={st.time}>{fmtSec(position)}</Text>
+            <Text style={[st.time, IS_WEB && { minWidth: 42 }]}>{fmtSec(position)}</Text>
             <TouchableOpacity
-              style={st.trackWrap}
+              style={[st.trackWrap, IS_WEB && { height: 6, borderRadius: 3 }]}
               activeOpacity={0.9}
               onLayout={e => { trackW.current = e.nativeEvent.layout.width; }}
               onPress={e => {
@@ -427,12 +432,18 @@ export function HDPlayer() {
                 const w = trackW.current;
                 if (w > 0 && duration > 0) seekTo(Math.max(0, Math.min(1, locationX / w)) * duration);
               }}
+              onStartShouldSetResponder={IS_WEB ? () => duration > 0 : undefined}
+              onResponderMove={IS_WEB ? e => {
+                const lx = (e.nativeEvent as unknown as { locationX: number }).locationX;
+                const w = trackW.current || 1;
+                if (duration > 0) seekTo(Math.max(0, Math.min(1, lx / w)) * duration);
+              } : undefined}
             >
               <View style={[st.trackFill, { flex: pct }]} />
               <View style={[st.trackRest, { flex: 1 - pct }]} />
               <View style={[st.playhead, { left: `${pct * 100}%` }]} />
             </TouchableOpacity>
-            <Text style={st.time}>{fmtSec(duration)}</Text>
+            <Text style={[st.time, IS_WEB && { minWidth: 42, textAlign: 'right' }]}>{fmtSec(duration)}</Text>
           </View>
 
           {/* lx89:控件单行(全屏 960dp 富余)——传输组+分隔+工具组,icon 純净排 */}
@@ -443,7 +454,7 @@ export function HDPlayer() {
             <HDTouch style={st.cMode} onPress={skipPrev}>
               <Icon name="previous" size={26} color="#ffffffee" />
             </HDTouch>
-            <HDTouch style={st.cMain} onPress={toggle} focusStyle={st.cMainFocus} hasTVPreferredFocus>
+            <HDTouch style={[st.cMain, IS_WEB && st.cMainWeb]} onPress={toggle} focusStyle={st.cMainFocus} hasTVPreferredFocus>
               <Icon name={playing ? 'pause' : 'play'} size={32} color={C.onBrand} />
             </HDTouch>
             <HDTouch style={st.cMode} onPress={skipNext}>
@@ -545,7 +556,9 @@ const st = StyleSheet.create({
   focus: { borderWidth: 2, borderColor: C.brand, borderRadius: 26 }, // web 分支控件环
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, borderRadius: 17, paddingHorizontal: 14, backgroundColor: '#ffffff14' },
   backLabel: { color: '#ffffffcc', fontSize: 13, fontWeight: '600' },
-  // web vinyl 尺寸: RN 不支持 CSS min()——组件内 Dimensions 计算 min(300, 40vh)
+    webArtCard: { borderRadius: 14, overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.05)', backgroundColor: C.inset },
+  webArtImg: { width: '100%', height: '100%' },
+// web vinyl 尺寸
   vinylWrap: { width: 228, height: 228, borderRadius: 114, backgroundColor: '#0d100e', borderWidth: 5, borderColor: '#161a17', alignItems: 'center', justifyContent: 'center', boxShadow: '0 18px 44px rgba(0,0,0,.55), 0 0 36px rgba(30,215,96,.14)' },
   vinylZone: { width: RING_ZONE, height: RING_ZONE, alignItems: 'center', justifyContent: 'center' },
   vinylArt: { width: 150, height: 150, borderRadius: 75 },
@@ -554,11 +567,13 @@ const st = StyleSheet.create({
   srcDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.brand },
   srcTag: { color: '#ffffffaa', fontSize: 10, letterSpacing: 2, fontWeight: '600' },
   main: { flex: 1, flexDirection: 'row', paddingHorizontal: 52, paddingTop: 4, gap: 42 },
-  mainWeb: { paddingHorizontal: '6%', gap: 64, alignItems: 'center' }, // web 大屏:更宽留白+垂直居中
+  mainWeb: { paddingHorizontal: '7%', gap: 72, alignItems: 'center' }, // web 大屏:更宽留白+垂直居中
   artCol: { width: 344, alignItems: 'center', justifyContent: 'center' },
   artFallback: { backgroundColor: '#1E2722', alignItems: 'center', justifyContent: 'center' },
   infoCol: { flex: 1, gap: 6, paddingTop: 22 }, // lx94:标题/歌词整体下移(老板:太高)
   title: { color: '#ffffff', fontSize: 25, fontWeight: '800' },
+  titleWeb: { fontSize: 30, letterSpacing: -.5 },
+  subWeb: { fontSize: 15, marginTop: 4 },
   sub: { color: '#ffffffb3', fontSize: 14 },
   lyricsBox: { flex: 1, gap: 8, justifyContent: 'center' },
   // 歌词窗 web 限高: 运行时算(50vh), // lx93:垂直居中(顶贴→太靠上),窗口 7 行填满空隙
@@ -575,7 +590,9 @@ const st = StyleSheet.create({
   trackRest: { backgroundColor: '#ffffff2e', borderRadius: 3 },
   playhead: { position: 'absolute', top: -4, width: 13, height: 13, borderRadius: 7, backgroundColor: C.brand, borderWidth: 2.5, borderColor: '#ffffff', marginLeft: -7, boxShadow: '0 0 12px rgba(30,215,96,.75)' },
   ctrlRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  ctrlRowWeb: { flexWrap: 'wrap', justifyContent: 'center', gap: 10 },
+  ctrlRowWeb: { flexWrap: 'wrap', justifyContent: 'center', gap: 14, marginTop: 20 },
+  cMainWeb: { width: 60, height: 60, borderRadius: 30, boxShadow: '0 8px 30px rgba(30,215,96,.4)' }, // Spotify 大播放键
+  ctrlDividerWeb: { opacity: .7 },
   cMode: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#ffffff14', alignItems: 'center', justifyContent: 'center' },
   cMain: { width: 66, height: 66, borderRadius: 33, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   cMainFocus: { borderWidth: 3, borderColor: '#FFFFFF', borderRadius: 33 },
