@@ -242,24 +242,25 @@ export function HDPlayer() {
         <View style={[st.artCol, IS_WEB && st.artColWeb]}>
           {/* lx125:粒子环(单圈 48 粒,FFT 分区驱动) */}
           {(<View style={[st.vinylZone, IS_WEB && { width: ringSize, height: ringSize }]}>
-            {/* v3.11(老板:封面在唱片下一层):方封面垫盘底,四边从唱片后露出(盘压封面) */}
+            {/* v3.12(老板:7%露边不是设计):改经典构图——封面完整可见(左),唱片从封面右侧压出(右上);
+                盘在上·封面在下一层,组宽 1.36 盘径整体居中;无封面时盘回正中 */}
             {IS_WEB && current.img ? (
-              <View style={{ position: 'absolute', top: '50%', left: '50%', width: vinylSize * 1.14, height: vinylSize * 1.14, marginLeft: -vinylSize * 0.57, marginTop: -vinylSize * 0.57, borderRadius: 12, overflow: 'hidden', boxShadow: '0 26px 70px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.07)' }}>
+              <View style={{ position: 'absolute', top: '50%', left: '50%', width: Math.round(vinylSize * 0.86), height: Math.round(vinylSize * 0.86), marginLeft: -Math.round(vinylSize * 0.43) - Math.round(vinylSize * 0.25), marginTop: -Math.round(vinylSize * 0.43), borderRadius: Math.round(vinylSize * 0.05), overflow: 'hidden', boxShadow: '0 26px 70px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.07)' }}>
                 <Image source={{ uri: current.img }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
               </View>
             ) : null}
-            {/* v3.11(老板):web 波浪环换 HD 版粒子环——按盘径缩放,与 TV 同比例(盘 228↔环 340);
-                层序:封面(底)→粒子环(中,贴盘边跳)→唱片(顶)——环不能垫封面下否则全被盖住 */}
+            {/* v3.11(老板):web 波浪环换 HD 版粒子环——按盘径缩放,与 TV 同比例(盘 228↔环 340),环心跟随盘心;
+                层序:封面(底)→粒子环(中,贴盘边跳)→唱片(顶) */}
             {IS_WEB ? (
-              <View style={{ position: 'absolute', top: '50%', left: '50%', width: RING_ZONE, height: RING_ZONE, marginLeft: -RING_ZONE / 2, marginTop: -RING_ZONE / 2, transform: [{ scale: vinylSize / 228 }] }}>
+              <View style={{ position: 'absolute', top: '50%', left: '50%', width: RING_ZONE, height: RING_ZONE, marginLeft: -RING_ZONE / 2 + (current.img ? Math.round(vinylSize * 0.18) : 0), marginTop: -RING_ZONE / 2, transform: [{ scale: vinylSize / 228 }] }}>
                 <ParticleRing bins={specBins} rot={ringRot} />
               </View>
             ) : (
               <ParticleRing bins={specBins} rot={ringRot} />
             )}
             {IS_WEB ? (
-              /* v3.3(老板:黑胶没质感):web 换 HD_VINYL_SVG——纹理沟槽+光泽,真黑胶质感 */
-              <View style={{ width: vinylSize, height: vinylSize, transform: [{ rotate: String(spinDeg) }] }}>
+              /* v3.3(老板:黑胶没质感):web 换 HD_VINYL_SVG——纹理沟槽+光泽,真黑胶质感;有封面时盘右移 0.18 盘径 */
+              <View style={{ position: 'absolute', top: '50%', left: '50%', width: vinylSize, height: vinylSize, marginLeft: -Math.round(vinylSize / 2) + (current.img ? Math.round(vinylSize * 0.18) : 0), marginTop: -Math.round(vinylSize / 2), transform: [{ rotate: String(spinDeg) }] }}>
                 {HD_VINYL_SVG(vinylSize, playing)}
               </View>
             ) : (
