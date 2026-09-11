@@ -73,6 +73,11 @@ interface PlayerCtx {
 const Ctx = createContext<PlayerCtx>(null as unknown as PlayerCtx);
 
 let seq = 0;
+// 取链失败熔断: 连续 failCount 次失败后不再弹窗/自动跳,需用户主动重试(防队列循环弹窗轰炸)
+let failStreak = 0;
+const FAIL_FUSE = 3;
+let errDialogOpen = false;
+
 const toTrack = (s: SongItem): QueueTrack => ({ ...s, uid: `${s.source}-${s.songmid}-${++seq}` });
 
 // 第三方媒体库源：播放依赖对应账号连接（emby/jellyfin/subsonic 系/webdav）
@@ -408,7 +413,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       if (!url) {
         // v2 对齐:失败自动下一曲(防卡死)
         const st = settings.get();
-        if (st.enableAutoSkipOnError && queueRef.current.length > 1) { setTimeout(() => { goTo(idxRef.current + 1); }, 300); }
+        failStreak++;
+        if (st.enableAutoSkipOnError && queueRef.current.length > 1 && failStreak < FAIL_FUSE) { setTimeout(() => { goTo(idxRef.current + 1); }, 300); }
         throw new Error('no url');
       }
       // v2 对齐:播放成功后缓存歌曲到服务器(后台,不打扰播放)
@@ -420,22 +426,43 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       } catch { /* 缓存失败不影响播放 */ }
       playOrCast(t, url);
       setCurrent(t);
+      failStreak = 0; // 播放成功重置熔断
     } catch (e) {
       setPlaying(false);
       // 媒体库歌丬的失败统一走定向引导，不再误导去登录/设音源
       if (isProviderSource(t)) { providerUnavailable(t); return; }
       // 取链失败：已登录 → 问题在服务器侧音源；未登录 → 引导登录/设源（产品语义：只有播放才需要这些）
       // 注意：用 tokenRef.current——catch 里闭包捕获的是 useCallback([]) 创建时的组件 token（陈旧值，首渲染为 null）
+      if (failStreak >= FAIL_FUSE) {
+        // 熔断:连续失败不逐首弹窗,一次汇总
+        if (!errDialogOpen) {
+          errDialogOpen = true;
+          dialog.alert(
+            '暂时无法播放',
+            `连续 ${failStreak} 首取链失败,已停止自动播放。请在服务器端(后台·音源管理)确认音源可用,或稍后再试。`,
+            [
+              { text: '设置音源', onPress: () => navRef.current?.navigate('Sources' as never) },
+              { text: '知道了', style: 'cancel', onPress: () => { failStreak = 0; } },
+            ],
+          );
+          setTimeout(() => { errDialogOpen = false; }, 800); // 弹窗生命周期兜底(按钮回调重置 failStreak)
+        }
+        return;
+      }
       if (tokenRef.current) {
-        dialog.alert(
-          '暂时无法播放',
-          '服务器取链失败。可在服务器端绑定可用音源，或在 App 内添加自定义音源后重试。',
-          [
-            { text: '重试', onPress: () => { resolveAndPlay(t).catch(() => setPlaying(false)); } },
-            { text: '设置音源', onPress: () => navRef.current?.navigate('Sources' as never) },
-            { text: '取消', style: 'cancel' },
-          ],
-        );
+        if (!errDialogOpen) {
+          errDialogOpen = true;
+          dialog.alert(
+            '暂时无法播放',
+            '服务器取链失败。可在服务器端绑定可用音源，或在 App 内添加自定义音源后重试。',
+            [
+              { text: '重试', onPress: () => { failStreak = 0; resolveAndPlay(t).catch(() => setPlaying(false)); } },
+              { text: '设置音源', onPress: () => navRef.current?.navigate('Sources' as never) },
+              { text: '取消', style: 'cancel', onPress: () => { failStreak = 0; } },
+            ],
+          );
+          setTimeout(() => { errDialogOpen = false; }, 800);
+        }
       } else {
         dialog.alert(
           '暂时无法播放',
