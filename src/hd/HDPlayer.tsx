@@ -248,7 +248,9 @@ export function HDPlayer() {
         <View style={[st.artCol, IS_WEB && st.artColWeb]}>
           {/* lx125:粒子环(单圈 48 粒,FFT 分区驱动) */}
           {(<View style={st.vinylZone}>
-            <ParticleRing bins={specBins} rot={ringRot} />
+            {IS_WEB
+              ? <SpectrumRing size={vinylSize + Math.round(vinylSize * 0.06)} playing={playing} /> /* v3.4:波浪频谱环(web,音频 analyser 驱动) */
+              : <ParticleRing bins={specBins} rot={ringRot} />}
             {IS_WEB ? (
               /* v3.3(老板:黑胶没质感):web 换 HD_VINYL_SVG——纹理沟槽+光泽+封面内嵌,真黑胶质感 */
               <View style={{ width: vinylSize, height: vinylSize, transform: [{ rotate: String(spinDeg) }] }}>
@@ -483,6 +485,15 @@ const st = StyleSheet.create({
 });
 
 // ===== 桌面(网易云参照)样式 =====
+// v3.4: 工具按钮 hover 浮出 tip(老板:按钮选项改 tips 上浮)
+if (Platform.OS === 'web' && typeof (globalThis as { document?: unknown }).document !== 'undefined' && !(globalThis as never as { document?: { getElementById: (i: string) => unknown } }).document?.getElementById('nm-tip-css')) {
+  const d = (globalThis as never as { document?: { createElement: (t: string) => { id: string; textContent: string; head?: unknown }; head: { appendChild: (e: unknown) => void } } }).document!;
+  const el = d.createElement('style'); el.id = 'nm-tip-css';
+  const cssTip = '[title]{position:relative}[title]:hover::after{content:attr(title);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#22262E;color:#fff;font:11px/1.6 sans-serif;padding:5px 10px;border-radius:8px;white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,.5);pointer-events:none;z-index:99}';
+  el.textContent = cssTip;
+  (d.head as unknown as { appendChild: (e: unknown) => void }).appendChild(el);
+  (d.head as unknown as { appendChild: (e: unknown) => void }).appendChild(el);
+}
 // CSS keyframes:唱片旋转(18s/转,暂停时停止)
 if (Platform.OS === 'web' && typeof (globalThis as { document?: unknown }).document !== 'undefined' && !(globalThis as never as { document?: { getElementById: (i: string) => unknown; createElement: (t: string) => { id: string; textContent: string }; head: { appendChild: (e: unknown) => void } } }).document?.getElementById('nm-vinyl-css')) {
   const doc = (globalThis as never as { document?: { createElement: (t: string) => { id: string; textContent: string }; head: { appendChild: (e: unknown) => void } } }).document!;
