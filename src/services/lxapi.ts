@@ -139,9 +139,11 @@ export const lxapi = {
         const r: any = WEB_SERVER_MODE
           ? await srvGet(`/api/music/search?name=${encodeURIComponent(name)}&source=${source}&page=${page}&limit=${limit}`)
           : await engine.sdk<{ list?: any[] }>([source, 'musicSearch', 'search'], [name, page, limit]);
+        // 服务器端 /api/music/search 返回裸数组;本地引擎返回 {list}——双形态兼容
+        const rawList: any[] = Array.isArray(r) ? r : (r?.list || []);
         // eslint-disable-next-line no-console
-        console.log(`[lxapi] search ${source} "${name}": ${(r?.list || []).length} raw items`);
-        return (r?.list || []).map(normalize);
+        console.log(`[lxapi] search ${source} "${name}": ${rawList.length} raw items`);
+        return rawList.map(normalize);
       } catch (e) {
         console.log('[lxapi] search fail', (e as Error).message);
         return [];
@@ -165,6 +167,7 @@ export const lxapi = {
           ? await srvGet(`/api/music/hotSearch?source=${source}`)
           : await engine.sdk<any>([source, 'hotSearch', 'getList'], []);
         if (Array.isArray(r)) return r.slice(0, 30);
+        if (r && Array.isArray((r as any).list)) return ((r as any).list as string[]).slice(0, 30); // 服务器端 /api/music/hotSearch 形态
         if (r && Array.isArray((r as any).source?.data)) return (r as any).source.data.slice(0, 30);
         if (r && Array.isArray((r as any).source)) return ((r as any).source as any[]).map((x: any) => x.name || '').filter(Boolean).slice(0, 30);
         return [];
