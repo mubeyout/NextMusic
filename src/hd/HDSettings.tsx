@@ -101,9 +101,6 @@ export function HDSettingsScreen() {
       ...(connected ? [{ kind: 'nav' as const, title: '断开服务器', desc: '清除连接与凭据,回到本地模式', icon: 'close' as IconName, action: () => { disconnectServer(); nav.goBack(); } }] : []),
     ],
     '下载与备份': [
-      { kind: 'info', icon: 'info', title: '下载模式', desc: IS_WEB
-        ? 'Web 版·服务器缓存模式:点「下载」=歌曲永久缓存到服务器(再次播放零流量,不占浏览器空间)。缓存目录=/server/data/cache/用户名;下载目录=/server/data/music;配额/LRU/缓存列表→后台·设置·存储备份'
-        : '原生端·本地文件模式:下载保存到设备存储(下载管理可查看/删除,可离线播放);开启下方「缓存歌曲到服务器」后同时写服务器,双备份', value: IS_WEB ? '服务器缓存' : '本地文件' },
       { kind: 'select', icon: 'music', title: '下载音质', desc: '下载歌曲保存的音质档位', value: s.downloadQuality, options: QUALITY_OPTS, onPick: v => settings.set('downloadQuality', v as Quality) },
       { kind: 'select', icon: 'queue', title: '同时下载数', desc: '下载任务并发数', value: String(s.maxConcurrent), options: ['1', '2', '3', '5'], onPick: v => settings.set('maxConcurrent', Number(v)) },
       { kind: 'toggle', icon: 'heart', title: '备份歌单', desc: '云备份时包含本地歌单', value: s.backupPlaylists, onToggle: () => settings.set('backupPlaylists', !s.backupPlaylists) },
@@ -111,13 +108,13 @@ export function HDSettingsScreen() {
       { kind: 'toggle', icon: 'cloud', title: '播放设置自动备份', desc: '音质/主题/播放开关等随账号云端同步,多端一致', value: s.syncSettingsCloud ?? true, onToggle: () => settings.set('syncSettingsCloud' as never, !(s.syncSettingsCloud ?? true) as never) },
       { kind: 'nav', title: '立即同步播放设置', desc: '上传当前播放设置到服务器账号', icon: 'refresh', action: () => { api.settingsPush({ playQuality: s.playQuality, downloadQuality: s.downloadQuality, light: s.light, pureBlack: s.pureBlack, accent: s.accent }).then(() => toast('已上传到服务器账号')).catch(() => toast('同步失败(未连接服务器)')); } },
       { kind: 'nav', title: '下载管理', desc: '查看下载队列与失败重试', icon: 'download', to: 'Downloads' },
-      { kind: 'toggle', icon: 'cloud', title: '缓存歌曲到服务器', desc: '播放时缓存文件,弱网流畅 · 缓存目录=/server/data/cache/用户名(宿主机路径=启动 -v 映射)', value: s.enableServerCache, onToggle: () => settings.set('enableServerCache', !s.enableServerCache) },
-      { kind: 'toggle', icon: 'cloud', title: '缓存歌词到服务器', desc: '多端同步极速加载', value: s.enableServerLyricCache, onToggle: () => settings.set('enableServerLyricCache', !s.enableServerLyricCache) },
+      { kind: 'toggle', icon: 'cloud', title: '缓存歌曲到服务器', desc: '播放时自动把歌曲存到服务器缓存,再次播放零流量。Web 版点「下载」也是存这里(浏览器不落盘)。缓存目录:/server/data/cache/用户名 · Docker 宿主机路径=启动 -v 映射', value: s.enableServerCache, onToggle: () => settings.set('enableServerCache', !s.enableServerCache) },
+      { kind: 'toggle', icon: 'cloud', title: '缓存歌词到服务器', desc: '歌词存服务器缓存目录,多端同步极速加载', value: s.enableServerLyricCache, onToggle: () => settings.set('enableServerLyricCache', !s.enableServerLyricCache) },
       { kind: 'toggle', icon: 'heart', title: '优先播放缓存', desc: '有缓存直接用,失效自动重取', value: s.preferServerCache, onToggle: () => settings.set('preferServerCache', !s.preferServerCache) },
       { kind: 'toggle', icon: 'heart', title: '本地歌词缓存', desc: '已加载歌词存本地', value: s.enableLyricCache, onToggle: () => settings.set('enableLyricCache', !s.enableLyricCache) },
       { kind: 'toggle', icon: 'heart', title: '播放链接缓存', desc: '缓存取链结果', value: s.enableSongUrlCache, onToggle: () => settings.set('enableSongUrlCache', !s.enableSongUrlCache) },
       { kind: 'toggle', icon: 'download', title: '下载嵌入歌词', desc: '标签+.lrc 写入文件', value: s.embedLyricToFile, onToggle: () => settings.set('embedLyricToFile', !s.embedLyricToFile) },
-      { kind: 'toggle', icon: 'download', title: '下载独立目录', desc: '开启:手动下载的文件与播放缓存分开存放(下载→/server/data/music,缓存→/server/data/cache/用户名);关闭:两者同写缓存目录', value: s.enableOnlyDownloadMode, onToggle: () => settings.set('enableOnlyDownloadMode', !s.enableOnlyDownloadMode) },
+      { kind: 'toggle', icon: 'download', title: '下载独立目录', desc: '开:「下载」保存到下载目录 /server/data/music,与播放缓存分开管理 · 关:下载文件也存入缓存目录 /server/data/cache/用户名(两类文件混放)', value: s.enableOnlyDownloadMode, onToggle: () => settings.set('enableOnlyDownloadMode', !s.enableOnlyDownloadMode) },
       { kind: 'toggle', icon: 'refresh', title: '下载目录歌曲洗版', desc: '自动替换为高音质版本', value: s.enableRemaster, onToggle: () => settings.set('enableRemaster', !s.enableRemaster) },
       { kind: 'toggle', icon: 'wave', title: '自动更新网络歌单', desc: '定时检测歌单变更', value: s.autoUpdateNetworkList, onToggle: () => settings.set('autoUpdateNetworkList', !s.autoUpdateNetworkList) },
       { kind: 'select', icon: 'globe', title: '歌单检测间隔', desc: '网络歌单自动检测', value: s.networkListAutoCheckInterval, options: ['30m', '1h', '3h', '6h', '12h', '1d'], onPick: v => settings.set('networkListAutoCheckInterval', v) },
