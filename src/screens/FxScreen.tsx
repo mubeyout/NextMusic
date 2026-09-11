@@ -447,8 +447,8 @@ export function FxScreen() {
           />
         </View>
 
-        {!IS_HD ? (<>
-        {/* ===== AutoEQ 耳机校正（lx52） ===== */}
+        {true ? (<>
+        {/* ===== AutoEQ 耳机校正（lx52;原 !IS_HD 隐藏——HD/web 一并对齐手机全量,老板:均衡器被阉割） ===== */}
         <View style={st.card}>
           <View style={st.cardHead}>
             <Text style={st.cardTitleAuto}>AutoEQ 耳机校正</Text>

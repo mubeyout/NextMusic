@@ -49,6 +49,24 @@ export function SourcesScreen() {
   const loadServerSources = () => { api.csList().then(setServerSources).catch(() => setServerSources([])); };
   // 服务器音源: 播放器/客户端端只读+启停;管理(上传/删除)走后台 /admin/
   // vc88:手动导入音源文件(SAF 选 .js)
+  // 本地引擎音源 URL 添加(15:54 整理时误删函数体,调用点残留致 ReferenceError——找回)
+  const addByUrl = () => {
+    (IS_HD ? hdActions : dialog).prompt('添加音源', {
+      placeholder: '音源脚本 URL(https://…/xxx.js)',
+      onSubmit: async v => {
+        const u = v.trim();
+        if (!u) return;
+        try {
+          const s = await addSourceByUrl(u);
+          toast(`已添加 ${s.name} v${s.version}`);
+          refresh();
+        } catch (e) {
+          dialog.alert('添加失败', (e as Error).message);
+        }
+      },
+    });
+  };
+
   const importFile = async () => {
     try {
       const docs = await SafX.openDocument({ multiple: false });
