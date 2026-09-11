@@ -22,8 +22,9 @@ import { hdNav } from './hdnav';
 
 // 唱片 SVG 纯 DOM 版(react-native-svg 的 web shim forwardRef 与 RNW 混用会 React#130,直出 DOM 稳)
 // v1.2.5:size 参数化 + nm-vinyl-spin CSS 旋转接入(此前 web 唱片根本不转——nm-vinyl-css 注入了却没人用)
-// v3.11(老板:封面改到唱片下一层):去掉内嵌封面,盘心纯黑胶 label;封面独立方形垫在盘底(见 vinylZone)
-function HD_VINYL_SVG(size = 300, playing?: boolean): React.ReactNode {
+// v3.13(老板:你知道唱片长什么样吗):盘心恢复真 vinyl label——封面正圆裁切(SVG clipPath,不再靠 borderRadius 的方图贴纸)
+// + label 描边环 + 轴孔;无图时回退深色纸 label
+function HD_VINYL_SVG(img?: string, size = 300, playing?: boolean): React.ReactNode {
   const h = React.createElement;
   const rg = h('radialGradient', { id: 'hdSheen', cx: '0.32', cy: '0.26', r: '0.95' }, [
     h('stop', { key: 'a', offset: '0', stopColor: '#FFFFFF', stopOpacity: '0.10' }),
@@ -36,13 +37,16 @@ function HD_VINYL_SVG(size = 300, playing?: boolean): React.ReactNode {
   ];
   return h('svg', { width: size, height: size, viewBox: '0 0 300 300', className: 'nm-vinyl-spin' + (playing ? '' : ' nm-vinyl-paused'),
     style: { position: 'absolute', top: 0, left: 0, borderRadius: '50%', boxShadow: '0 26px 70px rgba(0,0,0,.4), 0 0 54px rgba(30,215,96,.08)' } as never },
-    h('defs', null, rg),
+    h('defs', null, rg,
+      h('clipPath', { id: 'hdLblClip', key: 'lc' }, h('circle', { key: 'c', cx: 150, cy: 150, r: 74 }))),
     ...circles.map(([r, col, sw], i) => h('circle', { key: 'c' + i, cx: 150, cy: 150, r, fill: r === 149 ? col : 'none', stroke: col, strokeWidth: sw })),
     h('path', { d: 'M33 107 A125 125 0 0 1 107 33', stroke: '#FFFFFF1F', strokeWidth: 3, strokeLinecap: 'round', fill: 'none' }),
     h('path', { d: 'M246 185 A102 102 0 0 1 168 250', stroke: '#FFFFFF17', strokeWidth: 4, strokeLinecap: 'round', fill: 'none' }),
     h('circle', { cx: 150, cy: 150, r: 149, fill: 'url(#hdSheen)' }),
-    h('circle', { cx: 150, cy: 150, r: 88, fill: '#101312' }),
-    h('circle', { cx: 150, cy: 150, r: 70, fill: 'none', stroke: '#FFFFFF16', strokeWidth: 1.5 }),
+    /* 盘心 label:深色纸底→正圆裁切封面(slice 不变形)→label 描边环→轴孔 */
+    h('circle', { cx: 150, cy: 150, r: 76, fill: '#101312' }),
+    img ? h('image', { href: img, x: 76, y: 76, width: 148, height: 148, preserveAspectRatio: 'xMidYMid slice', clipPath: 'url(#hdLblClip)' }) : null,
+    h('circle', { cx: 150, cy: 150, r: 76, fill: 'none', stroke: '#FFFFFF2E', strokeWidth: 1.5 }),
     h('circle', { cx: 150, cy: 150, r: 6, fill: '#000' }),
   );
 }
@@ -261,7 +265,7 @@ export function HDPlayer() {
             {IS_WEB ? (
               /* v3.3(老板:黑胶没质感):web 换 HD_VINYL_SVG——纹理沟槽+光泽,真黑胶质感;有封面时盘右移 0.18 盘径 */
               <View style={{ position: 'absolute', top: '50%', left: '50%', width: vinylSize, height: vinylSize, marginLeft: -Math.round(vinylSize / 2) + (current.img ? Math.round(vinylSize * 0.18) : 0), marginTop: -Math.round(vinylSize / 2), transform: [{ rotate: String(spinDeg) }] }}>
-                {HD_VINYL_SVG(vinylSize, playing)}
+                {HD_VINYL_SVG(current.img, vinylSize, playing)}
               </View>
             ) : (
               <View style={st.vinylWrap}>
