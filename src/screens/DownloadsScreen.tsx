@@ -7,7 +7,6 @@ import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { SongRow } from '../components/SongRow';
 import { PageHeader, EmptyState } from '../components/PageChrome';
-import { MiniPlayer } from '../components/MiniPlayer';
 import { usePlayer } from '../state/PlayerProvider';
 import { fmtBytes } from '../services/downloads';
 import { downloads as dlStore, subscribeDownloads, fmtBytes, downloadProgress, downloadFails, clearFails } from '../services/downloads';
@@ -97,7 +96,7 @@ export function DownloadsScreen() {
         })}
         {!list.length ? <EmptyState icon="download" title="还没有下载" sub="在歌单或播放页点下载即可离线收听" /> : null}
       </ScrollView>
-      <View style={st.miniDock} pointerEvents="box-none"><MiniPlayer /></View>
+      <View style={st.miniDock} pointerEvents="box-none"></View>
     </View>
   );
 }

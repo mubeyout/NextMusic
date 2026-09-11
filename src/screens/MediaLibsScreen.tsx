@@ -14,7 +14,6 @@ import { ActionSheet } from '../components/ActionSheet';
 import { SongRow } from '../components/SongRow';
 import { toast } from '../components/Dialog';
 import { PageHeader, EmptyState } from '../components/PageChrome';
-import { MiniPlayer } from '../components/MiniPlayer';
 import { usePlayer } from '../state/PlayerProvider';
 import { library } from '../state/library';
 import { enqueueDownload } from '../services/downloads';
@@ -457,7 +456,6 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
         ]}
       />
       <View style={st.miniDock} pointerEvents="box-none">
-        <MiniPlayer />
       </View>
     </View>
   );

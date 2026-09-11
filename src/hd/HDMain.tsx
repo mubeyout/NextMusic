@@ -120,6 +120,7 @@ export function HDMain() {
   const [pls, setPls] = useState<{ key: string; localId?: string; name: string; count: number; songs: SongItem[] }[]>([]);
   const [loveCount, setLoveCount] = useState<number | null>(null);
   const [pbCollect, setPbCollect] = useState<import('../services/server').SongItem | null>(null);
+  const [innerRoute, setInnerRoute] = useState<string>('Tabs'); // 常驻 bar 按内页路由显隐(Player 时隐藏)
   const [providerAccts, setProviderAccts] = useState<import('../services/providers').ProviderAcct[]>([]);
   useEffect(() => {
     const upd = () => setProviderAccts((providers as unknown as { all: () => import('../services/providers').ProviderAcct[] }).all());
@@ -316,7 +317,7 @@ export function HDMain() {
       {/* ===== 内容区(lx84:嵌套栈——内页只在此切换,侧栏恒固定) ===== */}
       <View style={st.body}>
         <NavigationIndependentTree>
-        <NavigationContainer ref={hdInnerRef} theme={hdInnerTheme}>
+        <NavigationContainer ref={hdInnerRef} theme={hdInnerTheme} onStateChange={() => { try { const r = hdInnerRef.getCurrentRoute(); setInnerRoute(r?.name || 'Tabs'); } catch { /* ignore */ } }}>
           {/* 坞108:TV 转场必须直切;坞57:fade 有变亮中间态 */}
           <InnerStack.Navigator screenOptions={{ headerShown: false, animation: 'none', contentStyle: { backgroundColor: C.bg }, freezeOnBlur: true }}>
             <InnerStack.Screen name="Tabs">{() => <TabsHost tab={tab} setTab={setTab} />}</InnerStack.Screen>
@@ -364,9 +365,11 @@ export function HDMain() {
           </InnerStack.Navigator>
         </NavigationContainer>
 
-        <View style={{ position: 'absolute', left: H.sidebar, right: 0, bottom: 0, zIndex: 30 }} collapsable={false}>
+        {innerRoute !== 'Player' ? (
+        <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 30 }} collapsable={false}>
           <HDPlayBar onCollect={setPbCollect} />
         </View>
+        ) : null}
         {pbCollect ? <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, zIndex: 999 }}><HDCollect song={pbCollect} onClose={() => setPbCollect(null)} /></View> : null}
         </NavigationIndependentTree>
       </View>
@@ -379,6 +382,7 @@ export function HDMain() {
 function TabsHost({ tab, setTab }: { tab: number; setTab: (i: number) => void }) {
   const [visited, setVisited] = useState<number[]>([0]);
   const [pbCollect, setPbCollect] = useState<import('../services/server').SongItem | null>(null);
+  const [innerRoute, setInnerRoute] = useState<string>('Tabs'); // 常驻 bar 按内页路由显隐(Player 时隐藏)
   const [providerAccts, setProviderAccts] = useState<import('../services/providers').ProviderAcct[]>([]);
   useEffect(() => {
     const upd = () => setProviderAccts((providers as unknown as { all: () => import('../services/providers').ProviderAcct[] }).all());

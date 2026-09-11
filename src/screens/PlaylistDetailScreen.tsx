@@ -23,7 +23,6 @@ import type { LocalPlaylist } from '../state/library';
 type ListMeta = SongListMeta & Partial<Pick<LocalPlaylist, 'providerType' | 'providerName' | 'providerId'>>;
 import { useApp } from '../state/AppState';
 import { enqueueDownload, downloads as dlStore, downloadProgress, subscribeDownloads } from '../services/downloads';
-import { MiniPlayer } from '../components/MiniPlayer';
 import { lxapi } from '../services/lxapi';
 import { providers, providerApi, isProviderSongSource } from '../services/providers';
 
@@ -236,7 +235,6 @@ export function PlaylistDetailScreen() {
       </ScrollView>
       {/* Figma 歌单页有底部播放栏：MiniPlayer 绝对定位悬浮（无播放时自隐藏） */}
       <View style={st.miniDock} pointerEvents="box-none">
-        <MiniPlayer />
       </View>
       {/* 歌单管理菜单：ActionSheet（自定义 sheet，交互与单曲菜单一致）
           lx158:重命名/删除去重——单入口，本地歌单走本地，纯服务器歌单(plKey)走服务器，榜单/我喜欢的不显示 */}

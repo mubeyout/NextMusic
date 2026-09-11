@@ -11,7 +11,6 @@ import { ActionSheet } from '../components/ActionSheet';
 import { CollectSheet } from '../components/CollectSheet';
 import { toast } from '../components/Dialog';
 import { PageHeader } from '../components/PageChrome';
-import { MiniPlayer } from '../components/MiniPlayer';
 import { library } from '../state/library';
 import { usePlayer } from '../state/PlayerProvider';
 import { enqueueDownload, downloads as dlStore, downloadProgress, subscribeDownloads } from '../services/downloads';
@@ -162,7 +161,6 @@ export function ProviderDetailScreen() {
         )}
       </ScrollView>
       <View style={st.miniDock} pointerEvents="box-none">
-        <MiniPlayer />
       </View>
       <ActionSheet
         visible={!!actSong} onClose={() => setActSong(null)}
