@@ -1,6 +1,6 @@
 // 下载管理：列表 / 播放 / 删除 / 清空 / 存储统计
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, } from 'react-native';
+import { Platform, View, Text, StyleSheet, ScrollView, TouchableOpacity, } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
@@ -9,6 +9,7 @@ import { SongRow } from '../components/SongRow';
 import { PageHeader, EmptyState } from '../components/PageChrome';
 import { MiniPlayer } from '../components/MiniPlayer';
 import { usePlayer } from '../state/PlayerProvider';
+import { fmtBytes } from '../services/downloads';
 import { downloads as dlStore, subscribeDownloads, fmtBytes, downloadProgress, downloadFails, clearFails } from '../services/downloads';
 import type { SongItem } from '../services/server';
 import { dialog, toast } from '../components/Dialog';
@@ -48,6 +49,17 @@ export function DownloadsScreen() {
         title="下载管理"
         right={(
           <TouchableOpacity onPress={clear} hitSlop={6}>
+      {typeof Platform !== 'undefined' && Platform.OS === 'web' && !/electron/i.test(navigator.userAgent) ? (
+        <View style={{ backgroundColor: '#1E2422', borderRadius: 12, padding: 14, marginBottom: 12, gap: 4 }}>
+          <Text style={{ color: '#7ee2a8', fontSize: 13, fontWeight: '700' }}>服务器缓存模式</Text>
+          <Text style={{ color: '#9aa5a0', fontSize: 11.5, lineHeight: 17 }}>
+            Web 版下载的歌曲缓存到服务器存储目录(cache),再次播放无需外部流量。{'\n'}
+            缓存配额与 LRU 自动清理:后台「设置 · 存储备份 · 缓存与空间」;{'\n'}
+            缓存列表与清空:后台「下载与备份 · 服务器缓存管理」。
+          </Text>
+          {cacheStat ? <Text style={{ color: '#9aa5a0', fontSize: 11 }}>当前占用 {cacheStat.fileCount} 个文件 · {fmtBytes(cacheStat.totalSize)}</Text> : null}
+        </View>
+      ) : null}
             <Icon name="close" size={20} color={list.length ? C.text : C.text3} />
           </TouchableOpacity>
         )}

@@ -100,6 +100,9 @@ export function HDSettingsScreen() {
       ...(connected ? [{ kind: 'nav' as const, title: '断开服务器', desc: '清除连接与凭据,回到本地模式', icon: 'close' as IconName, action: () => { disconnectServer(); nav.goBack(); } }] : []),
     ],
     '下载与备份': [
+      { kind: 'info', icon: 'info', title: '下载说明', desc: IS_WEB
+        ? 'Web 版:下载=缓存到服务器存储(cache 目录),由服务器统一管理;配额/LRU 清理在后台「设置·存储备份」,浏览器不落盘'
+        : '下载保存到设备本地(可在下载管理查看);同时可开启服务器缓存双备份', value: IS_WEB ? '服务器缓存' : '本地文件' },
       { kind: 'select', icon: 'music', title: '下载音质', desc: '下载歌曲保存的音质档位', value: s.downloadQuality, options: QUALITY_OPTS, onPick: v => settings.set('downloadQuality', v as Quality) },
       { kind: 'select', icon: 'queue', title: '同时下载数', desc: '下载任务并发数', value: String(s.maxConcurrent), options: ['1', '2', '3', '5'], onPick: v => settings.set('maxConcurrent', Number(v)) },
       { kind: 'toggle', icon: 'heart', title: '备份歌单', desc: '云备份时包含本地歌单', value: s.backupPlaylists, onToggle: () => settings.set('backupPlaylists', !s.backupPlaylists) },
