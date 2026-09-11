@@ -427,9 +427,10 @@ export function HDPlayer() {
 
 const st = StyleSheet.create({
   cToolText: { color: '#ffffff99', fontSize: 11, fontWeight: '700' }, // 工具组降为次级灰
-  panelRow: { position: 'absolute', bottom: '100%', left: '50%', transform: [{ translateX: -190 }], flexDirection: 'row', gap: 8, justifyContent: 'center', marginBottom: 10, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 14, background: 'transparent' }, // v3.7:浮动弹出(不挤压布局)
+  // v3.9 面板交互: 悬浮深色卡(玻璃拟态,从按钮上方浮出+入场动画,锚定居中)——替代裸 pill 排
+  panelRow: { position: 'absolute', bottom: '100%', left: '50%', transform: [{ translateX: -210 }], flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center', marginBottom: 12, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 18, backgroundColor: 'rgba(24,26,24,.92)', boxShadow: '0 18px 48px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.08)' },
   panelPill: { borderRadius: 999, paddingHorizontal: 14, height: 30, backgroundColor: '#ffffff14', alignItems: 'center', justifyContent: 'center' },
-  panelPillOn: { backgroundColor: C.brand, borderColor: C.brand },
+  panelPillOn: { backgroundColor: C.brand, borderColor: C.brand, shadowColor: '#1ED760', shadowOpacity: .4, shadowRadius: 10, shadowOffset: { width: 0, height: 2 } }, // 选中态绿辉
   panelPillText: { color: '#ffffffcc', fontSize: 12, fontWeight: '600' },
   screen: { flex: 1, backgroundColor: '#0a0c0b' },
   bgArt: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.5 },
