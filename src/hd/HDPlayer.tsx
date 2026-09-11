@@ -100,7 +100,7 @@ export function HDPlayer() {
     window.addEventListener('resize', onR);
     return () => window.removeEventListener('resize', onR);
   }, []);
-  const vinylSize = IS_WEB ? Math.min(300, Math.round(winH * 0.4)) : 228;
+  const vinylSize = IS_WEB ? Math.min(190, Math.round(winH * 0.22)) : 228; // 缩小一半(老板)
 
   const insets = useSafeAreaInsets();
   const nav = { goBack: () => hdNav()?.goBack(), navigate: (s: string) => hdNav()?.navigate(s) };
@@ -285,8 +285,8 @@ export function HDPlayer() {
                 </View>
               )}
               {/* 歌词上下渐隐(盖住窗口边缘行,避免硬切) */}
-              <LinearGradient colors={[maskRgb + ',1)', maskRgb + ',0)']} locations={[0, 1]} style={stW.maskTop} pointerEvents="none" />
-              <LinearGradient colors={[maskRgb + ',0)', maskRgb + ',1)']} locations={[0, 1]} style={stW.maskBottom} pointerEvents="none" />
+              <LinearGradient colors={[maskRgb + ',1)', maskRgb + ',0)']} locations={[0, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={stW.maskTop} pointerEvents="none" />
+              <LinearGradient colors={[maskRgb + ',0)', maskRgb + ',1)']} locations={[0, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={stW.maskBottom} pointerEvents="none" />
             </View>
           </View>
         </View>
