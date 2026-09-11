@@ -293,7 +293,7 @@ export function FxScreen() {
         </T>
       </View>
 
-      <ScrollView contentContainerStyle={[st.content, IS_HD && { maxWidth: 900, alignSelf: 'center', width: '100%' }]} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[st.content, IS_HD && { maxWidth: 860, alignSelf: 'flex-start', width: '100%' }]} showsVerticalScrollIndicator={false}>
         {/* ===== lx57: 听感模式(一键,普通用户唯一入口) ===== */}
         <View style={st.modeGrid}>
           {SOUND_MODES.filter(m => m.id !== 'custom').map(m => {

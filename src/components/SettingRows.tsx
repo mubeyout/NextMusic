@@ -100,7 +100,7 @@ export function PageShell({ title, onBack, children }: { title: string; onBack: 
   return (
     <View style={s.screen}>
       <PageHeader title={title} onBack={onBack} />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 48 }}>{children}</ScrollView>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 48, maxWidth: 860, alignSelf: 'flex-start', width: '100%' }}>{children}</ScrollView>
     </View>
   );
 }

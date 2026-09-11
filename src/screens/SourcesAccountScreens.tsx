@@ -95,7 +95,7 @@ export function SourcesScreen() {
         <PageHeader title="音源管理" onBack={() => nav.goBack()} />
       )}
       <ScrollView
-        contentContainerStyle={[{ paddingHorizontal: 20, paddingBottom: insets.bottom + 28 }, IS_HD && { maxWidth: 900, alignSelf: 'center', width: '100%' }]}
+        contentContainerStyle={[{ paddingHorizontal: 20, paddingBottom: insets.bottom + 28 }, IS_HD && { maxWidth: 860, alignSelf: 'flex-start', width: '100%' }]}
         showsVerticalScrollIndicator={false}
       >
       <Section title="服务器音源(查看/启停,管理请去后台)">
