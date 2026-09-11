@@ -349,35 +349,36 @@ export function HDPlayer() {
               {repeat === 'one' ? <Text style={st.repOne}>1</Text> : null}
             </HDTouch>
             <View style={st.ctrlDivider} />
-            <HDTouch style={st.cTool} onPress={() => setCollectOpen(true)}>
-              <Icon name="heart" size={19} color={faved ? C.brand : '#ffffff99'} />
+            {/* v3.8 工具序(老板): 收藏·队列·评论·设备·音效·卡片·音质·倍速·定时 */}
+            <HDTouch style={st.cTool} onPress={() => setCollectOpen(true)} title="收藏">
+              <Icon name="heart" size={17} color={faved ? C.brand : '#ffffff99'} />
             </HDTouch>
-            <HDTouch style={st.cTool} onPress={() => nav.navigate('Queue')}>
-              <Icon name="queue" size={19} color="#ffffffcc" />
+            <HDTouch style={st.cTool} onPress={() => nav.navigate('Queue')} title="播放队列">
+              <Icon name="queue" size={17} color="#ffffffcc" />
               {queue.length ? (
                 <View style={st.qBadge}><Text style={st.qBadgeText}>{queue.length > 99 ? '99+' : queue.length}</Text></View>
               ) : null}
             </HDTouch>
-            <HDTouch style={st.cTool} onPress={() => nav.navigate('Route')}>
-              <Icon name="devices" size={19} color="#ffffffcc" />
-            </HDTouch>
-            <HDTouch style={st.cTool} onPress={() => setPanelOpen(panelOpen === 'quality' ? null : 'quality')}>
-              <Text style={st.cToolText}>{settings.get().playQuality === 'flac' ? 'SQ' : settings.get().playQuality}</Text>
-            </HDTouch>
-            <HDTouch style={st.cTool} onPress={() => setPanelOpen(panelOpen === 'speed' ? null : 'speed')}>
-              <Text style={st.cToolText}>{speed.toFixed(2).replace(/0$/, '')}x</Text>
-            </HDTouch>
-            <HDTouch style={st.cTool} onPress={() => setPanelOpen(panelOpen === 'sleep' ? null : 'sleep')}>
-              <Text style={[st.cToolText, sleepRemain != null && { color: C.brand }]}>{sleepRemain != null ? `${Math.floor(sleepRemain / 60)}:${String(sleepRemain % 60).padStart(2, '0')}` : '定时'}</Text>
-            </HDTouch>
-            <HDTouch style={st.cTool} onPress={() => setCardOpen(true)}>
-              <Text style={st.cToolText}>卡片</Text>
-            </HDTouch>
             <HDTouch style={st.cTool} onPress={() => nav.navigate('Comments')} title="评论">
-              <Icon name="comments" size={19} color="#ffffffcc" />
+              <Icon name="comments" size={17} color="#ffffffcc" />
+            </HDTouch>
+            <HDTouch style={st.cTool} onPress={() => nav.navigate('Route')} title="投屏设备">
+              <Icon name="devices" size={17} color="#ffffffcc" />
             </HDTouch>
             <HDTouch style={st.cTool} onPress={() => nav.navigate('Fx')} title="均衡器与音效">
-              <Icon name="sliders" size={19} color="#ffffffcc" />
+              <Icon name="sliders" size={17} color="#ffffffcc" />
+            </HDTouch>
+            <HDTouch style={st.cTool} onPress={() => setCardOpen(true)} title="歌词卡片">
+              <Text style={[st.cToolText, { color: '#ffffff99' }]}>卡片</Text>
+            </HDTouch>
+            <HDTouch style={st.cTool} onPress={() => setPanelOpen(panelOpen === 'quality' ? null : 'quality')} title="音质">
+              <Text style={st.cToolText}>{settings.get().playQuality === 'flac' ? 'SQ' : settings.get().playQuality}</Text>
+            </HDTouch>
+            <HDTouch style={st.cTool} onPress={() => setPanelOpen(panelOpen === 'speed' ? null : 'speed')} title="倍速">
+              <Text style={st.cToolText}>{speed.toFixed(2).replace(/0$/, '')}x</Text>
+            </HDTouch>
+            <HDTouch style={st.cTool} onPress={() => setPanelOpen(panelOpen === 'sleep' ? null : 'sleep')} title="睡眠定时">
+              <Text style={[st.cToolText, sleepRemain != null && { color: C.brand }]}>{sleepRemain != null ? `${Math.floor(sleepRemain / 60)}:${String(sleepRemain % 60).padStart(2, '0')}` : '定时'}</Text>
             </HDTouch>
           </View>
 
