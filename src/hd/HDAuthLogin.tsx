@@ -12,6 +12,8 @@ import { HDTouch } from './HDTouch';
 import { useApp } from '../state/AppState';
 import { api, normalizeBase } from '../services/server';
 import { IS_HD } from '../services/appversion';
+import { Platform } from 'react-native';
+const IS_WEB = Platform.OS === 'web';
 import { toast } from '../components/Dialog';
 
 const recentKv = createMMKV({ id: 'nextmusic-server-history' });
@@ -158,7 +160,7 @@ export function HDAuthLoginScreen() {
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ maxWidth: 860, alignSelf: 'center', width: '100%', paddingHorizontal: 24, paddingBottom: 34, gap: 14 }}
+        contentContainerStyle={IS_WEB ? { maxWidth: 460, alignSelf: 'center', width: '100%', paddingHorizontal: 24, paddingBottom: 34, gap: 12 } : { maxWidth: 860, alignSelf: 'center', width: '100%', paddingHorizontal: 24, paddingBottom: 34, gap: 14 }}
         showsVerticalScrollIndicator={false}
       >
         <Text style={st.desc}>账号保存在服务器上:先填服务器地址(可先测试),再输入该服务器上的账号密码。</Text>
@@ -214,9 +216,11 @@ export function HDAuthLoginScreen() {
           </HDTouch>
         </View>
 
-        <HDTouch style={st.btnGhostFull} onPress={goLocal} focusStyle={st.btnGhostFocus}>
-          <Text style={st.btnGhostText}>先本地使用(之后可再连接)</Text>
-        </HDTouch>
+        {!IS_WEB ? (
+          <HDTouch style={st.btnGhostFull} onPress={goLocal} focusStyle={st.btnGhostFocus}>
+            <Text style={st.btnGhostText}>先本地使用(之后可再连接)</Text>
+          </HDTouch>
+        ) : null}
 
         {/* 常用服务器常显 + 最近连接(TV 无键盘,一键填入;历史里的坏地址可无视直接点常用行) */}
         <View style={{ gap: 8 }}>
