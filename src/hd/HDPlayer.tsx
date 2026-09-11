@@ -89,6 +89,8 @@ function ParticleRing({ bins, rot }: { bins: Animated.Value[]; rot: Animated.Val
   );
 }
 
+const IS_WEB = Platform.OS === 'web';
+
 export function HDPlayer() {
   const insets = useSafeAreaInsets();
   const nav = { goBack: () => hdNav()?.goBack(), navigate: (s: string) => hdNav()?.navigate(s) };
@@ -359,12 +361,12 @@ export function HDPlayer() {
         </HDTouch>
       </View>
 
-      <View style={[st.main, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+      <View style={[st.main, IS_WEB && st.mainWeb, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View style={st.artCol}>
           {/* lx125:粒子环(单圈 48 粒,FFT 分区驱动) */}
           <View style={st.vinylZone}>
             <ParticleRing bins={specBins} rot={ringRot} />
-            <View style={st.vinylWrap}>
+            <View style={[st.vinylWrap, IS_WEB && st.vinylWrapWeb]}>
               <Animated.Image
                 source={current.img ? { uri: current.img } : undefined}
                 style={[st.vinylArt, { transform: [{ rotate: spinDeg }] }]}
@@ -386,7 +388,7 @@ export function HDPlayer() {
 
           <View style={st.lyricsBox}>
             {lyrics ? (
-              lyrics.slice(Math.max(0, activeIdx - 3), activeIdx + 4).map((l, i) => {
+              lyrics.slice(Math.max(0, activeIdx - (IS_WEB ? 5 : 3)), activeIdx + (IS_WEB ? 6 : 4)).map((l, i) => {
                 const idx = Math.max(0, activeIdx - 3) + i;
                 const on = idx === activeIdx;
                 return (
@@ -527,6 +529,7 @@ const st = StyleSheet.create({
   focus: { borderWidth: 2, borderColor: C.brand, borderRadius: 26 }, // web 分支控件环
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, borderRadius: 17, paddingHorizontal: 14, backgroundColor: '#ffffff14' },
   backLabel: { color: '#ffffffcc', fontSize: 13, fontWeight: '600' },
+  vinylWrapWeb: { width: 300, height: 300, borderRadius: 150 },
   vinylWrap: { width: 228, height: 228, borderRadius: 114, backgroundColor: '#0d100e', borderWidth: 5, borderColor: '#161a17', alignItems: 'center', justifyContent: 'center', boxShadow: '0 18px 44px rgba(0,0,0,.55), 0 0 36px rgba(30,215,96,.14)' },
   vinylZone: { width: RING_ZONE, height: RING_ZONE, alignItems: 'center', justifyContent: 'center' },
   vinylArt: { width: 150, height: 150, borderRadius: 75 },
@@ -535,6 +538,7 @@ const st = StyleSheet.create({
   srcDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.brand },
   srcTag: { color: '#ffffffaa', fontSize: 10, letterSpacing: 2, fontWeight: '600' },
   main: { flex: 1, flexDirection: 'row', paddingHorizontal: 52, paddingTop: 4, gap: 42 },
+  mainWeb: { paddingHorizontal: '6%', gap: 64, alignItems: 'center' }, // web 大屏:更宽留白+垂直居中
   artCol: { width: 344, alignItems: 'center', justifyContent: 'center' },
   artFallback: { backgroundColor: '#1E2722', alignItems: 'center', justifyContent: 'center' },
   infoCol: { flex: 1, gap: 6, paddingTop: 22 }, // lx94:标题/歌词整体下移(老板:太高)
