@@ -45,6 +45,9 @@ export default defineConfig({
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
     'process.env.APP_FLAVOR': JSON.stringify('hd'),
     'process.env.APP_VERSION': JSON.stringify(require('./package.json').version),
+    // RNW 内部 44 处裸 global(performance/cancelAnimationFrame 等)——Electron preload 设了 global,
+    // 纯浏览器(服务端部署)无 → ReferenceError。词法替换为 globalThat,两端皆可
+    global: 'globalThis',
   },
   server: { port: 5199, strictPort: true },
   build: { outDir: R('dist'), emptyOutDir: true, chunkSizeWarningLimit: 4096 },
