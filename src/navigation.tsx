@@ -48,6 +48,7 @@ import { IS_HD } from './services/appversion';
 import { HDMain } from './hd/HDMain';
 import { HDPlayer } from './hd/HDPlayer';
 import { HDBootScreen } from './hd/HDBootScreen';
+import { withPhoneScale } from './hd/HDMain';
 import { HDAuthLoginScreen } from './hd/HDAuthLogin';
 
 const navTheme = {
@@ -146,7 +147,11 @@ return (
         <Stack.Screen name="Boot" component={IS_HD ? HDBootScreen : BootScreen} />
         <Stack.Screen name="Server" component={withPhoneScale(ServerScreen)} />
         <Stack.Screen name="Auth" component={withPhoneScale(AuthScreen)} />
-        <Stack.Screen name="AuthLogin" component={IS_HD ? HDAuthLoginScreen : AuthLoginScreen} />
+        {IS_HD ? (
+          <Stack.Screen name="AuthLogin" component={withPhoneScale(HDAuthLoginScreen)} />
+        ) : (
+          <Stack.Screen name="AuthLogin" component={AuthLoginScreen} />
+        )}
         <Stack.Screen name="AuthSignup" component={AuthSignupScreen} />
         <Stack.Screen name="Main" component={IS_HD ? HDMain : MainTabs} />
         <Stack.Screen name="Player" component={IS_HD ? HDPlayer : PlayerScreen} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />

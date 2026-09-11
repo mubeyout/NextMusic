@@ -95,7 +95,7 @@ const railNav = (s: string, p?: object) => {
 // HD 屏 token=桌面px×0.75,phone 屏是原生 px;v1.2.6 缩放源修正后并排密度差一截(设置子页字体特大)。
 // 全部桥接 phone 屏(队列/评论/Fx/媒体库族/下载/榜单广场/搜索/设置族/账号族)包 0.75 缩放,与 HD 屏密度统一;
 // TV/原生侧原样返回组件,零 diff。Route(投屏弹层)除外——absolute 弹层定位不适用 transform 缩放
-const withPhoneScale = (Cmp: React.ComponentType<Record<string, unknown>>) => {
+export const withPhoneScale = (Cmp: React.ComponentType<Record<string, unknown>>) => {
   if (!IS_WEB) return Cmp;
   const W = (props: Record<string, unknown>) => (
     <View style={{ flex: 1, overflow: 'hidden' }}>
@@ -333,7 +333,7 @@ export function HDMain() {
                 <InnerStack.Screen name="Settings" component={HDSettingsScreen} />
                 <InnerStack.Screen name="BasicSettings" component={withPhoneScale(BasicSettingsScreen)} />
                 <InnerStack.Screen name="Theme" component={withPhoneScale(ThemeScreen)} />
-                <InnerStack.Screen name="About" component={AboutScreen} />
+                <InnerStack.Screen name="About" component={withPhoneScale(AboutScreen)} />
                 <InnerStack.Screen name="Manual" component={withPhoneScale(ManualScreen)} />
                 <InnerStack.Screen name="DeployGuide" component={withPhoneScale(DeployGuideScreen)} />
                 <InnerStack.Screen name="Faq" component={withPhoneScale(FaqScreen)} />
