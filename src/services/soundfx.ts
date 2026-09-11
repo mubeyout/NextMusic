@@ -171,6 +171,21 @@ function persist() {
 
 // ---------- 原生生效 ----------
 function applyNative() {
+  // web(Electron+纯浏览器): shim 已实现完整 WebAudio DSP 链(EQ/混响/声像/ViPER/变调),
+  // 经 globalThis.__nmFxSet 注入——原实现漏了这条分支,web 上开音效无任何效果
+  try {
+    const fxSet = (globalThis as unknown as { __nmFxSet?: (cfg: Record<string, unknown>) => void }).__nmFxSet;
+    if (fxSet) {
+      fxSet({
+        eq: settings.eq,
+        reverb: { id: settings.reverb.id, mainGain: settings.reverb.mainGain, sendGain: settings.reverb.sendGain },
+        panner: { enable: settings.panner.enable, speed: settings.panner.speed, distance: settings.panner.distance },
+        viper: settings.viper,
+        pitch: settings.pitch,
+      });
+      return; // web 路径已应用,无需原生
+    }
+  } catch { /* ignore */ }
   try {
     // lx55 救砖:原生 setConfig 任何异常(坏配置/旧原生/桥错误)都不许杀 App——音效失效可接受,启动循环闪退不可接受
     NativeModules.SoundFx?.setConfig({

@@ -92,6 +92,16 @@ function ParticleRing({ bins, rot }: { bins: Animated.Value[]; rot: Animated.Val
 const IS_WEB = Platform.OS === 'web';
 
 export function HDPlayer() {
+  // web: 黑胶尺寸 = min(300, 视口高 40%)(RN StyleSheet 不支持 CSS min,需运行时计算)
+  const [winH, setWinH] = useState(() => (typeof window !== 'undefined' ? window.innerHeight : 800));
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onR = () => setWinH(window.innerHeight);
+    window.addEventListener('resize', onR);
+    return () => window.removeEventListener('resize', onR);
+  }, []);
+  const vinylSize = IS_WEB ? Math.min(300, Math.round(winH * 0.4)) : 228;
+
   const insets = useSafeAreaInsets();
   const nav = { goBack: () => hdNav()?.goBack(), navigate: (s: string) => hdNav()?.navigate(s) };
   const { current, playing, position, duration, toggle, skipNext, skipPrev, seekTo, shuffle, repeat, setShuffle, cycleRepeat, queue, speed, setSpeed, sleepRemain, enableSleep } = usePlayer();
@@ -366,7 +376,7 @@ export function HDPlayer() {
           {/* lx125:粒子环(单圈 48 粒,FFT 分区驱动) */}
           <View style={st.vinylZone}>
             <ParticleRing bins={specBins} rot={ringRot} />
-            <View style={[st.vinylWrap, IS_WEB && st.vinylWrapWeb]}>
+            <View style={[st.vinylWrap, IS_WEB && { width: vinylSize, height: vinylSize, borderRadius: vinylSize / 2 }]}>
               <Animated.Image
                 source={current.img ? { uri: current.img } : undefined}
                 style={[st.vinylArt, { transform: [{ rotate: spinDeg }] }]}
@@ -386,7 +396,7 @@ export function HDPlayer() {
           <Text style={st.title} numberOfLines={1}>{current.name}</Text>
           <Text style={st.sub} numberOfLines={1}>{current.singer}{current.albumName ? ` · ${current.albumName}` : ''}</Text>
 
-          <View style={[st.lyricsBox, IS_WEB && st.lyricsBoxWeb]}>
+          <View style={[st.lyricsBox, IS_WEB && { maxHeight: Math.round(winH * 0.5), overflow: 'hidden' }]}>
             {lyrics ? (
               lyrics.slice(Math.max(0, activeIdx - (IS_WEB ? 5 : 3)), activeIdx + (IS_WEB ? 6 : 4)).map((l, i) => {
                 const idx = Math.max(0, activeIdx - 3) + i;
@@ -535,7 +545,7 @@ const st = StyleSheet.create({
   focus: { borderWidth: 2, borderColor: C.brand, borderRadius: 26 }, // web 分支控件环
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, borderRadius: 17, paddingHorizontal: 14, backgroundColor: '#ffffff14' },
   backLabel: { color: '#ffffffcc', fontSize: 13, fontWeight: '600' },
-  vinylWrapWeb: { width: 'min(300px, 40vh)', height: 'min(300px, 40vh)', borderRadius: 999 }, // web:≤页面高 40%
+  // web vinyl 尺寸: RN 不支持 CSS min()——组件内 Dimensions 计算 min(300, 40vh)
   vinylWrap: { width: 228, height: 228, borderRadius: 114, backgroundColor: '#0d100e', borderWidth: 5, borderColor: '#161a17', alignItems: 'center', justifyContent: 'center', boxShadow: '0 18px 44px rgba(0,0,0,.55), 0 0 36px rgba(30,215,96,.14)' },
   vinylZone: { width: RING_ZONE, height: RING_ZONE, alignItems: 'center', justifyContent: 'center' },
   vinylArt: { width: 150, height: 150, borderRadius: 75 },
@@ -551,7 +561,7 @@ const st = StyleSheet.create({
   title: { color: '#ffffff', fontSize: 25, fontWeight: '800' },
   sub: { color: '#ffffffb3', fontSize: 14 },
   lyricsBox: { flex: 1, gap: 8, justifyContent: 'center' },
-  lyricsBoxWeb: { maxHeight: '50vh', overflow: 'hidden' }, // web:歌词窗≤页面高 50%, // lx93:垂直居中(顶贴→太靠上),窗口 7 行填满空隙
+  // 歌词窗 web 限高: 运行时算(50vh), // lx93:垂直居中(顶贴→太靠上),窗口 7 行填满空隙
   lyric: { color: '#ffffff7d', fontSize: 17, lineHeight: 24, fontWeight: '500' },
   lyricOn: { color: '#ffffff', fontSize: 22, lineHeight: 31, fontWeight: '800', textShadowColor: 'rgba(255,255,255,.3)', textShadowRadius: 12, textShadowOffset: { width: 0, height: 0 } },
   lyricTr: { color: '#FFFFFF55', fontSize: 12, lineHeight: 17, marginTop: 2 },
