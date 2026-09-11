@@ -60,9 +60,8 @@ export function DownloadsScreen() {
         <View style={{ backgroundColor: '#1E2422', borderRadius: 12, padding: 14, marginBottom: 12, gap: 4 }}>
           <Text style={{ color: '#7ee2a8', fontSize: 13, fontWeight: '700' }}>服务器缓存模式</Text>
           <Text style={{ color: '#9aa5a0', fontSize: 11.5, lineHeight: 17 }}>
-            点「下载」=永久缓存到服务器(再次播放零流量,不占浏览器空间)。{'\n'}
-            缓存目录 /server/data/cache/用户名 · 下载目录 /server/data/music{'\n'}
-            配额/清理/列表:后台 · 设置 · 存储备份
+            点「下载」=永久缓存到服务器{'\n'}再次播放零流量 · 不占浏览器空间{'\n'}
+            缓存目录:{'/server/data/cache/用户名'}{'\n'}下载目录:{'/server/data/music'}{'\n'}配额/清理:后台 · 设置 · 存储备份
           </Text>
           {cacheStat ? <Text style={{ color: '#9aa5a0', fontSize: 11 }}>当前占用 {cacheStat.fileCount} 个文件 · {fmtBytes(cacheStat.totalSize)}</Text> : null}
         </View>
