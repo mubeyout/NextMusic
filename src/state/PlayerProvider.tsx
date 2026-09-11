@@ -402,6 +402,22 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       if (!webSrvMode) {
         try { url = await customGetMusicUrl(t, quality); } catch { url = null; }
       }
+      // 1.5) 服务器缓存优先(原版 preferServerCache 语义): web 部署形态播放前查服务器缓存,命中直接播缓存文件(零取链零流量)
+      if (!url && webSrvMode) {
+        try {
+          const st0 = settings.get();
+          if (st0.preferServerCache !== false) {
+            const q = `?name=${encodeURIComponent(t.name || '')}&singer=${encodeURIComponent(t.singer || '')}&source=${encodeURIComponent(t.source)}&songmid=${encodeURIComponent(String(t.songmid ?? ''))}&quality=${quality}`;
+            const c = await (await fetch('/api/music/cache/check' + q)).json();
+            if (c && c.exists && !c.isCollision && c.url) {
+              playOrCast(t, c.url);
+              setCurrent(t);
+              failStreak = 0;
+              return; // 缓存直出
+            }
+          }
+        } catch { /* 缓存检查失败回退取链 */ }
+      }
       // 2) 服务器端取链（web 部署恒走;其余需登录态）
       if (!url && (webSrvMode || token)) {
         try { url = (await api.musicUrl(t, quality)).url || null; } catch { url = null; }
