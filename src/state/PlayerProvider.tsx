@@ -418,12 +418,39 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           }
         } catch { /* 缓存检查失败回退取链 */ }
       }
+      // 1.8) 链接缓存(原版 enableSongUrlCache): localStorage 存取链结果,TTL 内直接复用
+      const lcKey = `nm-urlc:${t.source}:${t.songmid}:${quality}`;
+      if (!url) {
+        const stlc = settings.get();
+        if (stlc.enableSongUrlCache !== false) {
+          try {
+            const raw = localStorage.getItem(lcKey);
+            if (raw) {
+              const c = JSON.parse(raw);
+              if (Date.now() - c.at < 30 * 60_000) { // 30 分钟 TTL(外链临时有效)
+                playOrCast(t, c.url);
+                setCurrent(t);
+                failStreak = 0;
+                return;
+              }
+              localStorage.removeItem(lcKey);
+            }
+          } catch { /* ignore */ }
+        }
+      }
       // 2) 服务器端取链（web 部署恒走;其余需登录态）
       if (!url && (webSrvMode || token)) {
         try { url = (await api.musicUrl(t, quality)).url || null; } catch { url = null; }
         // 回退: 服务器无该源时再试本地引擎(Electron/原生)
         if (!url && !webSrvMode) {
           try { url = await customGetMusicUrl(t, quality); } catch { url = null; }
+        }
+        // 取链成功写链接缓存
+        if (url) {
+          const stlc2 = settings.get();
+          if (stlc2.enableSongUrlCache !== false) {
+            try { localStorage.setItem(lcKey, JSON.stringify({ url, at: Date.now() })); } catch { /* ignore */ }
+          }
         }
       }
       if (!url) {
@@ -443,6 +470,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       playOrCast(t, url);
       setCurrent(t);
       failStreak = 0; // 播放成功重置熔断
+      setTimeout(() => preloadNext(), 2000); // 预读下一首(不阻塞播放)
     } catch (e) {
       setPlaying(false);
       // 媒体库歌丬的失败统一走定向引导，不再误导去登录/设音源
@@ -492,6 +520,26 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       }
     }
   }, []);
+
+  // 预读下一首(原版 enablePreloader): 当前曲开播后预取下一首链接写入链接缓存,切歌零等待
+  const preloadedUidRef = useRef<string | null>(null);
+  const preloadNext = () => {
+    try {
+      const st = settings.get();
+      if (st.enablePreloader === false) return;
+      const q = queueRef.current;
+      const ni = (idxRef.current + 1) % Math.max(1, q.length);
+      const nt = q[ni];
+      if (!nt || nt.uid === preloadedUidRef.current) return;
+      preloadedUidRef.current = nt.uid;
+      const quality = pickQuality(nt);
+      const key = `nm-urlc:${nt.source}:${nt.songmid}:${quality}`;
+      if (localStorage.getItem(key)) return; // 已有缓存
+      api.musicUrl(nt, quality).then(r => {
+        if (r?.url) { try { localStorage.setItem(key, JSON.stringify({ url: r.url, at: Date.now() })); } catch { /* ignore */ } }
+      }).catch(() => {});
+    } catch { /* ignore */ }
+  };
 
   const goTo = useCallback((i: number, autoplay = true) => {
     const q = queueRef.current;
