@@ -284,9 +284,9 @@ const st = StyleSheet.create({
   plMask: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,.38)', borderTopLeftRadius: 12, borderTopRightRadius: 12 }, // 跟随封面容器高度(原写死 126,响应式卡宽≠126 时遮罩短一截)
   plPlay: { position: 'absolute', right: 7, bottom: 7, width: 44, height: 44, borderRadius: 22, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }, // lx98:去 overflow;顶角由封面带
   plArt: { width: '100%', aspectRatio: 1, borderTopLeftRadius: 12, borderTopRightRadius: 12 },
-  plCount: { position: 'absolute', bottom: 5, right: 5, backgroundColor: 'rgba(0,0,0,.6)', borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
+  plCount: { position: 'absolute', bottom: 5, right: 5, backgroundColor: 'rgba(0,0,0,.6)', borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1, height: 16, justifyContent: 'center' }, // 显式高度防 absolute 拉伸(zoom 下胶囊曾撑满封面高)
   plCountText: { color: '#fff', fontSize: 8 },
-  plCountWeb: { top: 6, right: 6, bottom: undefined, borderRadius: 999, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: 'rgba(0,0,0,.58)' },
+  plCountWeb: { top: 6, right: 6, bottom: undefined, borderRadius: 999, paddingHorizontal: 6, backgroundColor: 'rgba(0,0,0,.58)', height: 18, justifyContent: 'center' },
   plName: { color: C.text, fontSize: H.font.sm, fontWeight: '600' },
   plArtFull: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   plVeil: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 9 },
