@@ -100,7 +100,7 @@ export function HDPlayer() {
     window.addEventListener('resize', onR);
     return () => window.removeEventListener('resize', onR);
   }, []);
-  const vinylSize = IS_WEB ? Math.min(190, Math.round(winH * 0.22)) : 228; // 缩小一半(老板)
+  const vinylSize = IS_WEB ? Math.min(320, Math.round(winH * 0.34)) : 228; // 设计稿:黑胶为主视觉 // 缩小一半(老板)
 
   const insets = useSafeAreaInsets();
   const nav = { goBack: () => hdNav()?.goBack(), navigate: (s: string) => hdNav()?.navigate(s) };
@@ -285,8 +285,8 @@ export function HDPlayer() {
                 </View>
               )}
               {/* 歌词上下渐隐(盖住窗口边缘行,避免硬切) */}
-              <LinearGradient colors={[maskRgb + ',1)', maskRgb + ',0)']} locations={[0, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={stW.maskTop} pointerEvents="none" />
-              <LinearGradient colors={[maskRgb + ',0)', maskRgb + ',1)']} locations={[0, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={stW.maskBottom} pointerEvents="none" />
+              {IS_WEB ? null : (<LinearGradient colors={[maskRgb + ',1)', maskRgb + ',0)']} locations={[0, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={stW.maskTop} pointerEvents="none" />)}
+              {IS_WEB ? null : (<LinearGradient colors={[maskRgb + ',0)', maskRgb + ',1)']} locations={[0, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={stW.maskBottom} pointerEvents="none" />)}
             </View>
           </View>
         </View>
@@ -374,7 +374,7 @@ export function HDPlayer() {
       <View style={[st.main, IS_WEB && st.mainWeb, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View style={st.artCol}>
           {/* lx125:粒子环(单圈 48 粒,FFT 分区驱动) */}
-          {IS_WEB ? null : (<View style={st.vinylZone}>
+          {(<View style={st.vinylZone}>
             <ParticleRing bins={specBins} rot={ringRot} />
             <View style={[st.vinylWrap, IS_WEB && { width: vinylSize, height: vinylSize, borderRadius: vinylSize / 2 }]}>
               <Animated.Image
@@ -386,9 +386,10 @@ export function HDPlayer() {
               <View style={st.vinylHole} />
             </View>
           </View>)}
+          {/* 方形封面卡(黑胶下方,设计图布局) */}
           {IS_WEB ? (
-            <View style={[st.webArtCard, { width: vinylSize, height: vinylSize }]}>
-              {current.img ? <Image source={{ uri: current.img }} style={st.webArtImg} /> : <View style={[st.webArtImg, { backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={56} color={C.text3} /></View>}
+            <View style={[st.webArtCard, { width: Math.round(vinylSize * 0.42), height: Math.round(vinylSize * 0.42) }]}>
+              {current.img ? <Image source={{ uri: current.img }} style={st.webArtImg} /> : <View style={[st.webArtImg, { backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={32} color={C.text3} /></View>}
             </View>
           ) : null}
           <View style={st.srcPill}>
@@ -576,7 +577,7 @@ const st = StyleSheet.create({
   titleWeb: { fontSize: 30, letterSpacing: -.5 },
   subWeb: { fontSize: 15, marginTop: 4 },
   sub: { color: '#ffffffb3', fontSize: 14 },
-  lyricsBox: { flex: 1, gap: 8, justifyContent: 'center' },
+  lyricsBox: { flex: 1, gap: 8, justifyContent: 'center', alignItems: 'flex-start' }, // 设计稿:歌词左对齐
   // 歌词窗 web 限高: 运行时算(50vh), // lx93:垂直居中(顶贴→太靠上),窗口 7 行填满空隙
   lyric: { color: '#ffffff7d', fontSize: 17, lineHeight: 24, fontWeight: '500' },
   lyricOn: { color: '#ffffff', fontSize: 22, lineHeight: 31, fontWeight: '800', textShadowColor: 'rgba(255,255,255,.3)', textShadowRadius: 12, textShadowOffset: { width: 0, height: 0 } },
