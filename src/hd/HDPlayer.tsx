@@ -195,6 +195,7 @@ export function HDPlayer() {
       let lines = parseLrc(raw);
       const st = settings.get();
       if (r.tlyric && st.showLyricTranslation) lines = mergeTranslation(lines, r.tlyric);
+      if (r.rlyric && st.showLyricRoma) lines = mergeTranslation(lines, r.rlyric);
       if (lines.length) setLyrics(lines);
     })();
     return () => { dead = true; };

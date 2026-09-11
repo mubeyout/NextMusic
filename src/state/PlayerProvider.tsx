@@ -438,9 +438,12 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           } catch { /* ignore */ }
         }
       }
-      // 2) 服务器端取链（web 部署恒走;其余需登录态）
+      // 2) 服务器端取链（web 部署恒走;其余需登录态;自动降质:失败时高音质→128k 再试一次）
       if (!url && (webSrvMode || token)) {
         try { url = (await api.musicUrl(t, quality)).url || null; } catch { url = null; }
+        if (!url && quality !== '128k' && settings.get().enableAutoDegradeQuality !== false) {
+          try { url = (await api.musicUrl(t, '128k')).url || null; } catch { url = null; }
+        }
         // 回退: 服务器无该源时再试本地引擎(Electron/原生)
         if (!url && !webSrvMode) {
           try { url = await customGetMusicUrl(t, quality); } catch { url = null; }
@@ -523,6 +526,22 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   // 预读下一首(原版 enablePreloader): 当前曲开播后预取下一首链接写入链接缓存,切歌零等待
   const preloadedUidRef = useRef<string | null>(null);
+  // 屏幕常亮(keepScreenAwake): web Wake Lock API(播放时持锁,暂停释放;不支持则静默)
+  const wakeLockRef = useRef<{ release: () => Promise<void> } | null>(null);
+  const syncWakeLock = async (playing: boolean) => {
+    try {
+      const st = settings.get();
+      const nav = (navigator as unknown as { wakeLock?: { request: (t: string) => Promise<{ release: () => Promise<void> }> } });
+      if (!nav.wakeLock) return;
+      if (playing && st.keepScreenAwake !== false) {
+        if (!wakeLockRef.current) wakeLockRef.current = await nav.wakeLock.request('screen');
+      } else {
+        await wakeLockRef.current?.release?.().catch(() => {});
+        wakeLockRef.current = null;
+      }
+    } catch { /* ignore */ }
+  };
+
   const preloadNext = () => {
     try {
       const st = settings.get();
@@ -587,6 +606,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       switch (ev.type) {
         case AudioProEventType.STATE_CHANGED:
           setPlaying(ev.payload?.state === AudioProState.PLAYING);
+          if (ev.payload?.state === AudioProState.PLAYING) syncWakeLock(true); else if (ev.payload?.state === AudioProState.PAUSED) syncWakeLock(false);
           // 冷启动恢复的续播回跳：首次进入 PLAYING 且尚未推进 → 回跳到保存进度（一次）
           if (ev.payload?.state === AudioProState.PLAYING && resumeSeekRef.current > 2) {
             const rp = resumeSeekRef.current; resumeSeekRef.current = 0;
