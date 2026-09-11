@@ -116,9 +116,11 @@ export function SourcesScreen() {
         contentContainerStyle={[{ paddingHorizontal: 20, paddingBottom: insets.bottom + 28 }, IS_HD && { maxWidth: 860, alignSelf: 'flex-start', width: '100%' }]}
         showsVerticalScrollIndicator={false}
       >
-      <Section title="服务器音源(查看/启停,管理请去后台)">
-        <Text style={[st.hint, IS_HD && hd.hint]}>音源脚本保存在服务器,服务器端执行。添加/删除等管理操作请到后台管理(op.mubey.top:9527/admin/)。</Text>
-        {serverSources.length ? serverSources.map(cs => (
+      {/* 服务器音源区: 有可用音源才渲染(空/未配置/全部禁用/未连接 → 整块不显示,省得占位) */}
+      {serverSources.length ? (
+      <Section title="服务器音源">
+        <Text style={[st.hint, IS_HD && hd.hint]}>保存在服务器端执行的共享音源 · 管理(添加/删除)在服务器后台</Text>
+        {serverSources.map(cs => (
           <View key={cs.id} style={[st.srcRow, IS_HD && hd.srcRow]}>
             <T style={[st.srcIcon, IS_HD && hd.srcIcon]} onPress={() => { api.csToggle(cs.id, !cs.enabled).then(loadServerSources).catch(() => toast('操作失败(需登录)')); }}>
               <Icon name="wave" size={IS_HD ? 22 : 18} color={cs.enabled ? C.brand : C.text3} />
@@ -128,8 +130,9 @@ export function SourcesScreen() {
               <Text style={[st.srcSub, IS_HD && hd.srcSub]} numberOfLines={1}>{(cs.channels || []).join(' / ') || '服务器音源'} · 点击图标{cs.enabled ? '停用' : '启用'}(仅本端)</Text>
             </View>
           </View>
-        )) : <Text style={[st.hint, IS_HD && hd.hint]}>暂无服务器音源</Text>}
+        ))}
       </Section>
+      ) : null}
 
       <Section title="自定义音源">
         <Text style={[st.hint, IS_HD && hd.hint]}>音源脚本在本机沙箱运行,添加后无需登录即可播放。支持 LX Music 音源协议与 MusicFree 插件;更新由音源内置检查自动提醒。</Text>
