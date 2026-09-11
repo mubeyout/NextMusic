@@ -459,6 +459,12 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
           <Icon name="queue" size={14} color={C.text2} />
           {queue.length ? <View style={st.badge}><Text style={st.badgeText}>{queue.length > 99 ? '99' : queue.length}</Text></View> : null}
         </HDTouch>
+        <HDTouch style={st.tool} focusStyle={st.toolFocus} hoverBg={IS_WEB ? C.hover : false} onPress={() => hdNav()?.navigate('Comments')}>
+          <Icon name="comments" size={14} color={C.text2} />
+        </HDTouch>
+        <HDTouch style={st.tool} focusStyle={st.toolFocus} hoverBg={IS_WEB ? C.hover : false} onPress={() => hdNav()?.navigate('Fx')}>
+          <Icon name="sliders" size={14} color={C.text2} />
+        </HDTouch>
         <HDTouch style={st.tool} focusStyle={st.toolFocus} hoverBg={IS_WEB ? C.hover : false} onPress={() => hdNav()?.navigate('Route')}>
           <Icon name="devices" size={14} color={C.text2} />
         </HDTouch>

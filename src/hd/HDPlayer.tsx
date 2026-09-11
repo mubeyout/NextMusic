@@ -386,7 +386,7 @@ export function HDPlayer() {
           <Text style={st.title} numberOfLines={1}>{current.name}</Text>
           <Text style={st.sub} numberOfLines={1}>{current.singer}{current.albumName ? ` · ${current.albumName}` : ''}</Text>
 
-          <View style={st.lyricsBox}>
+          <View style={[st.lyricsBox, IS_WEB && st.lyricsBoxWeb]}>
             {lyrics ? (
               lyrics.slice(Math.max(0, activeIdx - (IS_WEB ? 5 : 3)), activeIdx + (IS_WEB ? 6 : 4)).map((l, i) => {
                 const idx = Math.max(0, activeIdx - 3) + i;
@@ -426,7 +426,7 @@ export function HDPlayer() {
           </View>
 
           {/* lx89:控件单行(全屏 960dp 富余)——传输组+分隔+工具组,icon 純净排 */}
-          <View style={st.ctrlRow}>
+          <View style={[st.ctrlRow, IS_WEB && st.ctrlRowWeb]}>
             <HDTouch style={st.cMode} onPress={() => setShuffle(!shuffle)}>
               <Icon name="shuffle" size={20} active={shuffle} color={shuffle ? C.brand : '#ffffff99'} />
             </HDTouch>
@@ -468,6 +468,12 @@ export function HDPlayer() {
             </HDTouch>
             <HDTouch style={st.cTool} onPress={() => setCardOpen(true)}>
               <Text style={st.cToolText}>卡片</Text>
+            </HDTouch>
+            <HDTouch style={st.cTool} onPress={() => nav.navigate('Comments')}>
+              <Text style={st.cToolText}>评论</Text>
+            </HDTouch>
+            <HDTouch style={st.cTool} onPress={() => nav.navigate('Fx')}>
+              <Text style={st.cToolText}>音效</Text>
             </HDTouch>
           </View>
 
@@ -529,7 +535,7 @@ const st = StyleSheet.create({
   focus: { borderWidth: 2, borderColor: C.brand, borderRadius: 26 }, // web 分支控件环
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, borderRadius: 17, paddingHorizontal: 14, backgroundColor: '#ffffff14' },
   backLabel: { color: '#ffffffcc', fontSize: 13, fontWeight: '600' },
-  vinylWrapWeb: { width: 300, height: 300, borderRadius: 150 },
+  vinylWrapWeb: { width: 'min(300px, 40vh)', height: 'min(300px, 40vh)', borderRadius: 999 }, // web:≤页面高 40%
   vinylWrap: { width: 228, height: 228, borderRadius: 114, backgroundColor: '#0d100e', borderWidth: 5, borderColor: '#161a17', alignItems: 'center', justifyContent: 'center', boxShadow: '0 18px 44px rgba(0,0,0,.55), 0 0 36px rgba(30,215,96,.14)' },
   vinylZone: { width: RING_ZONE, height: RING_ZONE, alignItems: 'center', justifyContent: 'center' },
   vinylArt: { width: 150, height: 150, borderRadius: 75 },
@@ -544,7 +550,8 @@ const st = StyleSheet.create({
   infoCol: { flex: 1, gap: 6, paddingTop: 22 }, // lx94:标题/歌词整体下移(老板:太高)
   title: { color: '#ffffff', fontSize: 25, fontWeight: '800' },
   sub: { color: '#ffffffb3', fontSize: 14 },
-  lyricsBox: { flex: 1, gap: 8, justifyContent: 'center' }, // lx93:垂直居中(顶贴→太靠上),窗口 7 行填满空隙
+  lyricsBox: { flex: 1, gap: 8, justifyContent: 'center' },
+  lyricsBoxWeb: { maxHeight: '50vh', overflow: 'hidden' }, // web:歌词窗≤页面高 50%, // lx93:垂直居中(顶贴→太靠上),窗口 7 行填满空隙
   lyric: { color: '#ffffff7d', fontSize: 17, lineHeight: 24, fontWeight: '500' },
   lyricOn: { color: '#ffffff', fontSize: 22, lineHeight: 31, fontWeight: '800', textShadowColor: 'rgba(255,255,255,.3)', textShadowRadius: 12, textShadowOffset: { width: 0, height: 0 } },
   lyricTr: { color: '#FFFFFF55', fontSize: 12, lineHeight: 17, marginTop: 2 },
@@ -558,6 +565,7 @@ const st = StyleSheet.create({
   trackRest: { backgroundColor: '#ffffff2e', borderRadius: 3 },
   playhead: { position: 'absolute', top: -4, width: 13, height: 13, borderRadius: 7, backgroundColor: C.brand, borderWidth: 2.5, borderColor: '#ffffff', marginLeft: -7, boxShadow: '0 0 12px rgba(30,215,96,.75)' },
   ctrlRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  ctrlRowWeb: { flexWrap: 'wrap', justifyContent: 'center', gap: 10 },
   cMode: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#ffffff14', alignItems: 'center', justifyContent: 'center' },
   cMain: { width: 66, height: 66, borderRadius: 33, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   cMainFocus: { borderWidth: 3, borderColor: '#FFFFFF', borderRadius: 33 },
