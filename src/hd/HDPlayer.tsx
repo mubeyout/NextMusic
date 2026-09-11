@@ -2,7 +2,6 @@
 // v1 教训:固定尺寸溢出;v2 教训:深色底 panel 突兀(老板:粗糙,直接取消)
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, Animated, Easing, ScrollView } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import Svg, { Defs, Path, RadialGradient, Stop } from 'react-native-svg';
 import { SpectrumRing } from './SpectrumRing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -234,7 +233,6 @@ export function HDPlayer() {
     <View style={st.screen}>
       {current.img ? <Image source={{ uri: current.img }} style={st.bgArt} blurRadius={60} resizeMode="cover" /> : null}
       <View style={st.bgVeil} />
-      <LinearGradient colors={['rgba(4,6,5,0)', 'rgba(4,6,5,.62)']} locations={[0, 1]} style={st.bgBottomGrad} />
 
       {/* 头部:返回按钮入流式布局(不再悬浮怪位) */}
       <View style={[st.header, { paddingTop: Math.max(insets.top, 12) }]}>
@@ -435,7 +433,6 @@ const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#0a0c0b' },
   bgArt: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.5 },
   bgVeil: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(6,8,7,.62)' },
-  bgBottomGrad: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '42%' },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 26, zIndex: 5 },
   focus: { borderWidth: 2, borderColor: C.brand, borderRadius: 26 }, // web 分支控件环
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, borderRadius: 17, paddingHorizontal: 14, backgroundColor: '#ffffff14' },
