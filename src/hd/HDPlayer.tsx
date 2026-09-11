@@ -426,9 +426,9 @@ export function HDPlayer() {
 
 const st = StyleSheet.create({
   cToolText: { color: '#ffffff99', fontSize: 11, fontWeight: '700' }, // 工具组降为次级灰
-  panelRow: { flexDirection: 'row', gap: 8, justifyContent: 'center', marginTop: 14 },
+  panelRow: { position: 'absolute', bottom: '100%', left: '50%', transform: [{ translateX: -190 }], flexDirection: 'row', gap: 8, justifyContent: 'center', marginBottom: 10, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 14, background: 'transparent' }, // v3.7:浮动弹出(不挤压布局)
   panelPill: { borderRadius: 999, paddingHorizontal: 14, height: 30, backgroundColor: '#ffffff14', alignItems: 'center', justifyContent: 'center' },
-  panelPillOn: { backgroundColor: C.brand },
+  panelPillOn: { backgroundColor: C.brand, borderColor: C.brand },
   panelPillText: { color: '#ffffffcc', fontSize: 12, fontWeight: '600' },
   screen: { flex: 1, backgroundColor: '#0a0c0b' },
   bgArt: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.5 },
@@ -475,15 +475,15 @@ const st = StyleSheet.create({
   trackRest: { backgroundColor: '#ffffff2e', borderRadius: 3 },
   playhead: { position: 'absolute', top: -4, width: 13, height: 13, borderRadius: 7, backgroundColor: C.brand, borderWidth: 2.5, borderColor: '#ffffff', marginLeft: -7, boxShadow: '0 0 12px rgba(30,215,96,.75)' },
   ctrlRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  ctrlRowWeb: { flexWrap: 'wrap', justifyContent: 'center', gap: 8, columnGap: 22, marginTop: 0 }, // v3.6:贴底紧凑(参照 playbar)
+  ctrlRowWeb: { justifyContent: 'center', gap: 10, columnGap: 20, marginTop: 0, flexWrap: 'nowrap' }, // v3.7:单排不换行
   cMainWeb: { width: 60, height: 60, borderRadius: 30, boxShadow: '0 8px 30px rgba(30,215,96,.4)' }, // Spotify 大播放键
   ctrlDividerWeb: { opacity: .7 },
-  cMode: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#ffffff14', alignItems: 'center', justifyContent: 'center' },
+  cMode: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' }, // v3.7:去黑底
   cMain: { width: 66, height: 66, borderRadius: 33, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   cMainFocus: { borderWidth: 3, borderColor: '#FFFFFF', borderRadius: 33 },
   repOne: { position: 'absolute', right: 8, top: 8, color: C.brand, fontSize: 9, fontWeight: '700' }, // 手机端同款角标位
   ctrlDivider: { width: 1, height: 26, backgroundColor: 'rgba(255,255,255,.14)', marginHorizontal: 2 },
-  cTool: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#ffffff0d', alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
+  cTool: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }, // v3.7:去黑底·紧凑
   qBadge: { position: 'absolute', top: -5, right: -7, minWidth: 17, height: 17, borderRadius: 9, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: '#0e1310' }, // lx95:队列数量优雅悬浮胶囊
   qBadgeText: { color: '#0b0f0d', fontSize: 9, fontWeight: '800' },
 });
