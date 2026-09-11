@@ -333,7 +333,7 @@ export function HDMain() {
                 <InnerStack.Screen name="Settings" component={HDSettingsScreen} />
                 <InnerStack.Screen name="BasicSettings" component={withPhoneScale(BasicSettingsScreen)} />
                 <InnerStack.Screen name="Theme" component={withPhoneScale(ThemeScreen)} />
-                <InnerStack.Screen name="About" component={withPhoneScale(AboutScreen)} />
+                <InnerStack.Screen name="About" component={AboutScreen} />
                 <InnerStack.Screen name="Manual" component={withPhoneScale(ManualScreen)} />
                 <InnerStack.Screen name="DeployGuide" component={withPhoneScale(DeployGuideScreen)} />
                 <InnerStack.Screen name="Faq" component={withPhoneScale(FaqScreen)} />

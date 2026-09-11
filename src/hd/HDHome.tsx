@@ -281,7 +281,7 @@ const st = StyleSheet.create({
   // 卡片内文字离边留气口(老板反馈:文字太贴边,左右和底部缺 padding)
   plCard: { width: '100%', gap: 5, paddingBottom: 7, borderRadius: 12, backgroundColor: C.surface },
   plCardSm: { gap: 3, paddingBottom: 4 },
-  plMask: { position: 'absolute', top: 0, left: 0, right: 0, height: 126, backgroundColor: 'rgba(0,0,0,.38)', borderRadius: 12 },
+  plMask: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,.38)', borderTopLeftRadius: 12, borderTopRightRadius: 12 }, // 跟随封面容器高度(原写死 126,响应式卡宽≠126 时遮罩短一截)
   plPlay: { position: 'absolute', right: 7, bottom: 7, width: 44, height: 44, borderRadius: 22, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }, // lx98:去 overflow;顶角由封面带
   plArt: { width: '100%', aspectRatio: 1, borderTopLeftRadius: 12, borderTopRightRadius: 12 },
   plCount: { position: 'absolute', bottom: 5, right: 5, backgroundColor: 'rgba(0,0,0,.6)', borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
