@@ -101,9 +101,8 @@ mountKbNav();
     '::-webkit-scrollbar-thumb { border-radius: 6px; border: 3px solid transparent; background-clip: content-box; background-color: ' + (isLight ? 'rgba(31,35,41,.20)' : 'rgba(255,255,255,.16)') + '; }',
     '::-webkit-scrollbar-thumb:hover { background-color: ' + (isLight ? 'rgba(31,35,41,.32)' : 'rgba(255,255,255,.30)') + '; }',
     '::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }',
-    /* 选区/键盘焦点环/tap 高亮(桌面感) */
+    /* 选区/tap 高亮(桌面感);v3.14(老板:淡淡方块跟着选中)去掉 :focus-visible 描边——桌面 hover 态已足够 */
     '::selection { background: rgba(30,215,96,.32); }',
-    ':focus-visible { outline: 2px solid rgba(30,215,96,.55); outline-offset: 2px; }',
     '* { -webkit-tap-highlight-color: transparent; }',
     /* 视图入场:内页卡片 push 转场(右入+淡入,桌面应用通用手感) */
     '@keyframes nmViewIn { from { opacity: 0; transform: translateX(22px); } to { opacity: 1; transform: translateX(0); } }',
