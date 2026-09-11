@@ -265,9 +265,9 @@ const st = StyleSheet.create({
   // 卡根 overflow hidden 直接裁(老板:每日推荐/私人雷达圆角没有了);TV 不动(原生正常)
   bigCardWeb: { overflow: 'hidden' as const, borderRadius: 12 },
   big: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 14, gap: 13, borderRadius: H.radius.card },
-  bigBadge: { color: '#fff', fontSize: 18, fontWeight: '800', opacity: 0.92 },
-  bigTitle: { color: '#fff', fontSize: H.font.xl, fontWeight: '700' },
-  bigSub: { color: '#FFFFFFD0', fontSize: H.font.sm, marginTop: 2 },
+  bigBadge: { color: '#ffffffcc', fontSize: 11, fontWeight: '700', opacity: 0.9 }, // 数字退层级(原 18px 压过标题)
+  bigTitle: { color: '#fff', fontSize: H.font.xl, fontWeight: '800', letterSpacing: -.3 },
+  bigSub: { color: '#ffffffa8', fontSize: H.font.sm, marginTop: 2 },
   bigPlay: { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,.22)', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(0,0,0,.35)' },
   secTitle: { color: C.text, fontSize: H.font.xl, fontWeight: '700' },
   secHint: { color: C.text3, fontSize: H.font.xs },

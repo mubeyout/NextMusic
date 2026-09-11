@@ -397,7 +397,7 @@ export function HDPlayer() {
           </View>
         </View>
 
-        <View style={st.infoCol}>
+        <View style={[st.infoCol, IS_WEB && st.infoColWeb]}>
           <Text style={[st.title, IS_WEB && st.titleWeb]} numberOfLines={1}>{current.name}</Text>
           <Text style={[st.sub, IS_WEB && st.subWeb]} numberOfLines={1}>{current.singer}{current.albumName ? ` · ${current.albumName}` : ''}</Text>
 
@@ -543,7 +543,7 @@ export function HDPlayer() {
 }
 
 const st = StyleSheet.create({
-  cToolText: { color: '#ffffffcc', fontSize: 11, fontWeight: '700' },
+  cToolText: { color: '#ffffff99', fontSize: 11, fontWeight: '700' }, // 工具组降为次级灰
   panelRow: { flexDirection: 'row', gap: 8, justifyContent: 'center', marginTop: 14 },
   panelPill: { borderRadius: 999, paddingHorizontal: 14, height: 30, backgroundColor: '#ffffff14', alignItems: 'center', justifyContent: 'center' },
   panelPillOn: { backgroundColor: C.brand },
@@ -570,7 +570,8 @@ const st = StyleSheet.create({
   mainWeb: { paddingHorizontal: '7%', gap: 72, alignItems: 'center' }, // web 大屏:更宽留白+垂直居中
   artCol: { width: 344, alignItems: 'center', justifyContent: 'center' },
   artFallback: { backgroundColor: '#1E2722', alignItems: 'center', justifyContent: 'center' },
-  infoCol: { flex: 1, gap: 6, paddingTop: 22 }, // lx94:标题/歌词整体下移(老板:太高)
+  infoCol: { flex: 1, gap: 6, paddingTop: 22 },
+  infoColWeb: { paddingTop: 8, gap: 8 }, // lx94:标题/歌词整体下移(老板:太高)
   title: { color: '#ffffff', fontSize: 25, fontWeight: '800' },
   titleWeb: { fontSize: 30, letterSpacing: -.5 },
   subWeb: { fontSize: 15, marginTop: 4 },
