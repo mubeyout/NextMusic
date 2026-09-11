@@ -374,7 +374,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       // 播放门槛：登录服务器 或 已启用自定义音源（对齐 lx-music：浏览免费，播放需其一）
-      if (!token && activeSources().length === 0) {
+      // web 服务端部署形态豁免：服务器公共源匿名可取链（对齐原版 v2 播放器行为）
+      const webSrv = Platform.OS === 'web' && typeof navigator !== 'undefined' && !/electron/i.test(navigator.userAgent);
+      if (!token && activeSources().length === 0 && !webSrv) {
         setPlaying(false);
         dialog.alert(
           '无法播放',
@@ -388,12 +390,20 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       const quality = pickQuality(t);
-      // 1) 自定义音源（免登录）
+      // web 服务端部署形态:直接走服务器取链(登录带 token,匿名亦可——公共源服务器端执行,无 CORS)
+      const webSrvMode = Platform.OS === 'web' && typeof navigator !== 'undefined' && !/electron/i.test(navigator.userAgent);
+      // 1) 自定义音源（免登录,Electron/原生本地引擎）
       let url: string | null = null;
-      try { url = await customGetMusicUrl(t, quality); } catch { url = null; }
-      // 2) 登录态：服务器端取链
-      if (!url && token) {
+      if (!webSrvMode) {
+        try { url = await customGetMusicUrl(t, quality); } catch { url = null; }
+      }
+      // 2) 服务器端取链（web 部署恒走;其余需登录态）
+      if (!url && (webSrvMode || token)) {
         try { url = (await api.musicUrl(t, quality)).url || null; } catch { url = null; }
+        // 回退: 服务器无该源时再试本地引擎(Electron/原生)
+        if (!url && !webSrvMode) {
+          try { url = await customGetMusicUrl(t, quality); } catch { url = null; }
+        }
       }
       if (!url) {
         // v2 对齐:失败自动下一曲(防卡死)

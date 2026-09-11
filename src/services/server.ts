@@ -37,6 +37,7 @@ export interface ServerConfig {
 
 export function normalizeBase(url: string): string {
   let u = url.trim().replace(/\/+$/, '');
+  if (!u) return ''; // web 部署形态:空 base=同源相对路径(fetch('/api/...'))
   if (!/^https?:\/\//.test(u)) u = 'http://' + u;
   return u;
 }

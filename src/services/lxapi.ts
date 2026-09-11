@@ -248,8 +248,17 @@ export const lxapi = {
     try {
       const method = type === 'hot' ? 'getHotComment' : 'getComment';
       if (WEB_SERVER_MODE) {
-        const q = `?source=${songInfo.source}&songmid=${encodeURIComponent(songInfo.songmid)}&name=${encodeURIComponent(songInfo.name)}&singer=${encodeURIComponent(songInfo.singer)}&hash=${encodeURIComponent(songInfo.hash || '')}`;
-        return (await srvGet('/api/music/comment' + q)) as never;
+        // 服务端 /api/music/comment 为 POST(songInfo+type+page in body)
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 15000);
+        try {
+          const res = await fetch('/api/music/comment', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctrl.signal,
+            body: JSON.stringify({ songInfo: { source: songInfo.source, songmid: songInfo.songmid, name: songInfo.name, singer: songInfo.singer, hash: songInfo.hash }, type, page, limit }),
+          });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return await res.json();
+        } finally { clearTimeout(t); }
       }
       return await engine.sdk<any>([songInfo.source, 'comment', method], [normalize({ ...songInfo }), page, limit]);
     } catch { return {}; }
