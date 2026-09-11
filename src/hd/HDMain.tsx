@@ -5,7 +5,7 @@ import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, Platform } from 'react-native';
 const IS_WEB = Platform.OS === 'web';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Icon } from '../theme/Icon';
+import { Icon, BrandIcon } from '../theme/Icon';
 import { C, H, SH, fmtSec } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { usePlayer } from '../state/PlayerProvider';
@@ -281,7 +281,7 @@ export function HDMain() {
           {providerAccts.map(pa => (
             <HDTouch key={pa.id} style={[st.navItem, { paddingLeft: 34 }]} focusStyle={st.navFocus} hoverBg={IS_WEB ? C.hover : false}
               onPress={() => railNav('ProviderBrowse', { acctId: pa.id })}>
-              <Icon name="music" size={16} color={C.text2} />
+              <BrandIcon name={pa.type} size={16} />
               <Text style={st.navLabel} numberOfLines={1}>{pa.name}</Text>
             </HDTouch>
           ))}

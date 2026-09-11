@@ -51,5 +51,10 @@ export type BrandIconName = 'netease' | 'qqmusic' | 'kugou' | 'kuwo' | 'migu' | 
 export function BrandIcon({ name, size = 24 }: { name: BrandIconName; size?: number }) {
   const xml = BRAND_ICONS[name];
   if (!xml) return null;
+  // 道理鱼: webp 位图(官方 logo)——SvgXml 不适用,走 Image dataURI
+  if (xml.startsWith('data:')) {
+    const { Image } = require('react-native');
+    return <Image source={{ uri: xml }} style={{ width: size, height: size, borderRadius: Math.round(size / 5) }} />;
+  }
   return <SvgXml xml={xml} width={size} height={size} />;
 }

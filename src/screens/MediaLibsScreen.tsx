@@ -25,7 +25,7 @@ import type { SongItem } from '../services/server';
 
 // 有品牌 logo 的类型用 BrandIcon，其余回退语义图标
 const BRAND_ICON_TYPES: Set<ProviderType> = new Set(['emby', 'jellyfin', 'navidrome', 'subsonic', 'webdav']);
-const TYPE_ICON: Record<ProviderType, string> = { subsonic: 'music', navidrome: 'music', daoliyu: 'music', emby: 'tv', jellyfin: 'tv', webdav: 'cloud' };
+// v3: 媒体库 icon 一律 BrandIcon(品牌图标一一对应)
 
 function AcctGlyph({ type, size = 20 }: { type: ProviderType; size?: number }) {
   return BRAND_ICON_TYPES.has(type)

@@ -1,6 +1,6 @@
 // 媒体库详情页（amcfy 式即点即播）：专辑 / 服务器歌单 → 曲目列表；艺术家 → 专辑网格
 // 替代原「点专辑弹 5 钮对话框」——看得到曲目、能单曲点播，导入/下载降级为次级动作
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -40,7 +40,14 @@ export function ProviderDetailScreen() {
   const [actSong, setActSong] = useState<SongItem | null>(null);
   const [collect, setCollect] = useState(false);
   const [, force] = useState(0);
-  useEffect(() => subscribeDownloads(() => force(n => n + 1)), []);
+  // v3: 下载进度重渲染节流(每 tick 全量 force → 专辑页闪烁;400ms 合并)
+  const dlTickRef = useRef(0);
+  useEffect(() => subscribeDownloads(() => {
+    const now = Date.now();
+    if (now - dlTickRef.current < 400) return;
+    dlTickRef.current = now;
+    force(n => n + 1);
+  }), []);
 
   const load = async () => {
     if (!acct) { setErr('账号不存在'); setLoading(false); return; }
