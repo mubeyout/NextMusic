@@ -244,19 +244,27 @@ export function HDPlayer() {
       </View>
 
       <View style={[st.main, IS_WEB && st.mainWeb, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-        <View style={st.artCol}>
+        <View style={st.rowWrap}>
+        <View style={[st.artCol, IS_WEB && st.artColWeb]}>
           {/* lx125:粒子环(单圈 48 粒,FFT 分区驱动) */}
           {(<View style={st.vinylZone}>
             <ParticleRing bins={specBins} rot={ringRot} />
-            <View style={[st.vinylWrap, IS_WEB && { width: vinylSize, height: vinylSize, borderRadius: vinylSize / 2 }]}>
-              <Animated.Image
-                source={current.img ? { uri: current.img } : undefined}
-                style={[st.vinylArt, { transform: [{ rotate: spinDeg }] }]}
-                resizeMode="cover"
-              />
-              {!current.img ? <View style={[st.vinylArt, st.artFallback]}><Icon name="music" size={52} color={C.text3} /></View> : null}
-              <View style={st.vinylHole} />
-            </View>
+            {IS_WEB ? (
+              /* v3.3(老板:黑胶没质感):web 换 HD_VINYL_SVG——纹理沟槽+光泽+封面内嵌,真黑胶质感 */
+              <View style={{ width: vinylSize, height: vinylSize, transform: [{ rotate: String(spinDeg) }] }}>
+                {HD_VINYL_SVG(current.img, vinylSize, playing)}
+              </View>
+            ) : (
+              <View style={st.vinylWrap}>
+                <Animated.Image
+                  source={current.img ? { uri: current.img } : undefined}
+                  style={[st.vinylArt, { transform: [{ rotate: spinDeg }] }]}
+                  resizeMode="cover"
+                />
+                {!current.img ? <View style={[st.vinylArt, st.artFallback]}><Icon name="music" size={52} color={C.text3} /></View> : null}
+                <View style={st.vinylHole} />
+              </View>
+            )}
           </View>)}
           
           <View style={st.srcPill}>
@@ -401,6 +409,7 @@ export function HDPlayer() {
             </View>
           ) : null}
         </View>
+        </View>
       </View>
 
       {/* lx103:收藏到歌单面板(共享组件) */}
@@ -435,11 +444,12 @@ const st = StyleSheet.create({
   srcDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.brand },
   srcTag: { color: '#ffffffaa', fontSize: 10, letterSpacing: 2, fontWeight: '600' },
   main: { flex: 1, flexDirection: 'row', paddingHorizontal: 52, paddingTop: 4, gap: 42 },
-  mainWeb: { paddingHorizontal: '7%', gap: 72, alignItems: 'center' }, // web 大屏:更宽留白+垂直居中
+  mainWeb: { flexDirection: 'column', paddingHorizontal: '5%', gap: 20 },
+  rowWrap: { flex: 1, flexDirection: 'row', gap: '10%', alignItems: 'center', minWidth: 0 }, // 行1:黑胶(左半靠右)|10%|标题歌词(右半靠左)
   artCol: { width: 344, alignItems: 'center', justifyContent: 'center' },
   artFallback: { backgroundColor: '#1E2722', alignItems: 'center', justifyContent: 'center' },
   infoCol: { flex: 1, gap: 6, paddingTop: 22 },
-  infoColWeb: { paddingTop: 8, gap: 8 }, // lx94:标题/歌词整体下移(老板:太高)
+  infoColWeb: { paddingTop: 0, gap: 10, flex: 1, alignItems: 'flex-start' }, // 行1 右半区·左对齐 // lx94:标题/歌词整体下移(老板:太高)
   title: { color: '#ffffff', fontSize: 25, fontWeight: '800' },
   titleWeb: { fontSize: 30, letterSpacing: -.5 },
   subWeb: { fontSize: 15, marginTop: 4 },
@@ -492,6 +502,7 @@ const stW = StyleSheet.create({
   backLabel: { color: C.text2, fontSize: 13, fontWeight: '600' },
   body: { flex: 1, flexDirection: 'row', paddingHorizontal: 64, gap: 56, alignItems: 'stretch' },
   artCol: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  artColWeb: { flex: 1, alignItems: 'flex-end', paddingRight: '5%' }, // 行1 左半区·靠右
   vinylArea: { flex: 1, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center' },
   srcPill: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 24, borderRadius: 12, marginTop: 16, paddingHorizontal: 12, borderWidth: 1, borderColor: C.border, backgroundColor: C.input },
   srcDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.brand },
