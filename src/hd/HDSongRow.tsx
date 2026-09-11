@@ -139,8 +139,9 @@ export function HDSongRow({ song, index, onPress, onLongPress, onAction, playing
         <Text style={st.dur}>{playing ? '播放中' : song.interval}</Text>
       )}
     </HDTouch>
-    {onAction ? (
-      <HDTouch style={st.act} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius:  11 }} focusBg={C.hover} onPress={onAction}>
+    {/* 行尾常驻 ⋯ 仅原生端保留(web hover 三钮已含菜单,重复;TV/手机 D-pad 依赖常驻钮) */}
+    {onAction && !IS_WEB ? (
+      <HDTouch style={st.act} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 11 }} focusBg={C.hover} onPress={onAction}>
         <Icon name="more" size={14} color={C.text3} />
       </HDTouch>
     ) : null}
