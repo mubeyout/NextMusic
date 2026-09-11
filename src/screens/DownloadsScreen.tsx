@@ -51,22 +51,22 @@ export function DownloadsScreen() {
         title="下载管理"
         right={(
           <TouchableOpacity onPress={clear} hitSlop={6}>
-      {typeof Platform !== 'undefined' && Platform.OS === 'web' && !/electron/i.test(navigator.userAgent) ? (
-        <View style={{ backgroundColor: '#1E2422', borderRadius: 12, padding: 14, marginBottom: 12, gap: 4 }}>
-          <Text style={{ color: '#7ee2a8', fontSize: 13, fontWeight: '700' }}>服务器缓存模式</Text>
-          <Text style={{ color: '#9aa5a0', fontSize: 11.5, lineHeight: 17 }}>
-            当前模式:服务器缓存(Web)。点「下载」=歌曲永久缓存到服务器,再次播放零流量,不占浏览器空间。缓存目录:/server/data/cache/用户名 · 下载目录:/server/data/music;{'\n'}
-            与原生端差别:手机/TV 为本地文件模式(下载到设备可离线),Web 不落盘、服务器统一管理;{'\n'}
-            配额与 LRU 自动清理:后台「设置 · 存储备份 · 缓存与空间」;缓存列表与清空:后台「下载与备份 · 服务器缓存管理」。
-          </Text>
-          {cacheStat ? <Text style={{ color: '#9aa5a0', fontSize: 11 }}>当前占用 {cacheStat.fileCount} 个文件 · {fmtBytes(cacheStat.totalSize)}</Text> : null}
-        </View>
-      ) : null}
             <Icon name="close" size={20} color={list.length ? C.text : C.text3} />
           </TouchableOpacity>
         )}
       />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 120 }}>
+      {typeof Platform !== 'undefined' && Platform.OS === 'web' && !/electron/i.test(navigator.userAgent) ? (
+        <View style={{ backgroundColor: '#1E2422', borderRadius: 12, padding: 14, marginBottom: 12, gap: 4 }}>
+          <Text style={{ color: '#7ee2a8', fontSize: 13, fontWeight: '700' }}>服务器缓存模式</Text>
+          <Text style={{ color: '#9aa5a0', fontSize: 11.5, lineHeight: 17 }}>
+            点「下载」=永久缓存到服务器(再次播放零流量,不占浏览器空间)。{'\n'}
+            缓存目录 /server/data/cache/用户名 · 下载目录 /server/data/music{'\n'}
+            配额/清理/列表:后台 · 设置 · 存储备份
+          </Text>
+          {cacheStat ? <Text style={{ color: '#9aa5a0', fontSize: 11 }}>当前占用 {cacheStat.fileCount} 个文件 · {fmtBytes(cacheStat.totalSize)}</Text> : null}
+        </View>
+      ) : null}
         <Text style={st.stat}>{list.length} 首 · {fmtBytes(dlStore.totalBytes())} · 内部存储/Music/NextMusic</Text>
         {lastFails.length ? (
           <View style={st.failCard}>
