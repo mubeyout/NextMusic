@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, Animated, Easing, ScrollView } from 'react-native';
 import Svg, { Defs, Path, RadialGradient, Stop } from 'react-native-svg';
-import { SpectrumRing } from './SpectrumRing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
 import { settings } from '../services/settings';
@@ -23,10 +22,8 @@ import { hdNav } from './hdnav';
 
 // 唱片 SVG 纯 DOM 版(react-native-svg 的 web shim forwardRef 与 RNW 混用会 React#130,直出 DOM 稳)
 // v1.2.5:size 参数化 + nm-vinyl-spin CSS 旋转接入(此前 web 唱片根本不转——nm-vinyl-css 注入了却没人用)
-// v1.2.11(老板:封面太小+波浪圈不对齐):①封面 label 88→132(44% 唱片径,网易云规格)加标环;
-// ②svg 绝对定位(top/left 0)与频谱环同一坐标系——两兄弟节点 flex 纵排在 320 盒里曾各被排到 ±160px(不同心真因);
-// ③圆形底盘投影( borderRadius 50% 否则方影)
-function HD_VINYL_SVG(img?: string, size = 300, playing?: boolean): React.ReactNode {
+// v3.11(老板:封面改到唱片下一层):去掉内嵌封面,盘心纯黑胶 label;封面独立方形垫在盘底(见 vinylZone)
+function HD_VINYL_SVG(size = 300, playing?: boolean): React.ReactNode {
   const h = React.createElement;
   const rg = h('radialGradient', { id: 'hdSheen', cx: '0.32', cy: '0.26', r: '0.95' }, [
     h('stop', { key: 'a', offset: '0', stopColor: '#FFFFFF', stopOpacity: '0.10' }),
@@ -46,8 +43,6 @@ function HD_VINYL_SVG(img?: string, size = 300, playing?: boolean): React.ReactN
     h('circle', { cx: 150, cy: 150, r: 149, fill: 'url(#hdSheen)' }),
     h('circle', { cx: 150, cy: 150, r: 88, fill: '#101312' }),
     h('circle', { cx: 150, cy: 150, r: 70, fill: 'none', stroke: '#FFFFFF16', strokeWidth: 1.5 }),
-    h('image', { href: img || undefined, x: 84, y: 84, width: 132, height: 132, clipPath: undefined,
-      style: { borderRadius: 66 } as never }),
     h('circle', { cx: 150, cy: 150, r: 6, fill: '#000' }),
   );
 }
@@ -247,15 +242,25 @@ export function HDPlayer() {
         <View style={[st.artCol, IS_WEB && st.artColWeb]}>
           {/* lx125:粒子环(单圈 48 粒,FFT 分区驱动) */}
           {(<View style={[st.vinylZone, IS_WEB && { width: ringSize, height: ringSize }]}>
-            {IS_WEB
-              ? <View style={{ position: 'absolute', top: '50%', left: '50%', transform: [{ translateX: -ringSize / 2 }, { translateY: -ringSize / 2 }] }}>
-                  <SpectrumRing size={ringSize} playing={playing} />
-                </View> /* v3.4:波浪环绝对定位·与黑胶同心重叠 */
-              : <ParticleRing bins={specBins} rot={ringRot} />}
+            {/* v3.11(老板:封面在唱片下一层):方封面垫盘底,四边从唱片后露出(盘压封面) */}
+            {IS_WEB && current.img ? (
+              <View style={{ position: 'absolute', top: '50%', left: '50%', width: vinylSize * 1.14, height: vinylSize * 1.14, marginLeft: -vinylSize * 0.57, marginTop: -vinylSize * 0.57, borderRadius: 12, overflow: 'hidden', boxShadow: '0 26px 70px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.07)' }}>
+                <Image source={{ uri: current.img }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+              </View>
+            ) : null}
+            {/* v3.11(老板):web 波浪环换 HD 版粒子环——按盘径缩放,与 TV 同比例(盘 228↔环 340);
+                层序:封面(底)→粒子环(中,贴盘边跳)→唱片(顶)——环不能垫封面下否则全被盖住 */}
             {IS_WEB ? (
-              /* v3.3(老板:黑胶没质感):web 换 HD_VINYL_SVG——纹理沟槽+光泽+封面内嵌,真黑胶质感 */
+              <View style={{ position: 'absolute', top: '50%', left: '50%', width: RING_ZONE, height: RING_ZONE, marginLeft: -RING_ZONE / 2, marginTop: -RING_ZONE / 2, transform: [{ scale: vinylSize / 228 }] }}>
+                <ParticleRing bins={specBins} rot={ringRot} />
+              </View>
+            ) : (
+              <ParticleRing bins={specBins} rot={ringRot} />
+            )}
+            {IS_WEB ? (
+              /* v3.3(老板:黑胶没质感):web 换 HD_VINYL_SVG——纹理沟槽+光泽,真黑胶质感 */
               <View style={{ width: vinylSize, height: vinylSize, transform: [{ rotate: String(spinDeg) }] }}>
-                {HD_VINYL_SVG(current.img, vinylSize, playing)}
+                {HD_VINYL_SVG(vinylSize, playing)}
               </View>
             ) : (
               <View style={st.vinylWrap}>
