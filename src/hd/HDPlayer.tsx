@@ -258,12 +258,7 @@ export function HDPlayer() {
               <View style={st.vinylHole} />
             </View>
           </View>)}
-          {/* 方形封面卡(黑胶下方,设计图布局) */}
-          {IS_WEB ? (
-            <View style={[st.webArtCard, { width: Math.round(vinylSize * 0.42), height: Math.round(vinylSize * 0.42) }]}>
-              {current.img ? <Image source={{ uri: current.img }} style={st.webArtImg} /> : <View style={[st.webArtImg, { backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={32} color={C.text3} /></View>}
-            </View>
-          ) : null}
+          
           <View style={st.srcPill}>
             <View style={st.srcDot} />
             <Text style={st.srcTag}>{current.source.toUpperCase()}</Text>
