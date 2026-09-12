@@ -110,6 +110,13 @@ export function HDPlayer() {
   // lx103:收藏到歌单面板(点按收藏键即弹,对齐手机端)
   const [collectOpen, setCollectOpen] = useState(false);
   const [panelOpen, setPanelOpen] = useState<null | 'quality' | 'speed' | 'sleep'>(null); // v2 功能对齐:音质/倍速/睡眠
+  // v3.15(老板):web Esc 关闭面板
+  useEffect(() => {
+    if (!IS_WEB || !panelOpen || typeof window === 'undefined') return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setPanelOpen(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [panelOpen]);
   const [cardOpen, setCardOpen] = useState(false); // v2 功能对齐:歌词卡片分享
   const trackW = React.useRef(0);
   // v1.2.11(老板:整体重排):唱片区实测方形(onLayout),尺寸自适应窗口,上限 440
@@ -381,13 +388,16 @@ export function HDPlayer() {
             <HDTouch style={st.cTool} onPress={() => setPanelOpen(panelOpen === 'sleep' ? null : 'sleep')} title="睡眠定时">
               <Text style={[st.cToolText, sleepRemain != null && { color: C.brand }]}>{sleepRemain != null ? `${Math.floor(sleepRemain / 60)}:${String(sleepRemain % 60).padStart(2, '0')}` : '定时'}</Text>
             </HDTouch>
-          </View>
 
-          {/* v2 功能对齐:音质/倍速/睡眠 面板 */}
-          {panelOpen === 'quality' ? (
-            <View style={st.panelRow}>
+            {/* v3.15(老板:三面板交互修复):面板移入 ctrlRow 内——bottom:100% 锚定按钮正上方(原锚 main 顶部=浮到页顶);
+                zIndex 20 盖过 header(原 0 被头叠层吃掉点击);web 加透明遮罩点外部关闭+Esc 关闭 */}
+            {IS_WEB && panelOpen ? (
+              <TouchableOpacity activeOpacity={1} style={st.panelScrim} onPress={() => setPanelOpen(null)} />
+            ) : null}
+            {panelOpen === 'quality' ? (
+            <View style={[st.panelRow, IS_WEB && st.panelRowWeb]}>
               {(['128k', '320k', 'flac'] as const).map(q => (
-                <HDTouch key={q} style={[st.panelPill, settings.get().playQuality === q && st.panelPillOn]}
+                <HDTouch key={q} style={[st.panelPill, settings.get().playQuality === q && st.panelPillOn]} hoverBg="#ffffff1f"
                   onPress={() => { settings.set('playQuality', q); setPanelOpen(null); }}>
                   <Text style={[st.panelPillText, settings.get().playQuality === q && { color: C.onBrand }]}>{q === 'flac' ? '无损' : q === '320k' ? '320k' : '128k'}</Text>
                 </HDTouch>
@@ -395,9 +405,9 @@ export function HDPlayer() {
             </View>
           ) : null}
           {panelOpen === 'speed' ? (
-            <View style={st.panelRow}>
+            <View style={[st.panelRow, IS_WEB && st.panelRowWeb]}>
               {[0.5, 0.75, 1, 1.25, 1.5, 2].map(v => (
-                <HDTouch key={v} style={[st.panelPill, speed === v && st.panelPillOn]}
+                <HDTouch key={v} style={[st.panelPill, speed === v && st.panelPillOn]} hoverBg="#ffffff1f"
                   onPress={() => { setSpeed(v); setPanelOpen(null); }}>
                   <Text style={[st.panelPillText, speed === v && { color: C.onBrand }]}>{v}x</Text>
                 </HDTouch>
@@ -405,18 +415,19 @@ export function HDPlayer() {
             </View>
           ) : null}
           {panelOpen === 'sleep' ? (
-            <View style={st.panelRow}>
+            <View style={[st.panelRow, IS_WEB && st.panelRowWeb]}>
               {[15, 30, 60, 90].map(v => (
-                <HDTouch key={v} style={[st.panelPill, sleepRemain != null && st.panelPillOn]}
+                <HDTouch key={v} style={[st.panelPill, sleepRemain != null && st.panelPillOn]} hoverBg="#ffffff1f"
                   onPress={() => { enableSleep(v); setPanelOpen(null); }}>
                   <Text style={[st.panelPillText, sleepRemain != null && { color: C.onBrand }]}>{v} 分钟</Text>
                 </HDTouch>
               ))}
-              <HDTouch style={st.panelPill} onPress={() => { enableSleep(null); setPanelOpen(null); }}>
+              <HDTouch style={st.panelPill} hoverBg="#ffffff1f" onPress={() => { enableSleep(null); setPanelOpen(null); }}>
                 <Text style={st.panelPillText}>取消定时</Text>
               </HDTouch>
             </View>
           ) : null}
+          </View>
       </View>
 
       {/* lx103:收藏到歌单面板(共享组件) */}
@@ -430,6 +441,10 @@ const st = StyleSheet.create({
   cToolText: { color: '#ffffff99', fontSize: 11, fontWeight: '700' }, // 工具组降为次级灰
   // v3.9 面板交互: 悬浮深色卡(玻璃拟态,从按钮上方浮出+入场动画,锚定居中)——替代裸 pill 排
   panelRow: { position: 'absolute', bottom: '100%', left: '50%', transform: [{ translateX: -210 }], flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center', marginBottom: 12, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 18, backgroundColor: 'rgba(24,26,24,.92)', boxShadow: '0 18px 48px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.08)' },
+  // v3.15:web 面板真居中(translateX -50% 自适应宽度,不再硬编码 -210)+ zIndex 20(原 0 被 header 盖住吞点击)
+  panelRowWeb: { transform: [{ translateX: '-50%' }], zIndex: 20 },
+  // v3.15:web 点击面板外关闭——透明遮罩覆盖按钮行以上全部区域(不盖按钮行本身,切换面板仍直达)
+  panelScrim: { position: 'absolute', top: -1200, left: -300, right: -300, bottom: '100%', zIndex: 19 },
   panelPill: { borderRadius: 999, paddingHorizontal: 14, height: 30, backgroundColor: '#ffffff14', alignItems: 'center', justifyContent: 'center' },
   panelPillOn: { backgroundColor: C.brand, borderColor: C.brand, shadowColor: '#1ED760', shadowOpacity: .4, shadowRadius: 10, shadowOffset: { width: 0, height: 2 } }, // 选中态绿辉
   panelPillText: { color: '#ffffffcc', fontSize: 12, fontWeight: '600' },
