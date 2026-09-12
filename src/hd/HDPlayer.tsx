@@ -1,12 +1,15 @@
 // HD 播放页 v3 —— 完全重构:无底部工具 bar,所有元素融入左右两列,沉浸式
 // v1 教训:固定尺寸溢出;v2 教训:深色底 panel 突兀(老板:粗糙,直接取消)
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, Animated, Easing, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, Animated, Easing, ScrollView, ActivityIndicator } from 'react-native';
 import Svg, { Defs, Path, RadialGradient, Stop } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
 import { settings } from '../services/settings';
 import { LyricCardModal } from '../components/LyricCardModal';
+import { WebLyricCardModal } from './WebLyricCardModal';
+import { enqueueDownload, webDownloadToServer, isWebServerMode } from '../services/downloads';
+import { toast } from '../components/Dialog';
 import { C, T, fmtSec } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { usePlayer } from '../state/PlayerProvider';
@@ -118,6 +121,22 @@ export function HDPlayer() {
     return () => window.removeEventListener('keydown', onKey);
   }, [panelOpen]);
   const [cardOpen, setCardOpen] = useState(false); // v2 功能对齐:歌词卡片分享
+  // v3.18(老板:播放页补下载):当前曲一键下载/缓存到服务器
+  const [dlBusy, setDlBusy] = useState(false);
+  const dlCurrent = async () => {
+    if (!current || dlBusy) return;
+    setDlBusy(true);
+    try {
+      if (isWebServerMode()) {
+        const r = await webDownloadToServer([current]);
+        toast(r.ok ? '已缓存到服务器(后台·设置·存储备份可查)' : '缓存失败:取链失败');
+      } else {
+        enqueueDownload([current]);
+        toast('已加入下载队列');
+      }
+    } catch (e) { toast('下载失败:' + (e as Error).message); }
+    setDlBusy(false);
+  };
   const trackW = React.useRef(0);
   // v1.2.11(老板:整体重排):唱片区实测方形(onLayout),尺寸自适应窗口,上限 440
   const [vsize, setVsize] = useState(0);
@@ -357,9 +376,12 @@ export function HDPlayer() {
               {repeat === 'one' ? <Text style={st.repOne}>1</Text> : null}
             </HDTouch>
             <View style={st.ctrlDivider} />
-            {/* v3.8 工具序(老板): 收藏·队列·评论·设备·音效·卡片·音质·倍速·定时 */}
+            {/* v3.8 工具序(老板): 收藏·下载·队列·评论·设备·音效·卡片·音质·倍速·定时 */}
             <HDTouch style={st.cTool} onPress={() => setCollectOpen(true)} title="收藏">
               <Icon name="heart" size={17} color={faved ? C.brand : '#ffffff99'} />
+            </HDTouch>
+            <HDTouch style={st.cTool} onPress={dlCurrent} title="下载">
+              {dlBusy ? <ActivityIndicator size="small" color="#ffffffcc" /> : <Icon name="download" size={17} color="#ffffffcc" />}
             </HDTouch>
             <HDTouch style={st.cTool} onPress={() => nav.navigate('Queue')} title="播放队列">
               <Icon name="queue" size={17} color="#ffffffcc" />
@@ -432,7 +454,9 @@ export function HDPlayer() {
 
       {/* lx103:收藏到歌单面板(共享组件) */}
       {collectOpen && current ? <HDCollect song={current} onClose={() => setCollectOpen(false)} /> : null}
-      {cardOpen && current ? <LyricCardModal visible onClose={() => setCardOpen(false)} song={current} lyrics={lyrics} positionSec={position} /> : null}
+      {cardOpen && current ? (IS_WEB
+        ? <WebLyricCardModal onClose={() => setCardOpen(false)} song={current} lyrics={lyrics} positionSec={position} />
+        : <LyricCardModal visible onClose={() => setCardOpen(false)} song={current} lyrics={lyrics} positionSec={position} />) : null}
     </View>
   );
 }

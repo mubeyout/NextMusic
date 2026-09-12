@@ -2,7 +2,7 @@
 // + 内容区(层叠保状态) + 底部 64dp 桌面式播放条
 // 业务层(播放引擎/音源/媒体库)全复用 phone 版,仅 UI 形态不同
 import React, { useEffect, useReducer, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, Platform, ActivityIndicator } from 'react-native';
 const IS_WEB = Platform.OS === 'web';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, BrandIcon } from '../theme/Icon';
@@ -14,6 +14,7 @@ import { providers } from '../services/providers';
 import { library } from '../state/library';
 import { playlistSync } from '../state/playlistSync'; // lx163
 import { toast } from '../components/Dialog';
+import { enqueueDownload, webDownloadToServer, isWebServerMode } from '../services/downloads';
 import { hdActions } from './HDActions';
 import { getRecents } from '../state/recent';
 import { sync, lxToApp , subscribeSync , isPlatformList } from '../services/sync';
@@ -435,6 +436,22 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
   const { current, playing, position, duration, toggle, skipNext, skipPrev, queue, shuffle, repeat, setShuffle, cycleRepeat } = usePlayer();
   const { faved } = useFav(current); // lx103:收藏态展示(操作走选歌单面板)
   const pct = duration > 0 ? Math.min(1, position / duration) : 0;
+  // v3.18(老板:playbar 补下载):当前曲一键下载/缓存到服务器
+  const [dlBusy, setDlBusy] = useState(false);
+  const dlCurrent = async () => {
+    if (!current || dlBusy) return;
+    setDlBusy(true);
+    try {
+      if (isWebServerMode()) {
+        const r = await webDownloadToServer([current]);
+        toast(r.ok ? '已缓存到服务器(后台·设置·存储备份可查)' : '缓存失败:取链失败');
+      } else {
+        enqueueDownload([current]);
+        toast('已加入下载队列');
+      }
+    } catch (e) { toast('下载失败:' + (e as Error).message); }
+    setDlBusy(false);
+  };
 
   return (
     <View style={st.playbar} dataSet={IS_WEB ? { nmPlaybar: '1' } : undefined}>
@@ -482,10 +499,13 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
         </View>
       </View>
 
-      {/* 右:收藏(点按弹选歌单面板,对齐手机端) */}
+      {/* 右:收藏(点按弹选歌单面板,对齐手机端)·下载 */}
       <View style={st.pbRight}>
         <HDTouch style={st.tool} focusStyle={st.toolFocus} hoverBg={IS_WEB ? C.hover : false} onPress={() => current && onCollect?.(current)}>
           <Icon name="heart" size={14} color={faved ? C.brand : C.text2} />
+        </HDTouch>
+        <HDTouch style={st.tool} focusStyle={st.toolFocus} hoverBg={IS_WEB ? C.hover : false} onPress={dlCurrent} title="下载">
+          {dlBusy ? <ActivityIndicator size="small" color={C.text2} /> : <Icon name="download" size={14} color={C.text2} />}
         </HDTouch>
         <HDTouch style={st.tool} focusStyle={st.toolFocus} hoverBg={IS_WEB ? C.hover : false} onPress={() => hdNav()?.navigate('Queue')}>
           <Icon name="queue" size={14} color={C.text2} />
