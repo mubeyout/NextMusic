@@ -1,3 +1,10 @@
+// 桌面验证钩子(同 navRef.__nmNav 思路):暴露嵌套栈直达导航——CDP 验证内页(歌单详情等)不再依赖不可靠的 UI 点击
+(typeof globalThis !== 'undefined') && (((globalThis as never as Record<string, unknown>).__nmNavInner = {
+  navigate: (name: string, params?: unknown) => {
+    try { (hdInnerRef as unknown as { navigate: (n: string, p?: unknown) => void }).navigate(name, params as never); return true; } catch { return false; }
+  },
+}));
+
 // HD 屏外导航辅助:hdNav() 分流——内页进 HDMain 内容区嵌套栈,左侧导航恒固定
 // lx84(老板定夺):TV 所有内页只在右侧内容区切换;Settings 族仍走根栈全屏
 // v1.2.5 桌面(老板:设置也作为内页加载,左边导航固定):web 侧设置族/播放页全部进嵌套栈,
