@@ -34,6 +34,14 @@ onSettings(applyZoom);
 
 mountCtxMenu();
 mountKbNav();
+// v3.17(老板):playbar 毛玻璃——RNW style 不认 backdropFilter,用 dataSet data-nm-playbar 挂 CSS;
+// 必须在 mountWindowChrome 的 !nm 早退之外(web 部署形态无 Electron 桥,拿不到那段注入)
+(function mountPlaybarGlass() {
+  const css = document.createElement('style');
+  css.id = 'nm-playbar-glass';
+  css.textContent = '[data-nm-playbar="1"]{backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%)}';
+  document.head.appendChild(css);
+})();
 (function mountWindowChrome() {
   const nm = (window as never as Record<string, unknown>).nmDesktop as
     | { platform: string; minimize: () => void; toggleMaximize: () => void; close: () => void; setTbStyle?: (s: unknown) => void }

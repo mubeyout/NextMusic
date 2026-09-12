@@ -437,7 +437,7 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
   const pct = duration > 0 ? Math.min(1, position / duration) : 0;
 
   return (
-    <View style={st.playbar}>
+    <View style={st.playbar} dataSet={IS_WEB ? { nmPlaybar: '1' } : undefined}>
       {/* 左 */}
       <View style={st.pbLeft}>
         <HDTouch style={st.pbCoverTouch} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 9 }} hoverBg={IS_WEB ? C.hover : false} onPress={() => hdNav()?.navigate('Player')}>
@@ -541,7 +541,7 @@ const st = StyleSheet.create({
   // 播放条(桌面式 64dp,玻璃磨砂面)
   playbar: {
     height: H.playbar, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 12,
-    backgroundColor: C.glass, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border,
+    backgroundColor: C.glassBar, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border,
   },
   pbLeft: { flexDirection: 'row', alignItems: 'center', gap: 9, width: 225 },
   // 中列:控件行与进度行同容器同宽对齐(v1.1.6 修错位——原 alignSelf:stretch+maxWidth 导致两行错切)

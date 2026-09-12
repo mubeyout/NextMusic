@@ -27,6 +27,7 @@ export const C: Record<string, string> = {
   // 玻璃磨砂面(桌面 --nm-glass 同源;浅色覆写)
   glass: 'rgba(16,18,22,.66)',
   glassStrong: 'rgba(22,25,30,.8)',
+  glassBar: 'rgba(16,18,22,.9)', // v3.17(老板):playbar 90% 不透明+web 毛玻璃(backdrop-filter 走 desktop main.tsx data 属性 CSS)
 };
 
 export const T = { light: false };
@@ -73,6 +74,7 @@ export function applyHdTheme() {
     C.brandSoft = acc ? mixHex(acc, '#000000', 0.22) : '#1DB455';
     C.glass = 'rgba(255,255,255,.68)';
     C.glassStrong = 'rgba(255,255,255,.8)';
+    C.glassBar = 'rgba(255,255,255,.9)';
     // 投影浅色化(桌面 --nm-shadow-* 浅色同源)——v1.2.11 同步再降 50%
     SH.card = '0 12px 36px rgba(31,35,41,.05)';
     SH.pop = '0 18px 52px rgba(31,35,41,.09)';
