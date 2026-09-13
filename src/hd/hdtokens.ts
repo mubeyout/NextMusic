@@ -24,6 +24,7 @@ export const C: Record<string, string> = {
   text: '#FFFFFF',
   text2: '#B3B3B3',
   text3: '#595959',
+  heart: '#FF5A76', // v3.28:收藏心形全局 token
   // 玻璃磨砂面(桌面 --nm-glass 同源;浅色覆写)
   glass: 'rgba(16,18,22,.66)',
   glassStrong: 'rgba(22,25,30,.8)',

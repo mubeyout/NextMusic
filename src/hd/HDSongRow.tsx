@@ -118,7 +118,7 @@ export function HDSongRow({ song, index, onPress, onLongPress, onAction, playing
           <View ref={hovBtnsRef} style={[st.hovBtns, { opacity: hov || faved ? 1 : 0 }]}>
             {/* ♡ 收藏(hover 可切;已收藏非 hover 常驻实心) */}
             <HDTouch style={st.hovBtn} onPress={toggle}>
-              <Icon name="heart" size={14} active={faved} color={faved ? '#FF5A76' : C.text2} />
+              <Icon name="heart" size={14} active={faved} color={faved ? C.heart : C.text2} />
             </HDTouch>
             {hov ? (
               <>

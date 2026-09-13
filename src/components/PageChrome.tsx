@@ -7,6 +7,7 @@ import { Icon, type IconName } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
+import { GUTTER } from '../hd/hdstyle';
 
 // 统一子页 header：返回 + 居中标题 + 右侧动作槽
 export function PageHeader({ title, right, onBack }: { title: string; right?: React.ReactNode; onBack?: () => void }) {
@@ -14,7 +15,7 @@ export function PageHeader({ title, right, onBack }: { title: string; right?: Re
   const nav = useNavigation() as { goBack: () => void };
   const back = onBack || (() => nav.goBack());
   return (
-    <View style={[h.wrap, { paddingTop: insets.top + 20 }]}>
+    <View style={[h.wrap, { paddingTop: insets.top + 20 }, IS_HD && { paddingHorizontal: GUTTER }]}>
       {IS_HD ? (
         <HDTouch onPress={back} style={h.sideBtn}>
           <Icon name="back" size={22} color={C.text} />

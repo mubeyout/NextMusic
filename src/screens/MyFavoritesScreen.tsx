@@ -6,9 +6,10 @@ import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { PageHeader } from '../components/PageChrome';
-import { PillTabs } from '../components/PillTabs';
+import { PillTabs, PillTabsHD } from '../components/PillTabs';
 import { SongRow } from '../components/SongRow';
 import { HDTouch } from '../hd/HDTouch';
+import { GUTTER, focus, pageBottom } from '../hd/hdstyle'; // v3.28:统一栅格/焦点环/播放条让位
 import { IS_HD } from '../services/appversion';
 import { sync, lxToApp, subscribeSync } from '../services/sync';
 import { lxapi } from '../services/lxapi';
@@ -77,28 +78,16 @@ export function MyFavoritesScreen() {
   return (
     <View style={st.screen}>
       <PageHeader title="我的收藏" onBack={() => nav.goBack()} />
-      <View style={{ paddingHorizontal: 16 }}>
-        {IS_HD ? (
-          /* lx167c(老板):TV 遥控可达——HDTouch 焦点 pills(PillTabs 是手机组件无焦点) */
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            {tabs.map((t, i) => (
-              <HDTouch key={t} style={[st.tvPill, tab === i && st.tvPillOn]}
-                focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }}
-                hasTVPreferredFocus={i === 0}
-                onPress={() => setTab(i)}>
-                <Text style={[st.tvPillText, tab === i && { color: C.onBrand, fontWeight: '700' }]}>{t}</Text>
-              </HDTouch>
-            ))}
-          </View>
-        ) : (
-          <PillTabs tabs={tabs} active={tab} onChange={setTab} />
-        )}
+      {/* v3.28(老板:布局间隔):tabs 与列表/页头同一栅格(HD=GUTTER),消灭 16/20 混排错位;pills 收口 PillTabsHD */}
+      <View style={{ paddingHorizontal: IS_HD ? GUTTER : 16 }}>
+        {IS_HD ? <PillTabsHD tabs={tabs} active={tab} onChange={setTab} autoFocusFirst />
+          : <PillTabs tabs={tabs} active={tab} onChange={setTab} />}
       </View>
       {tab === 0 ? (
         songs == null ? <View style={st.center}><ActivityIndicator color={C.brand} /></View>
         : songs.length ? (
           <FlatList data={songs} keyExtractor={(s, i) => `${s.source}_${s.songmid}_${i}`}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
+            contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 16, paddingBottom: IS_HD ? pageBottom() : 24 }}
             renderItem={({ item: s }) => (
               <SongRow song={s} playing={current?.songmid === s.songmid && current?.source === s.source}
                 onPress={() => playSong(s, songs)}
@@ -106,10 +95,10 @@ export function MyFavoritesScreen() {
                   { label: '取消收藏', icon: 'heart', danger: true, onPress: () => unfav(s) }, // lx167d(老板):TV 长按管理
                 ]) : undefined}
                 extra={IS_HD ? (
-                  <Icon name="heart" size={20} active color="#FF5A76" /> /* TV:状态指示器,管理走长按 */
+                  <Icon name="heart" size={20} active color={C.heart} /> /* TV:状态指示器,管理走长按 */
                 ) : (
                   <TouchableOpacity hitSlop={8} onPress={() => unfav(s)}>
-                    <Icon name="heart" size={20} active color="#FF5A76" />
+                    <Icon name="heart" size={20} active color={C.heart} />
                   </TouchableOpacity>
                 )} />
             )} />
@@ -118,26 +107,26 @@ export function MyFavoritesScreen() {
         artists == null ? <View style={st.center}><ActivityIndicator color={C.brand} /></View>
         : artists.length ? (
           <FlatList data={artists} keyExtractor={a => `${a.source || 'wy'}_${a.id}`}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
+            contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 16, paddingBottom: IS_HD ? pageBottom() : 24 }}
             renderItem={({ item: a }) => {
               const favd = isArtistFav(a);
               return (
-                <Row style={st.row} activeOpacity={0.85}
-                  focusStyle={IS_HD ? { borderWidth: 2, borderColor: C.brand, borderRadius: 12 } : undefined}
+                <Row style={[st.row, IS_HD && fv.row]} activeOpacity={0.85}
+                  focusStyle={IS_HD ? focus(12) : undefined}
                   onLongPress={IS_HD ? () => hdActions.menu(`${a.name}`, [
                     { label: isArtistFav(a) ? '取消收藏' : '收藏', icon: 'heart', danger: isArtistFav(a), onPress: () => toggleArtistFav(a).then(on => toast(on ? `已收藏 ${a.name}` : '已取消收藏')).catch(() => toast('服务器写入失败')) },
                   ]) : undefined}
                   onPress={() => nav.navigate('ArtistDetail', { artist: a })}>
-                  {a.img ? <Image source={{ uri: a.img }} style={st.round} /> : <View style={[st.round, st.avaFallback]}><Text style={st.glyph}>{a.name.slice(0, 1)}</Text></View>}
+                  {a.img ? <Image source={{ uri: a.img }} style={[st.round, IS_HD && fv.round]} /> : <View style={[st.round, IS_HD && fv.round, st.avaFallback]}><Text style={[st.glyph, IS_HD && fv.glyph]}>{a.name.slice(0, 1)}</Text></View>}
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={st.name} numberOfLines={1}>{a.name}</Text>
-                    <Text style={st.meta}>{a.count != null ? `${a.count} 首歌曲` : '点击查看'}</Text>
+                    <Text style={[st.name, IS_HD && fv.name]} numberOfLines={1}>{a.name}</Text>
+                    <Text style={[st.meta, IS_HD && fv.meta]}>{a.count != null ? `${a.count} 首歌曲` : '点击查看'}</Text>
                   </View>
                   {IS_HD ? (
-                    <Icon name="heart" size={20} active={favd} color={favd ? '#FF5A76' : C.text2} /> /* lx167d:TV 指示器 */
+                    <Icon name="heart" size={20} active={favd} color={favd ? C.heart : C.text2} /> /* lx167d:TV 指示器 */
                   ) : (
                     <TouchableOpacity hitSlop={8} onPress={() => toggleArtistFav(a).then(on => toast(on ? `已收藏 ${a.name}` : '已取消收藏')).catch(() => toast('服务器写入失败'))}>
-                      <Icon name="heart" size={20} active={favd} color={favd ? '#FF5A76' : C.text2} />
+                      <Icon name="heart" size={20} active={favd} color={favd ? C.heart : C.text2} />
                     </TouchableOpacity>
                   )}
                 </Row>
@@ -148,26 +137,26 @@ export function MyFavoritesScreen() {
         albums == null ? <View style={st.center}><ActivityIndicator color={C.brand} /></View>
         : albums.length ? (
           <FlatList data={albums} keyExtractor={a => `${a.source || 'wy'}_${a.id}`}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
+            contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 16, paddingBottom: IS_HD ? pageBottom() : 24 }}
             renderItem={({ item: a }) => {
               const favd = isAlbumFav(a);
               return (
-                <Row style={st.row} activeOpacity={0.85}
-                  focusStyle={IS_HD ? { borderWidth: 2, borderColor: C.brand, borderRadius: 12 } : undefined}
+                <Row style={[st.row, IS_HD && fv.row]} activeOpacity={0.85}
+                  focusStyle={IS_HD ? focus(12) : undefined}
                   onLongPress={IS_HD ? () => hdActions.menu(`${a.name}`, [
                     { label: isAlbumFav(a) ? '取消收藏' : '收藏', icon: 'heart', danger: isAlbumFav(a), onPress: () => toggleAlbumFav(a).then(on => toast(on ? '已收藏' : '已取消收藏')).catch(() => toast('服务器写入失败')) },
                   ]) : undefined}
                   onPress={() => nav.navigate('AlbumDetail', { album: a })}>
-                  {a.img ? <Image source={{ uri: a.img }} style={st.square} /> : <View style={[st.square, st.avaFallback]}><Icon name="music" size={22} color={C.text3} /></View>}
+                  {a.img ? <Image source={{ uri: a.img }} style={[st.square, IS_HD && fv.square]} /> : <View style={[st.square, IS_HD && fv.square, st.avaFallback]}><Icon name="music" size={22} color={C.text3} /></View>}
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={st.name} numberOfLines={1}>{a.name}</Text>
-                    <Text style={st.meta} numberOfLines={1}>{a.singer || ''}</Text>
+                    <Text style={[st.name, IS_HD && fv.name]} numberOfLines={1}>{a.name}</Text>
+                    <Text style={[st.meta, IS_HD && fv.meta]} numberOfLines={1}>{a.singer || ''}</Text>
                   </View>
                   {IS_HD ? (
-                    <Icon name="heart" size={20} active={favd} color={favd ? '#FF5A76' : C.text2} /> /* lx167d:TV 指示器 */
+                    <Icon name="heart" size={20} active={favd} color={favd ? C.heart : C.text2} /> /* lx167d:TV 指示器 */
                   ) : (
                     <TouchableOpacity hitSlop={8} onPress={() => toggleAlbumFav(a).then(on => toast(on ? '已收藏' : '已取消收藏')).catch(() => toast('服务器写入失败'))}>
-                      <Icon name="heart" size={20} active={favd} color={favd ? '#FF5A76' : C.text2} />
+                      <Icon name="heart" size={20} active={favd} color={favd ? C.heart : C.text2} />
                     </TouchableOpacity>
                   )}
                 </Row>
@@ -184,13 +173,20 @@ const st = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { color: C.text2, fontSize: 13, lineHeight: 20, textAlign: 'center', paddingVertical: 40 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 62, paddingHorizontal: 12, borderRadius: 12 },
-  tvPill: { borderRadius: 14, paddingHorizontal: 16, height: 32, backgroundColor: C.surface2, justifyContent: 'center' },
-  tvPillOn: { backgroundColor: C.brand },
-  tvPillText: { color: C.text2, fontSize: 12 },
   round: { width: 46, height: 46, borderRadius: 23 },
   square: { width: 46, height: 46, borderRadius: 8 },
   avaFallback: { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   glyph: { color: C.text2, fontSize: 18, fontWeight: '700' },
   name: { color: C.text, fontSize: 14, fontWeight: '600' },
   meta: { color: C.text2, fontSize: 11, marginTop: 2 },
+});
+
+// v3.28(老板:统一风格):HD/桌面行尺寸——与媒体库/歌单详情同档(行高 68/封面 52/字号 15·12)
+const fv = StyleSheet.create({
+  row: { minHeight: 68, gap: 14 },
+  round: { width: 52, height: 52, borderRadius: 26 },
+  square: { width: 52, height: 52, borderRadius: 10 },
+  glyph: { fontSize: 20 },
+  name: { fontSize: 15 },
+  meta: { fontSize: 12, marginTop: 3 },
 });

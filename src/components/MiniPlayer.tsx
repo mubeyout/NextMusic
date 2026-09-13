@@ -50,7 +50,7 @@ export function MiniPlayer() {
           {/* lx157:未收藏→面板;仅歌单收录→面板里移除;我喜欢的在→一键取消 */}
           <TouchableOpacity style={st.iconBtn} hitSlop={6} onPress={() => { popHeart(); if (faved && isFav(current)) { toggleFav(); toast('已取消收藏'); } else setCollect(true); }}>
             <Animated.Text style={{ transform: [{ scale: pop }] }}>
-              <Icon name="heart" size={20} active={faved} color={faved ? '#FF5A76' : C.text} />
+              <Icon name="heart" size={20} active={faved} color={faved ? C.heart : C.text} />
             </Animated.Text>
           </TouchableOpacity>
           <TouchableOpacity style={st.playBtn} hitSlop={4} onPress={toggle}>

@@ -15,6 +15,27 @@ import { library } from '../state/library';
 import { usePlayer } from '../state/PlayerProvider';
 import { enqueueDownload, downloads as dlStore, downloadProgress, subscribeDownloads } from '../services/downloads';
 import { providers, providerApi, type PvAlbum } from '../services/providers';
+import { IS_HD } from '../services/appversion';
+import { Platform } from 'react-native';
+import { HDTouch } from '../hd/HDTouch';
+import { GUTTER, focus, pageBottom } from '../hd/hdstyle'; // v3.28:统一栅格/焦点环/播放条让位
+
+const IS_WEB = Platform.OS === 'web';
+// 触点抽象:HD 用 HDTouch(焦点环),phone 保持 TouchableOpacity——与 MediaLibsScreen 同款
+function T(props: { style?: unknown; onPress?: () => void; onLongPress?: () => void; disabled?: boolean; children?: React.ReactNode } & Record<string, unknown>) {
+  const { style, onPress, onLongPress, disabled, children, ...rest } = props;
+  if (IS_HD) return (
+    <HDTouch style={style as never} onPress={onPress} onLongPress={onLongPress} disabled={disabled}
+      focusStyle={focus(12)} {...(rest as object)}>
+      {children}
+    </HDTouch>
+  );
+  return (
+    <TouchableOpacity style={style as never} onPress={onPress} onLongPress={onLongPress} disabled={disabled} activeOpacity={0.7} {...(rest as object)}>
+      {children}
+    </TouchableOpacity>
+  );
+}
 import type { SongItem } from '../services/server';
 
 type Params = {
@@ -74,9 +95,9 @@ export function ProviderDetailScreen() {
     if (prog != null) return <Text style={st.prog}>{Math.round(prog * 100)}%</Text>;
     if (done) return <Icon name="check" size={18} active />;
     return (
-      <TouchableOpacity hitSlop={8} onPress={() => setActSong(s)}>
+      <T hitSlop={8} onPress={() => setActSong(s)} focusStyle={focus(999)}>
         <Icon name="more" size={20} color={C.text2} />
-      </TouchableOpacity>
+      </T>
     );
   };
 
@@ -87,19 +108,19 @@ export function ProviderDetailScreen() {
 
   return (
     <View style={st.screen}>
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: current ? 116 : 32 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingTop: 8, paddingBottom: IS_HD ? pageBottom(32) : (current ? 116 : 32) }}>
         <PageHeader title="" />
 
         <View style={st.headCard}>
           {!isArtist ? (
-            p.cover ? <Image source={{ uri: p.cover }} style={st.cover} />
-              : <View style={[st.cover, st.coverFallback]}><Text style={st.glyph}>♫</Text></View>
+            p.cover ? <Image source={{ uri: p.cover }} style={[st.cover, IS_HD && dv.cover]} />
+              : <View style={[st.cover, IS_HD && dv.cover, st.coverFallback]}><Text style={st.glyph}>♫</Text></View>
           ) : (
-            <View style={[st.cover, st.artistFallback]}><Text style={st.artistInitial}>{p.name.slice(0, 1)}</Text></View>
+            <View style={[st.cover, IS_HD && dv.cover, st.artistFallback]}><Text style={st.artistInitial}>{p.name.slice(0, 1)}</Text></View>
           )}
           <View style={st.headMeta}>
-            <Text style={st.title} numberOfLines={2}>{p.name}</Text>
-            <Text style={st.stat}>{headSub}{acct ? ` · ${acct.name}` : ''}</Text>
+            <Text style={[st.title, IS_HD && dv.title]} numberOfLines={2}>{p.name}</Text>
+            <Text style={[st.stat, IS_HD && dv.stat]}>{headSub}{acct ? ` · ${acct.name}` : ''}</Text>
           </View>
         </View>
 
@@ -109,17 +130,17 @@ export function ProviderDetailScreen() {
         ) : err ? (
           <View style={st.center}>
             <Text style={st.empty}>{err}</Text>
-            <TouchableOpacity style={st.retryBtn} onPress={load}>
+            <T style={st.retryBtn} onPress={load} focusStyle={focus(18)}>
               <Icon name="refresh" size={16} color={C.onBrand} />
               <Text style={st.retryText}>重试</Text>
-            </TouchableOpacity>
+            </T>
           </View>
         ) : isArtist ? (
           albums.length ? (
             <View style={st.albumGrid}>
               {albums.map(al => (
-                <TouchableOpacity
-                  key={al.id} style={st.albumCell} activeOpacity={0.85}
+                <T
+                  key={al.id} style={[st.albumCell, IS_WEB && st.albumCellWeb]} activeOpacity={0.85} focusStyle={focus(10)}
                   onPress={() => nav.navigate('ProviderDetail', {
                     acctId: p.acctId, kind: 'album', id: al.id, name: al.name,
                     cover: al.cover, sub: `${al.year || ''}${al.songCount ? ` ${al.songCount}首` : ''}`.trim() || undefined,
@@ -127,29 +148,29 @@ export function ProviderDetailScreen() {
                 >
                   {al.cover ? <Image source={{ uri: al.cover }} style={st.albumCover} />
                     : <View style={[st.albumCover, st.coverFallback]}><Text style={st.glyph}>♫</Text></View>}
-                  <Text style={st.albumName} numberOfLines={1}>{al.name}</Text>
-                  <Text style={st.albumMeta} numberOfLines={1}>{al.year || ''}{al.songCount ? ` · ${al.songCount}首` : ''}</Text>
-                </TouchableOpacity>
+                  <Text style={[st.albumName, IS_HD && dv.albumName]} numberOfLines={1}>{al.name}</Text>
+                  <Text style={[st.albumMeta, IS_HD && dv.albumMeta]} numberOfLines={1}>{al.year || ''}{al.songCount ? ` · ${al.songCount}首` : ''}</Text>
+                </T>
               ))}
             </View>
           ) : <Text style={st.empty}>该艺术家没有专辑</Text>
         ) : (
           <>
-            <TouchableOpacity style={st.playAllBtn} onPress={() => songs.length && playSong(songs[0], songs)} disabled={!songs.length}>
+            <T style={[st.playAllBtn, IS_HD && dv.playAllBtn]} onPress={() => songs.length && playSong(songs[0], songs)} disabled={!songs.length} focusStyle={focus(12)}>
               <Icon name="play" size={20} active color={C.onBrand} />
               <Text style={st.playAllText}>播放全部</Text>
               <Text style={st.playAllCount}>{songs.length ? `(${songs.length})` : ''}</Text>
-            </TouchableOpacity>
+            </T>
             <View style={st.actionRow}>
-              <TouchableOpacity style={st.action} onPress={() => { if (songs.length) playSong(songs[Math.floor(Math.random() * songs.length)], songs); }} disabled={!songs.length}>
+              <T style={[st.action, IS_HD && dv.action]} onPress={() => { if (songs.length) playSong(songs[Math.floor(Math.random() * songs.length)], songs); }} disabled={!songs.length} focusStyle={focus(12)}>
                 <Icon name="shuffle" size={20} color={C.text2} /><Text style={st.actionText}>随机播</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={st.action} onPress={importPl} disabled={!songs.length}>
+              </T>
+              <T style={[st.action, IS_HD && dv.action]} onPress={importPl} disabled={!songs.length} focusStyle={focus(12)}>
                 <Icon name="add" size={20} color={C.text2} /><Text style={st.actionText}>导入歌单</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={st.action} onPress={() => { if (songs.length) { const n = enqueueDownload(songs); toast(n ? `${n} 首加入下载队列` : '歌曲均已下载'); } }} disabled={!songs.length}>
+              </T>
+              <T style={[st.action, IS_HD && dv.action]} onPress={() => { if (songs.length) { const n = enqueueDownload(songs); toast(n ? `${n} 首加入下载队列` : '歌曲均已下载'); } }} disabled={!songs.length} focusStyle={focus(12)}>
                 <Icon name="download" size={20} color={C.text2} /><Text style={st.actionText}>下载</Text>
-              </TouchableOpacity>
+              </T>
             </View>
             {songs.length ? (
               <View style={st.songList}>
@@ -167,8 +188,6 @@ export function ProviderDetailScreen() {
           </>
         )}
       </ScrollView>
-      <View style={st.miniDock} pointerEvents="box-none">
-      </View>
       <ActionSheet
         visible={!!actSong} onClose={() => setActSong(null)}
         title={actSong ? `${actSong.name} · ${actSong.singer}` : ''}
@@ -212,5 +231,16 @@ const st = StyleSheet.create({
   albumCover: { width: '100%', aspectRatio: 1, borderRadius: 10, backgroundColor: C.surface2 },
   albumName: { color: C.text, fontSize: 12, lineHeight: 15, fontWeight: '600' },
   albumMeta: { color: C.text2, fontSize: 9, lineHeight: 12 },
-  miniDock: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  albumCellWeb: { width: '15.5%' }, // v3.28:web 6 列(与浏览页网格同规格;此前 31% 在桌面=3 巨列)
+});
+
+// v3.28(老板:统一风格):HD/桌面尺寸——头部卡/按钮/网格字号与全站同档
+const dv = StyleSheet.create({
+  cover: { width: 140, height: 140, borderRadius: 12 },
+  title: { fontSize: 20, lineHeight: 27 },
+  stat: { fontSize: 13, lineHeight: 18 },
+  playAllBtn: { height: 48, borderRadius: 12 },
+  action: { minHeight: 60, borderRadius: 12 },
+  albumName: { fontSize: 13, lineHeight: 17 },
+  albumMeta: { fontSize: 10.5, lineHeight: 14 },
 });

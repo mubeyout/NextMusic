@@ -91,7 +91,7 @@ export function CollectSheet({ song, visible, onClose }: { song: SongItem | null
           <Text style={s.title}>收藏到歌单</Text>
 
           <TouchableOpacity style={s.loveRow} onPress={toggle}>
-            <View style={[s.loveIcon, faved && { backgroundColor: '#FF5A76' }]}>
+            <View style={[s.loveIcon, faved && { backgroundColor: C.heart }]}>
               <Icon name="heart" size={20} active color="#FFFFFF" />
             </View>
             <View style={{ flex: 1 }}>
@@ -104,24 +104,24 @@ export function CollectSheet({ song, visible, onClose }: { song: SongItem | null
           <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
             {remotePls.map(pl => (
               <TouchableOpacity key={`r-${pl.name}`} style={s.row} onPress={() => toggleRemote(pl.name, pl.has)}>
-                <View style={[s.rowIcon, pl.has && { backgroundColor: '#FF5A761A' }]}>
-                  <Text style={[s.rowGlyph, pl.has && { color: '#FF5A76' }]}>♫</Text>
+                <View style={[s.rowIcon, pl.has && { backgroundColor: C.heart + '1A' }]}>
+                  <Text style={[s.rowGlyph, pl.has && { color: C.heart }]}>♫</Text>
                 </View>
                 <Text style={s.rowTitle} numberOfLines={1}>{pl.name}</Text>
                 <Text style={s.sub}>{pl.has ? `已收藏 · 点击移除` : `${pl.count} 首`}</Text>
-                {pl.has ? <Icon name="check" size={18} active color="#FF5A76" /> : null}
+                {pl.has ? <Icon name="check" size={18} active color={C.heart} /> : null}
               </TouchableOpacity>
             ))}
             {localPls.filter(p => p.name !== '我喜欢的').map(pl => {
               const has = (pl.songs || []).some(x => songKey(x) === k);
               return (
                 <TouchableOpacity key={pl.id} style={s.row} onPress={() => toggleLocal(pl.id, pl.name, has)}>
-                  <View style={[s.rowIcon, has && { backgroundColor: '#FF5A761A' }]}>
-                    <Text style={[s.rowGlyph, has && { color: '#FF5A76' }]}>♫</Text>
+                  <View style={[s.rowIcon, has && { backgroundColor: C.heart + '1A' }]}>
+                    <Text style={[s.rowGlyph, has && { color: C.heart }]}>♫</Text>
                   </View>
                   <Text style={s.rowTitle} numberOfLines={1}>{pl.name}</Text>
                   <Text style={s.sub}>{has ? `已收藏 · 点击移除` : `${pl.songs.length} 首`}</Text>
-                  {has ? <Icon name="check" size={18} active color="#FF5A76" /> : null}
+                  {has ? <Icon name="check" size={18} active color={C.heart} /> : null}
                 </TouchableOpacity>
               );
             })}

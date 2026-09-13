@@ -14,6 +14,8 @@ import { ActionSheet } from '../components/ActionSheet';
 import { SongRow } from '../components/SongRow';
 import { toast } from '../components/Dialog';
 import { PageHeader, EmptyState } from '../components/PageChrome';
+import { PillTabsHD } from '../components/PillTabs';
+import { GUTTER, focus, pageBottom } from '../hd/hdstyle'; // v3.28:统一栅格/焦点环/播放条让位
 import { usePlayer } from '../state/PlayerProvider';
 import { library } from '../state/library';
 import { enqueueDownload } from '../services/downloads';
@@ -38,7 +40,7 @@ function T(props: { style?: unknown; onPress?: () => void; onLongPress?: () => v
   const { style, onPress, onLongPress, disabled, children, ...rest } = props;
   if (IS_HD) return (
     <HDTouch style={style as never} onPress={onPress} onLongPress={onLongPress} disabled={disabled}
-      focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12 }} {...(rest as object)}>
+      focusStyle={focus(12)} {...(rest as object)}>
       {children}
     </HDTouch>
   );
@@ -261,23 +263,40 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
   return (
     <View style={st.screen}>
       {/* 自定义头部：返回 + [logo+账号名 ▾] 一键切换 + 添加 */}
-      <View style={[st.hWrap, { paddingTop: insets.top + 20 }]}>
-        <TouchableOpacity onPress={() => nav.goBack()} hitSlop={6} style={st.hSide}>
-          <Icon name="back" size={22} />
-        </TouchableOpacity>
-        <TouchableOpacity style={st.acctBtn} activeOpacity={0.7} onPress={() => setSwSheet(true)}>
-          <AcctGlyph type={acct.type} size={18} />
-          <Text style={st.acctName} numberOfLines={1}>{acct.name || PROVIDER_META[acct.type].label}</Text>
-          <View style={st.acctCaret}><Icon name="chevronright" size={13} color={C.text3} /></View>
-        </TouchableOpacity>
-        <TouchableOpacity style={st.hSide} hitSlop={6} onPress={() => nav.navigate('ProviderEdit', {})}>
-          <Icon name="add" size={22} />
-        </TouchableOpacity>
-      </View>
+      {/* v3.28(老板:第三方媒体库统一风格):HD/桌面走 HDTouch 大触点头部,与媒体库列表页同款;手机保持原样 */}
+      {IS_HD ? (
+        <View style={[hd.head, { paddingTop: Math.max(Math.min(insets.top, 20), 14) }]}>
+          <HDTouch style={hd.backBtn} onPress={() => nav.goBack()} focusStyle={focus(10)} hasTVPreferredFocus>
+            <Icon name="back" size={17} color={C.text2} />
+          </HDTouch>
+          <HDTouch style={bv.acctPill} onPress={() => setSwSheet(true)} focusStyle={focus(999)}>
+            <AcctGlyph type={acct.type} size={18} />
+            <Text style={bv.acctName} numberOfLines={1}>{acct.name || PROVIDER_META[acct.type].label}</Text>
+            <Icon name="chevronright" size={13} color={C.text3} />
+          </HDTouch>
+          <HDTouch style={hd.addBtn} onPress={() => nav.navigate('ProviderEdit', {})} focusStyle={focus(10)}>
+            <Icon name="add" size={20} color={C.brand} />
+          </HDTouch>
+        </View>
+      ) : (
+        <View style={[st.hWrap, { paddingTop: insets.top + 20 }]}>
+          <TouchableOpacity onPress={() => nav.goBack()} hitSlop={6} style={st.hSide}>
+            <Icon name="back" size={22} />
+          </TouchableOpacity>
+          <TouchableOpacity style={st.acctBtn} activeOpacity={0.7} onPress={() => setSwSheet(true)}>
+            <AcctGlyph type={acct.type} size={18} />
+            <Text style={st.acctName} numberOfLines={1}>{acct.name || PROVIDER_META[acct.type].label}</Text>
+            <View style={st.acctCaret}><Icon name="chevronright" size={13} color={C.text3} /></View>
+          </TouchableOpacity>
+          <TouchableOpacity style={st.hSide} hitSlop={6} onPress={() => nav.navigate('ProviderEdit', {})}>
+            <Icon name="add" size={22} />
+          </TouchableOpacity>
+        </View>
+      )}
 
       {isDav ? (
         /* ---------- WebDAV 目录浏览（原交互保留） ---------- */
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: (current ? 100 : 0) + insets.bottom + 24 }}>
+        <ScrollView contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingBottom: ((current ? 100 : 0) + insets.bottom + 24) + (IS_HD ? 48 : 0) }}>
           {davBusy ? (
             <View style={st.center}><ActivityIndicator color={C.brand} size="large" /></View>
           ) : davErr ? (
@@ -292,22 +311,22 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
             <>
               <Text style={st.crumb}>WebDAV · {davDir}</Text>
               {davDir !== '/' ? (
-                <TouchableOpacity style={st.dirRow} onPress={() => setDavDir(davDir.replace(/[^/]*\/$/, '') || '/')}>
+                <T style={st.dirRow} focusStyle={focus(10)} onPress={() => setDavDir(davDir.replace(/[^/]*\/$/, '') || '/')}>
                   <Icon name="back" size={18} color={C.text2} />
                   <Text style={st.dirText}>上一级</Text>
-                </TouchableOpacity>
+                </T>
               ) : null}
               {davDirs.map(d => (
-                <TouchableOpacity key={d.path} style={st.dirRow} onPress={() => setDavDir(d.path)}>
+                <T key={d.path} style={st.dirRow} focusStyle={focus(10)} onPress={() => setDavDir(d.path)}>
                   <Icon name="folder" size={18} color={C.brandText} />
                   <Text style={st.dirText}>{d.name}</Text>
                   <Icon name="chevronright" size={16} color={C.text3} />
-                </TouchableOpacity>
+                </T>
               ))}
               {davSongs.map(s => {
                 const on = sel.has(s.songmid);
                 return (
-                  <TouchableOpacity key={s.songmid} style={[st.davSong, on && st.davSongOn]} onPress={() => toggleSel(s.songmid)} onLongPress={() => playSong(s, davSongs)}>
+                  <T key={s.songmid} style={[st.davSong, on && st.davSongOn]} focusStyle={focus(10)} onPress={() => toggleSel(s.songmid)} onLongPress={() => playSong(s, davSongs)}>
                     <View style={[st.checkBox, on && st.checkBoxOn]}>
                       {on ? <Icon name="check" size={14} color={C.onBrand} /> : null}
                     </View>
@@ -315,20 +334,21 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                       <Text style={st.davTitle} numberOfLines={1}>{s.name}</Text>
                       <Text style={st.davSub} numberOfLines={1}>{s.singer}</Text>
                     </View>
-                    <TouchableOpacity hitSlop={8} onPress={() => playSong(s, davSongs)}>
+                    <T hitSlop={8} onPress={() => playSong(s, davSongs)} focusStyle={focus(999)}>
                       <Icon name="play" size={18} color={C.text2} />
-                    </TouchableOpacity>
-                  </TouchableOpacity>
+                    </T>
+                  </T>
                 );
               })}
               {!davDirs.length && !davSongs.length ? <Text style={st.empty}>此目录为空</Text> : null}
               {davSongs.length ? (
                 <View style={st.davActions}>
-                  <TouchableOpacity style={st.davBtn} onPress={() => setSel(new Set(davSongs.map(s => s.songmid)))}>
+                  <T style={st.davBtn} focusStyle={focus(12)} onPress={() => setSel(new Set(davSongs.map(s => s.songmid)))}>
                     <Text style={st.davBtnText}>全选</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
+                  </T>
+                  <T
                     style={[st.davBtn, st.davBtnMain]}
+                    focusStyle={focus(12)}
                     disabled={!selSongs.length}
                     onPress={() => {
                       const name = `WebDAV ${davDir === '/' ? '根目录' : davDir.split('/').filter(Boolean).pop() || ''}`;
@@ -336,14 +356,15 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                     }}
                   >
                     <Text style={[st.davBtnText, { color: C.onBrand }]}>加入歌单{selSongs.length ? ` (${selSongs.length})` : ''}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
+                  </T>
+                  <T
                     style={[st.davBtn, st.davBtnMain]}
+                    focusStyle={focus(12)}
                     disabled={!selSongs.length}
                     onPress={() => { const n = enqueueDownload(selSongs); toast(`${n} 首加入下载队列`); }}
                   >
                     <Text style={[st.davBtnText, { color: C.onBrand }]}>下载</Text>
-                  </TouchableOpacity>
+                  </T>
                 </View>
               ) : null}
               <Text style={st.tip}>点击选择 · 长按直接播放</Text>
@@ -353,15 +374,18 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
       ) : (
         /* ---------- 四段曲库浏览 ---------- */
         <>
-          <PillTabs tabs={['专辑', '艺术家', '歌曲', '歌单']} active={seg} onChange={(i) => setSeg(i as Seg)} />
-          <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: (current ? 116 : 32), gap: 8 }}>
+          {IS_HD
+            ? <View style={{ paddingHorizontal: GUTTER }}><PillTabsHD tabs={['专辑', '艺术家', '歌曲', '歌单']} active={seg} onChange={(i) => setSeg(i as Seg)} autoFocusFirst /></View>
+            : <PillTabs tabs={['专辑', '艺术家', '歌曲', '歌单']} active={seg} onChange={(i) => setSeg(i as Seg)} />}
+          <ScrollView contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingBottom: IS_HD ? pageBottom(32) : (current ? 116 : 32), gap: IS_HD ? 12 : 8 }}>
             {seg === 0 && (
               <SegBody state={albums} onRetry={() => { setAlbums({ data: null, err: null, busy: false }); if (acct) loadAlbums(acct); }}>
                 {albums.data && albums.data.length === 0 ? <EmptyState icon="music" title="服务器上没有专辑" sub="先在媒体服务器里添加音乐库" /> : null}
                 <View style={st.albumGrid}>
                   {(albums.data || []).map(al => (
-                    <TouchableOpacity
+                    <T
                       key={al.id} style={[st.albumCell, IS_WEB && st.albumCellWeb]} activeOpacity={0.85}
+                      focusStyle={focus(10)}
                       onPress={() => nav.navigate('ProviderDetail', {
                         acctId: acct.id, kind: 'album', id: al.id, name: al.name, cover: al.cover,
                         sub: [al.artist, al.songCount ? `${al.songCount}首` : null].filter(Boolean).join(' · ') || undefined,
@@ -369,9 +393,9 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                     >
                       {al.cover ? <Image source={{ uri: al.cover }} style={st.albumCover} />
                         : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(al.name)]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
-                      <Text style={st.albumName} numberOfLines={1}>{al.name}</Text>
-                      <Text style={st.albumMeta} numberOfLines={1}>{al.artist || ''}{al.songCount ? ` · ${al.songCount}首` : ''}</Text>
-                    </TouchableOpacity>
+                      <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{al.name}</Text>
+                      <Text style={[st.albumMeta, IS_HD && bv.albumMeta]} numberOfLines={1}>{al.artist || ''}{al.songCount ? ` · ${al.songCount}首` : ''}</Text>
+                    </T>
                   ))}
                 </View>
               </SegBody>
@@ -381,18 +405,19 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
               <SegBody state={artists} onRetry={() => { setArtists({ data: null, err: null, busy: false }); if (acct) loadArtists(acct); }}>
                 {artists.data && artists.data.length === 0 ? <EmptyState icon="music" title="没有找到艺术家" /> : null}
                 {(artists.data || []).map(ar => (
-                  <TouchableOpacity
-                    key={ar.id} style={st.artistRow} activeOpacity={0.75}
+                  <T
+                    key={ar.id} style={[st.artistRow, IS_HD && bv.row]} activeOpacity={0.75}
+                    focusStyle={focus(12)}
                     onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'artist', id: ar.id, name: ar.name, sub: ar.albumCount ? `${ar.albumCount} 张专辑` : undefined })}
                   >
-                    {ar.cover ? <Image source={{ uri: ar.cover }} style={st.artistArt} />
-                      : <View style={[st.artistArt, st.artistFallback]}><Text style={st.artistInitial}>{ar.name.slice(0, 1)}</Text></View>}
+                    {ar.cover ? <Image source={{ uri: ar.cover }} style={[st.artistArt, IS_HD && bv.art]} />
+                      : <View style={[st.artistArt, IS_HD && bv.art, st.artistFallback]}><Text style={st.artistInitial}>{ar.name.slice(0, 1)}</Text></View>}
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={st.artistName} numberOfLines={1}>{ar.name}</Text>
-                      <Text style={st.artistMeta} numberOfLines={1}>{ar.albumCount ? `${ar.albumCount} 张专辑` : PROVIDER_META[acct.type].label}</Text>
+                      <Text style={[st.artistName, IS_HD && bv.rowTitle]} numberOfLines={1}>{ar.name}</Text>
+                      <Text style={[st.artistMeta, IS_HD && bv.rowSub]} numberOfLines={1}>{ar.albumCount ? `${ar.albumCount} 张专辑` : PROVIDER_META[acct.type].label}</Text>
                     </View>
                     <Icon name="chevronright" size={18} color={C.text3} />
-                  </TouchableOpacity>
+                  </T>
                 ))}
               </SegBody>
             )}
@@ -401,10 +426,10 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
               <SegBody state={songs} onRetry={refreshSongs}>
                 <View style={st.songsBar}>
                   <Text style={st.songsHint}>随机 100 首</Text>
-                  <TouchableOpacity style={st.shuffleBtn} activeOpacity={0.7} onPress={refreshSongs} disabled={songs.busy}>
+                  <T style={st.shuffleBtn} activeOpacity={0.7} onPress={refreshSongs} disabled={songs.busy} focusStyle={focus(16)}>
                     <Icon name="refresh" size={14} color={C.onBrand} />
                     <Text style={st.shuffleBtnText}>换一批</Text>
-                  </TouchableOpacity>
+                  </T>
                 </View>
                 {(songs.data || []).map((s, i) => (
                   <SongRow
@@ -421,18 +446,19 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
               <SegBody state={lists} onRetry={() => { setLists({ data: null, err: null, busy: false }); if (acct) loadLists(acct); }}>
                 {lists.data && lists.data.length === 0 ? <EmptyState icon="music" title="服务器上没有歌单" sub="在媒体服务器或 amcfy 等客户端里创建" /> : null}
                 {(lists.data || []).map(pl => (
-                  <TouchableOpacity
-                    key={pl.id} style={st.plRow} activeOpacity={0.75}
+                  <T
+                    key={pl.id} style={[st.plRow, IS_HD && bv.row]} activeOpacity={0.75}
+                    focusStyle={focus(12)}
                     onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'playlist', id: pl.id, name: pl.name, cover: pl.cover, sub: pl.songCount ? `${pl.songCount} 首` : undefined })}
                   >
-                    {pl.cover ? <Image source={{ uri: pl.cover }} style={st.artistArt} />
-                      : <View style={[st.artistArt, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name)]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
+                    {pl.cover ? <Image source={{ uri: pl.cover }} style={[st.artistArt, IS_HD && bv.art]} />
+                      : <View style={[st.artistArt, IS_HD && bv.art, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name)]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={st.artistName} numberOfLines={1}>{pl.name}</Text>
-                      <Text style={st.artistMeta} numberOfLines={1}>{pl.songCount ? `${pl.songCount} 首` : ''}</Text>
+                      <Text style={[st.artistName, IS_HD && bv.rowTitle]} numberOfLines={1}>{pl.name}</Text>
+                      <Text style={[st.artistMeta, IS_HD && bv.rowSub]} numberOfLines={1}>{pl.songCount ? `${pl.songCount} 首` : ''}</Text>
                     </View>
                     <Icon name="chevronright" size={18} color={C.text3} />
-                  </TouchableOpacity>
+                  </T>
                 ))}
               </SegBody>
             )}
@@ -455,8 +481,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
           { label: '管理列表', onPress: () => nav.navigate('MediaLibs', {}) },
         ]}
       />
-      <View style={st.miniDock} pointerEvents="box-none">
-      </View>
+
     </View>
   );
 }
@@ -469,10 +494,10 @@ function SegBody<T>({ state, onRetry, children }: {
   if (state.err && !state.data) return (
     <View style={st.center}>
       <Text style={st.empty}>{state.err}</Text>
-      <TouchableOpacity style={st.retryBtn} onPress={onRetry}>
+      <T style={st.retryBtn} onPress={onRetry} focusStyle={focus(18)}>
         <Icon name="refresh" size={16} color={C.onBrand} />
         <Text style={st.retryText}>重试</Text>
-      </TouchableOpacity>
+      </T>
     </View>
   );
   return <>{children}</>;
@@ -526,7 +551,7 @@ const st = StyleSheet.create({
   dirText: { flex: 1, color: C.text, fontSize: 14, lineHeight: 19, fontWeight: '500' },
   davSong: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 52, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.strokeFaint },
   davSongOn: { backgroundColor: C.selTint, marginHorizontal: -8, paddingHorizontal: 8, borderRadius: 8 },
-  checkBox: { width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: '#4A4A4A', alignItems: 'center', justifyContent: 'center' },
+  checkBox: { width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: C.inset2, alignItems: 'center', justifyContent: 'center' }, // v3.28:硬编码色 token 化
   checkBoxOn: { borderColor: C.brand, backgroundColor: C.brand },
   davTitle: { color: C.text, fontSize: 13, lineHeight: 18, fontWeight: '500' },
   davSub: { color: C.text2, fontSize: 10, lineHeight: 14 },
@@ -534,7 +559,6 @@ const st = StyleSheet.create({
   davBtn: { flex: 1, height: 40, borderRadius: 12, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   davBtnMain: { backgroundColor: C.brand },
   davBtnText: { color: C.text, fontSize: 12, fontWeight: '600' },
-  miniDock: { position: 'absolute', left: 0, right: 0, bottom: 0 },
 });
 
 // HD(车机/TV)覆盖样式:限宽居中 + 大触点/大字号(老板:媒体库列表需遥控光标+大屏排版)
@@ -548,6 +572,18 @@ const hd = StyleSheet.create({
   rowIconWrap: { width: 46, height: 46, borderRadius: 13 },
   rowTitle: { fontSize: 16 },
   rowSub: { fontSize: 12 },
+});
+
+// v3.28(老板:第三方媒体库统一风格):浏览页 HD 尺寸——行高/封面/字号与我的收藏·歌单详情同档
+const bv = StyleSheet.create({
+  row: { minHeight: 68 },
+  art: { width: 52, height: 52, borderRadius: 26 },
+  rowTitle: { fontSize: 15 },
+  rowSub: { fontSize: 12 },
+  albumName: { fontSize: 13, lineHeight: 17 },
+  albumMeta: { fontSize: 10.5, lineHeight: 14 },
+  acctPill: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 38, marginHorizontal: 4 },
+  acctName: { color: C.text, fontSize: 17, fontWeight: '800', maxWidth: 320 },
 });
 
 // navigation 注册用包装（native-stack 组件类型兼容）
