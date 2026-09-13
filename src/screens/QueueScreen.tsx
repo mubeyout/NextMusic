@@ -42,8 +42,9 @@ export function QueueScreen() {
   const upcoming = current ? queue.filter(t => t.songmid !== current.songmid) : queue;
   const pct = duration > 0 ? Math.min(1, position / duration) : 0;
 
+  // v3.24(老板:背景割裂):web/HD 下手机端绿色渐变背景与全站 #121212 割裂——统一纯 C.bg
   return (
-    <LinearGradient colors={[C.bgGradientTop, C.bg, C.bg]} locations={[0, 0.55, 1]} style={[st.screen, { backgroundColor: C.bg }]}>
+    <LinearGradient colors={IS_HD ? [C.bg, C.bg, C.bg] : [C.bgGradientTop, C.bg, C.bg]} locations={[0, 0.55, 1]} style={[st.screen, { backgroundColor: C.bg }]}>
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
         onScroll={e => {
           const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
