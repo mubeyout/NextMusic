@@ -1,7 +1,7 @@
 // HD 歌单详情 —— 对齐桌面版 PlaylistDetailScreen:
 // 头部(封面 + 「歌单」标签/标题/meta/三钮) + 全宽歌曲行(焦点选中态/播放中品牌绿)
 // 参数与 phone PlaylistDetailScreen 同构:title/songs/meta/localId(本地歌单封面取第一首)
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { hdActions } from './HDActions';
 import { HDCollect } from './HDCollect';
 import { Platform, View, Text, StyleSheet, ScrollView, Image, ActivityIndicator } from 'react-native';
@@ -38,6 +38,9 @@ export function HDPlaylistDetailScreen() {
   const local = p.localId ? library.get(p.localId) : null;
   // lx106:songs 可变(移除单曲);非本地列表先取参数快照
   const [songs, setSongs] = useState<SongItem[]>(() => (local ? local.songs as SongItem[] : p.songs || []));
+  // v3.21:重复 navigate 同名屏时组件复用、useState 初值不重跳(旧 songs 停留)——params 变了就同步
+  useEffect(() => { if (!local && p.songs && p.songs !== songsRef.current) { songsRef.current = p.songs; setSongs(p.songs); setLimit(40); } }, [p.songs]); // eslint-disable-line react-hooks/exhaustive-deps
+  const songsRef = useRef<SongItem[] | null>(p.songs || null);
   const cover = local?.cover || songs[0]?.img;
   const title = local?.name || p.title || '歌单';
   const meta = p.meta || `${songs.length} 首`;
@@ -221,7 +224,7 @@ export function HDPlaylistDetailScreen() {
 
       {/* ===== 歌曲列表(全宽行 + 焦点选中态) ===== */}
       {songs.length ? (
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 22, paddingTop: 8, paddingBottom: 20 + H.playbar, gap: 2, ...(Platform.OS === 'web' ? { maxWidth: 1160, width: '100%', alignSelf: 'flex-start' as const } : null) }} showsVerticalScrollIndicator={false}
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 22, paddingTop: 8, paddingBottom: 20 + H.playbar, gap: 2, ...(Platform.OS === 'web' ? { width: '100%', alignSelf: 'stretch' as const } : null) }} showsVerticalScrollIndicator={false}
           onScroll={e => {
             const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
             if (layoutMeasurement.height + contentOffset.y > contentSize.height - 600) setLimit(n => (n < songs.length ? n + 40 : n));

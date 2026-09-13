@@ -32,6 +32,22 @@ const applyZoom = () => {
 applyZoom();
 onSettings(applyZoom);
 
+// v3.21(老板:所有页面定时闪一下跳回模块首页):清理 v2 时代遗留 Service Worker——
+// 旧 SW(lx-music-web-v*)缓存优先策略会周期性把旧版缓存页面回吐(整页闪+跳回旧首页);
+// 新架构无 SW,启动即注销全部注册并清其缓存,一次性根治(浏览器无需手动清站数据)
+(async () => {
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      if (regs.length) await Promise.all(regs.map(r => r.unregister()));
+    }
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      if (keys.length) await Promise.all(keys.map(k => caches.delete(k)));
+    }
+  } catch { /* ignore */ }
+})();
+
 mountCtxMenu();
 mountKbNav();
 // v3.17(老板):playbar 毛玻璃——RNW style 不认 backdropFilter,用 dataSet data-nm-playbar 挂 CSS;

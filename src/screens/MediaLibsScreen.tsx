@@ -100,7 +100,7 @@ export function MediaLibsScreen() {
         />
       )}
       <ScrollView
-        contentContainerStyle={[{ paddingHorizontal: 20, paddingBottom: insets.bottom + 24 }, IS_HD && { maxWidth: 900, alignSelf: 'center', width: '100%', paddingTop: 8 }]}
+        contentContainerStyle={[{ paddingHorizontal: 20, paddingBottom: insets.bottom + 24 }, IS_HD && { width: '100%', alignSelf: 'stretch', paddingTop: 8 }]}
       >
         <Text style={[st.intro, IS_HD && hd.intro]}>接入 Emby、Jellyfin、Navidrome、道理鱼（Subsonic 兼容）或 WebDAV，把私有音乐库变成曲库。</Text>
         {accts.length === 0 ? (

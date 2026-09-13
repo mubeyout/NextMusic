@@ -65,7 +65,7 @@ export function DownloadsScreen() {
           {cacheStat ? <Text style={{ color: '#9aa5a0', fontSize: 11 }}>当前占用 {cacheStat.fileCount} 个文件 · {fmtBytes(cacheStat.totalSize)}</Text> : null}
         </View>
       ) : null}
-        <Text style={st.stat}>{list.length} 首 · {fmtBytes(dlStore.totalBytes())} · 内部存储/Music/NextMusic</Text>
+        <Text style={st.stat}>{list.length} 首 · {fmtBytes(dlStore.totalBytes())}{list.some(r => r.server) ? ' · 含服务器缓存(后台·设置·存储备份可清理)' : ' · 内部存储/Music/NextMusic'}</Text>
         {lastFails.length ? (
           <View style={st.failCard}>
             <Text style={st.failTitle} numberOfLines={1}>⚠ {fails.length} 首下载失败 · 最近：{lastFails[0].err}</Text>

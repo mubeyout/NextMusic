@@ -1,6 +1,10 @@
 // react-native-audio-pro web shim：HTML5 Audio 实现 PlayerProvider 用到的 API 面
 // configure/play/pause/resume/seekTo/getState/getTimings/addEventListener + 枚举
 // 桌面增强：MediaSession API 接系统媒体键（播放/暂停/上一首/下一首）
+// v3.20(老板:音效开了无效): WebAudio DSP 链不再限 Electron——浏览器部署同样建图;
+//   浏览器下媒体恒走同源代理 /api/music/download?inline=1(MediaElementSource 对跨域源输出静音,
+//   同源代理是 EQ/混响链路可用的前提;代理实测支持 Range,seek 正常);
+//   ViPER-lite: 低音/细节/清澈/响度/限幅/AutoEQ 全接入;变调(原生 Sonic)web 无实现不假装生效
 export enum AudioProState { IDLE = 'IDLE', PLAYING = 'PLAYING', PAUSED = 'PAUSED', STOPPED = 'STOPPED' }
 export enum AudioProContentType { MUSIC = 'MUSIC' }
 export enum AudioProEventType {
@@ -51,27 +55,44 @@ function wireMediaSession() {
   ms.setActionHandler('nexttrack', () => emit(AudioProEventType.REMOTE_NEXT));
 }
 
-// Range 请求带自定义头（WebDAV basicAuth 等）需要 MSE/ServiceWorker 转发；
-// 桌面 Electron renderer 无 CORS 限制（webSecurity off 时），此处直接 fetch 流不可行——
-// 简化：headers 场景（WebDAV）改走Electron 主进程代理 URL（见 electron/main.cjs /proxy 路由）。
+// 运行形态:Electron=主进程媒体代理(5198);浏览器部署=服务端同源代理(/api/music/download inline);
+// vite dev(5173/3000)=直连原 URL(DSP 可能因跨域静音,dev 容忍)
 const IS_ELECTRON = typeof navigator !== 'undefined' && /electron/i.test(navigator.userAgent);
+const IS_DEV = typeof location !== 'undefined' && (location.port === '5173' || location.port === '3000');
 function applyUrl(t: Track) {
   let url = t.url;
-  // Electron:恒走主进程媒体代理(同源)——WebAudio MediaElementSource 对跨域源会输出静音,
-  // 同源代理是 EQ/混响链路可用的前提;浏览器直开(vite dev)保持原 URL。
   if (IS_ELECTRON || (headers && Object.keys(headers).length)) {
     url = `http://127.0.0.1:5198/__media__?u=${encodeURIComponent(t.url)}${headers && Object.keys(headers).length ? `&h=${encodeURIComponent(JSON.stringify(headers))}` : ''}`;
+  } else if (!IS_DEV) {
+    // v3.20:浏览器部署走服务端 inline 代理(同源)——WebAudio MediaElementSource 不再跨域静音,Range 实测 206 可 seek
+    url = `/api/music/download?url=${encodeURIComponent(t.url)}&inline=1`;
   }
   audio.src = url;
 }
 
-// ===== WebAudio DSP（桌面音效真实现:soundfx.ts → NM.SoundFx.setConfig → __nmFxSet）=====
-type FxCfg = { eq?: number[]; reverb?: { id: string; mainGain: number; sendGain: number }; panner?: { enable: boolean; speed: number; distance: number } };
+// ===== WebAudio DSP(soundfx.ts → __nmFxSet / NM.SoundFx.setConfig) =====
+type FxViperCfg = {
+  bassMode?: 0 | 1 | 2 | 3; bassLevel?: number;
+  dcvEnable?: boolean; dcvLevel?: number;
+  cureEnable?: boolean; cureLevel?: number;
+  limiterEnable?: boolean; loudnessEnable?: boolean;
+  autoeqName?: string; autoeqOn?: boolean;
+};
+type FxCfg = { eq?: number[]; reverb?: { id: string; mainGain: number; sendGain: number }; panner?: { enable: boolean; speed: number; distance: number }; viper?: FxViperCfg; pitch?: number };
 const EQ_FREQS = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
 let actx: AudioContext | null = null;
 let srcNode: MediaElementAudioSourceNode | null = null;
 let preGain: GainNode | null = null;
 let eqNodes: BiquadFilterNode[] = [];
+let autoeqNodes: BiquadFilterNode[] = [];
+let curAutoeqKey = '';
+let bassNode: BiquadFilterNode | null = null;      // ViPER 低音(lowshelf)
+let bassPresNode: BiquadFilterNode | null = null;  // 清澈人声临场峰(peaking)
+let dcvHigh: BiquadFilterNode | null = null;       // 动态细节高频架
+let cureNode: BiquadFilterNode | null = null;      // 声场矫正近似(中频曲线,非真卷积)
+let loudLow: BiquadFilterNode | null = null;       // 响度补偿低/高架
+let loudHigh: BiquadFilterNode | null = null;
+let limiter: DynamicsCompressorNode | null = null; // 恒定限幅(恒挂链,禁用时 ratio=1 透明)
 let panNode: StereoPannerNode | null = null;
 let dryGain: GainNode | null = null;
 let wetGain: GainNode | null = null;
@@ -82,10 +103,13 @@ let curReverbId = '';
 let lastCfg: FxCfg = {};
 
 function buildIR(ctx: AudioContext, id: string): AudioBuffer {
-  // 程序化脉冲响应:噪声+指数衰减;时长/衰减按房间类型
+  // 程序化脉冲响应:噪声+指数衰减;时长/衰减按房间类型(v_* 系列按听感映射)
   const spec: Record<string, [number, number]> = {
     none: [0.001, 0], telephone: [0.12, 22], church: [3.2, 2.2], hall: [2.4, 3.0],
     cinema: [2.0, 2.6], dining: [1.1, 4.5], living: [0.7, 7], spreader: [0.45, 9],
+    stereo: [0.6, 3.2], matrix1: [1.2, 4.0], matrix2: [1.0, 3.6], cardiod: [0.8, 5.0],
+    magnetic: [0.5, 2.6], spring: [1.4, 5.4],
+    v_clear: [0.4, 4.2], v_creek: [1.8, 3.4], v_resound2: [0.7, 3.0], v_surround: [0.9, 2.8], v_valley: [2.2, 3.8], v_presence: [0.8, 3.2],
   };
   const [sec, decay] = spec[id] || [1.2, 4];
   const len = Math.max(1, Math.floor(ctx.sampleRate * sec));
@@ -98,7 +122,7 @@ function buildIR(ctx: AudioContext, id: string): AudioBuffer {
 }
 
 function ensureGraph() {
-  if (actx || !IS_ELECTRON) return;
+  if (actx) return; // 一次建图(元素级唯一 MediaElementSource)
   try {
     actx = new AudioContext();
     (typeof window !== 'undefined') && ((window as never as Record<string, unknown>).__nmActx = actx); // 频谱环复用(SpectrumRing)
@@ -109,6 +133,14 @@ function ensureGraph() {
       b.type = 'peaking'; b.frequency.value = f; b.Q.value = 1.0; b.gain.value = 0;
       return b;
     });
+    bassNode = actx.createBiquadFilter(); bassNode.type = 'lowshelf'; bassNode.frequency.value = 100; bassNode.gain.value = 0;
+    bassPresNode = actx.createBiquadFilter(); bassPresNode.type = 'peaking'; bassPresNode.frequency.value = 2800; bassPresNode.Q.value = 0.9; bassPresNode.gain.value = 0;
+    dcvHigh = actx.createBiquadFilter(); dcvHigh.type = 'highshelf'; dcvHigh.frequency.value = 9000; dcvHigh.gain.value = 0;
+    cureNode = actx.createBiquadFilter(); cureNode.type = 'peaking'; cureNode.frequency.value = 2400; cureNode.Q.value = 0.8; cureNode.gain.value = 0;
+    loudLow = actx.createBiquadFilter(); loudLow.type = 'lowshelf'; loudLow.frequency.value = 70; loudLow.gain.value = 0;
+    loudHigh = actx.createBiquadFilter(); loudHigh.type = 'highshelf'; loudHigh.frequency.value = 10000; loudHigh.gain.value = 0;
+    limiter = actx.createDynamicsCompressor();
+    limiter.threshold.value = 0; limiter.knee.value = 0; limiter.ratio.value = 1; limiter.attack.value = 0.003; limiter.release.value = 0.25;
     panNode = actx.createStereoPanner();
     dryGain = actx.createGain();
     wetGain = actx.createGain(); wetGain.gain.value = 0;
@@ -117,6 +149,13 @@ function ensureGraph() {
     node.connect(preGain);
     node = preGain;
     for (const b of eqNodes) { node.connect(b); node = b; }
+    node.connect(bassNode!); node = bassNode!;
+    node.connect(bassPresNode!); node = bassPresNode!;
+    node.connect(dcvHigh!); node = dcvHigh!;
+    node.connect(cureNode!); node = cureNode!;
+    node.connect(loudLow!); node = loudLow!;
+    node.connect(loudHigh!); node = loudHigh!;
+    node.connect(limiter!); node = limiter!;
     node.connect(panNode);
     panNode.connect(dryGain); dryGain.connect(actx.destination);
     // v1.2.0 频谱环数据源:analyser 并联 tap 进信号链(悬空 analyser 读数恒 0——波浪不动的根因)
@@ -131,15 +170,54 @@ function ensureGraph() {
   } catch { /* WebAudio 不可用:裸 Audio 输出 */ }
 }
 
+// v3.20:AutoEQ 参数化滤波链(增删重建;preamp 并入 preGain)——vite ESM 静态导入 json(Metro 的 require 写法 web 不通用)
+import autoeqPackJson from '../../src/assets/autoeq_pack.json';
+const autoeqPack = autoeqPackJson as unknown as Record<string, { preamp: number; f: [string, number, number, number][] }>;
+function rebuildAutoeq(name: string, on: boolean) {
+  if (!actx) return;
+  const key = on && name ? name : '';
+  if (key === curAutoeqKey) return;
+  // 摘除旧链:autoeqNodes 夹在 eqNodes 尾与 bassNode 之间——重建首尾连接
+  try {
+    if (autoeqNodes.length) {
+      const headIn = eqNodes[eqNodes.length - 1] ?? preGain!;
+      const tail = autoeqNodes[autoeqNodes.length - 1];
+      headIn.disconnect(); tail.disconnect();
+      autoeqNodes = [];
+      headIn.connect(bassNode!);
+    }
+    curAutoeqKey = '';
+    const prof = key ? autoeqPack[key] : null;
+    if (!prof) return;
+    let node: AudioNode = eqNodes[eqNodes.length - 1] ?? preGain!;
+    node.disconnect();
+    for (const [type, fc, gain, q] of prof.f) {
+      const b = actx!.createBiquadFilter();
+      b.type = type as BiquadFilterType; b.frequency.value = fc; b.gain.value = gain; b.Q.value = q;
+      node.connect(b); node = b; autoeqNodes.push(b);
+    }
+    node.connect(bassNode!);
+    curAutoeqKey = key;
+  } catch { /* 链重建失败保持旧链 */ }
+}
+
 function applyFx(cfg: FxCfg) {
   lastCfg = cfg;
   if (!actx) return;
   try {
-    if (cfg.eq?.length === 10) cfg.eq.forEach((g, i) => { if (eqNodes[i]) eqNodes[i].gain.value = Math.max(-12, Math.min(12, g)); });
+    // ---- EQ 10 段 + 防削波 ----
     if (cfg.eq?.length === 10) {
+      cfg.eq.forEach((g, i) => { if (eqNodes[i]) eqNodes[i].gain.value = Math.max(-12, Math.min(12, g)); });
       const maxAbs = Math.max(...cfg.eq.map(Math.abs));
-      if (preGain) preGain.gain.value = maxAbs > 6 ? 0.7 : 1; // 大推子防削波
+      let pre = maxAbs > 6 ? 0.7 : 1;
+      if (cfg.viper?.autoeqOn && cfg.viper.autoeqName) {
+        const prof = autoeqPack[cfg.viper.autoeqName];
+        if (prof?.preamp) pre *= Math.pow(10, Math.max(-6, Math.min(3, -prof.preamp)) / 20); // dB→增益,AutoEQ preamp 常为负
+      }
+      if (preGain) preGain.gain.value = pre;
+      rebuildAutoeq(cfg.viper?.autoeqName || '', !!cfg.viper?.autoeqOn);
     }
+    // ---- 混响 ----
     if (cfg.reverb) {
       if (cfg.reverb.id !== curReverbId && convolver) {
         curReverbId = cfg.reverb.id;
@@ -153,6 +231,29 @@ function applyFx(cfg: FxCfg) {
         }
       }
     }
+    // ---- ViPER-lite ----
+    const v = cfg.viper;
+    if (v && bassNode) {
+      const lvl = v.bassLevel ?? 0;
+      switch (v.bassMode) {
+        case 1: bassNode.frequency.value = 110; bassNode.gain.value = lvl * 6; break;   // 自然低音
+        case 2: bassNode.frequency.value = 75; bassNode.gain.value = lvl * 9; break;    // 纯净低音
+        case 3: bassNode.frequency.value = 130; bassNode.gain.value = lvl * 3.5; break; // 清澈人声
+        default: bassNode.gain.value = 0;
+      }
+      if (bassPresNode) bassPresNode.gain.value = v.bassMode === 3 ? 2 : 0;
+      if (dcvHigh) dcvHigh.gain.value = v.dcvEnable ? (v.dcvLevel ?? 0.5) * 5 : 0;
+      // 声场矫正近似:中频微亮+低频让位(非原生卷积,听感取向)
+      if (cureNode) cureNode.gain.value = v.cureEnable ? 1 + (v.cureLevel ?? 0.3) * 2.5 : 0;
+      if (loudLow) loudLow.gain.value = v.loudnessEnable ? 3.5 : 0;
+      if (loudHigh) loudHigh.gain.value = v.loudnessEnable ? 2.5 : 0;
+      // 限幅:禁用时 ratio=1/threshold=0 近似直通
+      if (limiter) {
+        if (v.limiterEnable) { limiter.threshold.value = -6; limiter.knee.value = 4; limiter.ratio.value = 12; }
+        else { limiter.threshold.value = 0; limiter.knee.value = 0; limiter.ratio.value = 1; }
+      }
+    }
+    // ---- 3D 环绕 ----
     if (cfg.panner && panNode) {
       if (cfg.panner.enable && !lfo && actx) {
         lfo = actx.createOscillator();
@@ -170,6 +271,7 @@ function applyFx(cfg: FxCfg) {
         lfoDepth.gain.value = Math.min(0.9, 0.25 + (cfg.panner.distance || 1) * 0.18);
       }
     }
+    // pitch(变调):web 无 Sonic 级实现,不假装生效(playbackRate 会连带变速,不采用)
   } catch { /* ignore */ }
 }
 (typeof globalThis !== 'undefined') && ((globalThis as never as Record<string, unknown>).__nmFxSet = applyFx);

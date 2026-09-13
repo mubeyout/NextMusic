@@ -37,6 +37,7 @@ import { CommentsScreen } from '../screens/CommentsScreen';
 import { PlayerSettingsScreen } from '../screens/PlayerSettingsScreen';
 import { ImportPlaylistScreen } from '../screens/ImportPlaylistScreen';
 import { FxScreen } from '../screens/FxScreen';
+import { HDFxScreen } from './HDFxScreen'; // v3.20(老板):web/pc 重构版均衡器与音效页
 import { MediaLibsScreen, ProviderBrowseRoute } from '../screens/MediaLibsScreen';
 import { ArtistFavScreen } from '../screens/ArtistFavScreen'; // lx161:收藏歌手
 import { ArtistDetailScreen } from '../screens/ArtistDetailScreen';
@@ -292,6 +293,8 @@ export function HDMain() {
             <Text style={st.navLabel} numberOfLines={1}>我的收藏{loveCount != null ? ` · ${loveCount}` : ''}</Text>
           </HDTouch>
           <NavItem icon="history" label="播放历史" onPress={openHistory} />
+          {/* v3.21(老板:下载管理上菜单):侧栏直入,下载/缓存记录一处可见 */}
+          <NavItem icon="download" label="下载管理" onPress={() => railNav('Downloads')} />
 
           {/* 歌单 */}
           <Group label="歌单" top={8} />
@@ -330,7 +333,8 @@ export function HDMain() {
             <InnerStack.Screen name="Search" component={withPhoneScale(SearchScreen)} />
             <InnerStack.Screen name="PlayerSettings" component={withPhoneScale(PlayerSettingsScreen)} />
             <InnerStack.Screen name="ImportPlaylist" component={withPhoneScale(ImportPlaylistScreen)} />
-            <InnerStack.Screen name="Fx" component={withPhoneScale(FxScreen)} />
+            {/* v3.20:web 全宽 HD 版 Fx(注释放 Navigator 内会炸——lx168 红线,注释放表达式内) */}
+            <InnerStack.Screen name="Fx" component={IS_WEB ? HDFxScreen : withPhoneScale(FxScreen)} />
             <InnerStack.Screen name="MediaLibs" component={withPhoneScale(MediaLibsScreen)} />
             <InnerStack.Screen name="ArtistFavs" component={withPhoneScale(ArtistFavScreen)} />
             <InnerStack.Screen name="AlbumFavs" component={withPhoneScale(AlbumFavScreen)} />

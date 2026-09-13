@@ -39,10 +39,11 @@ import { settings, type Quality } from './settings';
 export interface DownloadRec {
   key: string;
   song: SongItem;
-  path: string;       // file:// 绝对路径
+  path: string;       // file:// 绝对路径;web 服务器缓存模式='server-cache'
   size: number;       // bytes
   quality: Quality;
   at: number;         // downloaded at
+  server?: boolean;   // v3.21:web 服务器缓存记录(不占本地 fs,remove 只删记录)
 }
 
 const kv = createMMKV({ id: 'nextmusic-downloads' });
@@ -79,13 +80,13 @@ export const downloads = {
     const rec = list.find(r => r.key === songKey(s));
     if (!rec) return;
     writeAll(list.filter(r => r.key !== rec.key));
-    deleteFile(rec.path);
+    if (!rec.server) deleteFile(rec.path); // v3.21:服务器缓存记录不动本地 fs(真删走后台存储管理)
     emit();
   },
   clearAll() {
     const list = readAll();
     writeAll([]);
-    list.forEach(r => deleteFile(r.path));
+    list.forEach(r => { if (!r.server) deleteFile(r.path); });
     emit();
   },
 };
@@ -269,6 +270,13 @@ export async function webDownloadToServer(songs: SongItem[], quality = '320k'): 
   try {
     for (const s of songs) {
       if (s.source === 'device') continue;
+      // v3.21(老板:playbar 下载不见列表):服务器缓存也写进下载记录(server 标记)——下载管理立即可见,进行中→ok/fail 回写
+      const key = songKey(s);
+      const recs = readAll();
+      if (!recs.some(r => r.key === key)) {
+        recs.push({ key, song: s, path: 'server-cache', size: 0, quality: quality as Quality, at: Date.now(), server: true });
+        writeAll(recs); emit();
+      }
       try {
         // 先取链再缓存(服务端要求 url 一起提交)
         const r = await fetch('/api/music/url', {
@@ -276,12 +284,19 @@ export async function webDownloadToServer(songs: SongItem[], quality = '320k'): 
           body: JSON.stringify({ songInfo: { source: s.source, songmid: s.songmid, name: s.name, singer: s.singer, hash: s.hash, interval: s.interval }, type: quality }),
         }).then(x => x.json());
         if (!r.url) throw new Error('取链失败');
-        await fetch('/api/music/cache/download', {
+        const cr = await fetch('/api/music/cache/download', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ songInfo: { source: s.source, songmid: s.songmid, name: s.name, singer: s.singer }, url: r.url, quality }),
         });
+        if (!cr.ok) throw new Error('缓存写入失败');
         ok++;
-      } catch { fail++; }
+      } catch (e) {
+        fail++;
+        // 失败回滚记录+进失败清单(下载管理可见可重试)
+        writeAll(readAll().filter(x => x.key !== key));
+        pushFail({ key, name: `${s.name} - ${s.singer}`, err: (e as Error).message.slice(0, 60), at: Date.now() });
+      }
+      emit();
     }
   } finally { webDlBusy = false; }
   return { ok, fail };

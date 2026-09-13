@@ -3,6 +3,9 @@
   navigate: (name: string, params?: unknown) => {
     try { (hdInnerRef as unknown as { navigate: (n: string, p?: unknown) => void }).navigate(name, params as never); return true; } catch { return false; }
   },
+  lastParams: () => {
+    try { const r = hdInnerRef.getCurrentRoute(); return r ? { name: r.name, keys: Object.keys((r.params || {}) as object), songsLen: (((r.params as { songs?: unknown[] })?.songs) as unknown[] | undefined)?.length ?? null, title: (r.params as { title?: string })?.title ?? null } : null; } catch (e) { return String(e); }
+  },
 }));
 
 // HD 屏外导航辅助:hdNav() 分流——内页进 HDMain 内容区嵌套栈,左侧导航恒固定

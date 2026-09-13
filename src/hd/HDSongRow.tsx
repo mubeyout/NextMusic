@@ -111,28 +111,32 @@ export function HDSongRow({ song, index, onPress, onLongPress, onAction, playing
         <Text style={st.sub} numberOfLines={1}>{song.singer}{showAlbum && song.albumName ? ` · ${song.albumName}` : ''}</Text>
       </View>
       <View style={st.srcTag}><Text style={st.srcTagText}>{song.source}</Text></View>
-      {/* A1:hover 时长淡出/三钮淡入(绝对定位覆盖时长区,宽度守恒不跳动;♡已收藏常驻) */}
+      {/* v3.20(老板:hover 选项改挤出模式):hoverZone 在流内,hover 宽度 34→96 挤压标题列(不再 absolute 覆盖);♡已收藏常驻(→64) */}
       {IS_WEB ? (
-        <View style={st.hoverZone}>
+        <View style={[st.hoverZone, hov ? st.hoverZoneOn : faved ? st.hoverZoneFav : null]}>
           <Text style={[st.dur, { opacity: hov ? 0 : 1 }]}>{playing ? '播放中' : song.interval}</Text>
-          <View ref={hovBtnsRef} pointerEvents={hov ? 'auto' : 'none'} style={[st.hovBtns, { opacity: hov || faved ? 1 : 0 }]}>
-            {/* ♡ 已收藏常驻粉色实心(不依赖 hover) */}
+          <View ref={hovBtnsRef} style={[st.hovBtns, { opacity: hov || faved ? 1 : 0 }]}>
+            {/* ♡ 收藏(hover 可切;已收藏非 hover 常驻实心) */}
             <HDTouch style={st.hovBtn} onPress={toggle}>
               <Icon name="heart" size={14} active={faved} color={faved ? '#FF5A76' : C.text2} />
             </HDTouch>
-            {/* ＋ 加入队列 */}
-            <HDTouch style={st.hovBtn} onPress={() => { appendQueue([song]); toast('已加入队列'); }}>
-              <Icon name="add" size={14} color={C.text2} />
-            </HDTouch>
-            {/* ⋯ 更多=A3 菜单(与右键同数据) */}
-            <HDTouch style={st.hovBtn} onPress={() => {
-              const el = (hovBtnsRef.current as unknown as { measure?: (cb: (x: number, y: number, w: number, h: number, px: number, py: number) => void) => void } | null);
-              if (!buildMenu) { onAction?.(); return; }
-              // RNW View 有 measure;兜底 0,0(菜单自会视口翻转)
-              el?.measure?.((_x, _y, _w, _h, px, py) => openMenu(px, py));
-            }}>
-              <Icon name="more" size={14} color={C.text2} />
-            </HDTouch>
+            {hov ? (
+              <>
+                {/* ＋ 加入队列 */}
+                <HDTouch style={st.hovBtn} onPress={() => { appendQueue([song]); toast('已加入队列'); }}>
+                  <Icon name="add" size={14} color={C.text2} />
+                </HDTouch>
+                {/* ⋯ 更多=A3 菜单(v3.20 修复:RNW View 无 measure,改 getBoundingClientRect 直读 DOM) */}
+                <HDTouch style={st.hovBtn} onPress={() => {
+                  if (!buildMenu) { onAction?.(); return; }
+                  const el = hovBtnsRef.current as unknown as HTMLElement | null;
+                  const r = el?.getBoundingClientRect?.();
+                  openMenu(r ? r.right : 0, r ? r.top : 0);
+                }}>
+                  <Icon name="more" size={14} color={C.text2} />
+                </HDTouch>
+              </>
+            ) : null}
           </View>
         </View>
       ) : (
@@ -165,8 +169,11 @@ const st = StyleSheet.create({
   srcTag: { backgroundColor: C.elev, borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
   srcTagText: { color: C.text3, fontSize: 7, fontWeight: '600', letterSpacing: 0.5 },
   dur: { color: C.text3, fontSize: H.font.sm, fontVariant: ['tabular-nums'], minWidth: 34, textAlign: 'right' },
-  hoverZone: { position: 'relative', minWidth: 34, alignItems: 'flex-end' },
-  hovBtns: { position: 'absolute', right: 0, top: -10, flexDirection: 'row', gap: 2, height: 52, alignItems: 'center' },
+  // v3.20 挤出模式:hoverZone 流内占位,hover 34→96(三钮)/已收藏 34→64(♡),标题列被挤压而非覆盖
+  hoverZone: { minWidth: 34, alignItems: 'flex-end', overflow: 'hidden' },
+  hoverZoneOn: { minWidth: 96 },
+  hoverZoneFav: { minWidth: 64 },
+  hovBtns: { flexDirection: 'row', gap: 2, alignItems: 'center' },
   hovBtn: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   rowWrap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   act: { width: 30, height: 52, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
