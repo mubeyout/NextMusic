@@ -41,15 +41,16 @@ function HD_VINYL_SVG(img?: string, size = 300, playing?: boolean): React.ReactN
   return h('svg', { width: size, height: size, viewBox: '0 0 300 300', className: 'nm-vinyl-spin' + (playing ? '' : ' nm-vinyl-paused'),
     style: { position: 'absolute', top: 0, left: 0, borderRadius: '50%', boxShadow: '0 26px 70px rgba(0,0,0,.4), 0 0 54px rgba(30,215,96,.08)' } as never },
     h('defs', null, rg,
-      h('clipPath', { id: 'hdLblClip', key: 'lc' }, h('circle', { key: 'c', cx: 150, cy: 150, r: 74 }))),
+      h('clipPath', { id: 'hdLblClip', key: 'lc' }, h('circle', { key: 'c', cx: 150, cy: 150, r: 56 }))),
     ...circles.map(([r, col, sw], i) => h('circle', { key: 'c' + i, cx: 150, cy: 150, r, fill: r === 149 ? col : 'none', stroke: col, strokeWidth: sw })),
     h('path', { d: 'M33 107 A125 125 0 0 1 107 33', stroke: '#FFFFFF1F', strokeWidth: 3, strokeLinecap: 'round', fill: 'none' }),
     h('path', { d: 'M246 185 A102 102 0 0 1 168 250', stroke: '#FFFFFF17', strokeWidth: 4, strokeLinecap: 'round', fill: 'none' }),
     h('circle', { cx: 150, cy: 150, r: 149, fill: 'url(#hdSheen)' }),
-    /* 盘心 label:深色纸底→正圆裁切封面(slice 不变形)→label 描边环→轴孔 */
-    h('circle', { cx: 150, cy: 150, r: 76, fill: '#101312' }),
-    img ? h('image', { href: img, x: 76, y: 76, width: 148, height: 148, preserveAspectRatio: 'xMidYMid slice', clipPath: 'url(#hdLblClip)' }) : null,
-    h('circle', { cx: 150, cy: 150, r: 76, fill: 'none', stroke: '#FFFFFF2E', strokeWidth: 1.5 }),
+    /* 盘心 label:深色纸底→正圆裁切封面(slice 不变形)→label 描边环→轴孔
+       v3.23(老板:唱片变白):label 盘径 50%→38%(经典黑胶比例)——浅色封面时半张盘发白,黑胶面必须为主视觉 */
+    h('circle', { cx: 150, cy: 150, r: 58, fill: '#101312' }),
+    img ? h('image', { href: img, x: 94, y: 94, width: 112, height: 112, preserveAspectRatio: 'xMidYMid slice', clipPath: 'url(#hdLblClip)' }) : null,
+    h('circle', { cx: 150, cy: 150, r: 58, fill: 'none', stroke: '#FFFFFF2E', strokeWidth: 1.5 }),
     h('circle', { cx: 150, cy: 150, r: 6, fill: '#000' }),
   );
 }
