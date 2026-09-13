@@ -269,7 +269,7 @@ export function HDPlayer() {
 
       <View style={[st.main, IS_WEB && st.mainWeb, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View style={st.rowWrap}>
-        <View style={[st.artCol, IS_WEB && st.artColWeb]}>
+        <View style={[st.artCol, IS_WEB && st.artColWeb, IS_WEB && { width: '45%' }]}> {/* v3.19(老板:.r-1vcqxpo→45%):web 唱片列宽 344→45%,TV 保持 344 */}
           {/* lx125:粒子环(单圈 48 粒,FFT 分区驱动) */}
           {(<View style={[st.vinylZone, IS_WEB && { width: ringSize, height: ringSize }]}>
             {/* v3.14(老板):删多余的下层方形封面,只留盘内正圆 label;盘回正中 */}
@@ -492,7 +492,7 @@ const st = StyleSheet.create({
   main: { flex: 1, flexDirection: 'row', paddingHorizontal: 52, paddingTop: 4, gap: 42 },
   mainWeb: { flexDirection: 'column', paddingHorizontal: '5%', gap: 20, justifyContent: 'flex-end' }, // v3.5:行2(进度+控件)紧贴页面底部
   rowWrap: { flex: 1, flexDirection: 'row', gap: '10%', alignItems: 'center', minWidth: 0 }, // 行1:黑胶(左半靠右)|10%|标题歌词(右半靠左)
-  artCol: { width: 344, alignItems: 'center', justifyContent: 'center' },
+  artCol: { width: 344, alignItems: 'center', justifyContent: 'center' }, // TV 基准;web 见行内 45% 覆写
   artFallback: { backgroundColor: '#1E2722', alignItems: 'center', justifyContent: 'center' },
   infoCol: { flex: 1, gap: 6, paddingTop: 22 },
   infoColWeb: { paddingTop: 0, gap: 10, flex: 1, alignItems: 'flex-start' }, // 行1 右半区·左对齐 // lx94:标题/歌词整体下移(老板:太高)
