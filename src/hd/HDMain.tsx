@@ -125,7 +125,11 @@ export function HDMain() {
   const [innerRoute, setInnerRoute] = useState<string>('Tabs'); // 常驻 bar 按内页路由显隐(Player 时隐藏)
   const [providerAccts, setProviderAccts] = useState<import('../services/providers').ProviderAcct[]>([]);
   useEffect(() => {
-    const upd = () => setProviderAccts((providers as unknown as { all: () => import('../services/providers').ProviderAcct[] }).all());
+    // v3.26(老板:页面定时抖):轮询结果无变化不 setState——providers.all() 每次新数组引用引发整树重渲+Icon svg 全量重挂
+    const upd = () => {
+      const next = (providers as unknown as { all: () => import('../services/providers').ProviderAcct[] }).all();
+      setProviderAccts(prev => (prev.length === next.length && prev.every((p, i) => p === next[i] || p?.id === next[i]?.id)) ? prev : next);
+    };
     upd();
     const t = setInterval(upd, 3000); // 轻轮询(连接/删除后侧栏即时反映)
     return () => clearInterval(t);
@@ -269,16 +273,16 @@ export function HDMain() {
           {/* 发现 */}
           <Group label="发现" />
           {TABS.map((t, i) => (
-            <NavItem key={t.key} icon={t.icon} label={t.label} active={tab === i} first={i === 0}
+            <NavItem key={t.key} icon={t.icon} label={t.label} active={innerRoute === 'Tabs' && tab === i} first={i === 0}
               onPress={() => { setTab(i); hdInnerPop(); }} />
           ))}
 
           {/* 歌单广场(v2 对齐):发现族入口 */}
-          <NavItem icon="explore" label="歌单广场" onPress={() => railNav('Discover')} />
+          <NavItem icon="explore" label="歌单广场" active={innerRoute === 'Discover'} onPress={() => railNav('Discover')} />
 
           {/* 我的乐库 */}
           <Group label="我的乐库" top={8} />
-          <NavItem icon="server" label="媒体库" onPress={() => railNav('MediaLibs')} />
+          <NavItem icon="server" label="媒体库" active={innerRoute === 'MediaLibs'} onPress={() => railNav('MediaLibs')} />
           {/* v3:已连接媒体库账号直入口(Emby/Jellyfin/Navidrome/WebDAV/道理鱼) */}
           {providerAccts.map(pa => (
             <HDTouch key={pa.id} style={[st.navItem, { paddingLeft: 34 }]} focusStyle={st.navFocus} hoverBg={IS_WEB ? C.hover : false}
@@ -288,13 +292,13 @@ export function HDMain() {
             </HDTouch>
           ))}
           {/* lx165(老板):我喜欢的+收藏歌手+收藏专辑 三入口并一——内页三 tab,行内 ♥ 即管理 */}
-          <HDTouch style={st.navItem} focusStyle={st.navFocus} hoverBg={IS_WEB ? C.hover : false} onPress={() => railNav('MyFavorites')}>
-            <Icon name="heart" size={16} color={C.text2} />
-            <Text style={st.navLabel} numberOfLines={1}>我的收藏{loveCount != null ? ` · ${loveCount}` : ''}</Text>
+          <HDTouch style={[st.navItem, innerRoute === 'MyFavorites' && st.navItemOn]} focusStyle={st.navFocus} hoverBg={IS_WEB && innerRoute !== 'MyFavorites' ? C.hover : false} onPress={() => railNav('MyFavorites')}>
+            <Icon name="heart" size={16} color={innerRoute === 'MyFavorites' ? C.text : C.text2} />
+            <Text style={[st.navLabel, innerRoute === 'MyFavorites' && { fontWeight: '700', color: C.text }]} numberOfLines={1}>我的收藏{loveCount != null ? ` · ${loveCount}` : ''}</Text>
           </HDTouch>
           <NavItem icon="history" label="播放历史" onPress={openHistory} />
           {/* v3.21(老板:下载管理上菜单):侧栏直入,下载/缓存记录一处可见 */}
-          <NavItem icon="download" label="下载管理" onPress={() => railNav('Downloads')} />
+          <NavItem icon="download" label="下载管理" active={innerRoute === 'Downloads'} onPress={() => railNav('Downloads')} />
 
           {/* 歌单 */}
           <Group label="歌单" top={8} />
@@ -311,7 +315,7 @@ export function HDMain() {
         {/* lx85:设置项不贴底——留出焦点环完整显示空间(老板:太靠底被裁切) */}
         {/* v1.2.5:web 设置也走 railNav(内页化,侧栏恒固定);TV 保持原 navigate——零行为差异 */}
         <View style={st.settingsDock}>
-          <NavItem icon="settings" label="设置" onPress={() => (IS_WEB ? railNav('Settings') : hdNav()?.navigate('Settings'))} />
+          <NavItem icon="settings" label="设置" active={innerRoute === 'Settings'} onPress={() => (IS_WEB ? railNav('Settings') : hdNav()?.navigate('Settings'))} />
           {IS_WEB ? (
             <NavItem icon="server" label="后台管理" onPress={() => { window.open('/admin/', '_blank'); }} />
           ) : null}
@@ -390,7 +394,11 @@ function TabsHost({ tab, setTab }: { tab: number; setTab: (i: number) => void })
   const [innerRoute, setInnerRoute] = useState<string>('Tabs'); // 常驻 bar 按内页路由显隐(Player 时隐藏)
   const [providerAccts, setProviderAccts] = useState<import('../services/providers').ProviderAcct[]>([]);
   useEffect(() => {
-    const upd = () => setProviderAccts((providers as unknown as { all: () => import('../services/providers').ProviderAcct[] }).all());
+    // v3.26(老板:页面定时抖):轮询结果无变化不 setState——providers.all() 每次新数组引用引发整树重渲+Icon svg 全量重挂
+    const upd = () => {
+      const next = (providers as unknown as { all: () => import('../services/providers').ProviderAcct[] }).all();
+      setProviderAccts(prev => (prev.length === next.length && prev.every((p, i) => p === next[i] || p?.id === next[i]?.id)) ? prev : next);
+    };
     upd();
     const t = setInterval(upd, 3000); // 轻轮询(连接/删除后侧栏即时反映)
     return () => clearInterval(t);
