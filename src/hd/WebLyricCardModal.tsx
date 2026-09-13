@@ -2,7 +2,7 @@
 // web 专属:Canvas 渲染引擎(三版式×三配色×内容开关×行数/字号/行距),预览+下载 PNG
 // 原生端(手机/TV)继续走 components/LyricCardModal(view-shot 截 RN View)
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image as RNImage, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, type ViewStyle, TouchableOpacity, Image as RNImage, Dimensions, ActivityIndicator } from 'react-native';
 import { Icon } from '../theme/Icon';
 import { C, H } from './hdtokens';
 import { HDTouch } from './HDTouch';
@@ -150,7 +150,7 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
     try {
       if (!coverRef.current && song.img) coverRef.current = await loadImage(song.img);
       const img = coverRef.current;
-      const size = CARD_SIZES[o.layout];
+      if (!img && song.img) return; // v3.28:cover 未就绪直接跳过(类型收窄 null)
       const W = size.w, H = size.h;
       const canvas = document.createElement('canvas');
       canvas.width = W; canvas.height = H;
@@ -238,7 +238,7 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
         const pad = H * 0.1, bottomLimit = H * 0.92;
         const cs = o.showCover && img ? Math.max(H * 0.4, Math.min(H * 0.75, H * 0.8)) : 0;
         const coverX = pad, coverY = (H - cs) / 2;
-        if (cs > 0) {
+        if (cs > 0 && img) { // v3.28:img null 收窄
           ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 50; ctx.shadowOffsetX = 15;
           roundRect(ctx, coverX, coverY, cs, cs, cs * 0.06); ctx.clip(); ctx.drawImage(img, coverX, coverY, cs, cs); ctx.restore();
         }
@@ -411,7 +411,7 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
 }
 
 const stP = StyleSheet.create({
-  root: { ...StyleSheet.absoluteFillObject, zIndex: 999, backgroundColor: '#000000CC', alignItems: 'center', justifyContent: 'center' },
+  root: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, backgroundColor: '#000000CC', alignItems: 'center', justifyContent: 'center' },
   panel: { width: '92%', maxWidth: 1020, maxHeight: '90%', backgroundColor: '#17191E', borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, overflow: 'hidden', flexDirection: 'column' as const },
   head: { flexDirection: 'row' as const, alignItems: 'center', gap: 12, padding: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
   headTitle: { color: C.text, fontSize: 15, fontWeight: '800' },
@@ -419,9 +419,9 @@ const stP = StyleSheet.create({
   closeBtn: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   body: { flexDirection: 'row' as const, flex: 1, minHeight: 0 },
   previewBox: { flex: 1, minHeight: 0, alignItems: 'center', justifyContent: 'center', padding: 18, backgroundColor: 'rgba(255,255,255,.02)' },
-  veil: { ...StyleSheet.absoluteFillObject, backgroundColor: '#00000066', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  veil: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#00000066', alignItems: 'center', justifyContent: 'center', gap: 8 },
   veilText: { color: '#ffffffcc', fontSize: 11 },
-  opts: { width: 300, borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: C.border, padding: 16, gap: 6, overflowY: 'auto' as const },
+  opts: { width: 300, borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: C.border, padding: 16, gap: 6, overflowY: 'auto' as const } as ViewStyle, // v3.28:overflowY 为 RNW 属性,断言
   secTitle: { color: C.text3, fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginTop: 8 },
   row: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 6, marginTop: 6 },
   pill: { height: 30, borderRadius: 15, paddingHorizontal: 12, borderWidth: 1, borderColor: '#ffffff26', alignItems: 'center', justifyContent: 'center' },

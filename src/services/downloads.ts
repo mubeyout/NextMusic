@@ -73,7 +73,12 @@ export const songKey = (s: SongItem) => `${s.source}:${s.songmid}`;
 export const downloads = {
   all: readAll,
   isDownloaded(s: SongItem): boolean { return readAll().some(r => r.key === songKey(s)); },
-  pathFor(s: SongItem): string | null { return readAll().find(r => r.key === songKey(s))?.path ?? null; },
+  pathFor(s: SongItem): string | null {
+    // v3.29(老板:下载后无法播放):服务器缓存记录 path 是占位符 'server-cache' 不是可播地址——
+    // 离线播放只认本地文件(!r.server);服务器缓存命中由 /api/music/url 出流,此处不得劫持播放链
+    const r = readAll().find(x => x.key === songKey(s));
+    return r && !r.server ? r.path : null;
+  },
   totalBytes(): number { return readAll().reduce((n, r) => n + (r.size || 0), 0); },
   remove(s: SongItem) {
     const list = readAll();

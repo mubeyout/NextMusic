@@ -12,6 +12,8 @@ import { Platform, Pressable, StyleSheet, View, type ViewStyle } from 'react-nat
 import { C, TV_LOW_GPU } from './hdtokens';
 const IS_WEB = Platform.OS === 'web';
 type Props = React.ComponentProps<typeof Pressable> & {
+  title?: string; // web 悬停提示(RNW 运行时透传;v3.28 类型显式化)
+  className?: string; // RNW className(RNW 运行时透传)
   /** 聚焦时附加样式;不传 = 自动贴附环(元素圆角 + 2px 品牌描边);传 false = 无视觉;仅 TV 渲染 */
   focusStyle?: false | ViewStyle | ViewStyle[];
   /** 聚焦时背景提亮色(选中态);默认不动背景 */

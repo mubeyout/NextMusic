@@ -4,7 +4,7 @@
     try { (hdInnerRef as unknown as { navigate: (n: string, p?: unknown) => void }).navigate(name, params as never); return true; } catch { return false; }
   },
   lastParams: () => {
-    try { const r = hdInnerRef.getCurrentRoute(); return r ? { name: r.name, keys: Object.keys((r.params || {}) as object), songsLen: (((r.params as { songs?: unknown[] })?.songs) as unknown[] | undefined)?.length ?? null, title: (r.params as { title?: string })?.title ?? null } : null; } catch (e) { return String(e); }
+    try { const r = hdInnerRef.getCurrentRoute() as unknown as { name?: string; params?: object } | undefined; return r ? { name: r.name, keys: Object.keys((r.params || {}) as object), songsLen: (((r.params as { songs?: unknown[] })?.songs) as unknown[] | undefined)?.length ?? null, title: (r.params as { title?: string })?.title ?? null } : null; } catch (e) { return String(e); }
   },
 }));
 

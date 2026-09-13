@@ -232,8 +232,9 @@ export function HDPlayer() {
       if (dead || !raw) return;
       let lines = parseLrc(raw);
       const st = settings.get();
-      if (r.tlyric && st.showLyricTranslation) lines = mergeTranslation(lines, r.tlyric);
-      if (r.rlyric && st.showLyricRoma) lines = mergeTranslation(lines, r.rlyric);
+      const rr = r as { tlyric?: string; rlyric?: string }; // v3.28:api 两分支返回型联,统一断言
+      if (rr.tlyric && st.showLyricTranslation) lines = mergeTranslation(lines, rr.tlyric);
+      if (rr.rlyric && st.showLyricRoma) lines = mergeTranslation(lines, rr.rlyric);
       if (lines.length) setLyrics(lines);
     })();
     return () => { dead = true; };
@@ -270,7 +271,7 @@ export function HDPlayer() {
 
       <View style={[st.main, IS_WEB && st.mainWeb, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View style={st.rowWrap}>
-        <View style={[st.artCol, IS_WEB && st.artColWeb, IS_WEB && { width: '45%' }]}> {/* v3.19(老板:.r-1vcqxpo→45%):web 唱片列宽 344→45%,TV 保持 344 */}
+        <View style={[st.artCol, IS_WEB && { width: '45%' }]}> {/* v3.19(老板:.r-1vcqxpo→45%):web 唱片列宽 344→45%,TV 保持 344 */}
           {/* lx125:粒子环(单圈 48 粒,FFT 分区驱动) */}
           {(<View style={[st.vinylZone, IS_WEB && { width: ringSize, height: ringSize }]}>
             {/* v3.14(老板):删多余的下层方形封面,只留盘内正圆 label;盘回正中 */}
@@ -343,12 +344,14 @@ export function HDPlayer() {
                 const w = trackW.current;
                 if (w > 0 && duration > 0) seekTo(Math.max(0, Math.min(1, locationX / w)) * duration);
               }}
-              onStartShouldSetResponder={IS_WEB ? () => duration > 0 : undefined}
-              onResponderMove={IS_WEB ? e => {
-                const lx = (e.nativeEvent as unknown as { locationX: number }).locationX;
-                const w = trackW.current || 1;
-                if (duration > 0) seekTo(Math.max(0, Math.min(1, lx / w)) * duration);
-              } : undefined}
+              {...(IS_WEB ? ({
+                onStartShouldSetResponder: () => duration > 0,
+                onResponderMove: (e: import('react-native').GestureResponderEvent) => {
+                  const lx = e.nativeEvent.locationX;
+                  const w = trackW.current || 1;
+                  if (duration > 0) seekTo(Math.max(0, Math.min(1, lx / w)) * duration);
+                },
+              } as never) : {})} /* v3.28:responder props 运行时支持但已从 TouchableOpacity 类型移除 */
             >
               <View style={[st.trackFill, { flex: pct }]} />
               <View style={[st.trackRest, { flex: 1 - pct }]} />

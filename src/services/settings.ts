@@ -9,6 +9,7 @@ const kv = createMMKV({ id: 'nextmusic-settings' });
 export type Quality = '128k' | '320k' | 'flac';
 
 export interface AppSettings {
+  syncSettingsCloud?: boolean; // v3.28:播放设置云端同步开关(HDSettings 使用,类型此前缺失)
   // 播放
   playQuality: Quality;          // 默认播放音质（在线取链）
   // 下载

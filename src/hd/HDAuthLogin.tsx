@@ -12,8 +12,7 @@ import { HDTouch } from './HDTouch';
 import { useApp } from '../state/AppState';
 import { api, normalizeBase } from '../services/server';
 import { IS_HD } from '../services/appversion';
-import { Platform } from 'react-native';
-const IS_WEB = Platform.OS === 'web';
+const IS_WEB = Platform.OS === 'web'; // v3.28:去重复 import(顶部已有)
 import { toast } from '../components/Dialog';
 
 const recentKv = createMMKV({ id: 'nextmusic-server-history' });

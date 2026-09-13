@@ -21,7 +21,7 @@ const IS_WEB = Platform.OS === 'web';
 
 // ---------- 滑子(挤出无遮挡;RNW 鼠标拖拽走 responder) ----------
 function VSlider({ value, min = -12, max = 12, onChange, height = 130 }: { value: number; min?: number; max?: number; onChange: (v: number) => void; height?: number }) {
-  const trackRef = useRef<View | null>(null);
+  const trackRef = useRef<React.ComponentRef<typeof View> | null>(null); // v3.28:ref 实例类型(ComponentRef)
   const set = (pageY: number) => {
     const el = trackRef.current as unknown as HTMLElement | null;
     if (!el?.getBoundingClientRect) return;
@@ -51,7 +51,7 @@ function VSlider({ value, min = -12, max = 12, onChange, height = 130 }: { value
 }
 
 function HSlider({ value, min = 0, max = 3, step = 0.1, onChange, label }: { value: number; min?: number; max?: number; step?: number; onChange: (v: number) => void; label: string }) {
-  const trackRef = useRef<View | null>(null);
+  const trackRef = useRef<React.ComponentRef<typeof View> | null>(null); // v3.28:ref 实例类型(ComponentRef)
   const set = (pageX: number) => {
     const el = trackRef.current as unknown as HTMLElement | null;
     if (!el?.getBoundingClientRect) return;
@@ -333,7 +333,7 @@ const st = StyleSheet.create({
   segItemOn: { backgroundColor: C.brand, borderColor: C.brand },
   segText: { color: '#ffffffcc', fontSize: H.font.sm },
   aeRow: { flexDirection: 'row', gap: 7, marginTop: 8, alignItems: 'center' },
-  pickRoot: { ...StyleSheet.absoluteFillObject, zIndex: 999, backgroundColor: '#000000CC', alignItems: 'center', justifyContent: 'center' },
+  pickRoot: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, backgroundColor: '#000000CC', alignItems: 'center', justifyContent: 'center' }, // v3.28:absoluteFillObject 已从 RN 类型移除,内联
   pickPanel: { width: '84%', maxWidth: 560, height: '76%', backgroundColor: '#17191E', borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, overflow: 'hidden' },
   pickHead: { flexDirection: 'row', alignItems: 'center', padding: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
   pickTitle: { flex: 1, color: C.text, fontSize: H.font.md, fontWeight: '800' },

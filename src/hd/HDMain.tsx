@@ -290,7 +290,7 @@ export function HDMain() {
             return (
             <HDTouch key={pa.id} style={[st.navItem, { paddingLeft: 34 }, on && st.navItemOn]} focusStyle={st.navFocus} hoverBg={IS_WEB && !on ? C.hover : false}
               onPress={() => railNav('ProviderBrowse', { acctId: pa.id })}>
-              <BrandIcon name={pa.type} size={16} />
+              <BrandIcon name={pa.type as never} size={16} />
               <Text style={[st.navLabel, on && { fontWeight: '700', color: C.text }]} numberOfLines={1}>{pa.name}</Text>
             </HDTouch>
             );
@@ -331,7 +331,7 @@ export function HDMain() {
       {/* ===== 内容区(lx84:嵌套栈——内页只在此切换,侧栏恒固定) ===== */}
       <View style={st.body}>
         <NavigationIndependentTree>
-        <NavigationContainer ref={hdInnerRef} theme={hdInnerTheme} onStateChange={() => { try { const r = hdInnerRef.getCurrentRoute(); setInnerRoute(r?.name || 'Tabs'); setInnerP((r?.params as Record<string, unknown>) || null); } catch { /* ignore */ } }}>
+        <NavigationContainer ref={hdInnerRef} theme={hdInnerTheme} onStateChange={() => { try { const r = hdInnerRef.getCurrentRoute() as unknown as { name?: string; params?: object } | undefined; setInnerRoute(r?.name || 'Tabs'); setInnerP((r?.params as Record<string, unknown>) || null); } catch { /* ignore */ } }}>
           {/* 坞108:TV 转场必须直切;坞57:fade 有变亮中间态 */}
           <InnerStack.Navigator screenOptions={{ headerShown: false, animation: 'none', contentStyle: { backgroundColor: C.bg }, freezeOnBlur: true }}>
             <InnerStack.Screen name="Tabs">{() => <TabsHost tab={tab} setTab={setTab} />}</InnerStack.Screen>
@@ -472,7 +472,7 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
   };
 
   return (
-    <View style={st.playbar} dataSet={IS_WEB ? { nmPlaybar: '1' } : undefined}>
+    <View style={st.playbar} {...(IS_WEB ? ({ dataSet: { nmPlaybar: '1' } } as never) : {})} /* dataSet RNW 运行时支持,RN 类型未收录 */>
       {/* 左 */}
       <View style={st.pbLeft}>
         <HDTouch style={st.pbCoverTouch} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 9 }} hoverBg={IS_WEB ? C.hover : false} onPress={() => hdNav()?.navigate('Player')}>

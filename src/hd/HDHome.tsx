@@ -210,7 +210,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
 function BigCard({ colors, badge, title, sub, onPress, busy }: { colors: [string, string]; badge: string; title: string; sub: string; onPress: () => void; busy?: boolean }) {
   const [hov, setHov] = useState(false);
   const t = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const elRef = useRef<View | null>(null);
+  const elRef = useRef<React.ComponentRef<typeof View> | null>(null) // v3.28:ref 实例类型;
   useEffect(() => {
     const el = elRef.current as unknown as HTMLElement | null;
     if (el && el.classList) el.classList.add('nm-card');
@@ -305,9 +305,9 @@ const st = StyleSheet.create({
 function PlCardWeb({ pl, width, compact, onOpen, onPlay }: { pl: { name: string; img?: string; count?: number; author?: string; play_count?: string }; width?: number; compact?: boolean; onOpen: () => void; onPlay: () => void }) {
   const [hov, setHov] = useState(false);
   const t = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const elRef = useRef<View | null>(null); // RNW View ref=DOM(坑131)——挂 .nm-card 过渡类
-  const maskRef = useRef<View | null>(null); // v1.2.11 动效规范:遮罩/播放钮 150ms ease(原为瞬变)
-  const playRef = useRef<View | null>(null);
+  const elRef = useRef<React.ComponentRef<typeof View> | null>(null) // v3.28:ref 实例类型; // RNW View ref=DOM(坑131)——挂 .nm-card 过渡类
+  const maskRef = useRef<React.ComponentRef<typeof View> | null>(null) // v3.28:ref 实例类型; // v1.2.11 动效规范:遮罩/播放钮 150ms ease(原为瞬变)
+  const playRef = useRef<React.ComponentRef<typeof View> | null>(null) // v3.28:ref 实例类型;
   useEffect(() => {
     const el = elRef.current as unknown as HTMLElement | null;
     if (el && el.classList) el.classList.add('nm-card');

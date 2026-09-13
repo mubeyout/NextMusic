@@ -4,8 +4,9 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "lib": [
-      "es2019"
-    ],
+      "es2019",
+      "dom"
+    ],  // v3.28:补 dom——web 分支(window/localStorage/HTMLElement 等)类型合法化,消灭 55+ 假错
     "allowJs": true,
     "jsx": "react-jsx",
     "noEmit": true,

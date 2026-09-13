@@ -13,6 +13,7 @@ import { settings, useSettings, type Quality } from '../services/settings';
 import { createMMKV } from 'react-native-mmkv';
 import { usePlayer } from '../state/PlayerProvider';
 import { APP_VERSION, IS_HD } from '../services/appversion';
+import { toast } from '../components/Dialog'; // v3.28:漏 import(5 处调用裸用)
 import { api } from '../services/server';
 import { hdNav } from './hdnav';
 import { NativeModules } from 'react-native';
@@ -76,7 +77,7 @@ export function HDSettingsScreen() {
       { kind: 'toggle', icon: 'wave', title: '播放页可视化', desc: '频谱环/粒子', value: s.showDetailVisualizer, onToggle: () => settings.set('showDetailVisualizer', !s.showDetailVisualizer) },
       { kind: 'toggle', icon: 'fullscreen', title: '屏幕常亮', desc: '播放时阻止休眠', value: s.keepScreenAwake, onToggle: () => settings.set('keepScreenAwake', !s.keepScreenAwake) },
       { kind: 'toggle', icon: 'edit', title: '键盘快捷键', desc: '空格播放/Alt 切歌', value: s.enableKeyboardShortcuts, onToggle: () => settings.set('enableKeyboardShortcuts', !s.enableKeyboardShortcuts) },
-      { kind: 'select', icon: 'fullscreen', title: '界面缩放', desc: '全局字号/触点/行高缩放(桌面即时生效,手机/TV 切换后重启生效)', value: s.uiScale || '100%', options: IS_WEB ? ['100%', '110%', '125%', '150%', '175%'] : ['90%', '100%', '110%', '125%'], onPick: v => { settings.set('uiScale', v); if (IS_WEB) { const z = Math.max(0.75, Math.min(2, Number(v.replace('%', '')) / 100)); const doc = (globalThis as { document?: { documentElement?: { style?: Record<string, string> } } }).document; if (doc?.documentElement?.style) doc.documentElement.style.zoom = String(z); } else hdRestart(playing); } },
+      { kind: 'select', icon: 'fullscreen', title: '界面缩放', desc: '全局字号/触点/行高缩放(桌面即时生效,手机/TV 切换后重启生效)', value: s.uiScale || '100%', options: IS_WEB ? ['100%', '110%', '125%', '150%', '175%'] : ['90%', '100%', '110%', '125%'], onPick: v => { settings.set('uiScale', v); if (IS_WEB) { const z = Math.max(0.75, Math.min(2, Number(v.replace('%', '')) / 100)); document.documentElement.style.zoom = String(z); } else hdRestart(playing); } }, // v3.28:tsconfig 补 dom 后 document 直用
     ],
     '播放体验': [
       { kind: 'select', icon: 'music', title: '默认音质', desc: '在线播放优先选择的音质档位', value: s.playQuality, options: QUALITY_OPTS, onPick: v => settings.set('playQuality', v as Quality) },

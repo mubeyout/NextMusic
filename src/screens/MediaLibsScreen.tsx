@@ -1,7 +1,7 @@
 // 第三方媒体库：Emby / Jellyfin / Subsonic(Navidrome·道理鱼) / WebDAV
 // 管理页：账号列表（长按编辑）；浏览页（amcfy 式）：专辑/艺术家/歌曲/歌单 四段浏览 + 头部一键切账号
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, } from 'react-native';
+import { View, Text, StyleSheet, type ViewStyle, ScrollView, TouchableOpacity, Image, ActivityIndicator, } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Icon, BrandIcon } from '../theme/Icon';
@@ -26,13 +26,11 @@ import {
 import type { SongItem } from '../services/server';
 
 // 有品牌 logo 的类型用 BrandIcon，其余回退语义图标
-const BRAND_ICON_TYPES: Set<ProviderType> = new Set(['emby', 'jellyfin', 'navidrome', 'subsonic', 'webdav']);
 // v3: 媒体库 icon 一律 BrandIcon(品牌图标一一对应)
 
 function AcctGlyph({ type, size = 20 }: { type: ProviderType; size?: number }) {
-  return BRAND_ICON_TYPES.has(type)
-    ? <BrandIcon name={type as never} size={size} />
-    : <Icon name={TYPE_ICON[type] as never} size={size} color={C.text} />;
+  // v3(老板):媒体库 icon 一律 BrandIcon(五类型品牌图标一一对应;TYPE_ICON 死分支删除)
+  return <BrandIcon name={type as never} size={size} />;
 }
 
 // 触点抽象:HD 用 HDTouch(D-pad 焦点环),phone 保持 TouchableOpacity
@@ -62,7 +60,7 @@ const COVER_GRADS: [string, string][] = [
 function coverGrad(name?: string) {
   let h = 0; for (let i = 0; i < (name || '').length; i++) h = (name || '').charCodeAt(i) + ((h << 5) - h);
   const g = COVER_GRADS[Math.abs(h) % COVER_GRADS.length];
-  return { background: `linear-gradient(135deg, ${g[0]}, ${g[1]})` } as const;
+  return { background: `linear-gradient(135deg, ${g[0]}, ${g[1]})` }; // v3.28:去 as const
 }
 
 export function MediaLibsScreen() {
@@ -392,7 +390,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                       })}
                     >
                       {al.cover ? <Image source={{ uri: al.cover }} style={st.albumCover} />
-                        : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(al.name)]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
+                        : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(al.name) as ViewStyle]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
                       <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{al.name}</Text>
                       <Text style={[st.albumMeta, IS_HD && bv.albumMeta]} numberOfLines={1}>{al.artist || ''}{al.songCount ? ` · ${al.songCount}首` : ''}</Text>
                     </T>
@@ -452,7 +450,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                     onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'playlist', id: pl.id, name: pl.name, cover: pl.cover, sub: pl.songCount ? `${pl.songCount} 首` : undefined })}
                   >
                     {pl.cover ? <Image source={{ uri: pl.cover }} style={[st.artistArt, IS_HD && bv.art]} />
-                      : <View style={[st.artistArt, IS_HD && bv.art, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name)]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
+                      : <View style={[st.artistArt, IS_HD && bv.art, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name) as ViewStyle]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={[st.artistName, IS_HD && bv.rowTitle]} numberOfLines={1}>{pl.name}</Text>
                       <Text style={[st.artistMeta, IS_HD && bv.rowSub]} numberOfLines={1}>{pl.songCount ? `${pl.songCount} 首` : ''}</Text>

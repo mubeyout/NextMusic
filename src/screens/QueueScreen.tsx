@@ -25,7 +25,7 @@ import { SongRow } from '../components/SongRow';
 import { ActionSheet } from '../components/ActionSheet';
 import { CollectSheet } from '../components/CollectSheet';
 import { hdActions } from '../hd/HDActions';
-import { usePlayer } from '../state/PlayerProvider';
+import { usePlayer, type QueueTrack } from '../state/PlayerProvider';
 import { PageHeader, EmptyState } from '../components/PageChrome';
 import { dialog, toast } from '../components/Dialog';
 import { enqueueDownload, downloads as dlStore } from '../services/downloads';
@@ -34,7 +34,7 @@ import type { SongItem } from '../services/server';
 // Figma 03·播放队列: header + now playing card + list
 export function QueueScreen() {
   const [limit, setLimit] = useState(40);
-  const [actSong, setActSong] = useState<SongItem | null>(null); // lx163:队列行 ⋯ 菜单
+  const [actSong, setActSong] = useState<QueueTrack | null>(null); // lx163:队列行 ⋯ 菜单(v3.28:SongItem→QueueTrack,uid 合法)
   const [collect, setCollect] = useState(false);
   const nav = useNavigation() as { goBack: () => void };
   const { queue, current, playSong, position, duration, clearQueue, reorderQueue } = usePlayer();
