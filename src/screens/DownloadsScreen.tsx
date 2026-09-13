@@ -8,7 +8,6 @@ import { C } from '../theme/tokens';
 import { SongRow } from '../components/SongRow';
 import { PageHeader, EmptyState } from '../components/PageChrome';
 import { usePlayer } from '../state/PlayerProvider';
-import { fmtBytes } from '../services/downloads';
 import { downloads as dlStore, subscribeDownloads, fmtBytes, downloadProgress, downloadFails, clearFails } from '../services/downloads';
 import type { SongItem } from '../services/server';
 import { dialog, toast } from '../components/Dialog';
@@ -55,15 +54,8 @@ export function DownloadsScreen() {
         )}
       />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 120 }}>
-      {typeof Platform !== 'undefined' && Platform.OS === 'web' && !/electron/i.test(navigator.userAgent) ? (
-        <View style={{ backgroundColor: '#1E2422', borderRadius: 12, padding: 14, marginBottom: 12, gap: 4 }}>
-          <Text style={{ color: '#7ee2a8', fontSize: 13, fontWeight: '700' }}>服务器缓存模式</Text>
-          <Text style={{ color: '#9aa5a0', fontSize: 11.5, lineHeight: 17 }}>
-            点「下载」=永久缓存到服务器{'\n'}再次播放零流量 · 不占浏览器空间{'\n'}
-            缓存目录:{'/server/data/cache/用户名'}{'\n'}下载目录:{'/server/data/music'}{'\n'}配额/清理:后台 · 设置 · 存储备份
-          </Text>
-          {cacheStat ? <Text style={{ color: '#9aa5a0', fontSize: 11 }}>当前占用 {cacheStat.fileCount} 个文件 · {fmtBytes(cacheStat.totalSize)}</Text> : null}
-        </View>
+      {typeof Platform !== 'undefined' && Platform.OS === 'web' && !/electron/i.test((globalThis as any).navigator?.userAgent || '') && cacheStat ? (
+        <Text style={{ color: '#9aa5a0', fontSize: 11, marginBottom: 8 }}>已缓存 {cacheStat.fileCount} 首 · {fmtBytes(cacheStat.totalSize)}</Text>
       ) : null}
         <Text style={st.stat}>{list.length} 首 · {fmtBytes(dlStore.totalBytes())}{list.some(r => r.server) ? ' · 含服务器缓存(后台·设置·存储备份可清理)' : ' · 内部存储/Music/NextMusic'}</Text>
         {lastFails.length ? (
