@@ -123,6 +123,7 @@ export function HDMain() {
   const [loveCount, setLoveCount] = useState<number | null>(null);
   const [pbCollect, setPbCollect] = useState<import('../services/server').SongItem | null>(null);
   const [innerRoute, setInnerRoute] = useState<string>('Tabs'); // 常驻 bar 按内页路由显隐(Player 时隐藏)
+  const [innerP, setInnerP] = useState<Record<string, unknown> | null>(null); // v3.27:内页 params(歌单/历史/账号选中态)
   const [providerAccts, setProviderAccts] = useState<import('../services/providers').ProviderAcct[]>([]);
   useEffect(() => {
     // v3.26(老板:页面定时抖):轮询结果无变化不 setState——providers.all() 每次新数组引用引发整树重渲+Icon svg 全量重挂
@@ -284,26 +285,31 @@ export function HDMain() {
           <Group label="我的乐库" top={8} />
           <NavItem icon="server" label="媒体库" active={innerRoute === 'MediaLibs'} onPress={() => railNav('MediaLibs')} />
           {/* v3:已连接媒体库账号直入口(Emby/Jellyfin/Navidrome/WebDAV/道理鱼) */}
-          {providerAccts.map(pa => (
-            <HDTouch key={pa.id} style={[st.navItem, { paddingLeft: 34 }]} focusStyle={st.navFocus} hoverBg={IS_WEB ? C.hover : false}
+          {providerAccts.map(pa => {
+            const on = innerRoute === 'ProviderBrowse' && innerP?.acctId === pa.id; // v3.27 账号选中态
+            return (
+            <HDTouch key={pa.id} style={[st.navItem, { paddingLeft: 34 }, on && st.navItemOn]} focusStyle={st.navFocus} hoverBg={IS_WEB && !on ? C.hover : false}
               onPress={() => railNav('ProviderBrowse', { acctId: pa.id })}>
               <BrandIcon name={pa.type} size={16} />
-              <Text style={st.navLabel} numberOfLines={1}>{pa.name}</Text>
+              <Text style={[st.navLabel, on && { fontWeight: '700', color: C.text }]} numberOfLines={1}>{pa.name}</Text>
             </HDTouch>
-          ))}
+            );
+          })}
           {/* lx165(老板):我喜欢的+收藏歌手+收藏专辑 三入口并一——内页三 tab,行内 ♥ 即管理 */}
           <HDTouch style={[st.navItem, innerRoute === 'MyFavorites' && st.navItemOn]} focusStyle={st.navFocus} hoverBg={IS_WEB && innerRoute !== 'MyFavorites' ? C.hover : false} onPress={() => railNav('MyFavorites')}>
             <Icon name="heart" size={16} color={innerRoute === 'MyFavorites' ? C.text : C.text2} />
             <Text style={[st.navLabel, innerRoute === 'MyFavorites' && { fontWeight: '700', color: C.text }]} numberOfLines={1}>我的收藏{loveCount != null ? ` · ${loveCount}` : ''}</Text>
           </HDTouch>
-          <NavItem icon="history" label="播放历史" onPress={openHistory} />
+          <NavItem icon="history" label="播放历史" active={innerRoute === 'PlaylistDetail' && innerP?.title === '播放历史'} onPress={openHistory} />
           {/* v3.21(老板:下载管理上菜单):侧栏直入,下载/缓存记录一处可见 */}
           <NavItem icon="download" label="下载管理" active={innerRoute === 'Downloads'} onPress={() => railNav('Downloads')} />
 
           {/* 歌单 */}
           <Group label="歌单" top={8} />
           {pls.slice(0, 5).map(pl => (
-            <PlItem key={pl.key} name={pl.name} count={pl.count} onPress={() => openPl(pl)} onLongPress={() => managePl(pl)} />
+            <PlItem key={pl.key} name={pl.name} count={pl.count}
+              active={innerRoute === 'PlaylistDetail' && (innerP?.localId != null ? innerP?.localId === pl.localId : innerP?.plKey === pl.key)}
+              onPress={() => openPl(pl)} onLongPress={() => managePl(pl)} />
           ))}
           <PlItem name="新建歌单" add onPress={() => hdActions.menu('新建歌单', [
               { label: '空白歌单', icon: 'add', onPress: () => {
@@ -325,7 +331,7 @@ export function HDMain() {
       {/* ===== 内容区(lx84:嵌套栈——内页只在此切换,侧栏恒固定) ===== */}
       <View style={st.body}>
         <NavigationIndependentTree>
-        <NavigationContainer ref={hdInnerRef} theme={hdInnerTheme} onStateChange={() => { try { const r = hdInnerRef.getCurrentRoute(); setInnerRoute(r?.name || 'Tabs'); } catch { /* ignore */ } }}>
+        <NavigationContainer ref={hdInnerRef} theme={hdInnerTheme} onStateChange={() => { try { const r = hdInnerRef.getCurrentRoute(); setInnerRoute(r?.name || 'Tabs'); setInnerP((r?.params as Record<string, unknown>) || null); } catch { /* ignore */ } }}>
           {/* 坞108:TV 转场必须直切;坞57:fade 有变亮中间态 */}
           <InnerStack.Navigator screenOptions={{ headerShown: false, animation: 'none', contentStyle: { backgroundColor: C.bg }, freezeOnBlur: true }}>
             <InnerStack.Screen name="Tabs">{() => <TabsHost tab={tab} setTab={setTab} />}</InnerStack.Screen>
@@ -431,14 +437,14 @@ function NavItem({ icon, label, active, first, onPress }: { icon: string; label:
   );
 }
 
-function PlItem({ name, count, add, onPress, onLongPress }: { name: string; count?: number; add?: boolean; onPress: () => void; onLongPress?: () => void }) {
+function PlItem({ name, count, add, active, onPress, onLongPress }: { name: string; count?: number; add?: boolean; active?: boolean; onPress: () => void; onLongPress?: () => void }) {
   // 桌面版同构:单行(图标块 + 名字),计数折进后缀,保证文字与图标严格垂直居中
   return (
-    <HDTouch style={st.plItem} focusStyle={st.navFocus} hoverBg={IS_WEB ? C.hover : false} onPress={onPress} onLongPress={onLongPress}>
+    <HDTouch style={[st.plItem, active && st.navItemOn]} focusStyle={st.navFocus} hoverBg={IS_WEB && !active ? C.hover : false} onPress={onPress} onLongPress={onLongPress}>
       {add
         ? <View style={st.plAddChip}><Icon name="add" size={12} color={C.text3} /></View>
-        : <View style={st.plChip}><Icon name="music" size={10} color={C.text3} /></View>}
-      <Text style={st.plName} numberOfLines={1}>{name}{count != null ? ` · ${count}` : ''}</Text>
+        : <View style={st.plChip}><Icon name="music" size={10} color={active ? C.text : C.text3} /></View>}
+      <Text style={[st.plName, active && { fontWeight: '700', color: C.text }]} numberOfLines={1}>{name}{count != null ? ` · ${count}` : ''}</Text>
     </HDTouch>
   );
 }

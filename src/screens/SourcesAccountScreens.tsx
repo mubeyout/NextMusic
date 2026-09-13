@@ -136,13 +136,17 @@ export function SourcesScreen() {
           const on = csLocalOn(cs.id);
           return (
           <View key={cs.id} style={[st.srcRow, IS_HD && hd.srcRow]}>
-            <T style={[st.srcIcon, IS_HD && hd.srcIcon]} onPress={() => toggleCsLocal(cs.id)}>
+            <View style={[st.srcIcon, IS_HD && hd.srcIcon]}>
               <Icon name="wave" size={IS_HD ? 22 : 18} color={on ? C.brand : C.text3} />
-            </T>
+            </View>
             <View style={st.srcMeta}>
               <Text style={[st.srcName, IS_HD && hd.srcName]} numberOfLines={1}>{cs.name} <Text style={st.srcVer}>v{cs.version}</Text></Text>
               <Text style={[st.srcSub, IS_HD && hd.srcSub]} numberOfLines={1}>{(cs.channels || []).join(' / ') || '服务器音源'} · {on ? '使用中' : '已停用(本机)'}</Text>
             </View>
+            {/* v3.27(老板:服务器音源缺少停用启用开关):图标点击→右侧明确 toggle 开关(本机启停,服务器级管理在后台) */}
+            <T style={[st.csSw, on && st.csSwOn]} focusStyle={st.csSwFocus} onPress={() => toggleCsLocal(cs.id)} hitSlop={6}>
+              <View style={[st.csSwKnob, on && st.csSwKnobOn]} />
+            </T>
           </View>
           );
         })}
@@ -310,6 +314,12 @@ const st = StyleSheet.create({
   srcVer: { color: C.text3, fontSize: 11, fontWeight: '400' },
   srcTag: { color: C.brandText, fontSize: 10, fontWeight: '700' },
   srcSub: { color: C.text3, fontSize: 11 },
+  /* v3.27:服务器音源本机启停 toggle 开关 */
+  csSw: { width: 42, height: 24, borderRadius: 12, backgroundColor: C.inset2, borderWidth: 1, borderColor: C.strokeFaint, alignItems: 'center', flexDirection: 'row', justifyContent: 'flex-start', paddingHorizontal: 2 },
+  csSwOn: { backgroundColor: C.brand, borderColor: 'transparent' },
+  csSwFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 12 },
+  csSwKnob: { width: 18, height: 18, borderRadius: 9, backgroundColor: '#fff' },
+  csSwKnobOn: { marginLeft: 18 },
   srcDel: { padding: 6 },
   switchWrap: { padding: 2 },
   switch: { width: 40, height: 24, borderRadius: 12, backgroundColor: C.inset2, padding: 2 },

@@ -278,17 +278,22 @@ export async function webDownloadToServer(songs: SongItem[], quality = '320k'): 
         writeAll(recs); emit();
       }
       try {
+        // v3.27(老板:下载403但能播放):服务器 enablePublicRestriction 下公共身份 cache/download 被 403——必须带登录用户身份(x-user-name+x-user-token)
+        const authH: Record<string, string> = { 'Content-Type': 'application/json' };
+        const st = (await import('./server')).store;
+        if (st.username) authH['x-user-name'] = st.username;
+        if (st.token) authH['x-user-token'] = st.token;
         // 先取链再缓存(服务端要求 url 一起提交)
         const r = await fetch('/api/music/url', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: authH,
           body: JSON.stringify({ songInfo: { source: s.source, songmid: s.songmid, name: s.name, singer: s.singer, hash: s.hash, interval: s.interval }, type: quality }),
         }).then(x => x.json());
         if (!r.url) throw new Error('取链失败');
         const cr = await fetch('/api/music/cache/download', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: authH,
           body: JSON.stringify({ songInfo: { source: s.source, songmid: s.songmid, name: s.name, singer: s.singer }, url: r.url, quality }),
         });
-        if (!cr.ok) throw new Error('缓存写入失败');
+        if (!cr.ok) throw new Error(cr.status === 403 ? '权限限制:请先登录账号' : '缓存写入失败');
         ok++;
       } catch (e) {
         fail++;
