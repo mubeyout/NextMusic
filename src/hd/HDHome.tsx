@@ -110,7 +110,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
       <Text style={st.greet}>Hi,{greet}{connected && snap ? ',Mubey' : ''}</Text>
 
       {/* 双大卡 */}
-      <View style={{ flexDirection: 'row', gap: 12 }}>
+      <View style={{ flexDirection: 'row', gap: 22 }}> /* v3.30(LEO P1):双大卡间距 12→22(GUTTER) */
         <BigCard colors={['#7C4DFF', '#3F8CFF']} badge="30" title="每日推荐" sub="根据你的口味生成 · 每天 6:00 更新" busy={dailyBusy} onPress={playDaily} />
         <BigCard colors={['#0FA3A3', '#1ED760']} badge="雷达" title="私人雷达" sub="你循环过的歌,都在这里重逢" onPress={playRadar} />
       </View>
@@ -210,7 +210,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
 function BigCard({ colors, badge, title, sub, onPress, busy }: { colors: [string, string]; badge: string; title: string; sub: string; onPress: () => void; busy?: boolean }) {
   const [hov, setHov] = useState(false);
   const t = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const elRef = useRef<React.ComponentRef<typeof View> | null>(null) // v3.28:ref 实例类型;
+  const elRef = useRef<React.ComponentRef<typeof View> | null>(null); // v3.28:ref 实例类型
   useEffect(() => {
     const el = elRef.current as unknown as HTMLElement | null;
     if (el && el.classList) el.classList.add('nm-card');
@@ -305,7 +305,7 @@ const st = StyleSheet.create({
 function PlCardWeb({ pl, width, compact, onOpen, onPlay }: { pl: { name: string; img?: string; count?: number; author?: string; play_count?: string }; width?: number; compact?: boolean; onOpen: () => void; onPlay: () => void }) {
   const [hov, setHov] = useState(false);
   const t = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const elRef = useRef<React.ComponentRef<typeof View> | null>(null) // v3.28:ref 实例类型; // RNW View ref=DOM(坑131)——挂 .nm-card 过渡类
+  const elRef = useRef<React.ComponentRef<typeof View> | null>(null); // v3.28:ref 实例类型 // RNW View ref=DOM(坑131)——挂 .nm-card 过渡类
   const maskRef = useRef<React.ComponentRef<typeof View> | null>(null) // v3.28:ref 实例类型; // v1.2.11 动效规范:遮罩/播放钮 150ms ease(原为瞬变)
   const playRef = useRef<React.ComponentRef<typeof View> | null>(null) // v3.28:ref 实例类型;
   useEffect(() => {

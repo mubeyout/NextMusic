@@ -1,6 +1,9 @@
 // 交互式设置行：开关 / 值选择(ActionSheet) / 动作 / 跳转 / 文本输入
 // 与 SubPage 视觉一致，但行为真实
 import React, { useState } from 'react';
+import { IS_HD } from '../services/appversion';
+import { GUTTER } from '../hd/hdstyle';
+import { H } from '../hd/hdtokens'; // v3.30:设置族页面进统一栅格
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import { Icon } from '../theme/Icon';
 import { PageHeader } from './PageChrome';
@@ -100,7 +103,7 @@ export function PageShell({ title, onBack, children }: { title: string; onBack: 
   return (
     <View style={s.screen}>
       <PageHeader title={title} onBack={onBack} />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 48, maxWidth: 860, alignSelf: 'flex-start', width: '100%' }}>{children}</ScrollView>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingBottom: 48 + (IS_HD ? H.playbar : 0), maxWidth: 860, alignSelf: 'flex-start', width: '100%' }}>{children}</ScrollView>
     </View>
   );
 }
@@ -110,7 +113,7 @@ const s = StyleSheet.create({
   header: { height: 40, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 10 },
   title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700', textAlign: 'center' },
   section: { borderRadius: 14, backgroundColor: C.surface, padding: 16, marginBottom: 14 },
-  secTitle: { color: C.text, fontSize: 13, lineHeight: 16, fontWeight: '500', marginBottom: 8 },
+  secTitle: { color: C.text2, fontSize: 12, lineHeight: 16, fontWeight: '800', marginBottom: 12 }, // v3.30(LEO P1):分组标题退层级(text2+800)间距 8→12
   row: { minHeight: 44, flexDirection: 'row', alignItems: 'center' },
   rowDivide: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.strokeFaint, paddingTop: 10, marginTop: 10 },
   rowLabel: { flex: 1, color: C.text, fontSize: 14, lineHeight: 20 },
