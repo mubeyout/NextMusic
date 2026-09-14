@@ -53,6 +53,8 @@ async function reqOnce(path: string, init: RequestInit & { base?: string; timeou
   const t = setTimeout(() => ctrl.abort(), init?.timeout ?? 12000);
   const headers: Record<string, string> = { ...(init?.headers as Record<string, string> | undefined) };
   if (store.token && !headers['x-user-token']) headers['x-user-token'] = store.token;
+  // [Gate 2026-09-14] 补用户名:服务器音源接口按 token+用户名解析归属(未登录 401)
+  if (store.username && !headers['x-user-name']) headers['x-user-name'] = store.username;
   try {
     const r = await fetch(base + path, { ...init, headers, signal: ctrl.signal });
     const text = await r.text();
@@ -67,6 +69,10 @@ async function reqOnce(path: string, init: RequestInit & { base?: string; timeou
       // lx163g:401=token 失效(服务器重建/换密)——用存档凭据自动重登一次并重放(attempt 1→2,登录请求自身 attempt=5 不进)
       if (r.status === 401 && attempt < 2 && !path.includes('/api/user/login')) {
         if (await tryRelogin()) return reqOnce(path, init, 2);
+      }
+      // [Gate 2026-09-14] 音源接口未登录 401 → 广播去登录页(不静默空屏;原生端 Boot 流程已保证登录)
+      if (r.status === 401 && !store.token && typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+        window.dispatchEvent(new Event('nm-auth-required'));
       }
       throw Object.assign(new Error('HTTP ' + r.status), { status: r.status, data });
     }

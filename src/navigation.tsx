@@ -92,6 +92,17 @@ export function RootNavigator() {
   // 服务端 web 播放器不需要启动向导:直进主界面(本地模式);原生端保留三卡引导
   const initial = !mode ? (Platform.OS === 'web' ? 'Main' : 'Boot') : 'Main';
 
+  // [Gate 2026-09-14] 音源接口未登录 401 → 跳登录页(服务器音源登录门,不静默空屏)
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return;
+    const goLogin = () => {
+      const nav = navRef.current as unknown as { getCurrentRoute?: () => { name?: string }; navigate?: (n: string) => void } | null;
+      if (nav?.getCurrentRoute?.()?.name !== 'AuthLogin') nav?.navigate?.('AuthLogin');
+    };
+    window.addEventListener('nm-auth-required', goLogin);
+    return () => window.removeEventListener('nm-auth-required', goLogin);
+  }, []);
+
   // Android hardware back fallback: pop the stack instead of letting the OS
   // send the whole task to background (observed on LG V40 / RN 0.87 New Arch).
   useEffect(() => {

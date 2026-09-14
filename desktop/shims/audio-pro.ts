@@ -6,6 +6,7 @@
 //   同源代理是 EQ/混响链路可用的前提;代理实测支持 Range,seek 正常);
 //   ViPER-lite: 低音/细节/清澈/响度/限幅/AutoEQ 全接入;变调(原生 Sonic)web 无实现不假装生效
 export enum AudioProState { IDLE = 'IDLE', PLAYING = 'PLAYING', PAUSED = 'PAUSED', STOPPED = 'STOPPED' }
+import { store } from '../../src/services/server'; // [Gate 2026-09-14] 媒体代理 nm_auth 用
 export enum AudioProContentType { MUSIC = 'MUSIC' }
 export enum AudioProEventType {
   STATE_CHANGED = 'STATE_CHANGED', PLAYING = 'PLAYING', PAUSED = 'PAUSED', STOPPED = 'STOPPED', SEEKED = 'SEEKED',
@@ -65,7 +66,8 @@ function applyUrl(t: Track) {
     url = `http://127.0.0.1:5198/__media__?u=${encodeURIComponent(t.url)}${headers && Object.keys(headers).length ? `&h=${encodeURIComponent(JSON.stringify(headers))}` : ''}`;
   } else if (!IS_DEV) {
     // v3.20:浏览器部署走服务端 inline 代理(同源)——WebAudio MediaElementSource 不再跨域静音,Range 实测 206 可 seek
-    url = `/api/music/download?url=${encodeURIComponent(t.url)}&inline=1`;
+    // [Gate 2026-09-14] 代理接口已加登录门:audio 标签带不了 header → token 走 nm_auth query(store 同源,登录后/凭据重登后必有)
+    url = `/api/music/download?url=${encodeURIComponent(t.url)}&inline=1${store.token ? `&nm_auth=${encodeURIComponent(store.token)}` : ''}`;
   }
   audio.src = url;
 }
