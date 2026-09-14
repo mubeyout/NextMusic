@@ -94,12 +94,13 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
               <View style={st.divider} />
 
               {/* 歌词窗口:高亮当前句 */}
+              {/* v3.35(老板:卡片挤压):去 adjustsFontSizeToFit 逐行缩字(iOS 特性,Android 截断+各行字号不一=挤压观感) */}
               <View style={{ flex: 1, justifyContent: 'center', gap: 7 }}>
                 {lines.length ? lines.map((l, i) => (
                   <Text
                     key={`${l.t}-${i}`}
                     style={[st.lyric, i === active && st.lyricOn, i === active && { marginVertical: 2 }]}
-                    numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.72}
+                    numberOfLines={2} ellipsizeMode="tail"
                   >
                     {l.text || '♪'}
                   </Text>

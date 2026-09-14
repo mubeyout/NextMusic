@@ -49,7 +49,7 @@ function HD_VINYL_SVG(img?: string, size = 300, playing?: boolean): React.ReactN
     /* 盘心 label:深色纸底→正圆裁切封面(slice 不变形)→label 描边环→轴孔
        v3.23(老板:唱片变白):label 盘径 50%→38%(经典黑胶比例)——浅色封面时半张盘发白,黑胶面必须为主视觉 */
     h('circle', { cx: 150, cy: 150, r: 58, fill: '#101312' }),
-    img ? h('image', { href: img, x: 94, y: 94, width: 112, height: 112, preserveAspectRatio: 'xMidYMid slice', clipPath: 'url(#hdLblClip)' }) : null,
+    img ? h('image', { href: img, xlinkHref: img, x: 94, y: 94, width: 112, height: 112, preserveAspectRatio: 'xMidYMid slice', clipPath: 'url(#hdLblClip)' }) : null, // v3.35:href 双写兼容(xlink 老内核)
     h('circle', { cx: 150, cy: 150, r: 58, fill: 'none', stroke: '#FFFFFF2E', strokeWidth: 1.5 }),
     h('circle', { cx: 150, cy: 150, r: 6, fill: '#000' }),
   );
