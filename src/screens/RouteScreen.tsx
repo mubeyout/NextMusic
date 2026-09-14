@@ -84,6 +84,8 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
   const [airDevs, setAirDevs] = useState<AirPlayDevice[]>([]); // 仅 mac 桌面有 NMAirplay,其余平台恒空
   const [scanning, setScanning] = useState(false);
   const [directMode, setDirectMode] = useState(false); // lx42：组播空结果、直连探活注入
+  // 投屏能力开关(09-14):HD 删除投屏入口;web/浏览器端无原生投屏模块(available 全 false)→ 整块隐藏,Route 页只剩本机输出切换+音量
+  const castCapable = !IS_HD && (dlna.available || googleCast.available || airplay.available);
 
   const a = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -128,7 +130,7 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
   // vc78: 回前台重扫不再先清列表（设备列表闪空观感="突然断开"）；onFound 去重增量合并
   const firstOpen = useRef(true);
   useEffect(() => {
-    if (!visible || IS_HD) return; // HD:不扫投屏设备(老板 09-14 删投屏)
+    if (!visible || !castCapable) return; // HD/web:不扫投屏设备(老板 09-14 删投屏)
     const clearAll = () => { setRenderers([]); setCastDevs([]); };
     const startAll = (fresh: boolean) => {
       if (fresh) clearAll();
@@ -159,7 +161,7 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
 
   // lx42 兜底：两路扫描都结束且一无所获（AP/路由器组播抽风）→ 对已知设备 TCP 探活，活的注入列表
   useEffect(() => {
-    if (!visible || scanning || renderers.length || castDevs.length) return;
+    if (!visible || !castCapable || scanning || renderers.length || castDevs.length) return;
     const known = loadKnown();
     if (!known.length) return;
     let dead = false;
@@ -182,7 +184,7 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
   // 投屏中：拉取设备当前音量作为初始值
   useEffect(() => {
     if (!visible || !cast) return;
-    const api = cast.kind === 'cast' ? googleCast : dlna;
+    const api = cast.kind === 'dlna' ? dlna : cast.kind === 'cast' ? googleCast : airplay;
     (cast.kind === 'cast' ? googleCast.getVolume(cast.dev as never) : dlna.getVolume(cast.dev as never))
       .then(setCastVol).catch(() => {});
   }, [visible, cast]);
@@ -231,7 +233,7 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
         </View>
         <ScrollView bounces={false} style={{ flexShrink: 1 }} contentContainerStyle={{ paddingBottom: 6 }}>
           <Text style={st.title}>选择播放设备</Text>
-          <Text style={st.subtitle}>{cast ? `正在${cast.kind === 'cast' ? ' Cast 到' : '投屏到'} ${cast.dev.name}` : IS_HD ? '选择本机音频输出设备' : '让音乐在附近设备上继续播放'}</Text>
+          <Text style={st.subtitle}>{cast ? `正在${cast.kind === 'cast' ? ' Cast 到' : cast.kind === 'airplay' ? ' AirPlay 到' : '投屏到'} ${cast.dev.name}` : castCapable ? '让音乐在附近设备上继续播放' : '选择本机音频输出设备'}</Text>
 
           <Text style={st.label}>本机设备</Text>
           <T style={[st.deviceRow, autoOn && st.deviceRowOn]} onPress={() => pickLocal(-1)}>
@@ -281,8 +283,8 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
             </>);
           })()}
 
-          {/* 老板 2026-09-14:HD(车机/TV)删除投屏入口——本页仅保留本机输出切换;手机版投屏区不动 */}
-          {!IS_HD ? (<>
+          {/* 老板 2026-09-14:HD 删投屏入口;web 端无投屏能力整块隐藏——本页仅保留本机输出切换 */}
+          {castCapable ? (<>
           <Text style={st.label}>DLNA 投屏设备</Text>
           {cast?.kind === 'dlna' ? (
             <T style={[st.deviceRow, st.deviceRowOn]} onPress={() => { stopCast(); toast('已停止投屏，回本机播放'); }}>
