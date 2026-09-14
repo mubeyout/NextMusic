@@ -91,8 +91,8 @@ android {
             applicationIdSuffix ".hd"
             versionNameSuffix "-hd"
             // HD 独立版本线:与 phone 共享 default,但可单独越号更新(当前 hd v2)
-            versionCode 169
-            versionName "1.2.15" // v1.2.15(09-14 投屏入口彻底删除,老板复检收口)
+            versionCode 170
+            versionName "1.2.16" // v1.2.16(09-14 hotfix:HD 播放页闪退修复,老板反馈)
         }
     }
 

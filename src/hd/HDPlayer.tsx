@@ -95,9 +95,11 @@ const IS_WEB = Platform.OS === 'web';
 
 export function HDPlayer() {
   // web: 黑胶尺寸 = min(300, 视口高 40%)(RN StyleSheet 不支持 CSS min,需运行时计算)
-  const [winH, setWinH] = useState(() => (typeof window !== 'undefined' ? window.innerHeight : 800));
+  const [winH, setWinH] = useState(() => (typeof window !== 'undefined' && typeof window.innerHeight === 'number' ? window.innerHeight : 800));
+  // [Fix 2026-09-14] Hermes 也定义 window global——typeof window 守卫穿透,native 上 window.addEventListener 不存在
+  // → HD/TV 进播放页必崩(TV 实锤 vc169: TypeError undefined is not a function, 老板 09-14 反馈闪退)。守卫改 IS_WEB
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (!IS_WEB || typeof window.addEventListener !== 'function') return;
     const onR = () => setWinH(window.innerHeight);
     window.addEventListener('resize', onR);
     return () => window.removeEventListener('resize', onR);
