@@ -1,5 +1,5 @@
 // 桌面 polyfills：必须在一切主仓模块 import 之前执行（appversion 等在模块加载期读原生）
-import { NativeModules } from 'react-native';
+import { NativeModules, DeviceEventEmitter } from 'react-native';
 // RN 源码里的 require('./x.png') 静态资产引用（Metro 专有；vite/ESM 浏览器环境无 require）——
 // 映射到 vite 构建产物 URL。未知 id 抛错便于发现新增触点。
 import markUrl from '../../src/assets/brand/mark.png';
@@ -37,24 +37,63 @@ for (const m of ['NMScanner', 'NMDownloader', 'BlurModule', 'AppRestart', 'Versi
   if (NM[m] === undefined) NM[m] = {};
 }
 
-// 桌面本机音频路由：虚拟扬声器 + HTML5 Audio 音量接线（audioroute.ts 有方法级守卫，此处给真实可用实现）
-// v1.1.8:Dlna/Cast 桌面无原生模块——不进空对象循环(空对象 truthy 绕过 available 守卫、调不存在方法直接炸 Route 页);
-// 填完整 no-op 实现(扫描立即结束空列表,UI 走「未发现设备」正常分支)
-NM['NMDlna'] = {
-  startDiscovery: () => {}, stopDiscovery: () => {},
-  probeTcp: () => Promise.resolve('[]'),
-  cast: () => Promise.reject(new Error('桌面版暂不支持 DLNA 投屏')),
-  play: () => Promise.resolve(false), pause: () => Promise.resolve(false), stop: () => Promise.resolve(false),
-  seek: () => Promise.resolve(false), getPosition: () => Promise.resolve('0'),
-  getVolume: () => Promise.resolve('50'), setVolume: () => Promise.resolve(false),
+
+// ---------- 投屏（老板 09-14：桌面版保留投屏，真实现） ----------
+// 发现/控制在主进程（UDP 组播/TLS 只能在 Node 侧）；此处把 nmDesktop IPC 桥回 NMDlna/NMCast 接口。
+// 事件：主进程 webContents.send → onCastEvent → DeviceEventEmitter（=NativeEventEmitter 的全局总线）
+type CastBridge = { cast: (kind: 'dlna' | 'cast', method: string, ...args: unknown[]) => Promise<{ ok: boolean; r?: unknown; error?: string }>; onCastEvent: (cb: (channel: string, payload: unknown) => void) => () => void };
+const nmDesk = (globalThis as never as Record<string, CastBridge | undefined>).nmDesktop;
+const castCall = async (kind: 'dlna' | 'cast', method: string, ...args: unknown[]) => {
+  if (!nmDesk) throw new Error('no desktop bridge');
+  const res = await nmDesk.cast(kind, method, ...args);
+  if (!res.ok) throw new Error(res.error || 'cast error');
+  return res.r;
 };
-NM['NMCast'] = {
-  startDiscovery: () => {}, stopDiscovery: () => {},
-  cast: () => Promise.reject(new Error('桌面版暂不支持 Chromecast 投屏')),
-  play: () => Promise.resolve(false), pause: () => Promise.resolve(false), stop: () => Promise.resolve(false),
-  seek: () => Promise.resolve(false), getPosition: () => Promise.resolve('{}'),
-  getVolume: () => Promise.resolve(50), setVolume: () => Promise.resolve(false),
-};
+if (nmDesk) {
+  nmDesk.onCastEvent((channel, payload) => DeviceEventEmitter.emit(channel, payload));
+  // AirPlay 仅 mac(老板 09-14):win/linux 不注入,available=false 自动降级
+  if ((nmDesk as never as { platform?: string }).platform === 'darwin') {
+    NM['NMAirplay'] = {
+      startDiscovery: () => { void nmDesk.cast('airplay', 'startDiscovery'); },
+      stopDiscovery: () => { void nmDesk.cast('airplay', 'stopDiscovery'); },
+      cast: (...a: unknown[]) => castCall('airplay', 'cast', ...a) as Promise<boolean>,
+      play: () => Promise.resolve(false),
+      pause: (...a: unknown[]) => castCall('airplay', 'pause', ...a).catch(() => false) as Promise<boolean>,
+      stop: (...a: unknown[]) => castCall('airplay', 'stop', ...a).catch(() => false) as Promise<boolean>,
+      seek: () => Promise.resolve(false),
+      getPosition: (...a: unknown[]) => castCall('airplay', 'getPosition', ...a).catch(() => ({ pos: 0, dur: 0, state: 'STOPPED' })) as Promise<{ pos: number; dur: number; state: string }>,
+      getVolume: (...a: unknown[]) => castCall('airplay', 'getVolume', ...a).catch(() => 50) as Promise<number>,
+      setVolume: (...a: unknown[]) => castCall('airplay', 'setVolume', ...a).catch(() => false) as Promise<boolean>,
+    };
+  }
+  NM['NMDlna'] = {
+    startDiscovery: () => { void nmDesk.cast('dlna', 'startDiscovery'); },
+    stopDiscovery: () => { void nmDesk.cast('dlna', 'stopDiscovery'); },
+    probeTcp: (targets: unknown) => castCall('dlna', 'probeTcp', typeof targets === 'string' ? JSON.parse(targets) : targets).then((r) => JSON.stringify(r ?? [])),
+    cast: (...a: unknown[]) => castCall('dlna', 'cast', ...a) as Promise<boolean>,
+    play: (...a: unknown[]) => castCall('dlna', 'play', ...a).catch(() => false) as Promise<boolean>,
+    pause: (...a: unknown[]) => castCall('dlna', 'pause', ...a).catch(() => false) as Promise<boolean>,
+    stop: (...a: unknown[]) => castCall('dlna', 'stop', ...a).catch(() => false) as Promise<boolean>,
+    seek: (...a: unknown[]) => castCall('dlna', 'seek', ...a).catch(() => false) as Promise<boolean>,
+    getPosition: (...a: unknown[]) => castCall('dlna', 'getPosition', ...a) as Promise<{ pos: number; dur: number; state: string }>,
+    getVolume: (...a: unknown[]) => castCall('dlna', 'getVolume', ...a).catch(() => 50) as Promise<number>,
+    setVolume: (...a: unknown[]) => castCall('dlna', 'setVolume', ...a).catch(() => false) as Promise<boolean>,
+  };
+  NM['NMCast'] = {
+    startDiscovery: () => { void nmDesk.cast('cast', 'startDiscovery'); },
+    stopDiscovery: () => { void nmDesk.cast('cast', 'stopDiscovery'); },
+    cast: (...a: unknown[]) => castCall('cast', 'cast', ...a) as Promise<boolean>,
+    play: (...a: unknown[]) => castCall('cast', 'play', ...a).catch(() => false) as Promise<boolean>,
+    pause: (...a: unknown[]) => castCall('cast', 'pause', ...a).catch(() => false) as Promise<boolean>,
+    stop: (...a: unknown[]) => castCall('cast', 'stop', ...a).catch(() => false) as Promise<boolean>,
+    seek: (...a: unknown[]) => castCall('cast', 'seek', ...a).catch(() => false) as Promise<boolean>,
+    getPosition: (...a: unknown[]) => castCall('cast', 'getPosition', ...a) as Promise<{ pos: number; dur: number; state: string }>,
+    getVolume: (...a: unknown[]) => castCall('cast', 'getVolume', ...a).catch(() => 50) as Promise<number>,
+    setVolume: (...a: unknown[]) => castCall('cast', 'setVolume', ...a).catch(() => false) as Promise<boolean>,
+  };
+}
+// v1.1.8 老方案(无桥 no-op)已由上面的真实现取代;非 Electron 壳时 NMDlna/NMCast 保持 undefined,
+// audioroute.ts 的 available=false 守卫自动降级(不进空对象循环、不炸 Route 页)
 if (NM['NMAudioRoute'] === undefined || Object.keys(NM['NMAudioRoute'] as object).length === 0) {
   NM['NMAudioRoute'] = {
     getOutputDevices: () => Promise.resolve({ devices: [{ id: -1, name: '本机扬声器', kind: 'speaker' }], preferred: -1 }),

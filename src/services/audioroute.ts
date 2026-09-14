@@ -134,6 +134,46 @@ export function castMimeOf(url: string): string {
   }
 }
 
+// ---------- AirPlay（仅 mac 桌面:NativeModules.NMAirplay;原生/其余平台 undefined 自动降级） ----------
+
+export type AirPlayDevice = { uuid: string; name: string; host: string; port: number; airplay2?: boolean };
+const A = NativeModules.NMAirplay as {
+  startDiscovery(): void;
+  stopDiscovery(): void;
+  cast(dev: AirPlayDevice, url: string, title: string, artist: string): Promise<boolean>;
+  play(dev: AirPlayDevice): Promise<boolean>;
+  pause(dev: AirPlayDevice): Promise<boolean>;
+  stop(dev: AirPlayDevice): Promise<boolean>;
+  seek(dev: AirPlayDevice, sec: number): Promise<boolean>;
+  getPosition(dev: AirPlayDevice): Promise<{ pos: number; dur: number; state: string }>;
+  getVolume(dev: AirPlayDevice): Promise<number>;
+  setVolume(dev: AirPlayDevice, pct: number): Promise<boolean>;
+} | undefined;
+
+export const airplay = {
+  available: !!A,
+  startScan: () => A?.startDiscovery(),
+  stopScan: () => A?.stopDiscovery(),
+  onFound(cb: (dev: AirPlayDevice) => void): EmitterSubscription | undefined {
+    if (!A) return;
+    return new NativeEventEmitter(NativeModules.NMAirplay).addListener('airplay.found', (e: any) => cb(e as AirPlayDevice));
+  },
+  onScanEnd(cb: () => void): EmitterSubscription | undefined {
+    if (!A) return;
+    return new NativeEventEmitter(NativeModules.NMAirplay).addListener('airplay.scanEnd', () => cb());
+  },
+  cast: (dev: AirPlayDevice, url: string, title: string, artist: string): Promise<boolean> =>
+    A ? A.cast(dev, url, title, artist) : Promise.reject(new Error('no AirPlay')),
+  play: (dev: AirPlayDevice) => (A ? A.play(dev) : Promise.resolve(false)),
+  pause: (dev: AirPlayDevice) => (A ? A.pause(dev) : Promise.resolve(false)),
+  stop: (dev: AirPlayDevice) => (A ? A.stop(dev) : Promise.resolve(false)),
+  seek: (dev: AirPlayDevice, sec: number) => (A ? A.seek(dev, sec) : Promise.resolve(false)),
+  getPosition: (dev: AirPlayDevice): Promise<DlnaPosition> =>
+    A ? A.getPosition(dev) : Promise.reject(new Error('no AirPlay')),
+  getVolume: (dev: AirPlayDevice): Promise<number> => (A ? A.getVolume(dev) : Promise.resolve(50)),
+  setVolume: (dev: AirPlayDevice, vol: number) => (A ? A.setVolume(dev, vol) : Promise.resolve(false)),
+};
+
 export const googleCast = {
   available: !!G,
   startScan: () => G?.startDiscovery(),

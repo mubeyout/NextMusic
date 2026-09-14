@@ -16,7 +16,10 @@ import { pushRecent } from './recent';
 import { sync, appToLx, lxToApp } from '../services/sync'; // lx163:播放列表同步(defaultList)
 import { navRef } from '../navRef';
 import { dialog, toast } from '../components/Dialog';
-import { dlna, googleCast, audioRoute, type DlnaDevice, type CastDevice } from '../services/audioroute';
+import { dlna, googleCast, airplay, audioRoute, type DlnaDevice, type CastDevice, type AirPlayDevice } from '../services/audioroute';
+
+// 投屏 api 统一选择器(09-14 加 airplay)
+function castApiOf(kind: CastKind) { return kind === 'dlna' ? dlna : kind === 'cast' ? googleCast : airplay; }
 
 const modeKv = createMMKV({ id: 'nextmusic-playmode' });
 const playbackKv = createMMKV({ id: 'nextmusic-playback' }); // 恢复上次播放状态快照
@@ -31,7 +34,7 @@ export interface QueueTrack extends SongItem {
   uid: string; // local uid
 }
 
-export type CastKind = 'dlna' | 'cast';
+export type CastKind = 'dlna' | 'cast' | 'airplay';
 export type CastSession = { kind: CastKind; dev: DlnaDevice | CastDevice };
 
 interface PlayerCtx {
@@ -52,7 +55,7 @@ interface PlayerCtx {
   clearQueue: () => void;
   /** 正在投屏的会话（null = 本机播放）：dlna/cast = URL 推流型 */
   cast: CastSession | null;
-  startCast: (dev: DlnaDevice | CastDevice, kind: CastKind) => void;
+  startCast: (dev: DlnaDevice | CastDevice | AirPlayDevice, kind: CastKind) => void;
   stopCast: () => void;
   /** lx43：切换本机输出设备后重建音频管线（setPreferredDevice 需 track 重建才生效） */
   rebuildAudio: () => void;
@@ -242,7 +245,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       const cs = castRef.current;
       if (!cs || prev === null || v === prev) return;
       castVolMem.current = Math.max(0, Math.min(100, castVolMem.current + (v - prev)));
-      (cs.kind === 'dlna' ? dlna : googleCast).setVolume(cs.dev as never, castVolMem.current).catch(() => {});
+      castApiOf(cs.kind).setVolume(cs.dev as never, castVolMem.current).catch(() => {});
     });
     return () => { sub?.remove(); };
   }, []);
@@ -255,15 +258,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       AudioPro.pause();
       setPosition(0);
       const dev = cs.dev as DlnaDevice & CastDevice;
-      const push = cs.kind === 'dlna'
-        ? dlna.cast(dev, url, t.name, t.singer || '')
-        : googleCast.cast(dev, url, t.name, t.singer || '');
+      const push = castApiOf(cs.kind).cast(dev as never, url, t.name, t.singer || '');
       push
         .then(() => setPlaying(true))
         .catch(() => {
-          toast(cs.kind === 'dlna' ? '投屏失败，已回到本机播放' : 'Cast 推送失败，已回本机播放');
+          toast(cs.kind === 'cast' ? 'Cast 推送失败，已回本机播放' : cs.kind === 'airplay' ? 'AirPlay 推送失败，已回本机播放' : '投屏失败，已回到本机播放');
           // 防设备残留旧流（串台）：切流失败/断连时先停掉再回本机
-          (cs.kind === 'dlna' ? dlna.stop(dev) : googleCast.stop(dev)).catch(() => {});
+          castApiOf(cs.kind).stop(dev).catch(() => {});
           deactivateCast();
           AudioPro.play(trackToAudioPro(t, url), opts);
         });
@@ -698,11 +699,15 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     // dlna/cast 投屏中：控制远端设备
     if (castRef.current) {
       const cs = castRef.current;
-      const api = cs.kind === 'dlna' ? dlna : googleCast;
+      const api = castApiOf(cs.kind);
       try {
         const p = await api.getPosition(cs.dev as never);
         if (p.state === 'PLAYING' || p.state === 'BUFFERING') { await api.pause(cs.dev as never); setPlaying(false); }
-        else { await api.play(cs.dev as never); setPlaying(true); }
+        else {
+          const resumed = await api.play(cs.dev as never);
+          if (resumed === false) { setPlaying(false); toast('该设备不支持暂停后直接续播（AirPlay 线性流），请点击设备重新投屏'); }
+          else setPlaying(true);
+        }
       } catch { toast('投屏设备无响应'); }
       return;
     }
@@ -737,7 +742,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const cs = castRef.current;
     if (cs) {
       setPosition(sec);
-      (cs.kind === 'dlna' ? dlna : googleCast).seek(cs.dev as never, sec).catch(() => toast('投屏设备不支持进度调整'));
+      castApiOf(cs.kind).seek(cs.dev as never, sec).catch(() => toast('投屏设备不支持进度调整'));
       return;
     }
     AudioPro.seekTo(Math.round(sec * 1000));
@@ -845,7 +850,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             const rawCast = castKv.getString('session');
             const saved = rawCast ? JSON.parse(rawCast) as { kind: CastKind; dev: DlnaDevice & CastDevice; savedAt: number } : null;
             if (saved && Date.now() - saved.savedAt < 24 * 3600_000) {
-              const api = saved.kind === 'dlna' ? dlna : googleCast;
+              const api = castApiOf(saved.kind);
               try {
                 const p = await api.getPosition(saved.dev as never);
                 if (dead) return;
@@ -879,17 +884,17 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // —— 投屏控制（dlna / cast 双通道）——
-  const startCast = useCallback((dev: DlnaDevice | CastDevice, kind: CastKind) => {
+  const startCast = useCallback((dev: DlnaDevice | CastDevice | AirPlayDevice, kind: CastKind) => {
     // 切换协议/设备：先停旧会话（否则渲染器残留旧流/双唱）
     const prev = castRef.current;
     if (prev && (prev.kind !== kind || (prev.dev as { uuid?: string }).uuid !== (dev as { uuid?: string }).uuid)) {
       deactivateCast();
-      (prev.kind === 'dlna' ? dlna : googleCast).stop(prev.dev as never).catch(() => {});
+      castApiOf(prev.kind).stop(prev.dev as never).catch(() => {});
     }
     activateCast({ kind, dev });
     // vc78：音量键转发基线——拉当前系统音量+设备音量
     audioRoute.getVolume().then(v => { lastSysVol.current = v; }).catch(() => {});
-    (kind === 'dlna' ? dlna : googleCast).getVolume(dev as never).then(v => { castVolMem.current = v; }).catch(() => {});
+    castApiOf(kind).getVolume(dev as never).then(v => { castVolMem.current = v; }).catch(() => {});
     const t = queueRef.current[idxRef.current];
     if (t) {
       AudioPro.pause();
@@ -901,7 +906,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const cs = castRef.current;
     deactivateCast();
     if (!cs) return;
-    (cs.kind === 'dlna' ? dlna : googleCast).stop(cs.dev as never).catch(() => {});
+    castApiOf(cs.kind).stop(cs.dev as never).catch(() => {});
     // 本机续播：从投屏进度回接（本地轨还在 ExoPlayer 里挂着）
     if (queueRef.current.length && AudioPro.getState() === AudioProState.PAUSED) {
       AudioPro.seekTo(Math.round(position * 1000));
@@ -924,7 +929,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   // 投屏轮询（dlna/cast）：同步进度/播放态；播完自动推进队列
   useEffect(() => {
     if (!cast) return;
-    const api = cast.kind === 'dlna' ? dlna : googleCast;
+    const api = castApiOf(cast.kind);
     let alive = true;
     const iv = setInterval(async () => {
       if (!alive || !castRef.current) return;

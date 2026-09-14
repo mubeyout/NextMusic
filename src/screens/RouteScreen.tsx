@@ -22,7 +22,7 @@ function T(props: { style?: unknown; onPress?: () => void; disabled?: boolean; c
 }
 import { toast } from '../components/Dialog';
 import { usePlayer } from '../state/PlayerProvider';
-import { audioRoute, dlna, googleCast, type LocalDevice, type DlnaDevice, type CastDevice } from '../services/audioroute';
+import { audioRoute, dlna, googleCast, airplay, type LocalDevice, type DlnaDevice, type CastDevice, type AirPlayDevice } from '../services/audioroute';
 import { loadKnown, rememberKnown, hostPortOf, type KnownDevice } from '../services/devicemem';
 const NMBlur = NativeModules.NMBlur as { setBlur: (nativeId: string, enabled: boolean) => void } | undefined;
 
@@ -81,6 +81,7 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
   const [castVol, setCastVol] = useState(50);
   const [renderers, setRenderers] = useState<DlnaDevice[]>([]);
   const [castDevs, setCastDevs] = useState<CastDevice[]>([]);
+  const [airDevs, setAirDevs] = useState<AirPlayDevice[]>([]); // 仅 mac 桌面有 NMAirplay,其余平台恒空
   const [scanning, setScanning] = useState(false);
   const [directMode, setDirectMode] = useState(false); // lx42：组播空结果、直连探活注入
 
@@ -127,12 +128,12 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
   // vc78: 回前台重扫不再先清列表（设备列表闪空观感="突然断开"）；onFound 去重增量合并
   const firstOpen = useRef(true);
   useEffect(() => {
-    if (!visible) return;
+    if (!visible || IS_HD) return; // HD:不扫投屏设备(老板 09-14 删投屏)
     const clearAll = () => { setRenderers([]); setCastDevs([]); };
     const startAll = (fresh: boolean) => {
       if (fresh) clearAll();
       setScanning(true);
-      dlna.startScan(); googleCast.startScan();
+      dlna.startScan(); googleCast.startScan(); if (airplay.available) airplay.startScan();
     };
     startAll(firstOpen.current);
     firstOpen.current = false;
@@ -149,9 +150,11 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
       dlna.onScanEnd(() => setScanning(false)),
       googleCast.onFound(dev => { rememberCast(dev); setCastDevs(list => (list.some(x => x.uuid === dev.uuid) ? list : [...list, dev])); }),
       googleCast.onScanEnd(() => setScanning(false)),
+      airplay.onFound(dev => { rememberKnown([{ kind: 'airplay', uuid: dev.uuid, name: dev.name, host: dev.host, port: dev.port, lastSeen: Date.now() }]); setAirDevs(list => (list.some(x => x.uuid === dev.uuid) ? list : [...list, dev])); }),
+      airplay.onScanEnd(() => setScanning(false)),
       AppState.addEventListener('change', s => { if (s === 'active') startAll(false); }),
     ];
-    return () => { subs.forEach(s => s?.remove()); dlna.stopScan(); googleCast.stopScan(); };
+    return () => { subs.forEach(s => s?.remove()); dlna.stopScan(); googleCast.stopScan(); if (airplay.available) airplay.stopScan(); };
   }, [visible]);
 
   // lx42 兜底：两路扫描都结束且一无所获（AP/路由器组播抽风）→ 对已知设备 TCP 探活，活的注入列表
@@ -228,7 +231,7 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
         </View>
         <ScrollView bounces={false} style={{ flexShrink: 1 }} contentContainerStyle={{ paddingBottom: 6 }}>
           <Text style={st.title}>选择播放设备</Text>
-          <Text style={st.subtitle}>{cast ? `正在${cast.kind === 'cast' ? ' Cast 到' : '投屏到'} ${cast.dev.name}` : '让音乐在附近设备上继续播放'}</Text>
+          <Text style={st.subtitle}>{cast ? `正在${cast.kind === 'cast' ? ' Cast 到' : '投屏到'} ${cast.dev.name}` : IS_HD ? '选择本机音频输出设备' : '让音乐在附近设备上继续播放'}</Text>
 
           <Text style={st.label}>本机设备</Text>
           <T style={[st.deviceRow, autoOn && st.deviceRowOn]} onPress={() => pickLocal(-1)}>
@@ -278,6 +281,8 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
             </>);
           })()}
 
+          {/* 老板 2026-09-14:HD(车机/TV)删除投屏入口——本页仅保留本机输出切换;手机版投屏区不动 */}
+          {!IS_HD ? (<>
           <Text style={st.label}>DLNA 投屏设备</Text>
           {cast?.kind === 'dlna' ? (
             <T style={[st.deviceRow, st.deviceRowOn]} onPress={() => { stopCast(); toast('已停止投屏，回本机播放'); }}>
@@ -344,6 +349,37 @@ export function DeviceSheet({ visible, onClose }: { visible: boolean; onClose: (
           ) : castDevs.length === 0 ? (
             <Text style={st.scanHint}>未发现 Chromecast 设备（国际版音箱/电视/Google TV）</Text>
           ) : null}
+
+          {/* AirPlay（仅 mac 桌面:NMAirplay 注入时 available） */}
+          {airplay.available ? (<>
+          <Text style={st.label}>AirPlay 设备</Text>
+          {cast?.kind === 'airplay' ? (
+            <T style={[st.deviceRow, st.deviceRowOn]} onPress={() => { stopCast(); toast('已停止 AirPlay，回本机播放'); }}>
+              <View style={[st.iconWrap, { backgroundColor: C.brand }]}>
+                <Icon name="devices" size={26} color={C.onBrand} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={st.deviceName}>{cast.dev.name}</Text>
+                <Text style={st.deviceStatusOn}>正在 AirPlay · 点击停止并回本机</Text>
+              </View>
+              <View style={st.checkBadge}><Icon name="check" size={18} color="#FFFFFF" /></View>
+            </T>
+          ) : null}
+          {airDevs.filter(r => cast?.kind !== 'airplay' || r.uuid !== cast.dev.uuid).map(r => (
+            <T key={r.uuid} style={st.deviceRow} onPress={() => { startCast(r as never, 'airplay'); toast(`正在 AirPlay 到 ${r.name}…`); }}>
+              <View style={st.iconWrap}><Icon name="devices" size={26} /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={st.deviceName}>{r.name}</Text>
+                <Text style={st.deviceStatus}>AirPlay 接收器{(r as AirPlayDevice).airplay2 ? ' · AirPlay 2' : ''} · 点击推送当前歌曲</Text>
+              </View>
+              <Icon name="chevronright" size={20} color={C.text3} />
+            </T>
+          ))}
+          {airDevs.length === 0 ? (
+            <Text style={st.scanHint}>未发现 AirPlay 设备（HomePod/Apple TV/支持 AirPlay 的音响）</Text>
+          ) : null}
+          </>) : null}
+          </>) : null}
         </ScrollView>
 
         <View style={st.volumeRow}>

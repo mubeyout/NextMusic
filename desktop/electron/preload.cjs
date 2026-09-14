@@ -16,4 +16,18 @@ contextBridge.exposeInMainWorld('nmDesktop', {
     ipcRenderer.on('nm:dl-progress', l);
     return () => ipcRenderer.removeListener('nm:dl-progress', l);
   },
+  // 投屏(09-14):主进程发现+控制,renderer polyfill 映射回 NMDlna/NMCast 接口
+  cast: (kind, method, ...args) => ipcRenderer.invoke('nm:cast', kind, method, ...args),
+  onCastEvent: (cb) => {
+    const l = (e, ...a) => cb(e, ...a);
+    ipcRenderer.on('dlna.found', l);
+    ipcRenderer.on('dlna.scanEnd', l);
+    ipcRenderer.on('cast.found', l);
+    ipcRenderer.on('cast.scanEnd', l);
+    ipcRenderer.on('airplay.found', l);
+    ipcRenderer.on('airplay.scanEnd', l);
+    return () => {
+      for (const ch of ['dlna.found', 'dlna.scanEnd', 'cast.found', 'cast.scanEnd', 'airplay.found', 'airplay.scanEnd']) ipcRenderer.removeListener(ch, l);
+    };
+  },
 });

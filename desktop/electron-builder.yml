@@ -6,6 +6,10 @@ icon: build/icon.png
 files:
   - dist/**
   - electron/**
+# 投屏运行时依赖(bonjour/castv2/airplay-sender/wasm 解码器)随生产 node_modules 自动进包;
+# wasm 从 asar 外读更稳(fs 直读路径,不经 asar 虚拟层)
+asarUnpack:
+  - "**/*.wasm"
 win:
   target: [nsis]
   signAndEditExecutable: true    # CI win 原生构建嵌 ico 进 exe(Linux 本地交叉打包时无 rcedit 需手动关)

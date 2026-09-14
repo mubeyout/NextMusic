@@ -400,7 +400,7 @@ export function HDPlayer() {
             <HDTouch style={st.cTool} onPress={() => nav.navigate('Comments')} title="评论">
               <Icon name="comments" size={17} color={IC} />
             </HDTouch>
-            <HDTouch style={st.cTool} onPress={() => nav.navigate('Route')} title="投屏设备">
+            <HDTouch style={st.cTool} onPress={() => nav.navigate('Route')} title="输出设备">
               <Icon name="devices" size={17} color={IC} />
             </HDTouch>
             <HDTouch style={st.cTool} onPress={() => nav.navigate('Fx')} title="均衡器与音效">

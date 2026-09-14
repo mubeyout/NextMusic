@@ -9,7 +9,7 @@ const MAX = 10;
 const TTL = 7 * 24 * 3600_000; // 7 天未见即淘汰
 
 export type KnownDevice = {
-  kind: 'dlna' | 'cast';
+  kind: 'dlna' | 'cast' | 'airplay';
   uuid: string;
   name: string;
   host: string;

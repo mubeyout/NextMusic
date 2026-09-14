@@ -10,6 +10,16 @@ protocol.registerSchemesAsPrivileged([
 ]);
 const http = require('http');
 const path = require('path');
+const dlna = require('./cast-dlna.cjs'); // 桌面投屏:DLNA(SSDP+SOAP 零依赖)
+const chromeCast = require('./cast-chrome.cjs'); // Chromecast(bonjour+castv2)
+const airplay = process.platform === 'darwin' ? require('./cast-airplay.cjs') : null; // AirPlay 仅 mac(老板指令)
+// 事件出口:投屏设备发现/扫描结束 → renderer(polyfills 映射回 NativeEventEmitter 通道)
+function castSender(channel, payload) {
+  for (const w of BrowserWindow.getAllWindows()) { try { w.webContents.send(channel, payload); } catch { /* ignore */ } }
+}
+dlna.setSender(castSender);
+chromeCast.setSender(castSender);
+if (airplay) airplay.setSender(castSender);
 
 const PROXY_PORT = 5198;
 
@@ -169,6 +179,19 @@ ipcMain.handle('nm:download', async (e, { key, url, fileName, saveDir }) => {
     return { ok: true, path: file, size: received };
   } catch (err) {
     try { fsmod.unlinkSync(file); } catch { /* ignore */ }
+    return { ok: false, error: String(err && err.message || err) };
+  }
+});
+
+// ---------- 投屏(老板 09-14:桌面版保留投屏) ----------
+// renderer 无法开 UDP/组播,发现与控制全在主进程;IPC 带方法名分发,减 boilerplate
+ipcMain.handle('nm:cast', async (_e, kind, method, ...args) => {
+  try {
+    const mod = kind === 'cast' ? chromeCast : kind === 'airplay' ? airplay : dlna;
+    if (!mod) return { ok: false, error: 'not available on this platform' };
+    const r = await mod[method](...args);
+    return { ok: true, r };
+  } catch (err) {
     return { ok: false, error: String(err && err.message || err) };
   }
 });
