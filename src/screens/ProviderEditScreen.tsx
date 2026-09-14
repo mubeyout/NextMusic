@@ -303,7 +303,7 @@ const st = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 12 },
   title: { color: C.text, fontSize: 22, fontWeight: '700', flex: 1 }, // lx166 居左
   content: { paddingHorizontal: 16, paddingBottom: 40, gap: 10 },
-  desc: { color: C.text2, fontSize: 11, lineHeight: 16 },
+  desc: { color: C.text2, fontSize: 11, lineHeight: 16, textAlign: 'center' }, // v3.32b(老板):描述文字全端居中(Step1/Step2 通用)
 
   // 类型卡（Figma: #2B2B2B r12 p12×14 h64）
   typeCard: { backgroundColor: C.surface2, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, gap: 4, alignItems: 'center', textAlign: 'center' },

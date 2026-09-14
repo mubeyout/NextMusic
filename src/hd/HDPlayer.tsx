@@ -1,7 +1,7 @@
 // HD 播放页 v3 —— 完全重构:无底部工具 bar,所有元素融入左右两列,沉浸式
 // v1 教训:固定尺寸溢出;v2 教训:深色底 panel 突兀(老板:粗糙,直接取消)
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, Animated, Easing, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, Animated, Easing, ScrollView, ActivityIndicator, type ImageStyle, type ViewStyle, type TextStyle } from 'react-native';
 import Svg, { Defs, Path, RadialGradient, Stop } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
@@ -242,7 +242,7 @@ export function HDPlayer() {
 
   if (!current) {
     return (
-      <View style={[st.screen, { alignItems: 'center', justifyContent: 'center' }]}>
+      <View style={[st.screen, { alignItems: 'center', justifyContent: 'center', backgroundColor: settings.get().light ? '#F6F7F9' : C.bg }]}>
         <Text style={{ color: C.text2, fontSize: 15 }}>没有正在播放的歌曲</Text>
       </View>
     );
@@ -250,6 +250,10 @@ export function HDPlayer() {
 
   const activeIdx = lyrics ? findActiveLine(lyrics, position) : -1;
   const pct = duration > 0 ? Math.min(1, position / duration) : 0;
+  const lt = settings.get().light; // v3.32c:render 期浅色标志(Icon 等硬编码点)
+  const IC = lt ? 'rgba(38,40,44,.8)' : '#ffffffcc'; // 次级图标色
+  const ICM = lt ? '#26282C' : '#ffffffee'; // 主控件图标色
+
 
 
   // ===== v1.2.5 桌面播放页重排(老板:布局太草率):主题感知(浅色不再白条+黑页拼接) + 头部行内返回
@@ -257,14 +261,14 @@ export function HDPlayer() {
   // v3.2: web/TV/HD 统一走下方 st 版布局(web 特化分支移除——设计稿重排已在 st 版,旧 web 分支把改动全挡住了)
   // lx89:TV 播放页全屏独立屏(老板定夺)——头部返回行+左唱片活频谱+右歌词+单行控件
   return (
-    <View style={st.screen}>
-      {current.img ? <Image source={{ uri: current.img }} style={st.bgArt} blurRadius={60} resizeMode="cover" /> : null}
+    <View style={[st.screen, { backgroundColor: settings.get().light ? '#F6F7F9' : C.bg }]}>
+      {current.img ? <Image source={{ uri: current.img }} style={st.bgArt as ImageStyle} blurRadius={60} resizeMode="cover" /> : null}
       <View style={st.bgVeil} />
 
       {/* 头部:返回按钮入流式布局(不再悬浮怪位) */}
       <View style={[st.header, { paddingTop: Math.max(insets.top, 12) }]}>
         <HDTouch style={st.backBtn} onPress={nav.goBack}>
-          <Icon name="back" size={16} color="#ffffffcc" />
+          <Icon name="back" size={16} color={IC} />
           <Text style={st.backLabel}>返回</Text>
         </HDTouch>
       </View>
@@ -292,7 +296,7 @@ export function HDPlayer() {
               <View style={st.vinylWrap}>
                 <Animated.Image
                   source={current.img ? { uri: current.img } : undefined}
-                  style={[st.vinylArt, { transform: [{ rotate: spinDeg }] }]}
+                  style={[st.vinylArt as ImageStyle, { transform: [{ rotate: spinDeg }] }]}
                   resizeMode="cover"
                 />
                 {!current.img ? <View style={[st.vinylArt, st.artFallback]}><Icon name="music" size={52} color={C.text3} /></View> : null}
@@ -366,13 +370,13 @@ export function HDPlayer() {
               <Icon name="shuffle" size={20} active={shuffle} color={shuffle ? C.brand : '#ffffff99'} />
             </HDTouch>
             <HDTouch style={st.cMode} onPress={skipPrev}>
-              <Icon name="previous" size={26} color="#ffffffee" />
+              <Icon name="previous" size={26} color={ICM} />
             </HDTouch>
             <HDTouch style={[st.cMain, IS_WEB && st.cMainWeb]} onPress={toggle} focusStyle={st.cMainFocus} hasTVPreferredFocus>
               <Icon name={playing ? 'pause' : 'play'} size={32} color={C.onBrand} />
             </HDTouch>
             <HDTouch style={st.cMode} onPress={skipNext}>
-              <Icon name="next" size={26} color="#ffffffee" />
+              <Icon name="next" size={26} color={ICM} />
             </HDTouch>
             {/* lx151:循环三态(手机端同款角标) */}
             <HDTouch style={st.cMode} onPress={cycleRepeat}>
@@ -385,25 +389,25 @@ export function HDPlayer() {
               <Icon name="heart" size={17} color={faved ? C.brand : '#ffffff99'} />
             </HDTouch>
             <HDTouch style={st.cTool} onPress={dlCurrent} title="下载">
-              {dlBusy ? <ActivityIndicator size="small" color="#ffffffcc" /> : <Icon name="download" size={17} color="#ffffffcc" />}
+              {dlBusy ? <ActivityIndicator size="small" color={IC} /> : <Icon name="download" size={17} color={IC} />}
             </HDTouch>
             <HDTouch style={st.cTool} onPress={() => nav.navigate('Queue')} title="播放队列">
-              <Icon name="queue" size={17} color="#ffffffcc" />
+              <Icon name="queue" size={17} color={IC} />
               {queue.length ? (
                 <View style={st.qBadge}><Text style={st.qBadgeText}>{queue.length > 99 ? '99+' : queue.length}</Text></View>
               ) : null}
             </HDTouch>
             <HDTouch style={st.cTool} onPress={() => nav.navigate('Comments')} title="评论">
-              <Icon name="comments" size={17} color="#ffffffcc" />
+              <Icon name="comments" size={17} color={IC} />
             </HDTouch>
             <HDTouch style={st.cTool} onPress={() => nav.navigate('Route')} title="投屏设备">
-              <Icon name="devices" size={17} color="#ffffffcc" />
+              <Icon name="devices" size={17} color={IC} />
             </HDTouch>
             <HDTouch style={st.cTool} onPress={() => nav.navigate('Fx')} title="均衡器与音效">
-              <Icon name="sliders" size={17} color="#ffffffcc" />
+              <Icon name="sliders" size={17} color={IC} />
             </HDTouch>
             <HDTouch style={st.cTool} onPress={() => setCardOpen(true)} title="歌词卡片">
-              <Text style={[st.cToolText, { color: '#ffffff99' }]}>卡片</Text>
+              <Text style={[st.cToolText, { color: settings.get().light ? 'rgba(38,40,44,.6)' : '#ffffff99' }]}>卡片</Text>
             </HDTouch>
             <HDTouch style={st.cTool} onPress={() => setPanelOpen(panelOpen === 'quality' ? null : 'quality')} title="音质">
               <Text style={st.cToolText}>{settings.get().playQuality === 'flac' ? 'SQ' : settings.get().playQuality}</Text>
@@ -465,7 +469,9 @@ export function HDPlayer() {
   );
 }
 
-const st = StyleSheet.create({
+// v3.32c(老板:播放页浅色适配):此前 web 复用 TV 版硬编码深色(stW 为未接线死代码)——双盘化:
+// 原生 TV/车机深色默认不变;light=true 时全端走浅盘;渲染期读 settings 防 StyleSheet 模块加载期固化(循环 import 时序坑)
+const stDark: Record<string, ViewStyle | TextStyle> = {
   cToolText: { color: '#ffffff99', fontSize: 11, fontWeight: '700' }, // 工具组降为次级灰
   // v3.9 面板交互: 悬浮深色卡(玻璃拟态,从按钮上方浮出+入场动画,锚定居中)——替代裸 pill 排
   panelRow: { position: 'absolute', bottom: '100%', left: '50%', transform: [{ translateX: -210 }], flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center', marginBottom: 12, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 18, backgroundColor: 'rgba(24,26,24,.92)', boxShadow: '0 18px 48px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.08)' },
@@ -531,7 +537,42 @@ const st = StyleSheet.create({
   cTool: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }, // v3.7:去黑底·紧凑
   qBadge: { position: 'absolute', top: -5, right: -7, minWidth: 17, height: 17, borderRadius: 9, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: '#0e1310' }, // lx95:队列数量优雅悬浮胶囊
   qBadgeText: { color: '#0b0f0d', fontSize: 9, fontWeight: '800' },
-});
+};
+
+// 浅色盘:仅覆写深色硬编码项,布局/尺寸/品牌色项继承 stDark(stLight=stDark 展开)
+const stLight = {
+  ...stDark,
+  cToolText: { color: 'rgba(38,40,44,.6)', fontSize: 11, fontWeight: '700' },
+  panelRow: { ...stDark.panelRow, backgroundColor: 'rgba(255,255,255,.94)', boxShadow: '0 18px 48px rgba(31,35,41,.14), 0 0 0 1px rgba(31,35,41,.06)' },
+  panelPill: { ...stDark.panelPill, backgroundColor: 'rgba(31,35,41,.05)' },
+  panelPillText: { color: 'rgba(38,40,44,.85)', fontSize: 12, fontWeight: '600' },
+  screen: { ...stDark.screen, backgroundColor: '#F6F7F9' },
+  bgVeil: { ...stDark.bgVeil, backgroundColor: 'rgba(246,247,249,.82)' },
+  backBtn: { ...stDark.backBtn, backgroundColor: 'rgba(31,35,41,.05)' },
+  backLabel: { color: 'rgba(38,40,44,.85)', fontSize: 13, fontWeight: '600' },
+  webArtCard: { ...stDark.webArtCard, boxShadow: '0 24px 64px rgba(31,35,41,.18), 0 0 0 1px rgba(31,35,41,.05)' },
+  vinylWrap: { ...stDark.vinylWrap, backgroundColor: '#E4E7EA', borderColor: '#D5D9DD', boxShadow: '0 18px 44px rgba(31,35,41,.2), 0 0 36px rgba(30,215,96,.1)' },
+  vinylHole: { ...stDark.vinylHole, backgroundColor: '#F6F7F9', borderColor: '#D5D9DD' },
+  srcPill: { ...stDark.srcPill, borderColor: 'rgba(31,35,41,.08)', backgroundColor: 'rgba(31,35,41,.04)' },
+  srcTag: { color: 'rgba(38,40,44,.6)', fontSize: 10, letterSpacing: 2, fontWeight: '600' },
+  artFallback: { ...stDark.artFallback, backgroundColor: '#E9EBEE' },
+  title: { color: '#26282C', fontSize: 25, fontWeight: '800' },
+  sub: { color: 'rgba(38,40,44,.7)', fontSize: 14 },
+  lyric: { color: 'rgba(38,40,44,.55)', fontSize: 17, lineHeight: 24, fontWeight: '500' },
+  lyricOn: { color: '#26282C', fontSize: 22, lineHeight: 31, fontWeight: '800', textShadowColor: 'transparent', textShadowRadius: 0, textShadowOffset: { width: 0, height: 0 } },
+  lyricTr: { color: 'rgba(38,40,44,.35)', fontSize: 12, lineHeight: 17, marginTop: 2 },
+  lyricTrOn: { color: 'rgba(38,40,44,.6)' },
+  noLyricText: { color: 'rgba(38,40,44,.5)', fontSize: 13 },
+  time: { color: 'rgba(38,40,44,.7)', fontSize: 12, fontVariant: ['tabular-nums'], width: 42, textAlign: 'center' },
+  trackRest: { ...stDark.trackRest, backgroundColor: 'rgba(31,35,41,.14)' },
+  playhead: { ...stDark.playhead, borderColor: '#FFFFFF', boxShadow: '0 0 12px rgba(30,215,96,.45)' },
+  ctrlDivider: { ...stDark.ctrlDivider, backgroundColor: 'rgba(31,35,41,.12)' },
+  qBadge: { ...stDark.qBadge, borderColor: '#F6F7F9' },
+  qBadgeText: { color: '#0B3D1F', fontSize: 9, fontWeight: '800' },
+};
+type PlayerStyles = Record<string, ViewStyle | TextStyle>;
+// 直接样式对象(不经 StyleSheet.create):双盘在渲染层已定型,create 泛型对联合盘推断崩——RN style prop 原生接受普通样式对象
+const st: PlayerStyles = (settings.get().light ? stLight : stDark) as PlayerStyles;
 
 // ===== 桌面(网易云参照)样式 =====
 // v3.4: 工具按钮 hover 浮出 tip(老板:按钮选项改 tips 上浮)
