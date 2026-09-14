@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Platform, View, StyleSheet, BackHandler } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Platform, View, StyleSheet, BackHandler, Animated, Easing } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -149,49 +149,78 @@ const withPhoneScale = (Cmp: React.ComponentType<Record<string, unknown>>) => {
 };
 
 const SIDEBAR_LOCK_CONTENT: { marginLeft?: number; backgroundColor?: string } = Platform.OS === 'web' ? { marginLeft: 174 } : {};
+
+// v1.2.15(老板 09-14"进出页面还闪")转场终版：容器恒直切(lx57 一加实测 fade 两页半透明叠加"变亮一下"31→66→35、slide 露底窗口闪白，容器级转场两种预设都不可救)；
+// 动效改内容层——新页 18px 滑入+淡入 220ms cubic-out，不透明底上零中间态=物理无闪(MiniPlayer lx168① 同款已验证模式)。
+// 仅 phone 原生；TV/HD 直切家族不动(坑108)；web 桌面自有动效体系。返回(pop)仍直切——快且无闪。
+const PAGE_ENTER_MS = 220, PAGE_ENTER_DX = 18;
+const enterMemo = new Map<unknown, unknown>();
+function withEnter<P extends object>(Cmp: React.ComponentType<P>): React.ComponentType<P> {
+  if (IS_HD || Platform.OS === 'web') return Cmp;
+  const hit = enterMemo.get(Cmp) as React.ComponentType<P> | undefined;
+  if (hit) return hit;
+  const W = (props: P) => {
+    const x = useRef(new Animated.Value(PAGE_ENTER_DX)).current;
+    const o = useRef(new Animated.Value(0)).current;
+    useEffect(() => {
+      Animated.parallel([
+        Animated.timing(x, { toValue: 0, duration: PAGE_ENTER_MS, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(o, { toValue: 1, duration: PAGE_ENTER_MS, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      ]).start();
+    }, [x, o]);
+    return (
+      <Animated.View style={{ flex: 1, opacity: o, transform: [{ translateX: x }] }}>
+        <Cmp {...props} />
+      </Animated.View>
+    );
+  };
+  W.displayName = `Enter(${Cmp.displayName || Cmp.name || 'Screen'})`;
+  enterMemo.set(Cmp, W);
+  return W;
+}
 return (
     <NavigationContainer ref={navRef} theme={navTheme}>
-      {/* 坑108:slide_from_right 在 TV(米电视)上转场后原生焦点链断裂——D-pad 全死但 touch 正常;HD 恒用 fade */}
-      {/* lx57:转场最终方案 none(直切)——lx49 fade 后一加实测仍有"变亮一下"(两页半透明叠加的固有特性,31→66→35);直切零中间态,物理上无闪。速度感也更快 */}
-      {/* lx168:phone 转场 fade 160ms(硬切→轻淡入);TV 保持直切(坑108) */}
-      <Stack.Navigator initialRouteName={initial} screenOptions={{ headerShown: false, animation: IS_HD ? 'none' : 'fade', animationDuration: 160, contentStyle: { backgroundColor: C.bg }, freezeOnBlur: true }}>
+      {/* 坑108:slide_from_right 在 TV(米电视)上转场后原生焦点链断裂——D-pad 全死但 touch 正常;HD 恒直切 */}
+      {/* lx57:fade 两页半透明叠加固有"变亮一下"(一加实测 31→66→35);slide 滑动露底窗口闪白——容器转场两种预设都不可救,恒 none 直切零中间态 */}
+      {/* v1.2.15(老板 09-14"进出还闪一下"):lx168 的 fade 160ms 即本轮闪感回归点,容器回到直切;动效改内容层 withEnter 入场动画 */}
+      <Stack.Navigator initialRouteName={initial} screenOptions={{ headerShown: false, animation: 'none', contentStyle: { backgroundColor: C.bg }, freezeOnBlur: true }}>
         <Stack.Screen name="Boot" component={IS_HD ? HDBootScreen : BootScreen} />
         <Stack.Screen name="Server" component={withPhoneScale(ServerScreen)} />
         <Stack.Screen name="Auth" component={withPhoneScale(AuthScreen)} />
-        <Stack.Screen name="AuthLogin" component={IS_HD ? HDAuthLoginScreen : AuthLoginScreen} />
-        <Stack.Screen name="AuthSignup" component={AuthSignupScreen} />
+        <Stack.Screen name="AuthLogin" component={IS_HD ? HDAuthLoginScreen : withEnter(AuthLoginScreen)} />
+        <Stack.Screen name="AuthSignup" component={withEnter(AuthSignupScreen)} />
         <Stack.Screen name="Main" component={IS_HD ? HDMain : MainTabs} />
         <Stack.Screen name="Player" component={IS_HD ? HDPlayer : PlayerScreen} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />
         <Stack.Screen name="Queue" component={QueueScreen} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="PlayerSettings" component={PlayerSettingsScreen} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Comments" component={CommentsScreen} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="PlaylistDetail" component={IS_HD ? HDPlaylistDetailScreen : PlaylistDetailScreen} />
-        <Stack.Screen name="Search" component={SearchScreen} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ArtistDetail" component={ArtistDetailScreen} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="AlbumDetail" component={AlbumDetailScreen} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="PlayerSettings" component={withEnter(PlayerSettingsScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Comments" component={withEnter(CommentsScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="PlaylistDetail" component={IS_HD ? HDPlaylistDetailScreen : withEnter(PlaylistDetailScreen)} />
+        <Stack.Screen name="Search" component={withEnter(SearchScreen)} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ArtistDetail" component={withEnter(ArtistDetailScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="AlbumDetail" component={withEnter(AlbumDetailScreen)} />
         {/* Route(播放设备)页:HD 已删投屏不再注册(老板 09-14);phone 由 MiniPlayer 入口进入 */}
         {!IS_HD ? <Stack.Screen name="Route" component={RoutePage} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'fade', presentation: 'transparentModal' }} /> : null}
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Settings" component={IS_HD ? HDSettingsScreen : SettingsScreen} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Sources" component={SourcesScreen} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Account" component={AccountScreen} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="BasicSettings" component={BasicSettingsScreen} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Theme" component={ThemeScreen} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="DownloadsSettings" component={DownloadsSettingsScreen} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="BackupSettings" component={BackupSettingsScreen} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="About" component={AboutScreen} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Manual" component={ManualScreen} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="DeployGuide" component={DeployGuideScreen} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Faq" component={FaqScreen} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Changelog" component={ChangelogScreen} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ImportPlaylist" component={ImportPlaylistScreen} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Fx" component={FxScreen} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="MediaLibs" component={MediaLibsScreen} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ProviderEdit" component={ProviderEditScreen} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ProviderBrowse" component={ProviderBrowseRoute} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ProviderDetail" component={ProviderDetailScreen} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Downloads" component={DownloadsScreen} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="BoardsSquare" component={BoardsSquareScreen} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="DeviceMusic" component={DeviceMusicScreen} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Settings" component={IS_HD ? HDSettingsScreen : withEnter(SettingsScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Sources" component={withEnter(SourcesScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Account" component={withEnter(AccountScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="BasicSettings" component={withEnter(BasicSettingsScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Theme" component={withEnter(ThemeScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="DownloadsSettings" component={withEnter(DownloadsSettingsScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="BackupSettings" component={withEnter(BackupSettingsScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="About" component={withEnter(AboutScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Manual" component={withEnter(ManualScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="DeployGuide" component={withEnter(DeployGuideScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Faq" component={withEnter(FaqScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Changelog" component={withEnter(ChangelogScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ImportPlaylist" component={withEnter(ImportPlaylistScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Fx" component={withEnter(FxScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="MediaLibs" component={withEnter(MediaLibsScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ProviderEdit" component={withEnter(ProviderEditScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ProviderBrowse" component={withEnter(ProviderBrowseRoute)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ProviderDetail" component={withEnter(ProviderDetailScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Downloads" component={withEnter(DownloadsScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="BoardsSquare" component={withEnter(BoardsSquareScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="DeviceMusic" component={withEnter(DeviceMusicScreen)} />
       </Stack.Navigator>
     </NavigationContainer>
   );
