@@ -39,7 +39,8 @@ function HD_VINYL_SVG(img?: string, size = 300, playing?: boolean): React.ReactN
     [122, '#FFFFFF06', 1.5], [115, '#FFFFFF12', 1], [108, '#FFFFFF08', 1.5], [101, '#FFFFFF14', 1], [90, '#FFFFFF0D', 1],
   ];
   return h('svg', { width: size, height: size, viewBox: '0 0 300 300', className: 'nm-vinyl-spin' + (playing ? '' : ' nm-vinyl-paused'),
-    style: { position: 'absolute', top: 0, left: 0, borderRadius: '50%', boxShadow: '0 26px 70px rgba(0,0,0,.4), 0 0 54px rgba(30,215,96,.08)' } as never },
+    // [Fix 2026-09-14] 删根元素 boxShadow:svg 根上 border-radius 不裁剪阴影(Chromium)→方形半透明阴影框随唱片旋转,浅色背景下可见(老板:半透明矩形跟着旋转)
+    style: { position: 'absolute', top: 0, left: 0 } as never },
     h('defs', null, rg,
       h('clipPath', { id: 'hdLblClip', key: 'lc' }, h('circle', { key: 'c', cx: 150, cy: 150, r: 56 }))),
     ...circles.map(([r, col, sw], i) => h('circle', { key: 'c' + i, cx: 150, cy: 150, r, fill: r === 149 ? col : 'none', stroke: col, strokeWidth: sw })),
@@ -339,7 +340,9 @@ export function HDPlayer() {
 
         </View>
         </View>
-          <View style={[st.progRow, IS_WEB && st.progRowWeb]}>
+          {/* v1.2.15(老板 09-14"进度和按钮一排贴底"):TV=单行 dock(进度 flex 占满+控件组);web 保持上下两行 */}
+          <View style={IS_WEB ? st.dockColWeb : st.dockRow}>
+          <View style={[st.progRow, IS_WEB && st.progRowWeb, !IS_WEB && st.progRowDock]}>
             <Text style={[st.time, IS_WEB && { minWidth: 42 }]}>{fmtSec(position)}</Text>
             <TouchableOpacity
               style={[st.trackWrap, IS_WEB && { height: 6, borderRadius: 3 }]}
@@ -457,6 +460,7 @@ export function HDPlayer() {
             </View>
           ) : null}
           </View>
+          </View>
       </View>
 
       {/* lx103:收藏到歌单面板(共享组件) */}
@@ -498,7 +502,7 @@ const stDark: Record<string, ViewStyle | TextStyle> = {
   srcPill: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 24, borderRadius: 12, paddingHorizontal: 12, marginTop: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,.16)', backgroundColor: 'rgba(255,255,255,.06)' },
   srcDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.brand },
   srcTag: { color: '#ffffffaa', fontSize: 10, letterSpacing: 2, fontWeight: '600' },
-  main: { flex: 1, flexDirection: 'row', paddingHorizontal: 52, paddingTop: 4, gap: 42 },
+  main: { flex: 1, flexDirection: 'column', paddingHorizontal: 52, paddingTop: 4, gap: 18, justifyContent: 'flex-end' }, // v1.2.15(老板 09-14"排版乱"):TV 原误为 row——rowWrap/进度/控件横排成一条;改 column 贴底与 web 同构
   mainWeb: { flexDirection: 'column', paddingHorizontal: '5%', gap: 20, justifyContent: 'flex-end' }, // v3.5:行2(进度+控件)紧贴页面底部
   rowWrap: { flex: 1, flexDirection: 'row', gap: '10%', alignItems: 'center', minWidth: 0 }, // 行1:黑胶(左半靠右)|10%|标题歌词(右半靠左)
   artCol: { width: 344, alignItems: 'center', justifyContent: 'center' }, // TV 基准;web 见行内 45% 覆写
@@ -518,6 +522,9 @@ const stDark: Record<string, ViewStyle | TextStyle> = {
   noLyric: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
   noLyricText: { color: '#ffffff80', fontSize: 13 },
   progRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
+  progRowDock: { flex: 1, marginBottom: 0 }, // v1.2.15:TV 单行 dock 内进度占满剩余宽
+  dockRow: { flexDirection: 'row', alignItems: 'center', gap: 28 }, // v1.2.15(老板:进度条和按钮组挤在一排、页面底部)
+  dockColWeb: { flexDirection: 'column', width: '100%' }, // web 保持两行堆叠(mainWeb flex-end)
   progRowWeb: { width: '100%', marginBottom: 10 }, // v3.6:全宽(参照 playbar)
   time: { color: '#ffffffb3', fontSize: 12, fontVariant: ['tabular-nums'], width: 42, textAlign: 'center' },
   trackWrap: { flex: 1, height: 5, flexDirection: 'row', borderRadius: 3 },
