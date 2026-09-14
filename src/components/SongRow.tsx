@@ -8,8 +8,9 @@ import { registerKbRow } from '../hd/hdkeyboard';
 
 // Figma Song Row: 350x46, art 46x46 r=6, title 13 w500 / sub 10, duration right, more icon 20
 // extra: 右侧操作位（下载按钮等）；onMore: ⋯ 菜单回调(不传且无 extra 则不渲染 ⋯——lx163 老板:死图标等于欺骗)
-export function SongRow({ song, onPress, playing, extra, onMore, onLongPress }: { song: SongItem; onPress?: () => void; playing?: boolean; extra?: React.ReactNode; onMore?: () => void; onLongPress?: () => void }) { // lx167d:onLongPress(TV 长按管理)
+export function SongRow({ song, onPress, playing, extra, onMore, onLongPress, leading }: { song: SongItem; onPress?: () => void; playing?: boolean; extra?: React.ReactNode; onMore?: (pos?: { x: number; y: number }) => void; onLongPress?: () => void; leading?: React.ReactNode }) { // lx167d:onLongPress(TV 长按管理);v3.33(老板:队列操作箱优化):onMore 带位置+leading 左槽(批量勾选)
   const [focus, setFocus] = useState(false); // lx145:TV D-pad 光标(队列页无选中态)
+  const moreRef = useRef<unknown>(null); // v3.33:⋯ 按钮锚点(web 定位菜单)
   const kbRef = useRef<unknown>(null);
   // D3 A2:键盘导航注册(队列/媒体库浏览行;web only,native 注册表无人读)
   useEffect(() => {
@@ -36,7 +37,7 @@ export function SongRow({ song, onPress, playing, extra, onMore, onLongPress }: 
       onFocus={() => setFocus(true)}
       onBlur={() => setFocus(false)}>
       <View style={st.artWrap}>
-        {song.img ? <Image source={{ uri: song.img }} style={st.art} /> : <View style={[st.art, st.fallback]} />}
+        {leading != null ? leading : song.img ? <Image source={{ uri: song.img }} style={st.art} /> : <View style={[st.art, st.fallback]} />}
       </View>
       <View style={st.meta}>
         <Text style={[st.title, playing && { color: C.brandText }]} numberOfLines={1}>{song.name}</Text>
@@ -48,7 +49,16 @@ export function SongRow({ song, onPress, playing, extra, onMore, onLongPress }: 
       {extra != null ? (
         <View style={st.more}>{extra}</View>
       ) : onMore ? (
-        <Pressable hitSlop={10} style={st.more} onPress={(e) => { e.stopPropagation?.(); onMore(); }}>
+        <Pressable hitSlop={10} style={st.more} ref={moreRef as never} onPress={(e) => {
+          e.stopPropagation?.();
+          // v3.33:web 下直读 DOM rect 供定位菜单(队列 ⋯ 由底部 sheet 改定位菜单)
+          let pos: { x: number; y: number } | undefined;
+          if (Platform.OS === 'web') {
+            const r = (moreRef.current as unknown as HTMLElement | null)?.getBoundingClientRect?.();
+            if (r) pos = { x: Math.round(r.left), y: Math.round(r.bottom + 4) };
+          }
+          onMore(pos);
+        }}>
           <Icon name="more" size={20} color={C.text2} />
         </Pressable>
       ) : null}

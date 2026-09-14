@@ -118,6 +118,11 @@ export function mountCtxMenu() {
 
   (globalThis as never as Record<string, unknown>).__nmCtxMenu = (x: number, y: number, items: CtxMenuItem[]) => {
     clearTimeout(closeT); // lx170:exit 中途重开——取消隐藏定时器,避免新菜单刚起播就被藏
+    // v3.33(uiScale 偏移修复):调用方传的是 getBoundingClientRect/事件 clientX 视觉坐标,
+    // 而 style.left 是 zoom 前本地坐标——documentElement zoom≠1 时菜单偏移出屏(实锄 1.25×1451→1814)。
+    // 入口统一除 zoom,一处修复全体调用点(右键/⋯/键盘导航)
+    const dz = parseFloat(document.documentElement.style.zoom || '1') || 1;
+    if (dz !== 1) { x = x / dz; y = y / dz; }
     menu.textContent = '';
     sub.style.display = 'none';
     const vis = items.filter(i => !i.hidden);
