@@ -169,7 +169,8 @@ return (
         <Stack.Screen name="Search" component={SearchScreen} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ArtistDetail" component={ArtistDetailScreen} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="AlbumDetail" component={AlbumDetailScreen} />
-        <Stack.Screen name="Route" component={RoutePage} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: IS_HD ? 'none' : 'fade', presentation: 'transparentModal' }} />
+        {/* Route(播放设备)页:HD 已删投屏不再注册(老板 09-14);phone 由 MiniPlayer 入口进入 */}
+        {!IS_HD ? <Stack.Screen name="Route" component={RoutePage} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'fade', presentation: 'transparentModal' }} /> : null}
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Settings" component={IS_HD ? HDSettingsScreen : SettingsScreen} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Sources" component={SourcesScreen} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Account" component={AccountScreen} />

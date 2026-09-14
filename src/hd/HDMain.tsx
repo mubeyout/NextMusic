@@ -449,7 +449,7 @@ function PlItem({ name, count, add, active, onPress, onLongPress }: { name: stri
   );
 }
 
-// 桌面式播放条:左(封面+曲目+收藏) 中(控件+进度) 右(队列/投屏/详情)
+// 桌面式播放条:左(封面+曲目+收藏) 中(控件+进度) 右(队列/音效/详情)——投屏入口已删(老板 09-14)
 function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server').SongItem) => void }) {
   const { current, playing, position, duration, toggle, skipNext, skipPrev, queue, shuffle, repeat, setShuffle, cycleRepeat } = usePlayer();
   const { faved } = useFav(current); // lx103:收藏态展示(操作走选歌单面板)
@@ -534,9 +534,6 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
         </HDTouch>
         <HDTouch style={st.tool} focusStyle={st.toolFocus} hoverBg={IS_WEB ? C.hover : false} onPress={() => hdNav()?.navigate('Fx')}>
           <Icon name="sliders" size={14} color={C.text2} />
-        </HDTouch>
-        <HDTouch style={st.tool} focusStyle={st.toolFocus} hoverBg={IS_WEB ? C.hover : false} onPress={() => hdNav()?.navigate('Route')}>
-          <Icon name="devices" size={14} color={C.text2} />
         </HDTouch>
         <HDTouch style={st.tool} focusStyle={st.toolFocus} hoverBg={IS_WEB ? C.hover : false} onPress={() => hdNav()?.navigate('Player')}>
           <Icon name="fullscreen" size={14} color={C.text2} />
