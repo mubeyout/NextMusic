@@ -91,8 +91,8 @@ android {
             applicationIdSuffix ".hd"
             versionNameSuffix "-hd"
             // HD 独立版本线:与 phone 共享 default,但可单独越号更新(当前 hd v2)
-            versionCode 167
-            versionName "1.2.13" // v1.2.13(三端统一收口,v3.31 补入)
+            versionCode 168
+            versionName "1.2.14" // v1.2.13(三端统一收口,v3.31 补入)
         }
     }
 
@@ -100,8 +100,8 @@ android {
         applicationId "com.mubeyworks.nextmusic"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 147
-        versionName "1.2.13"
+        versionCode 148
+        versionName "1.2.14"
     }
     // 多架构分发：GitHub Release 只放编译产物（armeabi-v7a/arm64-v8a/x86/x86_64 + universal 兑底）
     splits {

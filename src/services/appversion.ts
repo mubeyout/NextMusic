@@ -7,7 +7,7 @@ const native = NativeModules.AppVersionInfo as { versionName?: string; versionCo
 const webVersion = ((globalThis as { process?: { env?: { APP_VERSION?: string; APP_FLAVOR?: string } } }).process)?.env?.APP_VERSION; // v3.28:process 经 globalThis
 export const APP_VERSION = native?.versionName
   ? `${native.versionName} (${native.versionCode})`
-  : webVersion || '1.2.13';
+  : webVersion || '1.2.14';
 
 // UI 形态：hd = 车机/TV 横屏壳（独立包名），phone = 手机竖版
 const webFlavor = ((globalThis as { process?: { env?: { APP_FLAVOR?: string } } }).process)?.env?.APP_FLAVOR;
