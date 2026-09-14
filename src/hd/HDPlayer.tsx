@@ -648,3 +648,27 @@ const stW = StyleSheet.create({
 const stWave = StyleSheet.create({
   host: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
 });
+
+// v1.2.15:播放页渲染异常兜底(老板 09-14 报"进入播放页闪退"——vc169 两度 FATAL at HDPlayer、
+// 多路径复现未遂;边界捕获后错误卡上屏而非整进程崩溃,真凶信息留在 logcat [HDPlayerBoundary] 可取)
+class PlayerBoundary extends React.Component<{ children: React.ReactNode }, { err: Error | null }> {
+  state = { err: null as Error | null };
+  static getDerivedStateFromError(err: Error) { return { err }; }
+  componentDidCatch(err: Error) { try { console.warn('[HDPlayerBoundary]', err?.message, String(err?.stack || '').slice(0, 400)); } catch { /* ignore */ } }
+  render() {
+    if (!this.state.err) return this.props.children;
+    return (
+      <View style={{ flex: 1, backgroundColor: '#0e1310', alignItems: 'center', justifyContent: 'center', gap: 14, padding: 60 }}>
+        <Icon name="music" size={34} color="#ffffff55" />
+        <Text style={{ color: '#ffffffdd', fontSize: 18, fontWeight: '700' }}>播放页出现了一个错误</Text>
+        <Text style={{ color: '#ffffff66', fontSize: 13, textAlign: 'center' }}>{String(this.state.err?.message || this.state.err).slice(0, 200)}</Text>
+        <HDTouch style={{ marginTop: 10, height: 40, borderRadius: 20, paddingHorizontal: 26, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }} onPress={() => hdNav()?.goBack()}>
+          <Text style={{ color: C.onBrand, fontSize: 14, fontWeight: '700' }}>返回</Text>
+        </HDTouch>
+      </View>
+    );
+  }
+}
+export function HDPlayerSafe() {
+  return <PlayerBoundary><HDPlayer /></PlayerBoundary>;
+}

@@ -29,7 +29,7 @@ import { HDBoards } from './HDBoards';
 import { HDDiscover } from './HDDiscover';
 import { HDPodcast } from './HDPodcast';
 // lx84:内容区嵌套栈内页(侧栏恒固定,内页只在右侧切换;TV 设置族走根栈,v1.2.5 起 web 也内页化)
-import { HDPlayer } from './HDPlayer';
+import { HDPlayerSafe } from './HDPlayer';
 import { HDPlaylistDetailScreen } from './HDPlaylistDetail';
 import { HDAuthLoginScreen } from './HDAuthLogin';
 import { QueueScreen } from '../screens/QueueScreen';
@@ -335,7 +335,7 @@ export function HDMain() {
           {/* 坞108:TV 转场必须直切;坞57:fade 有变亮中间态 */}
           <InnerStack.Navigator screenOptions={{ headerShown: false, animation: 'none', contentStyle: { backgroundColor: C.bg }, freezeOnBlur: true }}>
             <InnerStack.Screen name="Tabs">{() => <TabsHost tab={tab} setTab={setTab} />}</InnerStack.Screen>
-            <InnerStack.Screen name="Player" component={HDPlayer} />
+            <InnerStack.Screen name="Player" component={HDPlayerSafe} />
             <InnerStack.Screen name="Queue" component={withPhoneScale(QueueScreen)} />
             <InnerStack.Screen name="Route" component={RoutePage} options={{ presentation: 'transparentModal' }} />
             <InnerStack.Screen name="Comments" component={withPhoneScale(CommentsScreen)} />

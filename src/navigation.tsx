@@ -46,7 +46,7 @@ import { AlbumDetailScreen } from './screens/AlbumDetailScreen';
 import { RoutePage } from './screens/RouteScreen';
 import { IS_HD } from './services/appversion';
 import { HDMain } from './hd/HDMain';
-import { HDPlayer } from './hd/HDPlayer';
+import { HDPlayerSafe } from './hd/HDPlayer';
 import { HDBootScreen } from './hd/HDBootScreen';
 import { withPhoneScale } from './hd/HDMain';
 import { HDAuthLoginScreen } from './hd/HDAuthLogin';
@@ -190,7 +190,7 @@ return (
         <Stack.Screen name="AuthLogin" component={IS_HD ? HDAuthLoginScreen : withEnter(AuthLoginScreen)} />
         <Stack.Screen name="AuthSignup" component={withEnter(AuthSignupScreen)} />
         <Stack.Screen name="Main" component={IS_HD ? HDMain : MainTabs} />
-        <Stack.Screen name="Player" component={IS_HD ? HDPlayer : PlayerScreen} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />
+        <Stack.Screen name="Player" component={IS_HD ? HDPlayerSafe : PlayerScreen} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />
         <Stack.Screen name="Queue" component={QueueScreen} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="PlayerSettings" component={withEnter(PlayerSettingsScreen)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Comments" component={withEnter(CommentsScreen)} />
