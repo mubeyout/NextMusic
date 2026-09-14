@@ -5,7 +5,7 @@ import React, { useEffect, useRef, useState, useReducer } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
-import { C, H, SH } from './hdtokens';
+import { C, H, SH, T } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { hdNav } from './hdnav';
 import { toast } from '../components/Dialog';
@@ -91,11 +91,25 @@ function Seg({ options, value, onChange }: { options: { key: string; label: stri
   );
 }
 
+// v3.34(老板:开关非标准):重做为标准开关——轨道+白色圆滑块平移,开=品牌绿/关=中性灰,web 下 transform 过渡动画
+function Switch({ on }: { on: boolean }) {
+  const knobRef = useRef<React.ComponentRef<typeof View> | null>(null);
+  useEffect(() => {
+    if (!IS_WEB) return;
+    const el = knobRef.current as unknown as HTMLElement | null;
+    if (el?.style) el.style.transition = 'transform .18s cubic-bezier(.4,0,.2,1)';
+  }, []);
+  return (
+    <View style={[st.tgTrack, on && st.tgTrackOn]} pointerEvents="none">
+      <View ref={knobRef} style={[st.tgKnob, on && st.tgKnobOn]} />
+    </View>
+  );
+}
 function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
     <HDTouch style={st.tgRow} hoverBg={C.hover} onPress={() => onChange(!on)}>
       <Text style={st.tgLabel}>{label}</Text>
-      <View style={[st.tgDot, on && st.tgDotOn]} />
+      <Switch on={on} />
     </HDTouch>
   );
 }
@@ -212,8 +226,8 @@ export function HDFxScreen() {
           <Toggle on={s.panner.enable} label="启用环绕" onChange={v => { setPanner({ enable: v }); force(); }} />
           {s.panner.enable ? (
             <View style={{ gap: 8 }}>
-              <HSlider label="速度" value={s.panner.speed} min={0.2} max={3} onChange={v => { setPanner({ speed: v }); force(); }} />
-              <HSlider label="距离" value={s.panner.distance} min={0.2} max={3} onChange={v => { setPanner({ distance: v }); force(); }} />
+              <HSlider label="速度" value={s.panner.speed} min={1} max={50} step={1} onChange={v => { setPanner({ speed: v }); force(); }} /> // v3.34:量纲修正(原 0.2-3 与存储 1-50 错位,默认 25 顶格+拖动跳整数)
+              <HSlider label="距离" value={s.panner.distance} min={1} max={30} step={1} onChange={v => { setPanner({ distance: v }); force(); }} />
             </View>
           ) : null}
         </View>
@@ -257,9 +271,9 @@ export function HDFxScreen() {
               <Icon name="headphones" size={12} color={C.text2} />
               <Text style={st.chipText}>{s.viper.autoeqName || '选择耳机型号'}</Text>
             </HDTouch>
-            <HDTouch style={[st.chip, s.viper.autoeqOn && st.chipOn]} hoverBg="#ffffff1a" onPress={() => { setViper({ autoeqOn: !s.viper.autoeqOn }); force(); }}>
-              <Text style={[st.chipText, s.viper.autoeqOn && { color: '#0b0f0d', fontWeight: '700' }]}>{s.viper.autoeqOn ? '已启用' : '已停用'}</Text>
-            </HDTouch>
+            <HDTouch style={st.aeSwitchHit} hoverBg="transparent" onPress={() => { setViper({ autoeqOn: !s.viper.autoeqOn }); force(); }}>
+              <Switch on={!!s.viper.autoeqName && s.viper.autoeqOn} />
+            </HDTouch> // v3.34:已启用/已停用文字 chip → 标准开关
           </View>
         </View>
       </ScrollView>
@@ -326,8 +340,11 @@ const st = StyleSheet.create({
   stepVal: { color: C.text, fontSize: H.font.md, fontVariant: ['tabular-nums'], minWidth: 52, textAlign: 'center', fontWeight: '700' },
   tgRow: { flexDirection: 'row', alignItems: 'center', height: 40, borderRadius: 10, paddingHorizontal: 12, backgroundColor: C.surface, marginTop: 6 },
   tgLabel: { flex: 1, color: C.text, fontSize: H.font.sm, fontWeight: '600' },
-  tgDot: { width: 34, height: 20, borderRadius: 10, backgroundColor: '#ffffff22', borderWidth: 1, borderColor: '#ffffff30' },
-  tgDotOn: { backgroundColor: C.brand, borderColor: C.brand },
+  tgTrack: { width: 40, height: 22, borderRadius: 11, backgroundColor: T.light ? '#1F232922' : '#ffffff22', borderWidth: 1, borderColor: T.light ? '#1F232930' : '#ffffff30', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 2 }, // v3.34:标准开关轨道
+  tgTrackOn: { backgroundColor: C.brand, borderColor: C.brand },
+  tgKnob: { width: 16, height: 16, borderRadius: 8, backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 2 },
+  tgKnobOn: { transform: [{ translateX: 20 }] }, // 40-16-2-2=20
+  aeSwitchHit: { height: 34, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
   segRow: { flexDirection: 'row', gap: 7, flexWrap: 'wrap' },
   segItem: { height: 30, borderRadius: 15, paddingHorizontal: 14, borderWidth: 1, borderColor: '#ffffff26', alignItems: 'center', justifyContent: 'center' },
   segItemOn: { backgroundColor: C.brand, borderColor: C.brand },

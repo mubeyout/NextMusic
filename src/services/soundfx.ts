@@ -166,7 +166,8 @@ export function fxSnapshot() {
 function notify() { subs.forEach(f => f()); }
 
 function persist() {
-  kv.set(KEY, JSON.stringify({ settings, customPresets }));
+  // v3.34:连 soundMode/activePresetName 一起存——此前重载后高亮全丢("默认项有问题"根因之一)
+  kv.set(KEY, JSON.stringify({ settings, customPresets, soundMode, activePresetName }));
 }
 
 // ---------- 原生生效 ----------
@@ -222,7 +223,7 @@ function pushToServerSoon() {
     req('/api/user/sound-effects', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ settings, customPresets }),
+      body: JSON.stringify({ settings, customPresets, soundMode, activePresetName }), // v3.34:模式/预设高亮随同步走
     }).then(() => { syncState = 'synced'; notify(); }).catch(() => { syncState = 'local'; notify(); });
   }, 1500);
 }
@@ -235,6 +236,7 @@ export async function fetchFxFromServer() {
       settings = sanitize(d.settings);
       customPresets = Array.isArray(d.customPresets) ? d.customPresets.filter(p => p?.name && p?.values?.length === 10) : [];
       activePresetName = '';
+      soundMode = (d as { soundMode?: SoundMode }).soundMode || 'custom'; // v3.34:服务端同步恢复模式
       persist(); applyNative(); syncState = 'synced'; notify();
     } else {
       syncState = 'synced';
@@ -254,10 +256,25 @@ export function initFx() {
   const raw = kv.getString(KEY);
   if (raw) {
     try {
-      const parsed = JSON.parse(raw) as { settings?: unknown; customPresets?: FxPreset[] };
+      const parsed = JSON.parse(raw) as { settings?: unknown; customPresets?: FxPreset[]; soundMode?: SoundMode; activePresetName?: string };
       settings = sanitize(parsed.settings);
       customPresets = (parsed.customPresets || []).filter(p => p?.name && p?.values?.length === 10);
+      if (parsed.soundMode) soundMode = parsed.soundMode; // v3.34:恢复听感模式高亮
+      if (parsed.activePresetName) activePresetName = parsed.activePresetName;
     } catch { /* 保持默认 */ }
+  }
+  // v3.34(老板:默认项有问题):重载后恢复高亮——优先用持久化的 soundMode/activePresetName;
+  // 旧 blob 无这两个字段时才兜底推断(全零+全关=原声;EQ 精确匹配预设→视为该预设)
+  if (soundMode === 'custom' && !activePresetName) {
+    const all0 = settings.eq.every(g => g === 0);
+    if (all0 && settings.reverb.id === 'none' && settings.viper.bassMode === 0
+      && !settings.viper.dcvEnable && !settings.viper.cureEnable && !settings.viper.limiterEnable
+      && !settings.viper.loudnessEnable && !settings.viper.autoeqOn && !settings.panner.enable) {
+      soundMode = 'off';
+    } else {
+      const hit = [...FX_DEFAULT_PRESETS, ...customPresets].find(pr => pr.values.every((v, i) => v === settings.eq[i]));
+      activePresetName = hit ? hit.name : '';
+    }
   }
   applyNative();
   // 2026-09 需求：不再启动时自动拉服务器音效（会覆盖本地，出现“一来就很大”）；
@@ -354,7 +371,7 @@ export function applySoundMode(mode: SoundMode) {
       break;
     case 'bass': // 移动端低音:中心 125Hz(手机/耳机发得出),配合 ViPER 纯净低音+限幅防爆
       activePresetName = '重低音';
-      commit({ ...settings, eq: eq([5, 7, 6, 2, 0, 0, 0, 0, 1, 2]),
+      commit({ ...settings, eq: eq(FX_DEFAULT_PRESETS.find(p => p.name === '重低音')!.values), // v3.34:与预设 chip 高亮值一致(原 [5,7,6..] 与预设 [4,6,6..] 不一致=默认项错乱观感)
         viper: { ...settings.viper, bassMode: 2, bassLevel: 0.5, loudnessEnable: true, limiterEnable: true, dcvEnable: false, cureEnable: false } });
       break;
     case 'vocal': // 人声:250-2k 提,低频让位,清澈模式谐波增亮

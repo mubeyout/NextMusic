@@ -203,6 +203,10 @@ function rebuildAutoeq(name: string, on: boolean) {
 
 function applyFx(cfg: FxCfg) {
   lastCfg = cfg;
+  // v3.34(老板:有时无法启用/很久才生效):两道保险——①未建图则立即建(暂停态改音效也能挂上链,播放即生效)
+  // ②AudioContext 被浏览器挂起(后台标签页节流等)则 resume,否则参数全对但无声/延迟
+  if (!actx) { try { ensureGraph(); } catch { /* 保持 lastCfg,play 时再建 */ } }
+  else if (actx.state === 'suspended') { try { actx.resume().catch(() => {}); } catch { /* ignore */ } }
   if (!actx) return;
   try {
     // ---- EQ 10 段 + 防削波 ----
@@ -258,8 +262,8 @@ function applyFx(cfg: FxCfg) {
       if (cfg.panner.enable && !lfo && actx) {
         lfo = actx.createOscillator();
         lfoDepth = actx.createGain();
-        lfo.frequency.value = 0.12 + (cfg.panner.speed || 1) * 0.25;
-        lfoDepth.gain.value = Math.min(0.9, 0.25 + (cfg.panner.distance || 1) * 0.18);
+        lfo.frequency.value = 0.04 + ((cfg.panner.speed || 25) / 50) * 0.46; // v3.34:量纲映射修正(1-50 原生标度→0.04-0.5Hz,默认 25→0.27Hz 缓旋)
+        lfoDepth.gain.value = 0.1 + ((cfg.panner.distance || 5) / 30) * 0.8;
         lfo.connect(lfoDepth); lfoDepth.connect(panNode.pan);
         lfo.start();
       } else if (!cfg.panner.enable && lfo) {
@@ -267,8 +271,8 @@ function applyFx(cfg: FxCfg) {
         lfo.disconnect(); lfo = null; lfoDepth = null;
         panNode.pan.value = 0;
       } else if (cfg.panner.enable && lfo && lfoDepth) {
-        lfo.frequency.value = 0.12 + (cfg.panner.speed || 1) * 0.25;
-        lfoDepth.gain.value = Math.min(0.9, 0.25 + (cfg.panner.distance || 1) * 0.18);
+        lfo.frequency.value = 0.04 + ((cfg.panner.speed || 25) / 50) * 0.46;
+        lfoDepth.gain.value = 0.1 + ((cfg.panner.distance || 5) / 30) * 0.8;
       }
     }
     // pitch(变调):web 无 Sonic 级实现,不假装生效(playbackRate 会连带变速,不采用)
