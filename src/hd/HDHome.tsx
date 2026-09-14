@@ -76,7 +76,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
       const bs = await lxapi.leaderboardBoards('kg');
       const top = bs.find(b => /500/i.test(b.name)) || bs[0];
       const list = top ? await lxapi.leaderboardList(top.bangid, 'kg').catch(() => [] as SongItem[]) : [];
-      if (list.length) { playSong(list[0], list.slice(0, 30)); toast(`每日推荐 · ${Math.min(30, list.length)} 首`); }
+      if (list.length) { playSong(list[0], list.slice(0, 30)); toast(`每日精选 · ${Math.min(30, list.length)} 首`); }
       else toast('榜单获取失败,稍后重试');
     } finally { setDailyBusy(false); }
   };
@@ -110,9 +110,11 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
       <Text style={st.greet}>Hi,{greet}{connected && snap ? ',Mubey' : ''}</Text>
 
       {/* 双大卡 */}
-      <View style={{ flexDirection: 'row', gap: 22 }}> /* v3.30(LEO P1):双大卡间距 12→22(GUTTER) */
-        <BigCard colors={['#7C4DFF', '#3F8CFF']} badge="30" title="每日推荐" sub="根据你的口味生成 · 每天 6:00 更新" busy={dailyBusy} onPress={playDaily} />
-        <BigCard colors={['#0FA3A3', '#1ED760']} badge="雷达" title="私人雷达" sub="你循环过的歌,都在这里重逢" onPress={playRadar} />
+      {/* v3.30(LEO P1):双大卡间距 12→22(GUTTER) */}
+      {/* v3.32(老板 P1 修复):裸注释曾被渲染为匿名 flex 文本节点占 371px 致双大卡不占满行——JSX 子位置注释必须用花括号包裹形式 */}
+      <View style={{ flexDirection: 'row', gap: 22 }}>
+        <BigCard colors={['#7C4DFF', '#3F8CFF']} badge="30" title="每日精选" sub="30 首热歌 · 每天更新" busy={dailyBusy} onPress={playDaily} />
+        <BigCard colors={['#0FA3A3', '#1ED760']} badge="雷达" title="私人雷达" sub="你最近循环的歌" onPress={playRadar} />
       </View>
 
       {recents.length ? (

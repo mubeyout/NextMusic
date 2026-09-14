@@ -193,7 +193,7 @@ function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
       <View style={st.quickGrid}>
         <TouchableOpacity style={st.quickCard} activeOpacity={0.8} onPress={playHot} disabled={fetching}>
           <Image source={sky} style={st.quickArt} />
-          <Text style={st.quickLabel}>每日推荐</Text>
+          <Text style={st.quickLabel}>每日精选</Text>
         </TouchableOpacity>
         <TouchableOpacity style={st.quickCard} activeOpacity={0.8} onPress={openLove}>
           <Image source={vinyl} style={st.quickArt} />

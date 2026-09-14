@@ -181,7 +181,25 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={[st.desc, IS_HD && hdSt.desc]}>{copy.desc || PROVIDER_META[picked].hint}</Text>
+        <Text style={[st.desc, IS_HD && hdSt.desc, { textAlign: 'center' }]}>{copy.desc || PROVIDER_META[picked].hint}</Text>
+
+        {/* v3.32(老板):支持从历史连接中选择——同类型已存连接一键填充 */}
+        {(() => {
+          const hist = providers.all().filter(p => p.id !== a.id && p.type === picked && p.base);
+          return hist.length ? (
+            <View style={{ width: '100%', gap: 6 }}>
+              <Text style={[st.inputLabel, { textAlign: 'center' }]}>从历史连接中选择</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+                {hist.map(p => (
+                  <TouchableOpacity key={p.id} style={st.histChip} activeOpacity={0.7}
+                    onPress={() => { setA(prev => ({ ...prev, name: p.name, base: p.base, user: p.user, pass: p.pass })); setTested(false); toast('已填充历史连接，可直接测试或保存'); }}>
+                    <Text style={st.histChipText} numberOfLines={1}>{p.name || PROVIDER_META[p.type].label.split(' / ')[0]} · {p.user || '匿名'}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          ) : null;
+        })()}
 
         {subsonicFamily ? (
           <View style={st.tabsWrap}>
@@ -302,9 +320,11 @@ const st = StyleSheet.create({
   tabText: { color: C.text2, fontSize: 12 },
 
   // 输入卡（Figma: #2B2B2B r12 p10×12）
-  inputCard: { backgroundColor: C.surface2, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, gap: 4 },
-  inputLabel: { color: C.text2, fontSize: 11 },
-  inputValue: { color: C.text, fontSize: 14, paddingVertical: 4 },
+  inputCard: { backgroundColor: C.surface2, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, gap: 4, alignItems: 'center' }, // v3.32(老板):表单居中对齐
+  inputLabel: { color: C.text2, fontSize: 11, textAlign: 'center' },
+  inputValue: { color: C.text, fontSize: 14, paddingVertical: 4, textAlign: 'center', width: '100%' },
+  histChip: { backgroundColor: C.surface2, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: C.border }, // v3.32:历史连接胶囊
+  histChipText: { color: C.text2, fontSize: 12 },
   inputHint: { color: C.text2, fontSize: 10 },
 
   // 测试通过信息卡
@@ -332,10 +352,10 @@ const hdSt = StyleSheet.create({
   typeBadge: { backgroundColor: C.brandDim, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 3 },
   typeBadgeText: { color: C.brandText, fontSize: 12, fontWeight: '700' },
   typeSub: { color: C.text3, fontSize: 12, textAlign: 'center', lineHeight: 17 },
-  desc: { color: C.text2, fontSize: 13, lineHeight: 18 },
-  inputCard: { backgroundColor: C.surface, borderRadius: 16, paddingHorizontal: 20, paddingVertical: 14, gap: 6 },
-  inputLabel: { color: C.text2, fontSize: 13 },
-  inputValue: { color: C.text, fontSize: 16, paddingVertical: 6 },
+  desc: { color: C.text2, fontSize: 13, lineHeight: 18, textAlign: 'center' },
+  inputCard: { backgroundColor: C.surface, borderRadius: 16, paddingHorizontal: 20, paddingVertical: 14, gap: 6, alignItems: 'center' }, // v3.32(老板):表单居中对齐
+  inputLabel: { color: C.text2, fontSize: 13, textAlign: 'center' },
+  inputValue: { color: C.text, fontSize: 16, paddingVertical: 6, textAlign: 'center', width: '100%' },
   btnGhost: { flex: 1, height: 58, borderRadius: 14, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   btnGhostFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 14 },
   btnGhostText: { color: C.text, fontSize: 16, fontWeight: '600' },
