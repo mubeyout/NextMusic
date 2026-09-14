@@ -91,8 +91,8 @@ android {
             applicationIdSuffix ".hd"
             versionNameSuffix "-hd"
             // HD 独立版本线:与 phone 共享 default,但可单独越号更新(当前 hd v2)
-            versionCode 166
-            versionName "1.2.12" // v1.2.12(老板:三端一套版本口径,对齐桌面)
+            versionCode 167
+            versionName "1.2.13" // v1.2.13(三端统一收口,v3.31 补入)
         }
     }
 
