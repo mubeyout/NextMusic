@@ -520,7 +520,7 @@ const st = StyleSheet.create({
   trackRest: { backgroundColor: '#ffffff2e', borderRadius: 3 },
   playhead: { position: 'absolute', top: -4, width: 13, height: 13, borderRadius: 7, backgroundColor: C.brand, borderWidth: 2.5, borderColor: '#ffffff', marginLeft: -7, boxShadow: '0 0 12px rgba(30,215,96,.75)' },
   ctrlRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  ctrlRowWeb: { justifyContent: 'center', gap: 10, columnGap: 20, marginTop: 0, flexWrap: 'nowrap' }, // v3.7:单排不换行
+  ctrlRowWeb: { justifyContent: 'center', gap: 10, columnGap: 20, marginTop: 0, flexWrap: 'wrap', rowGap: 10 }, // v3.31(老板:窄窗工具按钮被裁):自适应换行保全控件可达;宽屏富余时仍单行
   cMainWeb: { width: 60, height: 60, borderRadius: 30, boxShadow: '0 8px 30px rgba(30,215,96,.4)' }, // Spotify 大播放键
   ctrlDividerWeb: { opacity: .7 },
   cMode: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' }, // v3.7:去黑底
