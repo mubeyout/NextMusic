@@ -48,7 +48,6 @@ import { ProviderEditScreen } from '../screens/ProviderEditScreen';
 import { ProviderDetailScreen } from '../screens/ProviderDetailScreen';
 import { DownloadsScreen } from '../screens/DownloadsScreen';
 import { BoardsSquareScreen } from '../screens/BoardsSquareScreen';
-import { TingfengScreen } from '../screens/TingfengScreen';
 import { DeviceMusicScreen } from '../screens/DeviceMusicScreen';
 import { SearchScreen } from '../screens/SearchScreen';
 import { RoutePage } from '../screens/RouteScreen';
@@ -282,8 +281,6 @@ export function HDMain() {
           {/* 歌单广场(v2 对齐):发现族入口 */}
           <NavItem icon="explore" label="歌单广场" active={innerRoute === 'Discover'} onPress={() => railNav('Discover')} />
 
-          {/* 听风音乐(RoCeOS Tingfeng):2026-09-16 老板需求,地址+账户密码接入 */}
-          <NavItem icon="wave" label="听风音乐" active={innerRoute === 'Tingfeng'} onPress={() => railNav('Tingfeng')} />
 
           {/* 我的乐库 */}
           <Group label="我的乐库" top={8} />
@@ -360,7 +357,6 @@ export function HDMain() {
             <InnerStack.Screen name="ProviderDetail" component={withPhoneScale(ProviderDetailScreen)} />
             <InnerStack.Screen name="Downloads" component={withPhoneScale(DownloadsScreen)} />
             <InnerStack.Screen name="BoardsSquare" component={withPhoneScale(BoardsSquareScreen)} />
-            <InnerStack.Screen name="Tingfeng" component={withPhoneScale(TingfengScreen)} />
             <InnerStack.Screen name="Discover" component={HDDiscover} />
             <InnerStack.Screen name="DeviceMusic" component={withPhoneScale(DeviceMusicScreen)} />
             <InnerStack.Screen name="Sources" component={withPhoneScale(SourcesScreen)} />

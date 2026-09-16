@@ -104,7 +104,7 @@ export function MediaLibsScreen() {
       >
         <Text style={[st.intro, IS_HD && hd.intro]}>接入 Emby、Jellyfin、Navidrome、道理鱼（Subsonic 兼容）或 WebDAV，把私有音乐库变成曲库。</Text>
         {accts.length === 0 ? (
-          <EmptyState icon="server" title="还没有添加媒体库" sub="点右上角 ＋ 接入 Emby / Jellyfin / Navidrome / WebDAV" />
+          <EmptyState icon="server" title="还没有添加媒体库" sub="点右上角 ＋ 接入 Emby / Jellyfin / Navidrome / WebDAV / 听风" />
         ) : (
           <View style={st.group}>
             {accts.map((a, i) => (
@@ -195,13 +195,18 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
       .catch(e => setLists({ data: null, err: (e as Error).message, busy: false }));
   };
 
+  // 听风无专辑/艺术家概念：只展示 歌曲/歌单 两段（seg 索引随 tab 数变化）
+  const isTf = acct?.type === 'tingfeng';
+  const segSongs: Seg = isTf ? 0 : 2;
+  const segLists: Seg = isTf ? 1 : 3;
+
   // 分段懒加载：进入某段且未加载时才拉
   useEffect(() => {
     if (!acct || isDav) return;
-    if (seg === 0 && !albums.data && !albums.busy && !albums.err) loadAlbums(acct);
-    if (seg === 1 && !artists.data && !artists.busy && !artists.err) loadArtists(acct);
-    if (seg === 2 && !songs.data && !songs.busy && !songs.err) loadSongs(acct);
-    if (seg === 3 && !lists.data && !lists.busy && !lists.err) loadLists(acct);
+    if (!isTf && seg === 0 && !albums.data && !albums.busy && !albums.err) loadAlbums(acct);
+    if (!isTf && seg === 1 && !artists.data && !artists.busy && !artists.err) loadArtists(acct);
+    if (seg === segSongs && !songs.data && !songs.busy && !songs.err) loadSongs(acct);
+    if (seg === segLists && !lists.data && !lists.busy && !lists.err) loadLists(acct);
   }, [seg, acctId, isDav]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // WebDAV 目录加载
@@ -373,10 +378,10 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
         /* ---------- 四段曲库浏览 ---------- */
         <>
           {IS_HD
-            ? <View style={{ paddingHorizontal: GUTTER }}><PillTabsHD tabs={['专辑', '艺术家', '歌曲', '歌单']} active={seg} onChange={(i) => setSeg(i as Seg)} autoFocusFirst /></View>
-            : <PillTabs tabs={['专辑', '艺术家', '歌曲', '歌单']} active={seg} onChange={(i) => setSeg(i as Seg)} />}
+            ? <View style={{ paddingHorizontal: GUTTER }}><PillTabsHD tabs={isTf ? ['歌曲', '歌单'] : ['专辑', '艺术家', '歌曲', '歌单']} active={seg} onChange={(i) => setSeg(i as Seg)} autoFocusFirst /></View>
+            : <PillTabs tabs={isTf ? ['歌曲', '歌单'] : ['专辑', '艺术家', '歌曲', '歌单']} active={seg} onChange={(i) => setSeg(i as Seg)} />}
           <ScrollView contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingBottom: IS_HD ? pageBottom(32) : (current ? 116 : 32), gap: IS_HD ? 12 : 8 }}>
-            {seg === 0 && (
+            {seg === 0 && !isTf && (
               <SegBody state={albums} onRetry={() => { setAlbums({ data: null, err: null, busy: false }); if (acct) loadAlbums(acct); }}>
                 {albums.data && albums.data.length === 0 ? <EmptyState icon="music" title="服务器上没有专辑" sub="先在媒体服务器里添加音乐库" /> : null}
                 <View style={st.albumGrid}>
@@ -399,7 +404,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
               </SegBody>
             )}
 
-            {seg === 1 && (
+            {seg === 1 && !isTf && (
               <SegBody state={artists} onRetry={() => { setArtists({ data: null, err: null, busy: false }); if (acct) loadArtists(acct); }}>
                 {artists.data && artists.data.length === 0 ? <EmptyState icon="music" title="没有找到艺术家" /> : null}
                 {(artists.data || []).map(ar => (
@@ -420,10 +425,10 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
               </SegBody>
             )}
 
-            {seg === 2 && (
+            {seg === segSongs && (
               <SegBody state={songs} onRetry={refreshSongs}>
                 <View style={st.songsBar}>
-                  <Text style={st.songsHint}>随机 100 首</Text>
+                  <Text style={st.songsHint}>{isTf ? '新歌速递' : '随机 100 首'}</Text>
                   <T style={st.shuffleBtn} activeOpacity={0.7} onPress={refreshSongs} disabled={songs.busy} focusStyle={focus(16)}>
                     <Icon name="refresh" size={14} color={C.onBrand} />
                     <Text style={st.shuffleBtnText}>换一批</Text>
@@ -440,7 +445,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
               </SegBody>
             )}
 
-            {seg === 3 && (
+            {seg === segLists && (
               <SegBody state={lists} onRetry={() => { setLists({ data: null, err: null, busy: false }); if (acct) loadLists(acct); }}>
                 {lists.data && lists.data.length === 0 ? <EmptyState icon="music" title="服务器上没有歌单" sub="在媒体服务器或 amcfy 等客户端里创建" /> : null}
                 {(lists.data || []).map(pl => (

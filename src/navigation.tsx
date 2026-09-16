@@ -39,7 +39,6 @@ import { MediaLibsScreen, ProviderBrowseRoute } from './screens/MediaLibsScreen'
 import { ProviderDetailScreen } from './screens/ProviderDetailScreen';
 import { DownloadsScreen } from './screens/DownloadsScreen';
 import { BoardsSquareScreen } from './screens/BoardsSquareScreen';
-import { TingfengScreen } from './screens/TingfengScreen';
 import { DeviceMusicScreen } from './screens/DeviceMusicScreen';
 import { SearchScreen } from './screens/SearchScreen';
 import { ArtistDetailScreen } from './screens/ArtistDetailScreen';
@@ -221,7 +220,6 @@ return (
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ProviderDetail" component={withEnter(ProviderDetailScreen)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Downloads" component={withEnter(DownloadsScreen)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="BoardsSquare" component={withEnter(BoardsSquareScreen)} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Tingfeng" component={withEnter(TingfengScreen)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="DeviceMusic" component={withEnter(DeviceMusicScreen)} />
       </Stack.Navigator>
     </NavigationContainer>

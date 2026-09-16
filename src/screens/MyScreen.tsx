@@ -23,7 +23,6 @@ import { sync, lxToApp, type UserListsSnapshot } from '../services/sync';
 import { downloads as dlStore, subscribeDownloads, fmtBytes } from '../services/downloads';
 import { deviceTrackCount } from '../services/devicelibrary';
 import { providers, PROVIDER_META, type ProviderAcct } from '../services/providers';
-import { tingfeng } from '../services/tingfeng';
 import type { SongItem } from '../services/server';
 
 // Figma 2154-702 我的·歌单: title 28 + settings btn(#2b2b2b round) + pills +
@@ -174,19 +173,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
             </TouchableOpacity>
           </View>
 
-          {/* 听风音乐(RoCeOS):地址+账户密码接入,独立服务不走 lxserver(2026-09-16) */}
-          <View style={st.sectionRow}>
-            <Text style={st.sectionTitle}>听风音乐</Text>
-            <TouchableOpacity onPress={() => nav.navigate('Tingfeng')} hitSlop={4}>
-              <Text style={st.sectionMeta}>{tingfeng.connected ? `${tingfeng.config?.nickname || '已连接'} ›` : '接入 ›'}</Text>
-            </TouchableOpacity>
-          </View>
-          <TouchableOpacity style={st.pvAddRow} activeOpacity={0.7} onPress={() => nav.navigate('Tingfeng')}>
-            <Icon name="wave" size={16} color={C.brandText} />
-            <Text style={st.pvAddText}>{tingfeng.connected ? 'RoCeOS 网易云 · 推荐歌单 / 排行榜 / 新歌' : '连接 iStoreOS/RoCeOS 的听风音乐服务'}</Text>
-          </TouchableOpacity>
-
-          {/* 媒体库：已连服务器直接进曲库（amcfy 式入口前置，不再只藏在设置里） */}
+          {/* 媒体库：已连服务器直接进曲库（amcfy 式入口前置，不再只藏在设置里；听风音乐也在媒体库里添加） */}
           <View style={st.sectionRow}>
             <Text style={st.sectionTitle}>媒体库</Text>
             <TouchableOpacity onPress={() => nav.navigate('MediaLibs')} hitSlop={4}>

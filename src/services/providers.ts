@@ -1,17 +1,19 @@
-// 第三方媒体库接入：Subsonic(Navidrome/道理鱼/Subsonic) · Emby · Jellyfin · WebDAV
-// 账号持久化在 MMKV；对外统一输出 SongItem（source = provider 类型，songmid = "pid:itemId"）
-// 播放/下载统一走 streamUrlFor() + authHeadersFor()
+// 第三方媒体库接入：Subsonic(Navidrome/道理鱼/Subsonic) · Emby · Jellyfin · WebDAV · 听风(RoCeOS 网易云)
+// 账号持久化在 MMKV；对外统一输出 SongItem（provider 系 source = provider 类型，songmid = "pid:itemId"；听风 source='tf'）
+// 播放/下载统一走 streamUrlFor() + authHeadersFor()（听风除外：直链需异步现取，PlayerProvider 前置分支处理）
 import { createMMKV } from 'react-native-mmkv';
 import type { SongItem } from './server';
+import { tfLogin, tfCall, tfToSongItem, tfUserLib, type TfSess, type TfSongList, type TfPlaylist } from './tingfeng';
 
 const kv = createMMKV({ id: 'nextmusic-providers' });
 
-export type ProviderType = 'subsonic' | 'navidrome' | 'daoliyu' | 'emby' | 'jellyfin' | 'webdav';
+export type ProviderType = 'subsonic' | 'navidrome' | 'daoliyu' | 'emby' | 'jellyfin' | 'webdav' | 'tingfeng';
 
 // 协议映射：navidrome / 道理鱼 走 Subsonic 协议
-export const PROTOCOL: Record<ProviderType, 'subsonic' | 'emby' | 'jellyfin' | 'webdav'> = {
+export const PROTOCOL: Record<ProviderType, 'subsonic' | 'emby' | 'jellyfin' | 'webdav' | 'tingfeng'> = {
   subsonic: 'subsonic', navidrome: 'subsonic', daoliyu: 'subsonic',
   emby: 'emby', jellyfin: 'jellyfin', webdav: 'webdav',
+  tingfeng: 'tingfeng',
 };
 
 export interface ProviderAcct {
@@ -25,6 +27,7 @@ export interface ProviderAcct {
   token?: string;      // emby/jellyfin AccessToken
   userId?: string;     // emby/jellyfin User.Id
   root?: string;       // 探测出的 API 根路径（emby 可能带 /emby）
+  tfRefresh?: string;  // 听风 refreshToken（token 轮换/刷新用；accessToken 在 token 字段）
 }
 
 export const PROVIDER_META: Record<ProviderType, { label: string; hint: string; placeholder: string }> = {
@@ -34,9 +37,10 @@ export const PROVIDER_META: Record<ProviderType, { label: string; hint: string; 
   emby: { label: 'Emby', hint: 'Emby 媒体服务器（音乐库）', placeholder: 'http://192.168.1.10:8096' },
   jellyfin: { label: 'Jellyfin', hint: 'Jellyfin 媒体服务器（音乐库）', placeholder: 'http://192.168.1.10:8096' },
   webdav: { label: 'WebDAV', hint: 'NAS / 飞牛 fnOS / Alist 等 WebDAV 共享目录，直接浏览音频文件', placeholder: 'http://192.168.1.10:5244/dav' },
+  tingfeng: { label: '听风音乐', hint: 'RoCeOS / iStoreOS 路由器内置网易云服务（推荐歌单/排行榜/新歌）', placeholder: 'http://192.168.1.1 或 op.example.com:88' },
 };
 
-// 判断歌曲是否来自第三方媒体库（source ∈ 协议表 keys；subsonic 系歌实际 source 为 'subsonic'）
+// 判断歌曲是否来自第三方媒体库（source ∈ 协议表 keys；subsonic 系歌实际 source 为 'subsonic'；听风歌 source='tf' 不在此列——它走独立取链分支）
 export function isProviderSongSource(src?: string): boolean {
   return !!src && !!PROTOCOL[src as ProviderType];
 }
@@ -302,10 +306,26 @@ function transcodeUrlFor(a: ProviderAcct, itemId: string): { url: string; header
 /** ExoPlayer 可直解的音频容器；其余（ape/wma/alac/aiff…）直流必败，只能转码 */
 const DIRECT_PLAY_OK = new Set(['mp3', 'm4a', 'aac', 'flac', 'ogg', 'oga', 'opus', 'wav', 'webma', 'webm']);
 
+/** 听风引擎包装：会话从账号构建，token 轮换/刷新后回写账号（finally 保证异常也持久化） */
+async function tfRun<T>(a: ProviderAcct, fn: (s: TfSess) => Promise<T>): Promise<T> {
+  const sess: TfSess = { base: a.base, token: a.token, refresh: a.tfRefresh };
+  try {
+    return await fn(sess);
+  } finally {
+    if (sess.token && (sess.token !== a.token || sess.refresh !== a.tfRefresh)) {
+      providers.save({ ...a, token: sess.token, tfRefresh: sess.refresh });
+    }
+  }
+}
+
 export const providerApi = {
   /** 连接测试 + 登录（成功返回更新后的账号，含 token/userId） */
   async connect(a: ProviderAcct): Promise<ProviderAcct> {
     const base = norm(a.base);
+    if (a.type === 'tingfeng') {
+      const r = await tfLogin(base, a.user, a.pass);
+      return { ...a, base: r.base, token: r.token, tfRefresh: r.refresh, name: a.name.trim() || r.nickname || '听风音乐' };
+    }
     if (PROTOCOL[a.type] === 'subsonic') {
       await subCall(a, 'ping'); // throws on failure
       return { ...a, base };
@@ -336,8 +356,9 @@ export const providerApi = {
     throw lastErr || new Error('连接失败');
   },
 
-  /** 专辑列表（P0 浏览页「专辑」段） */
+  /** 专辑列表（P0 浏览页「专辑」段；听风无专辑概念→空） */
   async albums(a: ProviderAcct): Promise<PvAlbum[]> {
+    if (a.type === 'tingfeng') return [];
     if (PROTOCOL[a.type] === 'subsonic') {
       const d = await subCall<{ albumList2?: { album?: Record<string, unknown>[] } }>(a, 'getAlbumList2', { type: 'alphabeticalByName', size: '200' });
       return (d.albumList2?.album || []).map(al => ({
@@ -361,8 +382,9 @@ export const providerApi = {
     return [];
   },
 
-  /** 艺术家列表（浏览页「艺术家」段；Subsonic getArtists / Emby MusicArtist） */
+  /** 艺术家列表（浏览页「艺术家」段；听风无→空） */
   async artists(a: ProviderAcct): Promise<PvArtist[]> {
+    if (a.type === 'tingfeng') return [];
     if (PROTOCOL[a.type] === 'subsonic') {
       const d = await subCall<{ artists?: { index?: { artist?: Record<string, unknown>[] }[] } }>(a, 'getArtists');
       const flat = (d.artists?.index || []).flatMap(ix => ix.artist || []);
@@ -384,8 +406,9 @@ export const providerApi = {
     return [];
   },
 
-  /** 某艺术家的专辑（艺术家详情页；Subsonic getArtist / Emby AlbumArtistIds 过滤） */
+  /** 某艺术家的专辑（艺术家详情页；听风无→空） */
   async artistAlbums(a: ProviderAcct, artistId: string): Promise<PvAlbum[]> {
+    if (a.type === 'tingfeng') return [];
     if (PROTOCOL[a.type] === 'subsonic') {
       const d = await subCall<{ artist?: { album?: Record<string, unknown>[] } }>(a, 'getArtist', { id: artistId });
       return (d.artist?.album || []).map(al => ({
@@ -407,9 +430,17 @@ export const providerApi = {
     return [];
   },
 
-  /** 随机歌曲（浏览页「歌曲」段，换一批即重调；Subsonic getRandomSongs / Emby SortBy=Random） */
+  /** 随机歌曲（浏览页「歌曲」段，换一批即重调；听风=新歌速递，客户端乱序充当"换一批"） */
   async randomSongs(a: ProviderAcct, size = 100): Promise<SongItem[]> {
     const pid = a.id;
+    if (a.type === 'tingfeng') {
+      return tfRun(a, async s => {
+        const d = await tfCall<TfSongList>(s, '/api/v1/netease/newsong?area=0', { timeout: 20000 });
+        const arr = d.songs.map(x => tfToSongItem(x, pid));
+        for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[arr[i], arr[j]] = [arr[j], arr[i]]; }
+        return arr;
+      });
+    }
     if (PROTOCOL[a.type] === 'subsonic') {
       const d = await subCall<{ randomSongs?: { song?: Record<string, unknown>[] } }>(a, 'getRandomSongs', { size: String(size) });
       return (d.randomSongs?.song || []).map(s => mapSubSong(a, pid, s));
@@ -421,8 +452,28 @@ export const providerApi = {
     return [];
   },
 
-  /** 服务器端歌单列表（浏览页「歌单」段） */
+  /** 服务器端歌单列表（浏览页「歌单」段；听风=我喜欢的音乐+最近播放+我的歌单+推荐歌单+排行榜，id 前缀 liked:/recent:/mine:/pl:/top: 区分） */
   async playlists(a: ProviderAcct): Promise<PvPlaylist[]> {
+    if (a.type === 'tingfeng') {
+      return tfRun(a, async s => {
+        // 用户库（听风侧 tingfeng_data，与听风 web 端同库双向）
+        let lib: Awaited<ReturnType<typeof tfUserLib>> | null = null;
+        try { lib = await tfUserLib(s); } catch { /* 用户库拉不到不影响公共榜单 */ }
+        const user: PvPlaylist[] = lib ? [
+          { id: 'liked:', name: '我喜欢的音乐', songCount: lib.liked.length, cover: lib.liked[0]?.thumbnail },
+          { id: 'recent:', name: '最近播放', songCount: lib.recent.length, cover: lib.recent[0]?.thumbnail },
+          ...lib.playlists.map(p => ({ id: `mine:${p.id}`, name: p.name, songCount: p.songs.length, cover: p.coverUrl || p.songs[0]?.thumbnail })),
+        ] : [];
+        const tops = await tfCall<TfPlaylist[]>(s, '/api/v1/netease/toplist', { timeout: 20000 });
+        let recs: TfPlaylist[] = [];
+        try { recs = await tfCall<TfPlaylist[]>(s, '/api/v1/netease/recommend/playlists?limit=30', { timeout: 20000 }); } catch { /* 推荐拉不到至少榜单可用 */ }
+        return [
+          ...user,
+          ...recs.map(p => ({ id: `pl:${p.id}`, name: p.name, songCount: p.trackCount, cover: p.coverUrl })),
+          ...tops.map(t => ({ id: `top:${t.id}`, name: t.name, cover: t.coverUrl })),
+        ];
+      });
+    }
     if (PROTOCOL[a.type] === 'subsonic') {
       const d = await subCall<{ playlists?: { playlist?: Record<string, unknown>[] } }>(a, 'getPlaylists');
       return (d.playlists?.playlist || []).map(pl => ({
@@ -444,9 +495,28 @@ export const providerApi = {
     return [];
   },
 
-  /** 服务器歌单曲目 */
+  /** 服务器歌单曲目（听风：liked:/recent:/mine: 走用户库；top: 前缀走榜单接口，其余走歌单接口） */
   async playlistSongs(a: ProviderAcct, playlistId: string): Promise<SongItem[]> {
     const pid = a.id;
+    if (a.type === 'tingfeng') {
+      return tfRun(a, async s => {
+        // 用户库歌单（听风侧数据直接映射）
+        if (playlistId === 'liked:' || playlistId === 'recent:') {
+          const lib = await tfUserLib(s);
+          const arr = playlistId === 'liked:' ? lib.liked : lib.recent;
+          return arr.map(x => tfToSongItem(x as never, pid));
+        }
+        if (playlistId.startsWith('mine:')) {
+          const lib = await tfUserLib(s);
+          const pl = lib.playlists.find(p => `mine:${p.id}` === playlistId);
+          return (pl?.songs || []).map(x => tfToSongItem(x as never, pid));
+        }
+        const isTop = playlistId.startsWith('top:');
+        const realId = playlistId.replace(/^(top:|pl:)/, '');
+        const d = await tfCall<TfSongList>(s, `/api/v1/netease/${isTop ? 'toplist' : 'playlist'}/${realId}/songs`, { timeout: 25000 });
+        return d.songs.map(x => tfToSongItem(x, pid));
+      });
+    }
     if (PROTOCOL[a.type] === 'subsonic') {
       const d = await subCall<{ playlist?: { entry?: Record<string, unknown>[] } }>(a, 'getPlaylist', { id: playlistId });
       return (d.playlist?.entry || []).map(s => mapSubSong(a, pid, s));
@@ -458,9 +528,10 @@ export const providerApi = {
     return [];
   },
 
-  /** 专辑内歌曲（复用映射助手） */
+  /** 专辑内歌曲（复用映射助手；听风无→空） */
   async albumSongs(a: ProviderAcct, albumId: string): Promise<SongItem[]> {
     const pid = a.id;
+    if (a.type === 'tingfeng') return [];
     if (PROTOCOL[a.type] === 'subsonic') {
       const d = await subCall<{ album?: { song?: Record<string, unknown>[] } }>(a, 'getAlbum', { id: albumId });
       return (d.album?.song || []).map(s => mapSubSong(a, pid, s, albumId));

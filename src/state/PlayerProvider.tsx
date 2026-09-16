@@ -14,7 +14,7 @@ import { settings } from '../services/settings';
 import { useApp } from './AppState';
 import { pushRecent } from './recent';
 import { sync, appToLx, lxToApp } from '../services/sync'; // lx163:播放列表同步(defaultList)
-import { TF_SOURCE, tfSongUrl } from '../services/tingfeng'; // 听风音乐(RoCeOS)取链
+import { TF_SOURCE, tfSongUrl, tfNoteRecent } from '../services/tingfeng'; // 听风音乐(RoCeOS)取链+最近播放同步
 import { navRef } from '../navRef';
 import { dialog, toast } from '../components/Dialog';
 import { dlna, googleCast, airplay, audioRoute, type DlnaDevice, type CastDevice, type AirPlayDevice } from '../services/audioroute';
@@ -406,6 +406,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             if (r.img && !t.img) t.img = r.img;
             playOrCast(t, r.url);
             setCurrent(t);
+            void tfNoteRecent(t); // 写回听风「最近播放」（fire-and-forget）
             failStreak = 0;
             return;
           }
