@@ -110,6 +110,13 @@ function withTimeout<T>(p: Promise<T>, ms: number, tag: string): Promise<T> {
 }
 
 async function resolveUrl(song: SongItem, quality: Quality): Promise<{ url: string; headers?: Record<string, string> }> {
+  // 听风音乐(RoCeOS):song/{id} 直链(不走 lxserver)
+  if (song.source === 'tf') {
+    const { tfSongUrl } = await import('./tingfeng');
+    const r = await withTimeout(tfSongUrl(song), 25000, '听风取链');
+    if (r.url) return { url: r.url };
+    throw new Error('听风取链失败');
+  }
   // 媒体库源（emby/jellyfin/subsonic/webdav）直接出流地址
   const p = providerApi.streamFor(song);
   if (p) return p;

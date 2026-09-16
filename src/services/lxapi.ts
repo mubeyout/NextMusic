@@ -266,6 +266,13 @@ export const lxapi = {
 
   async lyric(songInfo: SongItem): Promise<{ lyric?: string; tlyric?: string; rlyric?: string; lxlyric?: string; lrc?: string }> {
     try {
+      // 听风音乐(RoCeOS):取链时已回填 lrc,无则再拉一次 song 详情(直链+歌词一体)
+      if (songInfo.source === 'tf') {
+        if (songInfo.lrc) return { lyric: songInfo.lrc };
+        const { tfApi } = await import('./tingfeng');
+        const d = await tfApi.songDetail(songInfo.songmid);
+        return d.lyrics ? { lyric: d.lyrics } : {};
+      }
       const si = songInfo as SongItem & { copyrightId?: string; lrcUrl?: string; mrcUrl?: string; trcUrl?: string };
       const info = {
         songmid: songInfo.songmid || songmidOf(songInfo),

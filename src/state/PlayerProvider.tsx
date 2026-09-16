@@ -14,6 +14,7 @@ import { settings } from '../services/settings';
 import { useApp } from './AppState';
 import { pushRecent } from './recent';
 import { sync, appToLx, lxToApp } from '../services/sync'; // lx163:播放列表同步(defaultList)
+import { TF_SOURCE, tfSongUrl } from '../services/tingfeng'; // 听风音乐(RoCeOS)取链
 import { navRef } from '../navRef';
 import { dialog, toast } from '../components/Dialog';
 import { dlna, googleCast, airplay, audioRoute, type DlnaDevice, type CastDevice, type AirPlayDevice } from '../services/audioroute';
@@ -396,6 +397,20 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       const quality = pickQuality(t);
+      // 0) 听风音乐(RoCeOS Tingfeng):song/{id} 直链 mp3(含 LRC,回填曲目)——独立服务,不走 lxserver 取链
+      if (t.source === TF_SOURCE) {
+        try {
+          const r = await tfSongUrl(t);
+          if (r.url) {
+            if (r.lrc && !t.lrc) t.lrc = r.lrc;
+            if (r.img && !t.img) t.img = r.img;
+            playOrCast(t, r.url);
+            setCurrent(t);
+            failStreak = 0;
+            return;
+          }
+        } catch { /* 落到失败/换源流程 */ }
+      }
       // web 服务端部署形态:直接走服务器取链(登录带 token,匿名亦可——公共源服务器端执行,无 CORS)
       const webSrvMode = Platform.OS === 'web' && typeof navigator !== 'undefined' && !/electron/i.test(navigator.userAgent);
       // 1) 自定义音源（免登录,Electron/原生本地引擎）
