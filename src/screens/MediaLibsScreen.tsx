@@ -1,5 +1,6 @@
-// 第三方媒体库：Emby / Jellyfin / Subsonic(Navidrome·道理鱼) / WebDAV
-// 管理页：账号列表（长按编辑）；浏览页（amcfy 式）：专辑/艺术家/歌曲/歌单 四段浏览 + 头部一键切账号
+// 第三方媒体库：Emby / Jellyfin / Subsonic(Navidrome·道理鱼) / WebDAV / 听风
+// 管理页：账号列表（长按编辑）；浏览页（2026-09-17 老板指令·参考 Amcfy 主页）：
+// 连接后是【一个综合页面】——分区纵排（随机来点/专辑/艺术家/歌单 或 听风 我的/推荐/排行/新歌），不再 tab 切换
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, type ViewStyle, ScrollView, TouchableOpacity, Image, ActivityIndicator, } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,12 +10,10 @@ import { C } from '../theme/tokens';
 import { Platform } from 'react-native';
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
-import { PillTabs } from '../components/PillTabs';
 import { ActionSheet } from '../components/ActionSheet';
 import { SongRow } from '../components/SongRow';
 import { toast } from '../components/Dialog';
 import { PageHeader, EmptyState } from '../components/PageChrome';
-import { PillTabsHD } from '../components/PillTabs';
 import { GUTTER, focus, pageBottom } from '../hd/hdstyle'; // v3.28:统一栅格/焦点环/播放条让位
 import { usePlayer } from '../state/PlayerProvider';
 import { library } from '../state/library';
@@ -132,8 +131,6 @@ export function MediaLibsScreen() {
 
 
 // ---------- 浏览页（专辑/艺术家/歌曲/歌单 · WebDAV 保持目录浏览） ----------
-type Seg = 0 | 1 | 2 | 3; // 专辑/艺术家/歌曲/歌单
-
 // 单段数据缓存：null=未加载
 interface SegState<T> { data: T | null; err: string | null; busy: boolean; }
 
@@ -147,7 +144,8 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
   const acct = providers.get(acctId);
   const isDav = acct?.type === 'webdav';
 
-  const [seg, setSeg] = useState<Seg>(0);
+  // 综合页分区展开态（默认收起只出横滑预览，点「全部」原地展开）
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [albums, setAlbums] = useState<SegState<PvAlbum[]>>({ data: null, err: null, busy: false });
   const [artists, setArtists] = useState<SegState<PvArtist[]>>({ data: null, err: null, busy: false });
   const [songs, setSongs] = useState<SegState<SongItem[]>>({ data: null, err: null, busy: false });
@@ -195,19 +193,15 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
       .catch(e => setLists({ data: null, err: (e as Error).message, busy: false }));
   };
 
-  // 听风无专辑/艺术家概念：只展示 歌曲/歌单 两段（seg 索引随 tab 数变化）
+  // 听风无专辑/艺术家概念：歌曲=新歌速递；歌单数组含 liked:/recent:/mine:/pl:/top: 五类
   const isTf = acct?.type === 'tingfeng';
-  const segSongs: Seg = isTf ? 0 : 2;
-  const segLists: Seg = isTf ? 1 : 3;
 
-  // 分段懒加载：进入某段且未加载时才拉
+  // 综合页：进入即并行加载全部分区（loadXxx 自带缓存短路；各分区独立错误处理）
   useEffect(() => {
     if (!acct || isDav) return;
-    if (!isTf && seg === 0 && !albums.data && !albums.busy && !albums.err) loadAlbums(acct);
-    if (!isTf && seg === 1 && !artists.data && !artists.busy && !artists.err) loadArtists(acct);
-    if (seg === segSongs && !songs.data && !songs.busy && !songs.err) loadSongs(acct);
-    if (seg === segLists && !lists.data && !lists.busy && !lists.err) loadLists(acct);
-  }, [seg, acctId, isDav]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!isTf) { loadAlbums(acct); loadArtists(acct); }
+    loadSongs(acct); loadLists(acct);
+  }, [acctId, isDav]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // WebDAV 目录加载
   const davLoad = useCallback(async () => {
@@ -227,6 +221,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
     setAcctId(id);
     setDavDir('/'); setDavDirs([]); setDavSongs([]); setDavBusy(true);
     resetAll();
+    setExpanded({});
   };
 
   const refreshSongs = () => { if (acct) loadSongs(acct); };
@@ -375,98 +370,248 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
           )}
         </ScrollView>
       ) : (
-        /* ---------- 四段曲库浏览 ---------- */
-        <>
-          {IS_HD
-            ? <View style={{ paddingHorizontal: GUTTER }}><PillTabsHD tabs={isTf ? ['歌曲', '歌单'] : ['专辑', '艺术家', '歌曲', '歌单']} active={seg} onChange={(i) => setSeg(i as Seg)} autoFocusFirst /></View>
-            : <PillTabs tabs={isTf ? ['歌曲', '歌单'] : ['专辑', '艺术家', '歌曲', '歌单']} active={seg} onChange={(i) => setSeg(i as Seg)} />}
-          <ScrollView contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingBottom: IS_HD ? pageBottom(32) : (current ? 116 : 32), gap: IS_HD ? 12 : 8 }}>
-            {seg === 0 && !isTf && (
-              <SegBody state={albums} onRetry={() => { setAlbums({ data: null, err: null, busy: false }); if (acct) loadAlbums(acct); }}>
-                {albums.data && albums.data.length === 0 ? <EmptyState icon="music" title="服务器上没有专辑" sub="先在媒体服务器里添加音乐库" /> : null}
-                <View style={st.albumGrid}>
-                  {(albums.data || []).map(al => (
-                    <T
-                      key={al.id} style={[st.albumCell, IS_WEB && st.albumCellWeb]} activeOpacity={0.85}
-                      focusStyle={focus(10)}
-                      onPress={() => nav.navigate('ProviderDetail', {
-                        acctId: acct.id, kind: 'album', id: al.id, name: al.name, cover: al.cover,
-                        sub: [al.artist, al.songCount ? `${al.songCount}首` : null].filter(Boolean).join(' · ') || undefined,
-                      })}
-                    >
-                      {al.cover ? <Image source={{ uri: al.cover }} style={st.albumCover} />
-                        : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(al.name) as ViewStyle]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
-                      <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{al.name}</Text>
-                      <Text style={[st.albumMeta, IS_HD && bv.albumMeta]} numberOfLines={1}>{al.artist || ''}{al.songCount ? ` · ${al.songCount}首` : ''}</Text>
+        /* ---------- 综合浏览页：分区纵排（2026-09-17 老板：一个综合页面，不做 tab） ---------- */
+        <ScrollView
+          contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingBottom: IS_HD ? pageBottom(32) : (current ? 116 : 32), gap: IS_HD ? 22 : 16 }}
+        >
+          {isTf ? (() => {
+            // 听风：providers.playlists 返回五类（liked:/recent:/mine:/pl:/top: 前缀），拆成分区
+            const all = lists.data || [];
+            const tfLiked = all.find(x => x.id === 'liked:');
+            const tfRecent = all.find(x => x.id === 'recent:');
+            const mine = all.filter(x => x.id.startsWith('mine:'));
+            const recs = all.filter(x => x.id.startsWith('pl:'));
+            const tops = all.filter(x => x.id.startsWith('top:'));
+            const toDetail = (pl: PvPlaylist) => nav.navigate('ProviderDetail', {
+              acctId: acct.id, kind: 'playlist', id: pl.id, name: pl.name, cover: pl.cover,
+              sub: pl.songCount ? `${pl.songCount} 首` : undefined,
+            });
+            return (
+              <>
+                {/* 我的音乐：继续收听 / 我喜欢的 双入口卡 */}
+                <View>
+                  <SectionHead title="我的音乐" />
+                  <View style={sec.dualRow}>
+                    {[tfRecent, tfLiked].filter(Boolean as unknown as (v: PvPlaylist | undefined) => v is PvPlaylist).map(pl => (
+                      <T key={pl.id} style={sec.dualCard} activeOpacity={0.85} focusStyle={focus(14)} onPress={() => toDetail(pl)}>
+                        <View style={[sec.dualCover, coverGrad(pl.name) as ViewStyle]}>
+                          <Icon name={pl.id === 'liked:' ? 'heart' : 'play'} size={20} color="#ffffffcc" />
+                        </View>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={sec.dualTitle} numberOfLines={1}>{pl.name}</Text>
+                          <Text style={sec.dualMeta} numberOfLines={1}>{pl.songCount ? `${pl.songCount} 首` : '—'}</Text>
+                        </View>
+                        <Icon name="chevronright" size={16} color={C.text3} />
+                      </T>
+                    ))}
+                  </View>
+                </View>
+
+                {/* 我的歌单 */}
+                {mine.length ? (
+                  <View>
+                    <SectionHead title="我的歌单" count={mine.length} actionLabel={expanded.tfMine ? '收起' : '全部'} onAction={() => setExpanded(e => ({ ...e, tfMine: !e.tfMine }))} />
+                    {expanded.tfMine ? (
+                      <View style={st.albumGrid}>
+                        {mine.map(pl => (
+                          <T key={pl.id} style={[st.albumCell, IS_WEB && st.albumCellWeb]} activeOpacity={0.85} focusStyle={focus(10)} onPress={() => toDetail(pl)}>
+                            {pl.cover ? <Image source={{ uri: pl.cover }} style={st.albumCover} />
+                              : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name) as ViewStyle]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
+                            <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{pl.name}</Text>
+                            <Text style={[st.albumMeta, IS_HD && bv.albumMeta]} numberOfLines={1}>{pl.songCount ? `${pl.songCount}首` : ''}</Text>
+                          </T>
+                        ))}
+                      </View>
+                    ) : (
+                      <Rail>{mine.map(pl => <PvCard key={pl.id} cover={pl.cover} name={pl.name} meta={pl.songCount ? `${pl.songCount} 首` : ''} onPress={() => toDetail(pl)} />)}</Rail>
+                    )}
+                  </View>
+                ) : null}
+
+                {/* 推荐歌单 */}
+                {recs.length ? (
+                  <View>
+                    <SectionHead title="推荐歌单" count={recs.length} actionLabel={expanded.tfRecs ? '收起' : '全部'} onAction={() => setExpanded(e => ({ ...e, tfRecs: !e.tfRecs }))} />
+                    {expanded.tfRecs ? (
+                      <View style={st.albumGrid}>
+                        {recs.map(pl => (
+                          <T key={pl.id} style={[st.albumCell, IS_WEB && st.albumCellWeb]} activeOpacity={0.85} focusStyle={focus(10)} onPress={() => toDetail(pl)}>
+                            {pl.cover ? <Image source={{ uri: pl.cover }} style={st.albumCover} />
+                              : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name) as ViewStyle]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
+                            <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{pl.name}</Text>
+                          </T>
+                        ))}
+                      </View>
+                    ) : (
+                      <Rail>{recs.map(pl => <PvCard key={pl.id} cover={pl.cover} name={pl.name} meta={pl.songCount ? `${pl.songCount} 首` : ''} onPress={() => toDetail(pl)} />)}</Rail>
+                    )}
+                  </View>
+                ) : null}
+
+                {/* 排行榜 */}
+                {tops.length ? (
+                  <View>
+                    <SectionHead title="排行榜" count={tops.length} actionLabel={expanded.tfTops ? '收起' : '全部'} onAction={() => setExpanded(e => ({ ...e, tfTops: !e.tfTops }))} />
+                    {expanded.tfTops ? (
+                      <View style={st.albumGrid}>
+                        {tops.map(pl => (
+                          <T key={pl.id} style={[st.albumCell, IS_WEB && st.albumCellWeb]} activeOpacity={0.85} focusStyle={focus(10)} onPress={() => toDetail(pl)}>
+                            {pl.cover ? <Image source={{ uri: pl.cover }} style={st.albumCover} />
+                              : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name) as ViewStyle]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
+                            <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{pl.name}</Text>
+                          </T>
+                        ))}
+                      </View>
+                    ) : (
+                      <Rail>{tops.map(pl => <PvCard key={pl.id} cover={pl.cover} name={pl.name} onPress={() => toDetail(pl)} />)}</Rail>
+                    )}
+                  </View>
+                ) : null}
+
+                {/* 新歌速递 */}
+                <View>
+                  <SectionHead title="新歌速递" actionLabel="换一批" onAction={refreshSongs} />
+                  <SegBody state={songs} onRetry={refreshSongs}>
+                    <View style={sec.songsBar}>
+                      <T style={st.shuffleBtn} activeOpacity={0.7} focusStyle={focus(16)}
+                        onPress={() => { if (songs.data?.length) playSong(songs.data[0], songs.data); }}>
+                        <Icon name="play" size={14} color={C.onBrand} />
+                        <Text style={st.shuffleBtnText}>播放全部</Text>
+                      </T>
+                      {(songs.data?.length || 0) > 8 && !expanded.tfSongs ? <Text style={sec.previewHint}>前 8 首</Text> : null}
+                    </View>
+                    {(expanded.tfSongs ? songs.data || [] : (songs.data || []).slice(0, 8)).map((s, i) => (
+                      <SongRow key={`${s.songmid}-${i}`} song={s} playing={current?.songmid === s.songmid} onPress={() => playSong(s, songs.data || [])} />
+                    ))}
+                    {(songs.data?.length || 0) > 8 ? (
+                      <T style={sec.moreRow} focusStyle={focus(10)} onPress={() => setExpanded(e => ({ ...e, tfSongs: !e.tfSongs }))}>
+                        <Text style={sec.moreText}>{expanded.tfSongs ? '收起' : `展开全部 ${songs.data!.length} 首`}</Text>
+                        <Icon name="chevronright" size={13} color={C.text2} />
+                      </T>
+                    ) : null}
+                  </SegBody>
+                </View>
+              </>
+            );
+          })() : (
+            <>
+              {/* 随机来点 */}
+              <View>
+                <SectionHead title="随机来点" actionLabel="换一批" onAction={refreshSongs} />
+                <SegBody state={songs} onRetry={refreshSongs}>
+                  <View style={sec.songsBar}>
+                    <T style={st.shuffleBtn} activeOpacity={0.7} focusStyle={focus(16)}
+                      onPress={() => { if (songs.data?.length) playSong(songs.data[0], songs.data); }}>
+                      <Icon name="play" size={14} color={C.onBrand} />
+                      <Text style={st.shuffleBtnText}>播放全部</Text>
+                    </T>
+                    {(songs.data?.length || 0) > 8 && !expanded.songs ? <Text style={sec.previewHint}>前 8 首</Text> : null}
+                  </View>
+                  {(expanded.songs ? songs.data || [] : (songs.data || []).slice(0, 8)).map((s, i) => (
+                    <SongRow key={`${s.songmid}-${i}`} song={s} playing={current?.songmid === s.songmid} onPress={() => playSong(s, songs.data || [])} />
+                  ))}
+                  {(songs.data?.length || 0) > 8 ? (
+                    <T style={sec.moreRow} focusStyle={focus(10)} onPress={() => setExpanded(e => ({ ...e, songs: !e.songs }))}>
+                      <Text style={sec.moreText}>{expanded.songs ? '收起' : `展开全部 ${songs.data!.length} 首`}</Text>
+                      <Icon name="chevronright" size={13} color={C.text2} />
+                    </T>
+                  ) : null}
+                </SegBody>
+              </View>
+
+              {/* 专辑 */}
+              <View>
+                <SectionHead title="专辑" count={albums.data?.length} actionLabel={expanded.albums ? '收起' : '全部'} onAction={() => setExpanded(e => ({ ...e, albums: !e.albums }))} />
+                <SegBody state={albums} onRetry={() => { setAlbums({ data: null, err: null, busy: false }); if (acct) loadAlbums(acct); }}>
+                  {albums.data && albums.data.length === 0 ? <EmptyState icon="music" title="服务器上没有专辑" sub="先在媒体服务器里添加音乐库" /> : null}
+                  {expanded.albums ? (
+                    <View style={st.albumGrid}>
+                      {(albums.data || []).map(al => (
+                        <T key={al.id} style={[st.albumCell, IS_WEB && st.albumCellWeb]} activeOpacity={0.85} focusStyle={focus(10)}
+                          onPress={() => nav.navigate('ProviderDetail', {
+                            acctId: acct.id, kind: 'album', id: al.id, name: al.name, cover: al.cover,
+                            sub: [al.artist, al.songCount ? `${al.songCount}首` : null].filter(Boolean).join(' · ') || undefined,
+                          })}>
+                          {al.cover ? <Image source={{ uri: al.cover }} style={st.albumCover} />
+                            : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(al.name) as ViewStyle]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
+                          <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{al.name}</Text>
+                          <Text style={[st.albumMeta, IS_HD && bv.albumMeta]} numberOfLines={1}>{al.artist || ''}{al.songCount ? ` · ${al.songCount}首` : ''}</Text>
+                        </T>
+                      ))}
+                    </View>
+                  ) : (
+                    <Rail>
+                      {(albums.data || []).slice(0, 10).map(al => (
+                        <PvCard key={al.id} cover={al.cover} name={al.name} meta={al.artist || (al.songCount ? `${al.songCount} 首` : '')}
+                          onPress={() => nav.navigate('ProviderDetail', {
+                            acctId: acct.id, kind: 'album', id: al.id, name: al.name, cover: al.cover,
+                            sub: [al.artist, al.songCount ? `${al.songCount}首` : null].filter(Boolean).join(' · ') || undefined,
+                          })} />
+                      ))}
+                    </Rail>
+                  )}
+                </SegBody>
+              </View>
+
+              {/* 艺术家 */}
+              <View>
+                <SectionHead title="艺术家" count={artists.data?.length} actionLabel={expanded.artists ? '收起' : '全部'} onAction={() => setExpanded(e => ({ ...e, artists: !e.artists }))} />
+                <SegBody state={artists} onRetry={() => { setArtists({ data: null, err: null, busy: false }); if (acct) loadArtists(acct); }}>
+                  {artists.data && artists.data.length === 0 ? <EmptyState icon="music" title="没有找到艺术家" /> : null}
+                  {expanded.artists ? (
+                    <>
+                      {(artists.data || []).map(ar => (
+                        <T key={ar.id} style={[st.artistRow, IS_HD && bv.row]} activeOpacity={0.75} focusStyle={focus(12)}
+                          onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'artist', id: ar.id, name: ar.name, sub: ar.albumCount ? `${ar.albumCount} 张专辑` : undefined })}>
+                          {ar.cover ? <Image source={{ uri: ar.cover }} style={[st.artistArt, IS_HD && bv.art]} />
+                            : <View style={[st.artistArt, IS_HD && bv.art, st.artistFallback]}><Text style={st.artistInitial}>{ar.name.slice(0, 1)}</Text></View>}
+                          <View style={{ flex: 1, minWidth: 0 }}>
+                            <Text style={[st.artistName, IS_HD && bv.rowTitle]} numberOfLines={1}>{ar.name}</Text>
+                            <Text style={[st.artistMeta, IS_HD && bv.rowSub]} numberOfLines={1}>{ar.albumCount ? `${ar.albumCount} 张专辑` : PROVIDER_META[acct.type].label}</Text>
+                          </View>
+                          <Icon name="chevronright" size={18} color={C.text3} />
+                        </T>
+                      ))}
+                    </>
+                  ) : (
+                    <Rail>
+                      {(artists.data || []).slice(0, 10).map(ar => (
+                        <PvCard key={ar.id} round cover={ar.cover} name={ar.name} meta={ar.albumCount ? `${ar.albumCount} 张专辑` : ''}
+                          onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'artist', id: ar.id, name: ar.name, sub: ar.albumCount ? `${ar.albumCount} 张专辑` : undefined })} />
+                      ))}
+                    </Rail>
+                  )}
+                </SegBody>
+              </View>
+
+              {/* 歌单 */}
+              <View>
+                <SectionHead title="歌单" count={lists.data?.length} actionLabel={expanded.lists ? '收起' : '全部'} onAction={() => setExpanded(e => ({ ...e, lists: !e.lists }))} />
+                <SegBody state={lists} onRetry={() => { setLists({ data: null, err: null, busy: false }); if (acct) loadLists(acct); }}>
+                  {lists.data && lists.data.length === 0 ? <EmptyState icon="music" title="服务器上没有歌单" sub="在媒体服务器或 amcfy 等客户端里创建" /> : null}
+                  {(expanded.lists ? lists.data || [] : (lists.data || []).slice(0, 6)).map(pl => (
+                    <T key={pl.id} style={[st.plRow, IS_HD && bv.row]} activeOpacity={0.75} focusStyle={focus(12)}
+                      onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'playlist', id: pl.id, name: pl.name, cover: pl.cover, sub: pl.songCount ? `${pl.songCount} 首` : undefined })}>
+                      {pl.cover ? <Image source={{ uri: pl.cover }} style={[st.artistArt, IS_HD && bv.art]} />
+                        : <View style={[st.artistArt, IS_HD && bv.art, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name) as ViewStyle]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={[st.artistName, IS_HD && bv.rowTitle]} numberOfLines={1}>{pl.name}</Text>
+                        <Text style={[st.artistMeta, IS_HD && bv.rowSub]} numberOfLines={1}>{pl.songCount ? `${pl.songCount} 首` : ''}</Text>
+                      </View>
+                      <Icon name="chevronright" size={18} color={C.text3} />
                     </T>
                   ))}
-                </View>
-              </SegBody>
-            )}
-
-            {seg === 1 && !isTf && (
-              <SegBody state={artists} onRetry={() => { setArtists({ data: null, err: null, busy: false }); if (acct) loadArtists(acct); }}>
-                {artists.data && artists.data.length === 0 ? <EmptyState icon="music" title="没有找到艺术家" /> : null}
-                {(artists.data || []).map(ar => (
-                  <T
-                    key={ar.id} style={[st.artistRow, IS_HD && bv.row]} activeOpacity={0.75}
-                    focusStyle={focus(12)}
-                    onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'artist', id: ar.id, name: ar.name, sub: ar.albumCount ? `${ar.albumCount} 张专辑` : undefined })}
-                  >
-                    {ar.cover ? <Image source={{ uri: ar.cover }} style={[st.artistArt, IS_HD && bv.art]} />
-                      : <View style={[st.artistArt, IS_HD && bv.art, st.artistFallback]}><Text style={st.artistInitial}>{ar.name.slice(0, 1)}</Text></View>}
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={[st.artistName, IS_HD && bv.rowTitle]} numberOfLines={1}>{ar.name}</Text>
-                      <Text style={[st.artistMeta, IS_HD && bv.rowSub]} numberOfLines={1}>{ar.albumCount ? `${ar.albumCount} 张专辑` : PROVIDER_META[acct.type].label}</Text>
-                    </View>
-                    <Icon name="chevronright" size={18} color={C.text3} />
-                  </T>
-                ))}
-              </SegBody>
-            )}
-
-            {seg === segSongs && (
-              <SegBody state={songs} onRetry={refreshSongs}>
-                <View style={st.songsBar}>
-                  <Text style={st.songsHint}>{isTf ? '新歌速递' : '随机 100 首'}</Text>
-                  <T style={st.shuffleBtn} activeOpacity={0.7} onPress={refreshSongs} disabled={songs.busy} focusStyle={focus(16)}>
-                    <Icon name="refresh" size={14} color={C.onBrand} />
-                    <Text style={st.shuffleBtnText}>换一批</Text>
-                  </T>
-                </View>
-                {(songs.data || []).map((s, i) => (
-                  <SongRow
-                    key={`${s.songmid}-${i}`}
-                    song={s}
-                    playing={current?.songmid === s.songmid}
-                    onPress={() => playSong(s, songs.data || [])}
-                  />
-                ))}
-              </SegBody>
-            )}
-
-            {seg === segLists && (
-              <SegBody state={lists} onRetry={() => { setLists({ data: null, err: null, busy: false }); if (acct) loadLists(acct); }}>
-                {lists.data && lists.data.length === 0 ? <EmptyState icon="music" title="服务器上没有歌单" sub="在媒体服务器或 amcfy 等客户端里创建" /> : null}
-                {(lists.data || []).map(pl => (
-                  <T
-                    key={pl.id} style={[st.plRow, IS_HD && bv.row]} activeOpacity={0.75}
-                    focusStyle={focus(12)}
-                    onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'playlist', id: pl.id, name: pl.name, cover: pl.cover, sub: pl.songCount ? `${pl.songCount} 首` : undefined })}
-                  >
-                    {pl.cover ? <Image source={{ uri: pl.cover }} style={[st.artistArt, IS_HD && bv.art]} />
-                      : <View style={[st.artistArt, IS_HD && bv.art, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name) as ViewStyle]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={[st.artistName, IS_HD && bv.rowTitle]} numberOfLines={1}>{pl.name}</Text>
-                      <Text style={[st.artistMeta, IS_HD && bv.rowSub]} numberOfLines={1}>{pl.songCount ? `${pl.songCount} 首` : ''}</Text>
-                    </View>
-                    <Icon name="chevronright" size={18} color={C.text3} />
-                  </T>
-                ))}
-              </SegBody>
-            )}
-          </ScrollView>
-        </>
+                  {(lists.data?.length || 0) > 6 ? (
+                    <T style={sec.moreRow} focusStyle={focus(10)} onPress={() => setExpanded(e => ({ ...e, lists: !e.lists }))}>
+                      <Text style={sec.moreText}>{expanded.lists ? '收起' : `展开全部 ${lists.data!.length} 个歌单`}</Text>
+                      <Icon name="chevronright" size={13} color={C.text2} />
+                    </T>
+                  ) : null}
+                </SegBody>
+              </View>
+            </>
+          )}
+        </ScrollView>
       )}
 
       {/* 一键切换账号（amcfy 式）：当前账号打点 + 添加入口 */}
@@ -504,6 +649,54 @@ function SegBody<T>({ state, onRetry, children }: {
     </View>
   );
   return <>{children}</>;
+}
+
+// ---------- 综合页零件：分区头 / 横滑卡轨 / 通用卡 ----------
+function SectionHead({ title, count, actionLabel, onAction }: {
+  title: string; count?: number; actionLabel?: string; onAction?: () => void;
+}) {
+  return (
+    <View style={sec.head}>
+      <Text style={[sec.title, IS_HD && sec.titleHD]}>{title}</Text>
+      {typeof count === 'number' && count > 0 ? <Text style={sec.count}>{count}</Text> : null}
+      {actionLabel && onAction ? (
+        <T style={sec.moreBtn} onPress={onAction} focusStyle={focus(14)}>
+          <Text style={sec.moreText}>{actionLabel}</Text>
+          <Icon name="chevronright" size={13} color={C.text2} />
+        </T>
+      ) : null}
+    </View>
+  );
+}
+
+function Rail({ children }: { children: React.ReactNode }) {
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: IS_HD ? 14 : 12 }}>
+      {children}
+    </ScrollView>
+  );
+}
+
+function PvCard({ cover, name, meta, round, onPress }: {
+  cover?: string; name: string; meta?: string; round?: boolean; onPress: () => void;
+}) {
+  const size = IS_HD ? 148 : (IS_WEB ? 132 : 112);
+  return (
+    <T style={{ width: size, gap: 5 }} activeOpacity={0.85} onPress={onPress} focusStyle={focus(10)}>
+      {cover ? (
+        <Image source={{ uri: cover }} style={{ width: size, height: size, borderRadius: round ? size / 2 : 10, backgroundColor: C.surface2 }} />
+      ) : (
+        <View style={[
+          { width: size, height: size, borderRadius: round ? size / 2 : 10, alignItems: 'center', justifyContent: 'center' },
+          round ? { backgroundColor: C.artTint2 } : coverGrad(name) as ViewStyle,
+        ]}>
+          <Text style={round ? st.artistInitial : [st.albumGlyph, { color: '#ffffffb3' }]}>{round ? name.slice(0, 1) : '♫'}</Text>
+        </View>
+      )}
+      <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{name}</Text>
+      {meta ? <Text style={[st.albumMeta, IS_HD && bv.albumMeta]} numberOfLines={1}>{meta}</Text> : null}
+    </T>
+  );
 }
 
 const st = StyleSheet.create({
@@ -587,6 +780,24 @@ const bv = StyleSheet.create({
   albumMeta: { fontSize: 10.5, lineHeight: 14 },
   acctPill: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 38, marginHorizontal: 4 },
   acctName: { color: C.text, fontSize: 17, fontWeight: '800', maxWidth: 320 },
+});
+
+// 综合页分区样式（2026-09-17：一个综合页面）
+const sec = StyleSheet.create({
+  head: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+  title: { color: C.text, fontSize: 16, lineHeight: 22, fontWeight: '700' },
+  titleHD: { fontSize: 18, lineHeight: 25 },
+  count: { color: C.text3, fontSize: 12 },
+  moreBtn: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: 8, paddingVertical: 4 },
+  moreText: { color: C.text2, fontSize: 12, fontWeight: '500' },
+  moreRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 10 },
+  previewHint: { color: C.text3, fontSize: 11, marginLeft: 'auto' },
+  songsBar: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 },
+  dualRow: { gap: 10 },
+  dualCard: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, backgroundColor: C.surface, borderRadius: 14, padding: 12 },
+  dualCover: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  dualTitle: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '600' },
+  dualMeta: { color: C.text2, fontSize: 11, lineHeight: 15, marginTop: 2 },
 });
 
 // navigation 注册用包装（native-stack 组件类型兼容）
