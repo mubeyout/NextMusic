@@ -18,6 +18,8 @@ export interface TfSess {
   base: string;      // http://10.0.0.1 或 http://op.mubey.top:88
   token?: string;    // accessToken（Bearer）
   refresh?: string;  // refreshToken
+  user?: string;     // 账号（供 token 失效自动重登）
+  pass?: string;     // 密码（同上）
 }
 
 export interface TfSong {
@@ -110,6 +112,7 @@ export async function tfCall<T>(sess: TfSess, path: string, init?: RequestInit &
   if (r.status === 401 || j.code === 401) {
     if (!retried && !path.includes('/auth/')) {
       if (await tfRefresh(sess)) return tfCall<T>(sess, path, init, true);
+      if (await tfRelogin(sess)) return tfCall<T>(sess, path, init, true);
       throw new Error('听风登录已失效，请在媒体库里重新连接');
     }
     throw new Error(j.message || '听风登录已失效');
@@ -134,6 +137,17 @@ async function tfRefresh(sess: TfSess): Promise<boolean> {
       return true;
     }
     return false;
+  } catch { return false; }
+}
+
+/** 服务端重启/升级会同时作废 token+refresh（2026-09-17 RoCeOS 升级实例）：用存储账密自动重登 */
+async function tfRelogin(sess: TfSess): Promise<boolean> {
+  if (!sess.user || !sess.pass) return false;
+  try {
+    const r = await tfLogin(sess.base, sess.user, sess.pass);
+    sess.token = r.token;
+    sess.refresh = r.refresh;
+    return true;
   } catch { return false; }
 }
 
@@ -212,7 +226,7 @@ async function resolveSess(pid?: string): Promise<{ sess: TfSess; persist: Persi
     }
   }
   if (!acct) throw new Error('听风音乐未连接：请在 我的→媒体库 添加');
-  const sess: TfSess = { base: acct.base, token: acct.token, refresh: acct.tfRefresh };
+  const sess: TfSess = { base: acct.base, token: acct.token, refresh: acct.tfRefresh, user: acct.user, pass: acct.pass };
   const origToken = acct.token, origRefresh = acct.tfRefresh;
   return {
     sess,

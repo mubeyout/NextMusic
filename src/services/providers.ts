@@ -308,7 +308,7 @@ const DIRECT_PLAY_OK = new Set(['mp3', 'm4a', 'aac', 'flac', 'ogg', 'oga', 'opus
 
 /** 听风引擎包装：会话从账号构建，token 轮换/刷新后回写账号（finally 保证异常也持久化） */
 async function tfRun<T>(a: ProviderAcct, fn: (s: TfSess) => Promise<T>): Promise<T> {
-  const sess: TfSess = { base: a.base, token: a.token, refresh: a.tfRefresh };
+  const sess: TfSess = { base: a.base, token: a.token, refresh: a.tfRefresh, user: a.user, pass: a.pass };
   try {
     return await fn(sess);
   } finally {
