@@ -15,6 +15,24 @@
 </head>
 <body>
   <div id="root"></div>
+  <!-- 版本自检自动刷新:常开标签页/PWA 回到前台或每 2 分钟对一次线上 bundle 版本,不一致自动 reload。2026-09-18 排查结论:服务端从未回退,是旧页面从未重新导航 -->
+  <script>
+    (function () {
+      var KEY = 'nmk:shell-v';
+      function ver(t) { var m = t.match(/index-[A-Za-z0-9_-]+\.js/); return m ? m[0] : ''; }
+      function check() {
+        fetch('index.html', { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (t) {
+          var v = ver(t); if (!v) return;
+          var cur = null; try { cur = localStorage.getItem(KEY); } catch (e) {}
+          if (cur && cur !== v) { try { localStorage.setItem(KEY, v); } catch (e) {} location.reload(); }
+          else if (!cur) { try { localStorage.setItem(KEY, v); } catch (e) {} }
+        }).catch(function () {});
+      }
+      document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') check(); });
+      window.addEventListener('pageshow', function (e) { if (e.persisted) check(); });
+      setInterval(check, 120000);
+    })();
+  </script>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>
