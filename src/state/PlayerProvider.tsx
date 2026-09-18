@@ -402,9 +402,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         setPlaying(false);
         dialog.alert(
           '听风音乐暂不可用',
-          '取链失败：请检查听风连接与服务器状态。',
+          '取链失败：听风服务端音源暂时不可用（上游服务故障，浏览/搜索不受影响）。\n可先用在线音源播放这首歌。',
           [
             { text: '取消', style: 'cancel' },
+            { text: '在线播放', onPress: () => { playOnlineFallback(t).catch(() => {}); } },
             { text: '重新连接', onPress: () => navRef.current?.navigate('MediaLibs' as never) },
           ],
         );
