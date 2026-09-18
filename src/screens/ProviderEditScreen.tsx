@@ -1,7 +1,7 @@
 // 连接第三方媒体库 —— 按 Figma NM-REMOTE-SELECT-001 / NM-REMOTE-SUBSONIC-001 整页重做
 // 选择类型页：Bold 22 标题 + 说明 + 5 张类型卡（#2B2B2B r12 h64，Medium 14 + 推荐/说明 11）
 // 连接页：说明 + Tab 容器(#1C1C1C r12 p4) + 输入卡(#2B2B2B r12: label 11 灰 + 值 14 白 + hint 10) + 测试连接/保存并开始索引 h46 r12
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator , Image, Linking, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -64,6 +64,50 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
     setA(prev => ({ ...prev, type: t }));
     setTested(false);
   };
+
+  // ---------- 类型选择页横滑行(web):滚轮转横向 + 鼠标拖拽 + 箭头钮(老板 09-18 四改:web 无法滚动) ----------
+  const rowNode = () => (typeof document !== 'undefined' ? document.getElementById('nm-type-row') as HTMLDivElement | null : null);
+  const scrollRowBy = (dir: 1 | -1) => {
+    const n = rowNode(); if (!n) return;
+    n.scrollBy({ left: dir * Math.max(300, n.clientWidth * 0.7), behavior: 'smooth' });
+  };
+  useEffect(() => {
+    if (Platform.OS !== 'web' || picked) return;
+    const n = rowNode(); if (!n) return;
+    // 垂直滚轮→横向滚动（浏览器不给横滑容器滚轮支持，老板实锤「无法滚动」）
+    const onWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); n.scrollLeft += e.deltaY + e.deltaX; }
+    };
+    // 鼠标拖拽滑动；拖动超过 6px 后吞掉 click，避免拖完误入连接页
+    let sx = 0, sl = 0, moved = 0, down = false, suppress = false;
+    const onDown = (e: PointerEvent) => {
+      if (e.button !== 0) return;
+      down = true; moved = 0; sx = e.clientX; sl = n.scrollLeft;
+    };
+    const onMove = (e: PointerEvent) => {
+      if (!down) return;
+      const dx = e.clientX - sx;
+      moved = Math.max(moved, Math.abs(dx));
+      if (moved > 6) n.scrollLeft = sl - dx;
+    };
+    const onUp = () => {
+      if (moved > 6) { suppress = true; setTimeout(() => (suppress = false), 120); }
+      down = false;
+    };
+    const onClick = (e: Event) => { if (suppress) { e.stopPropagation(); e.preventDefault(); } };
+    n.addEventListener('wheel', onWheel, { passive: false });
+    n.addEventListener('pointerdown', onDown);
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    n.addEventListener('click', onClick, true);
+    return () => {
+      n.removeEventListener('wheel', onWheel);
+      n.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      n.removeEventListener('click', onClick, true);
+    };
+  }, [picked]);
 
   // Plex 网页授权（PIN 轮询）：打开 app.plex.tv → 轮询 pins → 选服务器 + 音乐库 → 保存
   const plexWebAuth = async () => {
@@ -139,41 +183,49 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
         </View>
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={[st.content, IS_HD && { paddingHorizontal: 40, gap: 16, flexGrow: 1, paddingBottom: 30, paddingTop: 10 }]}
+          contentContainerStyle={[st.content, IS_HD && { paddingHorizontal: 40, gap: 16, flexGrow: 1, paddingBottom: 30, paddingTop: 10, justifyContent: 'center' }]}
           showsVerticalScrollIndicator={false}
         >
           <Text style={[st.desc, IS_HD && hdSt.desc, { textAlign: 'center' }]}>选择服务器类型。NextMusic 会先测试能力，再保存凭证。</Text>
           {IS_HD ? (
-            /* HD:一行左右滚动卡带(老板 09-18 三改:横滑、无角标、等宽等高整齐划一) */
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ width: '100%', alignSelf: 'flex-start' }}
-              contentContainerStyle={{ flexDirection: 'row', gap: 14, paddingHorizontal: 2, paddingVertical: 4 }}>
-              {TYPE_CARDS.map(c => (
-                <HDTouch
-                  key={c.type}
-                  style={hdSt.typeCard}
-                  focusStyle={hdSt.typeFocus}
-                  focusBg={C.surface2}
-                  glow={SH.brand}
-                  onPress={() => pickType(c.type)}
-                >
-                  <View style={hdSt.typeIcon}>
-                    {c.logo
-                      ? <Image source={c.logo} style={{ width: 46, height: 46, borderRadius: 12 }} resizeMode="contain" />
-                      : <Icon name={c.icon} size={30} color={C.brandText} />}
-                  </View>
-                  <Text style={hdSt.typeTitle} numberOfLines={1} ellipsizeMode="tail">{c.title}</Text>
-                  <Text style={hdSt.typeSub} numberOfLines={1} ellipsizeMode="tail">{c.sub}</Text>
-                </HDTouch>
-              ))}
-            </ScrollView>
+            /* HD:一行横滑卡带居中 + 箭头钮(老板 09-18 四改:卡放大、箭头/滚轮/拖拽可滑、整组屏幕居中) */
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: '100%', justifyContent: 'center' }}>
+              <HDTouch style={hdSt.rowArrow} focusStyle={hdSt.rowArrowFocus} focusBg={C.surface} glow={SH.brand} onPress={() => scrollRowBy(-1)}>
+                <Icon name="back" size={22} color={C.text2} />
+              </HDTouch>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} nativeID="nm-type-row"
+                style={{ flexGrow: 0 }} contentContainerStyle={{ flexDirection: 'row', gap: 16, paddingVertical: 6 }}>
+                {TYPE_CARDS.map(c => (
+                  <HDTouch
+                    key={c.type}
+                    style={hdSt.typeCard}
+                    focusStyle={hdSt.typeFocus}
+                    focusBg={C.surface2}
+                    glow={SH.brand}
+                    onPress={() => pickType(c.type)}
+                  >
+                    <View style={hdSt.typeIcon}>
+                      {c.logo
+                        ? <Image source={c.logo} style={{ width: 64, height: 64, borderRadius: 16 }} resizeMode="contain" />
+                        : <Icon name={c.icon} size={40} color={C.brandText} />}
+                    </View>
+                    <Text style={hdSt.typeTitle} numberOfLines={1} ellipsizeMode="tail">{c.title}</Text>
+                    <Text style={hdSt.typeSub} numberOfLines={1} ellipsizeMode="tail">{c.sub}</Text>
+                  </HDTouch>
+                ))}
+              </ScrollView>
+              <HDTouch style={hdSt.rowArrow} focusStyle={hdSt.rowArrowFocus} focusBg={C.surface} glow={SH.brand} onPress={() => scrollRowBy(1)}>
+                <View style={{ transform: [{ rotate: '180deg' }] }}><Icon name="back" size={22} color={C.text2} /></View>
+              </HDTouch>
+            </View>
           ) : (
             /* phone:一行左右滑动卡带(老板 09-18 三改:横滑、无角标、等宽等高整齐划一) */
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 4, paddingVertical: 4 }}>
               {TYPE_CARDS.map(c => (
                 <TouchableOpacity key={c.type} style={st.typeRowCard} activeOpacity={0.7} onPress={() => pickType(c.type)}>
                   {c.logo
-                    ? <Image source={c.logo} style={{ width: 40, height: 40, borderRadius: 10 }} resizeMode="contain" />
-                    : <Icon name={c.icon} size={28} color={C.brandText} />}
+                    ? <Image source={c.logo} style={{ width: 56, height: 56, borderRadius: 14 }} resizeMode="contain" />
+                    : <Icon name={c.icon} size={36} color={C.brandText} />}
                   <Text style={st.typeRowTitle} numberOfLines={1} ellipsizeMode="tail">{c.title}</Text>
                   <Text style={st.typeRowSub} numberOfLines={1} ellipsizeMode="tail">{c.sub}</Text>
                 </TouchableOpacity>
@@ -380,9 +432,9 @@ const st = StyleSheet.create({
   typeCard: { backgroundColor: C.surface2, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, gap: 4, alignItems: 'center', textAlign: 'center' },
 
   // 类型选择网格（老板 09-18:整页重排版——3 列等高卡，logo 居中，单行截断）
-  typeRowCard: { width: 118, height: 130, backgroundColor: C.surface2, borderRadius: 14, alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 8 },
-  typeRowTitle: { color: C.text, fontSize: 12.5, fontWeight: '600', textAlign: 'center', width: '100%' },
-  typeRowSub: { color: C.text3, fontSize: 10, textAlign: 'center', width: '100%' },
+  typeRowCard: { width: 156, height: 172, backgroundColor: C.surface2, borderRadius: 16, alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 8 },
+  typeRowTitle: { color: C.text, fontSize: 14, fontWeight: '600', textAlign: 'center', width: '100%' },
+  typeRowSub: { color: C.text3, fontSize: 11, textAlign: 'center', width: '100%' },
   typeCardHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   typeCardTitle: { color: C.text, fontSize: 14, fontWeight: '500' },
   typeCardSub: { color: C.text2, fontSize: 11 },
@@ -419,13 +471,15 @@ const st = StyleSheet.create({
 // HD(车机/TV)样式:一排四张竖版类型卡 + 大表单 + D-pad 可聚焦按钮
 const hdSt = StyleSheet.create({
   typeCard: {
-    width: 172, height: 172, borderRadius: 18, backgroundColor: C.surface,
-    alignItems: 'center', justifyContent: 'center', gap: 10, padding: 14,
+    width: 236, height: 244, borderRadius: 20, backgroundColor: C.surface,
+    alignItems: 'center', justifyContent: 'center', gap: 12, padding: 14,
   },
-  typeFocus: { borderWidth: 2.5, borderColor: C.brand, borderRadius: 18 },
-  typeIcon: { width: 68, height: 68, borderRadius: 22, backgroundColor: C.brandDim, alignItems: 'center', justifyContent: 'center' },
-  typeTitle: { color: C.text, fontSize: 15, fontWeight: '700', textAlign: 'center', lineHeight: 20 },
-  typeSub: { color: C.text3, fontSize: 12, textAlign: 'center', lineHeight: 16 },
+  typeFocus: { borderWidth: 2.5, borderColor: C.brand, borderRadius: 20 },
+  typeIcon: { width: 96, height: 96, borderRadius: 28, backgroundColor: C.brandDim, alignItems: 'center', justifyContent: 'center' },
+  typeTitle: { color: C.text, fontSize: 17, fontWeight: '700', textAlign: 'center', lineHeight: 24 },
+  typeSub: { color: C.text3, fontSize: 13, textAlign: 'center', lineHeight: 18 },
+  rowArrow: { width: 46, height: 64, borderRadius: 14, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  rowArrowFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 14 },
   desc: { color: C.text2, fontSize: 13, lineHeight: 18, textAlign: 'center' },
   inputCard: { backgroundColor: C.surface, borderRadius: 16, paddingHorizontal: 20, paddingVertical: 14, gap: 6, alignItems: 'center' }, // v3.32(老板):表单居中对齐
   inputLabel: { color: C.text2, fontSize: 13, textAlign: 'center' },
