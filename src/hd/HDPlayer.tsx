@@ -8,7 +8,9 @@ import { Icon } from '../theme/Icon';
 import { settings } from '../services/settings';
 import { LyricCardModal } from '../components/LyricCardModal';
 import { WebLyricCardModal } from './WebLyricCardModal';
-import { enqueueDownload, webDownloadToServer, isWebServerMode } from '../services/downloads';
+import { enqueueDownload, isWebServerMode } from '../services/downloads';
+import { webDownloadActionItems } from './hdmenubuilders';
+import { hdActions } from './HDActions';
 import { toast } from '../components/Dialog';
 import { C, T, fmtSec } from './hdtokens';
 import { HDTouch } from './HDTouch';
@@ -125,21 +127,12 @@ export function HDPlayer() {
     return () => window.removeEventListener('keydown', onKey);
   }, [panelOpen]);
   const [cardOpen, setCardOpen] = useState(false); // v2 功能对齐:歌词卡片分享
-  // v3.18(老板:播放页补下载):当前曲一键下载/缓存到服务器
-  const [dlBusy, setDlBusy] = useState(false);
-  const dlCurrent = async () => {
-    if (!current || dlBusy) return;
-    setDlBusy(true);
-    try {
-      if (isWebServerMode()) {
-        const r = await webDownloadToServer([current]);
-        toast(r.ok ? '已缓存到服务器(后台·设置·存储备份可查)' : '缓存失败:取链失败');
-      } else {
-        enqueueDownload([current]);
-        toast('已加入下载队列');
-      }
-    } catch (e) { toast('下载失败:' + (e as Error).message); }
-    setDlBusy(false);
+  // v3.32(老板:web 下载缺选项):web 形态弹二选一(缓存到服务器/下载到本地);原生不变
+  const dlCurrent = () => {
+    if (!current) return;
+    if (isWebServerMode()) { hdActions.menu('下载当前曲目', webDownloadActionItems([current])); return; }
+    enqueueDownload([current]);
+    toast('已加入下载队列');
   };
   const trackW = React.useRef(0);
   // v1.2.11(老板:整体重排):唱片区实测方形(onLayout),尺寸自适应窗口,上限 440
@@ -394,7 +387,7 @@ export function HDPlayer() {
               <Icon name="heart" size={17} color={faved ? C.brand : '#ffffff99'} />
             </HDTouch>
             <HDTouch style={st.cTool} onPress={dlCurrent} title="下载">
-              {dlBusy ? <ActivityIndicator size="small" color={IC} /> : <Icon name="download" size={17} color={IC} />}
+              <Icon name="download" size={17} color={IC} />
             </HDTouch>
             <HDTouch style={st.cTool} onPress={() => nav.navigate('Queue')} title="播放队列">
               <Icon name="queue" size={17} color={IC} />

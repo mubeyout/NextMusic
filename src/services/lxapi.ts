@@ -9,12 +9,16 @@ async function srvGet(path: string, timeoutMs = 15000): Promise<any> {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const r = await fetch(path, { signal: ctrl.signal } as RequestInit);
+    // v3.32 修复:2026-09-14 服务器音源登录门后裸 fetch 恒 401(搜索/榜单/歌单广场全灭)——补登录头
+    const h: Record<string, string> = {};
+    if (store.token) { h['x-user-token'] = store.token; h['x-user-name'] = store.username; }
+    const r = await fetch(path, { signal: ctrl.signal, headers: h } as RequestInit);
     if (!r.ok) throw new Error('HTTP ' + r.status);
     return await r.json();
   } finally { clearTimeout(t); }
 }
 import type { SongItem, SongListMeta } from './server';
+import { store } from './server';
 
 // --- normalizeSongInfo (same as lxserver server.js) ---
 function normalize(songInfo: any): any {

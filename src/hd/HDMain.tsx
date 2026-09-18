@@ -14,7 +14,8 @@ import { providers } from '../services/providers';
 import { library } from '../state/library';
 import { playlistSync } from '../state/playlistSync'; // lx163
 import { toast } from '../components/Dialog';
-import { enqueueDownload, webDownloadToServer, isWebServerMode } from '../services/downloads';
+import { enqueueDownload, isWebServerMode } from '../services/downloads';
+import { webDownloadActionItems } from './hdmenubuilders';
 import { hdActions } from './HDActions';
 import { getRecents } from '../state/recent';
 import { sync, lxToApp , subscribeSync , isPlatformList } from '../services/sync';
@@ -455,21 +456,12 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
   const { current, playing, position, duration, toggle, skipNext, skipPrev, queue, shuffle, repeat, setShuffle, cycleRepeat } = usePlayer();
   const { faved } = useFav(current); // lx103:收藏态展示(操作走选歌单面板)
   const pct = duration > 0 ? Math.min(1, position / duration) : 0;
-  // v3.18(老板:playbar 补下载):当前曲一键下载/缓存到服务器
-  const [dlBusy, setDlBusy] = useState(false);
-  const dlCurrent = async () => {
-    if (!current || dlBusy) return;
-    setDlBusy(true);
-    try {
-      if (isWebServerMode()) {
-        const r = await webDownloadToServer([current]);
-        toast(r.ok ? '已缓存到服务器(后台·设置·存储备份可查)' : '缓存失败:取链失败');
-      } else {
-        enqueueDownload([current]);
-        toast('已加入下载队列');
-      }
-    } catch (e) { toast('下载失败:' + (e as Error).message); }
-    setDlBusy(false);
+  // v3.32(老板:web 下载缺选项):web 形态弹二选一(缓存到服务器/下载到本地);原生不变
+  const dlCurrent = () => {
+    if (!current) return;
+    if (isWebServerMode()) { hdActions.menu('下载当前曲目', webDownloadActionItems([current])); return; }
+    enqueueDownload([current]);
+    toast('已加入下载队列');
   };
 
   return (
@@ -524,7 +516,7 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
           <Icon name="heart" size={14} color={faved ? C.brand : C.text2} />
         </HDTouch>
         <HDTouch style={st.tool} focusStyle={st.toolFocus} hoverBg={IS_WEB ? C.hover : false} onPress={dlCurrent} title="下载">
-          {dlBusy ? <ActivityIndicator size="small" color={C.text2} /> : <Icon name="download" size={14} color={C.text2} />}
+          <Icon name="download" size={14} color={C.text2} />
         </HDTouch>
         <HDTouch style={st.tool} focusStyle={st.toolFocus} hoverBg={IS_WEB ? C.hover : false} onPress={() => hdNav()?.navigate('Queue')}>
           <Icon name="queue" size={14} color={C.text2} />

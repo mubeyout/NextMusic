@@ -275,18 +275,20 @@ export function enqueueDownload(songs: SongItem[]): number {
 // 原版 v2 语义: 歌曲文件缓存到服务器存储(cache/download),再次播放零流量;
 // 目录在后台「设置·存储备份」管理(缓存位置 root/data + LRU 配额),不在浏览器选目录
 let webDlBusy = false;
-export async function webDownloadToServer(songs: SongItem[], quality = '320k'): Promise<{ ok: number; fail: number }> {
+export async function webDownloadToServer(songs: SongItem[], quality?: Quality): Promise<{ ok: number; fail: number }> {
   if (webDlBusy) throw new Error('已有下载任务进行中');
   webDlBusy = true;
   let ok = 0, fail = 0;
   try {
     for (const s of songs) {
       if (s.source === 'device') continue;
+      // v3.32:默认音质与其他端对齐——按歌曲可用音质降级(原硬编码 320k)
+      const q: Quality = quality ?? bestQuality(s, settings.get().downloadQuality);
       // v3.21(老板:playbar 下载不见列表):服务器缓存也写进下载记录(server 标记)——下载管理立即可见,进行中→ok/fail 回写
       const key = songKey(s);
       const recs = readAll();
       if (!recs.some(r => r.key === key)) {
-        recs.push({ key, song: s, path: 'server-cache', size: 0, quality: quality as Quality, at: Date.now(), server: true });
+        recs.push({ key, song: s, path: 'server-cache', size: 0, quality: q, at: Date.now(), server: true });
         writeAll(recs); emit();
       }
       try {
@@ -298,12 +300,12 @@ export async function webDownloadToServer(songs: SongItem[], quality = '320k'): 
         // 先取链再缓存(服务端要求 url 一起提交)
         const r = await fetch('/api/music/url', {
           method: 'POST', headers: authH,
-          body: JSON.stringify({ songInfo: { source: s.source, songmid: s.songmid, name: s.name, singer: s.singer, hash: s.hash, interval: s.interval }, type: quality }),
+          body: JSON.stringify({ songInfo: { source: s.source, songmid: s.songmid, name: s.name, singer: s.singer, hash: s.hash, interval: s.interval }, type: q }),
         }).then(x => x.json());
         if (!r.url) throw new Error('取链失败');
         const cr = await fetch('/api/music/cache/download', {
           method: 'POST', headers: authH,
-          body: JSON.stringify({ songInfo: { source: s.source, songmid: s.songmid, name: s.name, singer: s.singer }, url: r.url, quality }),
+          body: JSON.stringify({ songInfo: { source: s.source, songmid: s.songmid, name: s.name, singer: s.singer }, url: r.url, quality: q }),
         });
         if (!cr.ok) throw new Error(cr.status === 403 ? '权限限制:请先登录账号' : '缓存写入失败');
         ok++;
@@ -318,6 +320,38 @@ export async function webDownloadToServer(songs: SongItem[], quality = '320k'): 
   } finally { webDlBusy = false; }
   return { ok, fail };
 }
+// ===== v3.32(老板 2026-09-18:web 下载缺「本地/服务器」选项) 浏览器本地下载 =====
+// 链路:resolveUrl 取链(自定义音源/服务器/媒体库全兼容) → 服务端同源代理
+// GET /api/music/download?url=&tag=1&nm_auth=(代理跟随重定向,嵌入封面/歌词元数据,
+// Content-Disposition attachment)→ 浏览器落盘到本机下载目录;进度由浏览器下载栏呈现,
+// 不写 MMKV 记录(文件在用户磁盘,归浏览器管;重下不拦截)
+export async function webDownloadLocal(songs: SongItem[]): Promise<{ ok: number; fail: number }> {
+  let ok = 0, fail = 0;
+  const st = (await import('./server')).store;
+  for (const s of songs) {
+    if (s.source === 'device') continue;
+    try {
+      const q = bestQuality(s, settings.get().downloadQuality);
+      const { url } = await resolveUrl(s, q);
+      const fn = `${sanitize(s.name)}-${sanitize(s.singer)}.${extFor(q)}`;
+      const p = new URLSearchParams({ url, filename: fn, tag: '1', name: s.name, singer: s.singer });
+      if (s.albumName) p.set('album', s.albumName);
+      if (s.img) p.set('pic', s.img);
+      if (st.token) p.set('nm_auth', st.token); // 登录门:/api/music/download 在 NM_MUSIC_AUTH_PATHS,anchor 带不了 header 走 query
+      const a = document.createElement('a');
+      a.href = `/api/music/download?${p.toString()}`;
+      a.download = fn; // 同源:提示文件名(实际以服务端 attachment 为准)
+      document.body.appendChild(a); a.click(); a.remove();
+      ok++;
+      if (songs.length > 1) await new Promise<void>(r2 => setTimeout(r2, 1500)); // 多文件节流:留时间给浏览器登记下载任务
+    } catch (e) {
+      fail++;
+      pushFail({ key: songKey(s), name: `${s.name} - ${s.singer}`, err: ((e as Error).message || '下载失败').slice(0, 60), at: Date.now() });
+    }
+  }
+  return { ok, fail };
+}
+
 export function isWebServerMode(): boolean {
   return typeof navigator !== 'undefined' && typeof window !== 'undefined' && !/electron/i.test(navigator.userAgent) && !!(window as { ReactNativeWebView?: unknown }).ReactNativeWebView === false && 'requestAnimationFrame' in window;
 }
