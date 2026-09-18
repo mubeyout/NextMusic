@@ -182,21 +182,21 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
           <View style={{ width: 26 }} />
         </View>
         {!IS_HD ? (
-          /* phone 重设计(老板 07:49):卡带独占屏幕正中,提示语沉底——去掉上下两段 desc,卡组即页面主体 */
+          /* phone 重设计 v2(老板 07:57 真机实测:父 View justifyContent:center 对横向 ScrollView 在原生 Yoga 不生效,卡带仍顶格)
+             → 教科书模式:ScrollView 自占 flex:1,contentContainer alignItems:center 垂直居中(行布局交叉轴),结构上不可能顶格 */
           <View style={{ flex: 1, paddingHorizontal: 16 }}>
-            <View style={{ flex: 1, justifyContent: 'center' }}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 4, paddingVertical: 4 }}>
-                {TYPE_CARDS.map(c => (
-                  <TouchableOpacity key={c.type} style={st.typeRowCard} activeOpacity={0.7} onPress={() => pickType(c.type)}>
-                    {c.logo
-                      ? <Image source={c.logo} style={{ width: 70, height: 70, borderRadius: 17 }} resizeMode="contain" />
-                      : <Icon name={c.icon} size={44} color={C.brandText} />}
-                    <Text style={st.typeRowTitle} numberOfLines={1} ellipsizeMode="tail">{c.title}</Text>
-                    <Text style={st.typeRowSub} numberOfLines={1} ellipsizeMode="tail">{c.sub}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}
+              contentContainerStyle={{ gap: 10, paddingHorizontal: 4, alignItems: 'center' }}>
+              {TYPE_CARDS.map(c => (
+                <TouchableOpacity key={c.type} style={st.typeRowCard} activeOpacity={0.7} onPress={() => pickType(c.type)}>
+                  {c.logo
+                    ? <Image source={c.logo} style={{ width: 70, height: 70, borderRadius: 17 }} resizeMode="contain" />
+                    : <Icon name={c.icon} size={44} color={C.brandText} />}
+                  <Text style={st.typeRowTitle} numberOfLines={1} ellipsizeMode="tail">{c.title}</Text>
+                  <Text style={st.typeRowSub} numberOfLines={1} ellipsizeMode="tail">{c.sub}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
             <Text style={[st.desc, { textAlign: 'center', paddingBottom: 14 + insets.bottom, opacity: 0.8 }]}>左右滑动查看全部平台 · 选中后先测试能力再保存凭证</Text>
           </View>
         ) : (
