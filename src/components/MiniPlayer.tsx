@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, Animated, Easing, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
@@ -11,8 +12,10 @@ import { isFav } from '../state/favorites';
 import { toast } from './Dialog';
 
 // Figma Player/Mini: 350x72 r=8, art 52x52 r=6, meta center-left, right icons
-export function MiniPlayer() {
+// standalone=true:内页独立挂载(底部自补安全区 inset);主 tab 内由 TabBar 吃掉 inset 不传
+export function MiniPlayer({ standalone }: { standalone?: boolean } = {}) {
   const { current, playing, position, duration, toggle, cast } = usePlayer();
+  const insets = useSafeAreaInsets();
   const nav = useNavigation() as { navigate: (s: string) => void };
   const [collect, setCollect] = useState(false);
   const { faved, toggle: toggleFav } = useFav(current); // hooks 全在早退前(修复 hooks 顺序闪退)
@@ -31,10 +34,26 @@ export function MiniPlayer() {
       Animated.timing(enterA, { toValue: 1, duration: 180, useNativeDriver: Platform.OS !== 'web' }),
     ]).start();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  if (!current) return null;
+  if (!current) {
+    // 常驻占位(老板 2026-09-18:miniplayerbar 应常驻页面,不是只有播放时才显示)
+    return (
+      <View style={[st.wrap, standalone && { paddingBottom: insets.bottom }]}>
+        <TouchableOpacity activeOpacity={0.9} style={st.card} onPress={() => nav.navigate('Main')}>
+          <View style={st.row}>
+            <View style={st.artWrap}><View style={[st.art, st.artFallback]} /></View>
+            <View style={st.meta}>
+              <Text style={st.title}>未在播放</Text>
+              <Text style={st.sub}>去选一首歌吧</Text>
+            </View>
+            <View style={st.playBtn}><Icon name="play" size={24} color={C.onBrand} /></View>
+          </View>
+        </TouchableOpacity>
+      </View>
+    );
+  }
   const pct = duration > 0 ? Math.min(1, position / duration) : 0;
   return (
-    <Animated.View style={[st.wrap, { transform: [{ translateY: enterY }], opacity: enterA }]}>
+    <Animated.View style={[st.wrap, standalone && { paddingBottom: insets.bottom }, { transform: [{ translateY: enterY }], opacity: enterA }]}>
       <TouchableOpacity activeOpacity={0.9} style={st.card} onPress={() => nav.navigate('Player')}>
         <View style={st.row}>
           <View style={st.artWrap}>

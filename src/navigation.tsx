@@ -171,6 +171,8 @@ function withEnter<P extends object>(Cmp: React.ComponentType<P>): React.Compone
     return (
       <Animated.View style={{ flex: 1, opacity: o, transform: [{ translateX: x }] }}>
         <Cmp {...props} />
+        {/* 常驻 mini 条(老板 2026-09-18:内页也显示,不再只在主 tab;Player 页不包避免双条) */}
+        <MiniPlayer standalone />
       </Animated.View>
     );
   };
@@ -191,7 +193,7 @@ return (
         <Stack.Screen name="AuthSignup" component={withEnter(AuthSignupScreen)} />
         <Stack.Screen name="Main" component={IS_HD ? HDMain : MainTabs} />
         <Stack.Screen name="Player" component={IS_HD ? HDPlayerSafe : PlayerScreen} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />
-        <Stack.Screen name="Queue" component={QueueScreen} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />
+        <Stack.Screen name="Queue" component={withEnter(QueueScreen)} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="PlayerSettings" component={withEnter(PlayerSettingsScreen)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Comments" component={withEnter(CommentsScreen)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="PlaylistDetail" component={IS_HD ? HDPlaylistDetailScreen : withEnter(PlaylistDetailScreen)} />
