@@ -191,14 +191,14 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
             return (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 4 }}>
                 {pv.map((a: ProviderAcct) => {
-                  const brand = ['emby', 'jellyfin', 'navidrome', 'subsonic', 'webdav'].includes(a.type);
+                  // v3.4(老板 07:45):媒体库入口 icon 一律 BrandIcon(旧白名单漏了 tingfeng/plex/飞牛/道理鱼等→落通用音符)
                   return (
                     <TouchableOpacity
                       key={a.id} style={st.pvCard} activeOpacity={0.85}
                       onPress={() => nav.navigate('ProviderBrowse', { acctId: a.id })}
                       onLongPress={() => nav.navigate('ProviderEdit', { acctId: a.id })}
                     >
-                      {brand ? <BrandIcon name={a.type as never} size={18} /> : <Icon name="music" size={18} color={C.text} />}
+                      <BrandIcon name={a.type as never} size={18} />
                       <Text style={st.pvName} numberOfLines={1}>{a.name || PROVIDER_META[a.type].label}</Text>
                       <Text style={st.pvMeta} numberOfLines={1}>{PROVIDER_META[a.type].label}</Text>
                     </TouchableOpacity>
