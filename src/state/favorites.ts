@@ -21,6 +21,8 @@ export function isFav(s: SongItem): boolean {
 }
 
 export async function setFav(s: SongItem, on: boolean, pushRemote?: (snap: any) => Promise<unknown>, fetchSnap?: () => Promise<any>): Promise<void> {
+  // 听风歌曲：收藏/取消联动听风用户库「我喜欢的音乐」（fire-and-forget，与听风 web 端双向）
+  if (s.source === 'tf') void import('../services/tingfeng').then(m => m.tfToggleLiked(s, on)).catch(() => {});
   const set = loadSet();
   const k = songKey(s);
   if (on) set.add(k); else set.delete(k);
@@ -63,6 +65,10 @@ export async function setFavBatch(songs: SongItem[], on: boolean, pushRemote?: (
   }
   kv.set(KEY, JSON.stringify([...set]));
   notifyFav();
+  // 听风歌曲批量收藏同样联动（逐首 fire-and-forget，内部 tfLikeBusy 串行防互踩）
+  for (const s of songs) {
+    if (s.source === 'tf') void import('../services/tingfeng').then(m => m.tfToggleLiked(s, on)).catch(() => {});
+  }
   // 本机「我喜欢的」歌单同步
   try {
     let pl = library.all().find(p => p.name === '我喜欢的');

@@ -300,6 +300,23 @@ export async function tfSaveUserLib(
   });
 }
 
+/** 收藏联动：本地收藏/取消 → 写回听风「我喜欢的音乐」；fire-and-forget（老板 09-18：收藏动作完善） */
+let tfLikeBusy = false;
+export async function tfToggleLiked(song: Pick<SongItem, 'songmid' | 'name' | 'singer' | 'albumName' | 'img'>, on: boolean): Promise<void> {
+  if (tfLikeBusy) return; // 防并发 PUT 互踩；last-writer-wins 由听风端保证
+  tfLikeBusy = true;
+  try {
+    const { pid, id } = tfSplitMid(song.songmid);
+    const { sess, persist } = await resolveSess(pid);
+    try {
+      const lib = await tfUserLib(sess);
+      let liked = lib.liked.filter(s => String(s.id) !== id);
+      if (on) liked = [{ id, name: song.name, artist: song.singer, album: song.albumName || '', thumbnail: song.img || '' }, ...liked].slice(0, 500);
+      await tfSaveUserLib(sess, { likedSongs: liked });
+    } finally { persist(); }
+  } catch { /* 联动失败不影响本地收藏 */ } finally { tfLikeBusy = false; }
+}
+
 /** 播放埋点：写回听风「最近播放」（最新在前、去重、上限 100，与听风 web 端同策略）；fire-and-forget */
 let tfRecentLast = '';
 let tfRecentBusy = false;

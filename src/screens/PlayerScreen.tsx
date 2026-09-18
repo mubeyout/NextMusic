@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Svg, { Circle, Path, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { Icon } from '../theme/Icon';
+import { sourceLabel } from '../components/SongRow';
 import { C } from '../theme/tokens';
 import { usePlayer } from '../state/PlayerProvider';
 import { api } from '../services/server';
@@ -248,7 +249,7 @@ export function PlayerScreen() {
           {current.img ? <Image source={{ uri: current.img }} style={st.pArt} /> : <View style={[st.pArt, { backgroundColor: C.surface2 }]} />}
           <View style={st.pMeta}>
             <Text style={st.pTitle} numberOfLines={1}>{current.name}</Text>
-            <Text style={st.pSub} numberOfLines={1}>{current.singer}  ·  {current._types?.flac ? 'SQ 无损' : '128k'}</Text>
+            <Text style={st.pSub} numberOfLines={1}>{sourceLabel(current.source) ? `${sourceLabel(current.source)} · ` : ''}{current.singer}  ·  {current._types?.flac ? 'SQ 无损' : '128k'}</Text>
           </View>
           <View style={st.pActions}>
             <TouchableOpacity style={st.pIcon} hitSlop={6} onPress={heartPress}>
