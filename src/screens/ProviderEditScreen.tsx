@@ -183,7 +183,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
         </View>
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={[st.content, IS_HD && { paddingHorizontal: 40, gap: 16, flexGrow: 1, paddingBottom: 30, paddingTop: 10, justifyContent: 'center' }]}
+          contentContainerStyle={[st.content, { flexGrow: 1, justifyContent: 'center', gap: 14 }, IS_HD && { paddingHorizontal: 40, gap: 16, paddingBottom: 30, paddingTop: 10 }]}
           showsVerticalScrollIndicator={false}
         >
           <Text style={[st.desc, IS_HD && hdSt.desc, { textAlign: 'center' }]}>选择服务器类型。NextMusic 会先测试能力，再保存凭证。</Text>
