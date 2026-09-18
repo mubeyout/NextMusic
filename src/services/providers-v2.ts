@@ -700,9 +700,85 @@ const fn = {
   async scrobble(): Promise<void> { /* /play-history 形态未定，v1 不回写 */ },
 };
 
+// ---------- 道理鱼（daoliyu-music-server 官方协议；2026-09-18 老板给源码后实测 v1.0.3 落地，替换原 Subsonic 占位） ----------
+// 登录: POST /api/auth/login {email|username, password} → {token: JWT, user}
+// 鉴权: Authorization: Bearer；流地址 ?token=JWT（实测支持，web <audio> 可用）
+// 响应: {items, total, skip, take}；曲目 item 含 artist/album 嵌套；歌单项为 {id, track}
+function dlySong(pid: string, base: string, t: any): SongItem {
+  return {
+    name: String(t.title || '未知曲目'),
+    singer: String(t.artistName || (t.artist && t.artist.name) || ((t.artists || [])[0] || {}).name || ''),
+    source: 'daoliyu',
+    songmid: `${pid}:${String(t.id || '')}`,
+    albumId: t.album ? String(t.album.id || '') : '',
+    albumName: t.album ? String(t.album.title || '') || undefined : undefined,
+    interval: fmtSec(Number(t.durationSeconds || t.duration)),
+  } as SongItem;
+}
+const dly = {
+  async connect(a: ProviderAcct): Promise<ProviderAcct> {
+    const base = norm(a.base);
+    const d = await jfetch(`${base}/api/auth/login`, { method: 'POST', body: JSON.stringify({ email: a.user, username: a.user, password: a.pass }) });
+    const token = String(d?.token || '');
+    if (!token) throw new Error(d?.message || '登录失败');
+    return { ...a, base, token, name: a.name.trim() || String(d?.user?.displayName || '道理鱼音乐') };
+  },
+  async albums(a: ProviderAcct): Promise<PvAlbum[]> {
+    const d = await jfetch(`${a.base}/api/library/albums?take=500`, { headers: { Authorization: `Bearer ${a.token || ''}` } });
+    return ((d.items || []) as any[]).map(al => ({
+      id: String(al.id), name: String(al.title || ''),
+      artist: al.albumArtist ? String(al.albumArtist) : undefined,
+      songCount: al.trackCount != null ? Number(al.trackCount) : undefined,
+      year: al.releaseYear ? Number(al.releaseYear) : undefined,
+    }));
+  },
+  async artists(a: ProviderAcct): Promise<PvArtist[]> {
+    const d = await jfetch(`${a.base}/api/library/artists?take=500`, { headers: { Authorization: `Bearer ${a.token || ''}` } });
+    return ((d.items || []) as any[]).map(ar => ({ id: String(ar.id), name: String(ar.name || ''), songCount: ar.trackCount != null ? Number(ar.trackCount) : undefined }));
+  },
+  async artistAlbums(a: ProviderAcct, artistId: string): Promise<PvAlbum[]> {
+    // 详情含 tracks[] → 客户端按 album 聚合（服务器无 artist→album 端点）
+    const d = await jfetch(`${a.base}/api/library/artists/${enc(artistId)}`, { headers: { Authorization: `Bearer ${a.token || ''}` } });
+    const by = new Map<string, { name: string; count: number }>();
+    ((d.tracks || []) as any[]).forEach(t => {
+      const g = t.album?.id ? String(t.album.id) : '_';
+      const cur = by.get(g) || { name: t.album?.title ? String(t.album.title) : '未分组', count: 0 };
+      cur.count++; by.set(g, cur);
+    });
+    return [...by.entries()].map(([id, v]) => ({ id, name: v.name, songCount: v.count }));
+  },
+  async randomSongs(a: ProviderAcct, size = 60): Promise<SongItem[]> {
+    const d = await jfetch(`${a.base}/api/tracks/random?take=${Math.min(200, Math.max(size, 30))}`, { headers: { Authorization: `Bearer ${a.token || ''}` } });
+    return ((d.items || []) as any[]).map(t => dlySong(a.id, a.base, t)).slice(0, size);
+  },
+  async playlists(a: ProviderAcct): Promise<PvPlaylist[]> {
+    const d = await jfetch(`${a.base}/api/playlists/web/mine`, { headers: { Authorization: `Bearer ${a.token || ''}` } });
+    return ((Array.isArray(d) ? d : d.items || []) as any[]).map(p => ({ id: String(p.id), name: String(p.name || ''), songCount: p.trackCount != null ? Number(p.trackCount) : undefined }));
+  },
+  async playlistSongs(a: ProviderAcct, playlistId: string): Promise<SongItem[]> {
+    const d = await jfetch(`${a.base}/api/playlists/${enc(playlistId)}/tracks?take=500`, { headers: { Authorization: `Bearer ${a.token || ''}` } });
+    return ((d.items || []) as any[]).map(it => dlySong(a.id, a.base, it.track || it));
+  },
+  async albumSongs(a: ProviderAcct, albumId: string): Promise<SongItem[]> {
+    // track-ids → 全曲目表 join（一次拉全量小库场景够用；大库后续可换分页）
+    const [ids, all] = await Promise.all([
+      jfetch(`${a.base}/api/library/albums/${enc(albumId)}/track-ids`, { headers: { Authorization: `Bearer ${a.token || ''}` } }),
+      jfetch(`${a.base}/api/tracks?take=500`, { headers: { Authorization: `Bearer ${a.token || ''}` } }),
+    ]);
+    const idSet = new Set((ids.items || []).map((x: any) => String(x)));
+    return ((all.items || []) as any[]).filter(t => idSet.has(String(t.id))).map(t => dlySong(a.id, a.base, t));
+  },
+  streamOf(a: ProviderAcct, itemId: string): StreamResult {
+    return { url: `${a.base}/api/tracks/${enc(itemId)}/stream?token=*** || '')}`, headers: { Authorization: `Bearer ${a.token || ''}` } };
+  },
+  async scrobble(a: ProviderAcct, itemId: string): Promise<void> {
+    try { await jfetch(`${a.base}/api/library/playback-history`, { method: 'POST', headers: { Authorization: `Bearer ${a.token || ''}` }, body: JSON.stringify({ trackId: dec(itemId), positionSeconds: 1, durationSeconds: 1 }) }); } catch { /* 统计尽力而为 */ }
+  },
+};
+
 // ---------- 分发表 ----------
-export const V2 = { plex, abs, syno, ms, sl, fn };
+export const V2 = { plex, abs, syno, ms, sl, fn, dly };
 export const V2_ENGINES: Record<string, keyof typeof V2> = {
-  plex: 'plex', audiobookshelf: 'abs', audiostation: 'syno', mstream: 'ms', songloft: 'sl', feiniu: 'fn',
+  plex: 'plex', audiobookshelf: 'abs', audiostation: 'syno', mstream: 'ms', songloft: 'sl', feiniu: 'fn', daoliyu: 'dly',
 };
 export function isV2Type(t: string): t is keyof typeof V2_ENGINES { return t in V2_ENGINES; }

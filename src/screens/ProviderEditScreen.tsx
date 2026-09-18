@@ -24,7 +24,7 @@ const TYPE_CARDS: { type: ProviderType; title: string; badge?: string; sub: stri
   { type: 'plex', title: 'Plex', sub: '网页授权自动发现 / Token 直连', icon: 'tv', logo: require('../assets/brands/plex.png') },
   { type: 'audiostation', title: '群晖 Audio Station', sub: 'DSM 内置音乐服务，SYNO API', icon: 'wave', logo: require('../assets/brands/audiostation.png') },
   { type: 'feiniu', title: '飞牛音乐', sub: 'fnOS 内置音乐服务，应用账号', icon: 'cloud', logo: require('../assets/brands/feiniu.png') },
-  { type: 'daoliyu', title: '道理鱼音乐', sub: 'Subsonic 兼容模式接入', icon: 'wave', logo: require('../assets/brands/daoliyu.png') },
+  { type: 'daoliyu', title: '道理鱼音乐', sub: '官方服务器协议，邮箱/用户名登录', icon: 'wave', logo: require('../assets/brands/daoliyu.png') },
   { type: 'audiobookshelf', title: 'Audiobookshelf', sub: '自托管有声书 / 播客', icon: 'wave', logo: require('../assets/brands/audiobookshelf.png') },
   { type: 'mstream', title: 'mStream', sub: 'JWT 登录 / 无用户公开模式', icon: 'cloud', logo: require('../assets/brands/mstream.png') },
   { type: 'songloft', title: 'Songloft', sub: 'Go 自托管，歌手专辑聚合', icon: 'music', logo: require('../assets/brands/songloft.png') },
@@ -38,7 +38,7 @@ const CONNECT_COPY: Record<string, ConnectCopy> = {
   navidrome: { desc: '通过 Subsonic 1.16.1 / OpenSubsonic 连接远程曲库。', baseHint: '自动补全 /rest；测试 ping 与 OpenSubsonic 扩展', passHint: '凭证保存到系统安全存储', badge: '1.16.1' },
   emby: { desc: '通过 Emby / Jellyfin API 登录并选择音乐库。', passHint: '凭证保存到系统安全存储' },
   jellyfin: { desc: '通过 Emby / Jellyfin API 登录并选择音乐库。', passHint: '凭证保存到系统安全存储' },
-  daoliyu: { desc: '道理鱼专有 API；可用时优先协商 Subsonic 兼容协议。', passHint: '凭证保存到系统安全存储' },
+  daoliyu: { desc: '道理鱼官方服务器（daoliyu-music-server）应用协议；邮箱或用户名 + 密码登录。', baseHint: '默认端口 4000；官方服务器不允许网页跨域访问——手机 / HD / 桌面端直连可用，网页版需与道理鱼同源部署（官方限制）' },
   webdav: { desc: '通过 PROPFIND / GET / Range 直接读取远程音频文件。', passHint: '凭证保存到系统安全存储' },
   subsonic: { desc: '通过 Subsonic 1.16.1 / OpenSubsonic 连接远程曲库。', baseHint: '自动补全 /rest；测试 ping 与 OpenSubsonic 扩展', passHint: '凭证保存到系统安全存储' },
   feiniu: { desc: '连接飞牛 fnOS 内置音乐服务；应用内账号登录（fnOS 桌面 → 音乐应用里创建的账号）。', baseHint: 'fnOS 桌面同地址同端口；仅支持 http(s)://IP:端口 或域名（FN ID 中继后续支持）', passHint: '密码 SHA-256 后传输' },
@@ -57,7 +57,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
   const [tested, setTested] = useState(false);
 
   const set = (p: Partial<ProviderAcct>) => setA(prev => ({ ...prev, ...p }));
-  const subsonicFamily = picked === 'navidrome' || picked === 'subsonic' || picked === 'daoliyu';
+  const subsonicFamily = picked === 'navidrome' || picked === 'subsonic';
   const copy: ConnectCopy = picked ? CONNECT_COPY[picked] ?? { desc: '' } : { desc: '' };
 
   const pickType = (t: ProviderType) => {

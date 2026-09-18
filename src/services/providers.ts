@@ -13,12 +13,13 @@ export type ProviderType = 'subsonic' | 'navidrome' | 'daoliyu' | 'emby' | 'jell
 
 // 协议映射：navidrome / 道理鱼 走 Subsonic 协议；v2 五引擎（老板 2026-09-18：对齐 Amcfy 平台）各自成协议
 export const PROTOCOL: Record<ProviderType, 'subsonic' | 'emby' | 'jellyfin' | 'webdav' | 'tingfeng'
-  | 'plex' | 'audiobookshelf' | 'audiostation' | 'mstream' | 'songloft' | 'feiniu'> = {
-  subsonic: 'subsonic', navidrome: 'subsonic', daoliyu: 'subsonic',
+  | 'plex' | 'audiobookshelf' | 'audiostation' | 'mstream' | 'songloft' | 'feiniu' | 'daoliyu'> = {
+  subsonic: 'subsonic', navidrome: 'subsonic',
   emby: 'emby', jellyfin: 'jellyfin', webdav: 'webdav',
   tingfeng: 'tingfeng',
   plex: 'plex', audiobookshelf: 'audiobookshelf', audiostation: 'audiostation', mstream: 'mstream', songloft: 'songloft',
   feiniu: 'feiniu',
+  daoliyu: 'daoliyu',
 };
 
 export interface ProviderAcct {
@@ -39,7 +40,7 @@ export interface ProviderAcct {
 export const PROVIDER_META: Record<ProviderType, { label: string; hint: string; placeholder: string }> = {
   subsonic: { label: 'Subsonic', hint: 'Subsonic 服务器（原生）', placeholder: 'http://192.168.1.10:4040' },
   navidrome: { label: 'Navidrome', hint: 'Navidrome 音乐服务器（Subsonic 兼容）', placeholder: 'http://192.168.1.10:4533' },
-  daoliyu: { label: '道理鱼音乐', hint: '道理鱼（Subsonic 兼容，NAS 自建音乐库）', placeholder: 'http://192.168.1.10:4533' },
+  daoliyu: { label: '道理鱼音乐', hint: '道理鱼官方服务器（daoliyu-music-server，JWT 登录，默认端口 4000）', placeholder: 'http://192.168.1.10:4000' },
   emby: { label: 'Emby', hint: 'Emby 媒体服务器（音乐库）', placeholder: 'http://192.168.1.10:8096' },
   jellyfin: { label: 'Jellyfin', hint: 'Jellyfin 媒体服务器（音乐库）', placeholder: 'http://192.168.1.10:8096' },
   webdav: { label: 'WebDAV', hint: 'NAS / 飞牛 fnOS / Alist 等 WebDAV 共享目录，直接浏览音频文件', placeholder: 'http://192.168.1.10:5244/dav' },
