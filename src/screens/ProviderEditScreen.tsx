@@ -13,13 +13,12 @@ import { SH } from '../hd/hdtokens';
 import { providers, providerApi, PROVIDER_META, providerIdentityId, type ProviderAcct, type ProviderType } from '../services/providers';
 import { library } from '../state/library';
 import { dialog, toast } from '../components/Dialog';
-import { BRAND_ICONS } from '../theme/brand-icons';
 import { plexBeginPin, plexPollPin, plexFinish } from '../services/providers-v2';
 
-// 类型卡数据（对齐 Figma NM-REMOTE-SELECT-001）；注：核心后台 LX Server 属于「使用方式与账号」的连接服务器流程，不是第三方媒体库，不在此列
-// icon:HD 卡片用
-const TYPE_CARDS: { type: ProviderType; title: string; badge?: string; sub: string; icon: 'music' | 'tv' | 'wave' | 'cloud'; logo?: any }[] = [ // lx154:真品牌 logo 资产（v2 对齐 Amcfy 12 平台；飞牛 2026-09-18 补）
-  { type: 'navidrome', title: 'Navidrome / Subsonic', badge: '推荐', sub: 'Subsonic / OpenSubsonic 兼容协议', icon: 'music', logo: require('../assets/brands/navidrome.png') },
+// 类型卡数据；注：核心后台 LX Server 属于「使用方式与账号」的连接服务器流程，不是第三方媒体库，不在此列
+// icon:HD 卡片用；logo:真品牌 logo 资产（v2 对齐 Amcfy 12 平台；飞牛/听风 2026-09-18 补）
+const TYPE_CARDS: { type: ProviderType; title: string; sub: string; icon: 'music' | 'tv' | 'wave' | 'cloud'; logo?: any }[] = [
+  { type: 'navidrome', title: 'Navidrome / Subsonic', sub: 'Subsonic / OpenSubsonic 兼容协议', icon: 'music', logo: require('../assets/brands/navidrome.png') },
   { type: 'emby', title: 'Emby / Jellyfin', sub: '账号登录，直放或服务端转码', icon: 'tv', logo: require('../assets/brands/emby.png') },
   { type: 'plex', title: 'Plex', sub: '网页授权自动发现 / Token 直连', icon: 'tv', logo: require('../assets/brands/plex.png') },
   { type: 'audiostation', title: '群晖 Audio Station', sub: 'DSM 内置音乐服务，SYNO API', icon: 'wave', logo: require('../assets/brands/audiostation.png') },
@@ -29,7 +28,7 @@ const TYPE_CARDS: { type: ProviderType; title: string; badge?: string; sub: stri
   { type: 'mstream', title: 'mStream', sub: 'JWT 登录 / 无用户公开模式', icon: 'cloud', logo: require('../assets/brands/mstream.png') },
   { type: 'songloft', title: 'Songloft', sub: 'Go 自托管，歌手专辑聚合', icon: 'music', logo: require('../assets/brands/songloft.png') },
   { type: 'webdav', title: 'WebDAV 音乐目录', sub: '直接读取远程音频文件', icon: 'cloud', logo: require('../assets/brands/webdav.png') },
-  { type: 'tingfeng', title: '听风音乐', badge: '路由器', sub: 'RoCeOS / iStoreOS 内置网易云', icon: 'wave', logo: { uri: 'data:image/svg+xml;utf8,' + encodeURIComponent(BRAND_ICONS.tingfeng) } },
+  { type: 'tingfeng', title: '听风音乐', sub: 'RoCeOS / iStoreOS 内置网易云', icon: 'wave', logo: require('../assets/brands/tingfeng.png') },
 ];
 
 // 连接页说明 / 输入 hint（对齐 Figma NM-REMOTE-SUBSONIC-001）
@@ -145,8 +144,9 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
         >
           <Text style={[st.desc, IS_HD && hdSt.desc, { textAlign: 'center' }]}>选择服务器类型。NextMusic 会先测试能力，再保存凭证。</Text>
           {IS_HD ? (
-            /* HD:定宽定高竖版卡 wrap 网格(老板 09-18:卡片高低不齐→统一高度，sub 截断 2 行) */
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14, maxWidth: 960, width: '100%', alignSelf: 'center', justifyContent: 'center' }}>
+            /* HD:一行左右滚动卡带(老板 09-18 三改:横滑、无角标、等宽等高整齐划一) */
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ width: '100%', alignSelf: 'flex-start' }}
+              contentContainerStyle={{ flexDirection: 'row', gap: 14, paddingHorizontal: 2, paddingVertical: 4 }}>
               {TYPE_CARDS.map(c => (
                 <HDTouch
                   key={c.type}
@@ -158,33 +158,27 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                 >
                   <View style={hdSt.typeIcon}>
                     {c.logo
-                      ? <Image source={c.logo} style={{ width: 44, height: 44, borderRadius: 10 }} resizeMode="contain" />
+                      ? <Image source={c.logo} style={{ width: 46, height: 46, borderRadius: 12 }} resizeMode="contain" />
                       : <Icon name={c.icon} size={30} color={C.brandText} />}
                   </View>
                   <Text style={hdSt.typeTitle} numberOfLines={1} ellipsizeMode="tail">{c.title}</Text>
-                  {c.badge ? (
-                    <View style={hdSt.typeBadge}><Text style={hdSt.typeBadgeText}>{c.badge}</Text></View>
-                  ) : (
-                    <View style={{ height: 22 }} /> /* 无 badge 也占位——卡内行对齐，卡片等高 */
-                  )}
-                  <Text style={hdSt.typeSub} numberOfLines={2} ellipsizeMode="tail">{c.sub}</Text>
+                  <Text style={hdSt.typeSub} numberOfLines={1} ellipsizeMode="tail">{c.sub}</Text>
                 </HDTouch>
               ))}
-            </View>
+            </ScrollView>
           ) : (
-            /* phone:3 列等高卡网格(老板 09-18:整页重排版，不再高高低低)——logo 居中 + 单行标题 + 单行副题截断 */
-            <View style={st.typeGrid}>
+            /* phone:一行左右滑动卡带(老板 09-18 三改:横滑、无角标、等宽等高整齐划一) */
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 4, paddingVertical: 4 }}>
               {TYPE_CARDS.map(c => (
-                <TouchableOpacity key={c.type} style={st.typeGridCard} activeOpacity={0.7} onPress={() => pickType(c.type)}>
-                  {c.badge ? <View style={st.typeGridBadge}><Text style={st.typeGridBadgeText}>{c.badge}</Text></View> : null}
+                <TouchableOpacity key={c.type} style={st.typeRowCard} activeOpacity={0.7} onPress={() => pickType(c.type)}>
                   {c.logo
-                    ? <Image source={c.logo} style={{ width: 38, height: 38, borderRadius: 9 }} resizeMode="contain" />
-                    : <Icon name={c.icon} size={30} color={C.brandText} />}
-                  <Text style={st.typeGridTitle} numberOfLines={1} ellipsizeMode="tail">{c.title}</Text>
-                  <Text style={st.typeGridSub} numberOfLines={1} ellipsizeMode="tail">{c.sub}</Text>
+                    ? <Image source={c.logo} style={{ width: 40, height: 40, borderRadius: 10 }} resizeMode="contain" />
+                    : <Icon name={c.icon} size={28} color={C.brandText} />}
+                  <Text style={st.typeRowTitle} numberOfLines={1} ellipsizeMode="tail">{c.title}</Text>
+                  <Text style={st.typeRowSub} numberOfLines={1} ellipsizeMode="tail">{c.sub}</Text>
                 </TouchableOpacity>
               ))}
-            </View>
+            </ScrollView>
           )}
           <Text style={[st.desc, IS_HD && hdSt.desc]}>服务器地址与账号由用户明确填写，也可以从历史连接中选择。</Text>
         </ScrollView>
@@ -386,12 +380,9 @@ const st = StyleSheet.create({
   typeCard: { backgroundColor: C.surface2, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, gap: 4, alignItems: 'center', textAlign: 'center' },
 
   // 类型选择网格（老板 09-18:整页重排版——3 列等高卡，logo 居中，单行截断）
-  typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  typeGridCard: { width: '31.8%', aspectRatio: 1 / 1.08, backgroundColor: C.surface2, borderRadius: 14, alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 8, position: 'relative' },
-  typeGridBadge: { position: 'absolute', top: 7, right: 7, backgroundColor: C.brandDim, borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2 },
-  typeGridBadgeText: { color: C.brandText, fontSize: 10, fontWeight: '600' },
-  typeGridTitle: { color: C.text, fontSize: 12.5, fontWeight: '600', textAlign: 'center', width: '100%' },
-  typeGridSub: { color: C.text3, fontSize: 10, textAlign: 'center', width: '100%' },
+  typeRowCard: { width: 118, height: 130, backgroundColor: C.surface2, borderRadius: 14, alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 8 },
+  typeRowTitle: { color: C.text, fontSize: 12.5, fontWeight: '600', textAlign: 'center', width: '100%' },
+  typeRowSub: { color: C.text3, fontSize: 10, textAlign: 'center', width: '100%' },
   typeCardHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   typeCardTitle: { color: C.text, fontSize: 14, fontWeight: '500' },
   typeCardSub: { color: C.text2, fontSize: 11 },
@@ -428,15 +419,13 @@ const st = StyleSheet.create({
 // HD(车机/TV)样式:一排四张竖版类型卡 + 大表单 + D-pad 可聚焦按钮
 const hdSt = StyleSheet.create({
   typeCard: {
-    width: 168, height: 216, borderRadius: 18, backgroundColor: C.surface,
+    width: 172, height: 172, borderRadius: 18, backgroundColor: C.surface,
     alignItems: 'center', justifyContent: 'center', gap: 10, padding: 14,
   },
   typeFocus: { borderWidth: 2.5, borderColor: C.brand, borderRadius: 18 },
   typeIcon: { width: 68, height: 68, borderRadius: 22, backgroundColor: C.brandDim, alignItems: 'center', justifyContent: 'center' },
-  typeTitle: { color: C.text, fontSize: 16, fontWeight: '700', textAlign: 'center', lineHeight: 22 },
-  typeBadge: { backgroundColor: C.brandDim, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 3 },
-  typeBadgeText: { color: C.brandText, fontSize: 12, fontWeight: '700' },
-  typeSub: { color: C.text3, fontSize: 12, textAlign: 'center', lineHeight: 17 },
+  typeTitle: { color: C.text, fontSize: 15, fontWeight: '700', textAlign: 'center', lineHeight: 20 },
+  typeSub: { color: C.text3, fontSize: 12, textAlign: 'center', lineHeight: 16 },
   desc: { color: C.text2, fontSize: 13, lineHeight: 18, textAlign: 'center' },
   inputCard: { backgroundColor: C.surface, borderRadius: 16, paddingHorizontal: 20, paddingVertical: 14, gap: 6, alignItems: 'center' }, // v3.32(老板):表单居中对齐
   inputLabel: { color: C.text2, fontSize: 13, textAlign: 'center' },

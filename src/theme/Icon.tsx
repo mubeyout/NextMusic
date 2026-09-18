@@ -68,6 +68,7 @@ const PNG_BRANDS: Partial<Record<BrandIconName, any>> = {
   songloft: require('../assets/brands/songloft.png'),
   feiniu: require('../assets/brands/feiniu.png'),
   daoliyu: require('../assets/brands/daoliyu.png'),
+  tingfeng: require('../assets/brands/tingfeng.png'),
 };
 
 export function BrandIcon({ name, size = 24 }: { name: BrandIconName; size?: number }) {
