@@ -1,0 +1,15 @@
+# NextMusic Server 一键部署
+#   mkdir -p data && docker compose up -d
+#   首次启动后打开 http://<IP>:9527/admin/ 引导创建管理员
+services:
+  nextmusic-server:
+    image: ${NEXTMUSIC_IMAGE:-mubeyout/nextmusic-server:latest}
+    container_name: nextmusic-server
+    ports:
+      - "9527:9527"          # 网页播放器 / 管理台 / LX Music 同步源 API
+    volumes:
+      - ./data:/server/data  # 用户/凭证/日志/下载队列——升级只换镜像,数据全在这
+    environment:
+      - PORT=9527
+      - BIND_IP=0.0.0.0
+    restart: unless-stopped
