@@ -3,7 +3,7 @@
 #   首次启动后打开 http://<IP>:9527/admin/ 引导创建管理员
 services:
   nextmusic-server:
-    image: ${NEXTMUSIC_IMAGE:-mubeyout/nextmusic-server:latest}
+    image: ${NEXTMUSIC_IMAGE:-mubeyout/nextmusic:latest}
     container_name: nextmusic-server
     ports:
       - "9527:9527"          # 网页播放器 / 管理台 / LX Music 同步源 API
