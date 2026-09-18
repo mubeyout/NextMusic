@@ -206,8 +206,8 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                   >
                     <View style={hdSt.typeIcon}>
                       {c.logo
-                        ? <Image source={c.logo} style={{ width: 64, height: 64, borderRadius: 16 }} resizeMode="contain" />
-                        : <Icon name={c.icon} size={40} color={C.brandText} />}
+                        ? <Image source={c.logo} style={{ width: 84, height: 84, borderRadius: 20 }} resizeMode="contain" />
+                        : <Icon name={c.icon} size={52} color={C.brandText} />}
                     </View>
                     <Text style={hdSt.typeTitle} numberOfLines={1} ellipsizeMode="tail">{c.title}</Text>
                     <Text style={hdSt.typeSub} numberOfLines={1} ellipsizeMode="tail">{c.sub}</Text>
@@ -224,8 +224,8 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
               {TYPE_CARDS.map(c => (
                 <TouchableOpacity key={c.type} style={st.typeRowCard} activeOpacity={0.7} onPress={() => pickType(c.type)}>
                   {c.logo
-                    ? <Image source={c.logo} style={{ width: 56, height: 56, borderRadius: 14 }} resizeMode="contain" />
-                    : <Icon name={c.icon} size={36} color={C.brandText} />}
+                    ? <Image source={c.logo} style={{ width: 70, height: 70, borderRadius: 17 }} resizeMode="contain" />
+                    : <Icon name={c.icon} size={44} color={C.brandText} />}
                   <Text style={st.typeRowTitle} numberOfLines={1} ellipsizeMode="tail">{c.title}</Text>
                   <Text style={st.typeRowSub} numberOfLines={1} ellipsizeMode="tail">{c.sub}</Text>
                 </TouchableOpacity>
@@ -432,9 +432,9 @@ const st = StyleSheet.create({
   typeCard: { backgroundColor: C.surface2, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, gap: 4, alignItems: 'center', textAlign: 'center' },
 
   // 类型选择网格（老板 09-18:整页重排版——3 列等高卡，logo 居中，单行截断）
-  typeRowCard: { width: 156, height: 172, backgroundColor: C.surface2, borderRadius: 16, alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 8 },
-  typeRowTitle: { color: C.text, fontSize: 14, fontWeight: '600', textAlign: 'center', width: '100%' },
-  typeRowSub: { color: C.text3, fontSize: 11, textAlign: 'center', width: '100%' },
+  typeRowCard: { width: 190, height: 210, backgroundColor: C.surface2, borderRadius: 18, alignItems: 'center', justifyContent: 'center', gap: 9, paddingHorizontal: 8 },
+  typeRowTitle: { color: C.text, fontSize: 15.5, fontWeight: '600', textAlign: 'center', width: '100%' },
+  typeRowSub: { color: C.text3, fontSize: 12, textAlign: 'center', width: '100%' },
   typeCardHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   typeCardTitle: { color: C.text, fontSize: 14, fontWeight: '500' },
   typeCardSub: { color: C.text2, fontSize: 11 },
@@ -471,15 +471,15 @@ const st = StyleSheet.create({
 // HD(车机/TV)样式:一排四张竖版类型卡 + 大表单 + D-pad 可聚焦按钮
 const hdSt = StyleSheet.create({
   typeCard: {
-    width: 236, height: 244, borderRadius: 20, backgroundColor: C.surface,
-    alignItems: 'center', justifyContent: 'center', gap: 12, padding: 14,
+    width: 300, height: 312, borderRadius: 24, backgroundColor: C.surface,
+    alignItems: 'center', justifyContent: 'center', gap: 14, padding: 16,
   },
-  typeFocus: { borderWidth: 2.5, borderColor: C.brand, borderRadius: 20 },
-  typeIcon: { width: 96, height: 96, borderRadius: 28, backgroundColor: C.brandDim, alignItems: 'center', justifyContent: 'center' },
-  typeTitle: { color: C.text, fontSize: 17, fontWeight: '700', textAlign: 'center', lineHeight: 24 },
-  typeSub: { color: C.text3, fontSize: 13, textAlign: 'center', lineHeight: 18 },
-  rowArrow: { width: 46, height: 64, borderRadius: 14, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  rowArrowFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 14 },
+  typeFocus: { borderWidth: 2.5, borderColor: C.brand, borderRadius: 24 },
+  typeIcon: { width: 124, height: 124, borderRadius: 36, backgroundColor: C.brandDim, alignItems: 'center', justifyContent: 'center' },
+  typeTitle: { color: C.text, fontSize: 20, fontWeight: '700', textAlign: 'center', lineHeight: 28 },
+  typeSub: { color: C.text3, fontSize: 14.5, textAlign: 'center', lineHeight: 20 },
+  rowArrow: { width: 52, height: 76, borderRadius: 16, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  rowArrowFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 16 },
   desc: { color: C.text2, fontSize: 13, lineHeight: 18, textAlign: 'center' },
   inputCard: { backgroundColor: C.surface, borderRadius: 16, paddingHorizontal: 20, paddingVertical: 14, gap: 6, alignItems: 'center' }, // v3.32(老板):表单居中对齐
   inputLabel: { color: C.text2, fontSize: 13, textAlign: 'center' },
