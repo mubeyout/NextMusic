@@ -181,14 +181,31 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
           <Text style={st.title}>添加远程音乐库</Text>
           <View style={{ width: 26 }} />
         </View>
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={[st.content, { flexGrow: 1, justifyContent: 'center', gap: 14 }, IS_HD && { paddingHorizontal: 40, gap: 16, paddingBottom: 30, paddingTop: 10 }, !IS_HD && { paddingBottom: 0 }]}
-          showsVerticalScrollIndicator={false}
-        >
-          <Text style={[st.desc, IS_HD && hdSt.desc, { textAlign: 'center' }]}>选择服务器类型。NextMusic 会先测试能力，再保存凭证。</Text>
-          {IS_HD ? (
-            /* HD:一行横滑卡带居中 + 箭头钮(老板 09-18 四改:卡放大、箭头/滚轮/拖拽可滑、整组屏幕居中) */
+        {!IS_HD ? (
+          /* phone:纯 View 居中(老板 07:05 再报偏顶——ScrollView flexGrow+center 原生不稳,改直排;内容短无需滚动) */
+          <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 16, gap: 14 }}>
+            <Text style={[st.desc, { textAlign: 'center' }]}>选择服务器类型。NextMusic 会先测试能力，再保存凭证。</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 4, paddingVertical: 4 }}>
+              {TYPE_CARDS.map(c => (
+                <TouchableOpacity key={c.type} style={st.typeRowCard} activeOpacity={0.7} onPress={() => pickType(c.type)}>
+                  {c.logo
+                    ? <Image source={c.logo} style={{ width: 70, height: 70, borderRadius: 17 }} resizeMode="contain" />
+                    : <Icon name={c.icon} size={44} color={C.brandText} />}
+                  <Text style={st.typeRowTitle} numberOfLines={1} ellipsizeMode="tail">{c.title}</Text>
+                  <Text style={st.typeRowSub} numberOfLines={1} ellipsizeMode="tail">{c.sub}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <Text style={st.desc}>服务器地址与账号由用户明确填写，也可以从历史连接中选择。</Text>
+          </View>
+        ) : (
+          /* HD: ScrollView 让位 + 一行横滑卡带居中 + 箭头钮(四改:卡放大、箭头/滚轮/拖拽可滑、整组屏幕居中) */
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={[st.content, { flexGrow: 1, justifyContent: 'center', gap: 14, paddingHorizontal: 40, paddingBottom: 30, paddingTop: 10 }]}
+            showsVerticalScrollIndicator={false}
+          >
+            <Text style={[st.desc, hdSt.desc, { textAlign: 'center' }]}>选择服务器类型。NextMusic 会先测试能力，再保存凭证。</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: '100%', justifyContent: 'center' }}>
               <HDTouch style={hdSt.rowArrow} focusStyle={hdSt.rowArrowFocus} focusBg={C.surface} glow={SH.brand} onPress={() => scrollRowBy(-1)}>
                 <Icon name="back" size={22} color={C.text2} />
@@ -218,22 +235,9 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                 <View style={{ transform: [{ rotate: '180deg' }] }}><Icon name="back" size={22} color={C.text2} /></View>
               </HDTouch>
             </View>
-          ) : (
-            /* phone:一行左右滑动卡带(老板 09-18 三改:横滑、无角标、等宽等高整齐划一) */
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 4, paddingVertical: 4 }}>
-              {TYPE_CARDS.map(c => (
-                <TouchableOpacity key={c.type} style={st.typeRowCard} activeOpacity={0.7} onPress={() => pickType(c.type)}>
-                  {c.logo
-                    ? <Image source={c.logo} style={{ width: 70, height: 70, borderRadius: 17 }} resizeMode="contain" />
-                    : <Icon name={c.icon} size={44} color={C.brandText} />}
-                  <Text style={st.typeRowTitle} numberOfLines={1} ellipsizeMode="tail">{c.title}</Text>
-                  <Text style={st.typeRowSub} numberOfLines={1} ellipsizeMode="tail">{c.sub}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          )}
-          <Text style={[st.desc, IS_HD && hdSt.desc]}>服务器地址与账号由用户明确填写，也可以从历史连接中选择。</Text>
-        </ScrollView>
+            <Text style={[st.desc, hdSt.desc]}>服务器地址与账号由用户明确填写，也可以从历史连接中选择。</Text>
+          </ScrollView>
+        )}
       </View>
     );
   }

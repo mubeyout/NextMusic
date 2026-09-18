@@ -108,9 +108,9 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
               </View>
             </View>
 
-            {/* 品牌水印右下(对齐 Web 端) */}
+            {/* 品牌水印右下(v3.36:绿点换品牌 mark) */}
             <View style={st.brandRow}>
-              <View style={st.brandDot} />
+              <Image source={require('../assets/brand/mark.png')} style={st.brandMark} />
               <Text style={st.brandText}>NextMusic</Text>
             </View>
           </View>
@@ -158,7 +158,7 @@ const st = StyleSheet.create({
   lyric: { color: '#ffffff73', fontSize: 14, lineHeight: 23, textAlign: 'center' },
   lyricOn: { color: '#fff', fontSize: 16, fontWeight: '800' },
   brandRow: { position: 'absolute', right: 16, bottom: 12, flexDirection: 'row', alignItems: 'center', gap: 5 },
-  brandDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#1ED760' },
+  brandMark: { width: 13, height: 13 },
   brandText: { color: '#ffffffb3', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
   ops: { marginTop: 16, alignItems: 'center', gap: 10 },
   opsRow: { flexDirection: 'row', gap: 8 },

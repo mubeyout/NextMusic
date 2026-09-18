@@ -155,10 +155,10 @@ const SIDEBAR_LOCK_CONTENT: { marginLeft?: number; backgroundColor?: string } = 
 // 仅 phone 原生；TV/HD 直切家族不动(坑108)；web 桌面自有动效体系。返回(pop)仍直切——快且无闪。
 const PAGE_ENTER_MS = 220, PAGE_ENTER_DX = 18;
 const enterMemo = new Map<unknown, unknown>();
-function withEnter<P extends object>(Cmp: React.ComponentType<P>): React.ComponentType<P> {
+function withEnter<P extends object>(Cmp: React.ComponentType<P>, bare = false): React.ComponentType<P> {
   if (IS_HD || Platform.OS === 'web') return Cmp;
   const hit = enterMemo.get(Cmp) as React.ComponentType<P> | undefined;
-  if (hit) return hit;
+  if (hit && !bare) return hit;
   const W = (props: P) => {
     const x = useRef(new Animated.Value(PAGE_ENTER_DX)).current;
     const o = useRef(new Animated.Value(0)).current;
@@ -171,13 +171,13 @@ function withEnter<P extends object>(Cmp: React.ComponentType<P>): React.Compone
     return (
       <Animated.View style={{ flex: 1, opacity: o, transform: [{ translateX: x }] }}>
         <Cmp {...props} />
-        {/* 常驻 mini 条(老板 2026-09-18:内页也显示,不再只在主 tab;Player 页不包避免双条) */}
-        <MiniPlayer standalone />
+        {/* 常驻 mini 条(老板 2026-09-18:内页也显示;bare=设置族页面不显示;Player 页不包避免双条) */}
+        {bare ? null : <MiniPlayer standalone />}
       </Animated.View>
     );
   };
   W.displayName = `Enter(${Cmp.displayName || Cmp.name || 'Screen'})`;
-  enterMemo.set(Cmp, W);
+  if (!bare) enterMemo.set(Cmp, W); // bare 版不进缓存,防覆盖非 bare 包装
   return W;
 }
 return (
@@ -194,7 +194,7 @@ return (
         <Stack.Screen name="Main" component={IS_HD ? HDMain : MainTabs} />
         <Stack.Screen name="Player" component={IS_HD ? HDPlayerSafe : PlayerScreen} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />
         <Stack.Screen name="Queue" component={withEnter(QueueScreen)} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="PlayerSettings" component={withEnter(PlayerSettingsScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="PlayerSettings" component={withEnter(PlayerSettingsScreen, true)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Comments" component={withEnter(CommentsScreen)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="PlaylistDetail" component={IS_HD ? HDPlaylistDetailScreen : withEnter(PlaylistDetailScreen)} />
         <Stack.Screen name="Search" component={withEnter(SearchScreen)} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />
@@ -202,21 +202,21 @@ return (
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="AlbumDetail" component={withEnter(AlbumDetailScreen)} />
         {/* Route(播放设备)页:HD 已删投屏不再注册(老板 09-14);phone 由 MiniPlayer 入口进入 */}
         {!IS_HD ? <Stack.Screen name="Route" component={RoutePage} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'fade', presentation: 'transparentModal' }} /> : null}
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Settings" component={IS_HD ? HDSettingsScreen : withEnter(SettingsScreen)} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Sources" component={withEnter(SourcesScreen)} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Account" component={withEnter(AccountScreen)} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="BasicSettings" component={withEnter(BasicSettingsScreen)} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Theme" component={withEnter(ThemeScreen)} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="DownloadsSettings" component={withEnter(DownloadsSettingsScreen)} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="BackupSettings" component={withEnter(BackupSettingsScreen)} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="About" component={withEnter(AboutScreen)} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Manual" component={withEnter(ManualScreen)} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="DeployGuide" component={withEnter(DeployGuideScreen)} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Faq" component={withEnter(FaqScreen)} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Changelog" component={withEnter(ChangelogScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Settings" component={IS_HD ? HDSettingsScreen : withEnter(SettingsScreen, true)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Sources" component={withEnter(SourcesScreen, true)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Account" component={withEnter(AccountScreen, true)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="BasicSettings" component={withEnter(BasicSettingsScreen, true)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Theme" component={withEnter(ThemeScreen, true)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="DownloadsSettings" component={withEnter(DownloadsSettingsScreen, true)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="BackupSettings" component={withEnter(BackupSettingsScreen, true)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="About" component={withEnter(AboutScreen, true)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Manual" component={withEnter(ManualScreen, true)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="DeployGuide" component={withEnter(DeployGuideScreen, true)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Faq" component={withEnter(FaqScreen, true)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Changelog" component={withEnter(ChangelogScreen, true)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ImportPlaylist" component={withEnter(ImportPlaylistScreen)} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Fx" component={withEnter(FxScreen)} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="MediaLibs" component={withEnter(MediaLibsScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Fx" component={withEnter(FxScreen, true)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="MediaLibs" component={withEnter(MediaLibsScreen, true)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ProviderEdit" component={withEnter(ProviderEditScreen)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ProviderBrowse" component={withEnter(ProviderBrowseRoute)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ProviderDetail" component={withEnter(ProviderDetailScreen)} />

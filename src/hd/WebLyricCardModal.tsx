@@ -9,6 +9,7 @@ import { HDTouch } from './HDTouch';
 import { toast } from '../components/Dialog';
 import type { LyricLine } from '../services/lyric';
 import type { SongItem } from '../services/server';
+import markUrl from '../assets/brand/mark.png'; // v3.36(老板):卡片水印换 NextMusic 品牌 mark
 
 type Layout = 'portrait' | 'landscape' | 'square';
 type Theme = 'light' | 'dark' | 'album';
@@ -135,6 +136,7 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
   const [dataUrl, setDataUrl] = useState<string>('');
   const [rendering, setRendering] = useState(true);
   const coverRef = useRef<HTMLImageElement | null>(null);
+  const markImgRef = useRef<HTMLImageElement | null>(null); // v3.36:品牌 mark(加载一次复用)
   const posRef = useRef(positionSec);
   posRef.current = positionSec;
 
@@ -150,7 +152,8 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
     try {
       if (!coverRef.current && song.img) coverRef.current = await loadImage(song.img);
       const img = coverRef.current;
-      if (!img && song.img) return; // v3.28:cover 未就绪直接跳过(类型收窄 null)
+      if (!img && song.img) return; // v3.28:cover 未就绪直接跳过(类型收窄)
+      if (!markImgRef.current) markImgRef.current = await loadImage(markUrl as unknown as string);
       const W = size.w, H = size.h;
       const canvas = document.createElement('canvas');
       canvas.width = W; canvas.height = H;
@@ -299,17 +302,23 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
         }
       }
 
-      // 水印(右下,品牌绿点+名)
+      // 水印(右下,品牌 mark+名)
       const wmFS = Math.round(W * 0.022), wmR = Math.round(W * 0.04), wmB = Math.round(H * 0.04);
       ctx.textBaseline = 'middle'; ctx.textAlign = 'right';
       ctx.font = `bold ${wmFS}px ${FONT}`;
       ctx.fillStyle = colors.isDark ? 'rgba(255,255,255,0.6)' : 'rgba(30,30,30,0.5)';
       ctx.fillText('NextMusic', W - wmR, H - wmB);
       const tw = ctx.measureText('NextMusic').width;
-      ctx.beginPath();
-      ctx.fillStyle = '#1ED760';
-      ctx.arc(W - wmR - tw - wmFS * 0.9, H - wmB, wmFS * 0.42, 0, Math.PI * 2);
-      ctx.fill();
+      const mark = markImgRef.current;
+      if (mark) {
+        const mh = Math.round(wmFS * 1.3);
+        ctx.drawImage(mark, W - wmR - tw - mh - wmFS * 0.55, H - wmB - mh / 2, mh, mh);
+      } else {
+        ctx.beginPath();
+        ctx.fillStyle = '#1ED760';
+        ctx.arc(W - wmR - tw - wmFS * 0.9, H - wmB, wmFS * 0.42, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
       setDataUrl(canvas.toDataURL('image/png'));
     } finally { setRendering(false); }
