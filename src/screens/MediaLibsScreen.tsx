@@ -11,13 +11,14 @@ import { Platform } from 'react-native';
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
 import { ActionSheet } from '../components/ActionSheet';
+import { CollectSheet } from '../components/CollectSheet';
 import { SongRow } from '../components/SongRow';
 import { toast } from '../components/Dialog';
 import { PageHeader, EmptyState } from '../components/PageChrome';
 import { GUTTER, focus, pageBottom } from '../hd/hdstyle'; // v3.28:统一栅格/焦点环/播放条让位
 import { usePlayer } from '../state/PlayerProvider';
 import { library } from '../state/library';
-import { enqueueDownload } from '../services/downloads';
+import { enqueueDownload, downloads as dlStore } from '../services/downloads';
 import {
   providers, providerApi, PROVIDER_META,
   type ProviderAcct, type ProviderType, type PvArtist, type PvAlbum, type PvPlaylist,
@@ -138,6 +139,8 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string, p?: object) => void };
   const { playSong, current } = usePlayer();
+  const [actSong, setActSong] = useState<SongItem | null>(null); // 歌曲行 ⋯ 菜单（下载/收藏，老板 09-18:媒体库歌曲也少不了）
+  const [collect, setCollect] = useState(false);
 
   // 账号可就地切换（amcfy 式一键切服务器），不重进页面
   const [acctId, setAcctId] = useState(route.params.acctId);
@@ -481,7 +484,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                       {(songs.data?.length || 0) > 8 && !expanded.tfSongs ? <Text style={sec.previewHint}>前 8 首</Text> : null}
                     </View>
                     {(expanded.tfSongs ? songs.data || [] : (songs.data || []).slice(0, 8)).map((s, i) => (
-                      <SongRow key={`${s.songmid}-${i}`} song={s} playing={current?.songmid === s.songmid} onPress={() => playSong(s, songs.data || [])} />
+                      <SongRow key={`${s.songmid}-${i}`} song={s} playing={current?.songmid === s.songmid} onPress={() => playSong(s, songs.data || [])} onMore={() => setActSong(s)} />
                     ))}
                     {(songs.data?.length || 0) > 8 ? (
                       <T style={sec.moreRow} focusStyle={focus(10)} onPress={() => setExpanded(e => ({ ...e, tfSongs: !e.tfSongs }))}>
@@ -508,7 +511,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                     {(songs.data?.length || 0) > 8 && !expanded.songs ? <Text style={sec.previewHint}>前 8 首</Text> : null}
                   </View>
                   {(expanded.songs ? songs.data || [] : (songs.data || []).slice(0, 8)).map((s, i) => (
-                    <SongRow key={`${s.songmid}-${i}`} song={s} playing={current?.songmid === s.songmid} onPress={() => playSong(s, songs.data || [])} />
+                    <SongRow key={`${s.songmid}-${i}`} song={s} playing={current?.songmid === s.songmid} onPress={() => playSong(s, songs.data || [])} onMore={() => setActSong(s)} />
                   ))}
                   {(songs.data?.length || 0) > 8 ? (
                     <T style={sec.moreRow} focusStyle={focus(10)} onPress={() => setExpanded(e => ({ ...e, songs: !e.songs }))}>
@@ -615,6 +618,17 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
       )}
 
       {/* 一键切换账号（amcfy 式）：当前账号打点 + 添加入口 */}
+      <ActionSheet
+        visible={!!actSong} onClose={() => setActSong(null)}
+        title={actSong ? `${actSong.name} · ${actSong.singer}` : ''}
+        items={actSong ? [
+          dlStore.isDownloaded(actSong)
+            ? { label: '已下载 ✓', onPress: () => {} }
+            : { label: '下载到本地', onPress: () => { const n = enqueueDownload([actSong]); toast(n ? `已加入下载队列 · ${actSong.name}` : '该歌曲已在下载队列'); } },
+          { label: '收藏到歌单', onPress: () => setCollect(true) },
+        ] : []}
+      />
+      <CollectSheet song={actSong} visible={collect} onClose={() => { setCollect(false); setActSong(null); }} />
       <ActionSheet
         visible={swSheet} onClose={() => setSwSheet(false)}
         title="切换媒体库"

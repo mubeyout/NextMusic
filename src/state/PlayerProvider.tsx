@@ -362,6 +362,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         playOrCast(t, dlPath);
         setCurrent(t);
         if (isProviderSource(t)) { scrobbleProvider(t); startReport(t); }
+        if (t.source === TF_SOURCE) void tfNoteRecent(t); // 听风离线播也写最近播放
         return;
       }
       // ③ 媒体库源（emby/jellyfin/subsonic/webdav）：直接出流地址 + 鉴权头
@@ -383,6 +384,32 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         await playOnlineFallback(t);
         return;
       }
+      // 0) 听风音乐(RoCeOS Tingfeng):song/{id} 直链 mp3(含 LRC,回填曲目)——独立服务,不走 lxserver 取链
+      // ※ 必须在播放门槛之前:听风自带账号体系,不该被 LX 登录/音源门槛拦(老板 09-18 手机端实锤)
+      if (t.source === TF_SOURCE) {
+        try {
+          const r = await tfSongUrl(t);
+          if (r.url) {
+            if (r.lrc && !t.lrc) t.lrc = r.lrc;
+            if (r.img && !t.img) t.img = r.img;
+            playOrCast(t, r.url);
+            setCurrent(t);
+            void tfNoteRecent(t); // 写回听风「最近播放」（fire-and-forget）
+            failStreak = 0;
+            return;
+          }
+        } catch { /* 取链失败 → 定向引导（别落入 LX 登录门槛弹窗） */ }
+        setPlaying(false);
+        dialog.alert(
+          '听风音乐暂不可用',
+          '取链失败：请检查听风连接与服务器状态。',
+          [
+            { text: '取消', style: 'cancel' },
+            { text: '重新连接', onPress: () => navRef.current?.navigate('MediaLibs' as never) },
+          ],
+        );
+        return;
+      }
       // 播放门槛：登录服务器 或 已启用自定义音源（对齐 lx-music：浏览免费，播放需其一）
       // web 服务端部署形态豁免：服务器公共源匿名可取链（对齐原版 v2 播放器行为）
       const webSrv = Platform.OS === 'web' && typeof navigator !== 'undefined' && !/electron/i.test(navigator.userAgent);
@@ -400,21 +427,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       const quality = pickQuality(t);
-      // 0) 听风音乐(RoCeOS Tingfeng):song/{id} 直链 mp3(含 LRC,回填曲目)——独立服务,不走 lxserver 取链
-      if (t.source === TF_SOURCE) {
-        try {
-          const r = await tfSongUrl(t);
-          if (r.url) {
-            if (r.lrc && !t.lrc) t.lrc = r.lrc;
-            if (r.img && !t.img) t.img = r.img;
-            playOrCast(t, r.url);
-            setCurrent(t);
-            void tfNoteRecent(t); // 写回听风「最近播放」（fire-and-forget）
-            failStreak = 0;
-            return;
-          }
-        } catch { /* 落到失败/换源流程 */ }
-      }
       // web 服务端部署形态:直接走服务器取链(登录带 token,匿名亦可——公共源服务器端执行,无 CORS)
       const webSrvMode = Platform.OS === 'web' && typeof navigator !== 'undefined' && !/electron/i.test(navigator.userAgent);
       // 1) 自定义音源（免登录,Electron/原生本地引擎）
