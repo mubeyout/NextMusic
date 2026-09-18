@@ -4,16 +4,20 @@
 import { createMMKV } from 'react-native-mmkv';
 import type { SongItem } from './server';
 import { tfLogin, tfCall, tfToSongItem, tfUserLib, type TfSess, type TfSongList, type TfPlaylist } from './tingfeng';
+import { V2, V2_ENGINES, isV2Type, plexManual, type StreamResult } from './providers-v2';
 
 const kv = createMMKV({ id: 'nextmusic-providers' });
 
-export type ProviderType = 'subsonic' | 'navidrome' | 'daoliyu' | 'emby' | 'jellyfin' | 'webdav' | 'tingfeng';
+export type ProviderType = 'subsonic' | 'navidrome' | 'daoliyu' | 'emby' | 'jellyfin' | 'webdav' | 'tingfeng'
+  | 'plex' | 'audiobookshelf' | 'audiostation' | 'mstream' | 'songloft';
 
-// 协议映射：navidrome / 道理鱼 走 Subsonic 协议
-export const PROTOCOL: Record<ProviderType, 'subsonic' | 'emby' | 'jellyfin' | 'webdav' | 'tingfeng'> = {
+// 协议映射：navidrome / 道理鱼 走 Subsonic 协议；v2 五引擎（老板 2026-09-18：对齐 Amcfy 平台）各自成协议
+export const PROTOCOL: Record<ProviderType, 'subsonic' | 'emby' | 'jellyfin' | 'webdav' | 'tingfeng'
+  | 'plex' | 'audiobookshelf' | 'audiostation' | 'mstream' | 'songloft'> = {
   subsonic: 'subsonic', navidrome: 'subsonic', daoliyu: 'subsonic',
   emby: 'emby', jellyfin: 'jellyfin', webdav: 'webdav',
   tingfeng: 'tingfeng',
+  plex: 'plex', audiobookshelf: 'audiobookshelf', audiostation: 'audiostation', mstream: 'mstream', songloft: 'songloft',
 };
 
 export interface ProviderAcct {
@@ -27,7 +31,8 @@ export interface ProviderAcct {
   token?: string;      // emby/jellyfin AccessToken
   userId?: string;     // emby/jellyfin User.Id
   root?: string;       // 探测出的 API 根路径（emby 可能带 /emby）
-  tfRefresh?: string;  // 听风 refreshToken（token 轮换/刷新用；accessToken 在 token 字段）
+  tfRefresh?: string;  // 听风 refreshToken（token 轮换/刷新用；accessToken 在 token 字段）；Songloft 也存这
+  clientId?: string;   // Plex 客户端标识（PIN 授权轮询需要，跨会话保持稳定）
 }
 
 export const PROVIDER_META: Record<ProviderType, { label: string; hint: string; placeholder: string }> = {
@@ -38,11 +43,23 @@ export const PROVIDER_META: Record<ProviderType, { label: string; hint: string; 
   jellyfin: { label: 'Jellyfin', hint: 'Jellyfin 媒体服务器（音乐库）', placeholder: 'http://192.168.1.10:8096' },
   webdav: { label: 'WebDAV', hint: 'NAS / 飞牛 fnOS / Alist 等 WebDAV 共享目录，直接浏览音频文件', placeholder: 'http://192.168.1.10:5244/dav' },
   tingfeng: { label: '听风音乐', hint: 'RoCeOS / iStoreOS 路由器内置网易云服务（推荐歌单/排行榜/新歌）', placeholder: 'http://192.168.1.1 或 op.example.com:88' },
+  plex: { label: 'Plex', hint: 'Plex 媒体服务器（网页授权自动发现服务器；也支持填地址+Token）', placeholder: 'http://192.168.1.10:32400' },
+  audiobookshelf: { label: 'Audiobookshelf', hint: '自托管有声书/播客服务器（专辑=书目）', placeholder: 'http://192.168.1.10:13378' },
+  audiostation: { label: 'Audio Station', hint: '群晖 DSM 内置音乐服务器（需账号有 Audio Station 权限）', placeholder: 'http://192.168.1.10:5000' },
+  mstream: { label: 'mStream', hint: 'mStream v5 音乐服务器（JWT 登录，按目录库组织）', placeholder: 'http://192.168.1.10:3000' },
+  songloft: { label: 'Songloft', hint: 'Songloft 自托管音乐服务器（Go，JWT 双 token）', placeholder: 'http://192.168.1.10:58091' },
 };
 
 // 判断歌曲是否来自第三方媒体库（source ∈ 协议表 keys；subsonic 系歌实际 source 为 'subsonic'；听风歌 source='tf' 不在此列——它走独立取链分支）
 export function isProviderSongSource(src?: string): boolean {
   return !!src && !!PROTOCOL[src as ProviderType];
+}
+
+/** v2 引擎分发：新五协议的方法调用统一走这里 */
+function v2<T>(a: ProviderAcct, fn: (e: typeof V2[keyof typeof V2]) => Promise<T>): Promise<T> {
+  const e = V2[V2_ENGINES[a.type] as keyof typeof V2];
+  if (!e) throw new Error('不支持的协议 ' + a.type);
+  return fn(e);
 }
 
 // ---------- accounts CRUD ----------
@@ -62,6 +79,15 @@ export const providers = {
     return acct;
   },
   remove(id: string) { writeAll(readAll().filter(p => p.id !== id)); },
+  /** Plex 客户端标识：PIN 授权轮询需要，设备级稳定（首次生成后落盘） */
+  plexClientId(): string {
+    let id = kv.getString('plex-client-id');
+    if (!id) {
+      id = 'nm-' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+      kv.set('plex-client-id', id);
+    }
+    return id;
+  },
 };
 
 // ---------- helpers ----------
@@ -326,6 +352,16 @@ export const providerApi = {
       const r = await tfLogin(base, a.user, a.pass);
       return { ...a, base: r.base, token: r.token, tfRefresh: r.refresh, name: a.name.trim() || r.nickname || '听风音乐' };
     }
+    if (isV2Type(a.type)) {
+      if (a.type === 'plex') {
+        // 手动模式：填了服务器地址+Token 直接验证；否则报错提示走网页授权（PIN 流程在 ProviderEditScreen 驱动，浏览器交互无法在 connect 里完成）
+        if (!a.token || !base) throw new Error('请点击「打开 Plex 网页授权」自动连接，或手填服务器地址 + X-Plex-Token');
+        const fin = await plexManual(base, a.token);
+        return { ...a, base: fin.base, token: fin.token, root: fin.root, name: a.name.trim() || fin.name };
+      }
+      const e = V2[V2_ENGINES[a.type] as keyof typeof V2];
+      return (e as { connect(a: ProviderAcct): Promise<ProviderAcct> }).connect(a);
+    }
     if (PROTOCOL[a.type] === 'subsonic') {
       await subCall(a, 'ping'); // throws on failure
       return { ...a, base };
@@ -359,6 +395,7 @@ export const providerApi = {
   /** 专辑列表（P0 浏览页「专辑」段；听风无专辑概念→空） */
   async albums(a: ProviderAcct): Promise<PvAlbum[]> {
     if (a.type === 'tingfeng') return [];
+    if (isV2Type(a.type)) return v2(a, e => e.albums(a));
     if (PROTOCOL[a.type] === 'subsonic') {
       const d = await subCall<{ albumList2?: { album?: Record<string, unknown>[] } }>(a, 'getAlbumList2', { type: 'alphabeticalByName', size: '200' });
       return (d.albumList2?.album || []).map(al => ({
@@ -385,6 +422,7 @@ export const providerApi = {
   /** 艺术家列表（浏览页「艺术家」段；听风无→空） */
   async artists(a: ProviderAcct): Promise<PvArtist[]> {
     if (a.type === 'tingfeng') return [];
+    if (isV2Type(a.type)) return v2(a, e => e.artists(a));
     if (PROTOCOL[a.type] === 'subsonic') {
       const d = await subCall<{ artists?: { index?: { artist?: Record<string, unknown>[] }[] } }>(a, 'getArtists');
       const flat = (d.artists?.index || []).flatMap(ix => ix.artist || []);
@@ -409,6 +447,7 @@ export const providerApi = {
   /** 某艺术家的专辑（艺术家详情页；听风无→空） */
   async artistAlbums(a: ProviderAcct, artistId: string): Promise<PvAlbum[]> {
     if (a.type === 'tingfeng') return [];
+    if (isV2Type(a.type)) return v2(a, e => e.artistAlbums(a, artistId));
     if (PROTOCOL[a.type] === 'subsonic') {
       const d = await subCall<{ artist?: { album?: Record<string, unknown>[] } }>(a, 'getArtist', { id: artistId });
       return (d.artist?.album || []).map(al => ({
@@ -441,6 +480,7 @@ export const providerApi = {
         return arr;
       });
     }
+    if (isV2Type(a.type)) return v2(a, e => e.randomSongs(a, size));
     if (PROTOCOL[a.type] === 'subsonic') {
       const d = await subCall<{ randomSongs?: { song?: Record<string, unknown>[] } }>(a, 'getRandomSongs', { size: String(size) });
       return (d.randomSongs?.song || []).map(s => mapSubSong(a, pid, s));
@@ -474,6 +514,7 @@ export const providerApi = {
         ];
       });
     }
+    if (isV2Type(a.type)) return v2(a, e => e.playlists(a));
     if (PROTOCOL[a.type] === 'subsonic') {
       const d = await subCall<{ playlists?: { playlist?: Record<string, unknown>[] } }>(a, 'getPlaylists');
       return (d.playlists?.playlist || []).map(pl => ({
@@ -517,6 +558,7 @@ export const providerApi = {
         return d.songs.map(x => tfToSongItem(x, pid));
       });
     }
+    if (isV2Type(a.type)) return v2(a, e => e.playlistSongs(a, playlistId));
     if (PROTOCOL[a.type] === 'subsonic') {
       const d = await subCall<{ playlist?: { entry?: Record<string, unknown>[] } }>(a, 'getPlaylist', { id: playlistId });
       return (d.playlist?.entry || []).map(s => mapSubSong(a, pid, s));
@@ -532,6 +574,7 @@ export const providerApi = {
   async albumSongs(a: ProviderAcct, albumId: string): Promise<SongItem[]> {
     const pid = a.id;
     if (a.type === 'tingfeng') return [];
+    if (isV2Type(a.type)) return v2(a, e => e.albumSongs(a, albumId));
     if (PROTOCOL[a.type] === 'subsonic') {
       const d = await subCall<{ album?: { song?: Record<string, unknown>[] } }>(a, 'getAlbum', { id: albumId });
       return (d.album?.song || []).map(s => mapSubSong(a, pid, s, albumId));
@@ -562,6 +605,7 @@ export const providerApi = {
     }
     if (!a || !itemId) return null;
     const proto = PROTOCOL[a.type];
+    if (isV2Type(a.type)) { const e2 = V2[V2_ENGINES[a.type] as keyof typeof V2] as { streamOf(a: ProviderAcct, id: string): StreamResult }; return e2.streamOf(a, itemId); }
     if (proto === 'subsonic') return { url: subUrl(a, 'stream', { id: itemId, maxBitRate: '0', format: 'raw' }) };
     if (proto === 'emby' || proto === 'jellyfin') {
       // 无损容器 ExoPlayer 解不了（ape/wma/alac...）：直流必报 UnrecognizedInputFormatException，直接出转码流
@@ -586,6 +630,7 @@ export const providerApi = {
     }
     if (!a || !itemId) return null;
     const proto = PROTOCOL[a.type];
+    if (isV2Type(a.type)) return null; // v2 协议无服务端转码概念；Plex part.key 由 PMS 自行决定直放/转码
     if (proto === 'subsonic') return { url: subUrl(a, 'stream', { id: itemId, maxBitRate: '320' }) };
     if (proto === 'emby' || proto === 'jellyfin') {
       // 服务端转码 mp3：外网/弱网下比无损直流可靠得多；PlaySessionId 唯一化防转码目录互删
@@ -597,6 +642,7 @@ export const providerApi = {
   /** 播放回写（fire-and-forget）：Subsonic scrobble / Emby·JF PlayedItems，让服务器侧有播放统计 */
   async scrobble(a: ProviderAcct, itemId: string): Promise<void> {
     try {
+      if (isV2Type(a.type)) { await v2(a, e => e.scrobble(a, itemId)); return; }
       if (PROTOCOL[a.type] === 'subsonic') {
         await subCall(a, 'scrobble', { id: itemId, submission: 'true' });
       } else if (PROTOCOL[a.type] === 'emby' || PROTOCOL[a.type] === 'jellyfin') {

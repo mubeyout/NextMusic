@@ -84,17 +84,20 @@ let errDialogOpen = false;
 
 const toTrack = (s: SongItem): QueueTrack => ({ ...s, uid: `${s.source}-${s.songmid}-${++seq}` });
 
-// 第三方媒体库源：播放依赖对应账号连接（emby/jellyfin/subsonic 系/webdav）
-const PROVIDER_SOURCES = ['emby', 'jellyfin', 'subsonic', 'navidrome', 'daoliyu', 'webdav'];
+// 第三方媒体库源：播放依赖对应账号连接（emby/jellyfin/subsonic 系/webdav + v2 五协议）
+const PROVIDER_SOURCES = ['emby', 'jellyfin', 'subsonic', 'navidrome', 'daoliyu', 'webdav', 'plex', 'audiobookshelf', 'audiostation', 'mstream', 'songloft'];
 const isProviderSource = (s?: { source?: string } | null) => !!s?.source && PROVIDER_SOURCES.includes(s.source);
 
 // 播放回写：songmid = "pid:itemId"，取 pid 对应账号 scrobble；找不到账号（如 webdav）静默跳过
+// Plex 例外：songmid 存的是流 part key，scrobble 要 ratingKey（映射时存在扩展字段 pk）
 function scrobbleProvider(t: SongItem) {
   try {
     const mid = String(t.songmid ?? '');
     const pid = mid.includes(':') ? mid.split(':')[0] : '';
     const acct = pid ? providers.get(pid) : null;
-    if (acct) providerApi.scrobble(acct, mid.slice(pid.length + 1)).catch(() => {});
+    if (!acct) return;
+    const key = acct.type === 'plex' ? String((t as SongItem & { pk?: string }).pk || mid.slice(pid.length + 1)) : mid.slice(pid.length + 1);
+    providerApi.scrobble(acct, key).catch(() => {});
   } catch { /* 统计失败不影响播放 */ }
 }
 

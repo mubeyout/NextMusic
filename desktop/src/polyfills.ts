@@ -8,12 +8,24 @@ import brandEmby from '../../src/assets/brands/emby.png';
 import brandJellyfin from '../../src/assets/brands/jellyfin.png';
 import brandNavidrome from '../../src/assets/brands/navidrome.png';
 import brandWebdav from '../../src/assets/brands/webdav.png';
+import brandPlex from '../../src/assets/brands/plex.png';
+import brandAbs from '../../src/assets/brands/audiobookshelf.png';
+import brandSyn from '../../src/assets/brands/audiostation.png';
+import brandDaoliyu from '../../src/assets/brands/daoliyu.png';
+import brandMstream from '../../src/assets/brands/mstream.png';
+import brandSongloft from '../../src/assets/brands/songloft.png';
 const ASSET_URLS: Record<string, string> = {
   'mark.png': markUrl,
   'brands/emby.png': brandEmby,
   'brands/jellyfin.png': brandJellyfin,
   'brands/navidrome.png': brandNavidrome,
   'brands/webdav.png': brandWebdav,
+  'brands/plex.png': brandPlex,
+  'brands/audiobookshelf.png': brandAbs,
+  'brands/audiostation.png': brandSyn,
+  'brands/daoliyu.png': brandDaoliyu,
+  'brands/mstream.png': brandMstream,
+  'brands/songloft.png': brandSongloft,
 };
 const ASSET_MODULES: Record<string, unknown> = { 'autoeq_pack.json': autoeqPack };
 (globalThis as { require?: unknown }).require = (id: string): unknown => {
