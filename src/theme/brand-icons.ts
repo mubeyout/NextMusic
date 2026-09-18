@@ -48,6 +48,10 @@ const _subsonic = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" f
 // WebDAV — dashboard-icons 和 simple-icons 均无收录，通用云图标 (#B3B3B3)
 const _webdav = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#B3B3B3"><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>`;
 
+// 听风音乐：官方 logo（深蓝渐变底+声波条，2026-09-18 老板提供；源文件 src/assets/icons/platform/tingfeng.svg）
+// 处理：去 width/height/class；filter(dropShadow/glow) 剔除——react-native-svg 不支持，且小尺寸下无感知；渐变保留
+const _tingfeng = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><defs><linearGradient id="tingfeng-bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1a237e"/><stop offset="50%" stop-color="#0d1b3e"/><stop offset="100%" stop-color="#0a0f24"/></linearGradient><linearGradient id="tingfeng-ring" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3949ab"/><stop offset="50%" stop-color="#1e88e5"/><stop offset="100%" stop-color="#0d47a1"/></linearGradient><linearGradient id="tingfeng-wave" x1="0%" y1="100%" x2="0%" y2="0%"><stop offset="0%" stop-color="#42a5f5"/><stop offset="100%" stop-color="#ffffff"/></linearGradient></defs><rect x="4" y="4" width="112" height="112" rx="26" fill="url(#tingfeng-bg)"/><circle cx="60" cy="60" r="42" fill="none" stroke="url(#tingfeng-ring)" stroke-width="1.5" opacity="0.6"/><circle cx="60" cy="60" r="48" fill="none" stroke="url(#tingfeng-ring)" stroke-width="1" opacity="0.3"/><circle cx="60" cy="60" r="52" fill="none" stroke="url(#tingfeng-ring)" stroke-width="0.5" opacity="0.2"/><circle cx="60" cy="60" r="32" fill="#0d1b3e"/><rect x="38" y="50" width="4" height="20" rx="2" fill="url(#tingfeng-wave)"/><rect x="45" y="42" width="4" height="36" rx="2" fill="url(#tingfeng-wave)"/><rect x="52" y="38" width="5" height="44" rx="2.5" fill="#ffffff"/><rect x="60" y="34" width="5" height="52" rx="2.5" fill="#ffffff"/><rect x="68" y="38" width="5" height="44" rx="2.5" fill="url(#tingfeng-wave)"/><rect x="76" y="42" width="4" height="36" rx="2" fill="url(#tingfeng-wave)"/><rect x="83" y="50" width="4" height="20" rx="2" fill="url(#tingfeng-wave)"/><g opacity="0.8"><rect x="48" y="88" width="3" height="8" rx="1.5" fill="#42a5f5"/><rect x="54" y="85" width="3" height="11" rx="1.5" fill="#64b5f6"/><rect x="60" y="82" width="3" height="14" rx="1.5" fill="#90caf9"/><rect x="66" y="85" width="3" height="11" rx="1.5" fill="#64b5f6"/><rect x="72" y="88" width="3" height="8" rx="1.5" fill="#42a5f5"/></g></svg>`;
+
 export const BRAND_ICONS: Record<string, string> = {
   netease: _netease,
   qqmusic: _qqmusic,
@@ -60,4 +64,5 @@ export const BRAND_ICONS: Record<string, string> = {
   navidrome: _navidrome,
   subsonic: _subsonic,
   webdav: _webdav,
+  tingfeng: _tingfeng,
 };
