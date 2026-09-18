@@ -182,21 +182,22 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
           <View style={{ width: 26 }} />
         </View>
         {!IS_HD ? (
-          /* phone:纯 View 居中(老板 07:05 再报偏顶——ScrollView flexGrow+center 原生不稳,改直排;内容短无需滚动) */
-          <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 16, gap: 14 }}>
-            <Text style={[st.desc, { textAlign: 'center' }]}>选择服务器类型。NextMusic 会先测试能力，再保存凭证。</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 4, paddingVertical: 4 }}>
-              {TYPE_CARDS.map(c => (
-                <TouchableOpacity key={c.type} style={st.typeRowCard} activeOpacity={0.7} onPress={() => pickType(c.type)}>
-                  {c.logo
-                    ? <Image source={c.logo} style={{ width: 70, height: 70, borderRadius: 17 }} resizeMode="contain" />
-                    : <Icon name={c.icon} size={44} color={C.brandText} />}
-                  <Text style={st.typeRowTitle} numberOfLines={1} ellipsizeMode="tail">{c.title}</Text>
-                  <Text style={st.typeRowSub} numberOfLines={1} ellipsizeMode="tail">{c.sub}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            <Text style={st.desc}>服务器地址与账号由用户明确填写，也可以从历史连接中选择。</Text>
+          /* phone 重设计(老板 07:49):卡带独占屏幕正中,提示语沉底——去掉上下两段 desc,卡组即页面主体 */
+          <View style={{ flex: 1, paddingHorizontal: 16 }}>
+            <View style={{ flex: 1, justifyContent: 'center' }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 4, paddingVertical: 4 }}>
+                {TYPE_CARDS.map(c => (
+                  <TouchableOpacity key={c.type} style={st.typeRowCard} activeOpacity={0.7} onPress={() => pickType(c.type)}>
+                    {c.logo
+                      ? <Image source={c.logo} style={{ width: 70, height: 70, borderRadius: 17 }} resizeMode="contain" />
+                      : <Icon name={c.icon} size={44} color={C.brandText} />}
+                    <Text style={st.typeRowTitle} numberOfLines={1} ellipsizeMode="tail">{c.title}</Text>
+                    <Text style={st.typeRowSub} numberOfLines={1} ellipsizeMode="tail">{c.sub}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+            <Text style={[st.desc, { textAlign: 'center', paddingBottom: 14 + insets.bottom, opacity: 0.8 }]}>左右滑动查看全部平台 · 选中后先测试能力再保存凭证</Text>
           </View>
         ) : (
           /* HD: ScrollView 让位 + 一行横滑卡带居中 + 箭头钮(四改:卡放大、箭头/滚轮/拖拽可滑、整组屏幕居中) */
