@@ -18,17 +18,18 @@ import { plexBeginPin, plexPollPin, plexFinish } from '../services/providers-v2'
 
 // 类型卡数据（对齐 Figma NM-REMOTE-SELECT-001）；注：核心后台 LX Server 属于「使用方式与账号」的连接服务器流程，不是第三方媒体库，不在此列
 // icon:HD 卡片用
-const TYPE_CARDS: { type: ProviderType; title: string; badge?: string; sub: string; icon: 'music' | 'tv' | 'wave' | 'cloud'; logo?: any }[] = [ // lx154:真品牌 logo 资产（v2 对齐 Amcfy 12 平台）
-  { type: 'navidrome', title: 'Navidrome / Subsonic', badge: '推荐', sub: '优先走 Subsonic 1.16.1 / OpenSubsonic 兼容协议', icon: 'music', logo: require('../assets/brands/navidrome.png') },
-  { type: 'emby', title: 'Emby / Jellyfin', sub: '用户登录、音乐库选择、直放或服务端转码', icon: 'tv', logo: require('../assets/brands/emby.png') },
-  { type: 'plex', title: 'Plex', sub: '网页授权自动发现服务器；也支持地址 + Token 直连', icon: 'tv', logo: require('../assets/brands/plex.png') },
-  { type: 'audiostation', title: '群晖 Audio Station', sub: 'DSM 内置音乐服务；SYNO API 自动发现 + sid 会话', icon: 'wave', logo: require('../assets/brands/audiostation.png') },
-  { type: 'daoliyu', title: '道理鱼音乐', sub: 'Subsonic 兼容模式接入（专有扫码配对后续支持）', icon: 'wave', logo: require('../assets/brands/daoliyu.png') },
-  { type: 'audiobookshelf', title: 'Audiobookshelf', sub: '自托管有声书/播客；专辑=书目，整书或分轨播放', icon: 'wave', logo: require('../assets/brands/audiobookshelf.png') },
-  { type: 'mstream', title: 'mStream', sub: 'mStream v5；JWT 登录或无用户公开模式', icon: 'cloud', logo: require('../assets/brands/mstream.png') },
-  { type: 'songloft', title: 'Songloft', sub: 'Go 自托管音乐服务；歌手/专辑聚合 + 歌单', icon: 'music', logo: require('../assets/brands/songloft.png') },
-  { type: 'webdav', title: 'WebDAV 音乐目录', sub: '直接读取远程文件；本地建立只读元数据索引', icon: 'cloud', logo: require('../assets/brands/webdav.png') },
-  { type: 'tingfeng', title: '听风音乐', badge: '路由器', sub: 'RoCeOS / iStoreOS 内置网易云：地址+账户密码，推荐歌单/排行榜/新歌', icon: 'wave', logo: { uri: 'data:image/svg+xml;utf8,' + encodeURIComponent(BRAND_ICONS.tingfeng) } },
+const TYPE_CARDS: { type: ProviderType; title: string; badge?: string; sub: string; icon: 'music' | 'tv' | 'wave' | 'cloud'; logo?: any }[] = [ // lx154:真品牌 logo 资产（v2 对齐 Amcfy 12 平台；飞牛 2026-09-18 补）
+  { type: 'navidrome', title: 'Navidrome / Subsonic', badge: '推荐', sub: 'Subsonic / OpenSubsonic 兼容协议', icon: 'music', logo: require('../assets/brands/navidrome.png') },
+  { type: 'emby', title: 'Emby / Jellyfin', sub: '账号登录，直放或服务端转码', icon: 'tv', logo: require('../assets/brands/emby.png') },
+  { type: 'plex', title: 'Plex', sub: '网页授权自动发现 / Token 直连', icon: 'tv', logo: require('../assets/brands/plex.png') },
+  { type: 'audiostation', title: '群晖 Audio Station', sub: 'DSM 内置音乐服务，SYNO API', icon: 'wave', logo: require('../assets/brands/audiostation.png') },
+  { type: 'feiniu', title: '飞牛音乐', sub: 'fnOS 内置音乐服务，应用账号', icon: 'cloud', logo: require('../assets/brands/feiniu.png') },
+  { type: 'daoliyu', title: '道理鱼音乐', sub: 'Subsonic 兼容模式接入', icon: 'wave', logo: require('../assets/brands/daoliyu.png') },
+  { type: 'audiobookshelf', title: 'Audiobookshelf', sub: '自托管有声书 / 播客', icon: 'wave', logo: require('../assets/brands/audiobookshelf.png') },
+  { type: 'mstream', title: 'mStream', sub: 'JWT 登录 / 无用户公开模式', icon: 'cloud', logo: require('../assets/brands/mstream.png') },
+  { type: 'songloft', title: 'Songloft', sub: 'Go 自托管，歌手专辑聚合', icon: 'music', logo: require('../assets/brands/songloft.png') },
+  { type: 'webdav', title: 'WebDAV 音乐目录', sub: '直接读取远程音频文件', icon: 'cloud', logo: require('../assets/brands/webdav.png') },
+  { type: 'tingfeng', title: '听风音乐', badge: '路由器', sub: 'RoCeOS / iStoreOS 内置网易云', icon: 'wave', logo: { uri: 'data:image/svg+xml;utf8,' + encodeURIComponent(BRAND_ICONS.tingfeng) } },
 ];
 
 // 连接页说明 / 输入 hint（对齐 Figma NM-REMOTE-SUBSONIC-001）
@@ -40,6 +41,7 @@ const CONNECT_COPY: Record<string, ConnectCopy> = {
   daoliyu: { desc: '道理鱼专有 API；可用时优先协商 Subsonic 兼容协议。', passHint: '凭证保存到系统安全存储' },
   webdav: { desc: '通过 PROPFIND / GET / Range 直接读取远程音频文件。', passHint: '凭证保存到系统安全存储' },
   subsonic: { desc: '通过 Subsonic 1.16.1 / OpenSubsonic 连接远程曲库。', baseHint: '自动补全 /rest；测试 ping 与 OpenSubsonic 扩展', passHint: '凭证保存到系统安全存储' },
+  feiniu: { desc: '连接飞牛 fnOS 内置音乐服务；应用内账号登录（fnOS 桌面 → 音乐应用里创建的账号）。', baseHint: 'fnOS 桌面同地址同端口；仅支持 http(s)://IP:端口 或域名（FN ID 中继后续支持）', passHint: '密码 SHA-256 后传输' },
 };
 
 export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: string; type?: ProviderType } } }) {
@@ -143,7 +145,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
         >
           <Text style={[st.desc, IS_HD && hdSt.desc, { textAlign: 'center' }]}>选择服务器类型。NextMusic 会先测试能力，再保存凭证。</Text>
           {IS_HD ? (
-            /* HD:一排四张竖版卡(整卡可聚焦,对齐引导页卡片语言;限宽居中+垂直居中) */
+            /* HD:定宽定高竖版卡 wrap 网格(老板 09-18:卡片高低不齐→统一高度，sub 截断 2 行) */
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14, maxWidth: 960, width: '100%', alignSelf: 'center', justifyContent: 'center' }}>
               {TYPE_CARDS.map(c => (
                 <HDTouch
@@ -159,26 +161,30 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                       ? <Image source={c.logo} style={{ width: 44, height: 44, borderRadius: 10 }} resizeMode="contain" />
                       : <Icon name={c.icon} size={30} color={C.brandText} />}
                   </View>
-                  <Text style={hdSt.typeTitle}>{c.title}</Text>
+                  <Text style={hdSt.typeTitle} numberOfLines={1} ellipsizeMode="tail">{c.title}</Text>
                   {c.badge ? (
                     <View style={hdSt.typeBadge}><Text style={hdSt.typeBadgeText}>{c.badge}</Text></View>
-                  ) : null}
-                  <Text style={hdSt.typeSub}>{c.sub}</Text>
+                  ) : (
+                    <View style={{ height: 22 }} /> /* 无 badge 也占位——卡内行对齐，卡片等高 */
+                  )}
+                  <Text style={hdSt.typeSub} numberOfLines={2} ellipsizeMode="tail">{c.sub}</Text>
                 </HDTouch>
               ))}
             </View>
           ) : (
-            <>
+            /* phone:3 列等高卡网格(老板 09-18:整页重排版，不再高高低低)——logo 居中 + 单行标题 + 单行副题截断 */
+            <View style={st.typeGrid}>
               {TYPE_CARDS.map(c => (
-                <TouchableOpacity key={c.type} style={st.typeCard} activeOpacity={0.7} onPress={() => pickType(c.type)}>
-                  <View style={st.typeCardHead}>
-                    <Text style={st.typeCardTitle}>{c.title}</Text>
-                    {c.badge ? <Text style={st.badge}>{c.badge}</Text> : null}
-                  </View>
-                  <Text style={st.typeCardSub}>{c.sub}</Text>
+                <TouchableOpacity key={c.type} style={st.typeGridCard} activeOpacity={0.7} onPress={() => pickType(c.type)}>
+                  {c.badge ? <View style={st.typeGridBadge}><Text style={st.typeGridBadgeText}>{c.badge}</Text></View> : null}
+                  {c.logo
+                    ? <Image source={c.logo} style={{ width: 38, height: 38, borderRadius: 9 }} resizeMode="contain" />
+                    : <Icon name={c.icon} size={30} color={C.brandText} />}
+                  <Text style={st.typeGridTitle} numberOfLines={1} ellipsizeMode="tail">{c.title}</Text>
+                  <Text style={st.typeGridSub} numberOfLines={1} ellipsizeMode="tail">{c.sub}</Text>
                 </TouchableOpacity>
               ))}
-            </>
+            </View>
           )}
           <Text style={[st.desc, IS_HD && hdSt.desc]}>服务器地址与账号由用户明确填写，也可以从历史连接中选择。</Text>
         </ScrollView>
@@ -280,7 +286,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
             <TextInput
               style={[st.inputValue, IS_HD && hdSt.inputValue]}
               value={a.user}
-              placeholder={a.type === 'webdav' ? '匿名可留空' : a.type === 'audiostation' ? 'DSM 账号' : 'music_user'}
+              placeholder={a.type === 'webdav' ? '匿名可留空' : a.type === 'audiostation' ? 'DSM 账号' : a.type === 'feiniu' ? '飞牛音乐账号' : 'music_user'}
               placeholderTextColor={C.text3}
               autoCapitalize="none"
               autoCorrect={false}
@@ -303,6 +309,21 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
           />
           {copy.passHint ? <Text style={st.inputHint}>{copy.passHint}</Text> : null}
         </View>
+
+        {picked === 'feiniu' ? (
+          <View style={[st.inputCard, IS_HD && hdSt.inputCard]}>
+            <Text style={[st.inputLabel, IS_HD && hdSt.inputLabel]}>安全码（可选）</Text>
+            <TextInput
+              style={[st.inputValue, IS_HD && hdSt.inputValue]}
+              value={a.root || ''}
+              placeholder="fnOS 开启了设备安全码时填写"
+              placeholderTextColor={C.text3}
+              autoCapitalize="none"
+              autoCorrect={false}
+              onChangeText={v => { set({ root: v.trim() }); setTested(false); }}
+            />
+          </View>
+        ) : null}
 
         {tested ? (
           <View style={st.infoCard}>
@@ -363,6 +384,14 @@ const st = StyleSheet.create({
 
   // 类型卡（Figma: #2B2B2B r12 p12×14 h64）
   typeCard: { backgroundColor: C.surface2, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, gap: 4, alignItems: 'center', textAlign: 'center' },
+
+  // 类型选择网格（老板 09-18:整页重排版——3 列等高卡，logo 居中，单行截断）
+  typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  typeGridCard: { width: '31.8%', aspectRatio: 1 / 1.08, backgroundColor: C.surface2, borderRadius: 14, alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 8, position: 'relative' },
+  typeGridBadge: { position: 'absolute', top: 7, right: 7, backgroundColor: C.brandDim, borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2 },
+  typeGridBadgeText: { color: C.brandText, fontSize: 10, fontWeight: '600' },
+  typeGridTitle: { color: C.text, fontSize: 12.5, fontWeight: '600', textAlign: 'center', width: '100%' },
+  typeGridSub: { color: C.text3, fontSize: 10, textAlign: 'center', width: '100%' },
   typeCardHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   typeCardTitle: { color: C.text, fontSize: 14, fontWeight: '500' },
   typeCardSub: { color: C.text2, fontSize: 11 },
@@ -399,7 +428,7 @@ const st = StyleSheet.create({
 // HD(车机/TV)样式:一排四张竖版类型卡 + 大表单 + D-pad 可聚焦按钮
 const hdSt = StyleSheet.create({
   typeCard: {
-    width: 168, minHeight: 216, borderRadius: 18, backgroundColor: C.surface,
+    width: 168, height: 216, borderRadius: 18, backgroundColor: C.surface,
     alignItems: 'center', justifyContent: 'center', gap: 10, padding: 14,
   },
   typeFocus: { borderWidth: 2.5, borderColor: C.brand, borderRadius: 18 },

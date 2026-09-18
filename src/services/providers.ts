@@ -9,15 +9,16 @@ import { V2, V2_ENGINES, isV2Type, plexManual, type StreamResult } from './provi
 const kv = createMMKV({ id: 'nextmusic-providers' });
 
 export type ProviderType = 'subsonic' | 'navidrome' | 'daoliyu' | 'emby' | 'jellyfin' | 'webdav' | 'tingfeng'
-  | 'plex' | 'audiobookshelf' | 'audiostation' | 'mstream' | 'songloft';
+  | 'plex' | 'audiobookshelf' | 'audiostation' | 'mstream' | 'songloft' | 'feiniu';
 
 // 协议映射：navidrome / 道理鱼 走 Subsonic 协议；v2 五引擎（老板 2026-09-18：对齐 Amcfy 平台）各自成协议
 export const PROTOCOL: Record<ProviderType, 'subsonic' | 'emby' | 'jellyfin' | 'webdav' | 'tingfeng'
-  | 'plex' | 'audiobookshelf' | 'audiostation' | 'mstream' | 'songloft'> = {
+  | 'plex' | 'audiobookshelf' | 'audiostation' | 'mstream' | 'songloft' | 'feiniu'> = {
   subsonic: 'subsonic', navidrome: 'subsonic', daoliyu: 'subsonic',
   emby: 'emby', jellyfin: 'jellyfin', webdav: 'webdav',
   tingfeng: 'tingfeng',
   plex: 'plex', audiobookshelf: 'audiobookshelf', audiostation: 'audiostation', mstream: 'mstream', songloft: 'songloft',
+  feiniu: 'feiniu',
 };
 
 export interface ProviderAcct {
@@ -48,6 +49,7 @@ export const PROVIDER_META: Record<ProviderType, { label: string; hint: string; 
   audiostation: { label: 'Audio Station', hint: '群晖 DSM 内置音乐服务器（需账号有 Audio Station 权限）', placeholder: 'http://192.168.1.10:5000' },
   mstream: { label: 'mStream', hint: 'mStream v5 音乐服务器（JWT 登录，按目录库组织）', placeholder: 'http://192.168.1.10:3000' },
   songloft: { label: 'Songloft', hint: 'Songloft 自托管音乐服务器（Go，JWT 双 token）', placeholder: 'http://192.168.1.10:58091' },
+  feiniu: { label: '飞牛音乐', hint: '飞牛 fnOS 内置音乐服务（应用内账号登录；支持安全码）', placeholder: 'http://192.168.1.10:5666' },
 };
 
 // 判断歌曲是否来自第三方媒体库（source ∈ 协议表 keys；subsonic 系歌实际 source 为 'subsonic'；听风歌 source='tf' 不在此列——它走独立取链分支）

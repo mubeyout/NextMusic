@@ -14,6 +14,7 @@ import brandSyn from '../../src/assets/brands/audiostation.png';
 import brandDaoliyu from '../../src/assets/brands/daoliyu.png';
 import brandMstream from '../../src/assets/brands/mstream.png';
 import brandSongloft from '../../src/assets/brands/songloft.png';
+import brandFeiniu from '../../src/assets/brands/feiniu.png';
 const ASSET_URLS: Record<string, string> = {
   'mark.png': markUrl,
   'brands/emby.png': brandEmby,
@@ -26,6 +27,7 @@ const ASSET_URLS: Record<string, string> = {
   'brands/daoliyu.png': brandDaoliyu,
   'brands/mstream.png': brandMstream,
   'brands/songloft.png': brandSongloft,
+  'brands/feiniu.png': brandFeiniu,
 };
 const ASSET_MODULES: Record<string, unknown> = { 'autoeq_pack.json': autoeqPack };
 (globalThis as { require?: unknown }).require = (id: string): unknown => {

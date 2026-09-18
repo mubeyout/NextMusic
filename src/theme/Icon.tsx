@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform } from 'react-native';
+import { Platform, Image as RNImage } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { ICONS } from './icon-data';
 import { BRAND_ICONS } from './brand-icons';
@@ -56,15 +56,30 @@ export function Icon({
 
 // ---- Brand icons (no recolor) ----
 
-export type BrandIconName = 'netease' | 'qqmusic' | 'kugou' | 'kuwo' | 'migu' | 'emby' | 'jellyfin' | 'navidrome' | 'subsonic' | 'webdav';
+export type BrandIconName = 'netease' | 'qqmusic' | 'kugou' | 'kuwo' | 'migu' | 'emby' | 'jellyfin' | 'navidrome' | 'subsonic' | 'webdav' | 'tingfeng'
+  | 'plex' | 'audiobookshelf' | 'audiostation' | 'mstream' | 'songloft' | 'feiniu' | 'daoliyu';
+
+// PNG 品牌图（Amcfy APK 提取，src/assets/brands/）——SvgXml 不适用，走 Image source
+const PNG_BRANDS: Partial<Record<BrandIconName, any>> = {
+  plex: require('../assets/brands/plex.png'),
+  audiobookshelf: require('../assets/brands/audiobookshelf.png'),
+  audiostation: require('../assets/brands/audiostation.png'),
+  mstream: require('../assets/brands/mstream.png'),
+  songloft: require('../assets/brands/songloft.png'),
+  feiniu: require('../assets/brands/feiniu.png'),
+  daoliyu: require('../assets/brands/daoliyu.png'),
+};
 
 export function BrandIcon({ name, size = 24 }: { name: BrandIconName; size?: number }) {
+  const png = PNG_BRANDS[name];
+  if (png) {
+    return <RNImage source={png} style={{ width: size, height: size, borderRadius: Math.round(size / 5) }} resizeMode="contain" />;
+  }
   const xml = BRAND_ICONS[name];
   if (!xml) return null;
   // 道理鱼: webp 位图(官方 logo)——SvgXml 不适用,走 Image dataURI
   if (xml.startsWith('data:')) {
-    const { Image } = require('react-native');
-    return <Image source={{ uri: xml }} style={{ width: size, height: size, borderRadius: Math.round(size / 5) }} />;
+    return <RNImage source={{ uri: xml }} style={{ width: size, height: size, borderRadius: Math.round(size / 5) }} />;
   }
   return <SvgXml xml={xml} width={size} height={size} />;
 }

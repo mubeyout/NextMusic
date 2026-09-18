@@ -103,7 +103,7 @@ export function MediaLibsScreen() {
       >
         <Text style={[st.intro, IS_HD && hd.intro]}>接入 Emby、Jellyfin、Navidrome、道理鱼（Subsonic 兼容）或 WebDAV，把私有音乐库变成曲库。</Text>
         {accts.length === 0 ? (
-          <EmptyState icon="server" title="还没有添加媒体库" sub="点右上角 ＋ 接入 Emby / Jellyfin / Navidrome / WebDAV / 听风" />
+          <EmptyState icon="server" title="还没有添加媒体库" sub="点右上角 ＋ 接入 Plex / 飞牛 / 群晖 / Emby / Navidrome / WebDAV / 听风 等 11 种平台" />
         ) : (
           <View style={st.group}>
             {accts.map((a, i) => (

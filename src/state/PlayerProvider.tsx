@@ -85,7 +85,7 @@ let errDialogOpen = false;
 const toTrack = (s: SongItem): QueueTrack => ({ ...s, uid: `${s.source}-${s.songmid}-${++seq}` });
 
 // 第三方媒体库源：播放依赖对应账号连接（emby/jellyfin/subsonic 系/webdav + v2 五协议）
-const PROVIDER_SOURCES = ['emby', 'jellyfin', 'subsonic', 'navidrome', 'daoliyu', 'webdav', 'plex', 'audiobookshelf', 'audiostation', 'mstream', 'songloft'];
+const PROVIDER_SOURCES = ['emby', 'jellyfin', 'subsonic', 'navidrome', 'daoliyu', 'webdav', 'plex', 'audiobookshelf', 'audiostation', 'mstream', 'songloft', 'feiniu'];
 const isProviderSource = (s?: { source?: string } | null) => !!s?.source && PROVIDER_SOURCES.includes(s.source);
 
 // 播放回写：songmid = "pid:itemId"，取 pid 对应账号 scrobble；找不到账号（如 webdav）静默跳过
