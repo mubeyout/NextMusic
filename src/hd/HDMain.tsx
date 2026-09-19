@@ -70,15 +70,21 @@ const TABS = [
 
 const InnerStack = createNativeStackNavigator();
 const hdInnerTheme = { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: C.bg, card: C.bg, text: C.text, primary: C.brand, border: 'transparent' } };
-// lx127:内容区→播放条 焦点桥(不可见 2px,滚到内容底部后 DOWN 直达播放条;老板:D-pad 只有绕侧栏底部才能进)
+// lx127:内容区→播放条 焦点桥(不可见,滚到内容底部后 DOWN 直达播放条;老板:D-pad 只有绕侧栏底部才能进)
+// #015:条高 2→8(2px 焦点引擎难命中)+导出 usePbFocusTarget 供末行卡显式 nextFocusDown
 let pbBridgeHandle: number | null = null;
 const pbBridgeSubs = new Set<() => void>();
+export function usePbFocusTarget(): number | null {
+  const [h, setH] = useState(pbBridgeHandle);
+  useEffect(() => { const f = () => setH(pbBridgeHandle); pbBridgeSubs.add(f); return () => { pbBridgeSubs.delete(f); }; }, []);
+  return h;
+}
 export function FocusBridge({ active }: { active?: boolean }) {
   const [, tick] = useState(0);
   useEffect(() => { const f = () => tick(n => n + 1); pbBridgeSubs.add(f); return () => { pbBridgeSubs.delete(f); }; }, []);
   if (!active || pbBridgeHandle == null) return null;
   return (
-    <HDTouch style={{ height: 2, marginTop: 4 }} focusStyle={false} onPress={() => {}} nextFocusDown={pbBridgeHandle} />
+    <HDTouch style={{ height: 8, marginTop: 4 }} focusStyle={false} onPress={() => {}} nextFocusDown={pbBridgeHandle} />
   );
 }
 

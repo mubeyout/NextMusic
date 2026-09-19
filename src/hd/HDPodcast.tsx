@@ -14,6 +14,8 @@ import { HDGrid } from './HDGrid';
 import { HDTouch } from './HDTouch';
 import { HDSongRow } from './HDSongRow';
 import { usePlayer } from '../state/PlayerProvider';
+import { useApp } from '../state/AppState';
+import { songMenu } from './hdmenubuilders';
 import { lxapi } from '../services/lxapi';
 import { hdNav } from './hdnav';
 import { cacheStale, cacheSet } from './hdcache';
@@ -41,7 +43,8 @@ const POD_GRADS: [string, string][] = [
 
 export function HDPodcast() {
   const insets = useSafeAreaInsets();
-  const { playSong, current } = usePlayer();
+  const { playSong, current, appendQueue, playNextUp } = usePlayer();
+  const { connected, token } = useApp(); // #018:歌曲行统一菜单 deps
   // lx91:陈旧缓存秒开(SWR)+ 8 频道并行拉取(原串行 for-await=8 次顺序网络往返,加载慢真凶)
   const [loading, setLoading] = useState(true);
   const [feeds, setFeeds] = useState<Record<string, SongItem[]>>(() => cacheStale<Record<string, SongItem[]>>('pod.feeds') || {});
@@ -118,7 +121,8 @@ export function HDPodcast() {
           {hotMix.slice(0, 14).map((s, i) => (
             <HDSongRow key={`${s.source}_${s.songmid}_${i}`} song={s} index={i + 1} first={i === 0}
               playing={current?.songmid === s.songmid && current?.source === s.source}
-              onPress={() => playSong(s, hotMix)} />
+              onPress={() => playSong(s, hotMix)}
+              buildMenu={sg => songMenu(sg, hotMix, { playSong, appendQueue, playNextUp, connected, token })} />
           ))}
         </View>
       ) : (

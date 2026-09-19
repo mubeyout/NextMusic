@@ -9,6 +9,8 @@ import { C, H, shadowStyleOf } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { HDSongRow } from './HDSongRow';
 import { usePlayer } from '../state/PlayerProvider';
+import { useApp } from '../state/AppState';
+import { songMenu } from './hdmenubuilders';
 import { lxapi } from '../services/lxapi';
 import { createMMKV } from 'react-native-mmkv';
 import type { SongItem } from '../services/server';
@@ -69,7 +71,8 @@ export function HDSearch() {
     return () => { dead = true; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const insets = useSafeAreaInsets();
-  const { playSong, current } = usePlayer();
+  const { playSong, current, appendQueue, playNextUp } = usePlayer();
+  const { connected, token } = useApp(); // #018:歌曲行统一菜单 deps
   const [kw, setKw] = useState('');
   const [mode, setMode] = useState<'song' | 'singer' | 'album'>('song'); // lx163:搜索类型
   const [singers, setSingers] = useState<{ id: string; name: string; img?: string; source?: string }[] | null>(null);
@@ -219,7 +222,8 @@ export function HDSearch() {
                 {weekly.map((s, i) => (
                   <HDSongRow key={`${s.source}_${s.songmid}_${i}`} song={s} index={i + 1}
                     playing={current?.songmid === s.songmid && current?.source === s.source}
-                    onPress={() => playSong(s, weekly)} />
+                    onPress={() => playSong(s, weekly)}
+                    buildMenu={sg => songMenu(sg, weekly, { playSong, appendQueue, playNextUp, connected, token })} />
                 ))}
               </View>
             ) : null}
@@ -290,7 +294,8 @@ export function HDSearch() {
             {(results || []).map((s, i) => (
               <HDSongRow key={`${s.source}_${s.songmid}_${i}`} song={s} index={i + 1}
                 playing={current?.songmid === s.songmid && current?.source === s.source}
-                onPress={() => playSong(s, results || [s])} />
+                onPress={() => playSong(s, results || [s])}
+                buildMenu={sg => songMenu(sg, results || [s], { playSong, appendQueue, playNextUp, connected, token })} />
             ))}
             {!busy && !results.length && !err ? <Text style={st.empty}>{`没有找到「${kw}」相关内容`}</Text> : null}
           </View>

@@ -1,7 +1,7 @@
 // HD 歌单广场 —— 桌面版风格:五源 pill + 热门标签 pill + 歌单卡网格,点击拉详情进 PlaylistDetail(复用)
 // v2 web 版 /discover 功能对齐:标签筛选 + 广场浏览 + 加载更多
 import React, { useEffect, useRef, useState } from 'react';
-import { FocusBridge } from './HDMain';
+import { FocusBridge, usePbFocusTarget } from './HDMain';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
@@ -42,7 +42,10 @@ export function HDDiscover() {
   const [pls, setPls] = useState<PL[] | null>(null);
   const [page, setPage] = useState(1);
   const [more, setMore] = useState(true);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(false); // 翻页/切源级
+  const [busyId, setBusyId] = useState<string | null>(null); // #015:per-card 拉详情中(蒙层反馈,静默失败 → 有反馈)
+  const [cols, setCols] = useState(6); // #015:网格列数(末行 nextFocusDown 判定)
+  const pbTarget = usePbFocusTarget();
   const deadRef = useRef(false);
 
   // 拉标签(wy 返回 tags 分组,mg/kg 返回 hotTag——统一摊平)
@@ -91,15 +94,15 @@ export function HDDiscover() {
   useEffect(() => { loadPage(1, false); return () => { deadRef.current = true; }; }, [src, tag]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const open = async (pl: PL) => {
-    if (busy) return;
-    setBusy(true);
+    if (busyId) return; // #015:per-card 互斥(替代全局 busy 吞点击)
+    setBusyId(pl.id);
     try {
       const r = await lxapi.songListDetail(pl.id, 1, src);
       const songs = ((r.list || []) as SongItem[]).map(s => ({ ...s, source: s.source || src }));
-      setBusy(false);
       if (songs.length) hdNav()?.navigate('PlaylistDetail', { title: pl.name, songs, meta: `${pl.total || songs.length} 首 · ${pl.author || '歌单'}` });
       else toast('歌单内容为空或加载失败');
-    } catch { setBusy(false); toast('歌单加载失败'); }
+    } catch { toast('歌单加载失败'); }
+    finally { setBusyId(null); }
   };
 
   return (
@@ -144,16 +147,20 @@ export function HDDiscover() {
       {pls == null ? (
         <View style={st.tip}><ActivityIndicator color={C.brand} size="large" /><Text style={st.tipText}>歌单加载中…</Text></View>
       ) : (
-        <HDGrid min={128 * (H.font.sm / 10)}>
+        <HDGrid min={128 * (H.font.sm / 10)} onCols={setCols}>
           {pls.map((pl, i) => (
-            <PLCard key={`${pl.id}_${i}`} pl={pl} i={i} src={src} onOpen={() => open(pl)} />
+            <PLCard key={`${pl.id}_${i}`} pl={pl} i={i} src={src} onOpen={() => open(pl)}
+              busy={busyId === pl.id}
+              lastRow={i >= pls.length - (((pls.length - 1) % cols) + 1)} // #015:末行卡显式 nextFocusDown→播放条(焦点逃逸焊死)
+              nextDown={pbTarget ?? undefined} />
           ))}
         </HDGrid>
       )}
       {pls != null && !pls.length ? <Text style={st.tipText}>该标签暂无歌单,换个标签或源试试</Text> : null}
       {pls != null && pls.length > 0 && more ? (
         <HDTouch style={st.moreBtn} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.pill }}
-          onPress={() => !busy && loadPage(page + 1, true)}>
+          onPress={() => !busy && loadPage(page + 1, true)}
+          nextFocusDown={pbTarget ?? undefined}>
           {busy ? <ActivityIndicator color={C.brand} size="small" /> : <Text style={st.moreText}>加载更多</Text>}
         </HDTouch>
       ) : null}
@@ -162,12 +169,13 @@ export function HDDiscover() {
   );
 }
 
-function PLCard({ pl, i, src, onOpen }: { pl: PL; i: number; src: string; onOpen: () => void }) {
+function PLCard({ pl, i, src, onOpen, busy, lastRow, nextDown }: { pl: PL; i: number; src: string; onOpen: () => void; busy?: boolean; lastRow?: boolean; nextDown?: number }) {
   const hc = useHoverCard(pl.name);
   return (
-    <HDTouch onPress={onOpen} activeOpacity={0.85} zoom={1.06}
+    <HDTouch onPress={onOpen} activeOpacity={0.85} zoom={1.06} disabled={busy}
       ref={IS_WEB ? (hc.elRef as never) : undefined}
       {...(IS_WEB ? { onHoverIn: hc.onHoverIn, onHoverOut: hc.onHoverOut } : {})}
+      {...(lastRow && nextDown != null ? { nextFocusDown: nextDown } : {})}
       style={[st.card, shadowStyleOf(pl.name), IS_WEB && hc.cardStyle, IS_WEB && { overflow: 'hidden' as const }]}
       focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }}
     >
@@ -178,6 +186,12 @@ function PLCard({ pl, i, src, onOpen }: { pl: PL; i: number; src: string; onOpen
           <Icon name="music" size={42} color="#FFFFFFB3" />
         </LinearGradient>
       )}
+      {/* #015:per-card busy 蒙层(拉详情中)——原先静默失败:卡看着能点,点了没反应 */}
+      {busy ? (
+        <View style={st.cardBusy} pointerEvents="none">
+          <ActivityIndicator color="#FFFFFFE6" size="small" />
+        </View>
+      ) : null}
       <View style={st.cardChipWrapper}>
         <View style={st.cardChip}><Text style={st.cardChipText}>{SOURCES.find(s => s.key === src)?.label ?? src}</Text></View>
       </View>
@@ -200,6 +214,7 @@ const st = StyleSheet.create({
   pillLabelOn: { color: C.onBrand, fontWeight: '600' },
   card: { borderRadius: 12, backgroundColor: C.surface, paddingBottom: 8 },
   cardCover: { width: '100%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderTopLeftRadius: 12, borderTopRightRadius: 12 },
+  cardBusy: { position: 'absolute', top: 0, left: 0, right: 0, height: '62%', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,.45)' },
   cardChipWrapper: { position: 'absolute', right: 8, bottom: 80 },
   cardChip: { backgroundColor: 'rgba(0,0,0,.55)', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
   cardChipText: { color: '#fff', fontSize: 9 },

@@ -1,17 +1,20 @@
 // HDGrid:桌面 minmax(min,1fr) 的 RN 等价 —— onLayout 实测容器宽算列数,
 // 卡片严格等宽整行填满(修老板反馈的自适应差/尾行拉伸/行内张数不一)
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 export function HDGrid({
-  min = 124, gap = 12, maxCols = 9, minCols = 3, children,
+  min = 124, gap = 12, maxCols = 9, minCols = 3, children, onCols,
 }: {
   /** 单卡最小宽(dp);列数 = floor((容器宽+gap)/(min+gap)),再夹在 [minCols, maxCols] */
   min?: number; gap?: number; maxCols?: number; minCols?: number;
   children: React.ReactNode;
+  /** #015:列数变化回调(末行卡显式 nextFocusDown 判定用) */
+  onCols?: (cols: number) => void;
 }) {
   const [w, setW] = useState(0);
   const cols = Math.max(minCols, Math.min(maxCols, Math.floor((w + gap) / (min + gap))));
+  useEffect(() => { if (w > 0) onCols?.(cols); }, [cols]); // eslint-disable-line react-hooks/exhaustive-deps
   const itemW = w > 0 ? (w - (cols - 1) * gap) / cols : 0;
   return (
     <View

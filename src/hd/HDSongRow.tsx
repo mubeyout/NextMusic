@@ -13,6 +13,7 @@ import { toast } from '../components/Dialog';
 import type { SongItem } from '../services/server';
 import type { CtxMenuItem } from './hdctxmenu';
 import { setHoverMenu } from './hdctxmenu';
+import { hdActions } from './HDActions';
 import { registerKbRow } from './hdkeyboard';
 
 const IS_WEB = Platform.OS === 'web';
@@ -66,6 +67,11 @@ export function HDSongRow({ song, index, onPress, onLongPress, onAction, playing
     if (!buildMenu) { onAction?.(); return; }
     (globalThis as never as { __nmCtxMenu?: (x: number, y: number, items: CtxMenuItem[]) => void }).__nmCtxMenu?.(x, y, buildMenu(song));
   };
+  // #018:长按/行尾⋯统一菜单兜底——调用方未传 onLongPress/onAction 时走 buildMenu 数据
+  // (TV:hdActions 菜单面板;与 web 右键/hover⋯同源,上下文菜单全端统一)
+  const fallbackMenu = buildMenu ? () => {
+    hdActions.menu(`${song.name} · ${song.singer}`, (buildMenu(song) as unknown as { label: string; onPress: () => void }[]).filter(x => !(x as { hidden?: boolean; disabled?: boolean }).hidden && !(x as { disabled?: boolean }).disabled));
+  } : undefined;
   // lx170(动效 standard 档):行即大按钮——按压 scale(.985)+透明 0.7 带 120ms 过渡(web;行内 DOM 钩子挂 transition)
   const rowEl = useRef<View | null>(null);
   useEffect(() => {
@@ -81,7 +87,7 @@ export function HDSongRow({ song, index, onPress, onLongPress, onAction, playing
       focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.row }}
       focusBg={C.hover}
       onPress={onPress}
-      onLongPress={onLongPress}
+      onLongPress={onLongPress ?? fallbackMenu}
       disabled={!onPress}
       activeOpacity={0.7}
       pressScale={0.985}
@@ -144,8 +150,8 @@ export function HDSongRow({ song, index, onPress, onLongPress, onAction, playing
       )}
     </HDTouch>
     {/* 行尾常驻 ⋯ 仅原生端保留(web hover 三钮已含菜单,重复;TV/手机 D-pad 依赖常驻钮) */}
-    {onAction && !IS_WEB ? (
-      <HDTouch style={st.act} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 11 }} focusBg={C.hover} onPress={onAction}>
+    {(onAction ?? fallbackMenu) && !IS_WEB ? (
+      <HDTouch style={st.act} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 11 }} focusBg={C.hover} onPress={onAction ?? fallbackMenu}>
         <Icon name="more" size={14} color={C.text3} />
       </HDTouch>
     ) : null}

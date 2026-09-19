@@ -90,7 +90,7 @@ function MixCard({ pl, fallbackArt }: { pl: SongListMeta; fallbackArt: any }) {
   const nav = useNavigation() as { navigate: (s: string, p?: object) => void };
   return (
     <TouchableOpacity
-      style={st.mixCard} activeOpacity={0.85}
+      style={st.mixCard} activeOpacity={0.8}
       onPress={() => nav.navigate('PlaylistDetail', {
         remoteId: pl.id, remoteSource: pl.source || 'wy', title: pl.name, cover: pl.img,
         meta: `${pl.total ?? ''} 首 · ${pl.author || '歌单'}`,
@@ -191,7 +191,7 @@ function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
     <View style={st.body}>
       {/* 快捷入口：大卡 2×3（老板要求大气） */}
       <View style={st.quickGrid}>
-        <TouchableOpacity style={st.quickCard} activeOpacity={0.8} onPress={playHot} disabled={fetching}>
+        <TouchableOpacity style={[st.quickCard, fetching && st.quickDis]} activeOpacity={0.8} onPress={playHot} disabled={fetching}>
           <Image source={sky} style={st.quickArt} />
           <Text style={st.quickLabel}>每日精选</Text>
         </TouchableOpacity>
@@ -199,15 +199,15 @@ function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
           <Image source={vinyl} style={st.quickArt} />
           <Text style={st.quickLabel}>我的收藏</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={st.quickCard} activeOpacity={0.8} onPress={playHot} disabled={fetching}>
+        <TouchableOpacity style={[st.quickCard, fetching && st.quickDis]} activeOpacity={0.8} onPress={playHot} disabled={fetching}>
           <Image source={warm} style={st.quickArt} />
           <Text style={st.quickLabel}>私人雷达</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={st.quickCard} activeOpacity={0.8} onPress={() => openSearch('夜深人静')} disabled={fetching}>
+        <TouchableOpacity style={[st.quickCard, fetching && st.quickDis]} activeOpacity={0.8} onPress={() => openSearch('夜深人静')} disabled={fetching}>
           <Image source={night} style={st.quickArt} />
           <Text style={st.quickLabel}>夜深人静</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={st.quickCard} activeOpacity={0.8} onPress={() => openSearch('华语经典')} disabled={fetching}>
+        <TouchableOpacity style={[st.quickCard, fetching && st.quickDis]} activeOpacity={0.8} onPress={() => openSearch('华语经典')} disabled={fetching}>
           <Image source={portrait} style={st.quickArt} />
           <Text style={st.quickLabel}>华语经典</Text>
         </TouchableOpacity>
@@ -231,9 +231,10 @@ function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
               <Text style={st.mixPhText}>加载失败 · 点击重试</Text>
             </TouchableOpacity>
           ) : [0, 1].map(i => (
-            <View key={i} style={[st.mixCard, st.mixPlaceholder]}>
+            // #012①:占位卡可点(tap=重试)——纯 View 长得像真卡但零反馈(LEO 定性)
+            <TouchableOpacity key={i} style={[st.mixCard, st.mixPlaceholder]} activeOpacity={0.8} onPress={() => loadMixes(true)}>
               <Text style={st.mixPhText}>加载中…</Text>
-            </View>
+            </TouchableOpacity>
           ))}
       </ScrollView>
 
@@ -455,6 +456,7 @@ const st = StyleSheet.create({
   homeOverlayCard: { width: 350, maxWidth: '100%' },
   empty: { color: C.text2, fontSize: 13, lineHeight: 18, paddingTop: 40, textAlign: 'center' },
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  quickDis: { opacity: 0.5 }, // #012②:disabled 态视觉反馈
   quickCard: {
     width: (Dimensions.get('window').width - 40 - 12) / 2, height: 88, borderRadius: 14,
     backgroundColor: C.elev, flexDirection: 'row', alignItems: 'center', gap: 12, overflow: 'hidden',
