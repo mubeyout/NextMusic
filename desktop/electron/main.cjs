@@ -1,7 +1,7 @@
 // NextMusic Desktop — Electron 主进程
 // 职责：窗口壳 / 媒体流代理(WebDAV 等带 headers 的音频走 HTML5 Audio 无法自定义头,
 //       由主进程 net.fetch 转发 Range 请求) / 媒体键由 renderer MediaSession 承担
-const { app, BrowserWindow, shell, protocol, net, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, shell, protocol, net, ipcMain, dialog, Menu } = require('electron');
 const { pathToFileURL } = require('url');
 
 // 自定义特权协议:prod 下承载 dist 静态资源(file:// 的 ES module 会被 CORS 拦,nmapp 是标准安全协议)
