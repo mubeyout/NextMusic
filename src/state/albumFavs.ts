@@ -22,8 +22,9 @@ export function isAlbumFav(a: { id: string; source?: string }): boolean {
 }
 export async function refreshAlbumFavs(): Promise<AlbumFav[]> {
   const list = await sync.libraryAlbums();
+  if (list === null) return load(); // lx164:不可达保缓存,不再 save([]) 清空
   const norm = list.map(a => ({ name: a.name, singer: a.singer, id: a.id, img: a.img }));
-  if (norm.length || load().length) save(norm);
+  save(norm);
   return norm;
 }
 export async function toggleAlbumFav(a: AlbumFav): Promise<boolean> {
@@ -33,7 +34,10 @@ export async function toggleAlbumFav(a: AlbumFav): Promise<boolean> {
   const next = idx >= 0 ? list.filter(x => alKey(x) !== k) : [{ ...a, source: a.source || 'wy' }, ...list];
   save(next);
   const ok = await sync.pushLibraryAlbums(next);
-  if (!ok) { save(list); throw new Error('服务器写入失败'); }
+  if (!ok) {
+    // lx164:不可达保留本地乐观态+入离线队列(全量覆盖,同类只留最新)
+    void import('../services/offlineQueue').then(m => m.offlineQueue.enqueue({ k: 'albums', list: next })).catch(() => {});
+  }
   return idx < 0;
 }
 export function subscribeAlbumFavs(f: () => void): () => void {
@@ -45,3 +49,6 @@ export function useAlbumFavTick(): number {
   useEffect(() => subscribeAlbumFavs(() => bump()), []); // eslint-disable-line react-hooks/exhaustive-deps
   return tick;
 }
+
+// lx164:仅「移除服务器/退出账号」可调(disconnectServer)
+export function clearAlbumFavs(): void { save([]); }

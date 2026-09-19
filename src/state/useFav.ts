@@ -34,7 +34,7 @@ export function useFav(song?: SongItem | null) {
       check(snap);
       // lx163:缓存自愈——后台补拉;lx163f(TV 卡顿):20s 冷却+全 app 共享在飞请求,
       // 之前 N 个 useFav 实例(播放条/播放页/行内)每次切歌各拉一次全量快照(网络+MB级JSON),TV 弱芯片直接卡
-      if (connected && token && Date.now() - useFavHealState.last > 20000 && !useFavHealState.inflight) {
+      if (token && Date.now() - useFavHealState.last > 20000 && !useFavHealState.inflight) { // lx164:绑定态(离线 fetchLists 回缓存)
         useFavHealState.last = Date.now();
         useFavHealState.inflight = sync.fetchLists()
           .then(s2 => { if (!dead && s2) check(s2); })
@@ -42,7 +42,7 @@ export function useFav(song?: SongItem | null) {
           .finally(() => { useFavHealState.inflight = null; });
       }
     }
-    else if (connected && token) {
+    else if (token) { // lx164
       sync.fetchLists().then(s => { if (!dead) check(s); }).catch(() => { if (!dead) setFaved(isFav(song) || inLocalPl); });
     } else setFaved(isFav(song) || inLocalPl);
     return () => { dead = true; };
@@ -54,8 +54,8 @@ export function useFav(song?: SongItem | null) {
     setFaved(next);
     try {
       await setFav(song, next,
-        connected && token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined,
-        connected && token ? () => sync.fetchLists() : undefined);
+        !!token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined,
+        !!token ? () => sync.fetchLists() : undefined); // lx164:绑定态即尝试——离线失败由数据层入队
     } catch { setFaved(!next); }
   };
   return { faved, toggle };

@@ -41,7 +41,7 @@ export function MyFavoritesScreen() {
       setSongs((snap?.loveList || []).map(lxToApp));
     };
     load();
-    if (connected && token) sync.fetchLists().then(load).catch(() => {});
+    if (token) sync.fetchLists().then(load).catch(() => {}); // lx164:绑定态——离线 fetchLists 回缓存
     return subscribeSync(load);
   }, [connected, token]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -67,8 +67,8 @@ export function MyFavoritesScreen() {
 
   const unfav = (s: SongItem) => {
     setFav(s, false,
-      connected && token ? ((snap: any) => sync.pushLists(snap)) : undefined,
-      connected && token ? () => sync.fetchLists() : undefined).then(() => {
+      !!token ? ((snap: any) => sync.pushLists(snap)) : undefined,
+      !!token ? () => sync.fetchLists() : undefined).then(() => { // lx164
         setSongs(prev => (prev || []).filter(x => songKey(x) !== songKey(s)));
         toast(`已取消收藏「${s.name}」`);
       });

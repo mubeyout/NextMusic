@@ -56,8 +56,8 @@ export function songMenu(song: SongItem, list: SongItem[], deps: MenuDeps): CtxM
     { key: 'fav', label: isFav(song) ? '取消收藏' : '收藏', onPress: async () => {
       try {
         await setFav(song, !isFav(song),
-          deps.connected && deps.token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined,
-          deps.connected && deps.token ? () => sync.fetchLists() : undefined);
+          deps.token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined,
+          deps.token ? () => sync.fetchLists() : undefined); // lx164:绑定态即尝试,离线入队
         toast(isFav(song) ? '已取消收藏' : '已收藏');
       } catch { toast('操作失败'); }
     } },

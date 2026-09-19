@@ -27,10 +27,11 @@ export function isArtistFav(a: { id: string; source?: string }): boolean {
   return load().some(x => aKey(x) === k);
 }
 
-/** 拉取服务器列表并更新缓存(登录态;失败时保留缓存) */
+/** 拉取服务器列表并更新缓存(登录态;失败时保留缓存) lx164:null=不可达→直接返回缓存,不再 save([]) 清空 */
 export async function refreshArtistFavs(): Promise<ArtistFav[]> {
   const list = await sync.libraryArtists();
-  if (list.length || load().length) save(list);
+  if (list === null) return load();
+  save(list);
   return list;
 }
 
@@ -42,7 +43,10 @@ export async function toggleArtistFav(a: ArtistFav): Promise<boolean> {
   const next = idx >= 0 ? list.filter(x => aKey(x) !== k) : [{ ...a, source: a.source || 'wy' }, ...list];
   save(next); // 先本地生效(乐观),再服务器
   const ok = await sync.pushLibraryArtists(next);
-  if (!ok) { save(list); throw new Error('服务器写入失败'); }
+  if (!ok) {
+    // lx164:不可达不再回滚/抛错——保留本地乐观态并入离线队列(artists 全量覆盖,同类只留最新),恢复连接补传
+    void import('../services/offlineQueue').then(m => m.offlineQueue.enqueue({ k: 'artists', list: next })).catch(() => {});
+  }
   return idx < 0;
 }
 
@@ -57,3 +61,6 @@ export function useArtistFavTick(): number {
   useEffect(() => subscribeArtistFavs(() => bump()), []); // eslint-disable-line react-hooks/exhaustive-deps
   return tick;
 }
+
+// lx164:仅「移除服务器/退出账号」可调(disconnectServer)——歌手收藏属同步数据
+export function clearArtistFavs(): void { save([]); }

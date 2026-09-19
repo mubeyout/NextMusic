@@ -60,7 +60,9 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
   const [actPl, setActPl] = useState<LocalPlaylist | null>(null);
   const [actSyncPl, setActSyncPl] = useState<{ id: string; name: string; count: number } | null>(null); // lx101:同步歌单管理
 
-  const loggedIn = connected && !!token;
+  // lx164:展示门控改「绑定态」(token 存在)——connected 只门在线能力,不再清空展示(离开内网数据消失根因①)
+  const loggedIn = !!token;
+  const offline = !!token && !connected; // 离线角标:数据照常展示,联网后自动同步
   // 订阅本地歌单变更：导入/新建/删除后实时刷新（否则需冷启动才能看到）
   const [, setLibTick] = useState(0);
   useEffect(() => library.subscribe(() => setLibTick(t => t + 1)), []);
@@ -69,7 +71,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
   const lastFetch = useRef(0); // lx163h:30s 内不重复全量拉(每次切 tab 都打服务器的根修)
   const refresh = useCallback(async (force = false) => {
     setRecents(getRecents());
-    if (!loggedIn) { setSnap(null); return; }
+    if (!loggedIn) { setSnap(null); return; } // 仅未绑定/已移除账号才清(需求③);离线时 fetchLists 回缓存,snap 保留
     if (!force && snap && Date.now() - lastFetch.current < 30000) return;
     lastFetch.current = Date.now();
     setSyncing(true);
@@ -136,6 +138,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
           <Icon name="settings" size={20} />
         </TouchableOpacity>
       </View>
+      {offline && <Text style={{ color: C.brand, fontSize: 12, marginBottom: 10 }}>离线模式 · 数据来自缓存，联网后自动同步</Text>}
 
       <PillTabs tabs={['歌单', '歌手', '专辑', '已下载']} active={tab} onChange={setTab} />
 

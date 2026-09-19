@@ -22,7 +22,14 @@ export function createMMKV(cfg: Config) {
       for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i)!; if (k.startsWith(P)) out.push(k.slice(P.length)); }
       return out;
     },
-    clearAll: () => { for (const k of this.getAllKeys()) this.delete(k); },
+    clearAll: () => {
+      // lx164 修复:原先用 this.getAllKeys()/this.delete()——箭头函数在 ESM 顶层 this=undefined,web/desktop 端一调即 TypeError;
+      // 且迭代中 removeItem 会跳项。改闭包直扫+先收集后删。
+      if (!ok) { mem.clear(); return; }
+      const keys: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(P)) keys.push(k); }
+      for (const k of keys) localStorage.removeItem(k);
+    },
   };
 }
 export type MMKV = ReturnType<typeof createMMKV>;

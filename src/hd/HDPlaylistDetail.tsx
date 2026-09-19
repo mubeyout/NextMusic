@@ -67,18 +67,18 @@ export function HDPlaylistDetailScreen() {
       try {
         if (p.love) {
           await setFav(sg, false,
-            connected && token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined,
-            connected && token ? () => sync.fetchLists() : undefined);
+            !!token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined,
+            !!token ? () => sync.fetchLists() : undefined); // lx164:绑定态即尝试,离线入队
         } else if (local) {
           library.removeSong(local.id, sg);
-        } else if (p.plKey && connected && token) {
+        } else if (p.plKey && token) { // lx164
           const ok = await sync.removeSongFromUserList(p.plKey, sg);
           if (!ok) { toast('服务器操作失败'); return; }
         } else {
           // lx116:无 id 的收藏歌单兜底——按标题匹配本地库/服务器歌单移除
           const localByName = library.all().find(q => q.name === title);
           if (localByName) { library.removeSong(localByName.id, sg); }
-          else if (connected && token) {
+          else if (token) { // lx164
             const ok = await sync.removeSongFromUserListByName(title, sg);
             if (!ok) { toast('未找到对应收藏歌单'); return; }
           } else { toast('该歌单不支持移除'); return; }
@@ -98,8 +98,8 @@ export function HDPlaylistDetailScreen() {
       ...(favd ? [{ label: '取消收藏', icon: 'heart', danger: true, onPress: async () => {
         try {
           await setFav(sg, false,
-            connected && token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined,
-            connected && token ? () => sync.fetchLists() : undefined);
+            !!token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined,
+            !!token ? () => sync.fetchLists() : undefined); // lx164:绑定态即尝试,离线入队
           toast('已取消收藏');
           if (p.love) setSongs(prev => prev.filter(x => !(x.source === sg.source && x.songmid === sg.songmid)));
         } catch { toast('操作失败'); }
@@ -149,12 +149,12 @@ export function HDPlaylistDetailScreen() {
         hdActions.prompt('重命名歌单', { defaultValue: title, onSubmit: async (v) => {
           if (!v || v === title) return;
           if (p.localId) { library.update(p.localId, { name: v }); toast('已重命名'); }
-          else if (connected && token) toast((await sync.renameUserList(p.plKey!, v)) ? '已重命名' : '服务器操作失败');
+          else if (token) toast((await sync.renameUserList(p.plKey!, v)) ? '已重命名' : '服务器操作失败'); // lx164
         } });
       } },
       { label: '删除歌单', icon: 'trash', danger: true, onPress: async () => {
         if (p.localId) { library.remove(p.localId); toast('已删除'); nav.goBack(); }
-        else if (connected && token) {
+        else if (token) { // lx164
           toast((await sync.removeUserList(p.plKey!)) ? '已删除' : '服务器操作失败');
           nav.goBack();
         }

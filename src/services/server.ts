@@ -100,6 +100,14 @@ export const store = {
 // lx163g:登录凭据持久化(可选)——服务器重建/换 token 后 401 自动重登,歌单不再集体蒸发
 import { createMMKV } from 'react-native-mmkv';
 const credKv = createMMKV({ id: 'nextmusic-creds' });
+// lx164:服务器音源列表缓存——不可达时回退,列表不再清空(仅 disconnectServer 可清)
+const csKv = createMMKV({ id: 'nextmusic-cs-cache' });
+export type CsItem = { id: string; name: string; version: string; enabled: boolean; channels: string[] };
+export const csCache = {
+  save(list: CsItem[]): void { try { csKv.set('list', JSON.stringify(list)); } catch { /* ignore */ } },
+  read(): CsItem[] { try { return JSON.parse(csKv.getString('list') || '[]') as CsItem[]; } catch { return []; } },
+  clear(): void { csKv.remove('list'); },
+};
 export function saveCreds(username: string, password: string) {
   if (username && password) credKv.set('c', JSON.stringify({ username, password }));
 }

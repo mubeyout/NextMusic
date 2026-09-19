@@ -26,7 +26,7 @@ export function CollectSheet({ song, visible, onClose }: { song: SongItem | null
   }, [visible, song?.songmid]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (visible && connected && token) {
+    if (visible && token) { // lx164:绑定态——离线走缓存
       sync.fetchLists().then(s => {
         if (!s) return;
         const k = song ? songKey(song) : '';
@@ -45,8 +45,8 @@ export function CollectSheet({ song, visible, onClose }: { song: SongItem | null
 
   const toggle = async () => {
     await setFav(song, !faved,
-      connected && token ? (snap: any) => sync.pushLists(snap) : undefined,
-      connected && token ? () => sync.fetchLists() : undefined);
+      !!token ? (snap: any) => sync.pushLists(snap) : undefined,
+      !!token ? () => sync.fetchLists() : undefined); // lx164:绑定态即尝试,离线入队
     setFaved(!faved);
   };
 
@@ -65,8 +65,8 @@ export function CollectSheet({ song, visible, onClose }: { song: SongItem | null
       }).catch(() => {});
     } else {
       await addToPlaylist({ name }, song,
-        connected && token ? () => sync.fetchLists() : undefined,
-        connected && token ? (s: any) => sync.pushLists(s) : undefined);
+        !!token ? () => sync.fetchLists() : undefined,
+        !!token ? (s: any) => sync.pushLists(s) : undefined); // lx164
       toast('已收藏');
       onClose();
     }
@@ -126,7 +126,7 @@ export function CollectSheet({ song, visible, onClose }: { song: SongItem | null
               );
             })}
             {!remotePls.length && localPls.length <= 1 ? (
-              <Text style={s.empty}>{connected && token ? '暂无自建歌单' : '本地暂无歌单，可到「我的」导入创建'}</Text>
+              <Text style={s.empty}>{token ? '暂无自建歌单' : '本地暂无歌单，可到「我的」导入创建'}</Text>
             ) : null}
           </ScrollView>
         </View>

@@ -9,7 +9,7 @@ import { HDTouch } from '../hd/HDTouch';
 import { useApp } from '../state/AppState';
 import { SubPage } from '../components/SubPage';
 import { PageHeader } from '../components/PageChrome';
-import { api, store } from '../services/server';
+import { api, store, csCache } from '../services/server';
 import { loadSources, addSourceByUrl, addSourceFromFile, removeSource, toggleSource, activeSources, sourceHealthCheck, checkSourceUpdates, applySourceUpdate, applyUpdateFromAlert, type CustomSource } from '../services/customSource';
 import { onSourceUpdateAlert } from '../lx-engine/engine';
 import { dialog, toast } from '../components/Dialog';
@@ -58,7 +58,17 @@ export function SourcesScreen() {
       return next;
     });
   };
-  const loadServerSources = () => { api.csList().then(l => setServerSources(l.filter(x => x.enabled !== false))).catch(() => setServerSources([])); };
+  const loadServerSources = () => {
+    api.csList().then(l => {
+      const list = l.filter(x => x.enabled !== false);
+      setServerSources(list);
+      csCache.save(list); // lx164:成功落缓存
+    }).catch(() => {
+      // lx164:不可达回缓存——音源列表不再清空(根因③);仅移除服务器/账号时才清
+      const cached = csCache.read().filter(x => x.enabled !== false);
+      setServerSources(cached);
+    });
+  };
   // 服务器音源: 播放器/客户端端只读+启停;管理(上传/删除)走后台 /admin/
   // vc88:手动导入音源文件(SAF 选 .js)
   // 本地引擎音源 URL 添加(15:54 整理时误删函数体,调用点残留致 ReferenceError——找回)

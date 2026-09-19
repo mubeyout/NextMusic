@@ -4,7 +4,7 @@
 // NOTE: req() auto-injects x-user-token when logged in (see server.ts)
 import { req, type SongItem } from './server';
 import { createMMKV } from 'react-native-mmkv';
-const kvSync = createMMKV({ id: 'nextmusic-sync-cache' });
+export const kvSync = createMMKV({ id: 'nextmusic-sync-cache' }); // lx165:导出供 dedupLove 存完成标记
 let lastSnapJson = ''; // lx126:缓存写入去重(避免重复 MB 级序列化)
 
 export interface LXSong {
@@ -101,6 +101,11 @@ export async function refetchAndBump(): Promise<void> {
 }
 function bumpSync() { syncSubs.forEach(f => f()); }
 
+// lx164:离线入队小助手(动态 import 防 sync↔offlineQueue 静态环)
+function queueOffline(op: import('./offlineQueue').OutboxInput): void {
+  void import('./offlineQueue').then(m => m.offlineQueue.enqueue(op)).catch(() => {});
+}
+
 export const sync = {
   /** lx104:上次快照缓存(MMKV)——冷启动侧栏/我的页秒出,后台刷新覆盖(大快照拉取慢=加载缓慢根因) */
   _snapCache: null as UserListsSnapshot | null | undefined, // lx163h:快照解析缓存(与 lastSnapJson 绑定)
@@ -119,7 +124,9 @@ export const sync = {
     try {
       const d = (await req('/api/user/list', { timeout: 10000 })) as UserListsSnapshot;
       console.log('[sync] user/list resp type:', typeof d, '| defaultList:', Array.isArray((d as any)?.defaultList) ? (d as any).defaultList.length : String((d as any)?.defaultList).slice(0, 40));
-      if (!d || !Array.isArray(d.defaultList)) return null;
+      // lx164:不可达/响应异常回退缓存——展示与读路径离线可见(离开内网数据消失根因);
+      // 写路径靠 pushLists 失败入离线队列,不会把本地缓存误推上服务器
+      if (!d || !Array.isArray(d.defaultList)) return this.cachedLists();
       const snap = { defaultList: d.defaultList, loveList: d.loveList || [], userList: d.userList || [] };
       // lx126 卡顿优化:内容未变跳过 MB 级 stringify+MMKV 写(全量快照 400+ 歌时 JS 线程卡顿源)
       try {
@@ -128,8 +135,17 @@ export const sync = {
       } catch { /* 超大忽略 */ }
       this._lastFetchAt = Date.now();
       return snap;
-    } catch { return null; }
+    } catch { return this.cachedLists(); }
   },
+  // lx164:离线乐观变更落缓存——重启后仍可见(未推上服务器的本地态)
+  persistSnap(snap: UserListsSnapshot): void {
+    try {
+      const json = JSON.stringify(snap);
+      if (json !== lastSnapJson) { kvSync.set('snap', json); lastSnapJson = json; this._snapCache = snap; }
+    } catch { /* 超大忽略 */ }
+  },
+  // lx164:清同步缓存——仅 disconnectServer(移除服务器/退出账号)这一个入口允许调
+  clearCache(): void { kvSync.remove('snap'); lastSnapJson = ''; this._snapCache = null; },
   // lx101:歌单管理(双端共用)——服务器 userList 重命名/删除(fetch+改+push 整快照)
   // lx102/lx104:本机歌单上传服务器——同名歌单覆盖更新(防重复堆积)
   async uploadUserList(name: string, songs: SongItem[]): Promise<boolean> {
@@ -139,14 +155,18 @@ export const sync = {
     snap.userList = exist
       ? snap.userList.map(x => (x.name === name ? entry : x))
       : [...snap.userList, entry];
-    return this.pushLists(snap);
+    const ok = await this.pushLists(snap);
+    if (!ok) { this.persistSnap(snap); queueOffline({ k: 'plUpload', name, songs }); return true; } // lx164:离线保存待补传
+    return true;
   },
   // lx106:服务器歌单移除单曲(收藏歌曲移除机制)
   async removeSongFromUserList(id: string, song: SongItem): Promise<boolean> {
     const snap = await this.fetchLists(); if (!snap) return false;
     const u = snap.userList.find(x => x.id === id); if (!u) return false;
     u.list = (u.list || []).filter(x => lxNormKey(x as never) !== lxNormKey(song));
-    return this.pushLists(snap);
+    const ok = await this.pushLists(snap);
+    if (!ok) { this.persistSnap(snap); queueOffline({ k: 'plDelSong', id, name: u.name, key: lxNormKey(song) }); return true; }
+    return true;
   },
   // lx107/lx119:本机歌单自动镜像——只"新增"本地独有歌单;服务器已存在同名一律不碰
   // (lx119:即使调用方过滤失效,这里也是最后防线——同名覆盖=服务器侧删改被本地旧副本复活)
@@ -165,16 +185,25 @@ export const sync = {
     const snap = await this.fetchLists(); if (!snap) return false;
     const u = snap.userList.find(x => x.name === plName); if (!u) return false;
     u.list = (u.list || []).filter(x => lxNormKey(x as never) !== lxNormKey(song));
-    return this.pushLists(snap);
+    const ok = await this.pushLists(snap);
+    if (!ok) { this.persistSnap(snap); queueOffline({ k: 'plDelSong', name: plName, key: lxNormKey(song) }); return true; }
+    return true;
   },
   async renameUserList(id: string, name: string): Promise<boolean> {
     const snap = await this.fetchLists(); if (!snap) return false;
     const u = snap.userList.find(x => x.id === id); if (!u) return false;
-    u.name = name; return this.pushLists(snap);
+    u.name = name;
+    const ok = await this.pushLists(snap);
+    if (!ok) { this.persistSnap(snap); queueOffline({ k: 'plRename', id, name: u.name, newName: name }); return true; }
+    return true;
   },
   async removeUserList(id: string): Promise<boolean> {
     const snap = await this.fetchLists(); if (!snap) return false;
-    snap.userList = snap.userList.filter(x => x.id !== id); return this.pushLists(snap);
+    const u = snap.userList.find(x => x.id === id);
+    snap.userList = snap.userList.filter(x => x.id !== id);
+    const ok = await this.pushLists(snap);
+    if (!ok) { this.persistSnap(snap); if (u) queueOffline({ k: 'plRemove', id, name: u.name }); return true; }
+    return true;
   },
   async pushLists(snap: UserListsSnapshot): Promise<boolean> {
     try {
@@ -183,12 +212,12 @@ export const sync = {
       return true;
     } catch { return false; }
   },
-  async libraryArtists(): Promise<{ name: string; id: string; source?: string; img?: string; count?: number }[]> {
+  async libraryArtists(): Promise<{ name: string; id: string; source?: string; img?: string; count?: number }[] | null> {
     try {
       const d = (await req('/api/user/library/artists')) as { list?: { name: string; id?: string; source?: string; img?: string; count?: number }[] } | { name: string; id?: string; source?: string; img?: string; count?: number }[];
       const list = Array.isArray(d) ? d : d.list || [];
       return list.map(a => ({ name: a.name, id: String(a.id ?? a.name), source: a.source, img: a.img, count: a.count }));
-    } catch { return []; }
+    } catch { return null; } // lx164:null=拉取失败(区别于空列表)——调用方保缓存不清空
   },
   // lx161:歌手收藏写入(服务器 API 为全量覆盖)——web 端同款接口,多端互通
   async pushLibraryArtists(list: { name: string; id: string; source?: string; img?: string; count?: number }[]): Promise<boolean> {
@@ -204,11 +233,11 @@ export const sync = {
       return true;
     } catch { return false; }
   },
-  async libraryAlbums(): Promise<{ name: string; singer?: string; id: string; img?: string }[]> {
+  async libraryAlbums(): Promise<{ name: string; singer?: string; id: string; img?: string }[] | null> {
     try {
       const d = (await req('/api/user/library/albums')) as { list?: { name: string; singer?: string; id?: string; img?: string }[] } | { name: string; singer?: string; id: string; img?: string }[];
       const list = Array.isArray(d) ? d : d.list || [];
       return list.map(a => ({ name: a.name, singer: a.singer, id: String(a.id ?? a.name), img: a.img }));
-    } catch { return []; }
+    } catch { return null; } // lx164:同 libraryArtists——null 保缓存
   },
 };

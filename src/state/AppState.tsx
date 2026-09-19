@@ -1,7 +1,13 @@
 // Global app state: boot mode, server connection, auth. Persisted via MMKV.
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState as RNAppState } from 'react-native';
 import { createMMKV, type MMKV } from 'react-native-mmkv';
-import { api, store as httpStore, normalizeBase, type ServerConfig } from '../services/server';
+import { api, store as httpStore, normalizeBase, clearCreds, csCache, type ServerConfig } from '../services/server';
+import { sync, refetchAndBump } from '../services/sync';
+import { offlineQueue } from '../services/offlineQueue';
+import { clearFavs } from './favorites';
+import { clearArtistFavs } from './artistFavs';
+import { clearAlbumFavs } from './albumFavs';
 
 const kv = createMMKV({ id: 'nextmusic' });
 
@@ -83,6 +89,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(init.token);
   const [username, setUsername] = useState<string | null>(init.username);
   const [serverConfig, setServerConfig] = useState<ServerConfig | null>(null);
+  const connected = !!serverConfig; // lx164:提前计算——补传/前台 effect 需要监听连接转沿
 
   // sync http store
   httpStore.base = base || '';
@@ -105,9 +112,33 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       .catch(() => setServerConfig(null));
   }, [base]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // lx164:恢复连接→离线队列补传+广播重拉(connected false→true 沿;登录成功 token 置位同样触发)
+  const wasUp = useRef(false);
+  useEffect(() => {
+    const up = connected && !!token;
+    if (up && !wasUp.current) {
+      // 串行:补传→重拉广播——并发 fetch+push 会互踩快照
+      void (async () => {
+        const n = await offlineQueue.flush();
+        if (n > 0) await refetchAndBump();
+      })().catch(() => {});
+    }
+    wasUp.current = up;
+  }, [connected, token]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // lx164:回前台→联网态下顺手补传一次(队列空时是零成本空转)
+  useEffect(() => {
+    const sub = RNAppState.addEventListener('change', s => {
+      if (s === 'active' && serverConfig && token) {
+        void offlineQueue.flush().then(n => { if (n > 0) refetchAndBump(); }).catch(() => {});
+      }
+    });
+    return () => sub.remove();
+  }, [serverConfig, token]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const value: AppStateCtx = {
     mode, base, token, username,
-    connected: !!serverConfig,
+    connected,
     serverConfig,
     setMode: m => setModeState(m),
     connectServer: async (b: string) => {
@@ -130,6 +161,15 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       httpStore.base = '';
       httpStore.token = ''; httpStore.username = '';
       setModeState('local');
+      // lx164:全库唯一清数据入口——仅「移除服务器/退出账号」清同步信息/歌单/音源(老板需求③):
+      // 快照缓存+离线队列+音源缓存+收藏(loveList 镜像+我喜欢的)+歌手/专辑收藏+自动重登凭据
+      sync.clearCache();
+      offlineQueue.clear();
+      csCache.clear();
+      clearFavs();
+      clearArtistFavs();
+      clearAlbumFavs();
+      clearCreds();
     },
   };
 

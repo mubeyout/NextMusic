@@ -277,8 +277,8 @@ export function PlaylistDetailScreen() {
             toast(`已移除「${actSong.name}」`);
           } }] : (p as { love?: boolean }).love ? [{ label: '取消收藏', danger: true as const, onPress: () => {
             setFav(actSong, false,
-              connected && token ? ((snap: any) => sync.pushLists(snap)) : undefined,
-              connected && token ? () => sync.fetchLists() : undefined);
+              !!token ? ((snap: any) => sync.pushLists(snap)) : undefined,
+              !!token ? () => sync.fetchLists() : undefined); // lx164
             setSongs(prev => (prev || []).filter(s => !(s.source === actSong.source && s.songmid === actSong.songmid)));
             setTotal(t => Math.max(0, t - 1));
             toast(`已取消收藏「${actSong.name}」`);
@@ -294,8 +294,8 @@ export function PlaylistDetailScreen() {
         items={[
           { label: '我喜欢的', onPress: async () => {
             const n = await setFavBatch(shown, true,
-              connected && token ? ((snap: any) => sync.pushLists(snap)) : undefined,
-              connected && token ? () => sync.fetchLists() : undefined,
+              !!token ? ((snap: any) => sync.pushLists(snap)) : undefined,
+              !!token ? () => sync.fetchLists() : undefined, // lx164
               appToLx);
             toast(n ? `已收藏 ${n} 首到「我喜欢的」` : '均已收藏');
             setPlCollect(false);
@@ -308,7 +308,7 @@ export function PlaylistDetailScreen() {
               setPlCollect(false);
             },
           })),
-          ...(connected && token ? [{ label: '＋ 新建歌单', onPress: () => {
+          ...(token ? [{ label: '＋ 新建歌单', onPress: () => { // lx164
             (IS_HD ? hdActions : dialog).prompt('新建歌单', { defaultValue: p.title || '', onSubmit: async (v: string) => {
               const n = (v || '').trim();
               if (!n) return;

@@ -45,8 +45,7 @@ export function AlbumFavScreen() {
               </View>
               <Row
                 style={st.favBtn}
-                onPress={() => toggleAlbumFav(item).then(ok => {
-                  if (!ok) { toast('同步失败,稍后重试'); return; }
+                onPress={() => toggleAlbumFav(item).then(() => { // lx164:返回值是"现在是否收藏"非成败——原判断恒失败(既有 bug 顺手修);离线已入队
                   setList(prev => (prev || []).filter(x => x !== item));
                 })}
               >

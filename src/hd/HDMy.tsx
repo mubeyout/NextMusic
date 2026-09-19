@@ -44,7 +44,7 @@ export function HDMy() {
     setLocalPls(library.all());
     if (!serverDirty) return;
     setSyncing(true);
-    if (connected && token) {
+    if (token) { // lx164:绑定态即拉——离线时 fetchLists 回缓存,snap 不再清空
       sync.fetchLists().then(setSnap).catch(() => {}).finally(() => setSyncing(false));
     } else setSyncing(false);
   };
@@ -70,13 +70,13 @@ export function HDMy() {
           onSubmit: async (v) => {
             if (!v || v === pl.name) return;
             if (pl.localId) { void playlistSync.rename(pl.localId, v).then(() => toast('已重命名')); } // lx163:镜像服务器
-            else if (connected && token) toast((await sync.renameUserList(pl.key, v)) ? '已重命名' : '服务器操作失败');
+            else if (token) toast((await sync.renameUserList(pl.key, v)) ? '已重命名' : '服务器操作失败'); // lx164:绑定态——离线入队
           },
         });
       } },
       { label: '删除歌单', icon: 'trash', danger: true, onPress: async () => {
         if (pl.localId) { void playlistSync.remove(pl.localId).then(() => toast('已删除')); } // lx163:镜像服务器
-        else if (connected && token) toast((await sync.removeUserList(pl.key)) ? '已删除' : '服务器操作失败');
+        else if (token) toast((await sync.removeUserList(pl.key)) ? '已删除' : '服务器操作失败'); // lx164
       } },
     ]);
   };

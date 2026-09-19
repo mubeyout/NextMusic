@@ -157,8 +157,8 @@ export function HDMain() {
     const localNames = new Set(local.map(x => x.name));
     // 本地段重算:保留 prev 里的服务器段(名字去重),本地副本优先
     setPls(prev => [...local, ...prev.filter(x => !x.localId && !localNames.has(x.name))]);
-    if (!serverDirty || !connected || !token) return;
-    // ↓ 仅服务器信号变化才走:缓存先行 + 网络拉取
+    if (!serverDirty || !token) return; // lx164:门控改绑定态——缓存渲染不再被 connected 拦(离开内网冷启动 probe 失败→缓存分支永不执行的根因②)
+    // ↓ 绑定即出:缓存先行(离线世同源);联网才补网络拉取
     const cached = sync.cachedLists();
     if (cached) {
       setLoveCount((cached.loveList || []).length);
@@ -171,7 +171,7 @@ export function HDMain() {
     }
     // lx122:mergeLocalLove 已移除——其 additions 推原始 SongItem(无 id 字段)入 loveList,
     // 服务器收下后 remoteIds 永远匹配不上→每轮再推→指数复制(实锤:1188 条中 1187 条无 id)
-    sync.fetchLists().then(s => {
+    if (connected) sync.fetchLists().then(s => { // lx164:仅联网拉取;离线用上面的缓存
       if (!s) return;
       setLoveCount((s.loveList || []).length);
       const serverPls = (s.userList || []).map(u => ({
@@ -207,7 +207,7 @@ export function HDMain() {
           onSubmit: async (v) => {
             if (!v || v === pl.name) return;
             if (pl.localId) { void playlistSync.rename(pl.localId, v).then(() => toast('已重命名')); } // lx163:镜像服务器
-            else if (connected && token) {
+            else if (token) { // lx164:绑定态——离线由 sync 层入队补传
               const ok = await sync.renameUserList(pl.key, v);
               toast(ok ? '已重命名' : '服务器操作失败');
             }
@@ -216,7 +216,7 @@ export function HDMain() {
       } },
       { label: '删除歌单', icon: 'trash', danger: true, onPress: async () => {
         if (pl.localId) { void playlistSync.remove(pl.localId).then(() => toast('已删除')); } // lx163:镜像服务器
-        else if (connected && token) toast((await sync.removeUserList(pl.key)) ? '已删除' : '服务器操作失败');
+        else if (token) toast((await sync.removeUserList(pl.key)) ? '已删除' : '服务器操作失败'); // lx164:绑定态
       } },
     ]);
   };
@@ -230,11 +230,11 @@ export function HDMain() {
   // lx67:登录后拉"我喜欢的"数量(侧栏展示)——lx91 并入上方歌单 effect,此处留空
 
   const openFavorites = () => {
-    if (!connected || !token) { hdNav()?.navigate('AuthLogin'); return; }
+    if (!token) { hdNav()?.navigate('AuthLogin'); return; } // lx164:绑定即可看——离线用缓存,不再跳登录页
     sync.fetchLists().then(s => {
       if (!s) return;
       const songs = (s.loveList || []).map(lxToApp);
-      railNav('PlaylistDetail', { title: '我喜欢的', songs, meta: `${songs.length} 首 · 同步收藏`, love: true });
+      railNav('PlaylistDetail', { title: '我喜欢的', songs, meta: `${songs.length} 首 · 同步收藏${connected ? '' : ' · 离线'}`, love: true });
     }).catch(() => {});
   };
 

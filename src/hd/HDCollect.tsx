@@ -20,8 +20,8 @@ export function HDCollect({ song, onClose }: { song: SongItem; onClose: () => vo
   const loved = isFav(song);
   const toggleLove = async () => {
     await setFav(song, !loved,
-      connected && token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined,
-      connected && token ? () => sync.fetchLists() : undefined);
+      !!token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined,
+      !!token ? () => sync.fetchLists() : undefined); // lx164
   };
   // lx149:BACK 关闭 + 焦点脱离 2.6s 自动关
   const songKey = `${song.source}_${song.songmid}`;
@@ -37,7 +37,7 @@ export function HDCollect({ song, onClose }: { song: SongItem; onClose: () => vo
     const cached = sync.cachedLists();
     if (cached) setPls([...local, ...(cached.userList || []).map(u => ({ key: u.id, name: u.name }))]);
     else setPls(local);
-    if (connected && token) {
+    if (token) { // lx164:绑定态——离线走缓存
       sync.fetchLists().then(sp => {
         if (dead || !sp) return;
         setPls([...local, ...(sp.userList || []).map(u => ({ key: u.id, name: u.name }))]);
@@ -77,15 +77,15 @@ export function HDCollect({ song, onClose }: { song: SongItem; onClose: () => vo
                     if (has) {
                       // lx159:已收录行点击=移除(对齐手机 CollectSheet 双向);lx163:镜像服务器
                       if (cp.localId) { await playlistSync.removeSong(cp.localId, song); toast(`已从「${cp.name}」移除`); }
-                      else if (connected && token) {
+                      else if (token) { // lx164
                         const ok = await sync.removeSongFromUserListByName(cp.name, song);
                         toast(ok ? `已从「${cp.name}」移除` : '服务器操作失败');
                       }
                     } else {
                       if (cp.localId) await playlistSync.addSongs(cp.localId, [song]);
                       else await addToPlaylist({ name: cp.name }, song,
-                        connected && token ? () => sync.fetchLists() : undefined,
-                        connected && token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined);
+                        !!token ? () => sync.fetchLists() : undefined,
+                        !!token ? ((snap: Parameters<typeof sync.pushLists>[0]) => sync.pushLists(snap)) : undefined); // lx164
                       toast(`已收藏到「${cp.name}」`);
                     }
                   } catch { toast('操作失败'); }
