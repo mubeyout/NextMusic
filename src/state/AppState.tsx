@@ -117,10 +117,11 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const up = connected && !!token;
     if (up && !wasUp.current) {
-      // 串行:补传→重拉广播——并发 fetch+push 会互踩快照
+      // 串行:补传→重拉广播→(队列清空后)存量去重迁移——并发 fetch+push 会互踩快照
       void (async () => {
         const n = await offlineQueue.flush();
         if (n > 0) await refetchAndBump();
+        if (offlineQueue.pending() === 0) await import('../services/dedupLove').then(m => m.dedupLoveListOnce()); // lx165:幂等
       })().catch(() => {});
     }
     wasUp.current = up;
