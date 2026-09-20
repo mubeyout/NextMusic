@@ -120,8 +120,8 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
               <>
                 <Image
                   source={{ uri: song.img }}
-                  blurRadius={80} resizeMode="cover"
-                  style={{ position: 'absolute', left: '-10%', top: '-10%', width: '120%', height: '120%' }}
+                  blurRadius={100} resizeMode="cover"
+                  style={{ position: 'absolute', left: '-15%', top: '-15%', width: '130%', height: '130%' }}
                 />
                 {/* 纵向弥散:顶部微亮→中部透→底部沉 */}
                 <LinearGradient colors={['#ffffff12', '#00000000', '#000000C4']} locations={[0, 0.42, 1]} style={StyleSheet.absoluteFill} />

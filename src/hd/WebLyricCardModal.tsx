@@ -173,17 +173,17 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
         // lxfix:ctx.filter 在 Safari/部分浏览器不生效→降级 downscale 模糊(1/48 缩画再拉伸,双线性天然雾化)
         const CAN_FILTER = (() => { try { const c = document.createElement('canvas').getContext('2d')!; c.filter = 'blur(2px)'; return c.filter !== 'none' && c.filter !== ''; } catch { return false; } })();
         if (CAN_FILTER) {
-          ctx.save(); ctx.filter = 'blur(80px) saturate(1.8) brightness(1.06)'; // 玻璃质感:强模糊+提饱和+微提亮
-          ctx.drawImage(img, -W * .18, -H * .18, W * 1.36, H * 1.36);
+          ctx.save(); ctx.filter = 'blur(140px) saturate(2.4) brightness(1.1)'; // 玻璃质感:重度高斯+强饱和+提亮(Apple Music 弥散)
+          ctx.drawImage(img, -W * .25, -H * .25, W * 1.5, H * 1.5);
           ctx.restore();
         } else {
           const tiny = document.createElement('canvas');
-          tiny.width = Math.max(6, Math.round(W / 48)); tiny.height = Math.max(6, Math.round(H / 48));
+          tiny.width = Math.max(5, Math.round(W / 64)); tiny.height = Math.max(5, Math.round(H / 64));
           const tctx = tiny.getContext('2d')!;
           tctx.drawImage(img, 0, 0, tiny.width, tiny.height);
           ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(tiny, -W * .18, -H * .18, W * 1.36, H * 1.36);
-          ctx.globalAlpha = 0.4; ctx.drawImage(tiny, -W * .18, -H * .18, W * 1.36, H * 1.36); ctx.globalAlpha = 1; // 叠画提饱和近似
+          ctx.drawImage(tiny, -W * .25, -H * .25, W * 1.5, H * 1.5);
+          ctx.globalAlpha = 0.45; ctx.drawImage(tiny, -W * .25, -H * .25, W * 1.5, H * 1.5); ctx.globalAlpha = 1; // 叠画提饱和近似
         }
         // 弥散层一:径向渐晕(中心透→边缘压暗/提亮,聚焦卡片主体)
         const vg = ctx.createRadialGradient(W / 2, H * .42, W * .18, W / 2, H * .5, W * .98);
@@ -196,6 +196,13 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
         lg.addColorStop(0.5, 'rgba(0,0,0,0)');
         lg.addColorStop(1, colors.isDark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.1)');
         ctx.fillStyle = lg; ctx.fillRect(0, 0, W, H);
+        // 弥散层三:磨砂噪点(玻璃质感的"砂"——极低透明度白噪声,压住塑料感)
+        const nz = document.createElement('canvas'); nz.width = nz.height = 128;
+        const nctx = nz.getContext('2d')!; const nd = nctx.createImageData(128, 128);
+        for (let i = 0; i < nd.data.length; i += 4) { const v = 200 + Math.random() * 55; nd.data[i] = nd.data[i + 1] = nd.data[i + 2] = v; nd.data[i + 3] = 255; }
+        nctx.putImageData(nd, 0, 0);
+        ctx.save(); ctx.globalAlpha = 0.035; ctx.globalCompositeOperation = 'overlay';
+        ctx.fillStyle = ctx.createPattern(nz, 'repeat')!; ctx.fillRect(0, 0, W, H); ctx.restore();
       } else {
         const grad = ctx.createLinearGradient(0, 0, W * .4, H);
         grad.addColorStop(0, colors.bg1); grad.addColorStop(1, colors.bg2);
