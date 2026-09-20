@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { fixCoverUrl } from '../utils/cover'; // lxfix:kw 图床域名自愈
 import { Platform } from 'react-native';
 import { View, Text, Pressable, StyleSheet, Image } from 'react-native';
 import { Icon } from '../theme/Icon';
@@ -46,7 +47,7 @@ export function SongRow({ song, onPress, playing, extra, onMore, onLongPress, le
       onFocus={() => setFocus(true)}
       onBlur={() => setFocus(false)}>
       <View style={st.artWrap}>
-        {leading != null ? leading : song.img ? <Image source={{ uri: song.img }} style={st.art} /> : <View style={[st.art, st.fallback]} />}
+        {leading != null ? leading : song.img ? <Image source={{ uri: fixCoverUrl(song.img) }} style={st.art} /> : <View style={[st.art, st.fallback]} />}
       </View>
       <View style={st.meta}>
         <Text style={[st.title, playing && { color: C.brandText }]} numberOfLines={1}>{song.name}</Text>

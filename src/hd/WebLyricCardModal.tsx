@@ -29,8 +29,9 @@ interface Colors {
 }
 
 // ===== 工具(移植原版) =====
-function loadImage(src: string): Promise<HTMLImageElement | null> {
+function loadImage(src0: string): Promise<HTMLImageElement | null> {
   return new Promise(res => {
+    const src = src0.replace(/^https?:\/\/img\.kuwo\.cn\//, 'https://img4.kuwo.cn/'); // lxfix:kw 图床域名自愈
     if (!src) { res(null); return; }
     const img = new (window as unknown as { Image: new () => HTMLImageElement }).Image();
     img.crossOrigin = 'anonymous'; // 必须,否则 canvas 导出污染

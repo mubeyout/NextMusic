@@ -4,6 +4,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Dimensions, Image, ScrollView } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import { fixCoverUrl } from '../utils/cover'; // lxfix:kw 图床域名自愈
 import { captureRef } from 'react-native-view-shot';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
@@ -115,20 +116,15 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
         <View style={{ alignItems: 'center' }}>
           {/* 卡片本体(截图目标) */}
           <View ref={cardRef} collapsable={false} style={[st.card, { width: cardW, height: cardH }]}>
-            {/* 氛围底:玻璃弥散(老板 20260920:高斯模糊+玻璃质感+弥散)——blur 封面+双层渐变近似径向渐晕 */}
+            {/* 氛围底:逐参数复刻播放页(HDPlayer bgArt opacity.5 / bgVeil rgba(6,8,7,.62) 均匀纱;老板 13:00-13:58 三次指定参考,不加饱和/渐变=「清晰感」来源) */}
             {opt.theme === 'album' && song.img ? (
               <>
                 <Image
-                  source={{ uri: song.img }}
+                  source={{ uri: fixCoverUrl(song.img) }}
                   blurRadius={100} resizeMode="cover"
-                  style={{ position: 'absolute', left: '-15%', top: '-15%', width: '130%', height: '130%' }}
+                  style={{ position: 'absolute', left: '-15%', top: '-15%', width: '130%', height: '130%', opacity: 0.5 }}
                 />
-                {/* 弥散层⓪:整体暗纱(对齐播放页背景配方,老板 13:00 参考播放页) */}
-                <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(8,10,9,0.54)' }]} />
-                {/* 纵向弥散:顶部微亮→中部透→底部沉 */}
-                <LinearGradient colors={['#ffffff0F', '#00000000', '#000000C4']} locations={[0, 0.42, 1]} style={StyleSheet.absoluteFill} />
-                {/* 对角弥散近似渐晕:左上浮光→右下压暗 */}
-                <LinearGradient colors={['#ffffff0D', '#00000000', '#00000059']} locations={[0, 0.5, 1]} style={[StyleSheet.absoluteFill, { transform: [{ rotate: '45deg' }], width: '160%', height: '160%', left: '-30%', top: '-30%' }]} />
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(6,8,7,0.62)' }]} />
               </>
             ) : light ? (
               <LinearGradient colors={['#FAFAF6', '#EFEFE9']} style={StyleSheet.absoluteFill} />
@@ -142,7 +138,7 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
                 {opt.showCover && (
                   <View style={st.coverWrapRow}>
                     {song.img ? (
-                      <Image source={{ uri: song.img }} style={[st.coverRow, { width: Math.round(cardH * 0.68), height: Math.round(cardH * 0.68), borderRadius: Math.round(cardH * 0.04) }]} />
+                      <Image source={{ uri: fixCoverUrl(song.img) }} style={[st.coverRow, { width: Math.round(cardH * 0.68), height: Math.round(cardH * 0.68), borderRadius: Math.round(cardH * 0.04) }]} />
                     ) : (
                       <View style={[st.coverRow, st.coverFallback, { width: Math.round(cardH * 0.68), height: Math.round(cardH * 0.68) }]}><Icon name="music" size={26} color="#ffffff66" /></View>
                     )}
@@ -167,7 +163,7 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
                 {opt.showCover && (
                   <View style={[st.coverWrap, { marginTop: Math.round(cardH * 0.02), marginBottom: Math.round(cardH * 0.035) }]}>
                     {song.img ? (
-                      <Image source={{ uri: song.img }} style={[st.cover, { width: Math.round(coverSize), height: Math.round(coverSize), borderRadius: Math.round(coverSize * (opt.layout === 'square' ? 0.075 : 0.05)) }]} />
+                      <Image source={{ uri: fixCoverUrl(song.img) }} style={[st.cover, { width: Math.round(coverSize), height: Math.round(coverSize), borderRadius: Math.round(coverSize * (opt.layout === 'square' ? 0.075 : 0.05)) }]} />
                     ) : (
                       <View style={[st.cover, st.coverFallback, { width: Math.round(coverSize), height: Math.round(coverSize) }]}><Icon name="music" size={30} color="#ffffff66" /></View>
                     )}

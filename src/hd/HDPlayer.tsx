@@ -5,6 +5,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, Animated, Ea
 import Svg, { Defs, Path, RadialGradient, Stop } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
+import { fixCoverUrl } from '../utils/cover'; // lxfix:kw 图床域名自愈
 import { settings } from '../services/settings';
 import { LyricCardModal } from '../components/LyricCardModal';
 import { WebLyricCardModal } from './WebLyricCardModal';
@@ -273,7 +274,7 @@ export function HDPlayer() {
   return (
     <View style={[st.screen, { backgroundColor: settings.get().light ? '#F6F7F9' : C.bg }]}>
       {/* 审计#3:播放页背景三档真实生效(原恒封面虚化)——blur=封面虚化/solid=纯色/dark=深黑压暗 */}
-      {current.img && settings.get().playerBackground === 'blur' ? <Image source={{ uri: current.img }} style={st.bgArt as ImageStyle} blurRadius={60} resizeMode="cover" /> : null}
+      {current.img && settings.get().playerBackground === 'blur' ? <Image source={{ uri: fixCoverUrl(current.img) }} style={st.bgArt as ImageStyle} blurRadius={60} resizeMode="cover" /> : null}
       <View style={[st.bgVeil, settings.get().playerBackground === 'dark' && { backgroundColor: 'rgba(0,0,0,.82)' }]} />
 
       {/* 头部:返回按钮入流式布局(不再悬浮怪位) */}
@@ -301,12 +302,12 @@ export function HDPlayer() {
             {IS_WEB ? (
               /* v3.3(老板:黑胶没质感):web 换 HD_VINYL_SVG——纹理沟槽+光泽+盘心正圆 label,真黑胶质感 */
               <View style={{ position: 'absolute', top: '50%', left: '50%', width: vinylSize, height: vinylSize, marginLeft: -Math.round(vinylSize / 2), marginTop: -Math.round(vinylSize / 2), transform: [{ rotate: String(spinDeg) }] }}>
-                {HD_VINYL_SVG(current.img, vinylSize, playing)}
+                {HD_VINYL_SVG(fixCoverUrl(current.img), vinylSize, playing)}
               </View>
             ) : (
               <View style={st.vinylWrap}>
                 <Animated.Image
-                  source={current.img ? { uri: current.img } : undefined}
+                  source={current.img ? { uri: fixCoverUrl(current.img) } : undefined}
                   style={[st.vinylArt as ImageStyle, { transform: [{ rotate: spinDeg }] }]}
                   resizeMode="cover"
                 />

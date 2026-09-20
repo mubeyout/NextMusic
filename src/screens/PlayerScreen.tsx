@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Svg, { Circle, Path, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { Icon } from '../theme/Icon';
+import { fixCoverUrl } from '../utils/cover'; // lxfix:kw 图床域名自愈
 import { sourceLabel } from '../components/SongRow';
 import { C } from '../theme/tokens';
 import { usePlayer } from '../state/PlayerProvider';
@@ -183,7 +184,7 @@ export function PlayerScreen() {
               <Circle cx={135} cy={135} r={79} fill={C.brand} />
             </Svg>
             {current.img ? (
-              <Image source={{ uri: current.img }} style={st.vinylLabel} />
+              <Image source={{ uri: fixCoverUrl(current.img) }} style={st.vinylLabel} />
             ) : (
               <View style={[st.vinylLabel, { backgroundColor: '#2A2A2A' }]} />
             )}
@@ -246,7 +247,7 @@ export function PlayerScreen() {
       {/* Playback panel */}
       <View style={[st.panel, { paddingBottom: insets.bottom + 12 }]}>
         <View style={st.pTrackRow}>
-          {current.img ? <Image source={{ uri: current.img }} style={st.pArt} /> : <View style={[st.pArt, { backgroundColor: C.surface2 }]} />}
+          {current.img ? <Image source={{ uri: fixCoverUrl(current.img) }} style={st.pArt} /> : <View style={[st.pArt, { backgroundColor: C.surface2 }]} />}
           <View style={st.pMeta}>
             <Text style={st.pTitle} numberOfLines={1}>{current.name}</Text>
             <Text style={st.pSub} numberOfLines={1}>{sourceLabel(current.source) ? `${sourceLabel(current.source)} · ` : ''}{current.singer}  ·  {current._types?.flac ? 'SQ 无损' : '128k'}</Text>
