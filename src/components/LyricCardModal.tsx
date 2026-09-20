@@ -46,6 +46,17 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
     : Math.min(win.width - 48, opt.layout === 'portrait' ? 320 : 340, maxByH);
   const cardH = Math.round(opt.layout === 'portrait' ? cardW * 16 / 9 : opt.layout === 'square' ? cardW : cardW * 9 / 16);
 
+  // v2 区域配额:封面吃剩余空间(竖版上限 cardW-2PAD,方卡收敛 62%),同 Web 端 Canvas 逻辑
+  const coverSize = (() => {
+    if (opt.layout === 'landscape' || !opt.showCover) return 0;
+    const PADW = cardW * (opt.layout === 'square' ? 0.12 : 0.085);
+    const fsT2 = cardH * 0.028 * opt.fontSize, fsA2 = cardH * 0.019 * opt.fontSize, fsL2 = cardH * 0.023 * opt.fontSize;
+    const headH = (opt.showTitle ? fsT2 * 1.3 + cardH * 0.014 : 0) + (opt.showArtist ? fsA2 * 1.4 + cardH * 0.028 : 0);
+    const lyrH = opt.showLyric ? cardH * 0.056 + opt.lyricLines * fsL2 * 1.7 * opt.lineSpacing : 0;
+    const avail = cardH * 0.84 - headH - lyrH;
+    return Math.round(Math.min(opt.layout === 'square' ? cardW * 0.62 : cardW - PADW * 2, Math.max(cardW * 0.28, avail - cardH * 0.035)));
+  })();
+
   const { lines, active } = useMemo(() => windowLines(lyrics, positionSec, opt.lyricLines), [lyrics, positionSec, opt.lyricLines]);
 
   const save = async () => {
@@ -71,6 +82,9 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
   const tLyricOn = light ? '#000000' : '#FFFFFF';
   const fMul = opt.fontSize;
   const gap = Math.round(7 * opt.lineSpacing);
+  // ===== 排版系统 v2(与 Web 端 Canvas 同系数,H 基准+区域配额+层级 标题>歌词>歌手,老板 20260920 字太大) =====
+  const fsT = cardH * 0.028 * fMul, fsL = cardH * 0.023 * fMul, fsA = cardH * 0.019 * fMul;
+  const fsTr = cardH * 0.056 * fMul, fsLr = cardH * 0.042 * fMul, fsAr = cardH * 0.033 * fMul; // 横版左右结构放大
 
   const pill = (on: boolean) => on ? st.pillOn : null;
   const pillText = (on: boolean) => [st.pillText, on && st.pillTextOn] as { color: string; fontSize: number; fontWeight: '600' | '800' }[];
@@ -80,17 +94,17 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
     </TouchableOpacity>
   );
 
-  const lyricWin = (
+  const LyricWin = ({ fs }: { fs: number }) => (
     <View style={{ flex: 1, justifyContent: 'center', gap }}>
       {lines.length ? lines.map((l, i) => (
         <Text
           key={`${l.t}-${i}`}
-          style={[st.lyric, { color: tLyric, fontSize: Math.round(14 * fMul), lineHeight: Math.round(23 * fMul * opt.lineSpacing) }, i === active && { color: tLyricOn, fontSize: Math.round(16 * fMul), fontWeight: '800', marginVertical: 2 }]}
+          style={[st.lyric, { color: tLyric, fontSize: Math.round(fs), lineHeight: Math.round(fs * 1.7 * opt.lineSpacing) }, i === active && { color: tLyricOn, fontSize: Math.round(fs * 1.12), fontWeight: '800' }]}
           numberOfLines={2} ellipsizeMode="tail"
         >
           {l.text || '♪'}
         </Text>
-      )) : <Text style={[st.lyric, { color: tLyricOn, fontSize: Math.round(14 * fMul) }]}>♪ 纯音乐,请欣赏</Text>}
+      )) : <Text style={[st.lyric, { color: tLyricOn, fontSize: Math.round(fs) }]}>♪ 纯音乐,请欣赏</Text>}
     </View>
   );
 
@@ -123,49 +137,50 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
                 {opt.showCover && (
                   <View style={st.coverWrapRow}>
                     {song.img ? (
-                      <Image source={{ uri: song.img }} style={st.coverRow} />
+                      <Image source={{ uri: song.img }} style={[st.coverRow, { width: Math.round(cardH * 0.68), height: Math.round(cardH * 0.68), borderRadius: Math.round(cardH * 0.04) }]} />
                     ) : (
-                      <View style={[st.coverRow, st.coverFallback]}><Icon name="music" size={26} color="#ffffff66" /></View>
+                      <View style={[st.coverRow, st.coverFallback, { width: Math.round(cardH * 0.68), height: Math.round(cardH * 0.68) }]}><Icon name="music" size={26} color="#ffffff66" /></View>
                     )}
                   </View>
                 )}
                 <View style={{ flex: 1, minHeight: 0, justifyContent: 'center' }}>
                   {opt.showTitle && (
-                    <Text style={{ color: tTitle, fontSize: Math.round(17 * fMul), fontWeight: '800' }} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>
+                    <Text style={{ color: tTitle, fontSize: Math.round(fsTr), fontWeight: '800' }} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>
                       {song.name}
                     </Text>
                   )}
                   {opt.showArtist && (
-                    <Text style={{ color: tSub, fontSize: Math.round(12 * fMul), marginTop: 4 }}>{song.singer}{song._types?.flac ? ' · 无损' : ''}</Text>
+                    <Text style={{ color: tSub, fontSize: Math.round(fsAr), marginTop: Math.round(cardH * 0.012) }}>{song.singer}{song._types?.flac ? ' · 无损' : ''}</Text>
                   )}
-                  {opt.showLyric && <View style={{ height: 1, backgroundColor: light ? '#0000001A' : '#1ED76055', marginVertical: 12 }} />}
-                  {opt.showLyric && lyricWin}
+                  {opt.showLyric && <View style={{ height: 1, backgroundColor: light ? '#0000001A' : '#1ED76055', marginVertical: Math.round(cardH * 0.028) }} />}
+                  {opt.showLyric && <LyricWin fs={fsLr} />}
                 </View>
               </View>
             ) : (
-              // 竖版/方形:海报式
+              // 竖版/方形:统一海报式结构(v2 区域配额,同 Web 端系数)
               <View style={st.cardBody}>
                 {opt.showCover && (
-                  <View style={st.coverWrap}>
+                  <View style={[st.coverWrap, { marginTop: Math.round(cardH * 0.02), marginBottom: Math.round(cardH * 0.035) }]}>
                     {song.img ? (
-                      <Image source={{ uri: song.img }} style={st.cover} />
+                      <Image source={{ uri: song.img }} style={[st.cover, { width: Math.round(coverSize), height: Math.round(coverSize), borderRadius: Math.round(coverSize * (opt.layout === 'square' ? 0.075 : 0.05)) }]} />
                     ) : (
-                      <View style={[st.cover, st.coverFallback]}><Icon name="music" size={30} color="#ffffff66" /></View>
+                      <View style={[st.cover, st.coverFallback, { width: Math.round(coverSize), height: Math.round(coverSize) }]}><Icon name="music" size={30} color="#ffffff66" /></View>
                     )}
                   </View>
                 )}
                 {opt.showTitle && (
-                  <Text style={{ color: tTitle, fontSize: Math.round(18 * fMul), fontWeight: '800', textAlign: 'center' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                  <Text style={{ color: tTitle, fontSize: Math.round(fsT), fontWeight: '800', textAlign: 'center' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
                     {song.name}
                   </Text>
                 )}
                 {opt.showArtist && (
-                  <Text style={{ color: tSub, fontSize: Math.round(12 * fMul), marginTop: 4, marginBottom: 12, textAlign: 'center' }} numberOfLines={1}>
+                  <Text style={{ color: tSub, fontSize: Math.round(fsA), marginTop: Math.round(cardH * 0.014), marginBottom: Math.round(cardH * 0.028), textAlign: 'center' }} numberOfLines={1}>
                     {song.singer}{song._types?.flac ? ' · 无损' : ''}
                   </Text>
                 )}
-                {opt.showLyric && <View style={{ height: 1, backgroundColor: light ? '#0000001A' : '#1ED76055', marginHorizontal: 14 }} />}
-                {opt.showLyric && lyricWin}
+                {opt.showLyric && <View style={{ height: 1, backgroundColor: light ? '#0000001A' : '#1ED76055', marginHorizontal: Math.round(cardW * 0.2) }} />}
+                {opt.showLyric && <View style={{ height: Math.round(cardH * 0.028) }} />}
+                {opt.showLyric && <LyricWin fs={fsL} />}
               </View>
             )}
 

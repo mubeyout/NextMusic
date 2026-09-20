@@ -170,9 +170,21 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
 
       // 背景:专辑主题=封面 60px 模糊+压暗;否则线性渐变+accent 辉光
       if (o.theme === 'album' && img) {
-        ctx.save(); ctx.filter = 'blur(60px)';
-        ctx.drawImage(img, -W * .15, -H * .15, W * 1.3, H * 1.3);
-        ctx.restore();
+        // lxfix(老板 20260920 背景缺模糊):ctx.filter 在 Safari/部分浏览器不生效→背景清晰刺眼。
+        // 双保险:filter 可用则真模糊;不可用/未生效时 downscale 模糊(封面缩到 1/40 再拉伸,双线性插值天然雾化)
+        const CAN_FILTER = (() => { try { const c = document.createElement('canvas').getContext('2d')!; c.filter = 'blur(2px)'; return c.filter !== 'none' && c.filter !== ''; } catch { return false; } })();
+        if (CAN_FILTER) {
+          ctx.save(); ctx.filter = 'blur(60px)';
+          ctx.drawImage(img, -W * .15, -H * .15, W * 1.3, H * 1.3);
+          ctx.restore();
+        } else {
+          const tiny = document.createElement('canvas');
+          tiny.width = Math.max(8, Math.round(W / 40)); tiny.height = Math.max(8, Math.round(H / 40));
+          const tctx = tiny.getContext('2d')!;
+          tctx.drawImage(img, 0, 0, tiny.width, tiny.height);
+          ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(tiny, -W * .15, -H * .15, W * 1.3, H * 1.3);
+        }
         ctx.fillStyle = colors.isDark ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.25)';
         ctx.fillRect(0, 0, W, H);
       } else {
@@ -219,7 +231,7 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
             ctx.textAlign = align; ctx.textBaseline = 'top';
             for (const r of rows) {
               ctx.font = `${r.on ? 'bold ' : ''}${Math.round(r.h / (1.6 * o.lineSpacing * (r.on ? 1.2 : 1)))}px ${FONT}`;
-              ctx.fillStyle = r.on ? colors.lyricActive : colors.lyricInactive;
+              ctx.fillStyle = r.on ? colors.lyricActive : colors.lyricInactive; // v2:高亮行由 lyricActive 驱动(album 主题可随取色主色)
               if (align === 'center') ctx.fillText(r.text, W / 2, y);
               else ctx.fillText(r.text, fixedX ?? pad, y);
               y += r.h;
@@ -231,99 +243,78 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
       };
 
       const fMul = o.fontSize;
-      if (o.layout === 'portrait') {
-        const pad = W * 0.1, bottomLimit = H * 0.94;
-        let y = H * 0.07;
-        if (o.showCover && img) {
-          const cs = Math.max(W * 0.3, Math.min(W * 0.75, H - H * .07 - H * .06
-            - (o.showTitle ? W * .07 * fMul * 1.35 + H * .015 : 0)
-            - (o.showArtist ? W * .043 * fMul * 1.4 + H * .02 : 0)
-            - (o.showLyric ? H * .03 + W * .054 * fMul * 1.6 * o.lineSpacing * o.lyricLines * 1.2 + H * .05 : 0)));
-          const cx = (W - cs) / 2;
-          ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 60; ctx.shadowOffsetY = 20;
-          roundRect(ctx, cx, y, cs, cs, cs * 0.06); ctx.clip(); ctx.drawImage(img, cx, y, cs, cs); ctx.restore();
-          y += cs + H * 0.05;
-        }
-        if (o.showTitle) {
-          ctx.font = `bold ${W * 0.07 * fMul}px ${FONT}`; // lxfix:0.075→0.07
-          ctx.fillStyle = colors.textColor; ctx.textAlign = 'center';
-          const lc = drawWrappedText(ctx, title, W / 2, y, W - pad * 2, W * .075 * fMul * 1.3);
-          y += lc * W * .075 * fMul * 1.3 + H * 0.005;
-        }
-        if (o.showArtist) {
-          ctx.font = `${W * 0.043 * fMul}px ${FONT}`;
-          ctx.fillStyle = colors.subColor; ctx.textAlign = 'center';
-          ctx.fillText(artist, W / 2, y);
-          y += W * .043 * fMul * 1.4 + H * 0.02;
-        }
-        if (o.showLyric) {
-          ctx.strokeStyle = colors.accent + '55'; ctx.lineWidth = 1.5;
-          ctx.beginPath(); ctx.moveTo(pad * 1.5, y); ctx.lineTo(W - pad * 1.5, y); ctx.stroke();
-          y += H * 0.025;
-          drawLyrics(y, bottomLimit - y, W * 0.054 * fMul, 'center', pad); // lxfix:0.06→0.054,竖版窄卡长句少换行
-        }
-      } else if (o.layout === 'landscape') {
-        const pad = H * 0.1, bottomLimit = H * 0.92;
-        const cs = o.showCover && img ? Math.max(H * 0.4, Math.min(H * 0.75, H * 0.8)) : 0;
+      // ===== 排版系统 v2(重新设计,老板 20260920:字太大/方形竖版布局失衡→H 基准字号+区域配额+层级 标题>歌词>歌手) =====
+      // 字号系数(×fMul):竖/方同系数 标题 H*.028 歌词 H*.023 歌手 H*.019(竖版 54/44/36px,方卡自动收敛 30/25/20px)
+      // 间距节奏:封面→标题 H*.035 | 标题→歌手 H*.014 | 歌手→线 H*.028 | 线→歌词 H*.028 | 底部留 9.5% 给水印呼吸
+      if (o.layout === 'landscape') {
+        const pad = H * 0.1, bottomLimit = H * 0.9;
+        const cs = o.showCover && img ? H * 0.68 : 0;
         const coverX = pad, coverY = (H - cs) / 2;
-        if (cs > 0 && img) { // v3.28:img null 收窄
+        if (cs > 0 && img) {
           ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 50; ctx.shadowOffsetX = 15;
           roundRect(ctx, coverX, coverY, cs, cs, cs * 0.06); ctx.clip(); ctx.drawImage(img, coverX, coverY, cs, cs); ctx.restore();
         }
         const textX = cs > 0 ? coverX + cs + pad : pad;
         const textW = W - textX - pad, xOff = textX + 24;
-        let y = H * 0.18;
+        let y = H * 0.16;
         if (o.showTitle) {
-          ctx.font = `bold ${H * 0.08 * fMul}px ${FONT}`;
+          ctx.font = `bold ${H * 0.056 * fMul}px ${FONT}`;
           ctx.fillStyle = colors.textColor; ctx.textAlign = 'left';
-          const lc = drawWrappedText(ctx, title, xOff, y, textW - 24, H * .08 * fMul * 1.2);
-          y += lc * H * .08 * fMul * 1.2 + H * 0.008;
+          const lc = drawWrappedText(ctx, title, xOff, y, textW - 24, H * .056 * fMul * 1.2);
+          y += lc * H * .056 * fMul * 1.2 + H * 0.012;
         }
         if (o.showArtist) {
-          ctx.font = `${H * 0.048 * fMul}px ${FONT}`;
+          ctx.font = `${H * 0.033 * fMul}px ${FONT}`;
           ctx.fillStyle = colors.subColor; ctx.textAlign = 'left';
           ctx.fillText(artist, xOff, y);
-          y += H * .048 * fMul * 1.4 + H * 0.035;
+          y += H * .033 * fMul * 1.4 + H * 0.03;
         }
         let endY = y;
         if (o.showLyric) {
-          drawLyrics(y, bottomLimit - y, H * 0.058 * fMul, 'left', pad, xOff, textW - 24);
-          const lyrLH = Math.min(H * .058 * fMul, (bottomLimit - y) / (o.lyricLines * 1.7 * o.lineSpacing)) * 1.6 * o.lineSpacing;
+          drawLyrics(y, bottomLimit - y, H * 0.042 * fMul, 'left', pad, xOff, textW - 24);
+          const lyrLH = Math.min(H * .042 * fMul, (bottomLimit - y) / (o.lyricLines * 1.7 * o.lineSpacing)) * 1.6 * o.lineSpacing;
           endY = y + Math.max(0, (bottomLimit - y - lyrLH * o.lyricLines) / 2) + lyrLH * (o.lyricLines + 0.15);
         }
         ctx.strokeStyle = colors.accent; ctx.lineWidth = 4; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(textX, H * 0.18); ctx.lineTo(textX, endY); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(textX, H * 0.16); ctx.lineTo(textX, endY); ctx.stroke();
       } else {
-        const pad = W * 0.08, bottomLimit = H * 0.93;
-        let y = H * 0.04;
+        // 竖版/方形:统一海报式结构(区域配额,顶部对齐,封面吃剩余空间,方卡封面收敛 62%)
+        const sq = o.layout === 'square';
+        const PAD = W * (sq ? 0.12 : 0.085);
+        const fsTitle = H * 0.028 * fMul, fsLyric = H * 0.023 * fMul, fsArtist = H * 0.019 * fMul;
+        const topY = H * 0.065, bottomLimit = H * 0.905;
+        const headH = (o.showTitle ? fsTitle * 1.3 + H * 0.014 : 0) + (o.showArtist ? fsArtist * 1.4 + H * 0.028 : 0);
+        const lyrH = o.showLyric ? H * 0.056 + o.lyricLines * fsLyric * 1.7 * o.lineSpacing : 0;
+        let cs = 0;
         if (o.showCover && img) {
-          const cs = Math.max(W * 0.3, Math.min(W * 0.85, H - H * .04 - H * .06
-            - (o.showTitle ? W * .062 * fMul * 1.25 + H * .01 : 0)
-            - (o.showArtist ? W * .04 * fMul * 1.6 + H * .015 : 0)
-            - (o.showLyric ? H * .02 + W * .05 * fMul * 1.6 * o.lineSpacing * o.lyricLines * 1.25 + H * .02 : 0)));
+          const avail = bottomLimit - topY - headH - lyrH;
+          cs = Math.min(sq ? W * 0.62 : W - PAD * 2, Math.max(W * 0.28, avail - H * 0.035));
+        }
+        let y = topY;
+        if (cs > 0 && img) {
           const cx = (W - cs) / 2;
-          ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 15;
-          roundRect(ctx, cx, y, cs, cs, cs * 0.08); ctx.clip(); ctx.drawImage(img, cx, y, cs, cs); ctx.restore();
-          y += cs + H * 0.02;
+          ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = cs * 0.08; ctx.shadowOffsetY = cs * 0.03;
+          roundRect(ctx, cx, y, cs, cs, cs * (sq ? 0.075 : 0.05)); ctx.clip(); ctx.drawImage(img, cx, y, cs, cs); ctx.restore();
+          y += cs + H * 0.035;
         }
         if (o.showTitle) {
-          ctx.font = `bold ${W * 0.062 * fMul}px ${FONT}`; // lxfix:0.068→0.062
+          ctx.font = `bold ${fsTitle}px ${FONT}`;
           ctx.fillStyle = colors.textColor; ctx.textAlign = 'center';
-          const lc = drawWrappedText(ctx, title, W / 2, y, W - pad * 2, W * .068 * fMul * 1.25);
-          y += lc * W * .068 * fMul * 1.25 + H * 0.01;
+          const lc = drawWrappedText(ctx, title, W / 2, y, W - PAD * 2, fsTitle * 1.3);
+          y += lc * fsTitle * 1.3 + H * 0.014;
         }
         if (o.showArtist) {
-          ctx.font = `${W * 0.04 * fMul}px ${FONT}`;
+          ctx.font = `${fsArtist}px ${FONT}`;
           ctx.fillStyle = colors.subColor; ctx.textAlign = 'center';
           ctx.fillText(artist, W / 2, y);
-          y += W * .04 * fMul * 1.6 + H * 0.015;
+          y += fsArtist * 1.4 + H * 0.028;
         }
         if (o.showLyric) {
-          ctx.strokeStyle = colors.isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.15)';
-          ctx.lineWidth = 1;
-          ctx.beginPath(); ctx.moveTo(pad * 2, y); ctx.lineTo(W - pad * 2, y); ctx.stroke();
-          y += H * 0.02;
-          drawLyrics(y, bottomLimit - y, W * 0.05 * fMul, 'center', pad); // lxfix:0.055→0.05,同上
+          // 细分隔线:内容宽 60% 居中,accent 低透明(v2:与整体节奏统一)
+          ctx.strokeStyle = colors.accent + (colors.isDark ? '55' : '44'); ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.moveTo(W * 0.2, y); ctx.lineTo(W * 0.8, y); ctx.stroke();
+          y += H * 0.028;
+          drawLyrics(y, bottomLimit - y, fsLyric, 'center', PAD);
         }
       }
 
