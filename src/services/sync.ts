@@ -108,7 +108,7 @@ function queueOffline(op: import('./offlineQueue').OutboxInput): void {
 
 export const sync = {
   /** lx104:上次快照缓存(MMKV)——冷启动侧栏/我的页秒出,后台刷新覆盖(大快照拉取慢=加载缓慢根因) */
-  _snapCache: null as UserListsSnapshot | null | undefined, // lx163h:快照解析缓存(与 lastSnapJson 绑定)
+  _snapCache: undefined as UserListsSnapshot | null | undefined, // lx163h:快照解析缓存(与 lastSnapJson 绑定);#029:必须 init undefined——null 会让 cachedLists 的「未解析」守卫短路,冷启动永远读不到 MMKV 盘缓存(离线冷启动 0/0 根因)
   cachedLists(): UserListsSnapshot | null {
     if (this._snapCache !== undefined) return this._snapCache; // undefined=未解析,null=无快照
     try { this._snapCache = JSON.parse(kvSync.getString('snap') || 'null') as UserListsSnapshot | null; } catch { this._snapCache = null; }

@@ -359,7 +359,7 @@ export function PlaylistDetailScreen() {
       defaultValue: localPl.name,
       onSubmit: (v) => {
         if (!v) return;
-        library.update(localPl.id, { name: v });
+        playlistSync.rename(localPl.id, v); // #030:镜像服务器(原 library.update 只改本地;库内同步改完即返)
         toast('已重命名');
         nav.goBack();
         nav.navigate('PlaylistDetail', { localId: localPl.id, title: v, songs: library.get(localPl.id)?.songs });
@@ -370,8 +370,8 @@ export function PlaylistDetailScreen() {
   function deletePl() {
     if (!localPl) return;
     (IS_HD ? hdActions : dialog).confirm('删除歌单', `确定删除「${localPl.name}」？${localPl.songs.length} 首歌曲将从此歌单移除`, () => {
-      library.remove(localPl.id);
-      toast('歌单已删除');
+      // #030:走 playlistSync(本地+服务器同名 userList 镜像+离线入队)——原先只 library.remove,服务器副本永不过期,卡片/详情/歌曲全残留且不上送
+      playlistSync.remove(localPl.id).then(() => toast('歌单已删除'));
       nav.goBack();
     }, '删除', '取消');
   }

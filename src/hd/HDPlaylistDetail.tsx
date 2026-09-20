@@ -15,6 +15,7 @@ import { usePlayer } from '../state/PlayerProvider';
 import { songMenu } from './hdmenubuilders';
 import { hdNav } from './hdnav';
 import { library } from '../state/library';
+import { playlistSync } from '../state/playlistSync'; // #030:删除/重命名镜像服务器
 import { setFav, isFav } from '../state/favorites';
 import { enqueueDownload, isWebServerMode } from '../services/downloads';
 import { webDownloadActionItems } from './hdmenubuilders';
@@ -148,12 +149,12 @@ export function HDPlaylistDetailScreen() {
       { label: '重命名歌单', icon: 'edit', onPress: () => {
         hdActions.prompt('重命名歌单', { defaultValue: title, onSubmit: async (v) => {
           if (!v || v === title) return;
-          if (p.localId) { library.update(p.localId, { name: v }); toast('已重命名'); }
+          if (p.localId) { playlistSync.rename(p.localId, v).then(() => toast('已重命名')); } // #030:镜像服务器
           else if (token) toast((await sync.renameUserList(p.plKey!, v)) ? '已重命名' : '服务器操作失败'); // lx164
         } });
       } },
       { label: '删除歌单', icon: 'trash', danger: true, onPress: async () => {
-        if (p.localId) { library.remove(p.localId); toast('已删除'); nav.goBack(); }
+        if (p.localId) { playlistSync.remove(p.localId).then(() => toast('已删除')); nav.goBack(); } // #030:镜像服务器+离线入队(原 library.remove 服务器副本永不过期)
         else if (token) { // lx164
           toast((await sync.removeUserList(p.plKey!)) ? '已删除' : '服务器操作失败');
           nav.goBack();
