@@ -195,6 +195,27 @@ class AudioRouteModule(reactContext: ReactApplicationContext) :
 
     private fun emitDevices() {
         emit("nm.devices", null)
+        emitCarAudio()
+        // A2DP proxy 可能未就绪(首连 lazy),3s 后复检一次——proxy 就绪后才能读 bluetoothClass
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ emitCarAudio() }, 3000)
+    }
+
+    /** [carlink v2]:车载蓝牙识别——A2DP 已连设备 majorClass=AUDIO_VIDEO 且 minor=CAR_AUDIO,
+     *  或设备名含 car/车 启发(部分车机 class 不规范)。JS 收 nm.caraudio 弹切换确认。 */
+    private fun emitCarAudio() {
+        val car = try {
+            val px = a2dpProxy
+            px != null && reactApplicationContext.checkPermission(
+                android.Manifest.permission.BLUETOOTH_CONNECT,
+                android.os.Process.myPid(), android.os.Process.myUid()) == PackageManager.PERMISSION_GRANTED &&
+                px.connectedDevices.any { d ->
+                    val bc = d.bluetoothClass
+                    (bc != null && bc.majorClass == android.bluetooth.BluetoothClass.Device.Major.AUDIO_VIDEO &&
+                        (bc.deviceClass and android.bluetooth.BluetoothClass.SERVICE_MASK.inv()) == 1024) || // AUDIO_VIDEO_CAR_AUDIO
+                        (d.name?.lowercase()?.contains("car") == true || d.name?.contains("车") == true)
+                }
+        } catch (t: Throwable) { false }
+        emit("nm.caraudio", car)
     }
 
     // ---------- 设备枚举 ----------

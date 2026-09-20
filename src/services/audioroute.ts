@@ -72,8 +72,15 @@ export const audioRoute = {
   onRouteStolen(cb: (e: { preferred: number; actual: number }) => void): EmitterSubscription | undefined {
     if (!R) return;
     return new NativeEventEmitter(NativeModules.NMAudioRoute).addListener('nm.route.stolen', (e: any) => cb(e));
+
   },
 };
+
+// [carlink v2] 车载蓝牙连接态(true/false)——AudioRouteModule 蓝牙 class/名称识别(hd/phone 通用)
+export function onCarAudio(cb: (connected: boolean) => void): EmitterSubscription | undefined {
+    if (!R) return;
+    return new NativeEventEmitter(NativeModules.NMAudioRoute).addListener('nm.caraudio', (e: any) => cb(e as boolean));
+}
 
 // ---------- DLNA ----------
 

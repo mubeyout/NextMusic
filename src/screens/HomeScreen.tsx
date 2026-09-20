@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { lxapi } from '../services/lxapi';
 import { useNavigation } from '@react-navigation/native';
@@ -132,6 +132,8 @@ function PlCard({ pl }: { pl: SongListMeta }) {
 /* ---------- 全部 tab ---------- */
 
 function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
+  // [carlink v2] 快捷卡宽随窗宽(横屏/投屏/折叠不再写死竖屏列宽)
+  const cardW = (useWindowDimensions().width - 40 - 12) / 2;
   const nav = useNavigation() as { navigate: (s: string, p?: object) => void };
   const { connected, token } = useApp();
   const { playSong } = usePlayer();
@@ -191,27 +193,27 @@ function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
     <View style={st.body}>
       {/* 快捷入口：大卡 2×3（老板要求大气） */}
       <View style={st.quickGrid}>
-        <TouchableOpacity style={[st.quickCard, fetching && st.quickDis]} activeOpacity={0.8} onPress={playHot} disabled={fetching}>
+        <TouchableOpacity style={[st.quickCard, { width: cardW }, fetching && st.quickDis]} activeOpacity={0.8} onPress={playHot} disabled={fetching}>
           <Image source={sky} style={st.quickArt} />
           <Text style={st.quickLabel}>每日精选</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={st.quickCard} activeOpacity={0.8} onPress={openLove}>
+        <TouchableOpacity style={[st.quickCard, { width: cardW }]} activeOpacity={0.8} onPress={openLove}>
           <Image source={vinyl} style={st.quickArt} />
           <Text style={st.quickLabel}>我的收藏</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[st.quickCard, fetching && st.quickDis]} activeOpacity={0.8} onPress={playHot} disabled={fetching}>
+        <TouchableOpacity style={[st.quickCard, { width: cardW }, fetching && st.quickDis]} activeOpacity={0.8} onPress={playHot} disabled={fetching}>
           <Image source={warm} style={st.quickArt} />
           <Text style={st.quickLabel}>私人雷达</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[st.quickCard, fetching && st.quickDis]} activeOpacity={0.8} onPress={() => openSearch('夜深人静')} disabled={fetching}>
+        <TouchableOpacity style={[st.quickCard, { width: cardW }, fetching && st.quickDis]} activeOpacity={0.8} onPress={() => openSearch('夜深人静')} disabled={fetching}>
           <Image source={night} style={st.quickArt} />
           <Text style={st.quickLabel}>夜深人静</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[st.quickCard, fetching && st.quickDis]} activeOpacity={0.8} onPress={() => openSearch('华语经典')} disabled={fetching}>
+        <TouchableOpacity style={[st.quickCard, { width: cardW }, fetching && st.quickDis]} activeOpacity={0.8} onPress={() => openSearch('华语经典')} disabled={fetching}>
           <Image source={portrait} style={st.quickArt} />
           <Text style={st.quickLabel}>华语经典</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={st.quickCard} activeOpacity={0.8} onPress={openRecent}>
+        <TouchableOpacity style={[st.quickCard, { width: cardW }]} activeOpacity={0.8} onPress={openRecent}>
           <Image source={night} style={st.quickArt} />
           <Text style={st.quickLabel}>最近播放</Text>
         </TouchableOpacity>
@@ -371,6 +373,7 @@ function HomePodcast() {
 /* ---------- 音乐 tab：与「全部」同样设计，音乐向真实数据 ---------- */
 
 function HomeMusic() {
+  const cardW = (useWindowDimensions().width - 40 - 12) / 2; // [carlink v2] 横屏/投屏自适应
   const { } = useApp();
   const { playSong } = usePlayer();
   const nav = useNavigation() as { navigate: (s: string, p?: object) => void };
@@ -421,7 +424,7 @@ function HomeMusic() {
       {/* 榜单快捷大卡：真实榜单 */}
       <View style={st.quickGrid}>
         {boards.length ? boards.map((b, i) => (
-          <TouchableOpacity key={b.id} style={st.quickCard} activeOpacity={0.8} onPress={() => playBoard(b)}>
+          <TouchableOpacity key={b.id} style={[st.quickCard, { width: cardW }]} activeOpacity={0.8} onPress={() => playBoard(b)}>
             <Image source={arts[i % 5]} style={st.quickArt} />
             <Text style={st.quickLabel}>{b.name}</Text>
           </TouchableOpacity>
@@ -458,7 +461,7 @@ const st = StyleSheet.create({
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   quickDis: { opacity: 0.5 }, // #012②:disabled 态视觉反馈
   quickCard: {
-    width: (Dimensions.get('window').width - 40 - 12) / 2, height: 88, borderRadius: 14,
+    height: 88, borderRadius: 14,
     backgroundColor: C.elev, flexDirection: 'row', alignItems: 'center', gap: 12, overflow: 'hidden',
     paddingHorizontal: 12,
   },

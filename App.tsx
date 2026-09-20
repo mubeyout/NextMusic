@@ -12,12 +12,28 @@ import { initFx } from './src/services/soundfx';
 import { RootNavigator } from './src/navigation';
 import { DialogHost } from './src/components/Dialog';
 import { IS_HD, isCarUi } from './src/services/appversion';
-import { useSettings } from './src/services/settings';
+import { useSettings, settings } from './src/services/settings';
 import { HDActionHost } from './src/hd/HDActions';
 import { refetchAndBump } from './src/services/sync';
 import { store as httpStore } from './src/services/server';
+import { dialog } from './src/components/Dialog';
+import { onCarAudio } from './src/services/audioroute';
 
+let carAskDone = false; // 同一次车载连接只问一次;断开重置
 function App() {
+  useEffect(() => {
+    // [carlink v2] 连上车载蓝牙且未开车机模式 → 弹确认一键切 HD 大屏 UI(hd 包不需要)
+    if (!IS_HD) {
+      const sub = onCarAudio(connected => {
+        if (!connected) { carAskDone = false; return; }
+        if (carAskDone || settings.get().carModeUi === true) return;
+        carAskDone = true;
+        dialog.confirm('已连接车机', '检测到车载蓝牙音频，切换到车机模式（大屏界面）？',
+          () => settings.set('carModeUi', true), '切换');
+      });
+      return () => sub?.remove();
+    }
+  }, []);
   useEffect(() => {
     setupPlayer();
     // 均衡器与音效：启动即把持久化配置应用到原生 DSP（服务器同步在后台拉）
