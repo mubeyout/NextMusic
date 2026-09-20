@@ -135,6 +135,14 @@ export function HDPlayer() {
     toast('已加入下载队列');
   };
   const trackW = React.useRef(0);
+  const trackRef = React.useRef<React.ComponentRef<typeof TouchableOpacity> | null>(null); // #034:measure 缓存页内左边距
+  const trackLeft = React.useRef(0);
+  // #034:web RNW 指针压到子元素(trackFill/playhead)时 locationX=undefined(原 undefined/w=NaN 被守卫拦掉但那段拖动跳段)——回退 pageX-缓存左边距,拖动全程跟手
+  const relX = (e: { nativeEvent?: { locationX?: number; pageX?: number } }) => {
+    const lx = e.nativeEvent?.locationX;
+    if (typeof lx === 'number' && Number.isFinite(lx)) return lx;
+    return (e.nativeEvent?.pageX ?? 0) - trackLeft.current;
+  };
   // v1.2.11(老板:整体重排):唱片区实测方形(onLayout),尺寸自适应窗口,上限 440
   const [vsize, setVsize] = useState(0);
   // v1.1.8 唱片旋转(18s/转;web 必须 JS driver——RNW Animated useNativeDriver 必 false,原生端 native driver 零 JS 开销)
@@ -338,20 +346,22 @@ export function HDPlayer() {
           <View style={[st.progRow, IS_WEB && st.progRowWeb, !IS_WEB && st.progRowDock]}>
             <Text style={[st.time, IS_WEB && { minWidth: 42 }]}>{fmtSec(position)}</Text>
             <TouchableOpacity
+              ref={trackRef as never}
               style={[st.trackWrap, IS_WEB && { height: 6, borderRadius: 3 }]}
               activeOpacity={0.9}
-              onLayout={e => { trackW.current = e.nativeEvent.layout.width; }}
+              onLayout={e => {
+                trackW.current = e.nativeEvent.layout.width;
+                trackRef.current?.measure?.((_x: number, _y: number, _w: number, _h: number, pageX: number) => { trackLeft.current = pageX || 0; }); // #034
+              }}
               onPress={e => {
-                const { locationX } = e.nativeEvent;
                 const w = trackW.current;
-                if (w > 0 && duration > 0) seekTo(Math.max(0, Math.min(1, locationX / w)) * duration);
+                if (w > 0 && duration > 0) seekTo(Math.max(0, Math.min(1, relX(e) / w)) * duration);
               }}
               {...(IS_WEB ? ({
                 onStartShouldSetResponder: () => duration > 0,
                 onResponderMove: (e: import('react-native').GestureResponderEvent) => {
-                  const lx = e.nativeEvent.locationX;
                   const w = trackW.current || 1;
-                  if (duration > 0) seekTo(Math.max(0, Math.min(1, lx / w)) * duration);
+                  if (duration > 0) seekTo(Math.max(0, Math.min(1, relX(e) / w)) * duration);
                 },
               } as never) : {})} /* v3.28:responder props 运行时支持但已从 TouchableOpacity 类型移除 */
             >

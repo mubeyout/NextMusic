@@ -126,6 +126,8 @@ mountKbNav();
     '::-webkit-scrollbar-thumb:hover { background-color: ' + (isLight ? 'rgba(31,35,41,.32)' : 'rgba(255,255,255,.30)') + '; }',
     '::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }',
     /* 选区/tap 高亮(桌面感);v3.14(老板:淡淡方块跟着选中)去掉 :focus-visible 描边——桌面 hover 态已足够 */
+    /* #035(LEO/MOMO 20260920):RNW TextInput 的 input/textarea 元素 UA 默认 focus outline 深色 UI 上刺眼白圈——去之,两种形态+Electron 通吃 */
+    'input:focus, textarea:focus { outline: none; }',
     '::selection { background: rgba(30,215,96,.32); }',
     '* { -webkit-tap-highlight-color: transparent; }',
     /* 视图入场:内页卡片 push 转场(右入+淡入,桌面应用通用手感) */

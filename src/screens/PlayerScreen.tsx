@@ -328,27 +328,40 @@ function SeekBar({ pct, duration, onSeek, onDrag }: {
   pct: number; duration: number; onSeek: (p: number) => void; onDrag: (p: number | null) => void;
 }) {
   const w = useRef(1);
+  const hostRef = useRef<React.ComponentRef<typeof View> | null>(null); // #034
+  const leftRef = useRef(0); // #034:页内左边距缓存
+  // #034:web RNW 压到子元素(barValue/barThumb)时 locationX=undefined——回退 pageX-缓存左边距,拖动全程跟手
+  const relX = (e: any) => {
+    const lx = e.nativeEvent?.locationX;
+    if (typeof lx === 'number' && Number.isFinite(lx)) return lx;
+    return (e.nativeEvent?.pageX ?? 0) - leftRef.current;
+  };
   const pan = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: () => true,
     onPanResponderGrant: (e: any) => {
-      const p = Math.max(0, Math.min(1, e.nativeEvent.locationX / w.current));
+      const p = Math.max(0, Math.min(1, relX(e) / w.current));
       onDrag(p);
     },
     onPanResponderMove: (e: any) => {
-      const p = Math.max(0, Math.min(1, e.nativeEvent.locationX / w.current));
+      const p = Math.max(0, Math.min(1, relX(e) / w.current));
       onDrag(p);
     },
     onPanResponderRelease: (e: any) => {
-      const p = Math.max(0, Math.min(1, e.nativeEvent.locationX / w.current));
+      const p = Math.max(0, Math.min(1, relX(e) / w.current));
       onSeek(p);
     },
     onPanResponderTerminate: () => onDrag(null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [onDrag, onSeek]);
   return (
     <View
+      ref={hostRef as never}
       style={st.seekHit}
-      onLayout={e => { w.current = Math.max(e.nativeEvent.layout.width, 1); }}
+      onLayout={e => {
+        w.current = Math.max(e.nativeEvent.layout.width, 1);
+        hostRef.current?.measure?.((_x, _y, _w, _h, pageX) => { leftRef.current = pageX || 0; }); // #034
+      }}
       {...pan.panHandlers}
     >
       <View style={st.bar}>
