@@ -58,6 +58,14 @@ mountKbNav();
   css.textContent = '[data-nm-playbar="1"]{backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%)}';
   document.head.appendChild(css);
 })();
+// #035 复盘(补钉):input:focus outline:none 误放 mountWindowChrome 内,web 形态 !nm 早退→规则从未注入(实测 D6i1am3F 部署后 outline 仍 auto)。
+// 独立无条件注入,镜像 mountPlaybarGlass 模式——两形态+Electron 通吃
+(function mountInputFocusReset() {
+  const css = document.createElement('style');
+  css.id = 'nm-input-focus-reset';
+  css.textContent = 'input:focus, textarea:focus { outline: none; }';
+  document.head.appendChild(css);
+})();
 (function mountWindowChrome() {
   const nm = (window as never as Record<string, unknown>).nmDesktop as
     | { platform: string; minimize: () => void; toggleMaximize: () => void; close: () => void; setTbStyle?: (s: unknown) => void }
@@ -126,8 +134,7 @@ mountKbNav();
     '::-webkit-scrollbar-thumb:hover { background-color: ' + (isLight ? 'rgba(31,35,41,.32)' : 'rgba(255,255,255,.30)') + '; }',
     '::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }',
     /* 选区/tap 高亮(桌面感);v3.14(老板:淡淡方块跟着选中)去掉 :focus-visible 描边——桌面 hover 态已足够 */
-    /* #035(LEO/MOMO 20260920):RNW TextInput 的 input/textarea 元素 UA 默认 focus outline 深色 UI 上刺眼白圈——去之,两种形态+Electron 通吃 */
-    'input:focus, textarea:focus { outline: none; }',
+    /* #035 规则已上提至 mountInputFocusReset(此处 !nm 早退,web 形态注入不到) */
     '::selection { background: rgba(30,215,96,.32); }',
     '* { -webkit-tap-highlight-color: transparent; }',
     /* 视图入场:内页卡片 push 转场(右入+淡入,桌面应用通用手感) */
