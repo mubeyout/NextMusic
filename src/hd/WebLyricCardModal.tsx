@@ -326,11 +326,12 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
 
   useEffect(() => { render(opt); }, [opt, render]);
 
-  const win = Dimensions.get('window');
+  // lxfix:实测容器尺寸算预览缩放——Dimensions.get('window') 是未缩放视口 px,而本组件在 HDMain 的 zoom:0.75 层内布局,
+  // 两套坐标系混算 = 预览尺寸错乱(老板:歌词卡片缩放自适应异常)。onLayout 拿到的就是 zoom 层内布局 px,自洽。
+  const [box, setBox] = useState({ w: 320, h: 420 });
+  const narrow = Dimensions.get('window').width < 720; // 仅作窄屏堆叠阈值(粗粒度,误差可容忍)
   const size = CARD_SIZES[opt.layout];
-  const boxW = Math.max(240, Math.min(win.width - 460, win.width * 0.52));
-  const boxH = Math.max(240, win.height - 290);
-  const scale = Math.min(boxW / size.w, boxH / size.h);
+  const scale = Math.min(box.w / size.w, box.h / size.h);
   const pw = Math.round(size.w * scale), ph = Math.round(size.h * scale);
 
   const dl = () => {
@@ -361,16 +362,19 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
           </View>
           <HDTouch style={stP.closeBtn} hoverBg="#ffffff1a" onPress={onClose}><Icon name="close" size={16} color={C.text2} /></HDTouch>
         </View>
-        <View style={stP.body}>
+        <View style={[stP.body, narrow && stP.bodyCol]}>
           {/* 预览区 */}
-          <View style={stP.previewBox}>
+          <View
+            style={[stP.previewBox, narrow && { minHeight: 300 }]}
+            onLayout={e => { const l = e.nativeEvent.layout; const w = Math.max(120, l.width - 36), h = Math.max(120, l.height - 36); setBox(p => (p.w === w && p.h === h ? p : { w, h })); }}
+          >
             {dataUrl ? (
               <RNImage source={{ uri: dataUrl }} style={{ width: pw, height: ph, borderRadius: 12 }} />
             ) : <ActivityIndicator color={C.text2} />}
             {rendering ? <View style={stP.veil}><ActivityIndicator color="#fff" /><Text style={stP.veilText}>渲染中…</Text></View> : null}
           </View>
           {/* 选项区 */}
-          <View style={stP.opts}>
+          <View style={[stP.opts, narrow && stP.optsNarrow]}>
             <Text style={stP.secTitle}>版式</Text>
             <View style={stP.row}>
               <Pill label="竖版 9:16" on={opt.layout === 'portrait'} onPress={() => setOpt(o => ({ ...o, layout: 'portrait' }))} />
@@ -427,6 +431,8 @@ const stP = StyleSheet.create({
   headSub: { color: C.text3, fontSize: 9, fontWeight: '700', letterSpacing: 1.2, marginTop: 2 },
   closeBtn: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   body: { flexDirection: 'row' as const, flex: 1, minHeight: 0 },
+  bodyCol: { flexDirection: 'column' as const },
+  optsNarrow: { width: '100%', borderLeftWidth: 0, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border, maxHeight: 264 } as ViewStyle,
   previewBox: { flex: 1, minHeight: 0, alignItems: 'center', justifyContent: 'center', padding: 18, backgroundColor: 'rgba(255,255,255,.02)' },
   veil: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#00000066', alignItems: 'center', justifyContent: 'center', gap: 8 },
   veilText: { color: '#ffffffcc', fontSize: 11 },

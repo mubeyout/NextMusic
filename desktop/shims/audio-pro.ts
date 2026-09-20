@@ -19,6 +19,8 @@ type Track = { id: string; url: string; title?: string; artist?: string; album?:
 type PlayOpts = { startTimeMs?: number; autoPlay?: boolean; headers?: Record<string, string> };
 
 const audio = new Audio();
+// lxfix: NaN/Infinity 守卫——浏览器对 non-finite currentTime 直接抛错(拖动条 duration 未就绪时 pct*duration=NaN)
+const seekSec = (sec: number) => { if (Number.isFinite(sec) && sec >= 0) audio.currentTime = sec; };
 // 调试:暴露实例(桌面探测用),非生产逻辑
 (typeof window !== 'undefined') && ((window as never as Record<string, unknown>).__nmAudio = audio);
 audio.preload = 'auto';
@@ -296,13 +298,13 @@ export const AudioPro = {
     curTrack = track; headers = opts.headers;
     ensureGraph(); actx?.resume?.().catch(() => {});
     applyUrl(track);
-    if (opts.startTimeMs) audio.currentTime = opts.startTimeMs / 1000;
+    if (opts.startTimeMs) seekSec(opts.startTimeMs / 1000);
     if (opts.autoPlay !== false) audio.play().catch(() => emit(AudioProEventType.PLAYBACK_ERROR, { error: 'autoplay blocked' }));
   },
   pause(): void { audio.pause(); },
   resume(): void { audio.play().catch(() => {}); },
   stop(): void { audio.pause(); audio.removeAttribute('src'); state = AudioProState.STOPPED; },
-  seekTo(ms: number): void { audio.currentTime = ms / 1000; },
+  seekTo(ms: number): void { seekSec(ms / 1000); },
   getState(): AudioProState { return audio.paused && audio.currentTime > 0 ? AudioProState.PAUSED : state; },
   getTimings(): { position: number; duration: number } {
     return { position: audio.currentTime * 1000, duration: (isFinite(audio.duration) ? audio.duration : 0) * 1000 };
