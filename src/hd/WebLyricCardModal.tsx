@@ -447,7 +447,7 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
           </View>
         </View>
         <View style={stP.foot}>
-          <Text style={stP.hint}>当前句高亮 · 配色「专辑」取封面主色</Text>
+          <Text style={stP.hint}>当前句高亮 · 配色「专辑」取封面主色 · 弥散v5</Text>
           <HDTouch style={stP.saveBtn} hoverBg="#24cf68" onPress={dl} disabled={!dataUrl}>
             <Icon name="download" size={15} color="#0b0f0d" />
             <Text style={stP.saveText}>下载 PNG</Text>
