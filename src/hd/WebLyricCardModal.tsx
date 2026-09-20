@@ -168,44 +168,25 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
         colors = (img && extractAlbumColors(img)) || { bg1: '#1a1a2e', bg2: '#0d0d1a', accent: '#1ED760', textColor: '#ffffff', subColor: 'rgba(255,255,255,0.6)', lyricActive: '#ffffff', lyricInactive: 'rgba(255,255,255,0.35)', isDark: true };
       }
 
-      // 背景:专辑主题=玻璃弥散(老板 20260920:高斯模糊+玻璃质感+弥散);否则线性渐变+accent 辉光
+      // 背景:专辑主题=逐参数复刻播放页(HDPlayer bgArt opacity.5+blur / bgVeil rgba(6,8,7,.62) 均匀纱)——老板 13:00/13:55/13:58 三次指定参考;不加饱和/亮度/渐变(那些=「清晰感」来源)
       if (o.theme === 'album' && img) {
-        // lxfix:ctx.filter 在 Safari/部分浏览器不生效→降级 downscale 模糊(1/48 缩画再拉伸,双线性天然雾化)
+        // lxfix:ctx.filter 在 Safari/部分浏览器不生效→降级 downscale 模糊
         const CAN_FILTER = (() => { try { const c = document.createElement('canvas').getContext('2d')!; c.filter = 'blur(2px)'; return c.filter !== 'none' && c.filter !== ''; } catch { return false; } })();
+        ctx.save(); ctx.globalAlpha = 0.5; // 播放页 bgArt 同款存在感
         if (CAN_FILTER) {
-          ctx.save(); ctx.globalAlpha = 0.65; ctx.filter = 'blur(160px) saturate(2.6) brightness(1.12)'; // 播放页等价:图opacity0.5+纱.62→有效存在感≈.27
+          ctx.filter = 'blur(160px)'; // 纯模糊,无 saturate/brightness
           ctx.drawImage(img, -W * .25, -H * .25, W * 1.5, H * 1.5);
-          ctx.restore();
         } else {
           const tiny = document.createElement('canvas');
           tiny.width = Math.max(5, Math.round(W / 64)); tiny.height = Math.max(5, Math.round(H / 64));
           const tctx = tiny.getContext('2d')!;
           tctx.drawImage(img, 0, 0, tiny.width, tiny.height);
           ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-          ctx.save(); ctx.globalAlpha = 0.65;
           ctx.drawImage(tiny, -W * .25, -H * .25, W * 1.5, H * 1.5);
-          ctx.globalAlpha = 0.3; ctx.drawImage(tiny, -W * .25, -H * .25, W * 1.5, H * 1.5); ctx.restore();
         }
-        // 弥散层⓪:整体暗纱(播放页配方 parity:veil .58+图 alpha .65 ≈ 播放页 0.5+.62)
-        ctx.fillStyle = 'rgba(6,8,7,0.58)'; ctx.fillRect(0, 0, W, H);
-        // 弥散层一:径向渐晕(中心透→边缘压暗,聚焦卡片主体)
-        const vg = ctx.createRadialGradient(W / 2, H * .42, W * .18, W / 2, H * .5, W * .98);
-        vg.addColorStop(0, 'rgba(0,0,0,0)');
-        vg.addColorStop(1, colors.isDark ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.3)');
-        ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
-        // 弥散层二:纵向光感(顶部微亮→中部透明→底部沉一点,弥散光)
-        const lg = ctx.createLinearGradient(0, 0, 0, H);
-        lg.addColorStop(0, colors.isDark ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.18)');
-        lg.addColorStop(0.5, 'rgba(0,0,0,0)');
-        lg.addColorStop(1, colors.isDark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.1)');
-        ctx.fillStyle = lg; ctx.fillRect(0, 0, W, H);
-        // 弥散层三:磨砂噪点(玻璃质感的"砂"——极低透明度白噪声,压住塑料感)
-        const nz = document.createElement('canvas'); nz.width = nz.height = 128;
-        const nctx = nz.getContext('2d')!; const nd = nctx.createImageData(128, 128);
-        for (let i = 0; i < nd.data.length; i += 4) { const v = 200 + Math.random() * 55; nd.data[i] = nd.data[i + 1] = nd.data[i + 2] = v; nd.data[i + 3] = 255; }
-        nctx.putImageData(nd, 0, 0);
-        ctx.save(); ctx.globalAlpha = 0.035; ctx.globalCompositeOperation = 'overlay';
-        ctx.fillStyle = ctx.createPattern(nz, 'repeat')!; ctx.fillRect(0, 0, W, H); ctx.restore();
+        ctx.restore();
+        // 均匀暗纱=播放页 bgVeil 原参数
+        ctx.fillStyle = 'rgba(6,8,7,0.62)'; ctx.fillRect(0, 0, W, H);
       } else {
         const grad = ctx.createLinearGradient(0, 0, W * .4, H);
         grad.addColorStop(0, colors.bg1); grad.addColorStop(1, colors.bg2);
