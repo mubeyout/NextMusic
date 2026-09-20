@@ -29,7 +29,13 @@ function windowLines(lyrics: LyricLine[] | null, positionSec: number, count: num
 type Layout = 'portrait' | 'landscape' | 'square'; // 与 Web 端 CARD_SIZES 对齐
 type Theme = 'album' | 'light' | 'dark';
 
-interface Opt { layout: Layout; theme: Theme; showCover: boolean; showTitle: boolean; showArtist: boolean; showLyric: boolean; lyricLines: number; fontSize: number; lineSpacing: number; }
+interface Opt { layout: Layout; theme: Theme; showCover: boolean; showTitle: boolean; showArtist: boolean; showLyric: boolean; lyricLines: number; fontSize: number; lineSpacing: number; blurLv: 0 | 1 | 2; }
+// 弥散强度三档(与 web BLUR_LV 同配方:存在感=alpha×(1-veil))
+const BLUR_LV = [
+  { alpha: 0.5, veil: 0.62, radius: 100 },
+  { alpha: 0.35, veil: 0.72, radius: 110 },
+  { alpha: 0.22, veil: 0.82, radius: 120 },
+] as const;
 
 export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: {
   visible: boolean; onClose: () => void;
@@ -37,7 +43,7 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
 }) {
   const cardRef = useRef<React.ElementRef<typeof View>>(null);
   const [saving, setSaving] = useState(false);
-  const [opt, setOpt] = useState<Opt>({ layout: 'portrait', theme: 'album', showCover: true, showTitle: true, showArtist: true, showLyric: true, lyricLines: 5, fontSize: 1.0, lineSpacing: 1.0 });
+  const [opt, setOpt] = useState<Opt>({ layout: 'portrait', theme: 'album', showCover: true, showTitle: true, showArtist: true, showLyric: true, lyricLines: 5, fontSize: 1.0, lineSpacing: 1.0, blurLv: 0 });
 
   const win = Dimensions.get('window');
   // 卡片宽:竖屏手机可用高约束 9:16 优先(卡片必须完整可见,操作区在下方)
@@ -121,10 +127,10 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
               <>
                 <Image
                   source={{ uri: fixCoverUrl(song.img) }}
-                  blurRadius={100} resizeMode="cover"
-                  style={{ position: 'absolute', left: '-15%', top: '-15%', width: '130%', height: '130%', opacity: 0.5 }}
+                  blurRadius={BLUR_LV[opt.blurLv].radius} resizeMode="cover"
+                  style={{ position: 'absolute', left: '-15%', top: '-15%', width: '130%', height: '130%', opacity: BLUR_LV[opt.blurLv].alpha }}
                 />
-                <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(6,8,7,0.62)' }]} />
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: `rgba(6,8,7,${BLUR_LV[opt.blurLv].veil})` }]} />
               </>
             ) : light ? (
               <LinearGradient colors={['#FAFAF6', '#EFEFE9']} style={StyleSheet.absoluteFill} />
@@ -203,6 +209,9 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
               <Pill label="专辑" on={opt.theme === 'album'} onPress={() => setOpt(o => ({ ...o, theme: 'album' }))} />
               <Pill label="浅色" on={opt.theme === 'light'} onPress={() => setOpt(o => ({ ...o, theme: 'light' }))} />
               <Pill label="深色" on={opt.theme === 'dark'} onPress={() => setOpt(o => ({ ...o, theme: 'dark' }))} />
+              <Pill label="强度·播放页" on={opt.blurLv === 0} onPress={() => setOpt(o => ({ ...o, blurLv: 0 }))} />
+              <Pill label="深" on={opt.blurLv === 1} onPress={() => setOpt(o => ({ ...o, blurLv: 1 }))} />
+              <Pill label="极深" on={opt.blurLv === 2} onPress={() => setOpt(o => ({ ...o, blurLv: 2 }))} />
             </View>
             <View style={st.opsRow}>
               <Pill label="封面" on={opt.showCover} onPress={() => setOpt(o => ({ ...o, showCover: !o.showCover }))} />

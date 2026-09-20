@@ -123,7 +123,15 @@ interface Opt {
   layout: Layout; theme: Theme;
   showCover: boolean; showTitle: boolean; showArtist: boolean; showLyric: boolean;
   lyricLines: number; fontSize: number; lineSpacing: number;
+  blurLv: 0 | 1 | 2; // lxfix:弥散强度三档(老板 12:42-14:32 四轮口味迭代→做成自选项)
 }
+
+// 弥散强度配方表:0=播放页逐参数 parity / 1=深 / 2=极深(封面存在感=alpha×(1-veil))
+const BLUR_LV = [
+  { alpha: 0.5, blur: 160, veil: 0.62 },  // 播放页:0.5×0.38≈0.19
+  { alpha: 0.35, blur: 190, veil: 0.72 }, // 深:≈0.10
+  { alpha: 0.22, blur: 220, veil: 0.82 }, // 极深:≈0.04
+] as const;
 
 export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
   onClose: () => void;
@@ -132,7 +140,7 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
   const [opt, setOpt] = useState<Opt>({
     layout: 'landscape', theme: 'album',
     showCover: true, showTitle: true, showArtist: true, showLyric: true,
-    lyricLines: 5, fontSize: 1.0, lineSpacing: 1.0,
+    lyricLines: 5, fontSize: 1.0, lineSpacing: 1.0, blurLv: 0,
   });
   const [dataUrl, setDataUrl] = useState<string>('');
   const [rendering, setRendering] = useState(true);
@@ -173,9 +181,10 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
       if (o.theme === 'album' && img) {
         // lxfix:ctx.filter 在 Safari/部分浏览器不生效→降级 downscale 模糊
         const CAN_FILTER = (() => { try { const c = document.createElement('canvas').getContext('2d')!; c.filter = 'blur(2px)'; return c.filter !== 'none' && c.filter !== ''; } catch { return false; } })();
-        ctx.save(); ctx.globalAlpha = 0.5; // 播放页 bgArt 同款存在感
+        const LV = BLUR_LV[o.blurLv] ?? BLUR_LV[0];
+        ctx.save(); ctx.globalAlpha = LV.alpha; // 播放页 bgArt 同款存在感(0档)
         if (CAN_FILTER) {
-          ctx.filter = 'blur(160px)'; // 纯模糊,无 saturate/brightness
+          ctx.filter = `blur(${LV.blur}px)`; // 纯模糊,无 saturate/brightness
           ctx.drawImage(img, -W * .25, -H * .25, W * 1.5, H * 1.5);
         } else {
           const tiny = document.createElement('canvas');
@@ -186,8 +195,8 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
           ctx.drawImage(tiny, -W * .25, -H * .25, W * 1.5, H * 1.5);
         }
         ctx.restore();
-        // 均匀暗纱=播放页 bgVeil 原参数
-        ctx.fillStyle = 'rgba(6,8,7,0.62)'; ctx.fillRect(0, 0, W, H);
+        // 均匀暗纱=播放页 bgVeil 原参数(0档)
+        ctx.fillStyle = `rgba(6,8,7,${LV.veil})`; ctx.fillRect(0, 0, W, H);
       } else {
         const grad = ctx.createLinearGradient(0, 0, W * .4, H);
         grad.addColorStop(0, colors.bg1); grad.addColorStop(1, colors.bg2);
@@ -404,6 +413,12 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
               <Pill label="浅色" on={opt.theme === 'light'} onPress={() => setOpt(o => ({ ...o, theme: 'light' }))} />
               <Pill label="深色" on={opt.theme === 'dark'} onPress={() => setOpt(o => ({ ...o, theme: 'dark' }))} />
             </View>
+            <Text style={stP.secTitle}>弥散强度</Text>
+            <View style={stP.row}>
+              <Pill label="播放页" on={opt.blurLv === 0} onPress={() => setOpt(o => ({ ...o, blurLv: 0 }))} />
+              <Pill label="深" on={opt.blurLv === 1} onPress={() => setOpt(o => ({ ...o, blurLv: 1 }))} />
+              <Pill label="极深" on={opt.blurLv === 2} onPress={() => setOpt(o => ({ ...o, blurLv: 2 }))} />
+            </View>
             <Text style={stP.secTitle}>显示内容</Text>
             <View style={stP.row}>
               <Pill label="封面" on={opt.showCover} onPress={() => setOpt(o => ({ ...o, showCover: !o.showCover }))} />
@@ -429,7 +444,7 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
           </View>
         </View>
         <View style={stP.foot}>
-          <Text style={stP.hint}>当前句高亮 · 配色「专辑」取封面主色 · 弥散v6</Text>
+          <Text style={stP.hint}>当前句高亮 · 配色「专辑」取封面主色 · 弥散v7</Text>
           <HDTouch style={stP.saveBtn} hoverBg="#24cf68" onPress={dl} disabled={!dataUrl}>
             <Icon name="download" size={15} color="#0b0f0d" />
             <Text style={stP.saveText}>下载 PNG</Text>
