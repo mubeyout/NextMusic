@@ -123,8 +123,10 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
                   blurRadius={100} resizeMode="cover"
                   style={{ position: 'absolute', left: '-15%', top: '-15%', width: '130%', height: '130%' }}
                 />
+                {/* 弥散层⓪:整体暗纱(对齐播放页背景配方,老板 13:00 参考播放页) */}
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(8,10,9,0.54)' }]} />
                 {/* 纵向弥散:顶部微亮→中部透→底部沉 */}
-                <LinearGradient colors={['#ffffff12', '#00000000', '#000000C4']} locations={[0, 0.42, 1]} style={StyleSheet.absoluteFill} />
+                <LinearGradient colors={['#ffffff0F', '#00000000', '#000000C4']} locations={[0, 0.42, 1]} style={StyleSheet.absoluteFill} />
                 {/* 对角弥散近似渐晕:左上浮光→右下压暗 */}
                 <LinearGradient colors={['#ffffff0D', '#00000000', '#00000059']} locations={[0, 0.5, 1]} style={[StyleSheet.absoluteFill, { transform: [{ rotate: '45deg' }], width: '160%', height: '160%', left: '-30%', top: '-30%' }]} />
               </>

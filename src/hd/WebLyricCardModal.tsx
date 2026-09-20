@@ -173,7 +173,7 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
         // lxfix:ctx.filter 在 Safari/部分浏览器不生效→降级 downscale 模糊(1/48 缩画再拉伸,双线性天然雾化)
         const CAN_FILTER = (() => { try { const c = document.createElement('canvas').getContext('2d')!; c.filter = 'blur(2px)'; return c.filter !== 'none' && c.filter !== ''; } catch { return false; } })();
         if (CAN_FILTER) {
-          ctx.save(); ctx.filter = 'blur(140px) saturate(2.4) brightness(1.1)'; // 玻璃质感:重度高斯+强饱和+提亮(Apple Music 弥散)
+          ctx.save(); ctx.filter = 'blur(140px) saturate(2.6) brightness(1.12)'; // 玻璃质感:重度高斯+强饱和(暗纱在后面压,先提亮提饱和保色彩透出来)
           ctx.drawImage(img, -W * .25, -H * .25, W * 1.5, H * 1.5);
           ctx.restore();
         } else {
@@ -185,10 +185,12 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
           ctx.drawImage(tiny, -W * .25, -H * .25, W * 1.5, H * 1.5);
           ctx.globalAlpha = 0.45; ctx.drawImage(tiny, -W * .25, -H * .25, W * 1.5, H * 1.5); ctx.globalAlpha = 1; // 叠画提饱和近似
         }
-        // 弥散层一:径向渐晕(中心透→边缘压暗/提亮,聚焦卡片主体)
+        // 弥散层⓪:整体暗纱(对齐播放页背景配方:blur+图opacity0.5+rgba(6,8,7,.62)纱——老板 13:00 指定参考)
+        ctx.fillStyle = 'rgba(8,10,9,0.54)'; ctx.fillRect(0, 0, W, H);
+        // 弥散层一:径向渐晕(中心透→边缘压暗,聚焦卡片主体)
         const vg = ctx.createRadialGradient(W / 2, H * .42, W * .18, W / 2, H * .5, W * .98);
         vg.addColorStop(0, 'rgba(0,0,0,0)');
-        vg.addColorStop(1, colors.isDark ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.35)');
+        vg.addColorStop(1, colors.isDark ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.3)');
         ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
         // 弥散层二:纵向光感(顶部微亮→中部透明→底部沉一点,弥散光)
         const lg = ctx.createLinearGradient(0, 0, 0, H);
