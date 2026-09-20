@@ -188,20 +188,45 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
       const artist = song.singer || '未知歌手';
       const ctxLines = o.showLyric ? windowCtx(lyrics, posRef.current, o.lyricLines) : [];
 
+      // lxfix(老板 20260920:方形/竖版文字排版大小有问题):原先 fillText(text,x,y,maxWidth) 靠浏览器
+      // maxWidth 压缩——窄卡长句被横向压扁。改为逐 token 换行 + 总高超限自动缩字号(每轮 ×0.92)。
+      const wrapTokens = (text: string) => text.match(/[\u4e00-\u9fa5]|[a-zA-Z0-9']+|\s+|./g) || [];
+      const wrapLine = (text: string, fs: number, maxW: number): string[] => {
+        ctx.font = `${fs}px ${FONT}`;
+        const out: string[] = []; let cur = '';
+        for (const tk of wrapTokens(text)) {
+          const test = cur + tk;
+          if (ctx.measureText(test).width > maxW && cur.trim()) { out.push(cur.trimEnd()); cur = tk.startsWith(' ') ? tk.trimStart() : tk; }
+          else cur = test;
+        }
+        if (cur.trim()) out.push(cur.trimEnd());
+        return out.length ? out : ['♪'];
+      };
       const drawLyrics = (startY: number, availH: number, baseFS: number, align: 'left' | 'center', pad: number, fixedX?: number, maxW?: number) => {
         if (!ctxLines.length) return;
-        const lyrFS = Math.min(baseFS, availH / (o.lyricLines * 1.7 * o.lineSpacing));
-        const lyrLH = lyrFS * 1.6 * o.lineSpacing;
-        const lyrY = startY + Math.max(0, (availH - lyrLH * o.lyricLines) / 2);
-        ctx.textAlign = align; ctx.textBaseline = 'top';
-        let y = lyrY;
-        for (const { text, isActive } of ctxLines) {
-          const fs = isActive ? lyrFS * 1.15 : lyrFS;
-          ctx.font = `${isActive ? 'bold ' : ''}${fs}px ${FONT}`;
-          ctx.fillStyle = isActive ? colors.lyricActive : colors.lyricInactive;
-          if (align === 'center') ctx.fillText(text, W / 2, y, W - pad * 2);
-          else ctx.fillText(text, fixedX ?? pad, y, maxW ?? W - pad * 2);
-          y += lyrLH * (isActive ? 1.2 : 1.0);
+        const boxW = align === 'center' ? W - pad * 2 : (maxW ?? W - pad * 2);
+        let fs = Math.min(baseFS, availH / (o.lyricLines * 1.7 * o.lineSpacing));
+        // 自适应循环:换行后总高超 availH → 缩字号(下限 16px)
+        for (let round = 0; round < 10; round++) {
+          const rows: { text: string; on: boolean; h: number }[] = [];
+          for (const { text, isActive } of ctxLines) {
+            const lfs = isActive ? fs * 1.15 : fs;
+            for (const seg of wrapLine(text, lfs, boxW)) rows.push({ text: seg, on: isActive, h: lfs * 1.6 * o.lineSpacing * (isActive ? 1.2 : 1) });
+          }
+          const totalH = rows.reduce((n, r) => n + r.h, 0);
+          if (totalH <= availH || fs <= 16) {
+            let y = startY + Math.max(0, (availH - totalH) / 2);
+            ctx.textAlign = align; ctx.textBaseline = 'top';
+            for (const r of rows) {
+              ctx.font = `${r.on ? 'bold ' : ''}${Math.round(r.h / (1.6 * o.lineSpacing * (r.on ? 1.2 : 1)))}px ${FONT}`;
+              ctx.fillStyle = r.on ? colors.lyricActive : colors.lyricInactive;
+              if (align === 'center') ctx.fillText(r.text, W / 2, y);
+              else ctx.fillText(r.text, fixedX ?? pad, y);
+              y += r.h;
+            }
+            return;
+          }
+          fs *= 0.92;
         }
       };
 
@@ -211,16 +236,16 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
         let y = H * 0.07;
         if (o.showCover && img) {
           const cs = Math.max(W * 0.3, Math.min(W * 0.75, H - H * .07 - H * .06
-            - (o.showTitle ? W * .075 * fMul * 1.35 + H * .015 : 0)
+            - (o.showTitle ? W * .07 * fMul * 1.35 + H * .015 : 0)
             - (o.showArtist ? W * .043 * fMul * 1.4 + H * .02 : 0)
-            - (o.showLyric ? H * .03 + W * .06 * fMul * 1.6 * o.lineSpacing * o.lyricLines * 1.2 + H * .05 : 0)));
+            - (o.showLyric ? H * .03 + W * .054 * fMul * 1.6 * o.lineSpacing * o.lyricLines * 1.2 + H * .05 : 0)));
           const cx = (W - cs) / 2;
           ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 60; ctx.shadowOffsetY = 20;
           roundRect(ctx, cx, y, cs, cs, cs * 0.06); ctx.clip(); ctx.drawImage(img, cx, y, cs, cs); ctx.restore();
           y += cs + H * 0.05;
         }
         if (o.showTitle) {
-          ctx.font = `bold ${W * 0.075 * fMul}px ${FONT}`;
+          ctx.font = `bold ${W * 0.07 * fMul}px ${FONT}`; // lxfix:0.075→0.07
           ctx.fillStyle = colors.textColor; ctx.textAlign = 'center';
           const lc = drawWrappedText(ctx, title, W / 2, y, W - pad * 2, W * .075 * fMul * 1.3);
           y += lc * W * .075 * fMul * 1.3 + H * 0.005;
@@ -235,7 +260,7 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
           ctx.strokeStyle = colors.accent + '55'; ctx.lineWidth = 1.5;
           ctx.beginPath(); ctx.moveTo(pad * 1.5, y); ctx.lineTo(W - pad * 1.5, y); ctx.stroke();
           y += H * 0.025;
-          drawLyrics(y, bottomLimit - y, W * 0.06 * fMul, 'center', pad);
+          drawLyrics(y, bottomLimit - y, W * 0.054 * fMul, 'center', pad); // lxfix:0.06→0.054,竖版窄卡长句少换行
         }
       } else if (o.layout === 'landscape') {
         const pad = H * 0.1, bottomLimit = H * 0.92;
@@ -273,16 +298,16 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
         let y = H * 0.04;
         if (o.showCover && img) {
           const cs = Math.max(W * 0.3, Math.min(W * 0.85, H - H * .04 - H * .06
-            - (o.showTitle ? W * .068 * fMul * 1.25 + H * .01 : 0)
+            - (o.showTitle ? W * .062 * fMul * 1.25 + H * .01 : 0)
             - (o.showArtist ? W * .04 * fMul * 1.6 + H * .015 : 0)
-            - (o.showLyric ? H * .02 + W * .055 * fMul * 1.6 * o.lineSpacing * o.lyricLines * 1.25 + H * .02 : 0)));
+            - (o.showLyric ? H * .02 + W * .05 * fMul * 1.6 * o.lineSpacing * o.lyricLines * 1.25 + H * .02 : 0)));
           const cx = (W - cs) / 2;
           ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 15;
           roundRect(ctx, cx, y, cs, cs, cs * 0.08); ctx.clip(); ctx.drawImage(img, cx, y, cs, cs); ctx.restore();
           y += cs + H * 0.02;
         }
         if (o.showTitle) {
-          ctx.font = `bold ${W * 0.068 * fMul}px ${FONT}`;
+          ctx.font = `bold ${W * 0.062 * fMul}px ${FONT}`; // lxfix:0.068→0.062
           ctx.fillStyle = colors.textColor; ctx.textAlign = 'center';
           const lc = drawWrappedText(ctx, title, W / 2, y, W - pad * 2, W * .068 * fMul * 1.25);
           y += lc * W * .068 * fMul * 1.25 + H * 0.01;
@@ -298,7 +323,7 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
           ctx.lineWidth = 1;
           ctx.beginPath(); ctx.moveTo(pad * 2, y); ctx.lineTo(W - pad * 2, y); ctx.stroke();
           y += H * 0.02;
-          drawLyrics(y, bottomLimit - y, W * 0.055 * fMul, 'center', pad);
+          drawLyrics(y, bottomLimit - y, W * 0.05 * fMul, 'center', pad); // lxfix:0.055→0.05,同上
         }
       }
 
@@ -377,9 +402,9 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
           <View style={[stP.opts, narrow && stP.optsNarrow]}>
             <Text style={stP.secTitle}>版式</Text>
             <View style={stP.row}>
-              <Pill label="竖版 9:16" on={opt.layout === 'portrait'} onPress={() => setOpt(o => ({ ...o, layout: 'portrait' }))} />
-              <Pill label="横版 16:9" on={opt.layout === 'landscape'} onPress={() => setOpt(o => ({ ...o, layout: 'landscape' }))} />
-              <Pill label="方形 1:1" on={opt.layout === 'square'} onPress={() => setOpt(o => ({ ...o, layout: 'square' }))} />
+              <Pill label="竖版" on={opt.layout === 'portrait'} onPress={() => setOpt(o => ({ ...o, layout: 'portrait' }))} />
+              <Pill label="横版" on={opt.layout === 'landscape'} onPress={() => setOpt(o => ({ ...o, layout: 'landscape' }))} />
+              <Pill label="方形" on={opt.layout === 'square'} onPress={() => setOpt(o => ({ ...o, layout: 'square' }))} />
             </View>
             <Text style={stP.secTitle}>配色</Text>
             <View style={stP.row}>
@@ -432,14 +457,14 @@ const stP = StyleSheet.create({
   closeBtn: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   body: { flexDirection: 'row' as const, flex: 1, minHeight: 0 },
   bodyCol: { flexDirection: 'column' as const },
-  optsNarrow: { width: '100%', borderLeftWidth: 0, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border, maxHeight: 264 } as ViewStyle,
+  optsNarrow: { width: '100%', borderLeftWidth: 0, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border, maxHeight: 328 } as ViewStyle, // lxfix:264→328,窄屏选项区不再挤成一条缝
   previewBox: { flex: 1, minHeight: 0, alignItems: 'center', justifyContent: 'center', padding: 18, backgroundColor: 'rgba(255,255,255,.02)' },
   veil: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#00000066', alignItems: 'center', justifyContent: 'center', gap: 8 },
   veilText: { color: '#ffffffcc', fontSize: 11 },
-  opts: { width: 300, borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: C.border, padding: 16, gap: 6, overflowY: 'auto' as const } as ViewStyle, // v3.28:overflowY 为 RNW 属性,断言
+  opts: { width: 296, borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: C.border, padding: 14, gap: 6, overflowY: 'auto' as const } as ViewStyle, // v3.28:overflowY 为 RNW 属性,断言
   secTitle: { color: C.text3, fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginTop: 8 },
   row: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 6, marginTop: 6 },
-  pill: { height: 30, borderRadius: 15, paddingHorizontal: 12, borderWidth: 1, borderColor: '#ffffff26', alignItems: 'center', justifyContent: 'center' },
+  pill: { height: 28, borderRadius: 14, paddingHorizontal: 10, borderWidth: 1, borderColor: '#ffffff26', alignItems: 'center', justifyContent: 'center' }, // lxfix:30→28/12→10,面板自适应
   pillOn: { backgroundColor: C.brand, borderColor: C.brand },
   pillText: { color: '#ffffffcc', fontSize: 11, fontWeight: '600' },
   valText: { color: C.text2, fontSize: 11, alignSelf: 'center', minWidth: 34, textAlign: 'center' },

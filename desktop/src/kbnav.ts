@@ -66,6 +66,17 @@ export function mountKbNav() {
   window.addEventListener('keydown', e => {
     const t = e.target as HTMLElement | null;
     const typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+    // ===== 全局播放器快捷键(老板 20260920:键盘快捷无法使用)——输入态不劫持;Space/←→/N/P =====
+    // __nmPlayerCtl 由 PlayerProvider 注册(web 形态),直接走 provider 保持 React 态同步
+    const ctl = (globalThis as never as { __nmPlayerCtl?: { toggle(): void; next(): void; prev(): void; seek(deltaSec: number): void } }).__nmPlayerCtl;
+    if (ctl && !typing && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      const k = e.key.toLowerCase();
+      if (e.code === 'Space' && !(t as HTMLElement | null)?.closest?.('#nm-ctxmenu-host')) { e.preventDefault(); ctl.toggle(); return; }
+      if (e.key === 'ArrowRight') { e.preventDefault(); ctl.seek(5); return; }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); ctl.seek(-5); return; }
+      if (k === 'n') { e.preventDefault(); ctl.next(); return; }
+      if (k === 'p') { e.preventDefault(); ctl.prev(); return; }
+    }
     // ⌘F/Ctrl+F 聚焦搜索框(输入态也放行,统一抢占)
     if ((e.metaKey || e.ctrlKey) && (e.key === 'f' || e.key === 'F')) {
       const input = Array.from(document.querySelectorAll('input')).find(i => ((i.getAttribute('placeholder') || '') + (i.getAttribute('aria-label') || '')).includes('搜索') && i.getBoundingClientRect().width > 0);

@@ -74,6 +74,7 @@ export function HDSearch() {
   const { playSong, current, appendQueue, playNextUp } = usePlayer();
   const { connected, token } = useApp(); // #018:歌曲行统一菜单 deps
   const [kw, setKw] = useState('');
+  const [sfocus, setSfocus] = useState(false); // #035b:搜索框整框 focus 激活态
   const [mode, setMode] = useState<'song' | 'singer' | 'album'>('song'); // lx163:搜索类型
   const [singers, setSingers] = useState<{ id: string; name: string; img?: string; source?: string }[] | null>(null);
   const [albums, setAlbums] = useState<{ id: string; name: string; singer?: string; img?: string; source?: string }[] | null>(null);
@@ -142,7 +143,7 @@ export function HDSearch() {
           ))}
         </View>
         {/* 搜索框 */}
-        <View style={st.searchRow}>
+        <View style={[st.searchRow, sfocus && st.searchRowOn]}>
           <Icon name="search" size={15} color={C.text3} />
           <TextInput
             style={st.input}
@@ -152,6 +153,8 @@ export function HDSearch() {
             onChangeText={setKw}
             returnKeyType="search"
             onSubmitEditing={() => search(kw)}
+            onFocus={() => setSfocus(true)}
+            onBlur={() => setSfocus(false)}
           />
           {kw ? (
             <HDTouch style={st.clearBtn} focusStyle={false} onPress={() => { setKw(''); setResults(null); setSingers(null); setAlbums(null); }}>
@@ -322,6 +325,7 @@ const st = StyleSheet.create({
     height: 40, borderRadius: 10, backgroundColor: C.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border,
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: 13, gap: 9,
   },
+  searchRowOn: { borderColor: C.brand, backgroundColor: C.surface2, borderWidth: 1 }, // #035b:focus 整框品牌描边(替代行级诡异选中态)
   input: { flex: 1, color: C.text, fontSize: H.font.md, padding: 0 },
   clearBtn: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   secTitle: { color: C.text, fontSize: H.font.xl, fontWeight: '700' },

@@ -1038,6 +1038,22 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, []);
   useEffect(() => () => { if (sleepTick.current) clearInterval(sleepTick.current); }, []);
 
+  // lxfix(老板 20260920:键盘快捷无法使用):web 形态注册全局播控句柄——kbnav.ts 的 Space/←→/N/P 消费
+  // 必须走 provider(而非直接戳 __nmAudio),toggle/next/prev 涉及队列推进等 React 内逻辑
+  useEffect(() => {
+    if (typeof globalThis === 'undefined') return;
+    (globalThis as never as { __nmPlayerCtl?: unknown }).__nmPlayerCtl = {
+      toggle: () => toggle(),
+      next: () => skipNext(),
+      prev: () => skipPrev(),
+      seek: (d: number) => {
+        // web:直接读 audio 元素实时位置(state 每秒更新,deps 会抖)
+        const a = (globalThis as never as { __nmAudio?: { currentTime?: number } }).__nmAudio;
+        const p = typeof a?.currentTime === 'number' ? a.currentTime : 0;
+        seekTo(Math.max(0, p + d));
+      },
+    };
+  }, [toggle, skipNext, skipPrev, seekTo]);
   return (    <Ctx.Provider value={{ queue, current, playing, position, duration, shuffle, repeat, setShuffle, cycleRepeat, playSong, toggle, skipNext, skipPrev, seekTo, clearQueue, cast, startCast, stopCast, rebuildAudio, appendQueue, playNextUp, reorderQueue, speed, setSpeed, sleepRemain, enableSleep }}>
       {children}
     </Ctx.Provider>
