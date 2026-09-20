@@ -168,25 +168,34 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
         colors = (img && extractAlbumColors(img)) || { bg1: '#1a1a2e', bg2: '#0d0d1a', accent: '#1ED760', textColor: '#ffffff', subColor: 'rgba(255,255,255,0.6)', lyricActive: '#ffffff', lyricInactive: 'rgba(255,255,255,0.35)', isDark: true };
       }
 
-      // 背景:专辑主题=封面 60px 模糊+压暗;否则线性渐变+accent 辉光
+      // 背景:专辑主题=玻璃弥散(老板 20260920:高斯模糊+玻璃质感+弥散);否则线性渐变+accent 辉光
       if (o.theme === 'album' && img) {
-        // lxfix(老板 20260920 背景缺模糊):ctx.filter 在 Safari/部分浏览器不生效→背景清晰刺眼。
-        // 双保险:filter 可用则真模糊;不可用/未生效时 downscale 模糊(封面缩到 1/40 再拉伸,双线性插值天然雾化)
+        // lxfix:ctx.filter 在 Safari/部分浏览器不生效→降级 downscale 模糊(1/48 缩画再拉伸,双线性天然雾化)
         const CAN_FILTER = (() => { try { const c = document.createElement('canvas').getContext('2d')!; c.filter = 'blur(2px)'; return c.filter !== 'none' && c.filter !== ''; } catch { return false; } })();
         if (CAN_FILTER) {
-          ctx.save(); ctx.filter = 'blur(60px)';
-          ctx.drawImage(img, -W * .15, -H * .15, W * 1.3, H * 1.3);
+          ctx.save(); ctx.filter = 'blur(80px) saturate(1.8) brightness(1.06)'; // 玻璃质感:强模糊+提饱和+微提亮
+          ctx.drawImage(img, -W * .18, -H * .18, W * 1.36, H * 1.36);
           ctx.restore();
         } else {
           const tiny = document.createElement('canvas');
-          tiny.width = Math.max(8, Math.round(W / 40)); tiny.height = Math.max(8, Math.round(H / 40));
+          tiny.width = Math.max(6, Math.round(W / 48)); tiny.height = Math.max(6, Math.round(H / 48));
           const tctx = tiny.getContext('2d')!;
           tctx.drawImage(img, 0, 0, tiny.width, tiny.height);
           ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(tiny, -W * .15, -H * .15, W * 1.3, H * 1.3);
+          ctx.drawImage(tiny, -W * .18, -H * .18, W * 1.36, H * 1.36);
+          ctx.globalAlpha = 0.4; ctx.drawImage(tiny, -W * .18, -H * .18, W * 1.36, H * 1.36); ctx.globalAlpha = 1; // 叠画提饱和近似
         }
-        ctx.fillStyle = colors.isDark ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.25)';
-        ctx.fillRect(0, 0, W, H);
+        // 弥散层一:径向渐晕(中心透→边缘压暗/提亮,聚焦卡片主体)
+        const vg = ctx.createRadialGradient(W / 2, H * .42, W * .18, W / 2, H * .5, W * .98);
+        vg.addColorStop(0, 'rgba(0,0,0,0)');
+        vg.addColorStop(1, colors.isDark ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.35)');
+        ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+        // 弥散层二:纵向光感(顶部微亮→中部透明→底部沉一点,弥散光)
+        const lg = ctx.createLinearGradient(0, 0, 0, H);
+        lg.addColorStop(0, colors.isDark ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.18)');
+        lg.addColorStop(0.5, 'rgba(0,0,0,0)');
+        lg.addColorStop(1, colors.isDark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.1)');
+        ctx.fillStyle = lg; ctx.fillRect(0, 0, W, H);
       } else {
         const grad = ctx.createLinearGradient(0, 0, W * .4, H);
         grad.addColorStop(0, colors.bg1); grad.addColorStop(1, colors.bg2);

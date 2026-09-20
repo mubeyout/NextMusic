@@ -115,15 +115,18 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
         <View style={{ alignItems: 'center' }}>
           {/* 卡片本体(截图目标) */}
           <View ref={cardRef} collapsable={false} style={[st.card, { width: cardW, height: cardH }]}>
-            {/* 氛围底 */}
+            {/* 氛围底:玻璃弥散(老板 20260920:高斯模糊+玻璃质感+弥散)——blur 封面+双层渐变近似径向渐晕 */}
             {opt.theme === 'album' && song.img ? (
               <>
                 <Image
                   source={{ uri: song.img }}
-                  blurRadius={70} resizeMode="cover"
-                  style={{ position: 'absolute', left: '-8%', top: '-8%', width: '116%', height: '116%' }}
+                  blurRadius={80} resizeMode="cover"
+                  style={{ position: 'absolute', left: '-10%', top: '-10%', width: '120%', height: '120%' }}
                 />
-                <LinearGradient colors={['#0000004D', '#00000026', '#000000CC']} locations={[0, 0.45, 1]} style={StyleSheet.absoluteFill} />
+                {/* 纵向弥散:顶部微亮→中部透→底部沉 */}
+                <LinearGradient colors={['#ffffff12', '#00000000', '#000000C4']} locations={[0, 0.42, 1]} style={StyleSheet.absoluteFill} />
+                {/* 对角弥散近似渐晕:左上浮光→右下压暗 */}
+                <LinearGradient colors={['#ffffff0D', '#00000000', '#00000059']} locations={[0, 0.5, 1]} style={[StyleSheet.absoluteFill, { transform: [{ rotate: '45deg' }], width: '160%', height: '160%', left: '-30%', top: '-30%' }]} />
               </>
             ) : light ? (
               <LinearGradient colors={['#FAFAF6', '#EFEFE9']} style={StyleSheet.absoluteFill} />
