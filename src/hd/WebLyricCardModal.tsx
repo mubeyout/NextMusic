@@ -173,7 +173,7 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
         // lxfix:ctx.filter 在 Safari/部分浏览器不生效→降级 downscale 模糊(1/48 缩画再拉伸,双线性天然雾化)
         const CAN_FILTER = (() => { try { const c = document.createElement('canvas').getContext('2d')!; c.filter = 'blur(2px)'; return c.filter !== 'none' && c.filter !== ''; } catch { return false; } })();
         if (CAN_FILTER) {
-          ctx.save(); ctx.filter = 'blur(140px) saturate(2.6) brightness(1.12)'; // 玻璃质感:重度高斯+强饱和(暗纱在后面压,先提亮提饱和保色彩透出来)
+          ctx.save(); ctx.globalAlpha = 0.65; ctx.filter = 'blur(160px) saturate(2.6) brightness(1.12)'; // 播放页等价:图opacity0.5+纱.62→有效存在感≈.27
           ctx.drawImage(img, -W * .25, -H * .25, W * 1.5, H * 1.5);
           ctx.restore();
         } else {
@@ -182,11 +182,12 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
           const tctx = tiny.getContext('2d')!;
           tctx.drawImage(img, 0, 0, tiny.width, tiny.height);
           ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+          ctx.save(); ctx.globalAlpha = 0.65;
           ctx.drawImage(tiny, -W * .25, -H * .25, W * 1.5, H * 1.5);
-          ctx.globalAlpha = 0.45; ctx.drawImage(tiny, -W * .25, -H * .25, W * 1.5, H * 1.5); ctx.globalAlpha = 1; // 叠画提饱和近似
+          ctx.globalAlpha = 0.3; ctx.drawImage(tiny, -W * .25, -H * .25, W * 1.5, H * 1.5); ctx.restore();
         }
-        // 弥散层⓪:整体暗纱(对齐播放页背景配方:blur+图opacity0.5+rgba(6,8,7,.62)纱——老板 13:00 指定参考)
-        ctx.fillStyle = 'rgba(8,10,9,0.54)'; ctx.fillRect(0, 0, W, H);
+        // 弥散层⓪:整体暗纱(播放页配方 parity:veil .58+图 alpha .65 ≈ 播放页 0.5+.62)
+        ctx.fillStyle = 'rgba(6,8,7,0.58)'; ctx.fillRect(0, 0, W, H);
         // 弥散层一:径向渐晕(中心透→边缘压暗,聚焦卡片主体)
         const vg = ctx.createRadialGradient(W / 2, H * .42, W * .18, W / 2, H * .5, W * .98);
         vg.addColorStop(0, 'rgba(0,0,0,0)');
