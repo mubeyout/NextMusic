@@ -72,6 +72,8 @@ export function BasicSettingsScreen() {
       </Section>
       <Section title="界面">
         <ToggleRow label="底栏显示标签" value={s.showTabLabels} onChange={v => settings.set('showTabLabels', v)} />
+        {/* carlink(20260920):CarLink/投屏连车机时切 HD 大屏 UI(参照 hd 版,横屏+大触点+D-pad);重启或再切回 */}
+        <ToggleRow label="车机模式" value={s.carModeUi === true} onChange={v => settings.set('carModeUi', v)} />
       </Section>
       <Section title="缓存">
         <StaticRow label="图片与网络缓存" value={cacheSize} />

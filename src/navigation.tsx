@@ -11,7 +11,7 @@ import { C } from './theme/tokens';
 import { TabBar } from './components/TabBar';
 import { MiniPlayer } from './components/MiniPlayer';
 import { useApp } from './state/AppState';
-import { settings } from './services/settings';
+import { settings, useSettings } from './services/settings';
 
 import { BootScreen } from './screens/BootScreen';
 import { ServerScreen } from './screens/ServerScreen';
@@ -44,7 +44,7 @@ import { SearchScreen } from './screens/SearchScreen';
 import { ArtistDetailScreen } from './screens/ArtistDetailScreen';
 import { AlbumDetailScreen } from './screens/AlbumDetailScreen';
 import { RoutePage } from './screens/RouteScreen';
-import { IS_HD } from './services/appversion';
+import { IS_HD, isCarUi } from './services/appversion';
 import { HDMain } from './hd/HDMain';
 import { HDPlayerSafe } from './hd/HDPlayer';
 import { HDBootScreen } from './hd/HDBootScreen';
@@ -88,6 +88,8 @@ function TabBarManual({ tab, setTab }: { tab: number; setTab: (i: number) => voi
 }
 
 export function RootNavigator() {
+  useSettings(); // carlink:carModeUi 变更即重渲——导航层 IS_HD|carMode 双分流
+  const HD = isCarUi();
   const { mode } = useApp();
   // 服务端 web 播放器不需要启动向导:直进主界面(本地模式);原生端保留三卡引导
   const initial = !mode ? (Platform.OS === 'web' ? 'Main' : 'Boot') : 'Main';
@@ -121,7 +123,7 @@ export function RootNavigator() {
       if (exitArmed) return false; // 确认后放行系统默认(退出)
       exitArmed = true;
       setTimeout(() => { exitArmed = false; }, 2600);
-      if (IS_HD) {
+      if (isCarUi()) {
         hdActions.menu('退出应用', [
           { label: '取消', icon: 'close' },
           { label: '退出', icon: 'back', danger: true, onPress: () => BackHandler.exitApp() }, // lx159:退出用 back(箭头离场),不再与取消重复 close
@@ -186,23 +188,23 @@ return (
       {/* lx57:fade 两页半透明叠加固有"变亮一下"(一加实测 31→66→35);slide 滑动露底窗口闪白——容器转场两种预设都不可救,恒 none 直切零中间态 */}
       {/* v1.2.15(老板 09-14"进出还闪一下"):lx168 的 fade 160ms 即本轮闪感回归点,容器回到直切;动效改内容层 withEnter 入场动画 */}
       <Stack.Navigator initialRouteName={initial} screenOptions={{ headerShown: false, animation: 'none', contentStyle: { backgroundColor: C.bg }, freezeOnBlur: true }}>
-        <Stack.Screen name="Boot" component={IS_HD ? HDBootScreen : BootScreen} />
+        <Stack.Screen name="Boot" component={HD ? HDBootScreen : BootScreen} />
         <Stack.Screen name="Server" component={withPhoneScale(ServerScreen)} />
         <Stack.Screen name="Auth" component={withPhoneScale(AuthScreen)} />
-        <Stack.Screen name="AuthLogin" component={IS_HD ? HDAuthLoginScreen : withEnter(AuthLoginScreen)} />
+        <Stack.Screen name="AuthLogin" component={HD ? HDAuthLoginScreen : withEnter(AuthLoginScreen)} />
         <Stack.Screen name="AuthSignup" component={withEnter(AuthSignupScreen)} />
-        <Stack.Screen name="Main" component={IS_HD ? HDMain : MainTabs} />
-        <Stack.Screen name="Player" component={IS_HD ? HDPlayerSafe : PlayerScreen} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />
+        <Stack.Screen name="Main" component={HD ? HDMain : MainTabs} />
+        <Stack.Screen name="Player" component={HD ? HDPlayerSafe : PlayerScreen} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />
         <Stack.Screen name="Queue" component={withEnter(QueueScreen)} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="PlayerSettings" component={withEnter(PlayerSettingsScreen, true)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Comments" component={withEnter(CommentsScreen)} />
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="PlaylistDetail" component={IS_HD ? HDPlaylistDetailScreen : withEnter(PlaylistDetailScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="PlaylistDetail" component={HD ? HDPlaylistDetailScreen : withEnter(PlaylistDetailScreen)} />
         <Stack.Screen name="Search" component={withEnter(SearchScreen)} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ArtistDetail" component={withEnter(ArtistDetailScreen)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="AlbumDetail" component={withEnter(AlbumDetailScreen)} />
         {/* Route(播放设备)页:HD 已删投屏不再注册(老板 09-14);phone 由 MiniPlayer 入口进入 */}
-        {!IS_HD ? <Stack.Screen name="Route" component={RoutePage} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'fade', presentation: 'transparentModal' }} /> : null}
-        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Settings" component={IS_HD ? HDSettingsScreen : withEnter(SettingsScreen, true)} />
+        {!HD ? <Stack.Screen name="Route" component={RoutePage} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'fade', presentation: 'transparentModal' }} /> : null}
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Settings" component={HD ? HDSettingsScreen : withEnter(SettingsScreen, true)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Sources" component={withEnter(SourcesScreen, true)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Account" component={withEnter(AccountScreen, true)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="BasicSettings" component={withEnter(BasicSettingsScreen, true)} />

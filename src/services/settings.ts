@@ -80,6 +80,7 @@ export interface AppSettings {
   enableLyricGlow: boolean;             // 歌词荧光
   enablePersistentToken: boolean;       // 持久化 Token
   playerBackground: string;             // 播放页背景 blur|solid|dark
+  carModeUi: boolean;                   // carlink:手机包内嵌车机模式(切 HD 大屏 UI)
   saveAccountSettingsToFile: boolean;   // 账号设置存文件
   autoUpdateNetworkList: boolean;       // 自动更新网络歌单
   networkListAutoCheckInterval: string; // 检测间隔 6h
@@ -160,6 +161,7 @@ export const DEFAULTS: AppSettings = {
   enableLyricGlow: true,
   enablePersistentToken: false,
   playerBackground: 'blur',
+  carModeUi: false,
   saveAccountSettingsToFile: true,
   autoUpdateNetworkList: false,
   networkListAutoCheckInterval: '6h',

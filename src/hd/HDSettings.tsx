@@ -64,6 +64,11 @@ export function HDSettingsScreen() {
   const [cacheStats, setCacheStats] = useState<{ totalSize: number; fileCount: number } | null>(null);
   const loadCacheStats = () => { api.cacheStats().then(setCacheStats).catch(() => setCacheStats({ totalSize: 0, fileCount: 0 })); };
 
+  // carlink:phone 包内嵌车机模式时给退出开关;独立 hd 包不显示
+  const carRows: RowDef[] = !IS_HD && s.carModeUi === true ? [
+    { kind: 'toggle', icon: 'fullscreen', title: '车机模式', desc: '当前使用 HD 大屏界面,关闭恢复手机竖版', value: s.carModeUi === true, onToggle: () => settings.set('carModeUi', false) },
+  ] : [];
+
   const rows: Record<Tab, RowDef[]> = {
     '外观与界面': [
       { kind: 'toggle', icon: 'palette', title: '纯黑背景', desc: 'OLED 友好的纯黑底色(仅深色模式)', value: s.pureBlack, onToggle: () => { settings.set('pureBlack', !s.pureBlack); if (IS_WEB) { hdWebReload(); } else hdRestart(playing); } },
@@ -182,6 +187,7 @@ export function HDSettingsScreen() {
 
       {/* 行式设置卡 */}
       <View style={{ gap: 8 }}>
+        {carRows.map((r, i) => <SettingsRow key={`car_${i}`} row={r} />)}
         {rows[tab].map((r, i) => <SettingsRow key={`${r.title}_${i}`} row={r} />)}
       </View>
     </ScrollView>

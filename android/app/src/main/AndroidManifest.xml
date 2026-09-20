@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
@@ -32,5 +33,22 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
       </activity>
+
+      <!-- lxfix(carlink v1 20260920): 车机互联——库 AudioProPlaybackService 提权 exported，Android Auto/车机可绑定同一 MediaSession：
+           车机控制 play/pause/seek 直达 ExoPlayer，next/prev 走库 emitNext/emitPrev → JS 桥（与通知栏同链路）。
+           双 action 兼容 media3 新旧 discovery；v2 内容树(歌单浏览)需 fork 库补 onGetChildren。 -->
+      <service
+          android:name="dev.rnap.reactnativeaudiopro.AudioProPlaybackService"
+          android:exported="true"
+          android:foregroundServiceType="mediaPlayback"
+          tools:replace="android:exported">
+          <intent-filter>
+              <action android:name="androidx.media3.session.MediaLibraryService" />
+              <action android:name="android.media.browse.MediaBrowserService" />
+          </intent-filter>
+      </service>
+      <meta-data
+          android:name="com.google.android.gms.car.application"
+          android:resource="@xml/automotive_app_desc" />
     </application>
 </manifest>

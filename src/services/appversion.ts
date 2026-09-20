@@ -13,3 +13,8 @@ export const APP_VERSION = native?.versionName
 const webFlavor = ((globalThis as { process?: { env?: { APP_FLAVOR?: string } } }).process)?.env?.APP_FLAVOR;
 export const APP_FLAVOR: 'phone' | 'hd' = native?.flavor === 'hd' || webFlavor === 'hd' ? 'hd' : 'phone';
 export const IS_HD = APP_FLAVOR === 'hd';
+
+// carlink(20260920 老板):手机包内嵌车机模式——CarLink/投屏/外接大屏时切 HD 大屏 UI(参照 hd 版)。
+// 独立 hd 包恒 true;phone 包读设置(手动开关,v2 蓝牙车机自动检测)。闭包内即时读用 settings.get()。
+import { settings } from './settings';
+export function isCarUi(): boolean { return IS_HD || settings.get().carModeUi === true; }

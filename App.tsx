@@ -11,7 +11,8 @@ import { loadSources } from './src/services/customSource';
 import { initFx } from './src/services/soundfx';
 import { RootNavigator } from './src/navigation';
 import { DialogHost } from './src/components/Dialog';
-import { IS_HD } from './src/services/appversion';
+import { IS_HD, isCarUi } from './src/services/appversion';
+import { useSettings } from './src/services/settings';
 import { HDActionHost } from './src/hd/HDActions';
 import { refetchAndBump } from './src/services/sync';
 import { store as httpStore } from './src/services/server';
@@ -31,6 +32,7 @@ function App() {
     return () => sub.remove();
   }, []);
 
+  useSettings(); // carlink:carModeUi 变更即重渲
   return (
     // lx49:根容器恒定主题底色——navigation stack 的屏容器在 pop 销毁瞬间会
     // 露出 windowBackground(一加/浅色下露白一帧);GestureHandlerRootView 常驻不销毁,
@@ -42,7 +44,7 @@ function App() {
           <PlayerProvider>
             <LxEngineHost />
             <RootNavigator />
-            {IS_HD ? <HDActionHost /> : null}
+            {isCarUi() ? <HDActionHost /> : null} {/* carlink:车机模式共享 HDActionHost */}
             <DialogHost />
           </PlayerProvider>
         </AppStateProvider>

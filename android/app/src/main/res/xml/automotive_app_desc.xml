@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- lxfix(carlink 20260920): Android Auto 媒体声明——Auto 识别本 app 为可车控媒体源 -->
+<automotiveApp>
+    <uses name="media" />
+</automotiveApp>
