@@ -170,6 +170,12 @@ export function HDPlayer() {
   const stopBin = () => { binLoops.current.forEach(l => l?.stop()); binLoops.current = []; };
 
   React.useEffect(() => {
+    if (settings.get().showDetailVisualizer === false) { // 审计#4:播放页可视化开关门控(关=频谱环/伪律动全停;下次播放态变化或刷新生效)
+      ringLoops.current.forEach(l => l?.stop()); ringLoops.current = [];
+      stopBin();
+      specBins.forEach(b => Animated.timing(b, { toValue: 0.08, duration: 400, useNativeDriver: NATIVE }).start());
+      return;
+    }
     if (playing) {
       if (!ringLoops.current.length) {
         const loop = Animated.loop(Animated.timing(ringRot, { toValue: 1, duration: 14000, easing: Easing.linear, useNativeDriver: NATIVE }));
@@ -266,8 +272,9 @@ export function HDPlayer() {
   // lx89:TV 播放页全屏独立屏(老板定夺)——头部返回行+左唱片活频谱+右歌词+单行控件
   return (
     <View style={[st.screen, { backgroundColor: settings.get().light ? '#F6F7F9' : C.bg }]}>
-      {current.img ? <Image source={{ uri: current.img }} style={st.bgArt as ImageStyle} blurRadius={60} resizeMode="cover" /> : null}
-      <View style={st.bgVeil} />
+      {/* 审计#3:播放页背景三档真实生效(原恒封面虚化)——blur=封面虚化/solid=纯色/dark=深黑压暗 */}
+      {current.img && settings.get().playerBackground === 'blur' ? <Image source={{ uri: current.img }} style={st.bgArt as ImageStyle} blurRadius={60} resizeMode="cover" /> : null}
+      <View style={[st.bgVeil, settings.get().playerBackground === 'dark' && { backgroundColor: 'rgba(0,0,0,.82)' }]} />
 
       {/* 头部:返回按钮入流式布局(不再悬浮怪位) */}
       <View style={[st.header, { paddingTop: Math.max(insets.top, 12) }]}>
@@ -326,7 +333,7 @@ export function HDPlayer() {
                 const on = idx === activeIdx;
                 return (
                   <TouchableOpacity key={idx} disabled={!on || !l.t} onPress={() => l.t && seekTo(l.t + 0.3)} activeOpacity={0.7}>
-                    <Text style={[st.lyric, on && st.lyricOn]} numberOfLines={1}>{l.text || '♪'}</Text>
+                    <Text style={[st.lyric, on && st.lyricOn, on && settings.get().enableLyricGlow === false && { textShadowRadius: 0, textShadowColor: 'transparent' }]} numberOfLines={1}>{l.text || '♪'}</Text> {/* 审计:荧光开关门控 */}
                     {l.trans ? <Text style={[st.lyricTr, on && st.lyricTrOn]} numberOfLines={1}>{l.trans}</Text> : null}
                   </TouchableOpacity>
                 );

@@ -119,9 +119,7 @@ export function HDSettingsScreen() {
       { kind: 'toggle', icon: 'refresh', title: '下载目录歌曲洗版', desc: '自动替换为高音质版本', value: s.enableRemaster, onToggle: () => settings.set('enableRemaster', !s.enableRemaster) },
       { kind: 'toggle', icon: 'wave', title: '自动更新网络歌单', desc: '定时检测歌单变更', value: s.autoUpdateNetworkList, onToggle: () => settings.set('autoUpdateNetworkList', !s.autoUpdateNetworkList) },
       { kind: 'select', icon: 'globe', title: '歌单检测间隔', desc: '网络歌单自动检测', value: s.networkListAutoCheckInterval, options: ['30m', '1h', '3h', '6h', '12h', '1d'], onPick: v => settings.set('networkListAutoCheckInterval', v) },
-      { kind: 'toggle', icon: 'globe', title: '播放走代理', desc: '音频流经代理转发', value: s.enableProxyPlayback, onToggle: () => settings.set('enableProxyPlayback', !s.enableProxyPlayback) },
-      { kind: 'toggle', icon: 'globe', title: '下载走代理', desc: '下载经代理转发', value: s.enableProxyDownload, onToggle: () => settings.set('enableProxyDownload', !s.enableProxyDownload) },
-      { kind: 'toggle', icon: 'globe', title: '自动代理', desc: '网络异常时自动启用', value: s.enableAutoProxy, onToggle: () => settings.set('enableAutoProxy', !s.enableAutoProxy) },
+      // lxfix(审计 20260920):代理三开关零消费(lxserver v2 字段对齐搬入从未接线,开了也不走代理=纯误导)——UI 隐藏;key 保留,真实现(取链 URL 模板代理)后再上
       { kind: 'toggle', icon: 'globe', title: '公开源可见', desc: '显示管理员上传的公共音源', value: s.enablePublicSources, onToggle: () => settings.set('enablePublicSources', !s.enablePublicSources) },
       { kind: 'nav', title: '服务器缓存管理', desc: '缓存统计 · 缓存列表 · 一键清空', icon: 'server', action: () => { setCacheOpen(true); loadCacheStats(); } },
     ],

@@ -2,6 +2,7 @@
 // ↑↓ 列表内移焦点(指针在列表区域内才激活,防劫持)/Enter 播放/Shift+F10 菜单/Home End/Esc 清除/⌘F 聚焦搜索框
 // 焦点视觉=品牌色左侧指示条(独立 DOM,不用 TV 焦点环)
 import type { KbRow } from '../../src/hd/hdkeyboard';
+import { settings } from '../../src/services/settings';
 
 interface RectRow { row: KbRow; x: number; y: number; w: number; h: number; }
 
@@ -64,6 +65,7 @@ export function mountKbNav() {
     : false;
 
   window.addEventListener('keydown', e => {
+    if (settings.get().enableKeyboardShortcuts === false) return; // 审计#2:设置门控——关掉即全组快捷键失效
     const t = e.target as HTMLElement | null;
     const typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
     // ===== 全局播放器快捷键(老板 20260920:键盘快捷无法使用)——输入态不劫持;Space/←→/N/P =====
