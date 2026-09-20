@@ -210,8 +210,8 @@ class AudioRouteModule(reactContext: ReactApplicationContext) :
                 android.os.Process.myPid(), android.os.Process.myUid()) == PackageManager.PERMISSION_GRANTED &&
                 px.connectedDevices.any { d ->
                     val bc = d.bluetoothClass
-                    (bc != null && bc.majorClass == android.bluetooth.BluetoothClass.Device.Major.AUDIO_VIDEO &&
-                        (bc.deviceClass and android.bluetooth.BluetoothClass.SERVICE_MASK.inv()) == 1024) || // AUDIO_VIDEO_CAR_AUDIO
+                    (bc != null && bc.majorDeviceClass == android.bluetooth.BluetoothClass.Device.Major.AUDIO_VIDEO &&
+                        bc.deviceClass == android.bluetooth.BluetoothClass.Device.AUDIO_VIDEO_CAR_AUDIO) ||
                         (d.name?.lowercase()?.contains("car") == true || d.name?.contains("车") == true)
                 }
         } catch (t: Throwable) { false }
