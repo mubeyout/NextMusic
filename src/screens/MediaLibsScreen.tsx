@@ -2,7 +2,7 @@
 // 管理页：账号列表（长按编辑）；浏览页（2026-09-17 老板指令·参考 Amcfy 主页）：
 // 连接后是【一个综合页面】——分区纵排（随机来点/专辑/艺术家/歌单 或 听风 我的/推荐/排行/新歌），不再 tab 切换
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, type ViewStyle, ScrollView, TouchableOpacity, Image, ActivityIndicator, } from 'react-native';
+import { View, Text, StyleSheet, type ViewStyle, ScrollView, TouchableOpacity, Image, ActivityIndicator, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Icon, BrandIcon } from '../theme/Icon';
@@ -298,10 +298,10 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
       )}
 
       {isDav ? (
-        /* ---------- WebDAV 目录浏览（原交互保留） ---------- */
-        <ScrollView contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingBottom: ((current ? 100 : 0) + insets.bottom + 24) + (IS_HD ? 48 : 0) }}>
+        /* ---------- WebDAV B「唱片墙网格」(LEO 0921 spec,方向级重做):路径胶囊+唱片墙+分段线+歌曲列表+贴底播放钮 ---------- */
+        <ScrollView contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingBottom: ((current ? 100 : 0) + insets.bottom + 84) + (IS_HD ? 48 : 0) }}>
           {davBusy ? (
-            <View style={st.center}><ActivityIndicator color={C.brand} size="large" /></View>
+            <View style={st.davWall}>{[0, 1, 2, 3, 4, 5].map(i => <View key={i} style={st.davSkel} />)}</View>
           ) : davErr ? (
             <View style={st.center}>
               <Text style={st.empty}>{davErr}</Text>
@@ -312,74 +312,84 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
             </View>
           ) : (
             <>
-              {/* v3.31(2026-09-21 老板:太丑/列表优化) 重设计:面包屑+文件夹卡横滑+歌曲列表(点击=播放,选择显式化) */}
+              {/* 路径胶囊行:祖先灰字‹›分隔;当前段=品牌绿实心胶囊(不可点);尾部刷新 */}
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.davCrumbWrap} contentContainerStyle={{ gap: 6, alignItems: 'center', paddingRight: 12 }}>
                 {(() => {
                   const segs = davDir.split('/').filter(Boolean);
                   const crumbs = [{ label: '根目录', path: '/' }];
                   let acc = '';
                   segs.forEach(s => { acc += '/' + s; crumbs.push({ label: s, path: acc }); });
-                  return crumbs.map((c, ci) => (
-                    <React.Fragment key={c.path}>
-                      {ci > 0 ? <Text style={st.davCrumbSep}>›</Text> : null}
-                      <T style={st.davChip} focusStyle={focus(999)} onPress={() => setDavDir(c.path)}>
-                        <Text style={[st.davChipText, ci === crumbs.length - 1 && st.davChipTextOn]} numberOfLines={1}>{c.label}</Text>
-                      </T>
-                    </React.Fragment>
-                  ));
+                  return crumbs.map((c, ci) => {
+                    const last = ci === crumbs.length - 1;
+                    return (
+                      <React.Fragment key={c.path}>
+                        {ci > 0 ? <Text style={st.davCrumbSep}>‹›</Text> : null}
+                        {last ? (
+                          <View style={st.davChipCur}><Text style={st.davChipCurText} numberOfLines={1}>{c.label}</Text></View>
+                        ) : (
+                          <T style={st.davChipGhost} focusStyle={focus(999)} onPress={() => setDavDir(c.path)}>
+                            <Text style={st.davChipGhostText} numberOfLines={1}>{c.label}</Text>
+                          </T>
+                        )}
+                      </React.Fragment>
+                    );
+                  });
                 })()}
                 <T style={st.davChipRefresh} focusStyle={focus(999)} onPress={davLoad} hitSlop={6}>
                   <Icon name="refresh" size={13} color={C.text3} />
                 </T>
               </ScrollView>
 
-              {(davDir !== '/' || davDirs.length > 0) ? (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.davRail} contentContainerStyle={{ gap: IS_HD ? 12 : 10, paddingRight: 12 }}>
+              {/* 唱片墙:3 列网格(TV 4-5);首格「上一级」虚线卡;唱片卡=方形 sleeve+黑胶露出+数量徽标 */}
+              {(davDir !== '/' || davDirs.length > 0) ? (() => {
+                const winW = Dimensions.get('window').width; // B 唱片墙:TV 超宽列数
+                const davCols = IS_HD ? (winW >= 1200 ? 5 : 4) : 3;
+                const discBasis = `${100 / davCols - 0.7}%`;
+                return (
+                <View style={st.davWall}>
                   {davDir !== '/' ? (
-                    <T style={st.davFolderCard} focusStyle={focus(12)} onPress={() => setDavDir(davDir.replace(/\/+$/, '').replace(/\/+[^/]*$/, '') || '/')}>
-                      <View style={[st.davFolderIcon, { backgroundColor: 'rgba(255,255,255,.09)' }]}>
-                        <Icon name="back" size={20} color={C.text2} />
+                    <T style={[st.davDiscUp, { flexBasis: discBasis }]} focusStyle={focus(12)} onPress={() => setDavDir(davDir.replace(/\/+$/, '').replace(/\/+[^/]*$/, '') || '/')}>
+                      <View style={[st.davDiscSleeve, st.davDiscSleeveUp]}>
+                        <Icon name="back" size={22} color={C.text2} />
                       </View>
-                      <Text style={st.davFolderName} numberOfLines={2}>上一级</Text>
+                      <Text style={st.davDiscName} numberOfLines={1}>上一级</Text>
+                      <Text style={st.davDiscSub} numberOfLines={1}>返回上层</Text>
                     </T>
                   ) : null}
                   {davDirs.map(d => (
-                    <T key={d.path} style={st.davFolderCard} focusStyle={focus(12)} onPress={() => setDavDir(d.path)}>
-                      <View style={[st.davFolderIcon, coverGrad(d.name) as ViewStyle]}>
-                        <Icon name="folder" size={IS_HD ? 26 : 22} color="rgba(255,255,255,.92)" />
+                    <T key={d.path} style={[st.davDiscCard, { flexBasis: discBasis }]} focusStyle={focus(12)} onPress={() => setDavDir(d.path)}>
+                      <View style={[st.davDiscSleeve, coverGrad(d.name) as ViewStyle]}>
+                        {/* 黑胶:右下 22% 露出,两层圆近似纹理(#1A1A1A 外圈+#242424 内圈 45%) */}
+                        <View style={st.davVinyl} pointerEvents="none">
+                          <View style={st.davVinylIn} />
+                        </View>
+                        <View style={st.davDiscBadge}><Text style={st.davDiscBadgeText}>DIR</Text></View>
                       </View>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Text style={st.davFolderName} numberOfLines={1}>{d.name}</Text>
-                        <Icon name="chevronright" size={12} color={C.text3} />
-                      </View>
+                      <Text style={st.davDiscName} numberOfLines={1}>{d.name}</Text>
+                      <Text style={st.davDiscSub} numberOfLines={1}>文件夹</Text>
                     </T>
                   ))}
-                </ScrollView>
-              ) : null}
-
-              <View style={st.davBar}>
-                <Text style={st.davStats}>{davDirs.length ? `${davDirs.length} 个文件夹 · ` : ''}{davSongs.length} 首</Text>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  {davSongs.length ? (
-                    <T style={[st.davBtn2, st.davBtn2Main]} focusStyle={focus(999)} onPress={() => playSong(davSongs[0], davSongs)}>
-                      <Icon name="play" size={13} color={C.onBrand} />
-                      <Text style={[st.davBtn2Text, { color: C.onBrand }]}>播放全部</Text>
-                    </T>
-                  ) : null}
-                  {davSongs.length ? (
-                    <T style={st.davBtn2} focusStyle={focus(999)} onPress={() => { setDavSelMode(m => !m); if (davSelMode) setSel(new Set()); }}>
-                      <Icon name={davSelMode ? 'check' : 'edit'} size={13} color={C.text2} />
-                      <Text style={st.davBtn2Text}>{davSelMode ? '完成' : '选择'}</Text>
-                    </T>
-                  ) : null}
                 </View>
-              </View>
+                );
+              })() : null}
+
+              {/* 分段线:— 本层歌曲 · N 首 — */}
+              {davSongs.length ? (
+                <View style={st.davDivider}>
+                  <View style={st.davDividerLine} />
+                  <Text style={st.davDividerText}>本层歌曲 · {davSongs.length} 首</Text>
+                  <View style={st.davDividerLine} />
+                </View>
+              ) : (!davDirs.length ? (
+                <EmptyState icon="music" title="这个文件夹还没有音乐" sub="支持 FLAC / MP3 / APE / WAV / OGG 等常见音频格式" />
+              ) : null)}
 
               {davSongs.map((s, si) => {
                 const on = sel.has(s.songmid);
                 const isCur = current?.songmid === s.songmid;
                 return (
                   <T key={s.songmid} style={[st.davSong, on && st.davSongOn]} focusStyle={focus(10)}
+                     onLongPress={() => setActSong(s)}
                      onPress={() => (davSelMode ? toggleSel(s.songmid) : playSong(s, davSongs))}>
                     {davSelMode ? (
                       <View style={[st.checkBox, on && st.checkBoxOn]}>
@@ -394,18 +404,27 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                     )}
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={[st.davTitle, isCur && { color: C.brandText }]} numberOfLines={1}>{s.name}</Text>
-                      <Text style={st.davSub} numberOfLines={1}>{s.singer}</Text>
+                      <Text style={st.davSub} numberOfLines={1}>{s.singer}{s.albumName ? ` · ${s.albumName}` : ''} · {s._types?.flac ? 'FLAC' : 'MP3'}</Text>
                     </View>
                     {!davSelMode ? (
-                      <T hitSlop={8} onPress={() => setActSong(s)} focusStyle={focus(999)}>
-                        <Icon name="more" size={18} color={C.text3} />
-                      </T>
+                      <Text style={st.davDur} numberOfLines={1}>{s.interval || ''}</Text>
                     ) : null}
                   </T>
                 );
               })}
 
-              {!davDirs.length && !davSongs.length ? <Text style={st.empty}>此目录为空</Text> : null}
+              {/* 贴底动作条:播放全部(品牌绿胶囊 13.5/700 深字 #04120A)+选择次钮(选择模式时变「完成」) */}
+              {davSongs.length && !davSelMode ? (
+                <View style={st.davDock}>
+                  <T style={st.davDockMain} focusStyle={focus(999)} onPress={() => playSong(davSongs[0], davSongs)}>
+                    <Icon name="play" size={15} color="#04120A" />
+                    <Text style={st.davDockMainText}>播放全部</Text>
+                  </T>
+                  <T style={st.davDockSub} focusStyle={focus(999)} onPress={() => setDavSelMode(true)}>
+                    <Text style={st.davDockSubText}>选择</Text>
+                  </T>
+                </View>
+              ) : null}
 
               {davSelMode && davSongs.length ? (
                 <View style={st.davActions}>
@@ -851,6 +870,32 @@ const st = StyleSheet.create({
   davBtn2Text: { fontSize: 12.5, color: C.text, fontWeight: '600' },
   davGlyph: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   davIdx: { fontSize: 12.5, fontWeight: '700', color: 'rgba(255,255,255,.72)' },
+  // ===== [B 唱片墙网格 0921] =====
+  davWall: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 4 }, // 3 列(TV 4-5 由卡宽 flexBasis 控制)
+  davSkel: { flexBasis: '31%', aspectRatio: 1, borderRadius: 12, backgroundColor: 'rgba(255,255,255,.05)' }, // busy 骨架
+  davDiscCard: {},
+  davDiscUp: {},
+  davDiscSleeve: { aspectRatio: 1, borderRadius: 12, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', elevation: 4, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } },
+  davDiscSleeveUp: { borderWidth: 1.5, borderStyle: 'dashed', borderColor: 'rgba(255,255,255,.22)', backgroundColor: 'rgba(255,255,255,.04)', elevation: 0, shadowOpacity: 0 },
+  davVinyl: { position: 'absolute', right: '-22%', bottom: '-22%', width: '86%', height: '86%', borderRadius: 999, backgroundColor: '#1A1A1A', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,.06)' },
+  davVinylIn: { width: '45%', height: '45%', borderRadius: 999, backgroundColor: '#242424' },
+  davDiscBadge: { position: 'absolute', left: 6, top: 6, backgroundColor: 'rgba(0,0,0,.66)', borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2 } as ViewStyle,
+  davDiscBadgeText: { color: 'rgba(255,255,255,.75)', fontSize: 9, fontWeight: '700', letterSpacing: 1 },
+  davDiscName: { color: C.text, fontSize: 11.5, fontWeight: '600', marginTop: 7 },
+  davDiscSub: { color: C.text3, fontSize: 10, marginTop: 1 },
+  davChipGhost: { paddingHorizontal: 4, paddingVertical: 3 },
+  davChipGhostText: { color: C.text3, fontSize: 12 },
+  davChipCur: { backgroundColor: C.brand, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 4 },
+  davChipCurText: { color: '#04120A', fontSize: 11.5, fontWeight: '700' },
+  davDivider: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 16, marginBottom: 4 },
+  davDividerLine: { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,.08)' },
+  davDividerText: { color: C.text3, fontSize: 12, letterSpacing: 1, fontWeight: '600' },
+  davDur: { color: C.text3, fontSize: 11, fontVariant: ['tabular-nums'], marginLeft: 8 },
+  davDock: { position: 'absolute', left: 20, right: 20, bottom: 10, flexDirection: 'row', gap: 10, alignItems: 'center' } as ViewStyle,
+  davDockMain: { flex: 1, height: 44, borderRadius: 22, backgroundColor: C.brand, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, elevation: 6, shadowColor: C.brand, shadowOpacity: 0.35, shadowRadius: 14, shadowOffset: { width: 0, height: 4 } },
+  davDockMainText: { color: '#04120A', fontSize: 13.5, fontWeight: '700' },
+  davDockSub: { height: 44, borderRadius: 22, paddingHorizontal: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,.18)', backgroundColor: 'rgba(255,255,255,.06)', alignItems: 'center', justifyContent: 'center' },
+  davDockSubText: { color: C.text2, fontSize: 13, fontWeight: '600' },
   davEq: { flexDirection: 'row', alignItems: 'flex-end', gap: 2, height: 12 },
   davEqBar: { width: 3, borderRadius: 1.5, backgroundColor: 'rgba(255,255,255,.85)' },
 });
