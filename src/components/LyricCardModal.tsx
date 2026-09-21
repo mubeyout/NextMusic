@@ -96,7 +96,7 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
   const pill = (on: boolean) => on ? st.pillOn : null;
   const pillText = (on: boolean) => [st.pillText, on && st.pillTextOn] as { color: string; fontSize: number; fontWeight: '600' | '800' }[];
   const Pill = ({ on, label, onPress, w }: { on?: boolean; label: string; onPress: () => void; w?: number }) => (
-    <TouchableOpacity style={[st.pill, w ? { width: w } : null, pill(!!on)]} onPress={onPress}>
+    <TouchableOpacity style={[st.pill, w ? { width: w } : null, pill(!!on)]} activeOpacity={0.72} onPress={onPress}>
       <Text style={pillText(!!on)}>{label}</Text>
     </TouchableOpacity>
   );
@@ -199,37 +199,48 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
           </View>
 
           {/* 操作区(截图范围外) */}
+          {/* lxfix(老板 09-21 排布+按钮观感):分区标签对齐 Web 端;字号/行距分组容器防折行错位;按钮强化存在感 */}
           <ScrollView style={st.ops} contentContainerStyle={st.opsInner} showsVerticalScrollIndicator={false}>
+            <Text style={st.secTitle}>版式</Text>
             <View style={st.opsRow}>
               <Pill label="竖版" on={opt.layout === 'portrait'} onPress={() => setOpt(o => ({ ...o, layout: 'portrait' }))} />
               <Pill label="方形" on={opt.layout === 'square'} onPress={() => setOpt(o => ({ ...o, layout: 'square' }))} />
               <Pill label="横版" on={opt.layout === 'landscape'} onPress={() => setOpt(o => ({ ...o, layout: 'landscape' }))} />
             </View>
+            <Text style={st.secTitle}>配色</Text>
             <View style={st.opsRow}>
               <Pill label="专辑" on={opt.theme === 'album'} onPress={() => setOpt(o => ({ ...o, theme: 'album' }))} />
               <Pill label="浅色" on={opt.theme === 'light'} onPress={() => setOpt(o => ({ ...o, theme: 'light' }))} />
               <Pill label="深色" on={opt.theme === 'dark'} onPress={() => setOpt(o => ({ ...o, theme: 'dark' }))} />
-              <Pill label="强度·播放页" on={opt.blurLv === 0} onPress={() => setOpt(o => ({ ...o, blurLv: 0 }))} />
+            </View>
+            <Text style={st.secTitle}>弥散强度</Text>
+            <View style={st.opsRow}>
+              <Pill label="播放页" on={opt.blurLv === 0} onPress={() => setOpt(o => ({ ...o, blurLv: 0 }))} />
               <Pill label="深" on={opt.blurLv === 1} onPress={() => setOpt(o => ({ ...o, blurLv: 1 }))} />
               <Pill label="极深" on={opt.blurLv === 2} onPress={() => setOpt(o => ({ ...o, blurLv: 2 }))} />
             </View>
+            <Text style={st.secTitle}>显示内容</Text>
             <View style={st.opsRow}>
               <Pill label="封面" on={opt.showCover} onPress={() => setOpt(o => ({ ...o, showCover: !o.showCover }))} />
               <Pill label="标题" on={opt.showTitle} onPress={() => setOpt(o => ({ ...o, showTitle: !o.showTitle }))} />
               <Pill label="歌手" on={opt.showArtist} onPress={() => setOpt(o => ({ ...o, showArtist: !o.showArtist }))} />
               <Pill label="歌词" on={opt.showLyric} onPress={() => setOpt(o => ({ ...o, showLyric: !o.showLyric }))} />
             </View>
+            <Text style={st.secTitle}>歌词行数</Text>
             <View style={st.opsRow}>
               {[3, 4, 5, 6, 7].map(n => (
                 <Pill key={n} label={`${n}`} w={34} on={opt.lyricLines === n} onPress={() => setOpt(o => ({ ...o, lyricLines: n }))} />
               ))}
             </View>
-            <View style={st.opsRow}>
+            <Text style={st.secTitle}>字号 / 行距</Text>
+            <View style={st.ctlGroup}>
               <Pill label="A−" w={40} onPress={() => setOpt(o => ({ ...o, fontSize: Math.max(0.8, +(o.fontSize - 0.05).toFixed(2)) }))} />
-              <Text style={st.valText}>{Math.round(opt.fontSize * 100)}%</Text>
+              <Text style={st.valPill}>{Math.round(opt.fontSize * 100)}%</Text>
               <Pill label="A+" w={40} onPress={() => setOpt(o => ({ ...o, fontSize: Math.min(1.25, +(o.fontSize + 0.05).toFixed(2)) }))} />
+            </View>
+            <View style={st.ctlGroup}>
               <Pill label="行−" w={46} onPress={() => setOpt(o => ({ ...o, lineSpacing: Math.max(0.9, +(o.lineSpacing - 0.1).toFixed(1)) }))} />
-              <Text style={st.valText}>{opt.lineSpacing.toFixed(1)}</Text>
+              <Text style={st.valPill}>{opt.lineSpacing.toFixed(1)}</Text>
               <Pill label="行+" w={46} onPress={() => setOpt(o => ({ ...o, lineSpacing: Math.min(1.5, +(o.lineSpacing + 0.1).toFixed(1)) }))} />
             </View>
             <TouchableOpacity style={[st.opMain, saving && { opacity: 0.6 }]} disabled={saving} onPress={save}>
@@ -261,14 +272,16 @@ const st = StyleSheet.create({
   brandRow: { position: 'absolute', right: 16, bottom: 12, flexDirection: 'row', alignItems: 'center', gap: 5 },
   brandMark: { width: 13, height: 13 },
   brandText: { color: '#ffffffb3', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
-  ops: { marginTop: 14, maxHeight: 210, width: '100%' },
-  opsInner: { alignItems: 'center', gap: 8, paddingHorizontal: 16 },
+  ops: { marginTop: 12, maxHeight: 268, width: '100%' },
+  opsInner: { alignItems: 'center', gap: 7, paddingHorizontal: 16 },
+  secTitle: { color: '#ffffff59', fontSize: 10, fontWeight: '700', letterSpacing: 2, marginTop: 2 },
   opsRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
-  pill: { height: 32, borderRadius: 16, paddingHorizontal: 14, borderWidth: 1, borderColor: '#ffffff33', justifyContent: 'center', backgroundColor: '#ffffff0d' },
+  ctlGroup: { flexDirection: 'row', alignItems: 'center', gap: 6 }, // 字号/行距组:整组不折行,数值胶囊居中
+  pill: { height: 32, borderRadius: 16, paddingHorizontal: 14, borderWidth: 1, borderColor: '#ffffff5c', justifyContent: 'center', backgroundColor: '#ffffff1f' },
   pillOn: { backgroundColor: C.brand, borderColor: C.brand },
-  pillText: { color: '#ffffffcc', fontSize: 12, fontWeight: '600' },
+  pillText: { color: '#ffffffe6', fontSize: 12, fontWeight: '600' },
   pillTextOn: { color: '#0b0f0d', fontWeight: '800' },
-  valText: { color: '#ffffffcc', fontSize: 11, alignSelf: 'center', minWidth: 34, textAlign: 'center' },
+  valPill: { color: '#ffffffcc', fontSize: 11, fontWeight: '700', minWidth: 46, textAlign: 'center', height: 24, lineHeight: 24, borderRadius: 12, backgroundColor: '#ffffff17', overflow: 'hidden' },
   opMain: { height: 42, borderRadius: 21, backgroundColor: '#1ED760', paddingHorizontal: 22, flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 4 },
   opMainText: { color: '#0b0f0d', fontSize: 13, fontWeight: '800' },
 });

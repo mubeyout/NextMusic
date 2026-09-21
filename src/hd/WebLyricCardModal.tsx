@@ -471,10 +471,10 @@ const stP = StyleSheet.create({
   opts: { width: 296, borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: C.border, padding: 14, gap: 6, overflowY: 'auto' as const } as ViewStyle, // v3.28:overflowY 为 RNW 属性,断言
   secTitle: { color: C.text3, fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginTop: 8 },
   row: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 6, marginTop: 6 },
-  pill: { height: 28, borderRadius: 14, paddingHorizontal: 10, borderWidth: 1, borderColor: '#ffffff26', alignItems: 'center', justifyContent: 'center' }, // lxfix:30→28/12→10,面板自适应
+  pill: { height: 28, borderRadius: 14, paddingHorizontal: 10, borderWidth: 1, borderColor: '#ffffff4d', backgroundColor: '#ffffff12', alignItems: 'center', justifyContent: 'center' }, // lxfix(09-21):描边+底色强化存在感(老板:不像按钮)
   pillOn: { backgroundColor: C.brand, borderColor: C.brand },
   pillText: { color: '#ffffffcc', fontSize: 11, fontWeight: '600' },
-  valText: { color: C.text2, fontSize: 11, alignSelf: 'center', minWidth: 34, textAlign: 'center' },
+  valText: { color: '#ffffffcc', fontSize: 11, fontWeight: '700', alignSelf: 'center', minWidth: 44, textAlign: 'center', height: 22, lineHeight: 22, borderRadius: 11, backgroundColor: '#ffffff14', overflow: 'hidden' },
   foot: { flexDirection: 'row' as const, alignItems: 'center', padding: 14, gap: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border },
   hint: { flex: 1, color: C.text3, fontSize: 11 },
   saveBtn: { height: 38, borderRadius: 19, backgroundColor: C.brand, paddingHorizontal: 20, flexDirection: 'row' as const, alignItems: 'center', gap: 7 },
