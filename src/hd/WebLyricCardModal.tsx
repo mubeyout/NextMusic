@@ -29,7 +29,7 @@ interface Colors {
 }
 
 // ===== 工具(移植原版) =====
-function loadImage(src0: string): Promise<HTMLImageElement | null> {
+function loadImgInner(src0: string): Promise<HTMLImageElement | null> {
   return new Promise(res => {
     const src = src0.replace(/^https?:\/\/img\.kuwo\.cn\//, 'https://img4.kuwo.cn/'); // lxfix:kw 图床域名自愈
     if (!src) { res(null); return; }
@@ -46,6 +46,14 @@ function loadImage(src0: string): Promise<HTMLImageElement | null> {
     };
     img.src = src;
   });
+}
+// lxfix 0921 老板「歌词卡片一直转圈」: 直连/代理都无超时——上游 stall 时 onload/onerror 永不触发,
+// render() 的 await 悬停,finally 不执行,「渲染中…」永远转。外层限时 7s 到点还 null(下游全 img&& 守卫,无封面照常出卡)
+function loadImage(src0: string): Promise<HTMLImageElement | null> {
+  return Promise.race([
+    loadImgInner(src0),
+    new Promise<null>(res => setTimeout(() => res(null), 7000)),
+  ]);
 }
 
 function extractAlbumColors(img: HTMLImageElement): Colors | null {
@@ -160,8 +168,7 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
     setRendering(true);
     try {
       if (!coverRef.current && song.img) coverRef.current = await loadImage(song.img);
-      const img = coverRef.current;
-      if (!img && song.img) return; // v3.28:cover 未就绪直接跳过(类型收窄)
+      const img = coverRef.current; // lxfix 0921:cover 挂了不再 return 跳过——否则 finally 复位后预览区空白;无封面走 fallback 配色照常出卡
       if (!markImgRef.current) markImgRef.current = await loadImage(markUrl as unknown as string);
       const W = size.w, H = size.h;
       const canvas = document.createElement('canvas');
