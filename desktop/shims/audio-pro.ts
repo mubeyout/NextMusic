@@ -299,11 +299,24 @@ export const AudioPro = {
     return audio.playbackRate || 1.0;
   },
   play(track: Track, opts: PlayOpts = {}): void {
-    curTrack = track; headers = opts.headers;
+    curTrack = track;
+    // v3.31(2026-09-21 修 WebDAV/鉴权流播放失败):PlayerProvider 传的是原生 audio-pro 的嵌套结构
+    // {headers:{audio:{...},artwork:{...}}}(Controller.extractHeaders 语义);shim 此前原样收——
+    // applyUrl 序列化出 {"audio":{...}} → 服务端 h= 白名单只收字符串值 → Authorization 整个被滤掉 → 上游 401。
+    // 浏览器形态只需 audio 头;裸平铺结构(测试用)也兼容。
+    const h = opts.headers as unknown as Record<string, unknown> | undefined;
+    headers = (h && typeof h === 'object' && 'audio' in h && h.audio && typeof h.audio === 'object')
+      ? h.audio as Record<string, string>
+      : (h as Record<string, string> | undefined);
     ensureGraph(); actx?.resume?.().catch(() => {});
     applyUrl(track);
     if (opts.startTimeMs) seekSec(opts.startTimeMs / 1000);
-    if (opts.autoPlay !== false) audio.play().catch(() => emit(AudioProEventType.PLAYBACK_ERROR, { error: 'autoplay blocked' }));
+    // v3.31:play() 拒绝原因分类——NotAllowedError 才是真 autoplay blocked;
+    // NotSupportedError/AbortError=媒体加载失败(src 401/404/格式),原标签把一切拒收都谎报成 autoplay
+    if (opts.autoPlay !== false) audio.play().catch((err: { name?: string; message?: string }) => {
+      const isAutoplay = err && (err.name === 'NotAllowedError' || /permission|gesture/i.test(String(err.message)));
+      emit(AudioProEventType.PLAYBACK_ERROR, { error: isAutoplay ? 'autoplay blocked' : ('播放失败: ' + (err?.name || 'media error') + ' ' + (err?.message || '')).slice(0, 120) });
+    });
   },
   pause(): void { audio.pause(); },
   resume(): void { audio.play().catch(() => {}); },

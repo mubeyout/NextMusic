@@ -704,7 +704,18 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
               break;
             }
           }
-          // 解析成功但播放失败：按源区分原因，不让用户猜
+          // v3.31(2026-09-21):解析成功但播放失败→先作废这首歌的取链缓存再提示——
+          // 外链(vkey 等)过期后 TTL 内重试会永远打同一条死链(老板实锤:重试无效果)
+          if (t && !isProviderSource(t) && t.songmid != null) {
+            try {
+              const dead = `nm-urlc:${t.source}:${t.songmid}:`;
+              for (let li = localStorage.length - 1; li >= 0; li--) {
+                const lk = localStorage.key(li);
+                if (lk && lk.startsWith(dead)) localStorage.removeItem(lk);
+              }
+            } catch { /* ignore */ }
+          }
+          // 按源区分原因，不让用户猜
           toast(isProviderSource(t)
             ? `播放失败：媒体库可能已断开或网络不可达${errDetail}`
             : `播放失败：音源链接不可用，可重试或更换音源${errDetail}`);
