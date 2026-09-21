@@ -162,6 +162,8 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
   const [davBusy, setDavBusy] = useState(true);
   const [davErr, setDavErr] = useState<string | null>(null);
   const [sel, setSel] = useState<Set<string>>(new Set());
+  // v3.31(2026-09-21 重设计):选择模式显式化——常态点击=播放(对齐全 app 习惯),选择/批量逆编辑模式
+  const [davSelMode, setDavSelMode] = useState(false);
 
   const resetAll = () => {
     setAlbums({ data: null, err: null, busy: false });
@@ -310,39 +312,102 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
             </View>
           ) : (
             <>
-              <Text style={st.crumb}>WebDAV · {davDir}</Text>
-              {davDir !== '/' ? (
-                <T style={st.dirRow} focusStyle={focus(10)} onPress={() => setDavDir(davDir.replace(/[^/]*\/$/, '') || '/')}>
-                  <Icon name="back" size={18} color={C.text2} />
-                  <Text style={st.dirText}>上一级</Text>
+              {/* v3.31(2026-09-21 老板:太丑/列表优化) 重设计:面包屑+文件夹卡横滑+歌曲列表(点击=播放,选择显式化) */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.davCrumbWrap} contentContainerStyle={{ gap: 6, alignItems: 'center', paddingRight: 12 }}>
+                {(() => {
+                  const segs = davDir.split('/').filter(Boolean);
+                  const crumbs = [{ label: '根目录', path: '/' }];
+                  let acc = '';
+                  segs.forEach(s => { acc += '/' + s; crumbs.push({ label: s, path: acc }); });
+                  return crumbs.map((c, ci) => (
+                    <React.Fragment key={c.path}>
+                      {ci > 0 ? <Text style={st.davCrumbSep}>›</Text> : null}
+                      <T style={st.davChip} focusStyle={focus(999)} onPress={() => setDavDir(c.path)}>
+                        <Text style={[st.davChipText, ci === crumbs.length - 1 && st.davChipTextOn]} numberOfLines={1}>{c.label}</Text>
+                      </T>
+                    </React.Fragment>
+                  ));
+                })()}
+                <T style={st.davChipRefresh} focusStyle={focus(999)} onPress={davLoad} hitSlop={6}>
+                  <Icon name="refresh" size={13} color={C.text3} />
                 </T>
+              </ScrollView>
+
+              {(davDir !== '/' || davDirs.length > 0) ? (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.davRail} contentContainerStyle={{ gap: IS_HD ? 12 : 10, paddingRight: 12 }}>
+                  {davDir !== '/' ? (
+                    <T style={st.davFolderCard} focusStyle={focus(12)} onPress={() => setDavDir(davDir.replace(/\/+$/, '').replace(/\/+[^/]*$/, '') || '/')}>
+                      <View style={[st.davFolderIcon, { backgroundColor: 'rgba(255,255,255,.09)' }]}>
+                        <Icon name="back" size={20} color={C.text2} />
+                      </View>
+                      <Text style={st.davFolderName} numberOfLines={2}>上一级</Text>
+                    </T>
+                  ) : null}
+                  {davDirs.map(d => (
+                    <T key={d.path} style={st.davFolderCard} focusStyle={focus(12)} onPress={() => setDavDir(d.path)}>
+                      <View style={[st.davFolderIcon, coverGrad(d.name) as ViewStyle]}>
+                        <Icon name="folder" size={IS_HD ? 26 : 22} color="rgba(255,255,255,.92)" />
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Text style={st.davFolderName} numberOfLines={1}>{d.name}</Text>
+                        <Icon name="chevronright" size={12} color={C.text3} />
+                      </View>
+                    </T>
+                  ))}
+                </ScrollView>
               ) : null}
-              {davDirs.map(d => (
-                <T key={d.path} style={st.dirRow} focusStyle={focus(10)} onPress={() => setDavDir(d.path)}>
-                  <Icon name="folder" size={18} color={C.brandText} />
-                  <Text style={st.dirText}>{d.name}</Text>
-                  <Icon name="chevronright" size={16} color={C.text3} />
-                </T>
-              ))}
-              {davSongs.map(s => {
+
+              <View style={st.davBar}>
+                <Text style={st.davStats}>{davDirs.length ? `${davDirs.length} 个文件夹 · ` : ''}{davSongs.length} 首</Text>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {davSongs.length ? (
+                    <T style={[st.davBtn2, st.davBtn2Main]} focusStyle={focus(999)} onPress={() => playSong(davSongs[0], davSongs)}>
+                      <Icon name="play" size={13} color={C.onBrand} />
+                      <Text style={[st.davBtn2Text, { color: C.onBrand }]}>播放全部</Text>
+                    </T>
+                  ) : null}
+                  {davSongs.length ? (
+                    <T style={st.davBtn2} focusStyle={focus(999)} onPress={() => { setDavSelMode(m => !m); if (davSelMode) setSel(new Set()); }}>
+                      <Icon name={davSelMode ? 'check' : 'edit'} size={13} color={C.text2} />
+                      <Text style={st.davBtn2Text}>{davSelMode ? '完成' : '选择'}</Text>
+                    </T>
+                  ) : null}
+                </View>
+              </View>
+
+              {davSongs.map((s, si) => {
                 const on = sel.has(s.songmid);
+                const isCur = current?.songmid === s.songmid;
                 return (
-                  <T key={s.songmid} style={[st.davSong, on && st.davSongOn]} focusStyle={focus(10)} onPress={() => toggleSel(s.songmid)} onLongPress={() => playSong(s, davSongs)}>
-                    <View style={[st.checkBox, on && st.checkBoxOn]}>
-                      {on ? <Icon name="check" size={14} color={C.onBrand} /> : null}
-                    </View>
+                  <T key={s.songmid} style={[st.davSong, on && st.davSongOn]} focusStyle={focus(10)}
+                     onPress={() => (davSelMode ? toggleSel(s.songmid) : playSong(s, davSongs))}>
+                    {davSelMode ? (
+                      <View style={[st.checkBox, on && st.checkBoxOn]}>
+                        {on ? <Icon name="check" size={14} color={C.onBrand} /> : null}
+                      </View>
+                    ) : (
+                      <View style={[st.davGlyph, coverGrad(s.name) as ViewStyle]}>
+                        {isCur
+                          ? <View style={st.davEq}><View style={[st.davEqBar, { height: 5 }]} /><View style={[st.davEqBar, { height: 10 }]} /><View style={[st.davEqBar, { height: 7 }]} /></View>
+                          : <Text style={st.davIdx}>{si + 1}</Text>}
+                      </View>
+                    )}
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={st.davTitle} numberOfLines={1}>{s.name}</Text>
+                      <Text style={[st.davTitle, isCur && { color: C.brandText }]} numberOfLines={1}>{s.name}</Text>
                       <Text style={st.davSub} numberOfLines={1}>{s.singer}</Text>
                     </View>
-                    <T hitSlop={8} onPress={() => playSong(s, davSongs)} focusStyle={focus(999)}>
-                      <Icon name="play" size={18} color={C.text2} />
-                    </T>
+                    {!davSelMode ? (
+                      <T hitSlop={8} onPress={() => setActSong(s)} focusStyle={focus(999)}>
+                        <Icon name="more" size={18} color={C.text3} />
+                      </T>
+                    ) : null}
                   </T>
                 );
               })}
+
               {!davDirs.length && !davSongs.length ? <Text style={st.empty}>此目录为空</Text> : null}
-              {davSongs.length ? (
+
+              {davSelMode && davSongs.length ? (
                 <View style={st.davActions}>
                   <T style={st.davBtn} focusStyle={focus(12)} onPress={() => setSel(new Set(davSongs.map(s => s.songmid)))}>
                     <Text style={st.davBtnText}>全选</Text>
@@ -368,7 +433,6 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                   </T>
                 </View>
               ) : null}
-              <Text style={st.tip}>点击选择 · 长按直接播放</Text>
             </>
           )}
         </ScrollView>
@@ -759,7 +823,7 @@ const st = StyleSheet.create({
   crumb: { color: C.text2, fontSize: 11, lineHeight: 15, marginBottom: 10 },
   dirRow: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.strokeFaint },
   dirText: { flex: 1, color: C.text, fontSize: 14, lineHeight: 19, fontWeight: '500' },
-  davSong: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 52, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.strokeFaint },
+  davSong: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 56, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.strokeFaint },
   davSongOn: { backgroundColor: C.selTint, marginHorizontal: -8, paddingHorizontal: 8, borderRadius: 8 },
   checkBox: { width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: C.inset2, alignItems: 'center', justifyContent: 'center' }, // v3.28:硬编码色 token 化
   checkBoxOn: { borderColor: C.brand, backgroundColor: C.brand },
@@ -769,6 +833,26 @@ const st = StyleSheet.create({
   davBtn: { flex: 1, height: 40, borderRadius: 12, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   davBtnMain: { backgroundColor: C.brand },
   davBtnText: { color: C.text, fontSize: 12, fontWeight: '600' },
+  // ---- v3.31 WebDAV 重设计新样式 ----
+  davCrumbWrap: { flexGrow: 0, marginTop: 2, marginBottom: 12 },
+  davChip: { paddingVertical: 5, paddingHorizontal: 11, borderRadius: 999, backgroundColor: C.surface2, maxWidth: 170 },
+  davChipText: { fontSize: 12, color: C.text2 },
+  davChipTextOn: { color: C.text, fontWeight: '600' },
+  davCrumbSep: { color: C.text3, fontSize: 12 },
+  davChipRefresh: { width: 26, height: 26, borderRadius: 999, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  davRail: { flexGrow: 0, marginBottom: 4 },
+  davFolderCard: { width: IS_HD ? 116 : 96, gap: 7 },
+  davFolderIcon: { width: IS_HD ? 62 : 56, height: IS_HD ? 62 : 56, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  davFolderName: { fontSize: 12, color: C.text, lineHeight: 16, flexShrink: 1 },
+  davBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.strokeFaint, marginBottom: 2 },
+  davStats: { fontSize: 12, color: C.text3, flexShrink: 1 },
+  davBtn2: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 7, paddingHorizontal: 13, borderRadius: 999, backgroundColor: C.surface2 },
+  davBtn2Main: { backgroundColor: C.brand },
+  davBtn2Text: { fontSize: 12.5, color: C.text, fontWeight: '600' },
+  davGlyph: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  davIdx: { fontSize: 12.5, fontWeight: '700', color: 'rgba(255,255,255,.72)' },
+  davEq: { flexDirection: 'row', alignItems: 'flex-end', gap: 2, height: 12 },
+  davEqBar: { width: 3, borderRadius: 1.5, backgroundColor: 'rgba(255,255,255,.85)' },
 });
 
 // HD(车机/TV)覆盖样式:限宽居中 + 大触点/大字号(老板:媒体库列表需遥控光标+大屏排版)

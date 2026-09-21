@@ -69,6 +69,13 @@ const PNG_BRANDS: Partial<Record<BrandIconName, any>> = {
   feiniu: require('../assets/brands/feiniu.png'),
   daoliyu: require('../assets/brands/daoliyu.png'),
   tingfeng: require('../assets/brands/tingfeng.png'),
+  // [audit 20260921 老板实锤「菜单icon与添加时对不上」]:以下五类有品牌 PNG 但未登记,菜单回退灰色 SVG 云朵/音符——与添加页彩 PNG 两张皮;
+  // 全量登记后 BrandIcon 恒优先 PNG,添加页(TYPE_CARDS logo)与菜单同源
+  navidrome: require('../assets/brands/navidrome.png'),
+  emby: require('../assets/brands/emby.png'),
+  jellyfin: require('../assets/brands/jellyfin.png'),
+  subsonic: require('../assets/brands/subsonic.png'),
+  webdav: require('../assets/brands/webdav.png'),
 };
 
 export function BrandIcon({ name, size = 24 }: { name: BrandIconName; size?: number }) {

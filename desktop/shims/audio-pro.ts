@@ -64,12 +64,16 @@ const IS_ELECTRON = typeof navigator !== 'undefined' && /electron/i.test(navigat
 const IS_DEV = typeof location !== 'undefined' && (location.port === '5173' || location.port === '3000');
 function applyUrl(t: Track) {
   let url = t.url;
-  if (IS_ELECTRON || (headers && Object.keys(headers).length)) {
-    url = `http://127.0.0.1:5198/__media__?u=${encodeURIComponent(t.url)}${headers && Object.keys(headers).length ? `&h=${encodeURIComponent(JSON.stringify(headers))}` : ''}`;
+  const hasHeaders = !!(headers && Object.keys(headers).length);
+  if (IS_ELECTRON) {
+    // Electron：主进程媒体代理(5198)——带鉴权头的流也走它
+    url = `http://127.0.0.1:5198/__media__?u=${encodeURIComponent(t.url)}${hasHeaders ? `&h=${encodeURIComponent(JSON.stringify(headers))}` : ''}`;
   } else if (!IS_DEV) {
     // v3.20:浏览器部署走服务端 inline 代理(同源)——WebAudio MediaElementSource 不再跨域静音,Range 实测 206 可 seek
     // [Gate 2026-09-14] 代理接口已加登录门:audio 标签带不了 header → token 走 nm_auth query(store 同源,登录后/凭据重登后必有)
-    url = `/api/music/download?url=${encodeURIComponent(t.url)}&inline=1${store.token ? `&nm_auth=${encodeURIComponent(store.token)}` : ''}`;
+    // v3.31(2026-09-21 修 WebDAV/Emby 浏览器播放失败)：带鉴权头 previously 误路由到 Electron 127.0.0.1:5198(浏览器没有)必挂;
+    // 浏览器恒走服务端代理,鉴权头经 h= 由服务端转发上游
+    url = `/api/music/download?url=${encodeURIComponent(t.url)}&inline=1${store.token ? `&nm_auth=${encodeURIComponent(store.token)}` : ''}${hasHeaders ? `&h=${encodeURIComponent(JSON.stringify(headers))}` : ''}`;
   }
   audio.src = url;
 }
