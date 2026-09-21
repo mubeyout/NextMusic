@@ -15,6 +15,17 @@ import { NativeModules } from 'react-native';
 
 const Downloader = NativeModules.Downloader as { saveBase64ToGallery(b64: string, name: string): Promise<string> };
 
+// [B 声波记忆 0921] 声波底纹伪随机高度(seed=songmid 稳定,20 根 20%-70%)
+function waveHeights(seedStr: string): number[] {
+  let h = 2166136261;
+  for (let i = 0; i < seedStr.length; i++) { h ^= seedStr.charCodeAt(i); h = Math.imul(h, 16777619); }
+  const out: number[] = [];
+  let x = (h >>> 0) || 1;
+  for (let i = 0; i < 20; i++) { x = (Math.imul(x, 48271) + 11) >>> 0; out.push(0.2 + (x % 51) / 100); }
+  return out;
+}
+const fmtMS = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
+
 // 找当前高亮行索引前后各 N 行(时间单位:秒)
 function windowLines(lyrics: LyricLine[] | null, positionSec: number, count: number): { lines: LyricLine[]; active: number } {
   if (!lyrics || !lyrics.length) return { lines: [], active: -1 };
@@ -93,6 +104,29 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
   const fsT = cardH * 0.028 * fMul, fsL = cardH * 0.023 * fMul, fsA = cardH * 0.019 * fMul;
   const fsTr = cardH * 0.056 * fMul, fsLr = cardH * 0.042 * fMul, fsAr = cardH * 0.033 * fMul; // 横版左右结构放大
 
+  // [B 声波记忆 0921] 横版三主题 token(LEO spec:浅色深灰系禁白,对比度红线 ≥#00000045)
+  const wvLight = light, wvDark = dark;
+  const wvTitle = wvLight ? '#1C1C1E' : '#FFFFFF';
+  const wvSub = wvLight ? '#0000008C' : '#FFFFFF8C';
+  const wvLyr = wvLight ? '#00000045' : '#FFFFFF4D';
+  const wvLyrOn = wvLight ? '#111111' : '#FFFFFF';
+  const wvAccent = wvLight ? '#0FAE4E' : '#1ED760';
+  const wvTimeS = wvLight ? '#00000073' : '#FFFFFF59';
+  const wvFoot = wvLight ? '#00000066' : '#FFFFFF52';
+  const waves = useMemo(() => waveHeights(song.songmid || song.name), [song.songmid, song.name]);
+  // 高亮词 v1:当前行中间词(空格/标点切分 2-4 字)品牌色
+  const hlWord = (t: string): { pre: string; mid: string; post: string } => {
+    const parts = t.split(/[\s,，。.!！?？、]+/).filter(Boolean);
+    if (parts.length < 2) return { pre: '', mid: '', post: '' };
+    const mid = parts[Math.floor(parts.length / 2)].slice(0, 4) || '';
+    const i = t.indexOf(mid);
+    return i < 0 || !mid ? { pre: '', mid: '', post: '' } : { pre: t.slice(0, i), mid, post: t.slice(i + mid.length) };
+  };
+  const fsWT = Math.max(cardH * 0.058, 15) * fMul, fsWA = Math.max(cardH * 0.034, 10) * fMul;
+  const fsWL = Math.max(cardH * 0.048, 11.5) * fMul, fsWLOn = fsWL * 1.58;
+  const fsWTm = Math.max(cardH * 0.05, 12.5), fsWTs = Math.max(cardH * 0.031, 9);
+  const headCover = Math.round(cardH * 0.13);
+
   const pill = (on: boolean) => on ? st.pillOn : null;
   const pillText = (on: boolean) => [st.pillText, on && st.pillTextOn] as { color: string; fontSize: number; fontWeight: '600' | '800' }[];
   const Pill = ({ on, label, onPress, w }: { on?: boolean; label: string; onPress: () => void; w?: number }) => (
@@ -130,37 +164,77 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
                   blurRadius={BLUR_LV[opt.blurLv].radius} resizeMode="cover"
                   style={{ position: 'absolute', left: '-15%', top: '-15%', width: '130%', height: '130%', opacity: BLUR_LV[opt.blurLv].alpha }}
                 />
-                <View style={[StyleSheet.absoluteFill, { backgroundColor: `rgba(6,8,7,${BLUR_LV[opt.blurLv].veil})` }]} />
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: opt.layout === 'landscape' ? 'rgba(4,8,6,.42)' : `rgba(6,8,7,${BLUR_LV[opt.blurLv].veil})` }]} />
               </>
             ) : light ? (
-              <LinearGradient colors={['#FAFAF6', '#EFEFE9']} style={StyleSheet.absoluteFill} />
+              <LinearGradient colors={['#F2F5EF', '#E4EAE2']} style={StyleSheet.absoluteFill} />
             ) : (
               <LinearGradient colors={dark ? ['#26243A', '#101018'] : ['#3A3850', '#101018']} style={StyleSheet.absoluteFill} />
             )}
 
             {opt.layout === 'landscape' ? (
-              // 横版:左封面右文字
-              <View style={st.cardBodyRow}>
-                {opt.showCover && (
-                  <View style={st.coverWrapRow}>
-                    {song.img ? (
-                      <Image source={{ uri: fixCoverUrl(song.img) }} style={[st.coverRow, { width: Math.round(cardH * 0.68), height: Math.round(cardH * 0.68), borderRadius: Math.round(cardH * 0.04) }]} />
+              // [B 声波记忆 0921] 横版重做(LEO spec):头部条+居中左对齐歌词+高亮词+声波底纹+引号装饰——不在旧左右结构上缝
+              <View style={st.waveBody}>
+                <View style={st.waveHead}>
+                  {opt.showCover && (
+                    song.img ? (
+                      <Image source={{ uri: fixCoverUrl(song.img) }} style={{ width: headCover, height: headCover, borderRadius: Math.round(headCover * 0.2) }} />
                     ) : (
-                      <View style={[st.coverRow, st.coverFallback, { width: Math.round(cardH * 0.68), height: Math.round(cardH * 0.68) }]}><Icon name="music" size={26} color="#ffffff66" /></View>
+                      <View style={[st.coverFallback, { width: headCover, height: headCover, borderRadius: Math.round(headCover * 0.2) }]}><Icon name="music" size={18} color="#ffffff66" /></View>
+                    )
+                  )}
+                  <View style={{ flex: 1, minHeight: 0, marginLeft: opt.showCover ? Math.round(cardH * 0.035) : 0 }}>
+                    {opt.showTitle && (
+                      <Text style={{ color: wvTitle, fontSize: Math.round(fsWT), fontWeight: '800' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                        {song.name}
+                      </Text>
+                    )}
+                    {opt.showArtist && (
+                      <Text style={{ color: wvSub, fontSize: Math.round(fsWA), marginTop: 2 }} numberOfLines={1}>
+                        {song.singer}{song.albumName ? ` · ${song.albumName}` : ''}
+                      </Text>
                     )}
                   </View>
+                  <View style={st.waveTime}>
+                    <Text style={{ color: wvAccent, fontSize: Math.round(fsWTm), fontWeight: '800', fontVariant: ['tabular-nums'] }}>{fmtMS(positionSec)}</Text>
+                    <Text style={{ color: wvTimeS, fontSize: Math.round(fsWTs), fontVariant: ['tabular-nums'] }}>/ {song.interval || '--:--'}</Text>
+                  </View>
+                </View>
+                {opt.showLyric && (
+                  <View style={{ flex: 1, justifyContent: 'center', minHeight: 0 }}>
+                    {lines.length ? lines.map((l, i) => {
+                      const on = i === active;
+                      const hl = on ? hlWord(l.text || '') : null;
+                      return (
+                        <Text
+                          key={`${l.t}-${i}`}
+                          style={{ color: on ? wvLyrOn : wvLyr, fontSize: Math.round(on ? fsWLOn : fsWL), fontWeight: on ? '800' : '400', lineHeight: Math.round(fsWL * 1.5 * opt.lineSpacing) }}
+                          numberOfLines={1} ellipsizeMode="tail"
+                        >
+                          {on && hl && hl.mid ? <>{hl.pre}<Text style={{ color: wvAccent }}>{hl.mid}</Text>{hl.post}</> : (l.text || '♪')}
+                        </Text>
+                      );
+                    }) : <Text style={{ color: wvLyrOn, fontSize: Math.round(fsWL) }}>♪ 纯音乐,请欣赏</Text>}
+                  </View>
                 )}
-                <View style={{ flex: 1, minHeight: 0, justifyContent: 'center' }}>
-                  {opt.showTitle && (
-                    <Text style={{ color: tTitle, fontSize: Math.round(fsTr), fontWeight: '800' }} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>
-                      {song.name}
-                    </Text>
-                  )}
-                  {opt.showArtist && (
-                    <Text style={{ color: tSub, fontSize: Math.round(fsAr), marginTop: Math.round(cardH * 0.012) }}>{song.singer}{song._types?.flac ? ' · 无损' : ''}</Text>
-                  )}
-                  {opt.showLyric && <View style={{ height: 1, backgroundColor: light ? '#0000001A' : '#1ED76055', marginVertical: Math.round(cardH * 0.028) }} />}
-                  {opt.showLyric && <LyricWin fs={fsLr} />}
+                {/* 声波底纹:20 根圆顶条,品牌色 44%→4% 渐隐(浅 30%→6%) */}
+                <View style={[st.waveBars, { height: Math.round(cardH * 0.139) }]}>
+                  {waves.map((h, i) => (
+                    <View key={i} style={{
+                      flex: 1, height: `${Math.round(h * 100)}%`, borderRadius: 999,
+                      backgroundColor: wvAccent,
+                      opacity: 0.44 - (i / waves.length) * 0.4 * (wvLight ? 0.68 : 1) * (0.44 / 0.44),
+                    }} />
+                  ))}
+                </View>
+                {/* 装饰引号(纯装饰) */}
+                <Text style={[st.waveQuote, { fontSize: Math.round(cardH * 0.1), color: wvLight ? '#000000' : '#FFFFFF', opacity: wvLight ? 0.08 : 0.06 }]}>”</Text>
+                {/* 页脚:左 NEXT MUSIC · 右 分享自 */}
+                <View style={st.waveFoot}>
+                  <Text style={{ color: wvFoot, fontSize: Math.max(Math.round(cardH * 0.028), 9), fontWeight: '700', letterSpacing: 1 }}>
+                    NEXT <Text style={{ color: wvAccent }}>MUSIC</Text>
+                  </Text>
+                  <Text style={{ color: wvFoot, fontSize: Math.max(Math.round(cardH * 0.028), 9), letterSpacing: 1 }}>· 分享自 NextMusic</Text>
                 </View>
               </View>
             ) : (
@@ -272,6 +346,13 @@ const st = StyleSheet.create({
   brandRow: { position: 'absolute', right: 16, bottom: 12, flexDirection: 'row', alignItems: 'center', gap: 5 },
   brandMark: { width: 13, height: 13 },
   brandText: { color: '#ffffffb3', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
+  // [B 声波记忆 0921] 横版结构样式
+  waveBody: { flex: 1, paddingVertical: 14, paddingHorizontal: 18 }, // H×0.037/0.042 缩放后手机档基准,TV 档由 cardW 撑大
+  waveHead: { flexDirection: 'row', alignItems: 'center', gap: 0 },
+  waveTime: { alignItems: 'flex-end', marginLeft: 10 },
+  waveBars: { flexDirection: 'row', gap: 3, alignItems: 'flex-end', marginTop: 10, marginBottom: 4 },
+  waveQuote: { position: 'absolute', top: -6, right: 14, fontWeight: '400' },
+  waveFoot: { position: 'absolute', left: 18, right: 18, bottom: 8, flexDirection: 'row', justifyContent: 'space-between' },
   ops: { marginTop: 12, maxHeight: 268, width: '100%' },
   opsInner: { alignItems: 'center', gap: 7, paddingHorizontal: 16 },
   secTitle: { color: '#ffffff59', fontSize: 10, fontWeight: '700', letterSpacing: 2, marginTop: 2 },
