@@ -8,7 +8,7 @@ import { C, H } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { toast } from '../components/Dialog';
 import type { LyricLine } from '../services/lyric';
-import type { SongItem } from '../services/server';
+import { store as serverStore, type SongItem } from '../services/server'; // lxfix 0921:卡片封面代理补 nm_auth(登录门后 /api/music/download 无 token 必 401→无封面)
 import markUrl from '../assets/brand/mark.png'; // v3.36(老板):卡片水印换 NextMusic 品牌 mark
 
 type Layout = 'portrait' | 'landscape' | 'square';
@@ -42,7 +42,7 @@ function loadImgInner(src0: string): Promise<HTMLImageElement | null> {
       p.crossOrigin = 'anonymous';
       p.onload = () => res(p);
       p.onerror = () => res(null);
-      p.src = `/api/music/download?url=${encodeURIComponent(src)}&inline=1`;
+      p.src = `/api/music/download?url=${encodeURIComponent(src)}&inline=1${serverStore.token ? `&nm_auth=${encodeURIComponent(serverStore.token)}` : ''}`;
     };
     img.src = src;
   });
