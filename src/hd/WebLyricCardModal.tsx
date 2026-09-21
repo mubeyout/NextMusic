@@ -195,8 +195,8 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
           ctx.drawImage(tiny, -W * .25, -H * .25, W * 1.5, H * 1.5);
         }
         ctx.restore();
-        // 均匀暗纱=播放页 bgVeil 原参数(0档);[B 声波记忆] 横版按 spec 用 rgba(4,8,6,.42) 固定纱
-        ctx.fillStyle = o.layout === 'landscape' ? 'rgba(4,8,6,.42)' : `rgba(6,8,7,${LV.veil})`; ctx.fillRect(0, 0, W, H);
+        // 均匀暗纱=播放页 bgVeil 原参数(0档)
+        ctx.fillStyle = `rgba(6,8,7,${LV.veil})`; ctx.fillRect(0, 0, W, H);
       } else {
         const grad = ctx.createLinearGradient(0, 0, W * .4, H);
         grad.addColorStop(0, colors.bg1); grad.addColorStop(1, colors.bg2);
@@ -208,10 +208,6 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
 
       const title = song.name || '未知歌曲';
       const artist = song.singer || '未知歌手';
-      const albumName = song.albumName || '';
-      const interval = song.interval || '';
-      const posSec = positionSec;
-      const songmid = song.songmid || '';
       const ctxLines = o.showLyric ? windowCtx(lyrics, posRef.current, o.lyricLines) : [];
 
       // lxfix(老板 20260920:方形/竖版文字排版大小有问题):原先 fillText(text,x,y,maxWidth) 靠浏览器
@@ -261,224 +257,94 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
       // 字号系数(×fMul):竖/方同系数 标题 H*.028 歌词 H*.023 歌手 H*.019(竖版 54/44/36px,方卡自动收敛 30/25/20px)
       // 间距节奏:封面→标题 H*.035 | 标题→歌手 H*.014 | 歌手→线 H*.028 | 线→歌词 H*.028 | 底部留 9.5% 给水印呼吸
       if (o.layout === 'landscape') {
-        // ===== [B 声波记忆 0921] 横版重做(LEO spec 1920×1080 原始像素):头部条+居中歌词+高亮词+声波底纹+引号+页脚 =====
-        const isLt = !colors.isDark && o.theme !== 'album';
-        const wv = {
-          title: o.theme === 'light' ? '#1C1C1E' : '#FFFFFF',
-          sub: o.theme === 'light' ? '#0000008C' : '#FFFFFF8C',
-          lyr: o.theme === 'light' ? '#00000045' : '#FFFFFF4D',
-          lyrOn: o.theme === 'light' ? '#111111' : '#FFFFFF',
-          acc: o.theme === 'light' ? '#0FAE4E' : '#1ED760',
-          timeS: o.theme === 'light' ? '#00000073' : '#FFFFFF59',
-          foot: o.theme === 'light' ? '#00000066' : '#FFFFFF52',
-        };
-        const PADX = H * 0.042, PADY = H * 0.037;
-        // 头部条:小封面 58 + 歌名 22/800 + 副标 13;右时间块(大 19 品牌色/小 13 灰)
-        let hy = PADY;
-        if (o.showCover && img) {
-          const csz = 58;
-          ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 22; ctx.shadowOffsetY = 8;
-          roundRect(ctx, PADX, hy, csz, csz, 12); ctx.clip(); ctx.drawImage(img, PADX, hy, csz, csz); ctx.restore();
+        const pad = H * 0.1, bottomLimit = H * 0.9;
+        const cs = o.showCover && img ? H * 0.68 : 0;
+        const coverX = pad, coverY = (H - cs) / 2;
+        if (cs > 0 && img) {
+          ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 50; ctx.shadowOffsetX = 15;
+          roundRect(ctx, coverX, coverY, cs, cs, cs * 0.06); ctx.clip(); ctx.drawImage(img, coverX, coverY, cs, cs); ctx.restore();
         }
-        const headTx = PADX + (o.showCover && img ? 58 + 18 : 0);
+        const textX = cs > 0 ? coverX + cs + pad : pad;
+        const textW = W - textX - pad, xOff = textX + 24;
+        let y = H * 0.16;
         if (o.showTitle) {
-          ctx.font = `800 ${Math.round(22 * fMul)}px ${FONT}`; ctx.fillStyle = wv.title; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-          ctx.fillText(title.length > 34 ? title.slice(0, 33) + '…' : title, headTx, hy + 24);
+          ctx.font = `bold ${H * 0.056 * fMul}px ${FONT}`;
+          ctx.fillStyle = colors.textColor; ctx.textAlign = 'left';
+          const lc = drawWrappedText(ctx, title, xOff, y, textW - 24, H * .056 * fMul * 1.2);
+          y += lc * H * .056 * fMul * 1.2 + H * 0.012;
         }
         if (o.showArtist) {
-          ctx.font = `${Math.round(13 * fMul)}px ${FONT}`; ctx.fillStyle = wv.sub;
-          const sub = artist + (albumName ? ' · ' + albumName : '');
-          ctx.fillText(sub.length > 52 ? sub.slice(0, 51) + '…' : sub, headTx, hy + 46);
+          ctx.font = `${H * 0.033 * fMul}px ${FONT}`;
+          ctx.fillStyle = colors.subColor; ctx.textAlign = 'left';
+          ctx.fillText(artist, xOff, y);
+          y += H * .033 * fMul * 1.4 + H * 0.03;
         }
-        // 时间块(右对齐 tabular)
-        ctx.textAlign = 'right';
-        const curT = `${Math.floor(posSec / 60)}:${String(Math.floor(posSec % 60)).padStart(2, '0')}`;
-        ctx.font = `800 ${Math.round(19 * fMul)}px ${FONT}`; ctx.fillStyle = wv.acc;
-        ctx.fillText(curT, W - PADX, hy + 26);
-        ctx.font = `${Math.round(13 * fMul)}px ${FONT}`; ctx.fillStyle = wv.timeS;
-        ctx.fillText('/ ' + (interval || '--:--'), W - PADX, hy + 47);
-        // 歌词主区:垂直居中左对齐;非当前 19/当前 30·800(1.58×);当前行中间词品牌色
-        if (o.showLyric && ctxLines.length) {
-          const lyrTop = hy + 70, lyrBot = H - H * 0.139 - 16;
-          const rows = ctxLines.slice(0, o.lyricLines);
-          const lh = (fs: number) => fs * 1.5 * o.lineSpacing;
-          const fsN = 19 * fMul, fsOn = 30 * fMul;
-          const totalH = rows.reduce((n, r) => n + (r.isActive ? lh(fsOn) : lh(fsN)), 0);
-          let ly = lyrTop + Math.max(8, (lyrBot - lyrTop - totalH) / 2);
-          ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-          for (const { text, isActive } of rows) {
-            const fs = isActive ? fsOn : fsN;
-            ctx.font = `${isActive ? '800 ' : ''}${Math.round(fs)}px ${FONT}`;
-            const t = text || '♪';
-            if (isActive) {
-              const parts = t.split(/[\s,,。.!!??、]+/).filter(Boolean);
-              const mid = (parts[Math.floor(parts.length / 2)] || '').slice(0, 4);
-              const i = mid ? t.indexOf(mid) : -1;
-              if (i >= 0) {
-                const x0 = PADX;
-                ctx.fillStyle = wv.lyrOn; ctx.fillText(t.slice(0, i), x0, ly);
-                const wPre = ctx.measureText(t.slice(0, i)).width;
-                ctx.fillStyle = wv.acc; ctx.fillText(mid, x0 + wPre, ly);
-                const wMid = ctx.measureText(mid).width;
-                ctx.fillStyle = wv.lyrOn; ctx.fillText(t.slice(i + mid.length), x0 + wPre + wMid, ly);
-              } else { ctx.fillStyle = wv.lyrOn; ctx.fillText(t, PADX, ly); }
-            } else {
-              ctx.fillStyle = wv.lyr; ctx.fillText(t.length > 74 ? t.slice(0, 73) + '…' : t, PADX, ly);
-            }
-            ly += lh(fs);
-          }
+        let endY = y;
+        if (o.showLyric) {
+          drawLyrics(y, bottomLimit - y, H * 0.042 * fMul, 'left', pad, xOff, textW - 24);
+          const lyrLH = Math.min(H * .042 * fMul, (bottomLimit - y) / (o.lyricLines * 1.7 * o.lineSpacing)) * 1.6 * o.lineSpacing;
+          endY = y + Math.max(0, (bottomLimit - y - lyrLH * o.lyricLines) / 2) + lyrLH * (o.lyricLines + 0.15);
         }
-        // 声波底纹:20 根圆顶条 宽均分 gap6 高 20-70%,品牌色渐隐 44%→4%(浅 30%→6%)
-        const barsH = H * 0.139, barsTop = H - barsH - 8;
-        const gap = 6, bw = (W - PADX * 2 - gap * 19) / 20;
-        let sx = 2166136261; const sd = songmid || title;
-        for (let i = 0; i < sd.length; i++) { sx ^= sd.charCodeAt(i); sx = Math.imul(sx, 16777619); }
-        let px = (sx >>> 0) || 1;
-        for (let i = 0; i < 20; i++) {
-          px = (Math.imul(px, 48271) + 11) >>> 0;
-          const bh = barsH * (0.2 + (px % 51) / 100);
-          const a = (o.theme === 'light' ? 0.3 - (i / 20) * 0.24 : 0.44 - (i / 20) * 0.4);
-          ctx.fillStyle = wv.acc;
-          ctx.globalAlpha = Math.max(0.04, a);
-          const bx = PADX + i * (bw + gap);
-          roundRect(ctx, bx, barsTop + barsH - bh, bw, bh, bw / 2); ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-        // 装饰引号(老板 03:49:全家 sans 无例外,Georgia 已去)
-        ctx.font = `400 ${Math.round(H * 0.102)}px ${FONT}`;
-        ctx.fillStyle = o.theme === 'light' ? '#000000' : '#FFFFFF';
-        ctx.globalAlpha = o.theme === 'light' ? 0.08 : 0.06;
-        ctx.textAlign = 'right'; ctx.textBaseline = 'top';
-        ctx.fillText('\u201D', W - PADX + 10, -H * 0.02);
-        ctx.globalAlpha = 1;
-        // 页脚:左 NEXT MUSIC(MUSIC 品牌色) · 右 · 分享自 NextMusic
-        ctx.font = `700 ${Math.round(11.5)}px ${FONT}`; ctx.textBaseline = 'alphabetic';
-        ctx.textAlign = 'left'; ctx.fillStyle = wv.foot;
-        ctx.fillText('NEXT ', PADX, H - 14);
-        const nw = ctx.measureText('NEXT ').width;
-        ctx.fillStyle = wv.acc; ctx.fillText('MUSIC', PADX + nw, H - 14);
-        ctx.textAlign = 'right'; ctx.fillStyle = wv.foot;
-        ctx.fillText('· 分享自 NextMusic', W - PADX, H - 14);
+        ctx.strokeStyle = colors.accent; ctx.lineWidth = 4; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(textX, H * 0.16); ctx.lineTo(textX, endY); ctx.stroke();
       } else {
-        // [B 声波记忆 v2 0921] 方/竖版重做:同横版语言——头部条+居中左对齐歌词(当前行辉光+高亮词)+声波底纹+引号+mark 页脚
-        const isLt2 = o.theme === 'light';
-        const wv2 = {
-          title: o.theme === 'light' ? '#1C1C1E' : (o.theme === 'dark' ? '#FFFFFF' : '#FFFFFF'),
-          sub: o.theme === 'light' ? '#0000008C' : '#FFFFFF8C',
-          lyr: o.theme === 'light' ? '#00000045' : '#FFFFFF4D',
-          lyrOn: o.theme === 'light' ? '#111111' : '#FFFFFF',
-          acc: o.theme === 'light' ? '#0FAE4E' : '#1ED760',
-          timeS: o.theme === 'light' ? '#00000073' : '#FFFFFF59',
-          foot: o.theme === 'light' ? '#00000066' : '#FFFFFF52',
-        };
-          const SC2 = o.layout === 'square'
-          ? { t: 0.05, a: 0.034, l: 0.044, on: 1.4, tm: 0.044, ts: 0.032, cv: 0.135, wave: 0.3, quote: 0.17 }
-          : { t: 0.036, a: 0.023, l: 0.032, on: 1.41, tm: 0.032, ts: 0.023, cv: 0.10, wave: 0.27, quote: 0.12 };
-        const PADX2 = W * 0.09, PADY2 = H * 0.055;
-        const hcv = H * SC2.cv;
-        const lyrTop0 = PADY2 + hcv + H * 0.02; // 装饰引号纵向锚
-        const sd = songmid || title; // 声波 seed
-        let hy2 = PADY2;
+        // 竖版/方形:统一海报式结构(区域配额,顶部对齐,封面吃剩余空间,方卡封面收敛 62%)
+        const sq = o.layout === 'square';
+        const PAD = W * (sq ? 0.12 : 0.085);
+        const fsTitle = H * 0.028 * fMul, fsLyric = H * 0.023 * fMul, fsArtist = H * 0.019 * fMul;
+        const topY = H * 0.065, bottomLimit = H * 0.905;
+        const headH = (o.showTitle ? fsTitle * 1.3 + H * 0.014 : 0) + (o.showArtist ? fsArtist * 1.4 + H * 0.028 : 0);
+        const lyrH = o.showLyric ? H * 0.056 + o.lyricLines * fsLyric * 1.7 * o.lineSpacing : 0;
+        let cs = 0;
         if (o.showCover && img) {
-          ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 22; ctx.shadowOffsetY = 8;
-          roundRect(ctx, PADX2, hy2, hcv, hcv, hcv * 0.24); ctx.clip(); ctx.drawImage(img, PADX2, hy2, hcv, hcv); ctx.restore();
+          const avail = bottomLimit - topY - headH - lyrH;
+          cs = Math.min(sq ? W * 0.62 : W - PAD * 2, Math.max(W * 0.28, avail - H * 0.035));
         }
-        const htx = PADX2 + (o.showCover && img ? hcv + H * 0.03 : 0);
+        let y = topY;
+        if (cs > 0 && img) {
+          const cx = (W - cs) / 2;
+          ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = cs * 0.08; ctx.shadowOffsetY = cs * 0.03;
+          roundRect(ctx, cx, y, cs, cs, cs * (sq ? 0.075 : 0.05)); ctx.clip(); ctx.drawImage(img, cx, y, cs, cs); ctx.restore();
+          y += cs + H * 0.035;
+        }
         if (o.showTitle) {
-          ctx.font = `800 ${Math.round(H * SC2.t * fMul)}px ${FONT}`; ctx.fillStyle = wv2.title; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-          ctx.fillText(title.length > 22 ? title.slice(0, 21) + '…' : title, htx, hy2 + hcv * 0.42);
+          ctx.font = `bold ${fsTitle}px ${FONT}`;
+          ctx.fillStyle = colors.textColor; ctx.textAlign = 'center';
+          const lc = drawWrappedText(ctx, title, W / 2, y, W - PAD * 2, fsTitle * 1.3);
+          y += lc * fsTitle * 1.3 + H * 0.014;
         }
         if (o.showArtist) {
-          ctx.font = `500 ${Math.round(H * SC2.a * fMul)}px ${FONT}`; ctx.fillStyle = wv2.sub;
-          const sb = artist + (albumName ? ' · ' + albumName : '');
-          ctx.fillText(sb.length > 30 ? sb.slice(0, 29) + '…' : sb, htx, hy2 + hcv * 0.82);
+          ctx.font = `${fsArtist}px ${FONT}`;
+          ctx.fillStyle = colors.subColor; ctx.textAlign = 'center';
+          ctx.fillText(artist, W / 2, y);
+          y += fsArtist * 1.4 + H * 0.028;
         }
-        ctx.textAlign = 'right';
-        ctx.font = `700 ${Math.round(H * SC2.tm * fMul)}px ${FONT}`; ctx.fillStyle = wv2.acc;
-        ctx.fillText(`${Math.floor(posSec / 60)}:${String(Math.floor(posSec % 60)).padStart(2, '0')}`, W - PADX2, hy2 + hcv * 0.45);
-        ctx.font = `${Math.round(H * SC2.ts * fMul)}px ${FONT}`; ctx.fillStyle = wv2.timeS;
-        ctx.fillText(interval || '--:--', W - PADX2, hy2 + hcv * 0.82);
-        // 歌词主区
-        if (o.showLyric && ctxLines.length) {
-          const lyrTop = hy2 + hcv + H * 0.045, lyrBot = H - H * SC2.wave - H * 0.11;
-          const rows = ctxLines.slice(0, o.lyricLines);
-          const fsN2 = H * SC2.l * fMul, fsOn2 = fsN2 * SC2.on;
-          const lh2 = (fs: number) => fs * 1.45 * o.lineSpacing;
-          const totalH2 = rows.reduce((n, r) => n + lh2(r.isActive ? fsOn2 : fsN2), 0);
-          let ly2 = lyrTop + Math.max(12, (lyrBot - lyrTop - totalH2) / 2);
-          ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-          for (const { text, isActive } of rows) {
-            const fs = isActive ? fsOn2 : fsN2;
-            ctx.font = `${isActive ? '700 ' : ''}${Math.round(fs)}px ${FONT}`;
-            const t = text || '♪';
-            if (isActive) {
-              if (!isLt2) { ctx.shadowColor = 'rgba(30,215,96,.25)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 2; }
-              const parts = t.split(/[\s,,。.!!??、]+/).filter(Boolean);
-              const mid = (parts[Math.floor(parts.length / 2)] || '').slice(0, 4);
-              const i = mid ? t.indexOf(mid) : -1;
-              if (i >= 0) {
-                ctx.fillStyle = wv2.lyrOn; ctx.fillText(t.slice(0, i), PADX2, ly2);
-                const w1 = ctx.measureText(t.slice(0, i)).width;
-                ctx.fillStyle = wv2.acc; ctx.fillText(mid, PADX2 + w1, ly2);
-                const w2 = ctx.measureText(mid).width;
-                ctx.fillStyle = wv2.lyrOn; ctx.fillText(t.slice(i + mid.length), PADX2 + w1 + w2, ly2);
-              } else { ctx.fillStyle = wv2.lyrOn; ctx.fillText(t, PADX2, ly2); }
-              ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
-            } else {
-              ctx.fillStyle = wv2.lyr;
-              ctx.fillText(t.length > 26 ? t.slice(0, 25) + '…' : t, PADX2, ly2);
-            }
-            ly2 += lh2(fs);
-          }
+        if (o.showLyric) {
+          // 细分隔线:内容宽 60% 居中,accent 低透明(v2:与整体节奏统一)
+          ctx.strokeStyle = colors.accent + (colors.isDark ? '55' : '44'); ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.moveTo(W * 0.2, y); ctx.lineTo(W * 0.8, y); ctx.stroke();
+          y += H * 0.028;
+          drawLyrics(y, bottomLimit - y, fsLyric, 'center', PAD);
         }
-        // 声波底纹(方/竖:条内纵向渐变 44%→0a + 整体 .5;浅 30%→07)
-        const barsH2 = H * SC2.wave, barsTop2 = H - barsH2 - H * 0.055;
-        const n2 = o.layout === 'square' ? 16 : 18, gap2 = 5, bw2 = (W - PADX2 * 2 - gap2 * (n2 - 1)) / n2;
-        let sx2 = 2166136261;
-        for (let i = 0; i < sd.length; i++) { sx2 ^= sd.charCodeAt(i); sx2 = Math.imul(sx2, 16777619); }
-        let px2 = (sx2 >>> 0) || 1;
-        ctx.save(); ctx.globalAlpha = 0.5;
-        for (let i = 0; i < n2; i++) {
-          px2 = (Math.imul(px2, 48271) + 11) >>> 0;
-          const bh = barsH2 * (0.2 + (px2 % 51) / 100);
-          const grd = ctx.createLinearGradient(0, barsTop2 + barsH2 - bh, 0, barsTop2 + barsH2);
-          grd.addColorStop(0, wv2.acc + (o.theme === 'light' ? '07' : '0A'));
-          grd.addColorStop(1, wv2.acc + (o.theme === 'light' ? '30' : '44'));
-          ctx.fillStyle = grd;
-          const bx = PADX2 + i * (bw2 + gap2);
-          roundRect(ctx, bx, barsTop2 + barsH2 - bh, bw2, bh, 3); ctx.fill();
-        }
-        ctx.restore();
-        // 装饰引号
-        ctx.font = `400 ${Math.round(H * SC2.quote)}px ${FONT}`;
-        ctx.fillStyle = isLt2 ? '#16181A' : '#FFFFFF';
-        ctx.globalAlpha = isLt2 ? 0.08 : 0.07;
-        ctx.textAlign = 'right'; ctx.textBaseline = 'top';
-        ctx.fillText('\u201D', W - PADX2, lyrTop0 - H * 0.01);
-        ctx.globalAlpha = 1;
-        // 页脚:mark(三声波三色)+NEXT MUSIC 字标+右「分享自 NextMusic」
-        const mk = H * 0.038, mky = H - H * 0.045 - mk;
-        const paths: Array<[string, string]> = [
-          ['M84 45.7C84 41.7 87 40.7 90 43.7L104 57.7V129.7C104 146.7 91 158.7 73 158.7C56 158.7 44 147.7 44 132.7C44 117.7 56 106.7 73 106.7C77 106.7 81 107.7 84 108.7V45.7Z', '1'],
-          ['M112 70.7L130 87.7V136.7C130 145.7 126 149.7 121 149.7C115 149.7 112 145.7 112 137.7V70.7Z', '0.85'],
-          ['M138 95.7L156 112.7V136.7C156 145.7 152 149.7 147 149.7C141 149.7 138 145.7 138 137.7V95.7Z', '0.65'],
-        ];
-        const mcolors = isLt2 ? ['#0c9b45', '#2db862', '#4ac980'] : ['#1ED760', '#2DDB6E', '#4AE182'];
-        ctx.save();
-        ctx.translate(PADX2, mky); ctx.scale(mk / 200, mk / 200);
-        try { paths.forEach(([d], i) => { const pth = new Path2D(d); ctx.fillStyle = mcolors[i]; ctx.fill(pth); }); } catch { /* Path2D 不可用时跳过 mark */ }
-        ctx.restore();
-        const ftx = PADX2 + mk + H * 0.012;
-        ctx.font = `700 ${Math.round(H * 0.019)}px ${FONT}`; ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
-        ctx.fillStyle = wv2.foot; ctx.fillText('NEXT ', ftx, H - H * 0.045);
-        const nw2 = ctx.measureText('NEXT ').width;
-        ctx.fillStyle = wv2.acc; ctx.font = `800 ${Math.round(H * 0.019)}px ${FONT}`;
-        ctx.fillText('MUSIC', ftx + nw2, H - H * 0.045);
-        ctx.textAlign = 'right'; ctx.fillStyle = wv2.foot;
-        ctx.font = `${Math.round(H * 0.018)}px ${FONT}`;
-        ctx.fillText('分享自 NextMusic', W - PADX2, H - H * 0.045);
       }
-      // [声波记忆 v2] 旧右下水印已移除:三版式页脚统一(mark+NEXT MUSIC+分享自)自带品牌位
+
+      // 水印(右下,品牌 mark+名)
+      const wmFS = Math.round(W * 0.022), wmR = Math.round(W * 0.04), wmB = Math.round(H * 0.04);
+      ctx.textBaseline = 'middle'; ctx.textAlign = 'right';
+      ctx.font = `bold ${wmFS}px ${FONT}`;
+      ctx.fillStyle = colors.isDark ? 'rgba(255,255,255,0.6)' : 'rgba(30,30,30,0.5)';
+      ctx.fillText('NextMusic', W - wmR, H - wmB);
+      const tw = ctx.measureText('NextMusic').width;
+      const mark = markImgRef.current;
+      if (mark) {
+        const mh = Math.round(wmFS * 1.3);
+        ctx.drawImage(mark, W - wmR - tw - mh - wmFS * 0.55, H - wmB - mh / 2, mh, mh);
+      } else {
+        ctx.beginPath();
+        ctx.fillStyle = '#1ED760';
+        ctx.arc(W - wmR - tw - wmFS * 0.9, H - wmB, wmFS * 0.42, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
       setDataUrl(canvas.toDataURL('image/png'));
     } finally { setRendering(false); }
