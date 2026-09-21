@@ -344,8 +344,8 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
           roundRect(ctx, bx, barsTop + barsH - bh, bw, bh, bw / 2); ctx.fill();
         }
         ctx.globalAlpha = 1;
-        // 装饰引号(右上 Georgia 110px 6%/浅 8%)
-        ctx.font = `400 ${Math.round(H * 0.102)}px Georgia, serif`;
+        // 装饰引号(老板 03:49:全家 sans 无例外,Georgia 已去)
+        ctx.font = `400 ${Math.round(H * 0.102)}px ${FONT}`;
         ctx.fillStyle = o.theme === 'light' ? '#000000' : '#FFFFFF';
         ctx.globalAlpha = o.theme === 'light' ? 0.08 : 0.06;
         ctx.textAlign = 'right'; ctx.textBaseline = 'top';
