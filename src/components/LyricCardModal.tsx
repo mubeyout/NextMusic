@@ -122,10 +122,16 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
     const i = t.indexOf(mid);
     return i < 0 || !mid ? { pre: '', mid: '', post: '' } : { pre: t.slice(0, i), mid, post: t.slice(i + mid.length) };
   };
-  const fsWT = Math.max(cardH * 0.058, 15) * fMul, fsWA = Math.max(cardH * 0.034, 10) * fMul;
-  const fsWL = Math.max(cardH * 0.048, 11.5) * fMul, fsWLOn = fsWL * 1.58;
-  const fsWTm = Math.max(cardH * 0.05, 12.5), fsWTs = Math.max(cardH * 0.031, 9);
-  const headCover = Math.round(cardH * 0.13);
+  // [声波记忆 v2] 字号按版式分化:横(H*.058/1.58×) 方(H*.05/1.4×) 竖(H*.036/1.41×),可读下限兜底
+  const SC = opt.layout === 'landscape'
+    ? { t: [0.058, 15], a: [0.034, 10], l: [0.048, 11.5], on: 1.58, tm: [0.05, 12.5], ts: [0.031, 9], cv: 0.13 }
+    : opt.layout === 'square'
+      ? { t: [0.05, 15], a: [0.034, 10.5], l: [0.044, 13], on: 1.4, tm: [0.044, 13], ts: [0.032, 10.5], cv: 0.135 }
+      : { t: [0.036, 16], a: [0.023, 11], l: [0.032, 15], on: 1.41, tm: [0.032, 15], ts: [0.023, 11], cv: 0.10 };
+  const fsWT = Math.max(cardH * SC.t[0], SC.t[1]) * fMul, fsWA = Math.max(cardH * SC.a[0], SC.a[1]) * fMul;
+  const fsWL = Math.max(cardH * SC.l[0], SC.l[1]) * fMul, fsWLOn = fsWL * SC.on;
+  const fsWTm = Math.max(cardH * SC.tm[0], SC.tm[1]), fsWTs = Math.max(cardH * SC.ts[0], SC.ts[1]);
+  const headCover = Math.round(cardH * SC.cv);
 
   const pill = (on: boolean) => on ? st.pillOn : null;
   const pillText = (on: boolean) => [st.pillText, on && st.pillTextOn] as { color: string; fontSize: number; fontWeight: '600' | '800' }[];
@@ -231,37 +237,81 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
                 <Text style={[st.waveQuote, { fontSize: Math.round(cardH * 0.1), color: wvLight ? '#000000' : '#FFFFFF', opacity: wvLight ? 0.08 : 0.06 }]}>”</Text>
                 {/* 页脚:左 NEXT MUSIC · 右 分享自 */}
                 <View style={st.waveFoot}>
-                  <Text style={{ color: wvFoot, fontSize: Math.max(Math.round(cardH * 0.028), 9), fontWeight: '700', letterSpacing: 1 }}>
-                    NEXT <Text style={{ color: wvAccent }}>MUSIC</Text>
-                  </Text>
-                  <Text style={{ color: wvFoot, fontSize: Math.max(Math.round(cardH * 0.028), 9), letterSpacing: 1 }}>· 分享自 NextMusic</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <Image source={require('../assets/brand/mark.png')} style={{ width: Math.max(Math.round(cardH * 0.035), 12), height: Math.max(Math.round(cardH * 0.035), 12) }} />
+                    <Text style={{ color: wvFoot, fontSize: Math.max(Math.round(cardH * 0.028), 9), fontWeight: '700', letterSpacing: 2.5 }}>
+                      NEXT <Text style={{ color: wvAccent, fontWeight: '800' }}>MUSIC</Text>
+                    </Text>
+                  </View>
+                  <Text style={{ color: wvFoot, fontSize: Math.max(Math.round(cardH * 0.028), 9), letterSpacing: 0.5 }}>· 分享自 NextMusic</Text>
                 </View>
               </View>
             ) : (
-              // 竖版/方形:统一海报式结构(v2 区域配额,同 Web 端系数)
-              <View style={st.cardBody}>
-                {opt.showCover && (
-                  <View style={[st.coverWrap, { marginTop: Math.round(cardH * 0.02), marginBottom: Math.round(cardH * 0.035) }]}>
-                    {song.img ? (
-                      <Image source={{ uri: fixCoverUrl(song.img) }} style={[st.cover, { width: Math.round(coverSize), height: Math.round(coverSize), borderRadius: Math.round(coverSize * (opt.layout === 'square' ? 0.075 : 0.05)) }]} />
+              // [B 声波记忆 v2 0921] 方/竖版重做(LEO lyric-b-sq-pt 预览):同声波语言——头部条+居中左对齐歌词(当前行辉光+高亮词)+声波底纹+引号+mark 页脚
+              <View style={st.waveBody}>
+                <View style={st.waveHead}>
+                  {opt.showCover && (
+                    song.img ? (
+                      <Image source={{ uri: fixCoverUrl(song.img) }} style={{ width: headCover, height: headCover, borderRadius: Math.round(headCover * 0.24) }} />
                     ) : (
-                      <View style={[st.cover, st.coverFallback, { width: Math.round(coverSize), height: Math.round(coverSize) }]}><Icon name="music" size={30} color="#ffffff66" /></View>
+                      <View style={[st.coverFallback, { width: headCover, height: headCover, borderRadius: Math.round(headCover * 0.24) }]}><Icon name="music" size={18} color="#ffffff66" /></View>
+                    )
+                  )}
+                  <View style={{ flex: 1, minHeight: 0, marginLeft: opt.showCover ? Math.round(cardH * 0.03) : 0 }}>
+                    {opt.showTitle && (
+                      <Text style={{ color: wvTitle, fontSize: Math.round(fsWT), fontWeight: '800', letterSpacing: 0.3 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                        {song.name}
+                      </Text>
+                    )}
+                    {opt.showArtist && (
+                      <Text style={{ color: wvSub, fontSize: Math.round(fsWA), marginTop: 3, fontWeight: '500' }} numberOfLines={1}>
+                        {song.singer}{song.albumName ? ` · ${song.albumName}` : ''}
+                      </Text>
                     )}
                   </View>
+                  <View style={st.waveTime}>
+                    <Text style={{ color: wvAccent, fontSize: Math.round(fsWTm), fontWeight: '700', fontVariant: ['tabular-nums'] }}>{fmtMS(positionSec)}</Text>
+                    <Text style={{ color: wvTimeS, fontSize: Math.round(fsWTs), fontVariant: ['tabular-nums'] }}>{song.interval || '--:--'}</Text>
+                  </View>
+                </View>
+                {opt.showLyric && (
+                  <View style={{ flex: 1, justifyContent: 'center', minHeight: 0, gap: Math.round(fsWL * 0.7), maxWidth: '88%' }}>
+                    {lines.length ? lines.map((l, i) => {
+                      const on = i === active;
+                      const hl = on ? hlWord(l.text || '') : null;
+                      return (
+                        <Text
+                          key={`${l.t}-${i}`}
+                          style={{
+                            color: on ? wvLyrOn : wvLyr, fontSize: Math.round(on ? fsWLOn : fsWL), fontWeight: on ? '700' : '400',
+                            lineHeight: Math.round((on ? fsWLOn : fsWL) * 1.45 * opt.lineSpacing),
+                            textAlign: 'left',
+                            ...(on && !light && { textShadowColor: 'rgba(30,215,96,.25)', textShadowRadius: 18, textShadowOffset: { width: 0, height: 2 } }),
+                          }}
+                          numberOfLines={2} ellipsizeMode="tail"
+                        >
+                          {on && hl && hl.mid ? <>{hl.pre}<Text style={{ color: wvAccent }}>{hl.mid}</Text>{hl.post}</> : (l.text || '♪')}
+                        </Text>
+                      );
+                    }) : <Text style={{ color: wvLyrOn, fontSize: Math.round(fsWL) }}>♪ 纯音乐,请欣赏</Text>}
+                  </View>
                 )}
-                {opt.showTitle && (
-                  <Text style={{ color: tTitle, fontSize: Math.round(fsT), fontWeight: '800', textAlign: 'center' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
-                    {song.name}
-                  </Text>
-                )}
-                {opt.showArtist && (
-                  <Text style={{ color: tSub, fontSize: Math.round(fsA), marginTop: Math.round(cardH * 0.014), marginBottom: Math.round(cardH * 0.028), textAlign: 'center' }} numberOfLines={1}>
-                    {song.singer}{song._types?.flac ? ' · 无损' : ''}
-                  </Text>
-                )}
-                {opt.showLyric && <View style={{ height: 1, backgroundColor: light ? '#0000001A' : '#1ED76055', marginHorizontal: Math.round(cardW * 0.2) }} />}
-                {opt.showLyric && <View style={{ height: Math.round(cardH * 0.028) }} />}
-                {opt.showLyric && <LyricWin fs={fsL} />}
+                {/* 声波底纹:条内纵向渐变(品牌 44%→0a)+整体 .5 */}
+                <View style={[st.waveBars, { height: Math.round(cardH * (opt.layout === 'square' ? 0.3 : 0.27)), opacity: 0.5, gap: 3 }]}>
+                  {waves.map((h, i) => (
+                    <LinearGradient key={i} colors={[`${wvAccent}0A`, `${wvAccent}${wvLight ? '30' : '44'}`]} style={{ flex: 1, height: `${Math.round(h * 100)}%`, borderRadius: 3, overflow: 'hidden' }} />
+                  ))}
+                </View>
+                <Text style={[st.waveQuote, { fontSize: Math.round(cardH * 0.17), color: wvLight ? '#16181A' : '#FFFFFF', opacity: wvLight ? 0.08 : 0.07 }]}>”</Text>
+                <View style={[st.waveFoot, { left: Math.round(cardH * 0.055), right: Math.round(cardH * 0.055), bottom: Math.round(cardH * 0.045) }]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <Image source={require('../assets/brand/mark.png')} style={{ width: Math.max(Math.round(cardH * 0.038), 12), height: Math.max(Math.round(cardH * 0.038), 12) }} />
+                    <Text style={{ color: wvFoot, fontSize: Math.max(Math.round(cardH * 0.02), 9), fontWeight: '700', letterSpacing: 2.5 }}>
+                      NEXT <Text style={{ color: wvAccent, fontWeight: '800' }}>MUSIC</Text>
+                    </Text>
+                  </View>
+                  <Text style={{ color: wvFoot, fontSize: Math.max(Math.round(cardH * 0.019), 8.5), letterSpacing: 0.5 }}>分享自 NextMusic</Text>
+                </View>
               </View>
             )}
 

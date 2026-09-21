@@ -146,6 +146,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
   const [acctId, setAcctId] = useState(route.params.acctId);
   const acct = providers.get(acctId);
   const isDav = acct?.type === 'webdav';
+  const davDesk0 = Platform.OS === 'web' && Dimensions.get('window').width >= 900; // v2 桌面双区(左墙右栏)
 
   // 综合页分区展开态（默认收起只出横滑预览，点「全部」原地展开）
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -299,7 +300,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
 
       {isDav ? (
         /* ---------- WebDAV B「唱片墙网格」(LEO 0921 spec,方向级重做):路径胶囊+唱片墙+分段线+歌曲列表+贴底播放钮 ---------- */
-        <ScrollView contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingBottom: ((current ? 100 : 0) + insets.bottom + 84) + (IS_HD ? 48 : 0) }}>
+        <ScrollView contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingBottom: ((current ? 100 : 0) + insets.bottom + 84) + (IS_HD ? 48 : 0), ...(IS_WEB && Dimensions.get('window').width >= 900 ? { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start' } as ViewStyle : {}) }}>
           {davBusy ? (
             <View style={st.davWall}>{[0, 1, 2, 3, 4, 5].map(i => <View key={i} style={st.davSkel} />)}</View>
           ) : davErr ? (
@@ -313,7 +314,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
           ) : (
             <>
               {/* 路径胶囊行:祖先灰字‹›分隔;当前段=品牌绿实心胶囊(不可点);尾部刷新 */}
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.davCrumbWrap} contentContainerStyle={{ gap: 6, alignItems: 'center', paddingRight: 12 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[st.davCrumbWrap, davDesk0 && { width: '100%' } as ViewStyle]} contentContainerStyle={{ gap: 6, alignItems: 'center', paddingRight: 12 }}>
                 {(() => {
                   const segs = davDir.split('/').filter(Boolean);
                   const crumbs = [{ label: '根目录', path: '/' }];
@@ -343,12 +344,13 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
               {/* 唱片墙:3 列网格(TV 4-5);首格「上一级」虚线卡;唱片卡=方形 sleeve+黑胶露出+数量徽标 */}
               {(davDir !== '/' || davDirs.length > 0) ? (() => {
                 const winW = Dimensions.get('window').width; // B 唱片墙:TV 超宽列数
-                const davCols = IS_HD ? (winW >= 1200 ? 5 : 4) : 3;
+                const davDesk = IS_WEB && winW >= 900; // v2:桌面=左墙右栏双区
+                const davCols = davDesk ? 4 : (IS_HD ? (winW >= 1200 ? 5 : 4) : 3);
                 const discBasis = `${100 / davCols - 0.7}%`;
                 return (
-                <View style={st.davWall}>
+                <View style={[st.davWall, davDesk0 && { flex: 1, minWidth: 0, marginRight: 20 } as ViewStyle]}>
                   {davDir !== '/' ? (
-                    <T style={[st.davDiscUp, { flexBasis: discBasis }]} focusStyle={focus(12)} onPress={() => setDavDir(davDir.replace(/\/+$/, '').replace(/\/+[^/]*$/, '') || '/')}>
+                    <T style={[st.davDiscUp, { flexBasis: discBasis }]} focusStyle={IS_HD ? st.davFocusTv : focus(12)} onPress={() => setDavDir(davDir.replace(/\/+$/, '').replace(/\/+[^/]*$/, '') || '/')}>
                       <View style={[st.davDiscSleeve, st.davDiscSleeveUp]}>
                         <Icon name="back" size={22} color={C.text2} />
                       </View>
@@ -357,7 +359,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                     </T>
                   ) : null}
                   {davDirs.map(d => (
-                    <T key={d.path} style={[st.davDiscCard, { flexBasis: discBasis }]} focusStyle={focus(12)} onPress={() => setDavDir(d.path)}>
+                    <T key={d.path} style={[st.davDiscCard, { flexBasis: discBasis }]} focusStyle={IS_HD ? st.davFocusTv : focus(12)} onPress={() => setDavDir(d.path)}>
                       <View style={[st.davDiscSleeve, coverGrad(d.name) as ViewStyle]}>
                         {/* 黑胶:右下 22% 露出,两层圆近似纹理(#1A1A1A 外圈+#242424 内圈 45%) */}
                         <View style={st.davVinyl} pointerEvents="none">
@@ -373,7 +375,8 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                 );
               })() : null}
 
-              {/* 分段线:— 本层歌曲 · N 首 — */}
+              {/* 分段线:— 本层歌曲 · N 首 — */}{davDesk0 ? null : null}
+              <View style={davDesk0 ? { width: 320 } as ViewStyle : undefined}>
               {davSongs.length ? (
                 <View style={st.davDivider}>
                   <View style={st.davDividerLine} />
@@ -426,6 +429,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                 </View>
               ) : null}
 
+              </View>{/* /桌面右栏 */}
               {davSelMode && davSongs.length ? (
                 <View style={st.davActions}>
                   <T style={st.davBtn} focusStyle={focus(12)} onPress={() => setSel(new Set(davSongs.map(s => s.songmid)))}>
@@ -874,6 +878,7 @@ const st = StyleSheet.create({
   davWall: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 4 }, // 3 列(TV 4-5 由卡宽 flexBasis 控制)
   davSkel: { flexBasis: '31%', aspectRatio: 1, borderRadius: 12, backgroundColor: 'rgba(255,255,255,.05)' }, // busy 骨架
   davDiscCard: {},
+  davFocusTv: { borderWidth: 2.5, borderColor: C.brand, borderRadius: 12, transform: [{ scale: 1.05 }] } as ViewStyle, // v2:TV 大卡焦点环
   davDiscUp: {},
   davDiscSleeve: { aspectRatio: 1, borderRadius: 12, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', elevation: 4, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } },
   davDiscSleeveUp: { borderWidth: 1.5, borderStyle: 'dashed', borderColor: 'rgba(255,255,255,.22)', backgroundColor: 'rgba(255,255,255,.04)', elevation: 0, shadowOpacity: 0 },

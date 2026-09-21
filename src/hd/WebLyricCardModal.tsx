@@ -360,63 +360,125 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
         ctx.textAlign = 'right'; ctx.fillStyle = wv.foot;
         ctx.fillText('· 分享自 NextMusic', W - PADX, H - 14);
       } else {
-        // 竖版/方形:统一海报式结构(区域配额,顶部对齐,封面吃剩余空间,方卡封面收敛 62%)
-        const sq = o.layout === 'square';
-        const PAD = W * (sq ? 0.12 : 0.085);
-        const fsTitle = H * 0.028 * fMul, fsLyric = H * 0.023 * fMul, fsArtist = H * 0.019 * fMul;
-        const topY = H * 0.065, bottomLimit = H * 0.905;
-        const headH = (o.showTitle ? fsTitle * 1.3 + H * 0.014 : 0) + (o.showArtist ? fsArtist * 1.4 + H * 0.028 : 0);
-        const lyrH = o.showLyric ? H * 0.056 + o.lyricLines * fsLyric * 1.7 * o.lineSpacing : 0;
-        let cs = 0;
+        // [B 声波记忆 v2 0921] 方/竖版重做:同横版语言——头部条+居中左对齐歌词(当前行辉光+高亮词)+声波底纹+引号+mark 页脚
+        const isLt2 = o.theme === 'light';
+        const wv2 = {
+          title: o.theme === 'light' ? '#1C1C1E' : (o.theme === 'dark' ? '#FFFFFF' : '#FFFFFF'),
+          sub: o.theme === 'light' ? '#0000008C' : '#FFFFFF8C',
+          lyr: o.theme === 'light' ? '#00000045' : '#FFFFFF4D',
+          lyrOn: o.theme === 'light' ? '#111111' : '#FFFFFF',
+          acc: o.theme === 'light' ? '#0FAE4E' : '#1ED760',
+          timeS: o.theme === 'light' ? '#00000073' : '#FFFFFF59',
+          foot: o.theme === 'light' ? '#00000066' : '#FFFFFF52',
+        };
+          const SC2 = o.layout === 'square'
+          ? { t: 0.05, a: 0.034, l: 0.044, on: 1.4, tm: 0.044, ts: 0.032, cv: 0.135, wave: 0.3, quote: 0.17 }
+          : { t: 0.036, a: 0.023, l: 0.032, on: 1.41, tm: 0.032, ts: 0.023, cv: 0.10, wave: 0.27, quote: 0.12 };
+        const PADX2 = W * 0.09, PADY2 = H * 0.055;
+        const hcv = H * SC2.cv;
+        const lyrTop0 = PADY2 + hcv + H * 0.02; // 装饰引号纵向锚
+        const sd = songmid || title; // 声波 seed
+        let hy2 = PADY2;
         if (o.showCover && img) {
-          const avail = bottomLimit - topY - headH - lyrH;
-          cs = Math.min(sq ? W * 0.62 : W - PAD * 2, Math.max(W * 0.28, avail - H * 0.035));
+          ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 22; ctx.shadowOffsetY = 8;
+          roundRect(ctx, PADX2, hy2, hcv, hcv, hcv * 0.24); ctx.clip(); ctx.drawImage(img, PADX2, hy2, hcv, hcv); ctx.restore();
         }
-        let y = topY;
-        if (cs > 0 && img) {
-          const cx = (W - cs) / 2;
-          ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = cs * 0.08; ctx.shadowOffsetY = cs * 0.03;
-          roundRect(ctx, cx, y, cs, cs, cs * (sq ? 0.075 : 0.05)); ctx.clip(); ctx.drawImage(img, cx, y, cs, cs); ctx.restore();
-          y += cs + H * 0.035;
-        }
+        const htx = PADX2 + (o.showCover && img ? hcv + H * 0.03 : 0);
         if (o.showTitle) {
-          ctx.font = `bold ${fsTitle}px ${FONT}`;
-          ctx.fillStyle = colors.textColor; ctx.textAlign = 'center';
-          const lc = drawWrappedText(ctx, title, W / 2, y, W - PAD * 2, fsTitle * 1.3);
-          y += lc * fsTitle * 1.3 + H * 0.014;
+          ctx.font = `800 ${Math.round(H * SC2.t * fMul)}px ${FONT}`; ctx.fillStyle = wv2.title; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+          ctx.fillText(title.length > 22 ? title.slice(0, 21) + '…' : title, htx, hy2 + hcv * 0.42);
         }
         if (o.showArtist) {
-          ctx.font = `${fsArtist}px ${FONT}`;
-          ctx.fillStyle = colors.subColor; ctx.textAlign = 'center';
-          ctx.fillText(artist, W / 2, y);
-          y += fsArtist * 1.4 + H * 0.028;
+          ctx.font = `500 ${Math.round(H * SC2.a * fMul)}px ${FONT}`; ctx.fillStyle = wv2.sub;
+          const sb = artist + (albumName ? ' · ' + albumName : '');
+          ctx.fillText(sb.length > 30 ? sb.slice(0, 29) + '…' : sb, htx, hy2 + hcv * 0.82);
         }
-        if (o.showLyric) {
-          // 细分隔线:内容宽 60% 居中,accent 低透明(v2:与整体节奏统一)
-          ctx.strokeStyle = colors.accent + (colors.isDark ? '55' : '44'); ctx.lineWidth = 1.5;
-          ctx.beginPath(); ctx.moveTo(W * 0.2, y); ctx.lineTo(W * 0.8, y); ctx.stroke();
-          y += H * 0.028;
-          drawLyrics(y, bottomLimit - y, fsLyric, 'center', PAD);
+        ctx.textAlign = 'right';
+        ctx.font = `700 ${Math.round(H * SC2.tm * fMul)}px ${FONT}`; ctx.fillStyle = wv2.acc;
+        ctx.fillText(`${Math.floor(posSec / 60)}:${String(Math.floor(posSec % 60)).padStart(2, '0')}`, W - PADX2, hy2 + hcv * 0.45);
+        ctx.font = `${Math.round(H * SC2.ts * fMul)}px ${FONT}`; ctx.fillStyle = wv2.timeS;
+        ctx.fillText(interval || '--:--', W - PADX2, hy2 + hcv * 0.82);
+        // 歌词主区
+        if (o.showLyric && ctxLines.length) {
+          const lyrTop = hy2 + hcv + H * 0.045, lyrBot = H - H * SC2.wave - H * 0.11;
+          const rows = ctxLines.slice(0, o.lyricLines);
+          const fsN2 = H * SC2.l * fMul, fsOn2 = fsN2 * SC2.on;
+          const lh2 = (fs: number) => fs * 1.45 * o.lineSpacing;
+          const totalH2 = rows.reduce((n, r) => n + lh2(r.isActive ? fsOn2 : fsN2), 0);
+          let ly2 = lyrTop + Math.max(12, (lyrBot - lyrTop - totalH2) / 2);
+          ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+          for (const { text, isActive } of rows) {
+            const fs = isActive ? fsOn2 : fsN2;
+            ctx.font = `${isActive ? '700 ' : ''}${Math.round(fs)}px ${FONT}`;
+            const t = text || '♪';
+            if (isActive) {
+              if (!isLt2) { ctx.shadowColor = 'rgba(30,215,96,.25)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 2; }
+              const parts = t.split(/[\s,,。.!!??、]+/).filter(Boolean);
+              const mid = (parts[Math.floor(parts.length / 2)] || '').slice(0, 4);
+              const i = mid ? t.indexOf(mid) : -1;
+              if (i >= 0) {
+                ctx.fillStyle = wv2.lyrOn; ctx.fillText(t.slice(0, i), PADX2, ly2);
+                const w1 = ctx.measureText(t.slice(0, i)).width;
+                ctx.fillStyle = wv2.acc; ctx.fillText(mid, PADX2 + w1, ly2);
+                const w2 = ctx.measureText(mid).width;
+                ctx.fillStyle = wv2.lyrOn; ctx.fillText(t.slice(i + mid.length), PADX2 + w1 + w2, ly2);
+              } else { ctx.fillStyle = wv2.lyrOn; ctx.fillText(t, PADX2, ly2); }
+              ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+            } else {
+              ctx.fillStyle = wv2.lyr;
+              ctx.fillText(t.length > 26 ? t.slice(0, 25) + '…' : t, PADX2, ly2);
+            }
+            ly2 += lh2(fs);
+          }
         }
+        // 声波底纹(方/竖:条内纵向渐变 44%→0a + 整体 .5;浅 30%→07)
+        const barsH2 = H * SC2.wave, barsTop2 = H - barsH2 - H * 0.055;
+        const n2 = o.layout === 'square' ? 16 : 18, gap2 = 5, bw2 = (W - PADX2 * 2 - gap2 * (n2 - 1)) / n2;
+        let sx2 = 2166136261;
+        for (let i = 0; i < sd.length; i++) { sx2 ^= sd.charCodeAt(i); sx2 = Math.imul(sx2, 16777619); }
+        let px2 = (sx2 >>> 0) || 1;
+        ctx.save(); ctx.globalAlpha = 0.5;
+        for (let i = 0; i < n2; i++) {
+          px2 = (Math.imul(px2, 48271) + 11) >>> 0;
+          const bh = barsH2 * (0.2 + (px2 % 51) / 100);
+          const grd = ctx.createLinearGradient(0, barsTop2 + barsH2 - bh, 0, barsTop2 + barsH2);
+          grd.addColorStop(0, wv2.acc + (o.theme === 'light' ? '07' : '0A'));
+          grd.addColorStop(1, wv2.acc + (o.theme === 'light' ? '30' : '44'));
+          ctx.fillStyle = grd;
+          const bx = PADX2 + i * (bw2 + gap2);
+          roundRect(ctx, bx, barsTop2 + barsH2 - bh, bw2, bh, 3); ctx.fill();
+        }
+        ctx.restore();
+        // 装饰引号
+        ctx.font = `400 ${Math.round(H * SC2.quote)}px ${FONT}`;
+        ctx.fillStyle = isLt2 ? '#16181A' : '#FFFFFF';
+        ctx.globalAlpha = isLt2 ? 0.08 : 0.07;
+        ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+        ctx.fillText('\u201D', W - PADX2, lyrTop0 - H * 0.01);
+        ctx.globalAlpha = 1;
+        // 页脚:mark(三声波三色)+NEXT MUSIC 字标+右「分享自 NextMusic」
+        const mk = H * 0.038, mky = H - H * 0.045 - mk;
+        const paths: Array<[string, string]> = [
+          ['M84 45.7C84 41.7 87 40.7 90 43.7L104 57.7V129.7C104 146.7 91 158.7 73 158.7C56 158.7 44 147.7 44 132.7C44 117.7 56 106.7 73 106.7C77 106.7 81 107.7 84 108.7V45.7Z', '1'],
+          ['M112 70.7L130 87.7V136.7C130 145.7 126 149.7 121 149.7C115 149.7 112 145.7 112 137.7V70.7Z', '0.85'],
+          ['M138 95.7L156 112.7V136.7C156 145.7 152 149.7 147 149.7C141 149.7 138 145.7 138 137.7V95.7Z', '0.65'],
+        ];
+        const mcolors = isLt2 ? ['#0c9b45', '#2db862', '#4ac980'] : ['#1ED760', '#2DDB6E', '#4AE182'];
+        ctx.save();
+        ctx.translate(PADX2, mky); ctx.scale(mk / 200, mk / 200);
+        try { paths.forEach(([d], i) => { const pth = new Path2D(d); ctx.fillStyle = mcolors[i]; ctx.fill(pth); }); } catch { /* Path2D 不可用时跳过 mark */ }
+        ctx.restore();
+        const ftx = PADX2 + mk + H * 0.012;
+        ctx.font = `700 ${Math.round(H * 0.019)}px ${FONT}`; ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+        ctx.fillStyle = wv2.foot; ctx.fillText('NEXT ', ftx, H - H * 0.045);
+        const nw2 = ctx.measureText('NEXT ').width;
+        ctx.fillStyle = wv2.acc; ctx.font = `800 ${Math.round(H * 0.019)}px ${FONT}`;
+        ctx.fillText('MUSIC', ftx + nw2, H - H * 0.045);
+        ctx.textAlign = 'right'; ctx.fillStyle = wv2.foot;
+        ctx.font = `${Math.round(H * 0.018)}px ${FONT}`;
+        ctx.fillText('分享自 NextMusic', W - PADX2, H - H * 0.045);
       }
-
-      // 水印(右下,品牌 mark+名)
-      const wmFS = Math.round(W * 0.022), wmR = Math.round(W * 0.04), wmB = Math.round(H * 0.04);
-      ctx.textBaseline = 'middle'; ctx.textAlign = 'right';
-      ctx.font = `bold ${wmFS}px ${FONT}`;
-      ctx.fillStyle = colors.isDark ? 'rgba(255,255,255,0.6)' : 'rgba(30,30,30,0.5)';
-      ctx.fillText('NextMusic', W - wmR, H - wmB);
-      const tw = ctx.measureText('NextMusic').width;
-      const mark = markImgRef.current;
-      if (mark) {
-        const mh = Math.round(wmFS * 1.3);
-        ctx.drawImage(mark, W - wmR - tw - mh - wmFS * 0.55, H - wmB - mh / 2, mh, mh);
-      } else {
-        ctx.beginPath();
-        ctx.fillStyle = '#1ED760';
-        ctx.arc(W - wmR - tw - wmFS * 0.9, H - wmB, wmFS * 0.42, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      // [声波记忆 v2] 旧右下水印已移除:三版式页脚统一(mark+NEXT MUSIC+分享自)自带品牌位
 
       setDataUrl(canvas.toDataURL('image/png'));
     } finally { setRendering(false); }
