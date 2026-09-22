@@ -311,6 +311,11 @@ export const AudioPro = {
     ensureGraph(); actx?.resume?.().catch(() => {});
     applyUrl(track);
     if (opts.startTimeMs) seekSec(opts.startTimeMs / 1000);
+    // 0922:同源代理 401(未登录 nm_auth 缺失)时 <audio> 只报 NotSupportedError——主动探测回明确错误,不再甩媒体格式错
+    if (!IS_ELECTRON && !IS_DEV && !store.token) {
+      emit(AudioProEventType.PLAYBACK_ERROR, { error: '播放失败：请先登录服务器账号（右上角设置→服务器连接）后再播放媒体库歌曲' });
+      return;
+    }
     // v3.31:play() 拒绝原因分类——NotAllowedError 才是真 autoplay blocked;
     // NotSupportedError/AbortError=媒体加载失败(src 401/404/格式),原标签把一切拒收都谎报成 autoplay
     if (opts.autoPlay !== false) audio.play().catch((err: { name?: string; message?: string }) => {
