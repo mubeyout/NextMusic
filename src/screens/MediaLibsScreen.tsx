@@ -224,7 +224,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
     globalThis.addEventListener?.('resize', h);
     return () => { globalThis.removeEventListener?.('resize', h); };
   }, []);
-  const davWide = IS_WEB && winW >= 900;
+  const davWide = IS_WEB && winW >= 900; // 预留：宽窗下可用于后续密度调节（当前满幅单列）
 
   // 综合页分区展开态（默认收起只出横滑预览，点「全部」原地展开）
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -439,15 +439,14 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                 </T>
               </ScrollView>
 
-              {/* 桌面≥900：双区（左行式列表 + 右操作栏）；其余单列限宽 */}
-              <View style={[davWide && dv.davCols]}>
-              <View style={[dv.listWrap, IS_WEB && dv.listWrapWeb]}>
+              {/* 列表满幅：一行占满整行；操作选项统一收进列表顶部动作栏（全端） */}
+              <View style={[dv.listWrap]}>
                 <View style={dv.headBar}>
                   <Text style={[dv.stats, IS_HD && dv.statsHD]} numberOfLines={1}>
                     {davDirs.length ? `${davDirs.length} 个文件夹` : ''}{davDirs.length && davSongs.length ? ' · ' : ''}{davSongs.length ? `${davSongs.length} 首` : ''}
                     {!davDirs.length && !davSongs.length ? '空目录' : ''}
                   </Text>
-                  {/* TV：动作收进行尾 ⋯ 菜单（D-pad 横向逐个可达 + 长按列表行也可呼出） */}
+                  {/* 动作统一在列表顶部：非 TV 网页/手机常驻；TV 保留 ⋯（D-pad 菜单）+ 长按 */}
                   {IS_HD ? (
                     davSongs.length || davDirs.length ? (
                       <T style={dv.actBtn} focusStyle={focus(999)} onLongPress={() => davMenu()}
@@ -535,30 +534,6 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                 {!davDirs.length && !davSongs.length ? (
                   <EmptyState icon="music" title="这个文件夹还没有音乐" sub="支持 FLAC / MP3 / APE / WAV / OGG 等常见音频格式" />
                 ) : null}
-              </View>
-
-              {/* 桌面≥900 右操作栏：吸附列表右缘，常驻动作（不依赖 hover） */}
-              {davWide && davSongs.length ? (
-                <View style={dv.sidePanel}>
-                  <T style={[dv.sideBtn, { backgroundColor: C.brand }]} onPress={() => playSong(davSongs[0], davSongs)}>
-                    <Icon name="play" size={13} color={C.onBrand} />
-                    <Text style={dv.sideBtnMain}>播放全部 · {davSongs.length} 首</Text>
-                  </T>
-                  <T style={dv.sideBtn} onPress={() => setDavSelMode(true)}>
-                    <Icon name="check" size={13} color={C.text2} />
-                    <Text style={dv.sideBtnText}>选择歌曲</Text>
-                  </T>
-                  <T style={dv.sideBtn} onPress={() => { const name = `WebDAV ${davDir === '/' ? '根目录' : davDir.split('/').filter(Boolean).pop() || ''}`; importDav(name, davSongs); }}>
-                    <Icon name="add" size={13} color={C.text2} />
-                    <Text style={dv.sideBtnText}>整个目录加入歌单</Text>
-                  </T>
-                  <T style={dv.sideBtn} onPress={() => { const n = enqueueDownload(davSongs); toast(`${n} 首加入下载队列`); }}>
-                    <Icon name="download" size={13} color={C.text2} />
-                    <Text style={dv.sideBtnText}>下载全部</Text>
-                  </T>
-                  <Text style={dv.sideHint} numberOfLines={2}>路径：{davDir}</Text>
-                </View>
-              ) : null}
               </View>
             </>
           )}
