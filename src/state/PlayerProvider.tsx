@@ -399,12 +399,15 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       }
       // 1.4) 服务器端缓存(老板 0922 优先级:服务器端在音源之前)——全端统一(原先仅 web 形态查),
       // 命中直接播服务器缓存文件(自己服务器上的本地文件,零取链零外网流量);req() 自动带 base+token
+      // 未配服务器直接跳过(web 同源形态除外);短超时 2.5s——加速性检查不能拖慢离线/弱网起播(默认 12s 太重)
       const quality = pickQuality(t);
-      try {
-        const st0 = settings.get();
-        if (st0.preferServerCache !== false) {
-          const q = `?name=${encodeURIComponent(t.name || '')}&singer=${encodeURIComponent(t.singer || '')}&source=${encodeURIComponent(t.source)}&songmid=${encodeURIComponent(String(t.songmid ?? ''))}&quality=${quality}`;
-          const c = await req('/api/music/cache/check' + q) as { exists?: boolean; isCollision?: boolean; url?: string };
+      const webSrvEarly = Platform.OS === 'web' && typeof navigator !== 'undefined' && !/electron/i.test(navigator.userAgent);
+      if (webSrvEarly || normalizeBase(httpStore.base)) {
+        try {
+          const st0 = settings.get();
+          if (st0.preferServerCache !== false) {
+            const q = `?name=${encodeURIComponent(t.name || '')}&singer=${encodeURIComponent(t.singer || '')}&source=${encodeURIComponent(t.source)}&songmid=${encodeURIComponent(String(t.songmid ?? ''))}&quality=${quality}`;
+            const c = await req('/api/music/cache/check' + q, { timeout: 2500 }) as { exists?: boolean; isCollision?: boolean; url?: string };
           if (c && c.exists && !c.isCollision && c.url) {
             const cu = c.url.startsWith('http') ? c.url : normalizeBase(httpStore.base) + c.url;
             playOrCast(t, cu);
@@ -414,7 +417,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             return; // 缓存直出
           }
         }
-      } catch { /* 缓存检查失败回退取链 */ }
+        } catch { /* 缓存检查失败回退取链 */ }
+      }
       // 0) 听风音乐(RoCeOS Tingfeng):song/{id} 直链 mp3(含 LRC,回填曲目)——独立服务,不走 lxserver 取链
       // ※ 必须在播放门槛之前:听风自带账号体系,不该被 LX 登录/音源门槛拦(老板 09-18 手机端实锤)
       if (t.source === TF_SOURCE) {
