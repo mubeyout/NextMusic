@@ -13,6 +13,7 @@ import { useApp } from '../state/AppState';
 import { providers } from '../services/providers';
 import { library } from '../state/library';
 import { playlistSync } from '../state/playlistSync'; // lx163
+import { store as httpStore, normalizeBase } from '../services/server';
 import { toast } from '../components/Dialog';
 import { enqueueDownload, isWebServerMode } from '../services/downloads';
 import { webDownloadActionItems } from './hdmenubuilders';
@@ -331,7 +332,11 @@ export function HDMain() {
         <View style={st.settingsDock}>
           <NavItem icon="settings" label="设置" active={innerRoute === 'Settings'} onPress={() => (IS_WEB ? railNav('Settings') : hdNav()?.navigate('Settings'))} />
           {IS_WEB ? (
-            <NavItem icon="server" label="后台管理" onPress={() => { window.open('/admin/', '_blank'); }} />
+            <NavItem icon="server" label="后台管理" onPress={() => {
+              // 0922 mac 实锤修复:相对路径在桌面端解析成 nmapp://local/admin/ 被丢给 OS(无处理器弹窗)
+              const b = normalizeBase(httpStore.base);
+              window.open(b ? `${b}/admin/` : '/admin/', '_blank');
+            }} />
           ) : null}
         </View>
       </View>

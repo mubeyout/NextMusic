@@ -218,7 +218,12 @@ export function AboutScreen() {
           <StaticRow label="Web 播放器" value={`NextMusic HD ${APP_VERSION}`} />
           <StaticRow label="服务器" value={srvInfo?.connected ? (srvInfo.name || '已连接') : '本地模式(未连接)'} />
           {srvInfo?.version ? <StaticRow label="服务端版本" value={srvInfo.version} /> : null}
-          <ActionRow label="后台管理" value="/admin/" onPress={() => { if (typeof window !== 'undefined') window.open('/admin/', '_blank'); }} />
+          <ActionRow label="后台管理" value="/admin/" onPress={() => {
+            // 0922 mac 实锤修复:相对路径在桌面端会解析成 nmapp://local/admin/ 被丢给 OS(无处理器弹窗);
+            // 必须解析到服务器绝对地址(web 同源形态 base 为空时保留相对)
+            const b = normalizeBase(httpStore.base);
+            window.open(b ? `${b}/admin/` : '/admin/', '_blank');
+          }} />
         </Section>
       ) : null}
       {Platform.OS === 'web' ? (

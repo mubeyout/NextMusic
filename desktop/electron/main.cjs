@@ -105,8 +105,16 @@ function createWindow() {
   win.webContents.on('console-message', (_e, _l, msg) => { const m = String(msg); if (!/Download the React DevTools/.test(m)) console.log('[web]', m.slice(0, 500)); });
   win.webContents.on('did-fail-load', (_e, code, desc, url) => console.log('[fail-load]', code, desc, url));
   win.webContents.on('render-process-gone', (_e, d) => console.log('[gone]', d.reason));
-  // 外链走系统浏览器
-  win.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
+  // 外链走系统浏览器。但 nmapp:// 是本应用内部特权协议(仅 protocol.handle 消费,从未向 OS 注册)——
+  // 误传给 openExternal 在 mac 会弹「未设定用来打开 URL 的应用程序」(0922 老板 mac 实锤),一律拦截丢弃
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('nmapp://') || url.startsWith('file://')) {
+      console.log('[open-blocked:internal-scheme]', url);
+      return { action: 'deny' };
+    }
+    shell.openExternal(url);
+    return { action: 'deny' };
+  });
   // v1.2.12b(Leo 验收打回1):窗口状态存取移出 dev 分支——正式包同样生效(原先只在 VITE_DEV 内=release 没修)
   win.on('close', () => saveWinState(win));
   if (saved?.maximized) win.maximize(); // 恢复最大化
