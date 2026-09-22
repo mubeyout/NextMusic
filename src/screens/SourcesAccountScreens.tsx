@@ -58,15 +58,19 @@ export function SourcesScreen() {
       return next;
     });
   };
+  // 0922:服务器源拉取失败要可见(原先静默空列表=「看不到后台配置的音源」)
+  const [csErr, setCsErr] = useState<string | null>(null);
   const loadServerSources = () => {
     api.csList().then(l => {
       const list = l.filter(x => x.enabled !== false);
       setServerSources(list);
+      setCsErr(null);
       csCache.save(list); // lx164:成功落缓存
-    }).catch(() => {
-      // lx164:不可达回缓存——音源列表不再清空(根因③);仅移除服务器/账号时才清
+    }).catch((e: Error) => {
+      // lx164:不可达回缓存——音源列表不清空;但失败必须显式报错(403=公开限制+token 无效/未登录,网络=服务器不可达)
       const cached = csCache.read().filter(x => x.enabled !== false);
       setServerSources(cached);
+      setCsErr(e.message || '网络错误');
     });
   };
   // 服务器音源: 播放器/客户端端只读+启停;管理(上传/删除)走后台 /admin/
@@ -139,9 +143,16 @@ export function SourcesScreen() {
         showsVerticalScrollIndicator={false}
       >
       {/* 服务器音源区: 有可用音源才渲染(空/未配置/全部禁用/未连接 → 整块不显示,省得占位) */}
-      {serverSources.length ? (
       <Section title="服务器音源">
         <Text style={[st.hint, IS_HD && hd.hint]}>服务器端启用的共享音源 · 点击图标选择本机是否使用 · 管理(添加/删除)在服务器后台</Text>
+        {csErr ? (
+          <T style={[st.hintRow, IS_HD && hd.hintRow]} focusStyle={st.hintFocus} onPress={() => { setCsErr(null); loadServerSources(); }}>
+            <Text style={[st.hintErr, IS_HD && hd.hintErr]}>⚠ 服务器音源拉取失败：{csErr}（点击重试；若持续 403 请重新登录）</Text>
+          </T>
+        ) : null}
+        {!serverSources.length && !csErr ? (
+          <Text style={[st.hintSub, IS_HD && hd.hintSub]}>服务器暂无启用的共享音源——可在服务器后台「音源管理」添加，或用后台账号上传后设为共享。</Text>
+        ) : null}
         {serverSources.map(cs => {
           const on = csLocalOn(cs.id);
           return (
@@ -161,7 +172,6 @@ export function SourcesScreen() {
           );
         })}
       </Section>
-      ) : null}
 
       <Section title="自定义音源">
         <Text style={[st.hint, IS_HD && hd.hint]}>音源脚本在本机沙箱运行,添加后无需登录即可播放。支持 LX Music 音源协议与 MusicFree 插件;更新由音源内置检查自动提醒。</Text>
@@ -315,6 +325,11 @@ const st = StyleSheet.create({
   section: { borderRadius: 14, backgroundColor: C.surface, padding: 16, marginBottom: 14 },
   secTitle: { color: C.text3, fontSize: 12, fontWeight: '600', letterSpacing: 0.5, marginBottom: 8 },
   hint: { color: C.text3, fontSize: 12, lineHeight: 17, marginBottom: 4 },
+  // 0922:服务器源空态/错误态显式化(老板实锤:静默空=「看不到后台配置的音源」)
+  hintRow: { paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8, backgroundColor: 'rgba(255,82,82,0.08)', borderWidth: 1, borderColor: 'rgba(255,82,82,0.35)', marginBottom: 6 },
+  hintFocus: { borderColor: '#FF5252' },
+  hintErr: { color: '#FF8A80', fontSize: 12, lineHeight: 17 },
+  hintSub: { color: C.text3, fontSize: 12, lineHeight: 17, marginBottom: 6 },
   empty: { color: C.text3, fontSize: 13, paddingVertical: 10 },
   // 源行(对齐设置页行式语言)
   srcRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint },
@@ -387,6 +402,9 @@ const hd = StyleSheet.create({
   backBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   title: { flex: 1, color: C.text, fontSize: 20, fontWeight: '800' }, // lx166 居左
   hint: { fontSize: 13, lineHeight: 19 },
+  hintRow: { paddingVertical: 10, paddingHorizontal: 12 },
+  hintErr: { fontSize: 14, lineHeight: 20 },
+  hintSub: { fontSize: 14, lineHeight: 20 },
   srcRow: { paddingVertical: 14, gap: 14 },
   srcIcon: { width: 46, height: 46, borderRadius: 13 },
   srcName: { fontSize: 16 },

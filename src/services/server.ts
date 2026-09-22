@@ -183,10 +183,9 @@ export const api = {
     return h;
   },
   async csList(): Promise<{ id: string; name: string; version: string; enabled: boolean; channels: string[] }[]> {
-    try {
-      const q = store.token && store.username ? `?username=${encodeURIComponent(store.username)}` : '';
-      return (await req('/api/custom-source/list' + q, { headers: api.csHeaders() })) as never;
-    } catch { return []; }
+    // 0922:不再内部吞错——拉取失败要让 UI 显式报错(老板实锤:静默空列表=「看不到后台配置的音源」无从排查)
+    const q = store.token && store.username ? `?username=${encodeURIComponent(store.username)}` : '';
+    return (await req('/api/custom-source/list' + q, { headers: api.csHeaders() })) as never;
   },
   /** share=true 公共源(全端共享,服务端 username 缺省→_open, 需管理员); false=登录用户私有源 */
   async csUpload(filename: string, script: string, share = true): Promise<void> {
