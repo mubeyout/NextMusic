@@ -167,13 +167,15 @@ export function MediaLibsScreen() {
 // v3.31:按压反馈基线 opacity .72 + scale .985（useNativeDriver 平台门控）；hover 态样式由 hoverStyle 注入
 function PressCard(props: {
   style?: unknown; hoverStyle?: ViewStyle; onPress?: () => void; onLongPress?: () => void;
-  onHoverIn?: () => void; onHoverOut?: () => void; disabled?: boolean; children?: React.ReactNode;
+  onHoverIn?: () => void; onHoverOut?: () => void; disabled?: boolean; tvFocus?: boolean; children?: React.ReactNode;
 }) {
-  const { style, hoverStyle, onPress, onLongPress, onHoverIn, onHoverOut, disabled, children } = props;
+  const { style, hoverStyle, onPress, onLongPress, onHoverIn, onHoverOut, disabled, tvFocus, children } = props;
   const [hov, setHov] = useState(false);
   const p = React.useRef(new Animated.Value(1)).current;
   if (IS_HD) return (
-    <HDTouch style={style as never} onPress={onPress} onLongPress={onLongPress} disabled={disabled} focusStyle={focus(14)}>
+    <HDTouch style={style as never} onPress={onPress} onLongPress={onLongPress} disabled={disabled}
+      focusStyle={tvFocus ? dv.rowFocusTv : focus(14)}
+      focusBg={tvFocus ? C.hover : undefined}>
       {children}
     </HDTouch>
   );
@@ -212,7 +214,17 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
   const [acctId, setAcctId] = useState(route.params.acctId);
   const acct = providers.get(acctId);
   const isDav = acct?.type === 'webdav';
-  const davDesk0 = Platform.OS === 'web' && Dimensions.get('window').width >= 900; // v2 桌面双区(左墙右栏)
+
+  // web 宽窗跟踪（≥900px 桌面双区：左行式列表 + 右操作栏；窄窗单列）
+  // RNW 的 Dimensions change 在桌面壳 zoom/resize 下不可靠，web 直接监听 window resize
+  const [winW, setWinW] = useState(() => IS_WEB ? (globalThis as { innerWidth?: number }).innerWidth || Dimensions.get('window').width : Dimensions.get('window').width);
+  useEffect(() => {
+    if (!IS_WEB) return;
+    const h = () => setWinW((globalThis as { innerWidth?: number }).innerWidth || 0);
+    globalThis.addEventListener?.('resize', h);
+    return () => { globalThis.removeEventListener?.('resize', h); };
+  }, []);
+  const davWide = IS_WEB && winW >= 900;
 
   // 综合页分区展开态（默认收起只出横滑预览，点「全部」原地展开）
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -320,6 +332,24 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
   };
   const selSongs = davSongs.filter(s => sel.has(s.songmid));
 
+  // TV：目录级操作收进 ⋯ 菜单（D-pad OK 弹 dialog.menu，遥控可达）
+  const davDirName = () => `WebDAV ${davDir === '/' ? '根目录' : davDir.split('/').filter(Boolean).pop() || ''}`;
+  const davMenu = () => {
+    const items: { label: string; onPress: () => void; danger?: boolean }[] = [];
+    if (davSongs.length) {
+      items.push({ label: '播放全部', onPress: () => playSong(davSongs[0], davSongs) });
+      items.push({ label: '选择歌曲', onPress: () => setDavSelMode(true) });
+      items.push({ label: `整个目录加入歌单 (${davSongs.length} 首)`, onPress: () => importDav(davDirName(), davSongs) });
+      items.push({ label: '下载全部', onPress: () => { const n = enqueueDownload(davSongs); toast(`${n} 首加入下载队列`); } });
+    }
+    if (davDir !== '/') {
+      const up = davDir.replace(/\/+$/, '').replace(/\/+[^/]*$/, '') || '/';
+      items.push({ label: '返回上一级', onPress: () => setDavDir(up) });
+    }
+    items.push({ label: '刷新目录', onPress: () => davLoad() });
+    dialog.menu(davDirName(), items);
+  };
+
   if (!acct) return (
     <View style={st.screen}>
       <PageHeader title="媒体库" />
@@ -365,11 +395,11 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
       )}
 
       {isDav ? (
-        /* ---------- WebDAV 目录浏览 v3.31 重设计：行式信息密度优先（面包屑+文件夹行+歌曲行），替换唱片墙大卡 ---------- */
-        <ScrollView contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingTop: 4, paddingBottom: ((current ? 100 : 0) + insets.bottom + 24) + (IS_HD ? 24 : 0) }}>
+        /* ---------- WebDAV 目录浏览 v3.31 行式 + 0922 三端适配：TV 焦点放大行 / 桌面≥900 双区（左列表+右操作栏）/ 窄窗单列 ---------- */
+        <ScrollView contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : (IS_WEB ? Math.min(Math.max(winW * 0.02, 16), 40) : 20), paddingTop: 4, paddingBottom: ((current ? 100 : 0) + insets.bottom + 24) + (IS_HD ? 24 : 0) }}>
           {davBusy ? (
-            <View style={[dv.listWrap, IS_WEB && dv.listWrapWeb]}>
-              {[0, 1, 2, 3, 4, 5].map(i => <View key={i} style={dv.rowSkel} />)}
+            <View style={[dv.listWrap, davWide && dv.listWrapWeb]}>
+              {[0, 1, 2, 3, 4, 5].map(i => <View key={i} style={[dv.rowSkel, IS_HD && dv.rowSkelHD]} />)}
             </View>
           ) : davErr ? (
             <View style={st.center}>
@@ -381,8 +411,8 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
             </View>
           ) : (
             <>
-              {/* 面包屑：祖先段可点，当前段实心胶囊；尾部刷新 */}
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={dv.crumbWrap} contentContainerStyle={{ gap: 4, alignItems: 'center', paddingRight: 10 }}>
+              {/* 面包屑：祖先段可点，当前段实心胶囊；尾部刷新（TV 加大触点） */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={dv.crumbWrap} contentContainerStyle={{ gap: IS_HD ? 6 : 4, alignItems: 'center', paddingRight: 10 }}>
                 {(() => {
                   const segs = davDir.split('/').filter(Boolean);
                   const crumbs = [{ label: '根目录', path: '/' }];
@@ -392,31 +422,40 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                     const last = ci === crumbs.length - 1;
                     return (
                       <React.Fragment key={c.path}>
-                        {ci > 0 ? <Icon name="chevronright" size={11} color={C.text3} /> : null}
+                        {ci > 0 ? <Icon name="chevronright" size={IS_HD ? 13 : 11} color={C.text3} /> : null}
                         {last ? (
-                          <View style={dv.crumbCur}><Text style={dv.crumbCurText} numberOfLines={1}>{c.label}</Text></View>
+                          <View style={[dv.crumbCur, IS_HD && dv.crumbCurHD]}><Text style={[dv.crumbCurText, IS_HD && dv.crumbCurTextHD]} numberOfLines={1}>{c.label}</Text></View>
                         ) : (
-                          <T style={dv.crumbItem} focusStyle={focus(999)} onPress={() => setDavDir(c.path)}>
-                            <Text style={dv.crumbItemText} numberOfLines={1}>{c.label}</Text>
+                          <T style={[dv.crumbItem, IS_HD && dv.crumbItemHD]} focusStyle={focus(999)} onPress={() => setDavDir(c.path)}>
+                            <Text style={[dv.crumbItemText, IS_HD && dv.crumbItemTextHD]} numberOfLines={1}>{c.label}</Text>
                           </T>
                         )}
                       </React.Fragment>
                     );
                   });
                 })()}
-                <T style={dv.crumbRefresh} focusStyle={focus(999)} onPress={davLoad} hitSlop={6}>
-                  <Icon name="refresh" size={13} color={C.text3} />
+                <T style={[dv.crumbRefresh, IS_HD && dv.crumbRefreshHD]} focusStyle={focus(999)} onPress={davLoad} hitSlop={6}>
+                  <Icon name="refresh" size={IS_HD ? 16 : 13} color={C.text3} />
                 </T>
               </ScrollView>
 
-              {/* 文件列表容器：头栏(统计+动作) + 文件夹行 + 歌曲行 */}
+              {/* 桌面≥900：双区（左行式列表 + 右操作栏）；其余单列限宽 */}
+              <View style={[davWide && dv.davCols]}>
               <View style={[dv.listWrap, IS_WEB && dv.listWrapWeb]}>
                 <View style={dv.headBar}>
-                  <Text style={dv.stats} numberOfLines={1}>
+                  <Text style={[dv.stats, IS_HD && dv.statsHD]} numberOfLines={1}>
                     {davDirs.length ? `${davDirs.length} 个文件夹` : ''}{davDirs.length && davSongs.length ? ' · ' : ''}{davSongs.length ? `${davSongs.length} 首` : ''}
                     {!davDirs.length && !davSongs.length ? '空目录' : ''}
                   </Text>
-                  {davSelMode ? (
+                  {/* TV：动作收进行尾 ⋯ 菜单（D-pad 横向逐个可达 + 长按列表行也可呼出） */}
+                  {IS_HD ? (
+                    davSongs.length || davDirs.length ? (
+                      <T style={dv.actBtn} focusStyle={focus(999)} onLongPress={() => davMenu()}
+                        onPress={() => davMenu()}>
+                        <Icon name="more" size={16} color={C.text2} />
+                      </T>
+                    ) : null
+                  ) : davSelMode ? (
                     <>
                       <T style={dv.actBtn} focusStyle={focus(999)} onPress={() => setSel(sel.size === davSongs.length ? new Set() : new Set(davSongs.map(s => s.songmid)))}>
                         <Text style={dv.actBtnText}>{sel.size === davSongs.length ? '取消全选' : '全选'}</Text>
@@ -448,18 +487,20 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
 
                 {/* 上一级 */}
                 {davDir !== '/' ? (
-                  <PressCard style={[dv.folderRow, IS_HD && dv.rowHD]} hoverStyle={dv.rowHover}
+                  <PressCard style={[dv.folderRow, IS_HD && dv.folderRowHD]} hoverStyle={dv.rowHover} tvFocus
                     onPress={() => setDavDir(davDir.replace(/\/+$/, '').replace(/\/+[^/]*$/, '') || '/')}>
-                    <View style={dv.folderIcon}><Icon name="back" size={15} color={C.text3} /></View>
-                    <Text style={dv.folderName}>上一级</Text>
+                    <View style={[dv.folderIcon, IS_HD && dv.folderIconHD]}><Icon name="back" size={IS_HD ? 17 : 15} color={C.text3} /></View>
+                    <Text style={[dv.folderName, IS_HD && dv.textHD]}>上一级</Text>
                   </PressCard>
                 ) : null}
 
                 {/* 文件夹行：icon 左文右，点击进入 */}
                 {davDirs.map((d, i) => (
-                  <PressCard key={d.path} style={[dv.folderRow, (davDir !== '/' || i > 0) && dv.rowDivide, IS_HD && dv.rowHD]} hoverStyle={dv.rowHover} onPress={() => setDavDir(d.path)}>
-                    <View style={dv.folderIcon}><Icon name="folder" size={IS_HD ? 20 : 17} color={C.brandText} /></View>
-                    <Text style={dv.folderName} numberOfLines={1}>{d.name}</Text>
+                  <PressCard key={d.path} style={[dv.folderRow, (davDir !== '/' || i > 0) && dv.rowDivide, IS_HD && dv.folderRowHD]} hoverStyle={dv.rowHover} tvFocus
+                    onLongPress={IS_HD ? () => davMenu() : undefined}
+                    onPress={() => setDavDir(d.path)}>
+                    <View style={[dv.folderIcon, IS_HD && dv.folderIconHD]}><Icon name="folder" size={IS_HD ? 20 : 17} color={C.brandText} /></View>
+                    <Text style={[dv.folderName, IS_HD && dv.textHD]} numberOfLines={1}>{d.name}</Text>
                     <Icon name="chevronright" size={IS_HD ? 18 : 15} color={C.text3} />
                   </PressCard>
                 ))}
@@ -469,8 +510,8 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                   const on = sel.has(s.songmid);
                   const isCur = current?.songmid === s.songmid;
                   return (
-                    <PressCard key={s.songmid} style={[dv.songRow, (davDir !== '/' || davDirs.length > 0) && dv.rowDivide, on && dv.songRowOn, IS_HD && dv.rowHD]}
-                      hoverStyle={dv.rowHover}
+                    <PressCard key={s.songmid} style={[dv.songRow, (davDir !== '/' || davDirs.length > 0) && dv.rowDivide, on && dv.songRowOn, IS_HD && dv.songRowHD]}
+                      hoverStyle={dv.rowHover} tvFocus
                       onLongPress={() => setActSong(s)}
                       onPress={() => (davSelMode ? toggleSel(s.songmid) : playSong(s, davSongs))}>
                       {davSelMode ? (
@@ -480,13 +521,13 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                       ) : isCur ? (
                         <View style={dv.eq}><View style={[dv.eqBar, { height: 5 }]} /><View style={[dv.eqBar, { height: 10 }]} /><View style={[dv.eqBar, { height: 7 }]} /></View>
                       ) : (
-                        <Text style={dv.idx}>{si + 1}</Text>
+                        <Text style={[dv.idx, IS_HD && dv.idxHD]}>{si + 1}</Text>
                       )}
                       <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={[dv.title, isCur && { color: C.brandText }]} numberOfLines={1}>{s.name}</Text>
-                        <Text style={dv.sub} numberOfLines={1}>{s.singer}{s.albumName ? ` · ${s.albumName}` : ''} · {s._types?.flac ? 'FLAC' : 'MP3'}</Text>
+                        <Text style={[dv.title, IS_HD && dv.textHD, isCur && { color: C.brandText }]} numberOfLines={1}>{s.name}</Text>
+                        <Text style={[dv.sub, IS_HD && dv.subHD]} numberOfLines={1}>{s.singer}{s.albumName ? ` · ${s.albumName}` : ''} · {s._types?.flac ? 'FLAC' : 'MP3'}</Text>
                       </View>
-                      {!davSelMode ? <Text style={dv.dur} numberOfLines={1}>{s.interval || ''}</Text> : null}
+                      {!davSelMode ? <Text style={[dv.dur, IS_HD && dv.idxHD]} numberOfLines={1}>{s.interval || ''}</Text> : null}
                     </PressCard>
                   );
                 })}
@@ -494,6 +535,30 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                 {!davDirs.length && !davSongs.length ? (
                   <EmptyState icon="music" title="这个文件夹还没有音乐" sub="支持 FLAC / MP3 / APE / WAV / OGG 等常见音频格式" />
                 ) : null}
+              </View>
+
+              {/* 桌面≥900 右操作栏：吸附列表右缘，常驻动作（不依赖 hover） */}
+              {davWide && davSongs.length ? (
+                <View style={dv.sidePanel}>
+                  <T style={[dv.sideBtn, { backgroundColor: C.brand }]} onPress={() => playSong(davSongs[0], davSongs)}>
+                    <Icon name="play" size={13} color={C.onBrand} />
+                    <Text style={dv.sideBtnMain}>播放全部 · {davSongs.length} 首</Text>
+                  </T>
+                  <T style={dv.sideBtn} onPress={() => setDavSelMode(true)}>
+                    <Icon name="check" size={13} color={C.text2} />
+                    <Text style={dv.sideBtnText}>选择歌曲</Text>
+                  </T>
+                  <T style={dv.sideBtn} onPress={() => { const name = `WebDAV ${davDir === '/' ? '根目录' : davDir.split('/').filter(Boolean).pop() || ''}`; importDav(name, davSongs); }}>
+                    <Icon name="add" size={13} color={C.text2} />
+                    <Text style={dv.sideBtnText}>整个目录加入歌单</Text>
+                  </T>
+                  <T style={dv.sideBtn} onPress={() => { const n = enqueueDownload(davSongs); toast(`${n} 首加入下载队列`); }}>
+                    <Icon name="download" size={13} color={C.text2} />
+                    <Text style={dv.sideBtnText}>下载全部</Text>
+                  </T>
+                  <Text style={dv.sideHint} numberOfLines={2}>路径：{davDir}</Text>
+                </View>
+              ) : null}
               </View>
             </>
           )}
@@ -917,18 +982,39 @@ const dv = StyleSheet.create({
   actBtnText: { color: C.text2, fontSize: 11.5, fontWeight: '600' },
   actBtnTextMain: { color: C.onBrand },
   rowSkel: { height: 52, borderRadius: 10, backgroundColor: 'rgba(255,255,255,.05)', marginVertical: 5 },
+  rowSkelHD: { height: 78 },
+  rowHover: { backgroundColor: C.surface2 },
+  // 0922 TV 行焦点：清晰 2.5px 环 + 轻微放大（行高无需 1.05 级，7b 行内禁大 zoom），双保险高亮背景由 focusBg 提供
+  rowFocusTv: { borderWidth: 2.5, borderColor: C.brand, borderRadius: 10, transform: [{ scale: 1.02 }] } as ViewStyle,
   folderRow: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10 },
+  folderRowHD: { minHeight: 76, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12, gap: 14 },
   folderIcon: { width: 30, height: 30, borderRadius: 9, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  folderIconHD: { width: 42, height: 42, borderRadius: 12 },
   folderName: { flex: 1, color: C.text, fontSize: 13.5, lineHeight: 19, fontWeight: '500' },
+  textHD: { fontSize: 16.5, lineHeight: 23 }, // TV 10ft 观看：主文字 16.5
   songRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10 },
+  songRowHD: { minHeight: 80, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12, gap: 14 },
   songRowOn: { backgroundColor: C.selTint },
   rowDivide: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.strokeFaint, borderRadius: 0 },
-  rowHover: { backgroundColor: C.surface2 },
-  rowHD: { minHeight: 68 }, // v3.28 共屏 HD 行基准
   idx: { width: 26, textAlign: 'center', color: C.text3, fontSize: 11.5, fontVariant: ['tabular-nums'] },
+  idxHD: { width: 34, fontSize: 13 },
   title: { color: C.text, fontSize: 13.5, lineHeight: 19, fontWeight: '500' },
   sub: { color: C.text2, fontSize: 10.5, lineHeight: 14, marginTop: 1 },
+  subHD: { fontSize: 12.5, lineHeight: 17 },
   dur: { color: C.text3, fontSize: 11, fontVariant: ['tabular-nums'] },
+  statsHD: { fontSize: 13 },
+  crumbItemHD: { paddingVertical: 5, paddingHorizontal: 8 },
+  crumbItemTextHD: { fontSize: 14 },
+  crumbCurHD: { paddingVertical: 6, paddingHorizontal: 13 },
+  crumbCurTextHD: { fontSize: 13.5 },
+  crumbRefreshHD: { width: 34, height: 34 },
+  // 桌面≥900 双区容器：左列表 flex1 + 右操作栏 260 固定（对齐 860 列表右缘）
+  davCols: { flexDirection: 'row', alignItems: 'flex-start', gap: 24, maxWidth: 1140, alignSelf: 'stretch' },
+  sidePanel: { width: 260, flexShrink: 0, gap: 8, position: 'relative', top: 40, padding: 14, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke },
+  sideBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 38, paddingHorizontal: 12, borderRadius: 10, backgroundColor: C.surface2 },
+  sideBtnMain: { color: C.onBrand, fontSize: 12.5, fontWeight: '700' },
+  sideBtnText: { color: C.text2, fontSize: 12.5, fontWeight: '600' },
+  sideHint: { color: C.text3, fontSize: 10.5, lineHeight: 14, marginTop: 4 },
   eq: { width: 26, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: 2, height: 12 },
   eqBar: { width: 3, borderRadius: 1.5, backgroundColor: C.brand },
 });
