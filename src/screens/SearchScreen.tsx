@@ -49,6 +49,7 @@ export function SearchScreen() {
   const [actSong, setActSong] = useState<SongItem | null>(null); // lx163:搜索行 ⋯ 菜单
   const [collect, setCollect] = useState(false);
   const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
+  const seqRef = useRef(0); // lxfix 0922:搜索代次守卫
 
   useEffect(() => {
     // 进入页面自动聚焦键盘
@@ -59,10 +60,8 @@ export function SearchScreen() {
   const search = async (q: string) => {
     const query = q.trim();
     if (!query) return;
+    const my = ++seqRef.current; // lxfix 0922 老板「搜索结果与输入无关」:旧查询慢响应回来会盖掉新结果;代次守卫,非最新直接丢弃
     setBusy(true); setErr(null); setAllFailed(false); setShowAllSongs(false);
-    // 搜索历史(去重置顶,留 10 条)
-    const h = [query, ...history.filter(x => x !== query)].slice(0, 10);
-    setHistory(h); histKv.set('h', JSON.stringify(h));
     try {
       // lx163e:聚合搜索——五源并行取歌曲,交错合并去重(同名同歌手取先到);歌手/专辑服务器智能选源
       const [lists, ar, al] = await Promise.all([
@@ -70,6 +69,10 @@ export function SearchScreen() {
         api.searchSingers(query, 'kw').catch(() => [] as never),
         api.searchAlbums(query, 'kw').catch(() => [] as never),
       ]);
+      if (my !== seqRef.current) return; // 过期响应:用户已改词,丢弃(否则旧结果盖新词→「搜的和输入的没关系」)
+      // 搜索历史(去重置顶,留 10 条)——只在结果被采纳时写入,半截词不进历史
+      const h = [query, ...history.filter(x => x !== query)].slice(0, 10);
+      setHistory(h); histKv.set('h', JSON.stringify(h));
       const seen = new Set<string>(); const sg: SongItem[] = [];
       for (let i = 0; i < 4; i++) for (const list of lists) {
         const s = list[i]; if (!s) continue;
@@ -79,9 +82,10 @@ export function SearchScreen() {
       setResults(sg); setSingers(ar); setAlbums(al);
       if (!sg.length && !ar.length && !al.length) setAllFailed(true);
     } catch {
+      if (my !== seqRef.current) return;
       setErr('搜索失败：无法连接音源');
       setResults([]);
-    } finally { setBusy(false); }
+    } finally { if (my === seqRef.current) setBusy(false); } // 过期轮不清 busy,否则新搜索转圈被误关
   };
 
   // debounce 自动搜索（与原探索页一致）；清空输入回空闲态（三路结果一并清，综合流默认态也能回 chips）

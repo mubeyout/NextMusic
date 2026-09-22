@@ -74,6 +74,7 @@ export function HDSearch() {
   const { playSong, current, appendQueue, playNextUp } = usePlayer();
   const { connected, token } = useApp(); // #018:歌曲行统一菜单 deps
   const [kw, setKw] = useState('');
+  const seqRef = useRef(0); // lxfix 0922:搜索代次守卫
   const [sfocus, setSfocus] = useState(false); // #035b:搜索框整框 focus 激活态
   const [mode, setMode] = useState<'song' | 'singer' | 'album'>('song'); // lx163:搜索类型
   const [singers, setSingers] = useState<{ id: string; name: string; img?: string; source?: string }[] | null>(null);
@@ -86,12 +87,14 @@ export function HDSearch() {
   const search = async (q: string, m = mode) => {
     const query = q.trim();
     if (!query) return;
+    const my = ++seqRef.current; // lxfix 0922 老板「搜索结果与输入无关」:代次守卫,旧慢响应回来即丢弃
     setBusy(true); setErr(null);
     try {
-      if (m === 'singer') { setSingers(await api.searchSingers(query, 'kw')); return; } // lx163:服务器 extendSearch
-      if (m === 'album') { setAlbums(await api.searchAlbums(query, 'kw')); return; }
+      if (m === 'singer') { const ar = await api.searchSingers(query, 'kw'); if (my === seqRef.current) setSingers(ar); return; } // lx163:服务器 extendSearch
+      if (m === 'album') { const al = await api.searchAlbums(query, 'kw'); if (my === seqRef.current) setAlbums(al); return; }
       // lx163e:五源并行聚合,交错去重(与手机端同策略)
       const lists = await Promise.all(SOURCES.map(s => lxapi.search(query, s.id).catch(() => [] as SongItem[])));
+      if (my !== seqRef.current) return; // 过期响应丢弃
       const seen = new Set<string>(); const merged: SongItem[] = [];
       for (let i = 0; i < 4; i++) for (const list of lists) {
         const s = list[i]; if (!s) continue;
@@ -100,9 +103,10 @@ export function HDSearch() {
       }
       setResults(merged);
     } catch {
+      if (my !== seqRef.current) return;
       setErr('搜索失败:无法连接音源');
       setResults([]);
-    } finally { setBusy(false); }
+    } finally { if (my === seqRef.current) setBusy(false); }
   };
 
   // debounce 自动搜索
