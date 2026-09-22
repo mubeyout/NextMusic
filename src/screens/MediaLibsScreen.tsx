@@ -411,8 +411,9 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
             </View>
           ) : (
             <>
-              {/* 面包屑：祖先段可点，当前段实心胶囊；尾部刷新（TV 加大触点） */}
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={dv.crumbWrap} contentContainerStyle={{ gap: IS_HD ? 6 : 4, alignItems: 'center', paddingRight: 10 }}>
+              {/* 顶栏：左面包屑目录层级(flex:1 可横向滚动) + 右侧页面右端常驻动作组(不折叠不收纳，不入滚动区) */}
+              <View style={dv.topRow}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[dv.crumbWrap, { flex: 1, minWidth: 0 }]} contentContainerStyle={{ gap: IS_HD ? 6 : 4, alignItems: 'center' }}>
                 {(() => {
                   const segs = davDir.split('/').filter(Boolean);
                   const crumbs = [{ label: '根目录', path: '/' }];
@@ -434,54 +435,54 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                     );
                   });
                 })()}
-                <T style={[dv.crumbRefresh, IS_HD && dv.crumbRefreshHD]} focusStyle={focus(999)} onPress={davLoad} hitSlop={6}>
-                  <Icon name="refresh" size={IS_HD ? 16 : 13} color={C.text3} />
-                </T>
               </ScrollView>
+              {/* —— 页面右端常驻动作组（固定可见，随选择模式切换内容） —— */}
+              <View style={dv.actRow}>
+                {/* 展开常驻：web（含 HD flavor 的 docker/桌面浏览器）一律全展开；仅原生 TV 用 ⋯ 菜单（老板 0922：不折叠全开放右边） */}
+                {IS_HD && !IS_WEB ? (
+                  davSongs.length || davDirs.length ? (
+                    <T style={[dv.actBtn]} focusStyle={focus(999)} onLongPress={() => davMenu()} onPress={() => davMenu()}>
+                      <Icon name="more" size={16} color={C.text2} />
+                    </T>
+                  ) : null
+                ) : davSelMode ? (
+                  <>
+                    <T style={[dv.actBtn]} focusStyle={focus(999)} onPress={() => setSel(sel.size === davSongs.length ? new Set() : new Set(davSongs.map(s => s.songmid)))}>
+                      <Text style={dv.actBtnText}>{sel.size === davSongs.length ? '取消全选' : '全选'}</Text>
+                    </T>
+                    <T style={[dv.actBtn, dv.actBtnMain]} focusStyle={focus(999)} disabled={!selSongs.length}
+                      onPress={() => { const name = `WebDAV ${davDir === '/' ? '根目录' : davDir.split('/').filter(Boolean).pop() || ''}`; importDav(name, selSongs); }}>
+                      <Text style={[dv.actBtnText, dv.actBtnTextMain]}>加入歌单{selSongs.length ? ` ${selSongs.length}` : ''}</Text>
+                    </T>
+                    <T style={[dv.actBtn, dv.actBtnMain]} focusStyle={focus(999)} disabled={!selSongs.length}
+                      onPress={() => { const n = enqueueDownload(selSongs); toast(`${n} 首加入下载队列`); }}>
+                      <Text style={[dv.actBtnText, dv.actBtnTextMain]}>下载</Text>
+                    </T>
+                    <T style={[dv.actBtn]} focusStyle={focus(999)} onPress={() => { setDavSelMode(false); setSel(new Set()); }}>
+                      <Text style={dv.actBtnText}>完成</Text>
+                    </T>
+                  </>
+                ) : davSongs.length ? (
+                  <>
+                    <T style={[dv.actBtn]} focusStyle={focus(999)} onPress={() => setDavSelMode(true)}>
+                      <Text style={dv.actBtnText}>选择</Text>
+                    </T>
+                    <T style={[dv.actBtn, dv.actBtnMain]} focusStyle={focus(999)} onPress={() => playSong(davSongs[0], davSongs)}>
+                      <Icon name="play" size={12} color={C.onBrand} />
+                      <Text style={[dv.actBtnText, dv.actBtnTextMain]}>播放全部</Text>
+                    </T>
+                  </>
+                ) : null}
+              </View>
+              </View>
 
-              {/* 列表满幅：一行占满整行；操作选项统一收进列表顶部动作栏（全端） */}
+              {/* 列表满幅：一行占满整行；头栏只留统计信息 */}
               <View style={[dv.listWrap]}>
                 <View style={dv.headBar}>
                   <Text style={[dv.stats, IS_HD && dv.statsHD]} numberOfLines={1}>
                     {davDirs.length ? `${davDirs.length} 个文件夹` : ''}{davDirs.length && davSongs.length ? ' · ' : ''}{davSongs.length ? `${davSongs.length} 首` : ''}
                     {!davDirs.length && !davSongs.length ? '空目录' : ''}
                   </Text>
-                  {/* 动作统一在列表顶部：非 TV 网页/手机常驻；TV 保留 ⋯（D-pad 菜单）+ 长按 */}
-                  {IS_HD ? (
-                    davSongs.length || davDirs.length ? (
-                      <T style={dv.actBtn} focusStyle={focus(999)} onLongPress={() => davMenu()}
-                        onPress={() => davMenu()}>
-                        <Icon name="more" size={16} color={C.text2} />
-                      </T>
-                    ) : null
-                  ) : davSelMode ? (
-                    <>
-                      <T style={dv.actBtn} focusStyle={focus(999)} onPress={() => setSel(sel.size === davSongs.length ? new Set() : new Set(davSongs.map(s => s.songmid)))}>
-                        <Text style={dv.actBtnText}>{sel.size === davSongs.length ? '取消全选' : '全选'}</Text>
-                      </T>
-                      <T style={[dv.actBtn, dv.actBtnMain]} focusStyle={focus(999)} disabled={!selSongs.length}
-                        onPress={() => { const name = `WebDAV ${davDir === '/' ? '根目录' : davDir.split('/').filter(Boolean).pop() || ''}`; importDav(name, selSongs); }}>
-                        <Text style={[dv.actBtnText, dv.actBtnTextMain]}>加入歌单{selSongs.length ? ` ${selSongs.length}` : ''}</Text>
-                      </T>
-                      <T style={[dv.actBtn, dv.actBtnMain]} focusStyle={focus(999)} disabled={!selSongs.length}
-                        onPress={() => { const n = enqueueDownload(selSongs); toast(`${n} 首加入下载队列`); }}>
-                        <Text style={[dv.actBtnText, dv.actBtnTextMain]}>下载</Text>
-                      </T>
-                      <T style={dv.actBtn} focusStyle={focus(999)} onPress={() => { setDavSelMode(false); setSel(new Set()); }}>
-                        <Text style={dv.actBtnText}>完成</Text>
-                      </T>
-                    </>
-                  ) : davSongs.length ? (
-                    <>
-                      <T style={dv.actBtn} focusStyle={focus(999)} onPress={() => setDavSelMode(true)}>
-                        <Text style={dv.actBtnText}>选择</Text>
-                      </T>
-                      <T style={[dv.actBtn, dv.actBtnMain]} focusStyle={focus(999)} onPress={() => playSong(davSongs[0], davSongs)}>
-                        <Icon name="play" size={12} color={C.onBrand} />
-                        <Text style={[dv.actBtnText, dv.actBtnTextMain]}>播放全部</Text>
-                      </T>
-                    </>
-                  ) : null}
                 </View>
 
                 {/* 上一级 */}
@@ -954,6 +955,9 @@ const dv = StyleSheet.create({
   stats: { flex: 1, color: C.text3, fontSize: 11.5 },
   actBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 28, paddingHorizontal: 12, borderRadius: 999, backgroundColor: C.surface2 },
   actBtnMain: { backgroundColor: C.brand },
+  // 顶栏:左面包屑(flex:1)+右端常驻动作组(固定可见,不入滚动区)
+  topRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+  actRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 },
   actBtnText: { color: C.text2, fontSize: 11.5, fontWeight: '600' },
   actBtnTextMain: { color: C.onBrand },
   rowSkel: { height: 52, borderRadius: 10, backgroundColor: 'rgba(255,255,255,.05)', marginVertical: 5 },

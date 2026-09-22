@@ -714,11 +714,20 @@ export const providerApi = {
         } else if (AUDIO.test(rel)) {
           const absUrl = hrefRaw.startsWith('/') ? origin + hrefRaw : mAbs ? hrefRaw : base + '/' + hrefRaw;
           const file = rel.split('/').pop() || rel;
+          // 0922 老板实锤：歌名在前歌手在后（主流命名「歌名 - 歌手」，如「思念像风一样 - 孤街酒客」）。
+          // 库内另一形态「红豆 - 王菲 - 128k - 专辑」：含「数字k」音质中缀——首段=歌名，末缀前的中段含歌手。
           const stem = file.replace(AUDIO, '');
           const dash = stem.split(' - ');
+          let name = stem;
+          let singer = a.name || 'WebDAV';
+          if (dash.length >= 2) {
+            name = dash[0].trim();
+            const rest = dash.slice(1);
+            const qi = rest.findIndex(x => /\s?\d{2,3}k\b/i.test(x));
+            singer = (qi > 0 ? rest.slice(0, qi) : rest).join(' - ').trim();
+          }
           songs.push({
-            name: dash.length >= 2 ? dash.slice(1).join(' - ').trim() : stem,
-            singer: dash.length >= 2 ? dash[0].trim() : (a.name || 'WebDAV'),
+            name, singer,
             source: 'webdav',
             songmid: absUrl,
             albumId: '', interval: '',
