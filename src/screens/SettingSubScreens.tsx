@@ -17,7 +17,7 @@ import { load as loadAppPersist, type RunMode } from '../state/AppState';
 import { library } from '../state/library';
 import { downloads as dlStore, fmtBytes, downloadFails, clearFails, subscribeDownloads } from '../services/downloads';
 import { APP_VERSION, IS_HD } from '../services/appversion';
-import { api } from '../services/server';
+import { api, store as httpStore, normalizeBase } from '../services/server';
 
 // ---------- 基本设置 ----------
 export function BasicSettingsScreen() {
@@ -142,6 +142,8 @@ const AppVersionNative = NativeModules.AppVersionInfo as { versionName?: string;
 // 独立更新通道：HD（车机/TV）走 update-hd.json，版本号空间与手机包互不干扰
 const UPDATE_FILE = IS_HD ? 'update-hd.json' : 'update.json';
 const DEFAULT_UPDATE_URL = `https://cdn.jsdelivr.net/gh/mubeyout/nextmusic-release@main/${UPDATE_FILE}`;
+// 2026-09-22:release 仓已转私有,GitHub 双镜像仅作遗留兑底;主更新源=自己服务器 /downloads/(自托管)
+const SELF_UPDATE_URL = normalizeBase(httpStore.base) ? `${normalizeBase(httpStore.base)}/downloads/${UPDATE_FILE}` : '';
 
 export function AboutScreen() {
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string) => void };
@@ -149,10 +151,11 @@ export function AboutScreen() {
   const [checking, setChecking] = useState(false);
 
   const checkUpdate = async () => {
-    // GitHub 双镜像降级：raw(权威,永远最新) → jsDelivr CDN(仅网络不通时的兑底)
+    // 更新源降级：自己服务器(主,随登录配置自动适配域名/IP) → GitHub raw(遗留,仓已转私有后不可达) → jsDelivr CDN(同上)
     // 坑89:jsDelivr 多层 PoP 缓存会滞后/回旧(实测 purge 后仍间歇吐旧版),陈旧但 200 的响应会短路兑底逻辑,
-    // 故 raw 必须打头;大陆裸网 raw 不通时自然落到 jsDelivr
+    // 故自托管源必须打头;均不可达时自然落到遗留镜像
     const urls = [...new Set([
+      SELF_UPDATE_URL,
       `https://raw.githubusercontent.com/mubeyout/nextmusic-release/main/${UPDATE_FILE}`,
       DEFAULT_UPDATE_URL,
     ].filter(u => /^https?:\/\//.test(u)))];
@@ -180,7 +183,13 @@ export function AboutScreen() {
               (info.notes || '').slice(0, 600) + '\n\n可下载 APK 后直接覆盖安装，歌单与设置不受影响。',
               [
                 { text: '取消', style: 'cancel' },
-                { text: '下载 APK', onPress: () => { if (info.apkUrl) Linking.openURL(info.apkUrl); else toast('更新源未提供下载地址'); } },
+                { text: '下载 APK', onPress: () => {
+                  if (!info.apkUrl) { toast('更新源未提供下载地址'); return; }
+                  // 自托管的 apkUrl 是相对路径(/downloads/xx.apk)——用当前服务器 base 解析成绝对地址
+                  const abs = /^https?:\/\//.test(info.apkUrl) ? info.apkUrl : normalizeBase(httpStore.base) + info.apkUrl;
+                  if (!abs) { toast('未配置服务器地址，无法解析下载地址'); return; }
+                  Linking.openURL(abs);
+                } },
               ],
             );
           }

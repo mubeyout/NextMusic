@@ -5,7 +5,8 @@ import { AudioPro, AudioProContentType, AudioProEventType, AudioProState } from 
 import { library } from './library';
 import { createMMKV } from 'react-native-mmkv';
 import type { SongItem } from '../services/server';
-import { api, store as httpStore } from '../services/server';
+import { api, store as httpStore, req, normalizeBase } from '../services/server';
+import { findLocalMatch } from '../services/localMatch'; // 跨源本地同名优先(老板 0922 播放优先级)
 import { lxapi } from '../services/lxapi';
 import { customGetMusicUrl, activeSources } from '../services/customSource';
 import { providerApi, providers, PROVIDER_META, type ProviderType } from '../services/providers';
@@ -377,6 +378,18 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         startReport(t); // vc78：Emby/JF 会话上报（后台统计）
         return;
       }
+      // ③.5 本地同名优先(老板 2026-09-22 优先级定案:本地→服务器端→音源):跨源同名歌直接播本地文件,不碰音源
+      // 覆盖:队列曲目来自在线源/听风/同步歌单,而下载记录或设备本地音乐里有同一首——精确 key 对不上时旧逻辑仍去取链
+      const lm = findLocalMatch(t);
+      if (lm) {
+        const lu = lm.path.startsWith('content://') || lm.path.startsWith('file://') ? lm.path : 'file://' + lm.path;
+        playOrCast(t, lu);
+        setCurrent(t);
+        if (t.source === TF_SOURCE) void tfNoteRecent(t); // 听风歌播本地也记最近播放
+        failStreak = 0;
+        toast('本地已有这首歌，已直接播放本地文件');
+        return;
+      }
       const token = tokenRef.current;
       // 同步歌单里的无 id 脏数据（服务器侧元数据缺失）：songmid 为空时取链必败——直接按歌名在线兜底，不发垃圾请求
       if (!String(t.songmid ?? '').trim() && !isProviderSource(t)) {
@@ -384,6 +397,24 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         await playOnlineFallback(t);
         return;
       }
+      // 1.4) 服务器端缓存(老板 0922 优先级:服务器端在音源之前)——全端统一(原先仅 web 形态查),
+      // 命中直接播服务器缓存文件(自己服务器上的本地文件,零取链零外网流量);req() 自动带 base+token
+      const quality = pickQuality(t);
+      try {
+        const st0 = settings.get();
+        if (st0.preferServerCache !== false) {
+          const q = `?name=${encodeURIComponent(t.name || '')}&singer=${encodeURIComponent(t.singer || '')}&source=${encodeURIComponent(t.source)}&songmid=${encodeURIComponent(String(t.songmid ?? ''))}&quality=${quality}`;
+          const c = await req('/api/music/cache/check' + q) as { exists?: boolean; isCollision?: boolean; url?: string };
+          if (c && c.exists && !c.isCollision && c.url) {
+            const cu = c.url.startsWith('http') ? c.url : normalizeBase(httpStore.base) + c.url;
+            playOrCast(t, cu);
+            setCurrent(t);
+            if (t.source === TF_SOURCE) void tfNoteRecent(t); // 听风歌走服务器缓存也记最近播放
+            failStreak = 0;
+            return; // 缓存直出
+          }
+        }
+      } catch { /* 缓存检查失败回退取链 */ }
       // 0) 听风音乐(RoCeOS Tingfeng):song/{id} 直链 mp3(含 LRC,回填曲目)——独立服务,不走 lxserver 取链
       // ※ 必须在播放门槛之前:听风自带账号体系,不该被 LX 登录/音源门槛拦(老板 09-18 手机端实锤)
       if (t.source === TF_SOURCE) {
@@ -427,29 +458,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         );
         return;
       }
-      const quality = pickQuality(t);
-      // web 服务端部署形态:直接走服务器取链(登录带 token,匿名亦可——公共源服务器端执行,无 CORS)
       const webSrvMode = Platform.OS === 'web' && typeof navigator !== 'undefined' && !/electron/i.test(navigator.userAgent);
       // 1) 自定义音源（免登录,Electron/原生本地引擎）
       let url: string | null = null;
       if (!webSrvMode) {
         try { url = await customGetMusicUrl(t, quality); } catch { url = null; }
-      }
-      // 1.5) 服务器缓存优先(原版 preferServerCache 语义): web 部署形态播放前查服务器缓存,命中直接播缓存文件(零取链零流量)
-      if (!url && webSrvMode) {
-        try {
-          const st0 = settings.get();
-          if (st0.preferServerCache !== false) {
-            const q = `?name=${encodeURIComponent(t.name || '')}&singer=${encodeURIComponent(t.singer || '')}&source=${encodeURIComponent(t.source)}&songmid=${encodeURIComponent(String(t.songmid ?? ''))}&quality=${quality}`;
-            const c = await (await fetch('/api/music/cache/check' + q)).json();
-            if (c && c.exists && !c.isCollision && c.url) {
-              playOrCast(t, c.url);
-              setCurrent(t);
-              failStreak = 0;
-              return; // 缓存直出
-            }
-          }
-        } catch { /* 缓存检查失败回退取链 */ }
       }
       // 1.8) 链接缓存(原版 enableSongUrlCache): localStorage 存取链结果,TTL 内直接复用
       const lcKey = `nm-urlc:${t.source}:${t.songmid}:${quality}`;
