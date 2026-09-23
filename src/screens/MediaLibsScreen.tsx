@@ -922,7 +922,7 @@ const st = StyleSheet.create({
 // v3.31 列表页重设计样式（老板 0921：克制卡——深色底/细描边/微投影/品牌 icon 左置/类型徽标）
 const ml = StyleSheet.create({
   group: { gap: 10 },
-  groupWeb: { alignSelf: 'flex-start', width: '100%', maxWidth: 720 }, // v3.28 约定:列表容器与页头同左
+  groupWeb: { alignSelf: 'center', width: '100%', maxWidth: 860 }, // lx168(老板 0923 02:58):与曲库浏览同宽 860 居中——原先 720 靠左,宽屏右半空白像"只有半截"
   card: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, paddingHorizontal: 14, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke, elevation: 1, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } },
   cardHD: { minHeight: 86, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16 },
   cardHover: { borderColor: C.strokeStrong, backgroundColor: C.surface2 }, // hover 细描边提亮,克制不加投影
