@@ -1,6 +1,7 @@
 // Custom LX source scripts store + playback resolution.
 // Sources are LX Music protocol scripts run in the LxEngine sandbox.
 import { createMMKV } from 'react-native-mmkv';
+import { Platform } from 'react-native';
 import { engine } from '../lx-engine/engine';
 
 const kv = createMMKV({ id: 'nextmusic' });
@@ -128,11 +129,27 @@ function extractMeta(script: string): { name: string; version: string; descripti
   return meta;
 }
 
-// Add a source by URL: fetch script, init in sandbox, persist.
-export async function addSourceByUrl(url: string): Promise<CustomSource> {
+// lx171:web 端浏览器直拉脚本遗 CORS 拦(Failed to fetch)→走服务器代拉接口(同源);
+// 原生/Electron 无 CORS 概念直拉。代拉失败时把上游状态带给用户。拉下来的脚本仍在本机沙箱跑,
+// 只是把"下载文本"这一步托给服务器,不降低安全性(脚本照常过元数据校验+沙箱)。
+async function fetchScriptText(url: string): Promise<string> {
+  if (Platform.OS === 'web' && typeof navigator !== 'undefined' && !/electron/i.test(navigator.userAgent)) {
+    const r = await fetch(`/api/custom-source/fetch-script?url=${encodeURIComponent(url)}`);
+    if (!r.ok) {
+      let msg = `HTTP ${r.status}`;
+      try { const j = await r.json(); if (j?.message) msg = j.message; } catch { /* ignore */ }
+      throw new Error(`下载脚本失败：${msg}`);
+    }
+    return await r.text();
+  }
   const resp = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' } });
   if (!resp.ok) throw new Error(`下载脚本失败：HTTP ${resp.status}`);
-  const script = await resp.text();
+  return await resp.text();
+}
+
+// Add a source by URL: fetch script, init in sandbox, persist.
+export async function addSourceByUrl(url: string): Promise<CustomSource> {
+  const script = await fetchScriptText(url);
   if (script.length < 50) throw new Error('脚本内容异常（过短）');
   const meta = extractMeta(script);
   const id = `s_${Date.now().toString(36)}`;
@@ -230,21 +247,33 @@ function isNewerVersion(a: string, b: string): boolean {
   return false;
 }
 
-/** 静默检查所有（有添加 URL 的）音源是否有新版本 */
+/** 静默检查所有（有添加 URL 的）音源是否有新版本
+ * lx174:web 端走服务器代拉接口(fetchScriptText 同源,CORS 免疫);启动后 30s 自动跑一次并自动应用 */
 export async function checkSourceUpdates(): Promise<SourceUpdate[]> {
   const updates: SourceUpdate[] = [];
   for (const s of loadSources()) {
     if (!s.url) continue;
     try {
-      const resp = await fetch(s.url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' } });
-      if (!resp.ok) continue;
-      const script = await resp.text();
+      const script = await fetchScriptText(s.url);
       if (script.length < 50) continue;
       const meta = extractMeta(script);
       if (meta.version && isNewerVersion(meta.version, s.version)) updates.push({ src: s, version: meta.version, script });
     } catch { /* 网络失败静默跳过 */ }
   }
   return updates;
+}
+
+// lx174:启动后 30s 静默自动更新(只处理有 URL 的源;失败静默,不动旧版);单源退出:s.url 为空自然跳过
+let autoUpdateStarted = false;
+export function startSourceAutoUpdate() {
+  if (autoUpdateStarted) return;
+  autoUpdateStarted = true;
+  setTimeout(() => {
+    void checkSourceUpdates().then(ups => {
+      ups.forEach(u => applySourceUpdate(u));
+      if (ups.length) console.log(`[CustomSource] 自动更新 ${ups.length} 个音源:`, ups.map(u => `${u.src.name}→${u.version}`).join(', '));
+    }).catch(() => {});
+  }, 30_000);
 }
 
 /** 一键更新覆盖（code/version 重写 + 引擎重载） */

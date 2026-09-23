@@ -7,6 +7,7 @@ import { T, C } from './src/theme/tokens';
 import { AppStateProvider, useApp } from './src/state/AppState';
 import { PlayerProvider, setupPlayer } from './src/state/PlayerProvider';
 import { LxEngineHost, engine } from './src/lx-engine/engine';
+import { startSourceAutoUpdate } from './src/services/customSource';
 import { loadSources } from './src/services/customSource';
 import { initFx } from './src/services/soundfx';
 import { RootNavigator } from './src/navigation';
@@ -41,6 +42,7 @@ function App() {
     initFx();
     // WebView 就绪后重载已启用的自定义音源脚本
     engine.setActiveSources(loadSources());
+    startSourceAutoUpdate(); // lx174:启动 30s 后静默自动更新自定义音源
     // lx163:回前台全量拉服务器快照并广播——服务器/其他端操作过的增删改在本端即时落地(双向同步拉半边)
     let lastBump = 0;
     const sub = RNAppState.addEventListener('change', s => {

@@ -117,6 +117,22 @@ export function SourcesScreen() {
     setHealth(h => ({ ...h, [s.id]: { st: r.ok ? 'ok' : 'fail', msg: r.detail } }));
   };
 
+  // lx174:手动「检查更新」——拉各源 URL 对比版本,一键全部应用(web 走服务器代拉免 CORS)
+  const [updBusy, setUpdBusy] = useState(false);
+  const checkUpdatesNow = async () => {
+    if (updBusy) return;
+    setUpdBusy(true);
+    try {
+      const ups = await checkSourceUpdates();
+      if (!ups.length) { toast('所有音源均已是最新'); return; }
+      ups.forEach(u => applySourceUpdate(u));
+      toast(`已更新 ${ups.length} 个音源: ${ups.map(u => `${u.src.name}→${u.version}`).join(', ')}`);
+      refresh();
+    } catch (e) {
+      dialog.alert('检查更新失败', (e as Error).message);
+    } finally { setUpdBusy(false); }
+  };
+
   const del = (s: CustomSource) => {
     dialog.alert('删除音源', `确定删除「${s.name}」?`, [
       { text: '取消', style: 'cancel' },
@@ -222,6 +238,11 @@ export function SourcesScreen() {
           <T style={[st.ghostBtn, IS_HD && hd.ghostBtn]} onPress={importFile} disabled={busy}>
             <Icon name="download" size={IS_HD ? 18 : 15} color={C.brand} />
             <Text style={[st.ghostText, IS_HD && hd.ghostText]}>导入音源文件</Text>
+          </T>
+          {/* lx174:手动检查更新(启动后 30s 也会自动跑一次) */}
+          <T style={[st.ghostBtn, IS_HD && hd.ghostBtn]} onPress={checkUpdatesNow} disabled={updBusy}>
+            <Icon name="refresh" size={IS_HD ? 18 : 15} color={C.brand} />
+            <Text style={[st.ghostText, IS_HD && hd.ghostText]}>{updBusy ? '检查中…' : '检查更新'}</Text>
           </T>
         </View>
       </Section>
