@@ -19,6 +19,9 @@ type Track = { id: string; url: string; title?: string; artist?: string; album?:
 type PlayOpts = { startTimeMs?: number; autoPlay?: boolean; headers?: Record<string, string> };
 
 const audio = new Audio();
+// lx170c:匿名直连场景(听风/CDN)必须 crossorigin——WebAudio MediaElementSource 对无 crossorigin 的跨域媒体输出静音;
+// 126.net 等实测返 ACAO:* 可用。走同源代理时此属性无害。
+audio.crossOrigin = 'anonymous';
 // lxfix: NaN/Infinity 守卫——浏览器对 non-finite currentTime 直接抛错(拖动条 duration 未就绪时 pct*duration=NaN)
 const seekSec = (sec: number) => { if (Number.isFinite(sec) && sec >= 0) audio.currentTime = sec; };
 // 调试:暴露实例(桌面探测用),非生产逻辑
