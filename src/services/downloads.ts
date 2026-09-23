@@ -298,9 +298,11 @@ export async function webDownloadToServer(songs: SongItem[], quality?: Quality):
   if (webDlBusy) throw new Error('已有下载任务进行中');
   webDlBusy = true;
   let ok = 0, fail = 0;
-  try {
-    for (const s of songs) {
-      if (s.source === 'device') continue;
+  // lx180(老板 0923 10:07 补缺口):同时下载数在 web 生效——原串行 for 改并发池
+  // (maxConcurrent 1-5,默认 3;与原生 pump() 同一设置键)
+  const CONC = Math.max(1, Math.min(5, settings.get().maxConcurrent || 3));
+  const list = songs.filter(s => s.source !== 'device');
+  const downloadOne = async (s: SongItem): Promise<void> => {
       // v3.32:默认音质与其他端对齐——按歌曲可用音质降级(原硬编码 320k)
       const q: Quality = quality ?? bestQuality(s, settings.get().downloadQuality);
       // v3.21(老板:playbar 下载不见列表):服务器缓存也写进下载记录(server 标记)——下载管理立即可见,进行中→ok/fail 回写
@@ -335,7 +337,16 @@ export async function webDownloadToServer(songs: SongItem[], quality?: Quality):
         pushFail({ key, name: `${s.name} - ${s.singer}`, err: (e as Error).message.slice(0, 60), at: Date.now(), song: s });
       }
       emit();
-    }
+  };
+  try {
+    let idx = 0;
+    const workers = Array.from({ length: Math.min(CONC, Math.max(1, list.length)) }, async () => {
+      while (idx < list.length) {
+        const s = list[idx++];
+        await downloadOne(s);
+      }
+    });
+    await Promise.all(workers);
   } finally { webDlBusy = false; }
   return { ok, fail };
 }

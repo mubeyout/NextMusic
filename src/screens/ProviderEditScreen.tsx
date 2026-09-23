@@ -31,6 +31,32 @@ const TYPE_CARDS: { type: ProviderType; title: string; sub: string; icon: 'music
   { type: 'tingfeng', title: '听风音乐', sub: 'RoCeOS / iStoreOS 内置网易云', icon: 'wave', logo: require('../assets/brands/tingfeng.png') },
 ];
 
+// 08:21 重设计原型三选(真机实拍给老板选):PROTO 由构建时切换
+let PROTO: 'A' | 'B' | 'C' = 'B';
+const SHORT_NAME: Partial<Record<ProviderType, string>> = {
+  navidrome: 'Navidrome', emby: 'Emby', plex: 'Plex', audiostation: '群晖', feiniu: '飞牛', daoliyu: '道理鱼',
+  audiobookshelf: 'Audobook', mstream: 'mStream', songloft: 'Songloft', webdav: 'WebDAV', tingfeng: '听风',
+};
+const TYPE_GROUPS: { label: string; items: typeof TYPE_CARDS }[] = [
+  { label: '路由器内置', items: TYPE_CARDS.filter(c => c.type === 'tingfeng') },
+  { label: '音乐服务器', items: TYPE_CARDS.filter(c => ['navidrome', 'emby', 'plex', 'daoliyu', 'songloft', 'mstream', 'audiostation', 'feiniu'].includes(c.type)) },
+  { label: '文件 · 有声书', items: TYPE_CARDS.filter(c => ['webdav', 'audiobookshelf'].includes(c.type)) },
+];
+// 数学居中:onLayout 量容器与内容,translateY 平移——不依赖 flex 引擎任何脾气(vc155 教训)
+function Center({ children }: { children: React.ReactNode }) {
+  const [box, setBox] = useState({ H: 0, h: 0 });
+  const off = box.H > 0 && box.h > 0 ? Math.max(0, (box.H - box.h) / 2) : 0;
+  // 等值守卫:高度抖动 <0.5px 时返回原对象让 React bail out——否则 onLayout↔setState 反馈环会 Max update depth 崩溃(真机实测)
+  const gH = (v: number) => Math.round(v);
+  return (
+    <View style={{ flex: 1 }} onLayout={e => { const H = gH(e.nativeEvent.layout.height); setBox(b => b.H === H ? b : { ...b, H }); }}>
+      <View onLayout={e => { const h = gH(e.nativeEvent.layout.height); setBox(b => b.h === h ? b : { ...b, h }); }} style={{ transform: [{ translateY: off }] }}>
+        {children}
+      </View>
+    </View>
+  );
+}
+
 // 连接页说明 / 输入 hint（对齐 Figma NM-REMOTE-SUBSONIC-001）
 interface ConnectCopy { desc: string; baseHint?: string; passHint?: string; badge?: string }
 const CONNECT_COPY: Record<string, ConnectCopy> = {
@@ -49,6 +75,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
   const existing = route?.params?.acctId ? providers.get(route.params.acctId) : undefined;
 
   const [picked, setPicked] = useState<ProviderType | null>(existing?.type ?? route?.params?.type ?? null);
+  const [protoPage, setProtoPage] = useState(0);
   // subsonic 系有 密码/Token 两种认证方式（Tab 容器）；emby/webdav 只有账号密码
   const [authTab, setAuthTab] = useState(0);
   const [a, setA] = useState<ProviderAcct>(existing ?? { id: `pv-${Date.now()}`, type: 'navidrome', name: '', base: '', user: '', pass: '' });
@@ -181,23 +208,82 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
           <Text style={st.title}>添加远程音乐库</Text>
           <View style={{ width: 26 }} />
         </View>
+        {/* ===== phone Step1 原型三选(老板 08:21 重新设计):A 图标矩阵 / B 分组列表 / C 大卡横滑翻页 ===== */}
         {!IS_HD ? (
-          /* phone 重设计 v2(老板 07:57 真机实测:父 View justifyContent:center 对横向 ScrollView 在原生 Yoga 不生效,卡带仍顶格)
-             → 教科书模式:ScrollView 自占 flex:1,contentContainer alignItems:center 垂直居中(行布局交叉轴),结构上不可能顶格 */
           <View style={{ flex: 1, paddingHorizontal: 16 }}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}
-              contentContainerStyle={{ gap: 10, paddingHorizontal: 4, alignItems: 'center' }}>
+          {PROTO === 'A' ? (
+            /* A: 图标矩阵——4 列 logo 瓦片,11 平台一屏全见,零横滑;onLayout 数学居中(不赌 flex 引擎) */
+            <>
+            <Center>
+              <View style={{ alignItems: 'center', gap: 6 }}>
+                <Text style={{ color: C.text, fontSize: 19, fontWeight: '800' }}>接入你的音乐库</Text>
+                <Text style={{ color: C.text3, fontSize: 12.5 }}>选择平台 · 自动测试连通后保存</Text>
+              </View>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 14, marginTop: 26, maxWidth: 400, alignSelf: 'center' }}>
+                {TYPE_CARDS.map(c => (
+                  <TouchableOpacity key={c.type} onPress={() => pickType(c.type)} activeOpacity={0.7} style={{ width: 80, alignItems: 'center', gap: 7 }}>
+                    <View style={{ width: 74, height: 74, borderRadius: 18, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }}>
+                      {c.logo
+                        ? <Image source={c.logo} style={{ width: 46, height: 46, borderRadius: 11 }} resizeMode="contain" />
+                        : <Icon name={c.icon} size={30} color={C.brandText} />}
+                    </View>
+                    <Text style={{ color: C.text2, fontSize: 11.5, fontWeight: '500' }} numberOfLines={1}>{SHORT_NAME[c.type] ?? c.title}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </Center>
+            <Text style={[st.desc, { textAlign: 'center', paddingBottom: 14 + insets.bottom, opacity: 0.7 }]}>点选平台开始 · 共 {TYPE_CARDS.length} 种</Text>
+            </>
+          ) : PROTO === 'B' ? (
+            /* B: 分组列表——按场景三组,行式条目(logo+标题+说明+箭头),一览无余 */
+            <>
+            <Center>
+              <View style={{ width: '100%', maxWidth: 460, alignSelf: 'center' }}>
+                {TYPE_GROUPS.map(g => (
+                  <View key={g.label} style={{ marginBottom: 12 }}>
+                    <Text style={{ color: C.text3, fontSize: 11.5, fontWeight: '700', letterSpacing: 0.6, marginBottom: 6, paddingLeft: 4 }}>{g.label}</Text>
+                    {g.items.map(c => (
+                      <TouchableOpacity key={c.type} onPress={() => pickType(c.type)} activeOpacity={0.75}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.surface2, borderRadius: 13, paddingVertical: 6, paddingHorizontal: 12, marginBottom: 6 }}>
+                        {c.logo
+                          ? <Image source={c.logo} style={{ width: 30, height: 30, borderRadius: 7 }} resizeMode="contain" />
+                          : <Icon name={c.icon} size={24} color={C.brandText} />}
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={{ color: C.text, fontSize: 14, fontWeight: '600' }}>{c.title}</Text>
+                          <Text style={{ color: C.text3, fontSize: 11.5 }} numberOfLines={1}>{c.sub}</Text>
+                        </View>
+                        <Icon name="chevronright" size={16} color={C.text3} />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                ))}
+              </View>
+            </Center>
+            <Text style={[st.desc, { textAlign: 'center', paddingBottom: 14 + insets.bottom, opacity: 0.7 }]}>选择平台开始接入</Text>
+            </>
+          ) : (
+            /* C: 大卡横滑 v3——更大卡+分页吸附+页点+计数(横滑概念终极版) */
+            <>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }} pagingEnabled snapToInterval={218} decelerationRate="fast"
+              contentContainerStyle={{ gap: 12, paddingHorizontal: 10, alignItems: 'center' }}
+              onScroll={e => setProtoPage(Math.round(e.nativeEvent.contentOffset.x / 218))} scrollEventThrottle={64}>
               {TYPE_CARDS.map(c => (
-                <TouchableOpacity key={c.type} style={st.typeRowCard} activeOpacity={0.7} onPress={() => pickType(c.type)}>
+                <TouchableOpacity key={c.type} style={[st.typeRowCard, { width: 206, height: 240 }]} activeOpacity={0.7} onPress={() => pickType(c.type)}>
                   {c.logo
-                    ? <Image source={c.logo} style={{ width: 70, height: 70, borderRadius: 17 }} resizeMode="contain" />
-                    : <Icon name={c.icon} size={44} color={C.brandText} />}
+                    ? <Image source={c.logo} style={{ width: 84, height: 84, borderRadius: 20 }} resizeMode="contain" />
+                    : <Icon name={c.icon} size={52} color={C.brandText} />}
                   <Text style={st.typeRowTitle} numberOfLines={1} ellipsizeMode="tail">{c.title}</Text>
                   <Text style={st.typeRowSub} numberOfLines={1} ellipsizeMode="tail">{c.sub}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
-            <Text style={[st.desc, { textAlign: 'center', paddingBottom: 14 + insets.bottom, opacity: 0.8 }]}>左右滑动查看全部平台 · 选中后先测试能力再保存凭证</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingBottom: 10 + insets.bottom }}>
+              {[0, 1, 2, 3, 4, 5].map(d => (
+                <View key={d} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: Math.floor(Math.min(protoPage, 10) / 2) === d ? C.brand : C.surface2 }} />
+              ))}
+            </View>
+            </>
+          )}
           </View>
         ) : (
           /* HD: ScrollView 让位 + 一行横滑卡带居中 + 箭头钮(四改:卡放大、箭头/滚轮/拖拽可滑、整组屏幕居中) */

@@ -427,8 +427,22 @@ export function BackupSettingsScreen() {
       const payload = buildBackupPayload(s);
       const d = new Date();
       const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+      const fname = `NextMusic-backup-${stamp}.json`;
+      // lx180(补缺口):纯浏览器无 SAF/Electron 桥——降级为浏览器下载(不再静默无效)
+      const isPlainWeb = typeof Platform !== 'undefined' && Platform.OS === 'web'
+        && !(globalThis as unknown as { nmDesktop?: unknown }).nmDesktop;
+      if (isPlainWeb) {
+        const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = fname;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+        toast(`已开始下载 ${fname}`);
+        return;
+      }
       const doc = await SafX.createDocument(JSON.stringify(payload), {
-        initialName: `NextMusic-backup-${stamp}.json`,
+        initialName: fname,
         mimeType: 'application/json',
       });
       if (doc) toast('已导出到所选位置');
@@ -440,9 +454,31 @@ export function BackupSettingsScreen() {
   // 文件导入（SAF 选文件 → 与云端恢复同一逻辑）
   const importFromFile = async () => {
     try {
-      const docs = await SafX.openDocument({ multiple: false });
-      if (!docs?.length) return;
-      const text = await SafX.readFile(docs[0].uri);
+      // lx180(补缺口):纯浏览器降级 <input type=file> 选备份 JSON
+      const isPlainWeb = typeof Platform !== 'undefined' && Platform.OS === 'web'
+        && !(globalThis as unknown as { nmDesktop?: unknown }).nmDesktop;
+      let text: string | null = null;
+      if (isPlainWeb) {
+        text = await new Promise<string | null>(resolve => {
+          const inp = document.createElement('input');
+          inp.type = 'file'; inp.accept = '.json,application/json';
+          inp.onchange = () => {
+            const f = inp.files?.[0];
+            if (!f) { resolve(null); return; }
+            const fr = new FileReader();
+            fr.onload = () => resolve(String(fr.result || ''));
+            fr.onerror = () => resolve(null);
+            fr.readAsText(f);
+          };
+          inp.oncancel = () => resolve(null);
+          document.body.appendChild(inp); inp.click(); inp.remove();
+        });
+        if (!text) return;
+      } else {
+        const docs = await SafX.openDocument({ multiple: false });
+        if (!docs?.length) return;
+        text = await SafX.readFile(docs[0].uri);
+      }
       const data = JSON.parse(text);
       applyBackupData(data);
     } catch (e) {

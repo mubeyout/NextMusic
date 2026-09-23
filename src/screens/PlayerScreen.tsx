@@ -9,6 +9,7 @@ import { sourceLabel } from '../components/SongRow';
 import { C } from '../theme/tokens';
 import { usePlayer } from '../state/PlayerProvider';
 import { api } from '../services/server';
+import { settings } from '../services/settings';
 import { lxapi } from '../services/lxapi';
 import { parseLrc, mergeTranslation, findActiveLine, type LyricLine } from '../services/lyric';
 import { sync, appToLx, lxToApp, lxNormKey } from '../services/sync';
@@ -114,8 +115,10 @@ export function PlayerScreen() {
       }
       if (dead || !raw) return;
       let lines = parseLrc(raw);
-      const tly = r.tlyric;
-      if (tly) lines = mergeTranslation(lines, tly);
+      // lx180(补缺口):phone 端翻译/罗马音开关接线(原无条件合入翻译=开关无效;罗马音从未合入)
+      const st = settings.get();
+      if (r.tlyric && st.showLyricTranslation !== false) lines = mergeTranslation(lines, r.tlyric);
+      if (r.rlyric && st.showLyricRoma) lines = mergeTranslation(lines, r.rlyric);
       if (lines.length) setLyrics(lines);
     })();
     return () => { dead = true; };

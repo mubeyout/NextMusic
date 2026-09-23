@@ -6,7 +6,7 @@ import Svg, { Defs, Path, RadialGradient, Stop } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
 import { fixCoverUrl } from '../utils/cover'; // lxfix:kw 图床域名自愈
-import { settings } from '../services/settings';
+import { settings, onSettings } from '../services/settings';
 import { LyricCardModal } from '../components/LyricCardModal';
 import { WebLyricCardModal } from './WebLyricCardModal';
 import { enqueueDownload, isWebServerMode } from '../services/downloads';
@@ -100,6 +100,11 @@ const IS_WEB = Platform.OS === 'web';
 export function HDPlayer() {
   // web: 黑胶尺寸 = min(300, 视口高 40%)(RN StyleSheet 不支持 CSS min,需运行时计算)
   const [winH, setWinH] = useState(() => (typeof window !== 'undefined' && typeof window.innerHeight === 'number' ? window.innerHeight : 800));
+  // lx180:可视化开关响应式镜像——settings 变更立即驱动 effect
+  const [showViz, setShowViz] = useState(settings.get().showDetailVisualizer !== false);
+  useEffect(() => {
+    return onSettings(() => setShowViz(settings.get().showDetailVisualizer !== false));
+  }, []);
   // [Fix 2026-09-14] Hermes 也定义 window global——typeof window 守卫穿透,native 上 window.addEventListener 不存在
   // → HD/TV 进播放页必崩(TV 实锤 vc169: TypeError undefined is not a function, 老板 09-14 反馈闪退)。守卫改 IS_WEB
   useEffect(() => {
@@ -171,7 +176,7 @@ export function HDPlayer() {
   const stopBin = () => { binLoops.current.forEach(l => l?.stop()); binLoops.current = []; };
 
   React.useEffect(() => {
-    if (settings.get().showDetailVisualizer === false) { // 审计#4:播放页可视化开关门控(关=频谱环/伪律动全停;下次播放态变化或刷新生效)
+    if (showViz === false) { // 审计#4:可视化开关门控;lx180(补缺口):改读响应式 showViz,播放中切换立即生效
       ringLoops.current.forEach(l => l?.stop()); ringLoops.current = [];
       stopBin();
       specBins.forEach(b => Animated.timing(b, { toValue: 0.08, duration: 400, useNativeDriver: NATIVE }).start());
@@ -189,7 +194,7 @@ export function HDPlayer() {
       stopBin();
       specBins.forEach(b => Animated.timing(b, { toValue: 0.08, duration: 400, useNativeDriver: NATIVE }).start());
     }
-  }, [playing]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [playing, showViz]); // lx180:deps 加 showViz——播放中切换立即生效
 
   React.useEffect(() => {
     if (!playing) return;
