@@ -70,10 +70,9 @@ async function reqOnce(path: string, init: RequestInit & { base?: string; timeou
       if (r.status === 401 && attempt < 2 && !path.includes('/api/user/login')) {
         if (await tryRelogin()) return reqOnce(path, init, 2);
       }
-      // [Gate 2026-09-14] 音源接口未登录 401 → 广播去登录页(不静默空屏;原生端 Boot 流程已保证登录)
-      if (r.status === 401 && !store.token && typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
-        window.dispatchEvent(new Event('nm-auth-required'));
-      }
+      // lx177(老板 0923 08:20 登录非必须):未登录 401 不再广播跳登录页——
+      // 浏览/本地音源/媒体库/匿名直链均合法匿名形态,自动跳转打断播放;
+      // 需要登录的场景(在线取链失败弹窗)已有「去登录」按钮主动引导。
       throw Object.assign(new Error('HTTP ' + r.status), { status: r.status, data });
     }
     return data;

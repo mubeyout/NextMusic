@@ -94,7 +94,8 @@ export function RootNavigator() {
   // 服务端 web 播放器不需要启动向导:直进主界面(本地模式);原生端保留三卡引导
   const initial = !mode ? (Platform.OS === 'web' ? 'Main' : 'Boot') : 'Main';
 
-  // [Gate 2026-09-14] 音源接口未登录 401 → 跳登录页(服务器音源登录门,不静默空屏)
+  // lx177(老板 0923 08:20 登录非必须):移除 401 自动跳登录页——server.ts 不再广播 nm-auth-required;
+  // 监听保留但无人触发(无害),未来如需主动引导应用 toast/按钮而非强制 navigate。
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return;
     const goLogin = () => {
