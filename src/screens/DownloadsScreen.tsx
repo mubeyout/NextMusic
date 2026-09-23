@@ -8,7 +8,7 @@ import { C } from '../theme/tokens';
 import { SongRow } from '../components/SongRow';
 import { PageHeader, EmptyState } from '../components/PageChrome';
 import { usePlayer } from '../state/PlayerProvider';
-import { downloads as dlStore, subscribeDownloads, fmtBytes, downloadProgress, downloadFails, clearFails } from '../services/downloads';
+import { downloads as dlStore, subscribeDownloads, fmtBytes, downloadProgress, downloadFails, clearFails, retryFails } from '../services/downloads';
 import type { SongItem } from '../services/server';
 import { dialog, toast } from '../components/Dialog';
 import RNBlobUtil from 'react-native-blob-util';
@@ -61,6 +61,10 @@ export function DownloadsScreen() {
         {lastFails.length ? (
           <View style={st.failCard}>
             <Text style={st.failTitle} numberOfLines={1}>⚠ {fails.length} 首下载失败 · 最近：{lastFails[0].err}</Text>
+            {/* lx179(B):一键重试(带曲目信息的失败项重新入队;web 走服务器缓存路径) */}
+            <TouchableOpacity hitSlop={6} onPress={() => { const r = retryFails(); if (!r.retried) toast('没有可重试的记录（旧记录缺曲目信息，已保留）'); }}>
+              <Text style={st.failClear}>重试</Text>
+            </TouchableOpacity>
             <TouchableOpacity hitSlop={6} onPress={() => { clearFails(); }}>
               <Text style={st.failClear}>清除</Text>
             </TouchableOpacity>

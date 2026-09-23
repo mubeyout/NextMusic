@@ -62,6 +62,8 @@ export function HDSettingsScreen() {
   // v2 功能对齐:服务器缓存管理面板
   const [cacheOpen, setCacheOpen] = useState(false);
   const [cacheStats, setCacheStats] = useState<{ totalSize: number; fileCount: number } | null>(null);
+  // lx179(B):缓存列表状态 undefined=未加载 null=失败 数组=列表
+  const [cacheFiles, setCacheFiles] = useState<{ name: string; size: number }[] | null | undefined>(undefined);
   const loadCacheStats = () => { api.cacheStats().then(setCacheStats).catch(() => setCacheStats({ totalSize: 0, fileCount: 0 })); };
 
   // carlink:phone 包内嵌车机模式时给退出开关;独立 hd 包不显示
@@ -147,16 +149,38 @@ export function HDSettingsScreen() {
           <Text style={st.cacheInfo}>
             {cacheStats ? `${cacheStats.fileCount} 个文件 · ${fmtBytes(cacheStats.totalSize)} · 歌曲播放时可缓存到服务器存储` : '统计加载中…'}
           </Text>
+          {/* lx179(B):缓存列表——api.cacheList 首次接入消费者;展开懒加载,最多列 50 条 */}
+          {cacheFiles === undefined ? null : cacheFiles === null ? (
+            <Text style={[st.cacheInfo, { color: C.text3, marginTop: 4 }]}>列表加载失败或无权限（需登录）</Text>
+          ) : cacheFiles.length ? (
+            <View style={{ marginTop: 8, maxHeight: 220 }}>
+              <ScrollView showsVerticalScrollIndicator>
+                {cacheFiles.slice(0, 50).map(f => (
+                  <Text key={f.name} numberOfLines={1} style={{ color: C.text2, fontSize: 11.5, lineHeight: 20 }}>
+                    · {f.name} <Text style={{ color: C.text3 }}>{fmtBytes(f.size)}</Text>
+                  </Text>
+                ))}
+              </ScrollView>
+            </View>
+          ) : (
+            <Text style={[st.cacheInfo, { color: C.text3, marginTop: 4 }]}>缓存为空</Text>
+          )}
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
-            <HDTouch style={st.cacheBtn} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }} onPress={() => { loadCacheStats(); toast('已刷新'); }}>
+            <HDTouch style={st.cacheBtn} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }} onPress={() => { loadCacheStats(); setCacheFiles(undefined); toast('已刷新'); }}>
               <Text style={st.cacheBtnText}>刷新统计</Text>
             </HDTouch>
+            <HDTouch style={st.cacheBtn} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }} onPress={() => {
+              setCacheFiles(null);
+              api.cacheList().then(l => setCacheFiles(l)).catch(() => setCacheFiles(null));
+            }}>
+              <Text style={st.cacheBtnText}>{cacheFiles ? '收起列表' : '缓存列表'}</Text>
+            </HDTouch>
             <HDTouch style={[st.cacheBtn, { borderColor: '#F2545B66' }]} focusStyle={{ borderWidth: 2, borderColor: '#F2545B', borderRadius: 10 }} onPress={() => {
-              api.cacheClear().then(() => { toast('服务器缓存已清空'); loadCacheStats(); }).catch(() => toast('清空失败(未连接服务器)'));
+              api.cacheClear().then(() => { toast('服务器缓存已清空'); loadCacheStats(); setCacheFiles(undefined); }).catch(() => toast('清空失败(未连接服务器)'));
             }}>
               <Text style={[st.cacheBtnText, { color: '#F2545B' }]}>清空缓存</Text>
             </HDTouch>
-            <HDTouch style={[st.cacheBtn, { backgroundColor: C.brand, borderColor: C.brand }]} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }} onPress={() => setCacheOpen(false)}>
+            <HDTouch style={[st.cacheBtn, { backgroundColor: C.brand, borderColor: C.brand }]} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }} onPress={() => { setCacheOpen(false); setCacheFiles(undefined); }}>
               <Text style={[st.cacheBtnText, { color: C.onBrand }]}>关闭</Text>
             </HDTouch>
           </View>

@@ -11,6 +11,7 @@ import { C, SH } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { useApp } from '../state/AppState';
 import { api, normalizeBase } from '../services/server';
+import { pullCloudSettingsOnLogin } from '../services/settingsSync';
 import { IS_HD } from '../services/appversion';
 const IS_WEB = Platform.OS === 'web'; // v3.28:去重复 import(顶部已有)
 import { toast } from '../components/Dialog';
@@ -117,6 +118,7 @@ export function HDAuthLoginScreen() {
       const r = await api.login(username.trim(), password);
       if (r.success) {
         setAuth(r.token, r.username);
+        void pullCloudSettingsOnLogin(); // lx179(B)
         navRef.current?.reset({ index: 0, routes: [{ name: 'Main' }] });
       } else setErr('账号或密码错误');
     } catch (e) {
@@ -138,6 +140,7 @@ export function HDAuthLoginScreen() {
       const r = await api.login(regUser.trim(), regPwd);
       if (r.success) {
         setAuth(r.token, r.username);
+        void pullCloudSettingsOnLogin(); // lx179(B)
         navRef.current?.reset({ index: 0, routes: [{ name: 'Main' }] });
       } else setErr('创建成功但登录失败,请切回登录重试');
     } catch (e) {

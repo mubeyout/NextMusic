@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { C } from '../theme/tokens';
 import { useApp } from '../state/AppState';
 import { api, normalizeBase } from '../services/server';
+import { pullCloudSettingsOnLogin } from '../services/settingsSync';
 
 // Figma NM-AUTH-LOGIN-001: server(step1) + username/password card + login button
 // 服务器地址与账号密码强关联：地址是登录第一步；改地址先重连再登录。
@@ -32,6 +33,7 @@ export function AuthLoginScreen() {
       const r = await api.login(username.trim(), password);
       if (r.success) {
         setAuth(r.token, r.username);
+        void pullCloudSettingsOnLogin(); // lx179(B):登录后拉云端播放设置(异步不阻塞导航)
         nav.reset({ index: 0, routes: [{ name: 'Main' }] });
       } else setErr('账号或密码错误');
     } catch (e) {

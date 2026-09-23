@@ -55,6 +55,12 @@ export function SourcesScreen() {
     setCsLocal(prev => {
       const next = { ...prev, [id]: !(prev[id] !== false) };
       try { localStorage.setItem('nm-cs-local', JSON.stringify(next)); } catch { /* ignore */ }
+      // lx179(老板 0923 08:48 禁用全部仍能播):登录用户的本机开关同步写服务器个人 states——
+      // 否则取链走服务端时看不到禁用,照用全部启用的源(实锤:日志 Owner:open 成功返回)。
+      // 失败静默(离线/权限)——localStorage 兜底仍在,下次登录重试语义可接受。
+      if (connected) {
+        api.csToggle(id, next[id]).catch(() => {});
+      }
       return next;
     });
   };

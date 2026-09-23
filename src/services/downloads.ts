@@ -53,7 +53,7 @@ function readAll(): DownloadRec[] {
 }
 function writeAll(list: DownloadRec[]) { kv.set('items', JSON.stringify(list)); }
 
-export interface DownloadFail { key: string; name: string; err: string; at: number }
+export interface DownloadFail { key: string; name: string; err: string; at: number; song?: SongItem } // lx179:song 可选——存了就能重试
 
 const listeners = new Set<() => void>();
 function emit() { listeners.forEach(fn => fn()); }
@@ -63,7 +63,7 @@ function readFails(): DownloadFail[] {
 }
 function pushFail(f: DownloadFail) {
   const list = [f, ...readFails().filter(x => x.key !== f.key)].slice(0, 50);
-  kv.set('fails', JSON.stringify(list));
+  try { kv.set('fails', JSON.stringify(list)); } catch { /* song 对象序列化失败时降级存基本字段 */ kv.set('fails', JSON.stringify(list.map(x => ({ ...x, song: undefined })))); }
 }
 
 export function subscribeDownloads(fn: () => void) { listeners.add(fn); return () => { listeners.delete(fn); }; }
@@ -147,12 +147,31 @@ function pump() {
     active++;
     runJob(job).catch(e => {
       console.log('[DL] fail:', songKey(job.song), (e as Error).message);
-      pushFail({ key: songKey(job.song), name: job.song.name, err: (e as Error).message || '下载失败', at: Date.now() });
+      pushFail({ key: songKey(job.song), name: job.song.name, err: (e as Error).message || '下载失败', at: Date.now(), song: job.song });
     }).finally(() => { active--; emit(); pump(); });
   }
 }
 
 export function downloadFails(): DownloadFail[] { return readFails(); }
+
+// lx179(老板 0923 08:48 B):失败重试——带 song 的失败项一键重入队;
+// 未带 song 的旧记录(升级前)只能清除;重试成功项从失败列表移除
+export function retryFails(): { retried: number } {
+  const fails = readFails();
+  const retryable = fails.filter(f => f.song && f.song.source && f.song.songmid);
+  const rest = fails.filter(f => !(f.song && f.song.source && f.song.songmid));
+  kv.set('fails', JSON.stringify(rest));
+  if (retryable.length) {
+    const isWeb = typeof Platform !== 'undefined' && Platform.OS === 'web' && !/electron/i.test((globalThis as { navigator?: { userAgent?: string } }).navigator?.userAgent || '');
+    if (isWeb) {
+      void webDownloadToServer(retryable.map(f => f.song as SongItem)).catch(() => {});
+    } else {
+      enqueueDownload(retryable.map(f => f.song as SongItem));
+    }
+  }
+  emit();
+  return { retried: retryable.length };
+}
 export function activeCount(): number { return active; }
 export function clearFails() { kv.set('fails', '[]'); emit(); }
 
@@ -313,7 +332,7 @@ export async function webDownloadToServer(songs: SongItem[], quality?: Quality):
         fail++;
         // 失败回滚记录+进失败清单(下载管理可见可重试)
         writeAll(readAll().filter(x => x.key !== key));
-        pushFail({ key, name: `${s.name} - ${s.singer}`, err: (e as Error).message.slice(0, 60), at: Date.now() });
+        pushFail({ key, name: `${s.name} - ${s.singer}`, err: (e as Error).message.slice(0, 60), at: Date.now(), song: s });
       }
       emit();
     }
@@ -346,7 +365,7 @@ export async function webDownloadLocal(songs: SongItem[]): Promise<{ ok: number;
       if (songs.length > 1) await new Promise<void>(r2 => setTimeout(r2, 1500)); // 多文件节流:留时间给浏览器登记下载任务
     } catch (e) {
       fail++;
-      pushFail({ key: songKey(s), name: `${s.name} - ${s.singer}`, err: ((e as Error).message || '下载失败').slice(0, 60), at: Date.now() });
+      pushFail({ key: songKey(s), name: `${s.name} - ${s.singer}`, err: ((e as Error).message || '下载失败').slice(0, 60), at: Date.now(), song: s });
     }
   }
   return { ok, fail };
