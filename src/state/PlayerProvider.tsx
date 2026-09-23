@@ -463,11 +463,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       const webSrvMode = Platform.OS === 'web' && typeof navigator !== 'undefined' && !/electron/i.test(navigator.userAgent);
-      // 1) 自定义音源（免登录,Electron/原生本地引擎）
+      // 1) 自定义音源（免登录;Electron/原生本地引擎 + lx175 web 端 iframe 沙箱 shim 同样可跑）
       let url: string | null = null;
-      if (!webSrvMode) {
-        try { url = await customGetMusicUrl(t, quality); } catch { url = null; }
-      }
+      try { url = await customGetMusicUrl(t, quality); } catch { url = null; }
       // 1.8) 链接缓存(原版 enableSongUrlCache): localStorage 存取链结果,TTL 内直接复用
       const lcKey = `nm-urlc:${t.source}:${t.songmid}:${quality}`;
       if (!url) {
@@ -518,7 +516,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           } catch { /* 换源失败继续走失败流程 */ }
         }
         // 回退: 服务器无该源时再试本地引擎(Electron/原生)
-        if (!url && !webSrvMode) {
+        if (!url) {
           try { url = await customGetMusicUrl(t, quality); } catch { url = null; }
         }
         // 取链成功写链接缓存
