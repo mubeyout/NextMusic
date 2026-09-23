@@ -69,7 +69,7 @@ export function SourcesScreen() {
   const loadServerSources = () => {
     // lx165(老板 0923 02:20):未登录服务器账号 → 整个「服务器音源」模块隐藏且禁用——
     // 不调 csList、不回退缓存(jm.read 缓存也一律不算数);服务器音源本质是账号服务的一部分。
-    if (!connected) { setServerSources([]); setCsErr(null); return; }
+    if (!connected || !token) { setServerSources([]); setCsErr(null); return; } // lx183:登录=connected+token(connected 仅表示服务器可达,曾致手机端未登录仍显示)
     api.csList().then(l => {
       const list = l.filter(x => x.enabled !== false);
       setServerSources(list);
@@ -146,7 +146,7 @@ export function SourcesScreen() {
     ]);
   };
 
-  const { connected } = useApp();
+  const { connected, token } = useApp();
   const canPlay = activeSources().length > 0 || connected;
   const hOf = (s: CustomSource): Health | undefined => health[s.id];
 
@@ -170,7 +170,7 @@ export function SourcesScreen() {
       >
       {/* 服务器音源区(lx165 老板 0923):未登录 或 服务器无启用音源(全部被管理员禁用) → 整块隐藏。
           已登录用户可对每个音源独立启停(toggleCsLocal),多音源并存,由用户自主决定启用哪个。 */}
-      {connected && serverSources.length > 0 && (
+      {connected && !!token && serverSources.length > 0 && (
       <Section title="服务器音源">
         <Text style={[st.hint, IS_HD && hd.hint]}>服务器端启用的共享音源 · 点击图标选择本机是否使用 · 管理(添加/删除)在服务器后台</Text>
         {csErr ? (
