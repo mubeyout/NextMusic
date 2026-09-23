@@ -7,7 +7,7 @@
 //    pollution physically cannot cross.
 // All HTTP from both pages goes through the RN bridge (native fetch, no CORS).
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { View, Platform as PlatformOS } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { buildSandboxHtml, buildUserApiHtml } from './sandbox';
 
@@ -110,6 +110,24 @@ class Sandbox {
       const payload = JSON.stringify({ hid: m.hid, err: err || null, statusCode, headers, bodyText: bodyText ?? null, bodyB64: bodyB64 ?? null });
       this.inject(`window.__lxhttpResp(${JSON.stringify(payload)});true;`);
     };
+    // lx176(老板 0923 07:42):web 浏览器形态——沙箱上游调用被 CORS 拦(聆澜等源站无 ACAO 头),
+    // 改走服务器 /api/sandbox/http 代理(同源);原生/Electron 保持直连。
+    const IS_WEB_BROWSER = PlatformOS.OS === 'web' && typeof navigator !== 'undefined' && !/electron/i.test(navigator.userAgent);
+    if (IS_WEB_BROWSER) {
+      try {
+        const r = await fetch('/api/sandbox/http', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: m.url, method: m.method || 'GET', headers: m.headers || {}, body: m.body ?? null }),
+        });
+        const j = await r.json() as { statusCode?: number; bodyText?: string; bodyB64?: string; err?: string; headers?: Record<string, string> };
+        if (j.err && !j.statusCode) { reply(0, {}, undefined, undefined, j.err); return; }
+        let body: string | { code?: number } = j.bodyText ?? '';
+        if (typeof body === 'string') { try { body = JSON.parse(body); } catch { /* keep text */ } }
+        reply(j.statusCode ?? 0, j.headers || {}, typeof body === 'string' ? body : JSON.stringify(body));
+      } catch (e) { reply(0, {}, undefined, undefined, (e as Error).message); }
+      return;
+    }
     try {
       const init: RequestInit = {
         method: m.method || 'GET',
