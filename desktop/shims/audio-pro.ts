@@ -69,6 +69,14 @@ function applyUrl(t: Track) {
     // Electron：主进程媒体代理(5198)——带鉴权头的流也走它
     url = `http://127.0.0.1:5198/__media__?u=${encodeURIComponent(t.url)}${hasHeaders ? `&h=${encodeURIComponent(JSON.stringify(headers))}` : ''}`;
   } else if (!IS_DEV) {
+    // lx170(老板 0923):匿名+无鉴权头的公开直链(听风/CDN) → audio 直连原 URL,不走代理。
+    // 原先恒走代理→匿名无 nm_auth 无 h= 必 401(NotSupportedError);媒体库/听风不依赖服务器账号。
+    // 代价:未登录时 DSP 因跨域可能静音(可接受——能播 > 有音效);登录后仍走代理(DSP 全功能)。
+    const isPublicDirect = !store.token && !hasHeaders && /^https?:\/\//i.test(t.url || '');
+    if (isPublicDirect) {
+      audio.src = t.url;
+      return;
+    }
     // v3.20:浏览器部署走服务端 inline 代理(同源)——WebAudio MediaElementSource 不再跨域静音,Range 实测 206 可 seek
     // [Gate 2026-09-14] 代理接口已加登录门:audio 标签带不了 header → token 走 nm_auth query(store 同源,登录后/凭据重登后必有)
     // v3.31(2026-09-21 修 WebDAV/Emby 浏览器播放失败)：带鉴权头 previously 误路由到 Electron 127.0.0.1:5198(浏览器没有)必挂;
