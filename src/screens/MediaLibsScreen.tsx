@@ -14,6 +14,7 @@ import { ActionSheet } from '../components/ActionSheet';
 import { CollectSheet } from '../components/CollectSheet';
 import { SongRow } from '../components/SongRow';
 import { toast, dialog } from '../components/Dialog';
+import { dropdownMenu, isDropdownPlatform, type MenuAnchor } from '../components/DropdownMenu';
 import { PageHeader, EmptyState } from '../components/PageChrome';
 import { GUTTER, focus, pageBottom } from '../hd/hdstyle'; // v3.28:统一栅格/焦点环/播放条让位
 import { usePlayer } from '../state/PlayerProvider';
@@ -34,7 +35,7 @@ function AcctGlyph({ type, size = 20 }: { type: ProviderType; size?: number }) {
 }
 
 // 触点抽象:HD 用 HDTouch(D-pad 焦点环),phone 保持 TouchableOpacity
-function T(props: { style?: unknown; onPress?: () => void; onLongPress?: () => void; disabled?: boolean; children?: React.ReactNode } & Record<string, unknown>) {
+function T(props: { style?: unknown; onPress?: (e?: unknown) => void; onLongPress?: () => void; disabled?: boolean; children?: React.ReactNode } & Record<string, unknown>) {
   const { style, onPress, onLongPress, disabled, children, ...rest } = props;
   if (IS_HD) return (
     <HDTouch style={style as never} onPress={onPress} onLongPress={onLongPress} disabled={disabled}
@@ -86,12 +87,18 @@ export function MediaLibsScreen() {
       .catch(e => dialog.alert('连接失败', (e as Error).message))
       .finally(() => setTestId(null));
   };
+  const menuItems = (a: ProviderAcct) => [
+    { label: '测试连接', onPress: () => testConn(a) },
+    { label: '编辑', onPress: () => nav.navigate('ProviderEdit', { acctId: a.id }) },
+    { label: '删除', danger: true, onPress: () => dialog.confirm('删除媒体库', `确定删除「${a.name || PROVIDER_META[a.type].label}」吗？已导入的歌单不受影响。`, () => { providers.remove(a.id); refresh(); }) },
+  ];
   const openMenu = (a: ProviderAcct) => {
-    dialog.menu(a.name || PROVIDER_META[a.type].label, [
-      { label: '测试连接', onPress: () => testConn(a) },
-      { label: '编辑', onPress: () => nav.navigate('ProviderEdit', { acctId: a.id }) },
-      { label: '删除', danger: true, onPress: () => dialog.confirm('删除媒体库', `确定删除「${a.name || PROVIDER_META[a.type].label}」吗？已导入的歌单不受影响。`, () => { providers.remove(a.id); refresh(); }) },
-    ]);
+    dialog.menu(a.name || PROVIDER_META[a.type].label, menuItems(a));
+  };
+  // lx169:web/桌面 ⋯ 改锚定下拉(需传入按钮位置);phone 维持底部 ActionSheet,HD 维持居中弹窗
+  const openMenuFor = (a: ProviderAcct, anchor?: MenuAnchor) => {
+    if (anchor && isDropdownPlatform()) { dropdownMenu(anchor, menuItems(a)); return; }
+    openMenu(a);
   };
 
   return (
@@ -136,8 +143,7 @@ export function MediaLibsScreen() {
                   onPress={() => nav.navigate('ProviderBrowse', { acctId: a.id })}
                   onLongPress={IS_WEB ? undefined : () => openMenu(a)}
                   onHoverIn={IS_WEB ? () => setHoverId(a.id) : undefined}
-                  onHoverOut={IS_WEB ? () => setHoverId(null) : undefined}
-                >
+                  onHoverOut={IS_WEB ? () => setHoverId(null) : undefined}                >
                   <View style={[ml.iconWrap, IS_HD && ml.iconWrapHD]}><AcctGlyph type={a.type} size={IS_HD ? 34 : 28} /></View>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <View style={ml.titleRow}>
@@ -148,7 +154,15 @@ export function MediaLibsScreen() {
                   </View>
                   {testId === a.id ? <ActivityIndicator size="small" color={C.brand} style={ml.spin} /> : null}
                   {/* lx167:⋯ 菜单常驻——原先 web 靠 hover 浮出,HD/桌面/触屏无 hover 等于没有管理入口 */}
-                  <T style={[ml.menuBtn, IS_HD && ml.menuBtnHD]} hitSlop={6} onPress={() => openMenu(a)}>
+                  <T style={[ml.menuBtn, IS_HD && ml.menuBtnHD]} hitSlop={6} onPress={e => {
+                    // lx169:web/桌面锚定下拉;phone/HD 走原 dialog.menu
+                    const ne = (e as unknown as { nativeEvent?: { pageX?: number; pageY?: number } })?.nativeEvent;
+                    if (IS_WEB && ne && typeof ne.pageX === 'number' && typeof ne.pageY === 'number') {
+                      openMenuFor(a, { x: ne.pageX - 32, y: ne.pageY - 16, w: 32, h: 32 });
+                    } else {
+                      openMenu(a);
+                    }
+                  }}>
                     <Icon name="more" size={IS_HD ? 20 : 17} color={C.text2} />
                   </T>
                   <Icon name="chevronright" size={IS_HD ? 22 : 18} color={C.text3} />

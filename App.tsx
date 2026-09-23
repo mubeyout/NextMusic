@@ -11,6 +11,7 @@ import { loadSources } from './src/services/customSource';
 import { initFx } from './src/services/soundfx';
 import { RootNavigator } from './src/navigation';
 import { DialogHost } from './src/components/Dialog';
+import { DropdownHost } from './src/components/DropdownMenu';
 import { IS_HD, isCarUi } from './src/services/appversion';
 import { useSettings, settings } from './src/services/settings';
 import { HDActionHost } from './src/hd/HDActions';
@@ -62,6 +63,7 @@ function App() {
             <RootNavigator />
             {isCarUi() ? <HDActionHost /> : null} {/* carlink:车机模式共享 HDActionHost */}
             <DialogHost />
+            <DropdownHost />
           </PlayerProvider>
         </AppStateProvider>
       </SafeAreaProvider>
