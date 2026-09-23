@@ -147,11 +147,10 @@ export function MediaLibsScreen() {
                     <Text style={[ml.sub, IS_HD && ml.subHD]} numberOfLines={1}>{a.base}</Text>
                   </View>
                   {testId === a.id ? <ActivityIndicator size="small" color={C.brand} style={ml.spin} /> : null}
-                  {(!IS_WEB || hoverId === a.id) ? (
-                    <T style={[ml.menuBtn, IS_HD && ml.menuBtnHD]} hitSlop={6} onPress={() => openMenu(a)}>
-                      <Icon name="more" size={IS_HD ? 20 : 17} color={C.text2} />
-                    </T>
-                  ) : null}
+                  {/* lx167:⋯ 菜单常驻——原先 web 靠 hover 浮出,HD/桌面/触屏无 hover 等于没有管理入口 */}
+                  <T style={[ml.menuBtn, IS_HD && ml.menuBtnHD]} hitSlop={6} onPress={() => openMenu(a)}>
+                    <Icon name="more" size={IS_HD ? 20 : 17} color={C.text2} />
+                  </T>
                   <Icon name="chevronright" size={IS_HD ? 22 : 18} color={C.text3} />
                 </PressCard>
               );
