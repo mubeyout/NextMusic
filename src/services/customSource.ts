@@ -204,33 +204,45 @@ export function activeSources(): CustomSource[] {
 
 // Resolve a music URL through enabled custom sources (in order).
 export async function customGetMusicUrl(songInfo: { source: string; songmid: string; hash?: string; name: string; singer: string; interval?: string }, type = '128k'): Promise<string | null> {
-  const actives = activeSources();
-  for (const s of actives) {
-    if (!s.sources[songInfo.source]) continue;
-    if (s.kind === 'musicfree') {
-      // vc85：MusicFree getMediaSource(item, quality) → {url}
-      const p = mfPluginOf(s);
-      if (!p) continue;
-      try {
-        const q = type === '128k' ? '128' : type === '320k' ? '320' : 'flac';
-        const r = await (p.getMediaSource as (item: Record<string, unknown>, q: string) => Promise<{ url?: string } | null>)(
-          { id: String(songInfo.songmid ?? ''), title: songInfo.name, artist: songInfo.singer, album: '', quality: q }, q,
-        );
-        if (r && r.url) return r.url;
-      } catch (e) {
-        console.log('[musicfree] get url fail', s.name, (e as Error).message);
+  const resolveOnce = async (): Promise<string | null> => {
+    const actives = activeSources();
+    for (const s of actives) {
+      if (!s.sources[songInfo.source]) continue;
+      if (s.kind === 'musicfree') {
+        // vc85：MusicFree getMediaSource(item, quality) → {url}
+        const p = mfPluginOf(s);
+        if (!p) continue;
+        try {
+          const q = type === '128k' ? '128' : type === '320k' ? '320' : 'flac';
+          const r = await (p.getMediaSource as (item: Record<string, unknown>, q: string) => Promise<{ url?: string } | null>)(
+            { id: String(songInfo.songmid ?? ''), title: songInfo.name, artist: songInfo.singer, album: '', quality: q }, q,
+          );
+          if (r && r.url) return r.url;
+        } catch (e) {
+          console.log('[musicfree] get url fail', s.name, (e as Error).message);
+        }
+        continue;
       }
-      continue;
+      try {
+        const r = await engine.userApiGetMusicUrl(s.id, songInfo.source, songInfo, type);
+        if (typeof r === 'string' && r) return r;       // LX 标准：纯 URL 字符串
+        if (r && typeof r === 'object' && r.url) return r.url;
+      } catch (e) {
+        console.log('[customSource] get url fail', s.name, (e as Error).message);
+      }
     }
-    try {
-      const r = await engine.userApiGetMusicUrl(s.id, songInfo.source, songInfo, type);
-      if (typeof r === 'string' && r) return r;       // LX 标准：纯 URL 字符串
-      if (r && typeof r === 'object' && r.url) return r.url;
-    } catch (e) {
-      console.log('[customSource] get url fail', s.name, (e as Error).message);
+    return null;
+  };
+  let url = await resolveOnce();
+  // lx175c:首次全败且报「音源未加载/未就绪」→ 沙箱可能被重载(iframe 重建/页面刷新竞态),重新注入脚本再试一次
+  if (!url) {
+    const actives = activeSources();
+    if (actives.length) {
+      try { await engine.setActiveSources(actives); } catch { /* ignore */ }
+      url = await resolveOnce();
     }
   }
-  return null;
+  return url;
 }
 
 // ---------- vc85：音源更新（检查 + 一键覆盖） ----------
