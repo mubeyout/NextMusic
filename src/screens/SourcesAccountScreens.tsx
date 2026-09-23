@@ -58,7 +58,7 @@ export function SourcesScreen() {
       // lx179(老板 0923 08:48 禁用全部仍能播):登录用户的本机开关同步写服务器个人 states——
       // 否则取链走服务端时看不到禁用,照用全部启用的源(实锤:日志 Owner:open 成功返回)。
       // 失败静默(离线/权限)——localStorage 兜底仍在,下次登录重试语义可接受。
-      if (connected) {
+      if (connected && token) {
         api.csToggle(id, next[id]).catch(() => {});
       }
       return next;
@@ -147,7 +147,7 @@ export function SourcesScreen() {
   };
 
   const { connected, token } = useApp();
-  const canPlay = activeSources().length > 0 || connected;
+  const canPlay = activeSources().length > 0 || (connected && !!token); // lx184(审计):可达≠可播,未登录无服务器源
   const hOf = (s: CustomSource): Health | undefined => health[s.id];
 
   return (

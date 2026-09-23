@@ -237,7 +237,7 @@ export function HDMain() {
   // lx67:登录后拉"我喜欢的"数量(侧栏展示)——lx91 并入上方歌单 effect,此处留空
 
   const openFavorites = () => {
-    if (!token) { hdNav()?.navigate('AuthLogin'); return; } // lx164:绑定即可看——离线用缓存,不再跳登录页
+    if (!token) { toast('未登录:登录后同步「我喜欢的」到服务器(本地收藏不受影响)'); return; } // lx184(审计):不强制跳登录页
     sync.fetchLists().then(s => {
       if (!s) return;
       const songs = (s.loveList || []).map(lxToApp);

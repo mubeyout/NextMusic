@@ -125,7 +125,11 @@ async function resolveUrl(song: SongItem, quality: Quality): Promise<{ url: stri
   // 在线音源：自定义脚本优先，其次服务器
   let url: string | null = null;
   try { url = await withTimeout(customGetMusicUrl(song, quality), 20000, '音源取链'); } catch { url = null; }
-  if (!url) url = (await withTimeout(api.musicUrl(song, quality), 20000, '服务器取链')).url;
+  if (!url) {
+    const st = (await import('./server')).store;
+    if (!st.token && !(typeof Platform !== 'undefined' && Platform.OS === 'web')) throw new Error('未登录且无自定义音源可解析'); // lx184(审计):不再打必 401 的服务器请求
+    url = (await withTimeout(api.musicUrl(song, quality), 20000, '服务器取链')).url;
+  }
   if (!url) throw new Error('取链失败');
   return { url };
 }

@@ -402,7 +402,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       // 未配服务器直接跳过(web 同源形态除外);短超时 2.5s——加速性检查不能拖慢离线/弱网起播(默认 12s 太重)
       const quality = pickQuality(t);
       const webSrvEarly = Platform.OS === 'web' && typeof navigator !== 'undefined' && !/electron/i.test(navigator.userAgent);
-      if (webSrvEarly || normalizeBase(httpStore.base)) {
+      if (webSrvEarly || (normalizeBase(httpStore.base) && tokenRef.current)) { // lx184(审计):原生端未登录跳过服务器缓存检查(cache 匿名可查但多 2.5s 网络等待)
         try {
           const st0 = settings.get();
           if (st0.preferServerCache !== false) {
@@ -625,6 +625,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       const quality = pickQuality(nt);
       const key = `nm-urlc:${nt.source}:${nt.songmid}:${quality}`;
       if (localStorage.getItem(key)) return; // 已有缓存
+      // lx184(审计):未登录不预读服务器取链(web 形态除外)——避免一串空炮 401
+      const preWebSrv = Platform.OS === 'web' && typeof navigator !== 'undefined' && !/electron/i.test(navigator.userAgent);
+      if (!preWebSrv && !tokenRef.current) return;
       api.musicUrl(nt, quality).then(r => {
         if (r?.url) { try { localStorage.setItem(key, JSON.stringify({ url: r.url, at: Date.now() })); } catch { /* ignore */ } }
       }).catch(() => {});

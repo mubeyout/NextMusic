@@ -54,7 +54,7 @@ export function HDSettingsScreen() {
   const nav = useNavigation() as { goBack: () => void };
   const [tab, setTab] = useState<Tab>('外观与界面');
   const s = useSettings();
-  const { connected, base, username, disconnectServer } = useApp();
+  const { connected, base, username, token, setAuth, disconnectServer } = useApp(); // lx184:token/setAuth 补齐(三态+退出登录)
   const { playing } = usePlayer();
 
   const QUALITY_OPTS: string[] = ['128k', '320k', 'flac'];
@@ -102,12 +102,17 @@ export function HDSettingsScreen() {
       // { kind: 'toggle', icon: 'music', title: '同 ID 歌曲仅最高音质', desc: '去重时保留最高音质版本', value: s.deduplicatePlaylistByQuality, onToggle: () => settings.set('deduplicatePlaylistByQuality', !s.deduplicatePlaylistByQuality) },
     ],
     '账号与同步': [
-      connected
-        ? { kind: 'info', icon: 'server', title: '服务器', desc: `${username} @ ${base}`, value: '已连接' }
-        : { kind: 'nav', title: '连接服务器', desc: '登录账号,同步歌单/收藏/音效', icon: 'server', to: 'AuthLogin' },
+      token && connected
+        ? { kind: 'info', icon: 'server', title: '服务器', desc: `${username} @ ${base}`, value: '已登录' }
+        : connected
+          ? { kind: 'nav', title: '登录服务器', desc: `${base} 可达 · 登录后同步歌单/收藏/音效`, icon: 'server', to: 'AuthLogin' }
+          : { kind: 'nav', title: '连接服务器', desc: '登录账号,同步歌单/收藏/音效', icon: 'server', to: 'AuthLogin' },
       { kind: 'nav', title: '音源管理', desc: 'LX 音源脚本,决定本地取链能力', icon: 'wave', to: 'Sources' },
       { kind: 'nav', title: '媒体库', desc: 'Emby / Jellyfin / Navidrome / WebDAV', icon: 'music', to: 'MediaLibs' },
-      ...(connected ? [{ kind: 'nav' as const, title: '断开服务器', desc: '清除连接与凭据,回到本地模式', icon: 'close' as IconName, action: () => { disconnectServer(); nav.goBack(); } }] : []),
+      ...(connected ? [
+        ...(token ? [{ kind: 'nav' as const, title: '退出登录', desc: '保留服务器地址,清除登录态', icon: 'close' as IconName, action: () => { setAuth(null as never, null as never); toast('已退出登录'); } }] : []),
+        { kind: 'nav' as const, title: '断开服务器', desc: '清除连接与凭据,回到本地模式', icon: 'close' as IconName, action: () => { disconnectServer(); nav.goBack(); } },
+      ] : []),
     ],
     '下载与备份': [
       { kind: 'select', icon: 'music', title: '下载音质', desc: '下载歌曲保存的音质档位', value: s.downloadQuality, options: QUALITY_OPTS, onPick: v => settings.set('downloadQuality', v as Quality) },

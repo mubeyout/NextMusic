@@ -99,11 +99,11 @@ export function HDMy() {
         <LinearGradient colors={['#145938', '#1F2E52']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.acct}>
           <View style={st.acctAvatar}><Icon name="my" size={28} color={C.text} /></View>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={st.acctName} numberOfLines={1}>{connected ? username : '未连接服务器'}</Text>
-            <Text style={st.acctSub}>{connected ? `${playlists.length} 个歌单 · ${providerCount} 个媒体库 · 已同步` : '连接后同步歌单/收藏/音效'}</Text>
+            <Text style={st.acctName} numberOfLines={1}>{token ? (username || '已登录') : connected ? '未登录' : '未连接服务器'}</Text>
+            <Text style={st.acctSub}>{token ? `${playlists.length} 个歌单 · ${providerCount} 个媒体库 · 已同步` : connected ? '服务器可达 · 登录后同步歌单/收藏' : '连接后同步歌单/收藏/音效'}</Text>
           </View>
-          <HDTouch style={st.acctBtn} onPress={() => hdNav()?.navigate(connected ? 'Account' : 'AuthLogin')}>
-            <Text style={st.acctBtnText}>{connected ? '账号' : '连接'}</Text>
+          <HDTouch style={st.acctBtn} onPress={() => hdNav()?.navigate(token ? 'Account' : 'AuthLogin')}>
+            <Text style={st.acctBtnText}>{token ? '账号' : connected ? '登录' : '连接'}</Text>
           </HDTouch>
         </LinearGradient>
       </View>

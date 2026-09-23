@@ -14,7 +14,7 @@ export function AuthLoginScreen() {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void; reset: (o: unknown) => void };
   const { base, connectServer, setAuth } = useApp();
-  const [addr, setAddr] = useState(base || '');
+  const [addr, setAddr] = useState(typeof location !== 'undefined' && /^https?:/.test(location.origin || '') ? location.origin : '') // lx184:web 容器预填本站;
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
