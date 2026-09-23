@@ -62,9 +62,12 @@ function wireMediaSession() {
 // vite dev(5173/3000)=直连原 URL(DSP 可能因跨域静音,dev 容忍)
 const IS_ELECTRON = typeof navigator !== 'undefined' && /electron/i.test(navigator.userAgent);
 const IS_DEV = typeof location !== 'undefined' && (location.port === '5173' || location.port === '3000');
+// lx170:本次 play() 是否命中「匿名公开直连」(applyUrl 里判定)——供后续拦截豁免
+let isPublicDirectApplied = false;
 function applyUrl(t: Track) {
   let url = t.url;
   const hasHeaders = !!(headers && Object.keys(headers).length);
+  isPublicDirectApplied = false;
   if (IS_ELECTRON) {
     // Electron：主进程媒体代理(5198)——带鉴权头的流也走它
     url = `http://127.0.0.1:5198/__media__?u=${encodeURIComponent(t.url)}${hasHeaders ? `&h=${encodeURIComponent(JSON.stringify(headers))}` : ''}`;
@@ -74,6 +77,7 @@ function applyUrl(t: Track) {
     // 代价:未登录时 DSP 因跨域可能静音(可接受——能播 > 有音效);登录后仍走代理(DSP 全功能)。
     const isPublicDirect = !store.token && !hasHeaders && /^https?:\/\//i.test(t.url || '');
     if (isPublicDirect) {
+      isPublicDirectApplied = true;
       audio.src = t.url;
       return;
     }
@@ -320,7 +324,10 @@ export const AudioPro = {
     applyUrl(track);
     if (opts.startTimeMs) seekSec(opts.startTimeMs / 1000);
     // 0922:同源代理 401(未登录 nm_auth 缺失)时 <audio> 只报 NotSupportedError——主动探测回明确错误,不再甩媒体格式错
-    if (!IS_ELECTRON && !IS_DEV && !store.token) {
+    // lx170(老板 0923 03:22 修):此拦截误伤匿名直连场景——lx170 后匿名公开直链(听风/CDN,无鉴权头)
+    // 不走代理可直接播,不应被拦截;仅当「本曲确实要走代理且无凭据」才拦截(有鉴权头 h= 的媒体库流服务端已放行)。
+    const needProxyAuth = !IS_ELECTRON && !IS_DEV && !store.token && !(headers && Object.keys(headers).length);
+    if (needProxyAuth && !isPublicDirectApplied) {
       emit(AudioProEventType.PLAYBACK_ERROR, { error: '播放失败：请先登录服务器账号（右上角设置→服务器连接）后再播放媒体库歌曲' });
       return;
     }
