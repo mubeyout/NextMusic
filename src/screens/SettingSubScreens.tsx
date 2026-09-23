@@ -246,10 +246,12 @@ export function AboutScreen() {
       </Section>
       <Section title="开源与致谢">
         <StaticRow label="LX Music" value="音源引擎" />
-        <StaticRow label="Subsonic / Emby / Jellyfin" value="媒体库协议" />
+        <StaticRow label="Emby / Jellyfin / Plex / Navidrome / Subsonic 等 12 种" value="媒体库协议" />
+        <StaticRow label="DLNA / AirPlay" value="投播协议" />
         <StaticRow label="IconPark 图标体系" value="视觉" />
+        <ActionRow label="项目主页" value="github.com/mubeyout" onPress={() => Linking.openURL('https://github.com/mubeyout/nextmusic-release')} />
       </Section>
-      <Text style={ts.footer}>NextMusic · 为纯粹听歌而生</Text>
+      <Text style={ts.footer}>NextMusic · 自己的音乐系统</Text>
     </PageShell>
   );
 }
