@@ -383,7 +383,7 @@ const st = StyleSheet.create({
   // lx178(老板 0923 08:49):开关重做——轨道滑动式,与服务器音源 csSw 同一交互语言;
   // 旧样式 knob 只变色不位移(灰圆钉死在左侧,像坏了);现在 on=白圆右滑+绿轨道,off=灰圆左停+内凹轨道
   switchWrap: { padding: 2 },
-  switch: { width: 42, height: 24, borderRadius: 12, backgroundColor: C.inset2, borderWidth: 1, borderColor: C.strokeFaint, alignItems: 'center', flexDirection: 'row', justifyContent: 'flex-start', paddingHorizontal: 2 },
+  switch: { width: 42, height: 24, borderRadius: 12, backgroundColor: C.inset2, borderWidth: 1, borderColor: C.strokeFaint, alignItems: 'center', flexDirection: 'row', justifyContent: 'flex-start', paddingHorizontal: 2 }, // lx179b:与 csSw 同构
   switchOn: { backgroundColor: C.brand, borderColor: 'transparent' },
   knob: { width: 18, height: 18, borderRadius: 9, backgroundColor: '#8F969E' },
   knobOn: { backgroundColor: '#FFFFFF', marginLeft: 18 },
@@ -445,9 +445,9 @@ const hd = StyleSheet.create({
   srcIcon: { width: 46, height: 46, borderRadius: 13 },
   srcName: { fontSize: 16 },
   srcSub: { fontSize: 13 },
-  switch: { width: 52, height: 30, borderWidth: 2, paddingHorizontal: 3 },
-  knob: { width: 22, height: 22 },
-  knobOn: { marginLeft: 22 }, // lx178:HD 开时白圆右滑
+  switch: { width: 42, height: 24, borderRadius: 12 }, // lx179b:与服务器音源 csSw 完全同尺寸(web 带字号放大时不另放,统一 42×24)
+  knob: { width: 18, height: 18, borderRadius: 9 },
+  knobOn: { marginLeft: 18 },
   ghostBtn: { height: 54, borderRadius: 14 },
   ghostText: { fontSize: 15 },
 });
