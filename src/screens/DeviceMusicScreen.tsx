@@ -1,6 +1,6 @@
 // 设备本地音乐：权限申请 → 扫描 → 列表（播放 / 加入歌单 / 下载入口）
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
@@ -34,7 +34,19 @@ export function DeviceMusicScreen() {
   const scan = async () => {
     setScanning(true); setFound(0);
     try {
-      await ensurePermission();
+      // lx182(老板 0923 12:47 一加扫不出):权限被拒必须拦下并明说——
+      // 原先 ensurePermission() 结果被丢弃,拒绝后仍继续扫(MediaStore 空)→误报「未发现本地音乐」;
+      // 一加 ColorOS 常默认拒绝/弹窗被雷屏,用户根本不知道是权限问题
+      const granted = await ensurePermission();
+      if (!granted) {
+        setScanning(false);
+        dialog.alert(
+          '缺少音乐访问权限',
+          '系统拒绝了「音乐和音频」权限,无法扫描本地音乐。\n\n请到 系统设置 → 应用 → NextMusic → 权限 → 允许「音乐和音频」后重试。',
+          [{ text: '去系统设置', onPress: () => { try { Linking.openSettings?.(); } catch { /* ignore */ } } }, { text: '知道了' }],
+        );
+        return;
+      }
       // ① MediaStore 主路径（系统媒体库，元数据齐全）
       let r: ScanResult | null = await scanByMediaStore();
       // ② 已授权 SAF 目录
