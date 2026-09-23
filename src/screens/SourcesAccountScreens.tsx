@@ -374,11 +374,13 @@ const st = StyleSheet.create({
   csSwKnob: { width: 18, height: 18, borderRadius: 9, backgroundColor: '#fff' },
   csSwKnobOn: { marginLeft: 18 },
   srcDel: { padding: 6 },
+  // lx178(老板 0923 08:49):开关重做——轨道滑动式,与服务器音源 csSw 同一交互语言;
+  // 旧样式 knob 只变色不位移(灰圆钉死在左侧,像坏了);现在 on=白圆右滑+绿轨道,off=灰圆左停+内凹轨道
   switchWrap: { padding: 2 },
-  switch: { width: 40, height: 24, borderRadius: 12, backgroundColor: C.inset2, padding: 2 },
-  switchOn: { backgroundColor: C.brand },
-  knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: C.knob },
-  knobOn: { backgroundColor: C.knobOn },
+  switch: { width: 42, height: 24, borderRadius: 12, backgroundColor: C.inset2, borderWidth: 1, borderColor: C.strokeFaint, alignItems: 'center', flexDirection: 'row', justifyContent: 'flex-start', paddingHorizontal: 2 },
+  switchOn: { backgroundColor: C.brand, borderColor: 'transparent' },
+  knob: { width: 18, height: 18, borderRadius: 9, backgroundColor: '#8F969E' },
+  knobOn: { backgroundColor: '#FFFFFF', marginLeft: 18 },
   // 按钮组(ghost 双钮并排)
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
   ghostBtn: { flex: 1, height: 40, borderRadius: 12, borderWidth: 1, borderColor: C.strokeStrong, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
@@ -437,8 +439,9 @@ const hd = StyleSheet.create({
   srcIcon: { width: 46, height: 46, borderRadius: 13 },
   srcName: { fontSize: 16 },
   srcSub: { fontSize: 13 },
-  switch: { width: 48, height: 28 },
-  knob: { width: 24, height: 24 },
+  switch: { width: 52, height: 30, borderWidth: 2, paddingHorizontal: 3 },
+  knob: { width: 22, height: 22 },
+  knobOn: { marginLeft: 22 }, // lx178:HD 开时白圆右滑
   ghostBtn: { height: 54, borderRadius: 14 },
   ghostText: { fontSize: 15 },
 });
