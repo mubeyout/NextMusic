@@ -61,13 +61,17 @@ export function SourcesScreen() {
   // 0922:服务器源拉取失败要可见(原先静默空列表=「看不到后台配置的音源」)
   const [csErr, setCsErr] = useState<string | null>(null);
   const loadServerSources = () => {
+    // lx165(老板 0923 02:20):未登录服务器账号 → 整个「服务器音源」模块隐藏且禁用——
+    // 不调 csList、不回退缓存(jm.read 缓存也一律不算数);服务器音源本质是账号服务的一部分。
+    if (!connected) { setServerSources([]); setCsErr(null); return; }
     api.csList().then(l => {
       const list = l.filter(x => x.enabled !== false);
       setServerSources(list);
       setCsErr(null);
       csCache.save(list); // lx164:成功落缓存
     }).catch((e: Error) => {
-      // lx164:不可达回缓存——音源列表不清空;但失败必须显式报错(403=公开限制+token 无效/未登录,网络=服务器不可达)
+      // lx165:已登录但拉取失败 → 回缓存保持可见+显式报错(403=token 失效,网络=不可达);
+      // 未登录不达此处(上方已 return,缓存对未登录一律不算数)
       const cached = csCache.read().filter(x => x.enabled !== false);
       setServerSources(cached);
       setCsErr(e.message || '网络错误');
@@ -142,7 +146,9 @@ export function SourcesScreen() {
         contentContainerStyle={[{ paddingHorizontal: 20, paddingBottom: insets.bottom + 28 }, IS_HD && { maxWidth: 860, alignSelf: 'flex-start', width: '100%' }]}
         showsVerticalScrollIndicator={false}
       >
-      {/* 服务器音源区: 有可用音源才渲染(空/未配置/全部禁用/未连接 → 整块不显示,省得占位) */}
+      {/* 服务器音源区(lx165 老板 0923):未登录 或 服务器无启用音源(全部被管理员禁用) → 整块隐藏。
+          已登录用户可对每个音源独立启停(toggleCsLocal),多音源并存,由用户自主决定启用哪个。 */}
+      {connected && serverSources.length > 0 && (
       <Section title="服务器音源">
         <Text style={[st.hint, IS_HD && hd.hint]}>服务器端启用的共享音源 · 点击图标选择本机是否使用 · 管理(添加/删除)在服务器后台</Text>
         {csErr ? (
@@ -172,6 +178,7 @@ export function SourcesScreen() {
           );
         })}
       </Section>
+      )}
 
       <Section title="自定义音源">
         <Text style={[st.hint, IS_HD && hd.hint]}>音源脚本在本机沙箱运行,添加后无需登录即可播放。支持 LX Music 音源协议与 MusicFree 插件;更新由音源内置检查自动提醒。</Text>
