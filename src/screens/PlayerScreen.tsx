@@ -8,6 +8,7 @@ import { fixCoverUrl } from '../utils/cover'; // lxfix:kw 图床域名自愈
 import { sourceLabel } from '../components/SongRow';
 import { C } from '../theme/tokens';
 import { usePlayer } from '../state/PlayerProvider';
+import { useSeekBar } from '../hooks/useSeekBar'; // R6 统一 seek
 import { api } from '../services/server';
 import { settings } from '../services/settings';
 import { lxapi } from '../services/lxapi';
@@ -332,48 +333,14 @@ function SeekBar({ pct, duration, onSeek, onDrag }: {
   pct: number; duration: number; onSeek: (p: number) => void; onDrag: (p: number | null) => void;
 }) {
   const w = useRef(1);
-  const hostRef = useRef<React.ComponentRef<typeof View> | null>(null); // #034
-  const leftRef = useRef(0); // #034:页内左边距缓存
-  // R5(0924 走查):RNW 的 locationX 语义相对命中子元素(#034 时 undefined,此后变「有限但错」),
-  // 且 onLayout 首帧缓存的 w 是动画期中间值——分子分母必须同源实时:web 实时 getBoundingClientRect 直算 pct;
-  // 原生 locationX 语义正确保留(#034/R4/R5 三轮坑全在 RNW)
-  const relPct = (e: any): number => {
-    const el = hostRef.current as unknown as { getBoundingClientRect?: () => { left: number; width: number } };
-    if (typeof el?.getBoundingClientRect === 'function') {
-      const r = el.getBoundingClientRect();
-      if (r && r.width >= 2) {
-        const px = e.nativeEvent?.pageX ?? 0;
-        return Math.max(0, Math.min(1, (px - r.left) / r.width));
-      }
-      return 0;
-    }
-    const lx = e.nativeEvent?.locationX ?? 0;
-    return Math.max(0, Math.min(1, lx / w.current));
-  };
-  const pan = useMemo(() => PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => true,
-    onPanResponderGrant: (e: any) => {
-      onDrag(relPct(e));
-    },
-    onPanResponderMove: (e: any) => {
-      onDrag(relPct(e));
-    },
-    onPanResponderRelease: (e: any) => {
-      onSeek(relPct(e));
-    },
-    onPanResponderTerminate: () => onDrag(null),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [onDrag, onSeek]);
+  // R6:全 app 统一 useSeekBar(此前独立实现,#034→R4→R5→R6 四轮坑史的终结)
+  const { handlers: seekHandlers } = useSeekBar((pct, phase) => {
+    if (phase === 'release') onSeek(pct); else onDrag(pct);
+  });
   return (
     <View
-      ref={hostRef as never}
       style={st.seekHit}
-      onLayout={e => {
-        w.current = Math.max(e.nativeEvent.layout.width, 1);
-        hostRef.current?.measure?.((_x, _y, _w, _h, pageX) => { leftRef.current = pageX || 0; }); // #034
-      }}
-      {...pan.panHandlers}
+      {...seekHandlers}
     >
       <View style={st.bar}>
         <View style={[st.barValue, { flex: Math.max(pct, 0.001) }]} />

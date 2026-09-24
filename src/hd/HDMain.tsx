@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, BrandIcon } from '../theme/Icon';
 import { C, H, SH, fmtSec } from './hdtokens';
 import { HDTouch } from './HDTouch';
+import { useSeekBar } from '../hooks/useSeekBar'; // R6 全 app 统一 seek
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
 import { providers } from '../services/providers';
@@ -468,34 +469,12 @@ function PlItem({ name, count, add, active, onPress, onLongPress }: { name: stri
 
 // 桌面式播放条:左(封面+曲目+收藏) 中(控件+进度) 右(队列/音效/详情)——投屏入口已删(老板 09-14)
 function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server').SongItem) => void }) {
-  const { current, playing, position, duration, toggle, skipNext, skipPrev, queue, shuffle, repeat, setShuffle, cycleRepeat } = usePlayer();
+  const { current, playing, position, duration, toggle, skipNext, skipPrev, queue, shuffle, repeat, setShuffle, cycleRepeat, seekTo } = usePlayer();
   const { faved } = useFav(current); // lx103:收藏态展示(操作走选歌单面板)
   const pct = duration > 0 ? Math.min(1, position / duration) : 0;
-  // R2-3 修复(0924 走查 R3):HD web 底部播放条进度条此前为纯展示(无 seek 交互)——
-  // 补 pointer seek,#034 同款 pageX 回退(locationX 在 RNW 压到子元素时 undefined)
-  const trackRef = useRef<React.ElementRef<typeof View> | null>(null); // R2-3:#034 同款 measure 缓存左边距
-  const trackLeftRef = useRef(0);
-  const trackWRef = useRef(1);
-  const seekFromEvent = (e: { nativeEvent?: { pageX?: number } }) => {
-    // R4 修复:locationX 在 RNW 语义不稳——#034 是 undefined,这次是「有限但相对命中子元素」(视觉50%跳66%)
-    // 恒走 pageX-measure(唯一可信坐标),不再信任 locationX
-    const px = e.nativeEvent?.pageX;
-    if (typeof px !== 'number' || !Number.isFinite(px) || !trackWRef.current || duration <= 0) return;
-    const lx = px - trackLeftRef.current;
-    const p = Math.max(0, Math.min(1, lx / trackWRef.current));
-    try {
-      const g = globalThis as never as { __nmAudio?: { currentTime?: number } };
-      const a = g.__nmAudio;
-      if (a && Number.isFinite(p * duration)) { a.currentTime = Math.max(0, p * duration); }
-    } catch { /* ignore */ }
-  };
-  type PEvt = { nativeEvent?: { locationX?: number; pageX?: number } };
-  const pbTrackProps: Record<string, unknown> = IS_WEB ? {
-    onStartShouldSetResponder: (): boolean => true,
-    onResponderGrant: (e: PEvt) => seekFromEvent(e),
-    onResponderMove: (e: PEvt) => seekFromEvent(e),
-    onResponderRelease: (e: PEvt) => seekFromEvent(e),
-  } : {};
+  // R6 根治:HDPlayBar 底部条是全 app 第 4 处独立 seek 实现(R3 自加坐标层三病:左边距恒0/宽度量错元素/直写 audio 绕过通道)
+  // → 统一 useSeekBar hook(pageX+实时 rect+seekTo 通道),全 app seek 只此一处实现
+  const pbSeek = useSeekBar((pct) => { if (duration > 0) seekTo(pct * duration); });
   // v3.32(老板:web 下载缺选项):web 形态弹二选一(缓存到服务器/下载到本地);原生不变
   const dlCurrent = () => {
     if (!current) return;
@@ -543,11 +522,8 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
         <View style={st.pbProgRow}>
           <Text style={st.pbTime}>{fmtSec(position)}</Text>
           <View
-            ref={trackRef}
             style={st.pbTrack}
-            onLayout={() => trackRef.current?.measure?.((_x, _y, w, _h, pageX) => { trackLeftRef.current = pageX || 0; trackWRef.current = w || 1; })} // #034
-            collapsable={false}
-            {...(pbTrackProps as Record<string, unknown>)}
+            {...pbSeek.handlers}
           >
             <View style={{ flex: pct, backgroundColor: C.brand, borderRadius: 2 }} />
             <View style={{ flex: 1 - pct, backgroundColor: C.track, borderRadius: 2 }} />

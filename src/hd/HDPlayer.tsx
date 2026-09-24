@@ -15,6 +15,7 @@ import { hdActions } from './HDActions';
 import { toast } from '../components/Dialog';
 import { C, T, fmtSec } from './hdtokens';
 import { HDTouch } from './HDTouch';
+import { useSeekBar } from '../hooks/useSeekBar'; // R6 统一 seek
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
 import { api } from '../services/server';
@@ -144,21 +145,8 @@ export function HDPlayer() {
   const trackRef = React.useRef<React.ComponentRef<typeof TouchableOpacity> | null>(null); // #034:measure 缓存页内左边距
   const trackLeft = React.useRef(0);
   // #034:web RNW 指针压到子元素(trackFill/playhead)时 locationX=undefined(原 undefined/w=NaN 被守卫拦掉但那段拖动跳段)——回退 pageX-缓存左边距,拖动全程跟手
-  // R5(0924 走查):RNW 的 locationX 相对命中子元素(有限但错)+onLayout 缓存宽度是动画期中间值——
-  // web 实时 getBoundingClientRect 直算 pct(分子分母同源);原生 locationX 语义正确保留
-  const relPct = (e: { nativeEvent?: { locationX?: number; pageX?: number } }): number => {
-    const el = trackRef.current as unknown as { getBoundingClientRect?: () => { left: number; width: number } };
-    if (typeof el?.getBoundingClientRect === 'function') {
-      const r = el.getBoundingClientRect();
-      if (r && r.width >= 2) {
-        const px = e.nativeEvent?.pageX ?? 0;
-        return Math.max(0, Math.min(1, (px - r.left) / r.width));
-      }
-      return 0;
-    }
-    const lx = e.nativeEvent?.locationX ?? 0;
-    return Math.max(0, Math.min(1, lx / (trackW.current || 1))); // 原生分支(locationX 语义正确)
-  };
+  // R6:全 app 统一 useSeekBar(独立实现坑史终结)
+  const { handlers: hdSeekHandlers } = useSeekBar((pct) => { if (duration > 0) seekTo(pct * duration); });
   // v1.2.11(老板:整体重排):唱片区实测方形(onLayout),尺寸自适应窗口,上限 440
   const [vsize, setVsize] = useState(0);
   // v1.1.8 唱片旋转(18s/转;web 必须 JS driver——RNW Animated useNativeDriver 必 false,原生端 native driver 零 JS 开销)
@@ -369,24 +357,9 @@ export function HDPlayer() {
           <View style={[st.progRow, IS_WEB && st.progRowWeb, !IS_WEB && st.progRowDock]}>
             <Text style={[st.time, IS_WEB && { minWidth: 42 }]}>{fmtSec(position)}</Text>
             <TouchableOpacity
-              ref={trackRef as never}
               style={[st.trackWrap, IS_WEB && { height: 6, borderRadius: 3 }]}
               activeOpacity={0.9}
-              onLayout={e => {
-                trackW.current = e.nativeEvent.layout.width;
-                trackRef.current?.measure?.((_x: number, _y: number, _w: number, _h: number, pageX: number) => { trackLeft.current = pageX || 0; }); // #034
-              }}
-              onPress={e => {
-                const w = trackW.current;
-                if (duration > 0) seekTo(relPct(e) * duration);
-              }}
-              {...(IS_WEB ? ({
-                onStartShouldSetResponder: () => duration > 0,
-                onResponderMove: (e: import('react-native').GestureResponderEvent) => {
-                  const w = trackW.current || 1;
-                  if (duration > 0) seekTo(relPct(e) * duration);
-                },
-              } as never) : {})} /* v3.28:responder props 运行时支持但已从 TouchableOpacity 类型移除 */
+              {...hdSeekHandlers} /* R6:useSeekBar 统一(替换 #034 老三样:onPress/measure/responder 内联) */
             >
               <View style={[st.trackFill, { flex: pct }]} />
               <View style={[st.trackRest, { flex: 1 - pct }]} />

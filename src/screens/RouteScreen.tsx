@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, BackHandler, ScrollView, NativeModules, NativeEventSubscription, PanResponder, Dimensions, AppState, PermissionsAndroid, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSeekBar } from '../hooks/useSeekBar'; // R6 统一 seek
 import { useAudioPro } from 'react-native-audio-pro';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
@@ -37,23 +38,16 @@ const NMBlur = NativeModules.NMBlur as { setBlur: (nativeId: string, enabled: bo
  */
 
 function VolSlider({ value, onDrag, onCommit }: { value: number; onDrag?: (v: number) => void; onCommit: (v: number) => void }) {
-  const wRef = useRef(1);
-  const calc = (x: number) => Math.max(0, Math.min(100, Math.round((x / Math.max(1, wRef.current)) * 100)));
-  const pan = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (e) => onDrag?.(calc(e.nativeEvent.locationX)),
-      onPanResponderMove: (e) => onDrag?.(calc(e.nativeEvent.locationX)),
-      onPanResponderRelease: (e) => onCommit(calc(e.nativeEvent.locationX)),
-    }),
-  ).current;
+  // R6:统一 useSeekBar(原 locationX 直用在 RNW 有 #034 族病)
+  const { handlers: volHandlers } = useSeekBar((pct, phase) => {
+    const v = Math.round(pct * 100);
+    if (phase === 'release') onCommit(v); else onDrag?.(v);
+  });
   const v = Math.max(0, Math.min(100, value));
   return (
     <View
       style={st.volTrack}
-      onLayout={(e) => { wRef.current = e.nativeEvent.layout.width; }}
-      {...pan.panHandlers}
+      {...volHandlers}
     >
       <View style={st.volBase} />
       <View style={[st.volFill, { width: `${v}%` }]} />
