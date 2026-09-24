@@ -471,6 +471,30 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
   const { current, playing, position, duration, toggle, skipNext, skipPrev, queue, shuffle, repeat, setShuffle, cycleRepeat } = usePlayer();
   const { faved } = useFav(current); // lx103:收藏态展示(操作走选歌单面板)
   const pct = duration > 0 ? Math.min(1, position / duration) : 0;
+  // R2-3 修复(0924 走查 R3):HD web 底部播放条进度条此前为纯展示(无 seek 交互)——
+  // 补 pointer seek,#034 同款 pageX 回退(locationX 在 RNW 压到子元素时 undefined)
+  const trackRef = useRef<React.ElementRef<typeof View> | null>(null); // R2-3:#034 同款 measure 缓存左边距
+  const trackLeftRef = useRef(0);
+  const trackWRef = useRef(1);
+  const seekFromEvent = (e: { nativeEvent?: { locationX?: number; pageX?: number } }) => {
+    const ne = e.nativeEvent || {};
+    const lx = typeof ne.locationX === 'number' && Number.isFinite(ne.locationX) ? ne.locationX : (ne.pageX ?? 0) - trackLeftRef.current;
+    if (!trackWRef.current || duration <= 0) return;
+    const p = Math.max(0, Math.min(1, lx / trackWRef.current));
+    try {
+      // ctl 面只有相对 seek——绝对定位直接设 audio.currentTime(#034 seekSec 同路径,finite 守卫)
+      const g = globalThis as never as { __nmAudio?: { currentTime?: number } };
+      const a = g.__nmAudio;
+      if (a && Number.isFinite(p * duration)) { a.currentTime = Math.max(0, p * duration); }
+    } catch { /* ignore */ }
+  };
+  type PEvt = { nativeEvent?: { locationX?: number; pageX?: number } };
+  const pbTrackProps: Record<string, unknown> = IS_WEB ? {
+    onStartShouldSetResponder: (): boolean => true,
+    onResponderGrant: (e: PEvt) => seekFromEvent(e),
+    onResponderMove: (e: PEvt) => seekFromEvent(e),
+    onResponderRelease: (e: PEvt) => seekFromEvent(e),
+  } : {};
   // v3.32(老板:web 下载缺选项):web 形态弹二选一(缓存到服务器/下载到本地);原生不变
   const dlCurrent = () => {
     if (!current) return;
@@ -517,7 +541,13 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
         </View>
         <View style={st.pbProgRow}>
           <Text style={st.pbTime}>{fmtSec(position)}</Text>
-          <View style={st.pbTrack}>
+          <View
+            ref={trackRef}
+            style={st.pbTrack}
+            onLayout={() => trackRef.current?.measure?.((_x, _y, w, _h, pageX) => { trackLeftRef.current = pageX || 0; trackWRef.current = w || 1; })} // #034
+            collapsable={false}
+            {...(pbTrackProps as Record<string, unknown>)}
+          >
             <View style={{ flex: pct, backgroundColor: C.brand, borderRadius: 2 }} />
             <View style={{ flex: 1 - pct, backgroundColor: C.track, borderRadius: 2 }} />
           </View>
