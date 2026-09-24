@@ -10,7 +10,7 @@ import { HDTouch } from '../hd/HDTouch';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { dialog, toast } from '../components/Dialog';
-import { store as httpStore } from '../services/server';
+import { store as httpStore, req } from '../services/server';
 import type { SongItem } from '../services/server';
 import { deviceLibraryAgg, deviceSongs } from '../services/deviceLibraryAgg';
 import { myLib, toSongItem, coverUrl, libCache, type LibArtist, type LibAlbum, type LibSong, type LibStats } from '../services/myLibrary';
@@ -175,6 +175,25 @@ export function MyLibraryScreen() {
   // v1.2 三层库:库分区(我的默认;本机=设备库;共享=管理员设的库,锁态可切但内容为锁卡)
   const [scope, setScope] = useState<LibScope>({ kind: 'mine' });
   const [sharedLibs, setSharedLibs] = useState<{ id: string; name: string; access: string; locked: boolean; songCountHint: number }[]>([]);
+  // spec⑪C:锁卡四字段(403 body.lock)+申请态
+  const [lockInfo, setLockInfo] = useState<{ name?: string; reason?: string; owner?: string; songCount?: number } | null>(null);
+  const [reqSent, setReqSent] = useState(false);
+  useEffect(() => {
+    setLockInfo(null); setReqSent(false);
+    if (scope.kind === 'shared' && scope.locked && httpStore.token) {
+      // req() 抛错丢响应体——原生 fetch 补拿 403 的 lock 四字段
+      fetch('/api/music/library/stats?lib=' + encodeURIComponent(scope.id), { headers: { 'x-user-token': httpStore.token } })
+        .then(r => (r.status === 403 ? r.json() : null))
+        .then(d => { if (d && d.lock) setLockInfo(d.lock); })
+        .catch(() => {});
+    }
+  }, [scope]);
+  const doRequestAccess = () => {
+    if (!httpStore.token || reqSent) return;
+    req('/api/music/library/shared/request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: scope.kind === 'shared' ? scope.id : '' }) })
+      .then(() => { setReqSent(true); toast('已提交申请'); })
+      .catch(() => toast('提交失败,稍后再试'));
+  };
   useEffect(() => { if (httpStore.token) myLib.sharedList().then(r => setSharedLibs(r.libs)).catch(() => {}); }, []);
   const [tab, setTab] = useState<Tab>('albums');
   const [stats, setStats] = useState<LibStats | null>(null);
@@ -225,6 +244,26 @@ export function MyLibraryScreen() {
     }
   }, [tab, seed, scope]);
 
+  // spec⑪B:SAF 添加目录(持久授权;权限不足弹引导重选)
+  const [devScanning, setDevScanning] = useState(false);
+  const addDeviceFolder = async () => {
+    if (devScanning) return;
+    try {
+      setDevScanning(true);
+      const { scanBySafFolder } = await import('../services/devicelibrary');
+      const libAgg = await import('../services/deviceLibraryAgg');
+      const r = await scanBySafFolder(() => {});
+      if (r && r.count > 0) {
+        libAgg.invalidateDeviceAgg();
+        await loadAll(true);
+        toast(`已添加 ${r.count} 首本机音乐`);
+      } else if (r) {
+        dialog.alert('未发现音频', '该目录没有音频文件,换个文件夹试试(选择后即持久授权,下次自动扫描)');
+      }
+    } catch (e) {
+      dialog.alert('无法访问该目录', '请重新选择并允许 NextMusic 访问(系统弹窗里点「允许」/「使用此文件夹」)', [{ text: '重新选择', onPress: () => { void addDeviceFolder(); } }, { text: '取消', style: 'cancel' }]);
+    } finally { setDevScanning(false); }
+  };
   const doSync = () => {
     if (syncing) return;
     setSyncing(true);
@@ -294,6 +333,28 @@ export function MyLibraryScreen() {
           <Text style={d.emptyT1}>曲库加载失败</Text>
           <Text style={d.emptyT2}>{err}</Text>
           <TouchableOpacity style={d.retryBtn} onPress={() => loadAll()}><Text style={d.retryText}>重试</Text></TouchableOpacity>
+        </View>
+      );
+    }
+    // spec⑪B:本机分区专属空态(SAF 添加目录/Web 引导上传——P2.5 拍板口径)
+    if (scope.kind === 'device' && stats && (stats.songs ?? 0) === 0) {
+      return (
+        <View style={d.emptyWrap}>
+          <Icon name="music" size={30} color={C.text3} />
+          <Text style={d.emptyT1}>本机还没有音乐</Text>
+          {IS_WEB ? (
+            <>
+              <Text style={d.emptyT2}>浏览器无法直接读取本机文件夹。手机/桌面 App 可扫描本机音乐;或把音乐上传到服务器曲库,全设备同步。</Text>
+              <UploadSheet.EmptyAction />
+            </>
+          ) : (
+            <>
+              <Text style={d.emptyT2}>添加一个文件夹,自动按歌手/专辑整理(不上传,离线可播)</Text>
+              <TouchableOpacity style={d.playAll} onPress={addDeviceFolder} activeOpacity={0.85}>
+                <Text style={d.playAllT}>{devScanning ? '扫描中…' : '添加本地目录'}</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       );
     }
@@ -405,18 +466,37 @@ export function MyLibraryScreen() {
           </TouchableOpacity>
         </View>
       )}
-      {/* v1.2 库切换胶囊行(我的/本机/共享库;功能版视觉,LEO 稿后精化) */}
-      <View style={{ flexDirection: 'row', gap: 6, paddingHorizontal: 16, paddingVertical: 6, flexWrap: 'wrap' }}>
-        <ScopeChip label="我的" on={scope.kind === 'mine'} onPress={() => setScope({ kind: 'mine' })} />
-        <ScopeChip label="本机" on={scope.kind === 'device'} onPress={() => setScope({ kind: 'device' })} />
-        {sharedLibs.map(l => (
-          <ScopeChip key={l.id} label={`${l.locked ? '🔒 ' : ''}${l.name}`} on={scope.kind === 'shared' && scope.id === l.id}
-            onPress={() => setScope({ kind: 'shared', id: l.id, name: l.name, locked: l.locked })} />
-        ))}
-      </View>
+      {/* v1.2 spec⑪D 库行三形态:手机=胶囊横排/TV=第一行可聚焦胶囊(tab 降二行)/桌面并入左竖 tab 顶部库组 */}
+      {!davWide && (
+        <View style={{ flexDirection: 'row', gap: 6, paddingHorizontal: IS_HD ? 30 : 16, paddingVertical: 6, flexWrap: 'wrap' }}>
+          <ScopeChip label="我的" on={scope.kind === 'mine'} onPress={() => setScope({ kind: 'mine' })} tv={IS_TV} />
+          <ScopeChip label="本机" on={scope.kind === 'device'} onPress={() => setScope({ kind: 'device' })} tv={IS_TV} />
+          {sharedLibs.map(l => (
+            <ScopeChip key={l.id} label={`${l.locked ? '🔒 ' : ''}${l.name}`} on={scope.kind === 'shared' && scope.id === l.id}
+              onPress={() => setScope({ kind: 'shared', id: l.id, name: l.name, locked: l.locked })} tv={IS_TV} />
+          ))}
+        </View>
+      )}
       {davWide ? (
         <View style={d.wideCols}>
           <View style={d.wideSide}>
+            {/* spec⑪D:桌面库组置顶(名称+计数,选中同 wtabOn) */}
+            <Text style={d.wsideStats}>库</Text>
+            <TouchableOpacity style={[d.wtab, scope.kind === 'mine' && d.wtabOn]} onPress={() => setScope({ kind: 'mine' })}>
+              <Icon name="wave" size={14} color={scope.kind === 'mine' ? C.text : C.text2} />
+              <Text style={[d.wtabT, scope.kind === 'mine' && d.wtabTOn]}>我的曲库</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[d.wtab, scope.kind === 'device' && d.wtabOn]} onPress={() => setScope({ kind: 'device' })}>
+              <Icon name="music" size={14} color={scope.kind === 'device' ? C.text : C.text2} />
+              <Text style={[d.wtabT, scope.kind === 'device' && d.wtabTOn]}>本机 · 离线</Text>
+            </TouchableOpacity>
+            {sharedLibs.map(l => (
+              <TouchableOpacity key={l.id} style={[d.wtab, scope.kind === 'shared' && scope.id === l.id && d.wtabOn]} onPress={() => setScope({ kind: 'shared', id: l.id, name: l.name, locked: l.locked })}>
+                <Icon name="cloud" size={14} color={scope.kind === 'shared' && scope.id === l.id ? C.text : C.text2} />
+                <Text style={[d.wtabT, scope.kind === 'shared' && scope.id === l.id && d.wtabTOn]} numberOfLines={1}>{l.locked ? '🔒 ' : ''}{l.name}</Text>
+              </TouchableOpacity>
+            ))}
+            <View style={{ borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.strokeFaint, marginVertical: 8 }} />
             {TABS.map(t => (
               <TouchableOpacity key={t.key} style={[d.wtab, tab === t.key && d.wtabOn]} onPress={() => setTab(t.key)}>
                 <Icon name={t.icon} size={15} color={tab === t.key ? C.text : C.text2} />
@@ -443,7 +523,14 @@ export function MyLibraryScreen() {
   );
 }
 
-function ScopeChip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
+function ScopeChip({ label, on, onPress, tv }: { label: string; on: boolean; onPress: () => void; tv?: boolean }) {
+  if (tv) {
+    return (
+      <HDTouch style={[d.tab, on && d.tabOn, { paddingVertical: 5, paddingHorizontal: 12 }]} focusStyle={d.tabFocus} onPress={onPress}>
+        <Text style={[d.tabText, on && d.tabTextOn]}>{label}</Text>
+      </HDTouch>
+    );
+  }
   return (
     <TouchableOpacity
       style={[d.tab, on && d.tabOn, { paddingVertical: 4, paddingHorizontal: 10 }]}

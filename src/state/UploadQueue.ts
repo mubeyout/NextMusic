@@ -11,6 +11,8 @@ export interface UpItem {
 }
 export interface UpBatch {
   id: number;
+  targetLib?: string;
+  targetName?: string; // v1.2 spec⑪A:上传目标(完成卡分计数)
   items: UpItem[];
   doneAt?: number;
   summary?: { uploaded: number; skipped: number; failed: number };
@@ -31,7 +33,7 @@ export function getUploadStore() { return store; }
 
 let seq = 0;
 /** 批量入队并启动(并发 2);重复调用=替换当前批(仅当空闲) */
-export function enqueueUpload(items: UploadItem[]) {
+export function enqueueUpload(items: UploadItem[], targetLib?: string, targetName?: string) {
   if (!items.length) return;
   if (store.batch && store.batch.items.some(i => i.st === 'wait' || i.st === 'up')) {
     // 进行中:拒绝新批(UI 层已挡,兜底)
@@ -83,7 +85,7 @@ async function runBatch(batch: UpBatch) {
         const r = await uploadToLibrary([{ uri: it.uri, name: it.name }], (l, t) => {
           it.prog = t > 0 ? Math.min(0.99, l / t) : 0;
           setStore({ batch: { ...batch, items: [...batch.items] } });
-        });
+        }, batch.targetLib);
         if (r.uploaded.length) it.st = 'done';
         else if (r.skipped.length) it.st = 'skip';
         else it.st = 'fail';

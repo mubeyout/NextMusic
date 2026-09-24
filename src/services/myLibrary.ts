@@ -122,6 +122,7 @@ export interface UploadResult {
 export function uploadToLibrary(
   items: UploadItem[],
   onProgress?: (loaded: number, total: number) => void,
+  targetLib?: string, // v1.2 spec⑪A:上传目标(''=我的曲库|共享库 id)
 ): Promise<UploadResult> {
   const b = B();
   if (!b || !store.token) return Promise.reject(new Error('请先登录服务器'));
@@ -145,7 +146,7 @@ export function uploadToLibrary(
       }
     })().finally(() => {
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', b + '/api/music/custom/upload');
+      xhr.open('POST', b + '/api/music/custom/upload' + (targetLib ? `?lib=${encodeURIComponent(targetLib)}` : ''));
       xhr.setRequestHeader('x-user-token', store.token);
       if (store.username) xhr.setRequestHeader('x-user-name', store.username);
       if (xhr.upload && onProgress) xhr.upload.onprogress = ev => { if (ev.total) onProgress(ev.loaded, ev.total); };

@@ -5,7 +5,7 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, Platform, ActivityIndi
 import SafX from 'react-native-saf-x';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
-import { toast } from '../components/Dialog';
+import { toast, dialog } from '../components/Dialog';
 import {
   getUploadStore, subscribeUpload, enqueueUpload, retryFailed, retryItem,
   minimizeUpload, openUploadSheet, closeFinished, dismissUpload,
@@ -17,7 +17,7 @@ const IS_HD = (Platform.OS === 'android' && ((Platform as { constants?: { Produc
   || (Platform.OS === 'web' && typeof navigator !== 'undefined' && /Android TV|levision|HD\b/i.test(navigator.userAgent));
 
 /** 选文件并批量入队(空态主钮/设备音乐屏共用);web 走 input,native 走 SAF */
-export function pickAndUpload() {
+export function pickAndUpload(targetLib?: string, targetName?: string) {
   if (!httpStore.token) { toast('请先登录服务器'); return; }
   if (Platform.OS === 'web') {
     const input = document.createElement('input');
@@ -30,7 +30,7 @@ export function pickAndUpload() {
         .filter(f => /\.(mp3|flac|m4a|ogg|wav|ape)$/i.test(f.name))
         .map(f => ({ uri: URL.createObjectURL(f), name: f.name, mime: f.type || undefined }));
       if (!items.length) { toast('未选择音频文件'); return; }
-      enqueueUpload(items);
+      enqueueUpload(items, targetLib, targetName);
     };
     input.click();
     return;
@@ -39,7 +39,7 @@ export function pickAndUpload() {
     .then(docs => {
       const items = (docs || []).filter(Boolean).map(d => ({ uri: d.uri, name: d.name || d.uri.split('/').pop() || 'audio', mime: d.type }));
       if (!items.length) return;
-      enqueueUpload(items);
+      enqueueUpload(items, targetLib, targetName);
     })
     .catch(() => { /* 用户取消 */ });
 }
@@ -93,7 +93,7 @@ function FinishCard({ batch: b, failed, onGo }: { batch: UpBatch; failed: UpItem
           ) : (
             <>
               <View style={u.doneIcon}><Icon name="cloud" size={26} color={C.brand} /></View>
-              <Text style={u.doneT1}>{b.summary?.uploaded || 0} 首已加入你的专辑墙</Text>
+              <Text style={u.doneT1}>{b.summary?.uploaded || 0} 首已加入{b.targetName || '你的专辑墙'}</Text>
               <Text style={u.doneT2}>
                 服务器扫描完成{b.byDirSplit ? `：${b.byDirSplit.id3Full} 首 ID3 完整 · ${b.byDirSplit.byDir} 首按文件夹分组` : ''}{b.summary?.skipped ? ` · ${b.summary.skipped} 首已在库跳过` : ''}{failed.length ? ` · ${failed.length} 首失败可重试` : ''}
               </Text>
@@ -182,7 +182,7 @@ export function useUploadSheet(onDone?: () => void) {
     );
   }, [b, s.minimized, s.finishedOpen]);
   const EmptyAction = useCallback(() => (
-    <TouchableOpacity style={u.emptyBtn} onPress={pickAndUpload} activeOpacity={0.85}>
+    <TouchableOpacity style={u.emptyBtn} onPress={() => pickAndUpload()} activeOpacity={0.85}>
       <Icon name="cloud" size={12} color="#04120a" />
       <Text style={u.emptyBtnT}>上传到曲库</Text>
     </TouchableOpacity>
