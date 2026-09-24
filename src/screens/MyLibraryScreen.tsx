@@ -141,7 +141,7 @@ export function MyLibraryScreen() {
   const [err, setErr] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [seed, setSeed] = useState(0);
-  const UploadSheet = useUploadSheet();
+  const UploadSheet = useUploadSheet(() => { void loadAll(true); }); // R2-2:完成卡跳转即刷新曲库
   const logged = !!httpStore.token;
 
   const loadAll = useCallback(async (soft = false) => {

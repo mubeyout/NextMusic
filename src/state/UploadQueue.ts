@@ -89,7 +89,13 @@ async function runBatch(batch: UpBatch) {
         else it.st = 'fail';
         it.prog = 1;
         if (r.stats) batch.stats = r.stats;
-        if (r.byDirSplit) batch.byDirSplit = r.byDirSplit;
+        // R2-1 修复:逐文件响应的 byDirSplit 只含当首——累加为全批数字(此前被末次覆盖→「1/0」错数)
+        if (r.byDirSplit) {
+          batch.byDirSplit = {
+            id3Full: (batch.byDirSplit?.id3Full || 0) + r.byDirSplit.id3Full,
+            byDir: (batch.byDirSplit?.byDir || 0) + r.byDirSplit.byDir,
+          };
+        }
       } catch (e) {
         it.st = 'fail';
         it.reason = (e as Error).message || '失败';

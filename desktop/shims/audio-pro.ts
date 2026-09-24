@@ -84,6 +84,13 @@ function applyUrl(t: Track) {
       audio.src = t.url;
       return;
     }
+    // R2-3 修复(0924 走查):内站相对路径 API(/api/…,自带鉴权 query,如 custom/file 直链)——
+    // 直连不经 download 代理。此前被改写成 /api/music/download?url=<内站路径> → 代理不透传 Range
+    // → 能自然播放但 seek 失效;download 代理是外链专用(内站路径对它是非法 url)
+    if (/^\//.test(url)) {
+      audio.src = url;
+      return;
+    }
     // v3.20:浏览器部署走服务端 inline 代理(同源)——WebAudio MediaElementSource 不再跨域静音,Range 实测 206 可 seek
     // [Gate 2026-09-14] 代理接口已加登录门:audio 标签带不了 header → token 走 nm_auth query(store 同源,登录后/凭据重登后必有)
     // v3.31(2026-09-21 修 WebDAV/Emby 浏览器播放失败)：带鉴权头 previously 误路由到 Electron 127.0.0.1:5198(浏览器没有)必挂;

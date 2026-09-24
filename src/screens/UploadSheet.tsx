@@ -1,6 +1,6 @@
 // UploadSheet —— 我的曲库上传 UI(P1b):进行态队列 sheet + 最小化浮条 + 完成卡 + 空态主动作
 // 形态:手机/web=底部 sheet;HD(TV)=居中模态卡。行级进度/重试(品红错误色),并发 2 在 UploadQueue。
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Platform, ActivityIndicator, Pressable } from 'react-native';
 import SafX from 'react-native-saf-x';
 import { Icon } from '../theme/Icon';
@@ -50,8 +50,10 @@ function useStore() {
 }
 
 /** 每个屏挂一次;无批次渲染 null,最小化=迷你浮条 */
-export function useUploadSheet() {
+export function useUploadSheet(onDone?: () => void) {
   const s = useStore();
+  const doneRef = useRef(onDone);
+  doneRef.current = onDone;
   const b = s.batch;
   const SheetView = useCallback(() => {
     if (!b) return null;
@@ -76,7 +78,7 @@ export function useUploadSheet() {
                   <Text style={u.retryAllT}>重试失败 {failed.length} 首</Text>
                 </TouchableOpacity>
               ) : null}
-              <TouchableOpacity style={u.doneGo} onPress={() => { closeFinished(); dismissUpload(); }}>
+              <TouchableOpacity style={u.doneGo} onPress={() => { closeFinished(); dismissUpload(); doneRef.current?.(); }}>
                 <Text style={u.doneGoT}>查看专辑墙</Text><Icon name="chevronright" size={12} color={C.brand} />
               </TouchableOpacity>
             </Pressable>
