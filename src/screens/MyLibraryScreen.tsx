@@ -183,13 +183,10 @@ export function MyLibraryScreen() {
     if (!soft) { setAlbums(null); setArtists(null); setRecent(null); }
     setErr(null);
     try {
-      // C12 SWR:缓存先行(旧数据秒开,骨架只在无缓存时出现)
-      await Promise.all([
-        myLib.swr('stats', () => myLib.stats(), setStats),
-        myLib.swr('albums', () => myLib.albums('newest', 120), (al) => setAlbums(al.albums)),
-        myLib.swr('artists', () => myLib.artists(), (ar) => setArtists(ar.artists)),
-        myLib.swr('recent', () => myLib.songs('recent', 60), (rc) => setRecent(rc.songs)),
-      ]);
+      // 质感#3+C12:一揽子端点一次往返(治串行空窗)+SWR 缓存先行(旧数据秒开)
+      await myLib.swr('home', () => myLib.home(), (h) => {
+        setStats(h.stats); setAlbums(h.albums); setArtists(h.artists); setRecent(h.recent);
+      }).then(h => { setStats(h.stats); setAlbums(h.albums); setArtists(h.artists); setRecent(h.recent); });
       setErr(null);
     } catch (e) {
       setErr((e as Error).message || '加载失败');

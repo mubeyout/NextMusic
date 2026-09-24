@@ -71,6 +71,10 @@ async function unwrap<T>(p: Promise<unknown>): Promise<T> {
   return r as T;
 }
 export const myLib = {
+  /** 质感#3:进屏一揽子端点(四路串行→一次往返) */
+  home(): Promise<{ stats: LibStats; albums: LibAlbum[]; artists: LibArtist[]; recent: LibSong[] }> {
+    return unwrap<never>(req('/api/music/library/home'));
+  },
   stats(): Promise<LibStats> { return unwrap<LibStats>(req('/api/music/library/stats')); },
   /** C12 SWR:缓存先行回调+网络刷新覆盖(列表/详情通用) */
   async swr<T>(cacheKey: string, fetcher: () => Promise<T>, onCached?: (v: T) => void): Promise<T> {
