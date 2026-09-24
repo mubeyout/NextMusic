@@ -476,13 +476,14 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
   const trackRef = useRef<React.ElementRef<typeof View> | null>(null); // R2-3:#034 同款 measure 缓存左边距
   const trackLeftRef = useRef(0);
   const trackWRef = useRef(1);
-  const seekFromEvent = (e: { nativeEvent?: { locationX?: number; pageX?: number } }) => {
-    const ne = e.nativeEvent || {};
-    const lx = typeof ne.locationX === 'number' && Number.isFinite(ne.locationX) ? ne.locationX : (ne.pageX ?? 0) - trackLeftRef.current;
-    if (!trackWRef.current || duration <= 0) return;
+  const seekFromEvent = (e: { nativeEvent?: { pageX?: number } }) => {
+    // R4 修复:locationX 在 RNW 语义不稳——#034 是 undefined,这次是「有限但相对命中子元素」(视觉50%跳66%)
+    // 恒走 pageX-measure(唯一可信坐标),不再信任 locationX
+    const px = e.nativeEvent?.pageX;
+    if (typeof px !== 'number' || !Number.isFinite(px) || !trackWRef.current || duration <= 0) return;
+    const lx = px - trackLeftRef.current;
     const p = Math.max(0, Math.min(1, lx / trackWRef.current));
     try {
-      // ctl 面只有相对 seek——绝对定位直接设 audio.currentTime(#034 seekSec 同路径,finite 守卫)
       const g = globalThis as never as { __nmAudio?: { currentTime?: number } };
       const a = g.__nmAudio;
       if (a && Number.isFinite(p * duration)) { a.currentTime = Math.max(0, p * duration); }
