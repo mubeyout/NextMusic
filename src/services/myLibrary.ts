@@ -34,21 +34,21 @@ export function toSongItem(l: LibSong): SongItem {
 // 走查❌#2 根因修复:web 同源部署形态 store.base=''(相对路径 fetch)——原 `b ? 绝对URL : ''` 在该形态返回空串
 // → 播放 src 恒空/封面全灰。web(base 空)走相对路径,原生无 base 维持空串(由分支 toast 引导登录)
 const IS_WEB_PLAT = Platform.OS === 'web';
-const Q = (filename: string) =>
-  `?filename=${encodeURIComponent(filename)}&user=${encodeURIComponent(store.username || '')}&token=${encodeURIComponent(store.token || '')}`;
+const Q = (filename: string, lib?: string) =>
+  `?filename=${encodeURIComponent(filename)}${lib ? `&lib=${encodeURIComponent(lib)}` : ''}&user=${encodeURIComponent(store.username || '')}&token=${encodeURIComponent(store.token || '')}`;
 
 /** 播放流地址(Range ✓,token 走 query——audio 标签带不了 header) */
-export function streamUrl(filename: string): string {
+export function streamUrl(filename: string, lib?: string): string {
   const b = B();
-  if (!b) return IS_WEB_PLAT ? '/api/music/custom/file' + Q(filename) : '';
-  return `${b}/api/music/custom/file` + Q(filename);
+  if (!b) return IS_WEB_PLAT ? '/api/music/custom/file' + Q(filename, lib) : '';
+  return `${b}/api/music/custom/file` + Q(filename, lib);
 }
 
 /** 封面地址(嵌入图代打;web 同源走相对,原生需 base+token) */
-export function coverUrl(filename: string): string {
+export function coverUrl(filename: string, lib?: string): string {
   const b = B();
-  if (!b) return IS_WEB_PLAT && store.token ? '/api/music/custom/cover' + Q(filename) : '';
-  return store.token ? `${b}/api/music/custom/cover` + Q(filename) : '';
+  if (!b) return IS_WEB_PLAT && store.token ? '/api/music/custom/cover' + Q(filename, lib) : '';
+  return store.token ? `${b}/api/music/custom/cover` + Q(filename, lib) : '';
 }
 
 
@@ -72,10 +72,14 @@ async function unwrap<T>(p: Promise<unknown>): Promise<T> {
 }
 export const myLib = {
   /** 质感#3:进屏一揽子端点(四路串行→一次往返) */
-  home(): Promise<{ stats: LibStats; albums: LibAlbum[]; artists: LibArtist[]; recent: LibSong[] }> {
-    return unwrap<never>(req('/api/music/library/home'));
+  home(lib?: string): Promise<{ stats: LibStats; albums: LibAlbum[]; artists: LibArtist[]; recent: LibSong[] }> {
+    return unwrap<never>(req('/api/music/library/home' + (lib ? `?lib=${encodeURIComponent(lib)}` : '')));
   },
-  stats(): Promise<LibStats> { return unwrap<LibStats>(req('/api/music/library/stats')); },
+  /** v1.2 三层库:共享库可见清单(锁态也返回,锁卡渲染数据) */
+  sharedList(): Promise<{ libs: { id: string; name: string; access: string; locked: boolean; songCountHint: number; syncedAt: number }[] }> {
+    return unwrap<never>(req('/api/music/library/shared/list'));
+  },
+  stats(lib?: string): Promise<LibStats> { return unwrap<LibStats>(req('/api/music/library/stats' + (lib ? `?lib=${encodeURIComponent(lib)}` : ''))); },
   /** C12 SWR:缓存先行回调+网络刷新覆盖(列表/详情通用) */
   async swr<T>(cacheKey: string, fetcher: () => Promise<T>, onCached?: (v: T) => void): Promise<T> {
     if (cacheKey) {
@@ -87,16 +91,16 @@ export const myLib = {
     return fresh;
   },
   artists(offset = 0, limit = 0): Promise<{ artists: LibArtist[]; total: number }> {
-    return unwrap<never>(req(`/api/music/library/artists?offset=${offset}&limit=${limit}`));
+    return unwrap<never>(req(`/api/music/library/artists?offset=${offset}&limit=${limit}`)); // lib 透传走 home/详情足用,artists 单查加 lib 时不常用
   },
-  artist(id: string): Promise<{ artist: LibArtist; albums: LibAlbum[]; songs: LibSong[] }> {
-    return unwrap<never>(req(`/api/music/library/artist?id=${encodeURIComponent(id)}`));
+  artist(id: string, lib?: string): Promise<{ artist: LibArtist; albums: LibAlbum[]; songs: LibSong[] }> {
+    return unwrap<never>(req(`/api/music/library/artist?id=${encodeURIComponent(id)}${lib ? `&lib=${encodeURIComponent(lib)}` : ''}`));
   },
   albums(type: 'newest' | 'recent' | 'random' = 'newest', size = 60, offset = 0): Promise<{ albums: LibAlbum[]; total: number }> {
     return unwrap<never>(req(`/api/music/library/albums?type=${type}&size=${size}&offset=${offset}`));
   },
-  album(id: string): Promise<{ album: LibAlbum; songs: LibSong[] }> {
-    return unwrap<never>(req(`/api/music/library/album?id=${encodeURIComponent(id)}`));
+  album(id: string, lib?: string): Promise<{ album: LibAlbum; songs: LibSong[] }> {
+    return unwrap<never>(req(`/api/music/library/album?id=${encodeURIComponent(id)}${lib ? `&lib=${encodeURIComponent(lib)}` : ''}`));
   },
   songs(type: 'recent' | 'random' = 'recent', size = 30): Promise<{ songs: LibSong[] }> {
     return unwrap<never>(req(`/api/music/library/songs?type=${type}&size=${size}`));

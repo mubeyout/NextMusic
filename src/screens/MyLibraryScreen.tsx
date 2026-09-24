@@ -12,6 +12,7 @@ import { C } from '../theme/tokens';
 import { dialog, toast } from '../components/Dialog';
 import { store as httpStore } from '../services/server';
 import type { SongItem } from '../services/server';
+import { deviceLibraryAgg, deviceSongs } from '../services/deviceLibraryAgg';
 import { myLib, toSongItem, coverUrl, libCache, type LibArtist, type LibAlbum, type LibSong, type LibStats } from '../services/myLibrary';
 import { usePlayer } from '../state/PlayerProvider';
 import { useUploadSheet } from './UploadSheet';
@@ -31,6 +32,10 @@ const TABS: { key: Tab; label: string; icon: 'music' | 'user' | 'wave' | 'refres
 ];
 
 const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
+
+// v1.2:当前活跃共享库(播放/封面 URL 的 lib 参数默认源——切库即切换流地址域)
+let __activeLib: string | undefined;
+export function setActiveLib(id?: string) { __activeLib = id; }
 
 // ── 封面渐变(与全 App coverGrad 同源族) ──
 const COVER_GRADS: [string, string][] = [
@@ -160,12 +165,17 @@ export function LibCard({ stats: rawStats, onEnter }: { stats: LibStats | null; 
 }
 
 // ── 主屏 ──
+type LibScope = { kind: 'mine' } | { kind: 'device' } | { kind: 'shared'; id: string; name: string; locked?: boolean };
 export function MyLibraryScreen() {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string, p?: object) => void };
   const { playSong } = usePlayer();
   const { width } = useWindowDimensions();
   const davWide = IS_WEB && width >= 900 && !IS_TV; // 走查❌#4 修正:宽屏 HD flavor(桌面 web)也要双区,仅 TV 例外
+  // v1.2 三层库:库分区(我的默认;本机=设备库;共享=管理员设的库,锁态可切但内容为锁卡)
+  const [scope, setScope] = useState<LibScope>({ kind: 'mine' });
+  const [sharedLibs, setSharedLibs] = useState<{ id: string; name: string; access: string; locked: boolean; songCountHint: number }[]>([]);
+  useEffect(() => { if (httpStore.token) myLib.sharedList().then(r => setSharedLibs(r.libs)).catch(() => {}); }, []);
   const [tab, setTab] = useState<Tab>('albums');
   const [stats, setStats] = useState<LibStats | null>(null);
   const [albums, setAlbums] = useState<LibAlbum[] | null>(null);
@@ -179,12 +189,24 @@ export function MyLibraryScreen() {
   const logged = !!httpStore.token;
 
   const loadAll = useCallback(async (soft = false) => {
+    // v1.2:本机分区走设备库聚合(零服务端)
+    if (scope.kind === 'device') {
+      setErr(null);
+      if (!soft) { setAlbums(null); setArtists(null); setRecent(null); }
+      try {
+        const r = await deviceLibraryAgg();
+        setStats(r.stats); setAlbums(r.albums); setArtists(r.artists); setRecent(r.songs.slice(0, 60));
+        setShuffle(null);
+      } catch (e) { setErr((e as Error).message || '本地扫描失败'); }
+      return;
+    }
     if (!httpStore.token) { setErr('NEED_LOGIN'); return; }
     if (!soft) { setAlbums(null); setArtists(null); setRecent(null); }
     setErr(null);
     try {
       // 质感#3+C12:一揽子端点一次往返(治串行空窗)+SWR 缓存先行(旧数据秒开)
-      await myLib.swr('home', () => myLib.home(), (h) => {
+      const libId = scope.kind === 'shared' ? scope.id : undefined;
+      await myLib.swr('home' + (libId || ''), () => myLib.home(libId), (h) => {
         setStats(h.stats); setAlbums(h.albums); setArtists(h.artists); setRecent(h.recent);
       }).then(h => { setStats(h.stats); setAlbums(h.albums); setArtists(h.artists); setRecent(h.recent); });
       setErr(null);
@@ -192,13 +214,16 @@ export function MyLibraryScreen() {
       setErr((e as Error).message || '加载失败');
     }
   }, []);
-  useEffect(() => { void loadAll(); }, [loadAll]);
+  useEffect(() => { void loadAll(); }, [loadAll, scope]);
+  useEffect(() => { setActiveLib(scope.kind === 'shared' ? scope.id : undefined); }, [scope]);
   // 随机30 按需+换种子
   useEffect(() => {
-    if (tab === 'shuffle' && httpStore.token) {
+    if (tab !== 'shuffle') return;
+    if (scope.kind === 'device') { deviceSongs('random', 30).then(l => setShuffle(l)).catch(() => setShuffle([])); return; }
+    if (httpStore.token) {
       myLib.songs('random', 30).then(r => setShuffle(r.songs)).catch(() => setShuffle([]));
     }
-  }, [tab, seed]);
+  }, [tab, seed, scope]);
 
   const doSync = () => {
     if (syncing) return;
@@ -208,19 +233,27 @@ export function MyLibraryScreen() {
       .finally(() => setSyncing(false));
   };
 
+  // v1.2:本机分区播放用 device 原始 SongItem(file:// 直播,不走服务器流);服务器库走 toSongItem
+  const toPlayable = async (l: LibSong[]): Promise<SongItem[]> => {
+    if (scope.kind !== 'device') return l.map(toSongItem);
+    const { deviceSongsDetailed } = await import('../services/devicelibrary');
+    const full = await deviceSongsDetailed();
+    const byMid = new Map(full.map(d => [d.songmid, d]));
+    return l.map(x => byMid.get(x.songmid) || toSongItem(x));
+  };
   const playAllLib = async () => {
     if (!recent?.length) return;
-    const items = recent.map(toSongItem);
+    const items = await toPlayable(recent);
     await playSong(items[0], items);
   };
   const playShuffle = async () => {
     if (!shuffle?.length) return;
-    const items = shuffle.map(toSongItem);
+    const items = await toPlayable(shuffle);
     await playSong(items[0], items);
   };
 
-  const enterAlbum = (a: LibAlbum) => nav.navigate('MyLibAlbum', { id: a.id, name: a.name, cover: a.coverFile });
-  const enterArtist = (a: LibArtist) => nav.navigate('MyLibArtist', { id: a.id, name: a.name });
+  const enterAlbum = (a: LibAlbum) => nav.navigate('MyLibAlbum', { id: a.id, name: a.name, cover: a.coverFile, lib: scope.kind === 'shared' ? scope.id : undefined });
+  const enterArtist = (a: LibArtist) => nav.navigate('MyLibArtist', { id: a.id, name: a.name, lib: scope.kind === 'shared' ? scope.id : undefined });
 
   const TabBtn = ({ t }: { t: typeof TABS[number] }) => (
     IS_HD ? (
@@ -235,6 +268,16 @@ export function MyLibraryScreen() {
   );
 
   const body = () => {
+    if (scope.kind === 'shared' && scope.locked) {
+      return (
+        <View style={d.emptyWrap}>
+          <Icon name="cloud" size={30} color={C.text3} />
+          <Text style={d.emptyT1}>{scope.name}</Text>
+          <Text style={d.emptyT2}>需要管理员授权后可见{(() => { const l = sharedLibs.find(x => x.id === scope.id); return l && l.songCountHint ? `（${l.songCountHint} 首）` : ''; })()}</Text>
+          <TouchableOpacity style={d.retryBtn} onPress={() => setScope({ kind: 'mine' })}><Text style={d.retryText}>返回我的曲库</Text></TouchableOpacity>
+        </View>
+      );
+    }
     if (err === 'NEED_LOGIN') {
       return (
         <View style={d.emptyWrap}>
@@ -308,7 +351,7 @@ export function MyLibraryScreen() {
             const g = timeGroup(s.mtime);
             const head = g !== lastG ? (lastG = g, <Text style={d.grp}>{g}</Text>) : null;
             return <React.Fragment key={s.id}>{head}
-              <SongRow song={s} onPress={async () => { const items = recent.map(toSongItem); await playSong(items[i], items); }} />
+              <SongRow song={s} onPress={async () => { const items = await toPlayable(recent); await playSong(items[i], items); }} />
             </React.Fragment>;
           })}
         </ScrollView>
@@ -362,6 +405,15 @@ export function MyLibraryScreen() {
           </TouchableOpacity>
         </View>
       )}
+      {/* v1.2 库切换胶囊行(我的/本机/共享库;功能版视觉,LEO 稿后精化) */}
+      <View style={{ flexDirection: 'row', gap: 6, paddingHorizontal: 16, paddingVertical: 6, flexWrap: 'wrap' }}>
+        <ScopeChip label="我的" on={scope.kind === 'mine'} onPress={() => setScope({ kind: 'mine' })} />
+        <ScopeChip label="本机" on={scope.kind === 'device'} onPress={() => setScope({ kind: 'device' })} />
+        {sharedLibs.map(l => (
+          <ScopeChip key={l.id} label={`${l.locked ? '🔒 ' : ''}${l.name}`} on={scope.kind === 'shared' && scope.id === l.id}
+            onPress={() => setScope({ kind: 'shared', id: l.id, name: l.name, locked: l.locked })} />
+        ))}
+      </View>
       {davWide ? (
         <View style={d.wideCols}>
           <View style={d.wideSide}>
@@ -391,6 +443,17 @@ export function MyLibraryScreen() {
   );
 }
 
+function ScopeChip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
+  return (
+    <TouchableOpacity
+      style={[d.tab, on && d.tabOn, { paddingVertical: 4, paddingHorizontal: 10 }]}
+      onPress={onPress} activeOpacity={0.75}
+    >
+      <Text style={[d.tabText, on && d.tabTextOn]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
 function SkelGrid({ round }: { round?: boolean }) {
   // A5 骨架脉冲(spec pulse 1.4s 循环;RN 用 opacity 呼吸近似)
   const op = useRef(new Animated.Value(0.45)).current;
@@ -417,8 +480,8 @@ function SkelGrid({ round }: { round?: boolean }) {
 
 // ── 专辑详情 ──
 export function MyLibAlbumRoute(props: Record<string, unknown>) {
-  const route = (props as { route: { params: { id: string; name: string; cover?: string | null } } }).route;
-  const { id, name, cover } = route.params;
+  const route = (props as { route: { params: { id: string; name: string; cover?: string | null; lib?: string } } }).route;
+  const { id, name, cover, lib } = route.params;
   const { playSong } = usePlayer();
   const [album, setAlbum] = useState<LibAlbum | null>(null);
   const [songs, setSongs] = useState<LibSong[] | null>(null);
@@ -427,7 +490,7 @@ export function MyLibAlbumRoute(props: Record<string, unknown>) {
     const ck = 'album:' + id;
     const c = libCache.get<{ album: LibAlbum; songs: LibSong[] }>(ck);
     if (c) { setAlbum(c.album); setSongs(c.songs); }
-    myLib.album(id).then(r => { libCache.set(ck, r); setAlbum(r.album); setSongs(r.songs); }).catch(e => setErr((e as Error).message));
+    myLib.album(id, lib).then(r => { libCache.set(ck, r); setAlbum(r.album); setSongs(r.songs); }).catch(e => setErr((e as Error).message));
   }, [id]);
   const play = async (i: number) => {
     if (!songs) return;
@@ -460,8 +523,8 @@ export function MyLibAlbumRoute(props: Record<string, unknown>) {
 
 // ── 歌手详情 ──
 export function MyLibArtistRoute(props: Record<string, unknown>) {
-  const route = (props as { route: { params: { id: string; name: string } } }).route;
-  const { id, name } = route.params;
+  const route = (props as { route: { params: { id: string; name: string; lib?: string } } }).route;
+  const { id, name, lib } = route.params;
   const nav = useNavigation() as { navigate: (s: string, p?: object) => void };
   const { playSong } = usePlayer();
   const [data, setData] = useState<{ artist: LibArtist; albums: LibAlbum[]; songs: LibSong[] } | null>(null);
@@ -470,7 +533,7 @@ export function MyLibArtistRoute(props: Record<string, unknown>) {
     const ck = 'artist:' + id;
     const c = libCache.get<{ artist: LibArtist; albums: LibAlbum[]; songs: LibSong[] }>(ck);
     if (c) setData(c);
-    myLib.artist(id).then(r => { libCache.set(ck, r); setData(r); }).catch(e => setErr((e as Error).message));
+    myLib.artist(id, lib).then(r => { libCache.set(ck, r); setData(r); }).catch(e => setErr((e as Error).message));
   }, [id]);
   const play = async (i: number) => {
     if (!data) return;
