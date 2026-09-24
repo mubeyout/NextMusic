@@ -19,6 +19,8 @@ import { PageHeader } from '../components/PageChrome';
 
 const IS_HD = APP_IS_HD;
 const IS_WEB = Platform.OS === 'web';
+// TV 判定(UA)与 HD flavor 分离:桌面 web 跑的是 HD flavor 但形态要桌面双区(spec③≥900),TV 才是顶部胶囊(spec④)
+const IS_TV = IS_WEB && typeof navigator !== 'undefined' && /Android TV|levision|SmartTV|WebOS|BRAVIA|AFT/i.test(navigator.userAgent);
 type Tab = 'albums' | 'artists' | 'recent' | 'shuffle';
 const TABS: { key: Tab; label: string; icon: 'music' | 'user' | 'wave' | 'refresh' }[] = [
   { key: 'albums', label: '专辑', icon: 'music' },
@@ -101,8 +103,10 @@ function timeGroup(ts: number): string {
 }
 
 // ── 入口卡(媒体库页顶部) ──
-export function LibCard({ stats, onEnter }: { stats: LibStats | null; onEnter: () => void }) {
-  const gb = stats ? (stats.totalBytes / 1024 / 1024 / 1024).toFixed(1) : '--';
+export function LibCard({ stats: rawStats, onEnter }: { stats: LibStats | null; onEnter: () => void }) {
+  // 走查❌#1 双保险:防御异常形状(壳/undefined),崩溃不可出现在媒体库页
+  const stats = rawStats && typeof (rawStats as LibStats).songs === 'number' ? rawStats : null;
+  const gb = stats ? ((stats.totalBytes || 0) / 1024 / 1024 / 1024).toFixed(1) : '--';
   return (
     <TouchableOpacity style={d.libCard} onPress={onEnter} activeOpacity={0.85}>
       <View style={d.vinBig} />
@@ -127,7 +131,7 @@ export function MyLibraryScreen() {
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string, p?: object) => void };
   const { playSong } = usePlayer();
   const { width } = useWindowDimensions();
-  const davWide = IS_WEB && width >= 900 && !IS_HD;
+  const davWide = IS_WEB && width >= 900 && !IS_TV; // 走查❌#4 修正:宽屏 HD flavor(桌面 web)也要双区,仅 TV 例外
   const [tab, setTab] = useState<Tab>('albums');
   const [stats, setStats] = useState<LibStats | null>(null);
   const [albums, setAlbums] = useState<LibAlbum[] | null>(null);

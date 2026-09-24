@@ -1,6 +1,7 @@
 // myLibrary.ts —— 「我的曲库」数据层(老板 0924 一等公民 P1,D0.5 接口层)
 // 服务端:/api/music/library/* 聚合 + /api/music/custom/{file,cover} 流/图(token query 兜底,audio/Image 组件可直载)
 // 播放身份:SongItem.source='custom',songmid=库内 id,hash=filename(播放/封面原料)
+import { Platform } from 'react-native';
 import { req, store, normalizeBase } from './server';
 import type { SongItem } from './server';
 
@@ -96,25 +97,37 @@ export function uploadToLibrary(
   if (!b || !store.token) return Promise.reject(new Error('请先登录服务器'));
   return new Promise((resolve, reject) => {
     const fd = new FormData();
-    for (const it of items) {
-      const ext = (it.name.split('.').pop() || 'mp3').toLowerCase();
-      const mime = it.mime || (ext === 'flac' ? 'audio/flac' : ext === 'm4a' ? 'audio/mp4' : ext === 'ogg' ? 'audio/ogg' : ext === 'wav' ? 'audio/wav' : 'audio/mpeg');
-      // RN 原生 FormData 吃 {uri,name,type};web 吃 Blob/File(URI 形如 blob:/file: 也被当 URI 处理失败时由上层改传 File——三形态 UI 层适配)
-      fd.append('files', { uri: it.uri, name: it.name, type: mime } as never);
-    }
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', b + '/api/music/custom/upload');
-    xhr.setRequestHeader('x-user-token', store.token);
-    if (store.username) xhr.setRequestHeader('x-user-name', store.username);
-    if (xhr.upload && onProgress) xhr.upload.onprogress = ev => { if (ev.total) onProgress(ev.loaded, ev.total); };
-    xhr.onerror = () => reject(new Error('网络错误'));
-    xhr.onload = () => {
-      try {
-        const d = JSON.parse(xhr.responseText) as UploadResult;
-        if (xhr.status >= 200 && xhr.status < 300 && d.success) resolve(d);
-        else reject(new Error(d.message || ('HTTP ' + xhr.status)));
-      } catch { reject(new Error('HTTP ' + xhr.status)); }
-    };
-    xhr.send(fd);
+    const isWeb = Platform.OS === 'web';
+    (async () => {
+      for (const it of items) {
+        const ext = (it.name.split('.').pop() || 'mp3').toLowerCase();
+        const mime = it.mime || (ext === 'flac' ? 'audio/flac' : ext === 'm4a' ? 'audio/mp4' : ext === 'ogg' ? 'audio/ogg' : ext === 'wav' ? 'audio/wav' : 'audio/mpeg');
+        if (isWeb) {
+          // 走查❌#3:浏览器 FormData 不认 {uri,name,type}(序列化成"[object Object]"→0 文件达服务器)——web 转 Blob
+          try {
+            const blob = await fetch(it.uri).then(r => r.blob());
+            fd.append('files', blob, it.name);
+          } catch { fd.append('files', new Blob([new Uint8Array(0)], { type: mime }), it.name); }
+        } else {
+          // RN 原生 FormData 吃 {uri,name,type}(content:// 与 file:// 均可)
+          fd.append('files', { uri: it.uri, name: it.name, type: mime } as never);
+        }
+      }
+    })().finally(() => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', b + '/api/music/custom/upload');
+      xhr.setRequestHeader('x-user-token', store.token);
+      if (store.username) xhr.setRequestHeader('x-user-name', store.username);
+      if (xhr.upload && onProgress) xhr.upload.onprogress = ev => { if (ev.total) onProgress(ev.loaded, ev.total); };
+      xhr.onerror = () => reject(new Error('网络错误'));
+      xhr.onload = () => {
+        try {
+          const d = JSON.parse(xhr.responseText) as UploadResult;
+          if (xhr.status >= 200 && xhr.status < 300 && d.success) resolve(d);
+          else reject(new Error(d.message || ('HTTP ' + xhr.status)));
+        } catch { reject(new Error('HTTP ' + xhr.status)); }
+      };
+      xhr.send(fd);
+    });
   });
 }

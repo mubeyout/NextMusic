@@ -400,6 +400,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           toast('我的曲库需要登录服务器后播放');
           return;
         }
+        console.log('[nm-custom] play url=', cu.slice(0, 100), 'hash=', String(t.hash || '').slice(0, 40)); // ❌#2 诊断
         playOrCast(t, cu);
         setCurrent(t);
         failStreak = 0;
@@ -422,7 +423,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           const st0 = settings.get();
           if (st0.preferServerCache !== false) {
             const q = `?name=${encodeURIComponent(t.name || '')}&singer=${encodeURIComponent(t.singer || '')}&source=${encodeURIComponent(t.source)}&songmid=${encodeURIComponent(String(t.songmid ?? ''))}&quality=${quality}`;
-            const c = await req('/api/music/cache/check' + q, { timeout: 2500 }) as { exists?: boolean; isCollision?: boolean; url?: string };
+            const c0 = await req('/api/music/cache/check' + q, { timeout: 2500 }) as { exists?: boolean; isCollision?: boolean; url?: string; data?: { exists?: boolean; isCollision?: boolean; url?: string } };
+            const c = (c0 as { data?: typeof c0 }).data ?? c0; // {success,data} 壳解包
           if (c && c.exists && !c.isCollision && c.url) {
             const cu = c.url.startsWith('http') ? c.url : normalizeBase(httpStore.base) + c.url;
             playOrCast(t, cu);
