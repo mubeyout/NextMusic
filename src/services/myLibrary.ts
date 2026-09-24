@@ -67,3 +67,43 @@ export const myLib = {
   /** 触发扫描(进屏手动刷新用);扫描后聚合缓存服务端已联动失效 */
   sync(): Promise<void> { return req('/api/music/custom/sync', { method: 'POST' }) as never; },
 };
+
+// ── P1b 上传链路(0924 老板追加:客户端→服务器导入,传完即上墙) ──
+export interface UploadItem { uri: string; name: string; mime?: string }
+export interface UploadResult {
+  success: boolean; uploaded: { name: string; size: number }[];
+  skipped: string[]; failed: { name: string; reason: string }[];
+  stats?: LibStats | null; message?: string;
+}
+
+/** 批量上传到我的曲库(XHR 带 upload progress,RN 原生/web 同构;服务端自动增量扫描+聚合失效) */
+export function uploadToLibrary(
+  items: UploadItem[],
+  onProgress?: (loaded: number, total: number) => void,
+): Promise<UploadResult> {
+  const b = B();
+  if (!b || !store.token) return Promise.reject(new Error('请先登录服务器'));
+  return new Promise((resolve, reject) => {
+    const fd = new FormData();
+    for (const it of items) {
+      const ext = (it.name.split('.').pop() || 'mp3').toLowerCase();
+      const mime = it.mime || (ext === 'flac' ? 'audio/flac' : ext === 'm4a' ? 'audio/mp4' : ext === 'ogg' ? 'audio/ogg' : ext === 'wav' ? 'audio/wav' : 'audio/mpeg');
+      // RN 原生 FormData 吃 {uri,name,type};web 吃 Blob/File(URI 形如 blob:/file: 也被当 URI 处理失败时由上层改传 File——三形态 UI 层适配)
+      fd.append('files', { uri: it.uri, name: it.name, type: mime } as never);
+    }
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', b + '/api/music/custom/upload');
+    xhr.setRequestHeader('x-user-token', store.token);
+    if (store.username) xhr.setRequestHeader('x-user-name', store.username);
+    if (xhr.upload && onProgress) xhr.upload.onprogress = ev => { if (ev.total) onProgress(ev.loaded, ev.total); };
+    xhr.onerror = () => reject(new Error('网络错误'));
+    xhr.onload = () => {
+      try {
+        const d = JSON.parse(xhr.responseText) as UploadResult;
+        if (xhr.status >= 200 && xhr.status < 300 && d.success) resolve(d);
+        else reject(new Error(d.message || ('HTTP ' + xhr.status)));
+      } catch { reject(new Error('HTTP ' + xhr.status)); }
+    };
+    xhr.send(fd);
+  });
+}
