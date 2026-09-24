@@ -111,7 +111,7 @@ export function LibCard({ stats, onEnter }: { stats: LibStats | null; onEnter: (
         <Text style={d.libTitle}>我的曲库</Text>
       </View>
       <Text style={d.libStat}>
-        {stats ? <><Text style={d.libStatB}>{stats.songs.toLocaleString()}</Text> 首歌 · <Text style={d.libStatB}>{stats.albums}</Text> 专辑 · <Text style={d.libStatB}>{stats.artists}</Text> 歌手 · <Text style={d.libStatB}>{gb}</Text> GB</> : '服务器上的自有曲库 · 点击进入'}
+        {stats && typeof stats.songs === 'number' ? <><Text style={d.libStatB}>{stats.songs.toLocaleString()}</Text> 首歌 · <Text style={d.libStatB}>{stats.albums ?? 0}</Text> 专辑 · <Text style={d.libStatB}>{stats.artists ?? 0}</Text> 歌手 · <Text style={d.libStatB}>{gb}</Text> GB</> : '服务器上的自有曲库 · 点击进入'}
       </Text>
       <View style={d.libGoRow}>
         <Text style={d.libGo}>进入曲库</Text>
@@ -213,7 +213,7 @@ export function MyLibraryScreen() {
         </View>
       );
     }
-    const isEmpty = stats && stats.songs === 0;
+    const isEmpty = stats && (stats.songs ?? 0) === 0;
     if (isEmpty) {
       return (
         <View style={d.emptyWrap}>
@@ -296,7 +296,7 @@ export function MyLibraryScreen() {
       </ScrollView>
     </View>
   );
-  const statsLine = stats ? `${stats.songs.toLocaleString()} 首 · ${stats.albums} 专辑 · ${stats.artists} 歌手` : '';
+  const statsLine = stats && typeof stats.songs === 'number' ? `${stats.songs.toLocaleString()} 首 · ${stats.albums ?? 0} 专辑 · ${stats.artists ?? 0} 歌手` : '';
 
   return (
     <View style={[d.screen, { paddingTop: insets.top }]}>

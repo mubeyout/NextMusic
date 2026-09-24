@@ -47,22 +47,32 @@ export function coverUrl(filename: string): string {
 }
 
 // ── API(req() 自动带 base+x-user-token) ──
+// lx185(老板 0924 03:56 toLocaleString 崩溃):服务端返回 {success,data} 信封,客户端原样断言 → stats.songs=undefined → .toLocaleString() 白屏;
+// 统一解包:unwrap() 取 .data,无 data 时抛错(让调用方 catch 走降级)
+async function unwrap<T>(p: Promise<unknown>): Promise<T> {
+  const r = await p as { success?: boolean; data?: T; message?: string };
+  if (r && typeof r === 'object' && 'data' in r) {
+    if (r.success === false) throw new Error(r.message || '服务器返回失败');
+    return r.data as T;
+  }
+  return r as T;
+}
 export const myLib = {
-  stats(): Promise<LibStats> { return req('/api/music/library/stats') as Promise<LibStats>; },
+  stats(): Promise<LibStats> { return unwrap<LibStats>(req('/api/music/library/stats')); },
   artists(offset = 0, limit = 0): Promise<{ artists: LibArtist[]; total: number }> {
-    return req(`/api/music/library/artists?offset=${offset}&limit=${limit}`) as never;
+    return unwrap<never>(req(`/api/music/library/artists?offset=${offset}&limit=${limit}`));
   },
   artist(id: string): Promise<{ artist: LibArtist; albums: LibAlbum[]; songs: LibSong[] }> {
-    return req(`/api/music/library/artist?id=${encodeURIComponent(id)}`) as never;
+    return unwrap<never>(req(`/api/music/library/artist?id=${encodeURIComponent(id)}`));
   },
   albums(type: 'newest' | 'recent' | 'random' = 'newest', size = 60, offset = 0): Promise<{ albums: LibAlbum[]; total: number }> {
-    return req(`/api/music/library/albums?type=${type}&size=${size}&offset=${offset}`) as never;
+    return unwrap<never>(req(`/api/music/library/albums?type=${type}&size=${size}&offset=${offset}`));
   },
   album(id: string): Promise<{ album: LibAlbum; songs: LibSong[] }> {
-    return req(`/api/music/library/album?id=${encodeURIComponent(id)}`) as never;
+    return unwrap<never>(req(`/api/music/library/album?id=${encodeURIComponent(id)}`));
   },
   songs(type: 'recent' | 'random' = 'recent', size = 30): Promise<{ songs: LibSong[] }> {
-    return req(`/api/music/library/songs?type=${type}&size=${size}`) as never;
+    return unwrap<never>(req(`/api/music/library/songs?type=${type}&size=${size}`));
   },
   /** 触发扫描(进屏手动刷新用);扫描后聚合缓存服务端已联动失效 */
   sync(): Promise<void> { return req('/api/music/custom/sync', { method: 'POST' }) as never; },
