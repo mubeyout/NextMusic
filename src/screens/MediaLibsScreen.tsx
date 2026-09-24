@@ -10,6 +10,8 @@ import { C } from '../theme/tokens';
 import { Platform } from 'react-native';
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
+import { LibCard } from './MyLibraryScreen'; // 我的曲库入口卡(0924)
+import { myLib, type LibStats } from '../services/myLibrary';
 import { ActionSheet } from '../components/ActionSheet';
 import { CollectSheet } from '../components/CollectSheet';
 import { SongRow } from '../components/SongRow';
@@ -73,6 +75,9 @@ export function MediaLibsScreen() {
 
   const refresh = useCallback(() => setAccts(providers.all()), []);
   useEffect(refresh, []);
+  // 曲库统计(入口卡展示;失败静默——卡片降级为无统计文案)
+  const [libStats, setLibStats] = useState<LibStats | null>(null);
+  useEffect(() => { myLib.stats().then(setLibStats).catch(() => setLibStats(null)); }, []);
   // 从 ProviderEdit 保存/删除返回时刷新列表（屏幕停留挂载不会重走 mount）
   useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
 
@@ -128,6 +133,8 @@ export function MediaLibsScreen() {
         contentContainerStyle={[{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingBottom: insets.bottom + 24 }, IS_HD && { paddingTop: 8 }]}
       >
         <Text style={[st.intro, IS_HD && hd.intro]}>接入 Emby、Jellyfin、Navidrome、道理鱼（Subsonic 兼容）或 WebDAV，把私有音乐库变成曲库。</Text>
+        {/* 0924 我的曲库入口卡(老板拍板:渐变黑胶大卡含统计行,置顶)——未登录时仍展示(进入后引导登录) */}
+        <LibCard stats={libStats} onEnter={() => nav.navigate('MyLibrary', {})} />
         {accts.length === 0 ? (
           <EmptyState icon="server" title="还没有添加媒体库" sub="点右上角 ＋ 接入 Plex / 飞牛 / 群晖 / Emby / Navidrome / WebDAV / 听风 等 11 种平台" />
         ) : (

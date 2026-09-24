@@ -15,6 +15,8 @@ import {
   deviceSongsDetailed, deviceTrackCount,
   type ScanResult,
 } from '../services/devicelibrary';
+import { enqueueUpload } from '../state/UploadQueue'; // P1b 上传队列
+import { useUploadSheet } from './UploadSheet';
 import { dialog, toast } from '../components/Dialog';
 
 export function DeviceMusicScreen() {
@@ -102,6 +104,18 @@ export function DeviceMusicScreen() {
     ]);
   };
 
+  // P1b 入口 A(0924):本地音乐批量上传到服务器曲库(多选筛选等 LEO v1.1 精修,先全量批量)
+  const UploadSheet = useUploadSheet();
+  const uploadAllToLibrary = () => {
+    if (!songs.length) { toast('先扫描设备音乐'); return; }
+    dialog.alert('上传到曲库', `把 ${songs.length} 首设备音乐上传到服务器曲库？\n上传后自动扫描整理成专辑墙。`, [
+      { text: '取消', style: 'cancel' },
+      { text: '上传', onPress: () => {
+        enqueueUpload(songs.map(s => ({ uri: s.songmid, name: (s.hash || s.songmid).split('/').pop() || s.name })));
+      } },
+    ]);
+  };
+
   const addOne = (song: SongItem) => {
     const pls = library.all();
     const options = pls.map(p => ({ text: `${p.name} (${p.songs.length})`, onPress: () => { library.addSongs(p.id, [song]); toast(`已加入 ${p.name}`); } }));
@@ -124,10 +138,16 @@ export function DeviceMusicScreen() {
           </TouchableOpacity>
         </View>
         {count ? (
-          <TouchableOpacity style={st.addAll} onPress={addAllToPlaylist}>
-            <Icon name="add" size={16} color={C.onBrand} />
-            <Text style={st.addAllText}>全部加入歌单</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
+            <TouchableOpacity style={[st.addAll, { flex: 1, marginTop: 0 }]} onPress={addAllToPlaylist}>
+              <Icon name="add" size={16} color={C.onBrand} />
+              <Text style={st.addAllText}>全部加入歌单</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[st.addAll, { flex: 1, marginTop: 0, borderWidth: 1, borderColor: 'rgba(30,215,96,.35)' }]} onPress={uploadAllToLibrary}>
+              <Icon name="cloud" size={16} color={C.brand} />
+              <Text style={st.addAllText}>上传到曲库</Text>
+            </TouchableOpacity>
+          </View>
         ) : null}
         <View style={{ gap: 4, marginTop: 8 }}>
           {songs.map((s, i) => (
@@ -147,6 +167,7 @@ export function DeviceMusicScreen() {
         {!scanning && !count ? <EmptyState icon="music" title="未发现本地音乐" sub="点「开始扫描」导入设备上的音频文件" /> : null}
       </ScrollView>
       <View style={st.miniDock} pointerEvents="box-none"></View>
+      <UploadSheet.View />
     </View>
   );
 }

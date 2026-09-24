@@ -41,6 +41,7 @@ import { ImportPlaylistScreen } from '../screens/ImportPlaylistScreen';
 import { FxScreen } from '../screens/FxScreen';
 import { HDFxScreen } from './HDFxScreen'; // v3.20(老板):web/pc 重构版均衡器与音效页
 import { MediaLibsScreen, ProviderBrowseRoute } from '../screens/MediaLibsScreen';
+import { MyLibraryScreen, MyLibAlbumRoute, MyLibArtistRoute } from '../screens/MyLibraryScreen';
 import { ArtistFavScreen } from '../screens/ArtistFavScreen'; // lx161:收藏歌手
 import { ArtistDetailScreen } from '../screens/ArtistDetailScreen';
 import { AlbumFavScreen } from '../screens/AlbumFavScreen'; // v1.2.9 桌面:收藏专辑入口
@@ -359,6 +360,9 @@ export function HDMain() {
             {/* v3.20:web 全宽 HD 版 Fx(注释放 Navigator 内会炸——lx168 红线,注释放表达式内) */}
             <InnerStack.Screen name="Fx" component={IS_WEB ? HDFxScreen : withPhoneScale(FxScreen)} />
             <InnerStack.Screen name="MediaLibs" component={withPhoneScale(MediaLibsScreen)} />
+            <InnerStack.Screen name="MyLibrary" component={withPhoneScale(MyLibraryScreen)} />
+            <InnerStack.Screen name="MyLibAlbum" component={withPhoneScale(MyLibAlbumRoute)} />
+            <InnerStack.Screen name="MyLibArtist" component={withPhoneScale(MyLibArtistRoute)} />
             <InnerStack.Screen name="ArtistFavs" component={withPhoneScale(ArtistFavScreen)} />
             <InnerStack.Screen name="AlbumFavs" component={withPhoneScale(AlbumFavScreen)} />
             <InnerStack.Screen name="MyFavorites" component={withPhoneScale(MyFavoritesScreen)} />

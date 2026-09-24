@@ -36,6 +36,7 @@ import { ImportPlaylistScreen } from './screens/ImportPlaylistScreen';
 import { FxScreen } from './screens/FxScreen';
 import { ProviderEditScreen } from './screens/ProviderEditScreen';
 import { MediaLibsScreen, ProviderBrowseRoute } from './screens/MediaLibsScreen';
+import { MyLibraryScreen, MyLibAlbumRoute, MyLibArtistRoute } from './screens/MyLibraryScreen';
 import { ProviderDetailScreen } from './screens/ProviderDetailScreen';
 import { DownloadsScreen } from './screens/DownloadsScreen';
 import { BoardsSquareScreen } from './screens/BoardsSquareScreen';
@@ -226,6 +227,9 @@ return (
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Downloads" component={withEnter(DownloadsScreen)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="BoardsSquare" component={withEnter(BoardsSquareScreen)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="DeviceMusic" component={withEnter(DeviceMusicScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="MyLibrary" component={withEnter(MyLibraryScreen, true)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="MyLibAlbum" component={withEnter(MyLibAlbumRoute)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="MyLibArtist" component={withEnter(MyLibArtistRoute)} />
       </Stack.Navigator>
     </NavigationContainer>
   );
