@@ -75,15 +75,34 @@ function FinishCard({ batch: b, failed, onGo }: { batch: UpBatch; failed: UpItem
     <Modal transparent visible onRequestClose={closeFinished}>
       <Pressable style={u.backdrop} onPress={closeFinished}>
         <Pressable style={[u.sheet, IS_HD && u.sheetHD, { transform: [{ scale: sc }] }] as never} onPress={() => {}}>
-          <View style={u.doneIcon}><Icon name="cloud" size={26} color={C.brand} /></View>
-          <Text style={u.doneT1}>{b.summary?.uploaded || 0} 首已加入你的专辑墙</Text>
-          <Text style={u.doneT2}>
-            服务器扫描完成{b.byDirSplit ? `：${b.byDirSplit.id3Full} 首 ID3 完整 · ${b.byDirSplit.byDir} 首按文件夹分组` : ''}{b.summary?.skipped ? ` · ${b.summary.skipped} 首已在库跳过` : ''}{failed.length ? ` · ${failed.length} 首失败可重试` : ''}
-          </Text>
+          {/* A1(LEO 整改 spec):三态——全失败=错误卡/全跳过=已在库卡/有成功=加入卡(治「0 首已加入+扫描完成」逻辑矛盾) */}
+          {(b.summary?.uploaded || 0) === 0 ? (
+            <>
+              {failed.length && !(b.summary?.skipped) ? (
+                <View style={[u.doneIcon, u.doneIconErr]}><Icon name="cloud" size={26} color="#E8618C" /></View>
+              ) : (
+                <View style={u.doneIcon}><Icon name="cloud" size={26} color={C.brand} /></View>
+              )}
+              <Text style={u.doneT1}>{failed.length && !(b.summary?.skipped) ? '上传失败' : `${b.summary?.skipped || 0} 首已在曲库`}</Text>
+              <Text style={u.doneT2}>
+                {failed.length && !(b.summary?.skipped)
+                  ? '没有文件成功到达服务器,检查网络后重试全部。'
+                  : '同名歌曲已存在,未重复上传。想传新的请先在曲库删除或改名。'}
+              </Text>
+            </>
+          ) : (
+            <>
+              <View style={u.doneIcon}><Icon name="cloud" size={26} color={C.brand} /></View>
+              <Text style={u.doneT1}>{b.summary?.uploaded || 0} 首已加入你的专辑墙</Text>
+              <Text style={u.doneT2}>
+                服务器扫描完成{b.byDirSplit ? `：${b.byDirSplit.id3Full} 首 ID3 完整 · ${b.byDirSplit.byDir} 首按文件夹分组` : ''}{b.summary?.skipped ? ` · ${b.summary.skipped} 首已在库跳过` : ''}{failed.length ? ` · ${failed.length} 首失败可重试` : ''}
+              </Text>
+            </>
+          )}
           {b.stats ? <Text style={u.doneStat}>曲库统计已更新：{b.stats.songs} 首 · {b.stats.albums} 专辑</Text> : null}
           {failed.length ? (
-            <TouchableOpacity style={u.retryAllBtn} onPress={retryFailed}>
-              <Text style={u.retryAllT}>重试失败 {failed.length} 首</Text>
+            <TouchableOpacity style={[u.retryAllBtn, (b.summary?.uploaded || 0) === 0 && b.summary?.skipped ? u.retryAllMain : null]} onPress={retryFailed}>
+              <Text style={[u.retryAllT, (b.summary?.uploaded || 0) === 0 && b.summary?.skipped ? u.retryAllMainT : null]}>{(b.summary?.uploaded || 0) === 0 && !(b.summary?.skipped) ? '重试全部' : `重试失败 ${failed.length} 首`}</Text>
             </TouchableOpacity>
           ) : null}
           <TouchableOpacity style={u.doneGo} onPress={onGo}>
@@ -198,6 +217,9 @@ const u = StyleSheet.create({
   miniT: { flex: 1, color: C.text2, fontSize: 12, fontWeight: '600' },
   // 完成卡
   doneIcon: { width: 56, height: 56, borderRadius: 16, backgroundColor: 'rgba(30,215,96,.08)', borderWidth: 1, borderColor: 'rgba(30,215,96,.2)', alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  doneIconErr: { backgroundColor: 'rgba(232,97,140,.08)', borderColor: 'rgba(232,97,140,.25)' },
+  retryAllMain: { backgroundColor: '#E8618C', borderWidth: 0 },
+  retryAllMainT: { color: '#fff' },
   doneT1: { color: C.text, fontSize: 15.5, fontWeight: '800', textAlign: 'center' },
   doneT2: { color: C.text3, fontSize: 11.5, lineHeight: 17, textAlign: 'center', marginTop: 6, maxWidth: 260 },
   doneStat: { color: C.text3, fontSize: 10.5, marginTop: 10, textAlign: 'center' },

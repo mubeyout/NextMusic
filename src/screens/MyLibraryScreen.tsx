@@ -58,7 +58,7 @@ function DiscCard({ name, sub, cover, count, round, focusable, onPress, unknown,
       )}
       {!cover && !unknown && <View style={[d.gradFill2, { backgroundColor: g2 }]} />}
       {!cover && <Icon name="music" size={26 * size} color={unknown ? '#ffffffaa' : '#fff'} />}
-      <View style={[d.vin, round && { borderRadius: 999 }]} />
+      <View style={[d.vin, round && d.vinRound]}><View style={d.vinInner} /></View>
       {count !== undefined && <View style={d.cntWrap}><Text style={d.cnt}>{count} 首</Text></View>}
     </View>
   );
@@ -143,7 +143,7 @@ export function LibCard({ stats: rawStats, onEnter }: { stats: LibStats | null; 
         start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }}
         style={StyleSheet.absoluteFill as never}
       />
-      <View style={d.vinBig} />
+      <View style={d.vinBig}><View style={d.vinInner} /></View>
       <View style={d.libRow}>
         <Icon name="wave" size={22} color={C.brand} />
         <Text style={d.libTitle}>我的曲库</Text>
@@ -557,7 +557,10 @@ const d = StyleSheet.create({
   sleeveUnknown: { opacity: 0.75 },
   gradFill: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, opacity: 0.55 },
   gradFill2: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, opacity: 0.35 },
-  vin: { position: 'absolute', right: '-22%', bottom: '-22%', width: '70%', aspectRatio: 1, borderRadius: 999, backgroundColor: '#111', borderWidth: 2, borderColor: '#000', opacity: 0.85 },
+  // V2 黑胶两层圆(spec:外 #1A1A1A+内 #242424 半径 45%,全套统一)
+  vin: { position: 'absolute', right: '-22%', bottom: '-22%', width: '70%', aspectRatio: 1, borderRadius: 999, backgroundColor: '#1A1A1A', borderWidth: 2, borderColor: '#000', opacity: 0.88, alignItems: 'center', justifyContent: 'center' },
+  vinInner: { width: '45%', aspectRatio: 1, borderRadius: 999, backgroundColor: '#242424' },
+  vinRound: { borderRadius: 999, width: '38%', right: '-12%', bottom: '-12%' }, // V2:歌手圆头像右下小黑胶
   cntWrap: { position: 'absolute', left: 8, top: 8, backgroundColor: 'rgba(0,0,0,.66)', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
   cnt: { color: '#ffffffcc', fontSize: 9.5 },
   discName: { color: C.text, fontSize: 11.5, fontWeight: '600' },
@@ -587,7 +590,7 @@ const d = StyleSheet.create({
   shuffleBtnSub: { flex: 1, color: '#04120a', fontSize: 11, fontWeight: '600', opacity: 0.75, textAlign: 'right' },
   // 入口卡
   libCard: { borderRadius: 16, borderWidth: 1, borderColor: 'rgba(30,215,96,.15)', backgroundColor: '#0c1612', paddingVertical: 18, paddingHorizontal: 20, marginBottom: 14, overflow: 'hidden' },
-  vinBig: { position: 'absolute', right: -36, bottom: -70, width: 140, height: 140, borderRadius: 999, backgroundColor: '#111', borderWidth: 2, borderColor: '#000', opacity: 0.75 },
+  vinBig: { position: 'absolute', right: -36, bottom: -70, width: 140, height: 140, borderRadius: 999, backgroundColor: '#1A1A1A', borderWidth: 2, borderColor: '#000', opacity: 0.78, alignItems: 'center', justifyContent: 'center' },
   libRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   libTitle: { color: C.text, fontSize: 17, fontWeight: '800' },
   libStat: { color: C.text2, fontSize: 12, marginTop: 8 },
