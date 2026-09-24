@@ -31,20 +31,24 @@ export function toSongItem(l: LibSong): SongItem {
   return s;
 }
 
+// 走查❌#2 根因修复:web 同源部署形态 store.base=''(相对路径 fetch)——原 `b ? 绝对URL : ''` 在该形态返回空串
+// → 播放 src 恒空/封面全灰。web(base 空)走相对路径,原生无 base 维持空串(由分支 toast 引导登录)
+const IS_WEB_PLAT = Platform.OS === 'web';
+const Q = (filename: string) =>
+  `?filename=${encodeURIComponent(filename)}&user=${encodeURIComponent(store.username || '')}&token=${encodeURIComponent(store.token || '')}`;
+
 /** 播放流地址(Range ✓,token 走 query——audio 标签带不了 header) */
 export function streamUrl(filename: string): string {
   const b = B();
-  return b
-    ? `${b}/api/music/custom/file?filename=${encodeURIComponent(filename)}&user=${encodeURIComponent(store.username || '')}&token=${encodeURIComponent(store.token || '')}`
-    : '';
+  if (!b) return IS_WEB_PLAT ? '/api/music/custom/file' + Q(filename) : '';
+  return `${b}/api/music/custom/file` + Q(filename);
 }
 
-/** 封面地址(嵌入图代打;无 token 同样空串) */
+/** 封面地址(嵌入图代打;web 同源走相对,原生需 base+token) */
 export function coverUrl(filename: string): string {
   const b = B();
-  return b && store.token
-    ? `${b}/api/music/custom/cover?filename=${encodeURIComponent(filename)}&user=${encodeURIComponent(store.username || '')}&token=${encodeURIComponent(store.token)}`
-    : '';
+  if (!b) return IS_WEB_PLAT && store.token ? '/api/music/custom/cover' + Q(filename) : '';
+  return store.token ? `${b}/api/music/custom/cover` + Q(filename) : '';
 }
 
 // ── API(req() 自动带 base+x-user-token) ──
