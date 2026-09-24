@@ -334,26 +334,33 @@ function SeekBar({ pct, duration, onSeek, onDrag }: {
   const w = useRef(1);
   const hostRef = useRef<React.ComponentRef<typeof View> | null>(null); // #034
   const leftRef = useRef(0); // #034:页内左边距缓存
-  // #034:web RNW 压到子元素(barValue/barThumb)时 locationX=undefined——回退 pageX-缓存左边距,拖动全程跟手
-  const relX = (e: any) => {
-    const lx = e.nativeEvent?.locationX;
-    if (typeof lx === 'number' && Number.isFinite(lx)) return lx;
-    return (e.nativeEvent?.pageX ?? 0) - leftRef.current;
+  // R5(0924 走查):RNW 的 locationX 语义相对命中子元素(#034 时 undefined,此后变「有限但错」),
+  // 且 onLayout 首帧缓存的 w 是动画期中间值——分子分母必须同源实时:web 实时 getBoundingClientRect 直算 pct;
+  // 原生 locationX 语义正确保留(#034/R4/R5 三轮坑全在 RNW)
+  const relPct = (e: any): number => {
+    const el = hostRef.current as unknown as { getBoundingClientRect?: () => { left: number; width: number } };
+    if (typeof el?.getBoundingClientRect === 'function') {
+      const r = el.getBoundingClientRect();
+      if (r && r.width >= 2) {
+        const px = e.nativeEvent?.pageX ?? 0;
+        return Math.max(0, Math.min(1, (px - r.left) / r.width));
+      }
+      return 0;
+    }
+    const lx = e.nativeEvent?.locationX ?? 0;
+    return Math.max(0, Math.min(1, lx / w.current));
   };
   const pan = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: () => true,
     onPanResponderGrant: (e: any) => {
-      const p = Math.max(0, Math.min(1, relX(e) / w.current));
-      onDrag(p);
+      onDrag(relPct(e));
     },
     onPanResponderMove: (e: any) => {
-      const p = Math.max(0, Math.min(1, relX(e) / w.current));
-      onDrag(p);
+      onDrag(relPct(e));
     },
     onPanResponderRelease: (e: any) => {
-      const p = Math.max(0, Math.min(1, relX(e) / w.current));
-      onSeek(p);
+      onSeek(relPct(e));
     },
     onPanResponderTerminate: () => onDrag(null),
     // eslint-disable-next-line react-hooks/exhaustive-deps

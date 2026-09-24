@@ -144,10 +144,20 @@ export function HDPlayer() {
   const trackRef = React.useRef<React.ComponentRef<typeof TouchableOpacity> | null>(null); // #034:measure 缓存页内左边距
   const trackLeft = React.useRef(0);
   // #034:web RNW 指针压到子元素(trackFill/playhead)时 locationX=undefined(原 undefined/w=NaN 被守卫拦掉但那段拖动跳段)——回退 pageX-缓存左边距,拖动全程跟手
-  const relX = (e: { nativeEvent?: { locationX?: number; pageX?: number } }) => {
-    const lx = e.nativeEvent?.locationX;
-    if (typeof lx === 'number' && Number.isFinite(lx)) return lx;
-    return (e.nativeEvent?.pageX ?? 0) - trackLeft.current;
+  // R5(0924 走查):RNW 的 locationX 相对命中子元素(有限但错)+onLayout 缓存宽度是动画期中间值——
+  // web 实时 getBoundingClientRect 直算 pct(分子分母同源);原生 locationX 语义正确保留
+  const relPct = (e: { nativeEvent?: { locationX?: number; pageX?: number } }): number => {
+    const el = trackRef.current as unknown as { getBoundingClientRect?: () => { left: number; width: number } };
+    if (typeof el?.getBoundingClientRect === 'function') {
+      const r = el.getBoundingClientRect();
+      if (r && r.width >= 2) {
+        const px = e.nativeEvent?.pageX ?? 0;
+        return Math.max(0, Math.min(1, (px - r.left) / r.width));
+      }
+      return 0;
+    }
+    const lx = e.nativeEvent?.locationX ?? 0;
+    return Math.max(0, Math.min(1, lx / (trackW.current || 1))); // 原生分支(locationX 语义正确)
   };
   // v1.2.11(老板:整体重排):唱片区实测方形(onLayout),尺寸自适应窗口,上限 440
   const [vsize, setVsize] = useState(0);
@@ -368,13 +378,13 @@ export function HDPlayer() {
               }}
               onPress={e => {
                 const w = trackW.current;
-                if (w > 0 && duration > 0) seekTo(Math.max(0, Math.min(1, relX(e) / w)) * duration);
+                if (duration > 0) seekTo(relPct(e) * duration);
               }}
               {...(IS_WEB ? ({
                 onStartShouldSetResponder: () => duration > 0,
                 onResponderMove: (e: import('react-native').GestureResponderEvent) => {
                   const w = trackW.current || 1;
-                  if (duration > 0) seekTo(Math.max(0, Math.min(1, relX(e) / w)) * duration);
+                  if (duration > 0) seekTo(relPct(e) * duration);
                 },
               } as never) : {})} /* v3.28:responder props 运行时支持但已从 TouchableOpacity 类型移除 */
             >
