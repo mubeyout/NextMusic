@@ -2,7 +2,8 @@
 // 四 tab(专辑墙/歌手/最近添加/随机30)三形态;详情=专辑/歌手独立路由;LibCard=媒体库页入口卡
 // 视觉:唱片卡(sleeve+黑胶圆+N首徽标)按 spec 从零建;数据=myLibrary.ts;上传=P1b 入口B+sheet
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, ActivityIndicator, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, ActivityIndicator, useWindowDimensions, Animated, RefreshControl } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient'; // A1 渐变(质感整改)
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { HDTouch } from '../hd/HDTouch';
@@ -11,7 +12,7 @@ import { C } from '../theme/tokens';
 import { dialog, toast } from '../components/Dialog';
 import { store as httpStore } from '../services/server';
 import type { SongItem } from '../services/server';
-import { myLib, toSongItem, coverUrl, type LibArtist, type LibAlbum, type LibSong, type LibStats } from '../services/myLibrary';
+import { myLib, toSongItem, coverUrl, libCache, type LibArtist, type LibAlbum, type LibSong, type LibStats } from '../services/myLibrary';
 import { usePlayer } from '../state/PlayerProvider';
 import { useUploadSheet } from './UploadSheet';
 import { IS_HD as APP_IS_HD } from '../services/appversion';
@@ -28,6 +29,8 @@ const TABS: { key: Tab; label: string; icon: 'music' | 'user' | 'wave' | 'refres
   { key: 'recent', label: '最近添加', icon: 'wave' },
   { key: 'shuffle', label: '随机 30', icon: 'refresh' },
 ];
+
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
 // ── 封面渐变(与全 App coverGrad 同源族) ──
 const COVER_GRADS: [string, string][] = [
@@ -72,15 +75,32 @@ function DiscCard({ name, sub, cover, count, round, focusable, onPress, unknown,
       </HDTouch>
     );
   }
-  return <TouchableOpacity style={d.disc as never} onPress={onPress} activeOpacity={0.75}>{sleeve}{label}</TouchableOpacity>;
+  // A7 按压态:缩放反馈(Animated.Value,零 re-render)
+  const pv = useRef(new Animated.Value(1)).current;
+  return (
+    <AnimatedTouchableOpacity
+      style={[d.disc as never, { transform: [{ scale: pv }] }] as never}
+      onPress={onPress}
+      onPressIn={() => Animated.spring(pv, { toValue: 0.96, useNativeDriver: Platform.OS !== 'web', speed: 50, bounciness: 4 }).start()}
+      onPressOut={() => Animated.spring(pv, { toValue: 1, useNativeDriver: Platform.OS !== 'web', speed: 50, bounciness: 4 }).start()}
+      activeOpacity={1}
+    >{sleeve}{label}</AnimatedTouchableOpacity>
+  );
 }
 
 /** 歌曲行(最近添加/随机30/详情列表) */
 function SongRow({ song, idx, onPress }: { song: LibSong; idx?: number; onPress?: () => void }) {
   const [g1] = gradOf(song.album || song.singer);
   const sub = `${song.singer || '未知歌手'} · ${song.album || (song.subPath ? '文件夹分组' : '未知专辑')}${song.quality && song.quality !== '128k' ? ' · ' + song.quality.toUpperCase() : ''}`;
+  const sv = useRef(new Animated.Value(1)).current;
   return (
-    <TouchableOpacity style={d.sg} onPress={onPress} activeOpacity={0.7}>
+    <AnimatedTouchableOpacity
+      style={[d.sg, { transform: [{ scale: sv }] }] as never}
+      onPress={onPress}
+      onPressIn={() => Animated.spring(sv, { toValue: 0.98, useNativeDriver: Platform.OS !== 'web', speed: 60, bounciness: 2 }).start()}
+      onPressOut={() => Animated.spring(sv, { toValue: 1, useNativeDriver: Platform.OS !== 'web', speed: 60, bounciness: 2 }).start()}
+      activeOpacity={1}
+    >
       {idx !== undefined && <Text style={d.sgIdx}>{idx + 1}</Text>}
       <View style={[d.cvs, { backgroundColor: song.hasCover ? undefined : g1 }]}>
         {song.hasCover ? <Image source={{ uri: coverUrl(song.filename) }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 } as never} resizeMode="cover" /> : <Icon name="music" size={15} color="#fff" />}
@@ -90,7 +110,7 @@ function SongRow({ song, idx, onPress }: { song: LibSong; idx?: number; onPress?
         <Text style={d.sgB} numberOfLines={1}>{sub}</Text>
       </View>
       <Text style={d.dur}>{song.interval || song.ext.toUpperCase()}</Text>
-    </TouchableOpacity>
+    </AnimatedTouchableOpacity>
   );
 }
 
@@ -107,8 +127,22 @@ export function LibCard({ stats: rawStats, onEnter }: { stats: LibStats | null; 
   // 走查❌#1 双保险:防御异常形状(壳/undefined),崩溃不可出现在媒体库页
   const stats = rawStats && typeof (rawStats as LibStats).songs === 'number' ? rawStats : null;
   const gb = stats ? ((stats.totalBytes || 0) / 1024 / 1024 / 1024).toFixed(1) : '--';
+  // A7 按压态:缩放反馈(质感整改)
+  const ps = useRef(new Animated.Value(1)).current;
   return (
-    <TouchableOpacity style={d.libCard} onPress={onEnter} activeOpacity={0.85}>
+    <AnimatedTouchableOpacity
+      style={[d.libCard, { transform: [{ scale: ps }] }] as never}
+      onPress={onEnter}
+      onPressIn={() => Animated.timing(ps, { toValue: 0.97, duration: 90, useNativeDriver: Platform.OS !== 'web' }).start()}
+      onPressOut={() => Animated.timing(ps, { toValue: 1, duration: 120, useNativeDriver: Platform.OS !== 'web' }).start()}
+      activeOpacity={1}
+    >
+      {/* A1 渐变黑胶大卡(spec 140deg 深绿渐变;依赖+shim 现成,此前省略纯偷懒) */}
+      <LinearGradient
+        colors={['#14352a', '#0c1612']}
+        start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }}
+        style={StyleSheet.absoluteFill as never}
+      />
       <View style={d.vinBig} />
       <View style={d.libRow}>
         <Icon name="wave" size={22} color={C.brand} />
@@ -121,7 +155,7 @@ export function LibCard({ stats: rawStats, onEnter }: { stats: LibStats | null; 
         <Text style={d.libGo}>进入曲库</Text>
         <Icon name="chevronright" size={12} color={C.brand} />
       </View>
-    </TouchableOpacity>
+    </AnimatedTouchableOpacity>
   );
 }
 
@@ -149,8 +183,14 @@ export function MyLibraryScreen() {
     if (!soft) { setAlbums(null); setArtists(null); setRecent(null); }
     setErr(null);
     try {
-      const [st, al, ar, rc] = await Promise.all([myLib.stats(), myLib.albums('newest', 120), myLib.artists(), myLib.songs('recent', 60)]);
-      setStats(st); setAlbums(al.albums); setArtists(ar.artists); setRecent(rc.songs);
+      // C12 SWR:缓存先行(旧数据秒开,骨架只在无缓存时出现)
+      await Promise.all([
+        myLib.swr('stats', () => myLib.stats(), setStats),
+        myLib.swr('albums', () => myLib.albums('newest', 120), (al) => setAlbums(al.albums)),
+        myLib.swr('artists', () => myLib.artists(), (ar) => setArtists(ar.artists)),
+        myLib.swr('recent', () => myLib.songs('recent', 60), (rc) => setRecent(rc.songs)),
+      ]);
+      setErr(null);
     } catch (e) {
       setErr((e as Error).message || '加载失败');
     }
@@ -231,6 +271,7 @@ export function MyLibraryScreen() {
     }
     if (tab === 'albums') {
       if (!albums) return <SkelGrid />;
+      // C13 下拉刷新(原生端;web RNW 无 RefreshControl 支持不挂)
       return (
         <ScrollView>
           <View style={[d.wall, IS_HD && d.wallHD]}>
@@ -354,12 +395,22 @@ export function MyLibraryScreen() {
 }
 
 function SkelGrid({ round }: { round?: boolean }) {
+  // A5 骨架脉冲(spec pulse 1.4s 循环;RN 用 opacity 呼吸近似)
+  const op = useRef(new Animated.Value(0.45)).current;
+  useEffect(() => {
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(op, { toValue: 1, duration: 700, useNativeDriver: Platform.OS !== 'web' }),
+      Animated.timing(op, { toValue: 0.45, duration: 700, useNativeDriver: Platform.OS !== 'web' }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, [op]);
   return (
     <ScrollView>
       <View style={[d.wall, round && { gap: 14 }]}>
         {[0, 1, 2, 3, 4, 5].map(i => (
           <View key={i} style={{ width: '31%' } as never}>
-            <View style={[d.skel, round && { borderRadius: 999 }]} />
+            <Animated.View style={[d.skel, round && { borderRadius: 999 }, { opacity: op }]} />
           </View>
         ))}
       </View>
@@ -376,7 +427,10 @@ export function MyLibAlbumRoute(props: Record<string, unknown>) {
   const [songs, setSongs] = useState<LibSong[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
-    myLib.album(id).then(r => { setAlbum(r.album); setSongs(r.songs); }).catch(e => setErr((e as Error).message));
+    const ck = 'album:' + id;
+    const c = libCache.get<{ album: LibAlbum; songs: LibSong[] }>(ck);
+    if (c) { setAlbum(c.album); setSongs(c.songs); }
+    myLib.album(id).then(r => { libCache.set(ck, r); setAlbum(r.album); setSongs(r.songs); }).catch(e => setErr((e as Error).message));
   }, [id]);
   const play = async (i: number) => {
     if (!songs) return;
@@ -416,7 +470,10 @@ export function MyLibArtistRoute(props: Record<string, unknown>) {
   const [data, setData] = useState<{ artist: LibArtist; albums: LibAlbum[]; songs: LibSong[] } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
-    myLib.artist(id).then(setData).catch(e => setErr((e as Error).message));
+    const ck = 'artist:' + id;
+    const c = libCache.get<{ artist: LibArtist; albums: LibAlbum[]; songs: LibSong[] }>(ck);
+    if (c) setData(c);
+    myLib.artist(id).then(r => { libCache.set(ck, r); setData(r); }).catch(e => setErr((e as Error).message));
   }, [id]);
   const play = async (i: number) => {
     if (!data) return;

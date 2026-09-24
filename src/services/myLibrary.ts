@@ -51,6 +51,14 @@ export function coverUrl(filename: string): string {
   return store.token ? `${b}/api/music/custom/cover` + Q(filename) : '';
 }
 
+
+// C12(质感整改):乐观缓存——点过的详情/上次列表先渲染秒开,网络刷新覆盖(SWR)
+import { createMMKV } from 'react-native-mmkv';
+const libKv = createMMKV({ id: 'nextmusic-libcache' });
+export const libCache = {
+  get<T>(k: string): T | null { try { const v = libKv.getString(k); return v ? JSON.parse(v) as T : null; } catch { return null; } },
+  set(k: string, v: unknown): void { try { libKv.set(k, JSON.stringify(v)); } catch { /* 配额满忽略 */ } },
+};
 // ── API(req() 自动带 base+x-user-token) ──
 // lx185(老板 0924 03:56 toLocaleString 崩溃):服务端返回 {success,data} 信封,客户端原样断言 → stats.songs=undefined → .toLocaleString() 白屏;
 // 统一解包:unwrap() 取 .data,无 data 时抛错(让调用方 catch 走降级)
@@ -64,6 +72,16 @@ async function unwrap<T>(p: Promise<unknown>): Promise<T> {
 }
 export const myLib = {
   stats(): Promise<LibStats> { return unwrap<LibStats>(req('/api/music/library/stats')); },
+  /** C12 SWR:缓存先行回调+网络刷新覆盖(列表/详情通用) */
+  async swr<T>(cacheKey: string, fetcher: () => Promise<T>, onCached?: (v: T) => void): Promise<T> {
+    if (cacheKey) {
+      const c = libCache.get<T>(cacheKey);
+      if (c !== null && onCached) onCached(c);
+    }
+    const fresh = await fetcher();
+    if (cacheKey) libCache.set(cacheKey, fresh);
+    return fresh;
+  },
   artists(offset = 0, limit = 0): Promise<{ artists: LibArtist[]; total: number }> {
     return unwrap<never>(req(`/api/music/library/artists?offset=${offset}&limit=${limit}`));
   },

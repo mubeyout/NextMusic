@@ -1,7 +1,7 @@
 // UploadSheet —— 我的曲库上传 UI(P1b):进行态队列 sheet + 最小化浮条 + 完成卡 + 空态主动作
 // 形态:手机/web=底部 sheet;HD(TV)=居中模态卡。行级进度/重试(品红错误色),并发 2 在 UploadQueue。
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, Platform, ActivityIndicator, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, Platform, ActivityIndicator, Pressable, Animated } from 'react-native';
 import SafX from 'react-native-saf-x';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
@@ -10,6 +10,7 @@ import {
   getUploadStore, subscribeUpload, enqueueUpload, retryFailed, retryItem,
   minimizeUpload, openUploadSheet, closeFinished, dismissUpload,
 } from '../state/UploadQueue';
+import type { UpBatch, UpItem } from '../state/UploadQueue';
 import { store as httpStore } from '../services/server';
 
 const IS_HD = (Platform.OS === 'android' && ((Platform as { constants?: { Product?: string } }).constants?.Product?.includes?.('box') ?? false))
@@ -43,13 +44,57 @@ export function pickAndUpload() {
     .catch(() => { /* 用户取消 */ });
 }
 
+// A3b(质感整改):行进度条 200ms width 过渡(spec⑧),替代瞬时跳变
+function AnimBar({ pct, trackStyle, fillStyle }: { pct: number; trackStyle: unknown; fillStyle: unknown }) {
+  const v = useRef(new Animated.Value(pct)).current;
+  useEffect(() => { Animated.timing(v, { toValue: pct, duration: 200, useNativeDriver: false }).start(); }, [pct, v]);
+  return (
+    <View style={trackStyle as never}>
+      <Animated.View style={[fillStyle as never, { width: v.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }]} />
+    </View>
+  );
+}
+
 function useStore() {
   const [, force] = useState(0);
   useEffect(() => subscribeUpload(() => force(n => n + 1)), []);
   return getUploadStore();
 }
 
-/** 每个屏挂一次;无批次渲染 null,最小化=迷你浮条 */
+// A3a(质感整改):完成卡弹入 240ms 0.96→1(spec⑧;prefers-reduced-motion 停动画)
+function FinishCard({ batch: b, failed, onGo }: { batch: UpBatch; failed: UpItem[]; onGo: () => void }) {
+  const sc = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    let reduce = false;
+    try { reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { /* ignore */ }
+    if (reduce) return;
+    sc.setValue(0.96);
+    Animated.timing(sc, { toValue: 1, duration: 240, useNativeDriver: false }).start();
+  }, [sc, b.id]);
+  return (
+    <Modal transparent visible onRequestClose={closeFinished}>
+      <Pressable style={u.backdrop} onPress={closeFinished}>
+        <Pressable style={[u.sheet, IS_HD && u.sheetHD, { transform: [{ scale: sc }] }] as never} onPress={() => {}}>
+          <View style={u.doneIcon}><Icon name="cloud" size={26} color={C.brand} /></View>
+          <Text style={u.doneT1}>{b.summary?.uploaded || 0} 首已加入你的专辑墙</Text>
+          <Text style={u.doneT2}>
+            服务器扫描完成{b.byDirSplit ? `：${b.byDirSplit.id3Full} 首 ID3 完整 · ${b.byDirSplit.byDir} 首按文件夹分组` : ''}{b.summary?.skipped ? ` · ${b.summary.skipped} 首已在库跳过` : ''}{failed.length ? ` · ${failed.length} 首失败可重试` : ''}
+          </Text>
+          {b.stats ? <Text style={u.doneStat}>曲库统计已更新：{b.stats.songs} 首 · {b.stats.albums} 专辑</Text> : null}
+          {failed.length ? (
+            <TouchableOpacity style={u.retryAllBtn} onPress={retryFailed}>
+              <Text style={u.retryAllT}>重试失败 {failed.length} 首</Text>
+            </TouchableOpacity>
+          ) : null}
+          <TouchableOpacity style={u.doneGo} onPress={onGo}>
+            <Text style={u.doneGoT}>查看专辑墙</Text><Icon name="chevronright" size={12} color={C.brand} />
+          </TouchableOpacity>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
 export function useUploadSheet(onDone?: () => void) {
   const s = useStore();
   const doneRef = useRef(onDone);
@@ -63,28 +108,7 @@ export function useUploadSheet(onDone?: () => void) {
     const total = b.items.length;
     // ── 完成卡 ──
     if (s.finishedOpen && b.doneAt) {
-      return (
-        <Modal transparent visible onRequestClose={closeFinished}>
-          <Pressable style={u.backdrop} onPress={closeFinished}>
-            <Pressable style={[u.sheet, IS_HD && u.sheetHD]} onPress={() => {}}>
-              <View style={u.doneIcon}><Icon name="cloud" size={26} color={C.brand} /></View>
-              <Text style={u.doneT1}>{b.summary?.uploaded || 0} 首已加入你的专辑墙</Text>
-              <Text style={u.doneT2}>
-                服务器扫描完成{b.byDirSplit ? `：${b.byDirSplit.id3Full} 首 ID3 完整 · ${b.byDirSplit.byDir} 首按文件夹分组` : ''}{b.summary?.skipped ? ` · ${b.summary.skipped} 首已在库跳过` : ''}{failed.length ? ` · ${failed.length} 首失败可重试` : ''}
-              </Text>
-              {b.stats ? <Text style={u.doneStat}>曲库统计已更新：{b.stats.songs} 首 · {b.stats.albums} 专辑</Text> : null}
-              {failed.length ? (
-                <TouchableOpacity style={u.retryAllBtn} onPress={retryFailed}>
-                  <Text style={u.retryAllT}>重试失败 {failed.length} 首</Text>
-                </TouchableOpacity>
-              ) : null}
-              <TouchableOpacity style={u.doneGo} onPress={() => { closeFinished(); dismissUpload(); doneRef.current?.(); }}>
-                <Text style={u.doneGoT}>查看专辑墙</Text><Icon name="chevronright" size={12} color={C.brand} />
-              </TouchableOpacity>
-            </Pressable>
-          </Pressable>
-        </Modal>
-      );
+      return <FinishCard batch={b} failed={failed} onGo={() => { closeFinished(); dismissUpload(); doneRef.current?.(); }} />;
     }
     // ── 最小化浮条 ──
     if (s.minimized) {
@@ -106,7 +130,7 @@ export function useUploadSheet(onDone?: () => void) {
               <Text style={u.sheetT}>正在上传</Text>
               <Text style={u.sheetC}>{doneCount}/{total} · 可最小化</Text>
             </View>
-            <View style={u.barTrack}><View style={[u.barFill, { width: `${Math.round(progOverall * 100)}%` } as never]} /></View>
+            <AnimBar pct={progOverall} trackStyle={u.barTrack} fillStyle={u.barFill} />
             <Text style={u.barSub}>总进度 {Math.round(progOverall * 100)}%{failed.length ? ` · 失败 ${failed.length}` : ''}</Text>
             <View style={{ maxHeight: 300 } as never}>
               <View>
@@ -116,7 +140,7 @@ export function useUploadSheet(onDone?: () => void) {
                     <View style={u.qMid}>
                       <Text style={u.qName} numberOfLines={1}>{it.name}</Text>
                       {it.st === 'up' ? (
-                        <View style={u.qBarTrack}><View style={[u.qBarFill, { width: `${Math.round(it.prog * 100)}%` } as never]} /></View>
+                        <AnimBar pct={it.prog} trackStyle={u.qBarTrack} fillStyle={u.qBarFill} />
                       ) : (
                         <Text style={[u.qSub, it.st === 'fail' && { color: '#E8618C' }]} numberOfLines={1}>
                           {it.st === 'wait' ? '排队中' : it.st === 'done' ? '已完成' : it.st === 'skip' ? '已在曲库 · 跳过' : (it.reason || '失败')}
