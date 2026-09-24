@@ -74,6 +74,7 @@ export interface UploadResult {
   success: boolean; uploaded: { name: string; size: number }[];
   skipped: string[]; failed: { name: string; reason: string }[];
   stats?: LibStats | null; message?: string;
+  byDirSplit?: { id3Full: number; byDir: number } | null; // v1.1 完成卡拆分
 }
 
 /** 批量上传到我的曲库(XHR 带 upload progress,RN 原生/web 同构;服务端自动增量扫描+聚合失效) */

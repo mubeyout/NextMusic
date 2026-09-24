@@ -12,9 +12,10 @@ export interface UpItem {
 export interface UpBatch {
   id: number;
   items: UpItem[];
-  doneAt?: number;   // 整批结束时的时间戳(完成卡依据)
+  doneAt?: number;
   summary?: { uploaded: number; skipped: number; failed: number };
   stats?: UploadResult['stats'];
+  byDirSplit?: { id3Full: number; byDir: number } | null; // v1.1 完成卡拆分(最后一次成功上传带回)
 }
 interface Store {
   batch: UpBatch | null;
@@ -88,6 +89,7 @@ async function runBatch(batch: UpBatch) {
         else it.st = 'fail';
         it.prog = 1;
         if (r.stats) batch.stats = r.stats;
+        if (r.byDirSplit) batch.byDirSplit = r.byDirSplit;
       } catch (e) {
         it.st = 'fail';
         it.reason = (e as Error).message || '失败';

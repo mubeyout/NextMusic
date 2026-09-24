@@ -68,7 +68,7 @@ export function useUploadSheet() {
               <View style={u.doneIcon}><Icon name="cloud" size={26} color={C.brand} /></View>
               <Text style={u.doneT1}>{b.summary?.uploaded || 0} 首已加入你的专辑墙</Text>
               <Text style={u.doneT2}>
-                服务器扫描完成{b.summary?.skipped ? ` · ${b.summary.skipped} 首已在库跳过` : ''}{failed.length ? ` · ${failed.length} 首失败可重试` : ''}
+                服务器扫描完成{b.byDirSplit ? `：${b.byDirSplit.id3Full} 首 ID3 完整 · ${b.byDirSplit.byDir} 首按文件夹分组` : ''}{b.summary?.skipped ? ` · ${b.summary.skipped} 首已在库跳过` : ''}{failed.length ? ` · ${failed.length} 首失败可重试` : ''}
               </Text>
               {b.stats ? <Text style={u.doneStat}>曲库统计已更新：{b.stats.songs} 首 · {b.stats.albums} 专辑</Text> : null}
               {failed.length ? (
