@@ -53,6 +53,9 @@ function InputCard({ label, value, set, ph, opts, onDirty }: {
     </View>
   );
   if (!IS_HD) return card;
+  // P0 修复(0925 走查:web 上 InputCard 的 Pressable wrapper 抢占手势,致同表单后续 HDTouch 按钮点击死/Enter 活)
+  // web 桌面:TextInput 原生可交互(无 IME 问题),去 HDTouch wrapper 直渲 card——TV 保留(遥控 OK 进输入态)
+  if (IS_WEB) return card;
   return (
     <HDTouch style={{ borderRadius: 12 }} onPress={() => setIme(true)} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12 }}>
       {card}
@@ -110,6 +113,7 @@ export function HDAuthLoginScreen() {
   };
 
   const login = async () => {
+    console.log('[nm-login] fired addr=' + addr.trim().slice(0,20) + ' user=' + username.trim()); // P0 诊断
     if (!addr.trim()) { setErr('第一步:请先输入服务器地址'); return; }
     if (!username.trim() || !password) { setErr('请输入用户名和密码'); return; }
     setBusy('login'); setErr(null);
