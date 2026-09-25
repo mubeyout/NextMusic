@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { HDTouch } from '../hd/HDTouch';
 import { Icon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, T } from '../theme/tokens';
 import { dialog, toast } from '../components/Dialog';
 import { store as httpStore, req } from '../services/server';
 import type { SongItem } from '../services/server';
@@ -142,9 +142,9 @@ export function LibCard({ stats: rawStats, onEnter }: { stats: LibStats | null; 
       onPressOut={() => Animated.timing(ps, { toValue: 1, duration: 120, useNativeDriver: Platform.OS !== 'web' }).start()}
       activeOpacity={1}
     >
-      {/* A1 渐变黑胶大卡(spec 140deg 深绿渐变;依赖+shim 现成,此前省略纯偷懒) */}
+      {/* A1+V11(质感整改):渐变黑胶大卡按主题分色——深色=140° 深绿(spec 原案);浅色=墨绿浅渐变 #E8F0EA→#D2E4D8(LEO V11 token,治「深绿直压浅底偏脏」) */}
       <LinearGradient
-        colors={['#14352a', '#0c1612']}
+        colors={T.light ? ['#E8F0EA', '#D2E4D8'] : ['#14352a', '#0c1612']}
         start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }}
         style={StyleSheet.absoluteFill as never}
       />
@@ -736,8 +736,9 @@ const d = StyleSheet.create({
   shuffleBtnT: { color: '#04120a', fontSize: 13.5, fontWeight: '800' },
   shuffleBtnSub: { flex: 1, color: '#04120a', fontSize: 11, fontWeight: '600', opacity: 0.75, textAlign: 'right' },
   // 入口卡
-  libCard: { borderRadius: 16, borderWidth: 1, borderColor: 'rgba(30,215,96,.15)', backgroundColor: '#0c1612', paddingVertical: 18, paddingHorizontal: 20, marginBottom: 14, overflow: 'hidden' },
+  libCard: { borderRadius: 16, borderWidth: 1, borderColor: T.light ? 'rgba(13,155,69,.22)' : 'rgba(30,215,96,.15)', backgroundColor: T.light ? '#D2E4D8' : '#0c1612', paddingVertical: 18, paddingHorizontal: 20, marginBottom: 14, overflow: 'hidden' }, // V11 浅色 token
   vinBig: { position: 'absolute', right: -36, bottom: -70, width: 140, height: 140, borderRadius: 999, backgroundColor: '#1A1A1A', borderWidth: 2, borderColor: '#000', opacity: 0.78, alignItems: 'center', justifyContent: 'center' },
+  // V11:浅色下入口卡边框/黑胶减轻(墨绿浅底不吃重描边)
   libRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   libTitle: { color: C.text, fontSize: 17, fontWeight: '800' },
   libStat: { color: C.text2, fontSize: 12, marginTop: 8 },
