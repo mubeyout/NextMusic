@@ -8,7 +8,7 @@ import { C, H } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { toast } from '../components/Dialog';
 import type { LyricLine } from '../services/lyric';
-import { store as serverStore, type SongItem } from '../services/server'; // lxfix 0921:卡片封面代理补 nm_auth(登录门后 /api/music/download 无 token 必 401→无封面)
+import type { SongItem } from '../services/server';
 import markUrl from '../assets/brand/mark.png'; // v3.36(老板):卡片水印换 NextMusic 品牌 mark
 
 type Layout = 'portrait' | 'landscape' | 'square';
@@ -29,7 +29,7 @@ interface Colors {
 }
 
 // ===== 工具(移植原版) =====
-function loadImgInner(src0: string): Promise<HTMLImageElement | null> {
+function loadImage(src0: string): Promise<HTMLImageElement | null> {
   return new Promise(res => {
     const src = src0.replace(/^https?:\/\/img\.kuwo\.cn\//, 'https://img4.kuwo.cn/'); // lxfix:kw 图床域名自愈
     if (!src) { res(null); return; }
@@ -42,18 +42,10 @@ function loadImgInner(src0: string): Promise<HTMLImageElement | null> {
       p.crossOrigin = 'anonymous';
       p.onload = () => res(p);
       p.onerror = () => res(null);
-      p.src = `/api/music/download?url=${encodeURIComponent(src)}&inline=1${serverStore.token ? `&nm_auth=${encodeURIComponent(serverStore.token)}` : ''}`;
+      p.src = `/api/music/download?url=${encodeURIComponent(src)}&inline=1`;
     };
     img.src = src;
   });
-}
-// lxfix 0921 老板「歌词卡片一直转圈」: 直连/代理都无超时——上游 stall 时 onload/onerror 永不触发,
-// render() 的 await 悬停,finally 不执行,「渲染中…」永远转。外层限时 7s 到点还 null(下游全 img&& 守卫,无封面照常出卡)
-function loadImage(src0: string): Promise<HTMLImageElement | null> {
-  return Promise.race([
-    loadImgInner(src0),
-    new Promise<null>(res => setTimeout(() => res(null), 7000)),
-  ]);
 }
 
 function extractAlbumColors(img: HTMLImageElement): Colors | null {
@@ -168,7 +160,8 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
     setRendering(true);
     try {
       if (!coverRef.current && song.img) coverRef.current = await loadImage(song.img);
-      const img = coverRef.current; // lxfix 0921:cover 挂了不再 return 跳过——否则 finally 复位后预览区空白;无封面走 fallback 配色照常出卡
+      const img = coverRef.current;
+      if (!img && song.img) return; // v3.28:cover 未就绪直接跳过(类型收窄)
       if (!markImgRef.current) markImgRef.current = await loadImage(markUrl as unknown as string);
       const W = size.w, H = size.h;
       const canvas = document.createElement('canvas');
@@ -179,7 +172,7 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
       if (o.theme === 'dark') {
         colors = { bg1: '#0f0c29', bg2: '#302b63', accent: '#a78bfa', textColor: '#ffffff', subColor: 'rgba(255,255,255,0.6)', lyricActive: '#ffffff', lyricInactive: 'rgba(255,255,255,0.35)', isDark: true };
       } else if (o.theme === 'light') {
-        colors = { bg1: '#ffffff', bg2: '#f0f4f8', accent: '#4a90e2', textColor: '#1a1a2e', subColor: 'rgba(0,0,0,0.5)', lyricActive: '#1a1a2e', lyricInactive: 'rgba(0,0,0,0.3)', isDark: false };
+        colors = { bg1: '#ffffff', bg2: '#f0f4f8', accent: '#4a90e2', textColor: '#1a1a2e', subColor: 'rgba(0,0,0,0.5)', lyricActive: '#000000', lyricInactive: 'rgba(0,0,0,0.3)', isDark: false }; // M3:浅色当前行纯黑
       } else {
         colors = (img && extractAlbumColors(img)) || { bg1: '#1a1a2e', bg2: '#0d0d1a', accent: '#1ED760', textColor: '#ffffff', subColor: 'rgba(255,255,255,0.6)', lyricActive: '#ffffff', lyricInactive: 'rgba(255,255,255,0.35)', isDark: true };
       }
@@ -234,7 +227,7 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
       const drawLyrics = (startY: number, availH: number, baseFS: number, align: 'left' | 'center', pad: number, fixedX?: number, maxW?: number) => {
         if (!ctxLines.length) return;
         const boxW = align === 'center' ? W - pad * 2 : (maxW ?? W - pad * 2);
-        let fs = Math.min(baseFS, availH / (o.lyricLines * 1.7 * o.lineSpacing));
+        let fs = Math.min(baseFS, availH / (o.lyricLines * 1.75 * o.lineSpacing)); // M4:1.7→1.75
         // 自适应循环:换行后总高超 availH → 缩字号(下限 16px)
         for (let round = 0; round < 10; round++) {
           const rows: { text: string; on: boolean; h: number }[] = [];
@@ -247,7 +240,7 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
             let y = startY + Math.max(0, (availH - totalH) / 2);
             ctx.textAlign = align; ctx.textBaseline = 'top';
             for (const r of rows) {
-              ctx.font = `${r.on ? 'bold ' : ''}${Math.round(r.h / (1.6 * o.lineSpacing * (r.on ? 1.2 : 1)))}px ${FONT}`;
+              ctx.font = `${r.on ? '800 ' : ''}${Math.round(r.h / (1.6 * o.lineSpacing * (r.on ? 1.2 : 1)))}px ${FONT}`; // M3:active 800
               ctx.fillStyle = r.on ? colors.lyricActive : colors.lyricInactive; // v2:高亮行由 lyricActive 驱动(album 主题可随取色主色)
               if (align === 'center') ctx.fillText(r.text, W / 2, y);
               else ctx.fillText(r.text, fixedX ?? pad, y);
@@ -268,17 +261,23 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
         const cs = o.showCover && img ? H * 0.68 : 0;
         const coverX = pad, coverY = (H - cs) / 2;
         if (cs > 0 && img) {
-          ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 50; ctx.shadowOffsetX = 15;
-          roundRect(ctx, coverX, coverY, cs, cs, cs * 0.06); ctx.clip(); ctx.drawImage(img, coverX, coverY, cs, cs); ctx.restore();
+          ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 36; ctx.shadowOffsetX = 10; // M6:50/15→36/10 减浮感
+          roundRect(ctx, coverX, coverY, cs, cs, cs * 0.05); // M5:统一 0.05 ctx.clip(); ctx.drawImage(img, coverX, coverY, cs, cs); ctx.restore();
         }
         const textX = cs > 0 ? coverX + cs + pad : pad;
         const textW = W - textX - pad, xOff = textX + 24;
-        let y = H * 0.16;
+        // M1:整组(headH+lyrH)以可用区垂直居中——消除头重脚轻
+        const tFS = H * 0.056 * fMul, aFS = H * 0.033 * fMul;
+        const titleLC = o.showTitle ? Math.max(1, Math.ceil(ctx.measureText(title).width / (textW - 24))) : 0;
+        const headH = (o.showTitle ? titleLC * tFS * 1.2 + H * 0.012 : 0) + (o.showArtist ? aFS * 1.4 + H * 0.03 : 0);
+        const lyrLH0 = Math.min(H * .042 * fMul, (bottomLimit - H * 0.16 - headH) / (o.lyricLines * 1.75 * o.lineSpacing)) * 1.6 * o.lineSpacing;
+        const lyrTotalH = o.showLyric ? lyrLH0 * o.lyricLines : 0;
+        let y = (H * 0.16 + bottomLimit - headH - lyrTotalH) / 2; // M1 居中轴
         if (o.showTitle) {
-          ctx.font = `bold ${H * 0.056 * fMul}px ${FONT}`;
+          ctx.font = `bold ${tFS}px ${FONT}`;
           ctx.fillStyle = colors.textColor; ctx.textAlign = 'left';
-          const lc = drawWrappedText(ctx, title, xOff, y, textW - 24, H * .056 * fMul * 1.2);
-          y += lc * H * .056 * fMul * 1.2 + H * 0.012;
+          const lc = drawWrappedText(ctx, title, xOff, y, textW - 24, tFS * 1.2);
+          y += lc * tFS * 1.2 + H * 0.012;
         }
         if (o.showArtist) {
           ctx.font = `${H * 0.033 * fMul}px ${FONT}`;
@@ -289,10 +288,10 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
         let endY = y;
         if (o.showLyric) {
           drawLyrics(y, bottomLimit - y, H * 0.042 * fMul, 'left', pad, xOff, textW - 24);
-          const lyrLH = Math.min(H * .042 * fMul, (bottomLimit - y) / (o.lyricLines * 1.7 * o.lineSpacing)) * 1.6 * o.lineSpacing;
+          const lyrLH = Math.min(H * .042 * fMul, (bottomLimit - y) / (o.lyricLines * 1.75 * o.lineSpacing)) * 1.6 * o.lineSpacing; // M4
           endY = y + Math.max(0, (bottomLimit - y - lyrLH * o.lyricLines) / 2) + lyrLH * (o.lyricLines + 0.15);
         }
-        ctx.strokeStyle = colors.accent; ctx.lineWidth = 4; ctx.lineCap = 'round';
+        ctx.strokeStyle = colors.accent + (colors.isDark ? 'AA' : '99'); ctx.lineWidth = 3; ctx.lineCap = 'round'; // M2:3px+透明减硬
         ctx.beginPath(); ctx.moveTo(textX, H * 0.16); ctx.lineTo(textX, endY); ctx.stroke();
       } else {
         // 竖版/方形:统一海报式结构(区域配额,顶部对齐,封面吃剩余空间,方卡封面收敛 62%)
@@ -301,7 +300,7 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
         const fsTitle = H * 0.028 * fMul, fsLyric = H * 0.023 * fMul, fsArtist = H * 0.019 * fMul;
         const topY = H * 0.065, bottomLimit = H * 0.905;
         const headH = (o.showTitle ? fsTitle * 1.3 + H * 0.014 : 0) + (o.showArtist ? fsArtist * 1.4 + H * 0.028 : 0);
-        const lyrH = o.showLyric ? H * 0.056 + o.lyricLines * fsLyric * 1.7 * o.lineSpacing : 0;
+        const lyrH = o.showLyric ? H * 0.056 + o.lyricLines * fsLyric * 1.75 * o.lineSpacing : 0; // M4
         let cs = 0;
         if (o.showCover && img) {
           const avail = bottomLimit - topY - headH - lyrH;
@@ -311,7 +310,7 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
         if (cs > 0 && img) {
           const cx = (W - cs) / 2;
           ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = cs * 0.08; ctx.shadowOffsetY = cs * 0.03;
-          roundRect(ctx, cx, y, cs, cs, cs * (sq ? 0.075 : 0.05)); ctx.clip(); ctx.drawImage(img, cx, y, cs, cs); ctx.restore();
+          roundRect(ctx, cx, y, cs, cs, cs * 0.05); // M5:方/竖统一 ctx.clip(); ctx.drawImage(img, cx, y, cs, cs); ctx.restore();
           y += cs + H * 0.035;
         }
         if (o.showTitle) {
@@ -329,7 +328,7 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
         if (o.showLyric) {
           // 细分隔线:内容宽 60% 居中,accent 低透明(v2:与整体节奏统一)
           ctx.strokeStyle = colors.accent + (colors.isDark ? '55' : '44'); ctx.lineWidth = 1.5;
-          ctx.beginPath(); ctx.moveTo(W * 0.2, y); ctx.lineTo(W * 0.8, y); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(W * 0.27, y); ctx.lineTo(W * 0.73, y); ctx.stroke(); // M7:60%→46%
           y += H * 0.028;
           drawLyrics(y, bottomLimit - y, fsLyric, 'center', PAD);
         }
@@ -339,7 +338,7 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
       const wmFS = Math.round(W * 0.022), wmR = Math.round(W * 0.04), wmB = Math.round(H * 0.04);
       ctx.textBaseline = 'middle'; ctx.textAlign = 'right';
       ctx.font = `bold ${wmFS}px ${FONT}`;
-      ctx.fillStyle = colors.isDark ? 'rgba(255,255,255,0.6)' : 'rgba(30,30,30,0.5)';
+      ctx.fillStyle = colors.isDark ? 'rgba(255,255,255,0.5)' : 'rgba(30,30,30,0.42)'; // M8:降存在感
       ctx.fillText('NextMusic', W - wmR, H - wmB);
       const tw = ctx.measureText('NextMusic').width;
       const mark = markImgRef.current;
