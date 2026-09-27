@@ -261,7 +261,7 @@ export function AboutScreen() {
         <StaticRow label="Emby / Jellyfin / Plex / Navidrome / Subsonic 等 12 种" value="媒体库协议" />
         <StaticRow label="DLNA / AirPlay" value="投播协议" />
         <StaticRow label="IconPark 图标体系" value="视觉" />
-        <ActionRow label="项目主页" value="github.com/mubeyout" onPress={() => Linking.openURL('https://github.com/mubeyout/nextmusic-release')} />
+        <ActionRow label="项目主页" value="github.com/mubeyout/NextMusic" onPress={() => Linking.openURL('https://github.com/mubeyout/NextMusic')} />
       </Section>
       <Text style={ts.footer}>NextMusic · 自己的音乐系统</Text>
     </PageShell>
