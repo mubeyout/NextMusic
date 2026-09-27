@@ -59,7 +59,8 @@ export function SourcesScreen() {
       // 否则取链走服务端时看不到禁用,照用全部启用的源(实锤:日志 Owner:open 成功返回)。
       // 失败静默(离线/权限)——localStorage 兜底仍在,下次登录重试语义可接受。
       if (connected && token) {
-        api.csToggle(id, next[id]).catch(() => {});
+        // lx202(0927 一加实锤:WebView 存储随进程重启被清+同步静默失败=「关了又自动开」):失败必须可见
+        api.csToggle(id, next[id]).catch(() => toast('同步服务器失败，仅本机生效(重新登录后重试)'));
       }
       return next;
     });
@@ -71,6 +72,11 @@ export function SourcesScreen() {
     // 不调 csList、不回退缓存(jm.read 缓存也一律不算数);服务器音源本质是账号服务的一部分。
     if (!connected || !token) { setServerSources([]); setCsErr(null); return; } // lx183:登录=connected+token(connected 仅表示服务器可达,曾致手机端未登录仍显示)
     api.csList().then(l => {
+      // lx202:登录用户以服务端个人启停状态为准重置本机开关——设备存储被清/换设备后,关掉的源不再复活
+      const seed: Record<string, boolean> = {};
+      for (const x of l) seed[x.id] = x.enabled !== false;
+      setCsLocal(seed);
+      try { localStorage.setItem('nm-cs-local', JSON.stringify(seed)); } catch { /* ignore */ }
       const list = l.filter(x => x.enabled !== false);
       setServerSources(list);
       setCsErr(null);
