@@ -23,7 +23,6 @@ import type { LocalPlaylist } from '../state/library';
 type ListMeta = SongListMeta & Partial<Pick<LocalPlaylist, 'providerType' | 'providerName' | 'providerId'>>;
 import { useApp } from '../state/AppState';
 import { enqueueDownload, downloads as dlStore, downloadProgress, subscribeDownloads } from '../services/downloads';
-import { uploadWithFeedback } from '../services/cloudLibrary'; // spec③:本机曲库歌上传云曲库
 import { lxapi } from '../services/lxapi';
 import { providers, providerApi, isProviderSongSource } from '../services/providers';
 
@@ -260,8 +259,6 @@ export function PlaylistDetailScreen() {
         visible={!!actSong} onClose={() => setActSong(null)}
         title={actSong ? `${actSong.name} · ${actSong.singer}` : ''}
         items={actSong ? [
-          // spec③:本机曲库歌才提供上传入口(歌单详情 device 歌)
-          ...(actSong.source === 'device' ? [{ label: '上传到云曲库', onPress: () => { void uploadWithFeedback([actSong]); } }] : []),
           dlStore.isDownloaded(actSong)
             ? { label: '已下载 ✓', onPress: () => {} }
             : { label: '下载', onPress: () => { enqueueDownload([actSong]); } },

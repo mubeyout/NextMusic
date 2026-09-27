@@ -54,8 +54,6 @@ export function QueueScreen() {
   // v3.33(老板:队列操作箱优化):行菜单三端分发——web/桌面=定位菜单(点击处弹出,桌面惯例);
   // TV=hdActions 页内面板(D-pad);手机=底部 ActionSheet(移动惯例)
   const rowMenu = (t: QueueTrack) => [
-    // spec③:本机曲库歌才提供上传入口(判定=歌源 device;云端副本唯一来源=本机)
-    ...(t.source === 'device' ? [{ label: '上传到云曲库', onPress: () => { void uploadWithFeedback([t]); } }] : []),
     dlStore.isDownloaded(t)
       ? { label: '已下载 ✓', onPress: () => {} }
       : { label: '下载', onPress: () => { enqueueDownload([t]); toast('已加入下载队列'); } },
@@ -137,7 +135,7 @@ export function QueueScreen() {
             }}>
               <Text style={[st.batchBtnText, st.batchBtnPriText]}>下载</Text>
             </T>
-            {/* spec③:批量传到云曲库(多选动作条;仅本机曲库歌生效) */}
+            {/* spec③:批量传到云曲库(多选动作条;仅本机曲库歌生效)。v2.2收窄(LEO裁决:上传唯一源=本机曲库):队列行菜单/ActionSheet入口已移除,此动作条按保留清单留用 */}
             <T style={st.batchBtn} onPress={() => {
               const devs = upcoming.filter(t => sel.has(keyOf(t)) && t.source === 'device');
               if (!devs.length) { toast('所选中没有本机曲库歌曲'); return; }
@@ -186,7 +184,6 @@ export function QueueScreen() {
         visible={!!actSong} onClose={() => setActSong(null)}
         title={actSong ? `${actSong.name} · ${actSong.singer}` : ''}
         items={actSong ? [
-          ...(actSong.source === 'device' ? [{ label: '上传到云曲库', onPress: () => { void uploadWithFeedback([actSong]); } }] : []),
           dlStore.isDownloaded(actSong)
             ? { label: '已下载 ✓', onPress: () => {} }
             : { label: '下载', onPress: () => { enqueueDownload([actSong]); } },
