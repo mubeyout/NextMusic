@@ -71,7 +71,7 @@ const CONNECT_COPY: Record<string, ConnectCopy> = {
 
 export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: string; type?: ProviderType } } }) {
   const insets = useSafeAreaInsets();
-  const nav = useNavigation() as { goBack: () => void };
+  const nav = useNavigation() as { goBack: () => void; navigate: (s: string, p?: object) => void };
   const existing = route?.params?.acctId ? providers.get(route.params.acctId) : undefined;
 
   const [picked, setPicked] = useState<ProviderType | null>(existing?.type ?? route?.params?.type ?? null);
@@ -220,6 +220,13 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                 <Text style={{ color: C.text3, fontSize: 12.5 }}>选择平台 · 自动测试连通后保存</Text>
               </View>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 14, marginTop: 26, maxWidth: 400, alignSelf: 'center' }}>
+                {/* ②本机曲库(A 原型矩阵同位:首格) */}
+                <TouchableOpacity onPress={() => nav.navigate('LocalLibEdit', {})} activeOpacity={0.7} style={{ width: 80, alignItems: 'center', gap: 7 }}>
+                  <View style={{ width: 74, height: 74, borderRadius: 18, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.stroke }}>
+                    <Icon name="folder-music" size={30} color={C.brandText} />
+                  </View>
+                  <Text style={{ color: C.text2, fontSize: 11.5, fontWeight: '500' }} numberOfLines={1}>本机曲库</Text>
+                </TouchableOpacity>
                 {TYPE_CARDS.map(c => (
                   <TouchableOpacity key={c.type} onPress={() => pickType(c.type)} activeOpacity={0.7} style={{ width: 80, alignItems: 'center', gap: 7 }}>
                     <View style={{ width: 74, height: 74, borderRadius: 18, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }}>
@@ -239,6 +246,21 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
             <>
             <Center>
               <View style={{ width: '100%', maxWidth: 460, alignSelf: 'center' }}>
+                {/* ②本机曲库添加卡(LEO v2.1 §②:与 Emby/听风同卡同流程,iconpark folder-music 同形;HD/车机不渲染) */}
+                <View style={{ marginBottom: 12 }}>
+                  <Text style={{ color: C.text3, fontSize: 11.5, fontWeight: '700', letterSpacing: 0.6, marginBottom: 6, paddingLeft: 4 }}>本机</Text>
+                  <TouchableOpacity onPress={() => nav.navigate('LocalLibEdit', {})} activeOpacity={0.75}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.surface2, borderRadius: 13, paddingVertical: 6, paddingHorizontal: 12, borderWidth: 1, borderColor: C.stroke }}>
+                    <View style={{ width: 30, height: 30, borderRadius: 7, alignItems: 'center', justifyContent: 'center' }}>
+                      <Icon name="folder-music" size={24} color={C.brandText} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={{ color: C.text, fontSize: 14, fontWeight: '600' }}>本机曲库</Text>
+                      <Text style={{ color: C.text3, fontSize: 11.5 }} numberOfLines={1}>扫描本设备音乐目录，离线可播</Text>
+                    </View>
+                    <Icon name="chevronright" size={16} color={C.text3} />
+                  </TouchableOpacity>
+                </View>
                 {TYPE_GROUPS.map(g => (
                   <View key={g.label} style={{ marginBottom: 12 }}>
                     <Text style={{ color: C.text3, fontSize: 11.5, fontWeight: '700', letterSpacing: 0.6, marginBottom: 6, paddingLeft: 4 }}>{g.label}</Text>
@@ -267,6 +289,12 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }} pagingEnabled snapToInterval={218} decelerationRate="fast"
               contentContainerStyle={{ gap: 12, paddingHorizontal: 10, alignItems: 'center' }}
               onScroll={e => setProtoPage(Math.round(e.nativeEvent.contentOffset.x / 218))} scrollEventThrottle={64}>
+              {/* ②本机曲库(C 原型大卡首位) */}
+              <TouchableOpacity style={[st.typeRowCard, { width: 206, height: 240 }]} activeOpacity={0.7} onPress={() => nav.navigate('LocalLibEdit', {})}>
+                <Icon name="folder-music" size={52} color={C.brandText} />
+                <Text style={st.typeRowTitle} numberOfLines={1} ellipsizeMode="tail">本机曲库</Text>
+                <Text style={st.typeRowSub} numberOfLines={1} ellipsizeMode="tail">扫描本设备音乐目录，离线可播</Text>
+              </TouchableOpacity>
               {TYPE_CARDS.map(c => (
                 <TouchableOpacity key={c.type} style={[st.typeRowCard, { width: 206, height: 240 }]} activeOpacity={0.7} onPress={() => pickType(c.type)}>
                   {c.logo

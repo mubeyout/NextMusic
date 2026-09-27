@@ -26,6 +26,7 @@ import {
   providers, providerApi, PROVIDER_META,
   type ProviderAcct, type ProviderType, type PvArtist, type PvAlbum, type PvPlaylist,
 } from '../services/providers';
+import { localLib, checkLocalLib, type LocalLibConfig } from '../services/localLibrary';
 import type { SongItem } from '../services/server';
 
 // 有品牌 logo 的类型用 BrandIcon，其余回退语义图标
@@ -74,12 +75,22 @@ export function MediaLibsScreen() {
   const [testId, setTestId] = useState<string | null>(null);
 
   const refresh = useCallback(() => setAccts(providers.all()), []);
+  // ②本机曲库行(含失效态 v3 A5:灰置+danger 状态点+副文案+行内重新选择)
+  const [locLibs, setLocLibs] = useState<LocalLibConfig[]>([]);
+  const [locBad, setLocBad] = useState<Record<string, boolean>>({});
+  const refreshLocals = useCallback(() => {
+    const list = localLib.all();
+    setLocLibs(list);
+    list.forEach(l => {
+      checkLocalLib(l).then(ok => setLocBad(b => (b[l.id] === !ok ? b : { ...b, [l.id]: !ok })));
+    });
+  }, []);
   useEffect(refresh, []);
   // 曲库统计(入口卡展示;失败静默——卡片降级为无统计文案)
   const [libStats, setLibStats] = useState<LibStats | null>(null);
   useEffect(() => { myLib.stats().then(setLibStats).catch(() => setLibStats(null)); }, []);
   // 从 ProviderEdit 保存/删除返回时刷新列表（屏幕停留挂载不会重走 mount）
-  useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
+  useFocusEffect(useCallback(() => { refresh(); refreshLocals(); }, [refresh, refreshLocals]));
 
   // 按钮入口：Figma NM-REMOTE-SELECT-001 选择类型页（ProviderEditScreen 内部先选类型再连接）
   const addMenu = () => nav.navigate('ProviderEdit', {});
@@ -135,6 +146,48 @@ export function MediaLibsScreen() {
         <Text style={[st.intro, IS_HD && hd.intro]}>接入 Emby、Jellyfin、Navidrome、道理鱼（Subsonic 兼容）或 WebDAV，把私有音乐库变成曲库。</Text>
         {/* 0924 我的曲库入口卡(老板拍板:渐变黑胶大卡含统计行,置顶)——未登录时仍展示(进入后引导登录) */}
         <LibCard stats={libStats} onEnter={() => nav.navigate('MyLibrary', {})} />
+        {/* ②本机曲库行:与第三方媒体库同卡同流程;失效=灰置+denger 点+重新选择(点击整卡进编辑恢复) */}
+        {locLibs.length ? (
+          <View style={[ml.group, IS_WEB && ml.groupWeb]}>
+            {locLibs.map(l => {
+              const bad = !!locBad[l.id];
+              const locMenu = () => dialog.menu(l.name, [
+                { label: '编辑配置', onPress: () => nav.navigate('LocalLibEdit', { libId: l.id }) },
+                { label: '删除库', danger: true, onPress: () => dialog.confirm('删除本机曲库', `确定删除「${l.name}」吗？仅移除扫描记录，不删除设备上的音乐文件。`, () => { localLib.remove(l.id); refreshLocals(); }) },
+              ]);
+              return (
+                <PressCard
+                  key={l.id}
+                  style={[ml.card, IS_HD && ml.cardHD, bad && { opacity: 0.55 }]}
+                  hoverStyle={ml.cardHover}
+                  onPress={() => bad ? nav.navigate('LocalLibEdit', { libId: l.id }) : nav.navigate('LocalLibBrowse', { libId: l.id })}
+                  onLongPress={IS_WEB ? undefined : locMenu}
+                >
+                  <View style={[ml.iconWrap, IS_HD && ml.iconWrapHD]}><Icon name="folder-music" size={IS_HD ? 32 : 26} color={C.brandText} /></View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <View style={ml.titleRow}>
+                      <Text style={[ml.title, IS_HD && ml.titleHD]} numberOfLines={1}>{l.name}</Text>
+                      <View style={ml.typeChip}><Text style={ml.typeChipText}>本机</Text></View>
+                    </View>
+                    <Text style={[ml.sub, IS_HD && ml.subHD]} numberOfLines={1}>
+                      {bad ? '目录不可用（SD 卡拔出/目录被移除）' : `${l.rootLabel || '本机目录'}${l.trackCount ? ` · ${l.trackCount} 首` : ' · 未扫描'}`}
+                    </Text>
+                  </View>
+                  {bad ? (
+                    <T style={ml.repickBtn} hitSlop={6} onPress={() => nav.navigate('LocalLibEdit', { libId: l.id })}>
+                      <Text style={ml.repickText}>重新选择</Text>
+                    </T>
+                  ) : (
+                    <T style={[ml.menuBtn, IS_HD && ml.menuBtnHD]} hitSlop={6} onPress={locMenu}>
+                      <Icon name="more" size={IS_HD ? 20 : 17} color={C.text2} />
+                    </T>
+                  )}
+                  <Icon name="chevronright" size={IS_HD ? 22 : 18} color={C.text3} />
+                </PressCard>
+              );
+            })}
+          </View>
+        ) : null}
         {accts.length === 0 ? (
           <EmptyState icon="server" title="还没有添加媒体库" sub="点右上角 ＋ 接入 Plex / 飞牛 / 群晖 / Emby / Navidrome / WebDAV / 听风 等 11 种平台" />
         ) : (
@@ -958,6 +1011,8 @@ const ml = StyleSheet.create({
   subHD: { fontSize: 12.5, lineHeight: 17 },
   menuBtn: { width: 32, height: 32, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   menuBtnHD: { width: 40, height: 40 },
+  repickBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 1, borderColor: C.stroke },
+  repickText: { color: C.brandText, fontSize: 11.5, fontWeight: '600' },
   spin: { marginRight: 2 },
 });
 

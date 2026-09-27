@@ -36,6 +36,8 @@ import { ImportPlaylistScreen } from './screens/ImportPlaylistScreen';
 import { FxScreen } from './screens/FxScreen';
 import { ProviderEditScreen } from './screens/ProviderEditScreen';
 import { MediaLibsScreen, ProviderBrowseRoute } from './screens/MediaLibsScreen';
+import { LocalLibraryEditScreen } from './screens/LocalLibraryEditScreen';
+import { LocalLibraryRoute } from './screens/LocalLibraryScreen';
 import { MyLibraryScreen, MyLibAlbumRoute, MyLibArtistRoute } from './screens/MyLibraryScreen';
 import { ProviderDetailScreen } from './screens/ProviderDetailScreen';
 import { DownloadsScreen } from './screens/DownloadsScreen';
@@ -224,6 +226,8 @@ return (
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ProviderEdit" component={withEnter(ProviderEditScreen)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ProviderBrowse" component={withEnter(ProviderBrowseRoute)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ProviderDetail" component={withEnter(ProviderDetailScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="LocalLibEdit" component={withEnter(LocalLibraryEditScreen)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="LocalLibBrowse" component={withEnter(LocalLibraryRoute, true)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Downloads" component={withEnter(DownloadsScreen)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="BoardsSquare" component={withEnter(BoardsSquareScreen)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="DeviceMusic" component={withEnter(DeviceMusicScreen)} />

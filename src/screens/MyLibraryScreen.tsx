@@ -47,8 +47,8 @@ function gradOf(name?: string) {
   return COVER_GRADS[Math.abs(h) % COVER_GRADS.length];
 }
 
-/** 唱片卡(sleeve+黑胶圆+N首徽标;封面缺失=渐变+图标;未知=灰阶) */
-function DiscCard({ name, sub, cover, count, round, focusable, onPress, unknown, size = 1 }: {
+/** 唱片卡(sleeve+黑胶圆+N首徽标;封面缺失=渐变+图标;未知=灰阶)——②本机曲库三视图复用(导出) */
+export function DiscCard({ name, sub, cover, count, round, focusable, onPress, unknown, size = 1 }: {
   name: string; sub?: string; cover?: string | null; count?: number; round?: boolean;
   focusable?: boolean; onPress?: () => void; unknown?: boolean; size?: number;
 }) {

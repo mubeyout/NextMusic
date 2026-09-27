@@ -351,9 +351,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       } catch { toast('在线搜索失败，请检查网络'); }
     };
     try {
-      // ① 设备本地文件：直接播（file:// 路径或 content:// uri）
+      // ① 设备本地文件：直接播（content:// uri、blob:/http(s):/data: URL 原样直出，其余按 file:// 路径）
+      // lx②(本机曲库):web FSAPI 文件经 URL.createObjectURL 生成 blob: 地址,须直出不可加 file:// 前缀
       if (t.source === 'device') {
-        const url = t.songmid.startsWith('content://') ? t.songmid : 'file://' + t.songmid;
+        const url = /^(content:|blob:|https?:|data:)/.test(t.songmid) ? t.songmid : 'file://' + t.songmid;
         playOrCast(t, url);
         setCurrent(t);
         return;
