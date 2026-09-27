@@ -24,7 +24,7 @@ export function SubPage({
   return (
     <View style={[st.screen]}>
       <PageHeader title={title} onBack={() => nav.goBack()} />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 24, maxWidth: 860, alignSelf: 'flex-start', width: '100%' }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 24, maxWidth: 860, alignSelf: 'center', width: '100%' }}>
         {sections.map(sec => (
           <View key={sec.title} style={st.section}>
             <Text style={st.secTitle}>{sec.title}</Text>
