@@ -77,14 +77,14 @@ export function SourcesScreen() {
       for (const x of l) seed[x.id] = x.enabled !== false;
       setCsLocal(seed);
       try { localStorage.setItem('nm-cs-local', JSON.stringify(seed)); } catch { /* ignore */ }
-      const list = l.filter(x => x.enabled !== false);
-      setServerSources(list);
+      // lx204(0927 老板实锤:禁用后源从列表消失无法再启用):不再过滤 enabled=false——禁用源保留行显示关闭态,可随时开回(lx202 服务端持久语义下的配套)
+      setServerSources(l);
       setCsErr(null);
-      csCache.save(list); // lx164:成功落缓存
+      csCache.save(l); // lx164:成功落缓存
     }).catch((e: Error) => {
       // lx165:已登录但拉取失败 → 回缓存保持可见+显式报错(403=token 失效,网络=不可达);
       // 未登录不达此处(上方已 return,缓存对未登录一律不算数)
-      const cached = csCache.read().filter(x => x.enabled !== false);
+      const cached = csCache.read(); // lx204:同上去滤
       setServerSources(cached);
       setCsErr(e.message || '网络错误');
     });
