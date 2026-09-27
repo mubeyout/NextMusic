@@ -226,6 +226,11 @@ export function AboutScreen() {
   return (
     <PageShell title="关于与帮助" onBack={() => nav.goBack()}>
       {Platform.OS === 'web' ? (
+        <Section title="关于 NextMusic">
+          <StaticRow label="定位" value="自托管音乐系统 · 一个服务端四端播放" />
+          <StaticRow label="四端" value="手机 / 桌面 / HD·车机 / Web" />
+          <StaticRow label="曲库" value="本机 · 云端 · 公共 · 第三方 12 种协议" />
+        </Section>
         <Section title="版本">
           <StaticRow label="Web 播放器" value={`NextMusic HD ${APP_VERSION}`} />
           <StaticRow label="服务器" value={srvInfo?.connected ? (srvInfo.name || '已连接') : '本地模式(未连接)'} />
@@ -240,7 +245,7 @@ export function AboutScreen() {
       ) : null}
       {Platform.OS === 'web' ? (
         <Section title="开源与致谢">
-          <StaticRow label="核心" value="lxserver 2.0.1 (XCQ0607)" />
+          <StaticRow label="核心" value="NextMusic Server（lxserver 衍生）" />
           <StaticRow label="根源" value="lyswhut/lx-music-sync-server" />
         </Section>
       ) : null}
@@ -262,6 +267,7 @@ export function AboutScreen() {
         <StaticRow label="DLNA / AirPlay" value="投播协议" />
         <StaticRow label="IconPark 图标体系" value="视觉" />
         <ActionRow label="项目主页" value="github.com/mubeyout/NextMusic" onPress={() => Linking.openURL('https://github.com/mubeyout/NextMusic')} />
+        <ActionRow label="版本发布" value="nextmusic-release" onPress={() => Linking.openURL('https://github.com/mubeyout/nextmusic-release')} />
       </Section>
       <Text style={ts.footer}>NextMusic · 自己的音乐系统</Text>
     </PageShell>
