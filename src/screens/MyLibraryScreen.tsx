@@ -13,7 +13,8 @@ import { dialog, toast } from '../components/Dialog';
 import { store as httpStore, req } from '../services/server';
 import type { SongItem } from '../services/server';
 import { deviceLibraryAgg, deviceSongs } from '../services/deviceLibraryAgg';
-import { myLib, toSongItem, coverUrl, libCache, type LibArtist, type LibAlbum, type LibSong, type LibStats } from '../services/myLibrary';
+import { myLib, toSongItem, coverUrl, libCache, setActiveLib, type LibArtist, type LibAlbum, type LibSong, type LibStats } from '../services/myLibrary';
+import { pubCheck, usePubEntry } from '../services/publicLibrary'; // ④公共曲库入口态
 import { usePlayer } from '../state/PlayerProvider';
 import { useUploadSheet } from './UploadSheet';
 import { IS_HD as APP_IS_HD } from '../services/appversion';
@@ -33,9 +34,8 @@ const TABS: { key: Tab; label: string; icon: 'music' | 'user' | 'wave' | 'refres
 
 const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
-// v1.2:当前活跃共享库(播放/封面 URL 的 lib 参数默认源——切库即切换流地址域)
-let __activeLib: string | undefined;
-export function setActiveLib(id?: string) { __activeLib = id; }
+// v1.2→④:活跃库态(setActiveLib)下沉 myLibrary 服务层——PlayerProvider 消费 lib 参数(公共曲库='public')
+export { setActiveLib } from '../services/myLibrary';
 
 // ── 封面渐变(与全 App coverGrad 同源族) ──
 const COVER_GRADS: [string, string][] = [
@@ -93,10 +93,10 @@ export function DiscCard({ name, sub, cover, count, round, focusable, onPress, u
   );
 }
 
-/** 歌曲行(最近添加/随机30/详情列表) */
-function SongRow({ song, idx, onPress }: { song: LibSong; idx?: number; onPress?: () => void }) {
+/** 歌曲行(最近添加/随机30/详情列表;④公共曲库复用:lib=封面 URL 域,sourceName=副行标源(多源)) */
+export function SongRow({ song, idx, onPress, lib, sourceName }: { song: LibSong; idx?: number; onPress?: () => void; lib?: string; sourceName?: string }) {
   const [g1] = gradOf(song.album || song.singer);
-  const sub = `${song.singer || '未知歌手'} · ${song.album || (song.subPath ? '文件夹分组' : '未知专辑')}${song.quality && song.quality !== '128k' ? ' · ' + song.quality.toUpperCase() : ''}`;
+  const sub = `${song.singer || '未知歌手'} · ${song.album || (song.subPath ? '文件夹分组' : '未知专辑')}${song.quality && song.quality !== '128k' ? ' · ' + song.quality.toUpperCase() : ''}${sourceName ? ' · ' + sourceName : ''}`;
   const sv = useRef(new Animated.Value(1)).current;
   return (
     <AnimatedTouchableOpacity
@@ -108,7 +108,7 @@ function SongRow({ song, idx, onPress }: { song: LibSong; idx?: number; onPress?
     >
       {idx !== undefined && <Text style={d.sgIdx}>{idx + 1}</Text>}
       <View style={[d.cvs, { backgroundColor: song.hasCover ? undefined : g1 }]}>
-        {song.hasCover ? <Image source={{ uri: coverUrl(song.filename) }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 } as never} resizeMode="cover" /> : <Icon name="music" size={15} color="#fff" />}
+        {song.hasCover ? <Image source={{ uri: coverUrl(song.filename, lib) }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 } as never} resizeMode="cover" /> : <Icon name="music" size={15} color="#fff" />}
       </View>
       <View style={d.sgMid}>
         <Text style={d.sgA} numberOfLines={1}>{song.name}</Text>
@@ -175,6 +175,10 @@ export function MyLibraryScreen() {
   // v1.2 三层库:库分区(我的默认;本机=设备库;共享=管理员设的库,锁态可切但内容为锁卡)
   const [scope, setScope] = useState<LibScope>({ kind: 'mine' });
   const [sharedLibs, setSharedLibs] = useState<{ id: string; name: string; access: string; locked: boolean; songCountHint: number }[]>([]);
+  // ④公共曲库入口态(浏览页库胶囊/桌面库组行;未授权或个人开关关闭→不渲染)
+  const pub = usePubEntry();
+  const pubVisible = pub.authorized && pub.showEntry;
+  useEffect(() => { pubCheck(); }, []);
   // spec⑪C:锁卡四字段(403 body.lock)+申请态
   const [lockInfo, setLockInfo] = useState<{ name?: string; reason?: string; owner?: string; songCount?: number } | null>(null);
   const [reqSent, setReqSent] = useState(false);
@@ -471,6 +475,8 @@ export function MyLibraryScreen() {
         <View style={{ flexDirection: 'row', gap: 6, paddingHorizontal: IS_HD ? 30 : 16, paddingVertical: 6, flexWrap: 'wrap' }}>
           <ScopeChip label="我的" on={scope.kind === 'mine'} onPress={() => setScope({ kind: 'mine' })} tv={IS_TV} />
           <ScopeChip label="本机" on={scope.kind === 'device'} onPress={() => setScope({ kind: 'device' })} tv={IS_TV} />
+          {/* ④浏览页库胶囊「公共」(未授权/开关关→不渲染;点击进公共曲库页) */}
+          {pubVisible ? <ScopeChip label="公共" on={false} onPress={() => nav.navigate('PublicLibrary', {})} tv={IS_TV} /> : null}
           {sharedLibs.map(l => (
             <ScopeChip key={l.id} label={`${l.locked ? '🔒 ' : ''}${l.name}`} on={scope.kind === 'shared' && scope.id === l.id}
               onPress={() => setScope({ kind: 'shared', id: l.id, name: l.name, locked: l.locked })} tv={IS_TV} />
@@ -490,6 +496,13 @@ export function MyLibraryScreen() {
               <Icon name="music" size={14} color={scope.kind === 'device' ? C.text : C.text2} />
               <Text style={[d.wtabT, scope.kind === 'device' && d.wtabTOn]}>本机 · 离线</Text>
             </TouchableOpacity>
+            {/* ④库组固定行「公共曲库」(library 图标;未授权/开关关→不渲染) */}
+            {pubVisible ? (
+              <TouchableOpacity style={[d.wtab]} onPress={() => nav.navigate('PublicLibrary', {})}>
+                <Icon name="library" size={14} color={C.text2} />
+                <Text style={[d.wtabT]} numberOfLines={1}>公共曲库</Text>
+              </TouchableOpacity>
+            ) : null}
             {sharedLibs.map(l => (
               <TouchableOpacity key={l.id} style={[d.wtab, scope.kind === 'shared' && scope.id === l.id && d.wtabOn]} onPress={() => setScope({ kind: 'shared', id: l.id, name: l.name, locked: l.locked })}>
                 <Icon name="cloud" size={14} color={scope.kind === 'shared' && scope.id === l.id ? C.text : C.text2} />

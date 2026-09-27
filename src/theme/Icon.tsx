@@ -16,7 +16,7 @@ export type IconName =
   | 'check' | 'status' | 'user' | 'server'
   | 'palette' | 'cloud' | 'globe' | 'wave' | 'info' | 'folder' | 'refresh' | 'trash'
   | 'podcast' | 'ranking' | 'history' | 'fullscreen' | 'edit'
-  | 'folder-music' | 'file-question' | 'shield'; // ②本机曲库(LEO v2.1:iconpark folder-music 同形手绘)
+  | 'folder-music' | 'file-question' | 'shield' | 'library'; // ②本机曲库(LEO v2.1:iconpark folder-music 同形手绘)+④公共曲库(library,icon-data 家族手绘)
 
 // Figma semantic icons export two literal colors; map them to a requested color.
 function recolor(xml: string, color?: string): string {

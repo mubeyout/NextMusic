@@ -39,6 +39,7 @@ import { MediaLibsScreen, ProviderBrowseRoute } from './screens/MediaLibsScreen'
 import { LocalLibraryEditScreen } from './screens/LocalLibraryEditScreen';
 import { LocalLibraryRoute } from './screens/LocalLibraryScreen';
 import { MyLibraryScreen, MyLibAlbumRoute, MyLibArtistRoute } from './screens/MyLibraryScreen';
+import { PublicLibraryScreen, PublicLibAlbumRoute, PublicLibArtistRoute } from './screens/PublicLibraryScreen'; // ④公共曲库(LEO v2.2 规格④)
 import { ProviderDetailScreen } from './screens/ProviderDetailScreen';
 import { DownloadsScreen } from './screens/DownloadsScreen';
 import { BoardsSquareScreen } from './screens/BoardsSquareScreen';
@@ -234,6 +235,10 @@ return (
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="MyLibrary" component={withEnter(MyLibraryScreen, true)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="MyLibAlbum" component={withEnter(MyLibAlbumRoute)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="MyLibArtist" component={withEnter(MyLibArtistRoute)} />
+        {/* ④公共曲库(浏览+专辑/歌手详情) */}
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="PublicLibrary" component={withEnter(PublicLibraryScreen, true)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="PublicLibAlbum" component={withEnter(PublicLibAlbumRoute)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="PublicLibArtist" component={withEnter(PublicLibArtistRoute)} />
       </Stack.Navigator>
     </NavigationContainer>
   );

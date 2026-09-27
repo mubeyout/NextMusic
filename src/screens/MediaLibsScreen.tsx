@@ -12,6 +12,7 @@ import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
 import { LibCard } from './MyLibraryScreen'; // 我的曲库入口卡(0924)
 import { myLib, type LibStats } from '../services/myLibrary';
+import { pubCheck, usePubEntry } from '../services/publicLibrary'; // ④公共曲库系统库置顶条目
 import { ActionSheet } from '../components/ActionSheet';
 import { CollectSheet } from '../components/CollectSheet';
 import { SongRow } from '../components/SongRow';
@@ -78,6 +79,9 @@ export function MediaLibsScreen() {
   // ②本机曲库行(含失效态 v3 A5:灰置+danger 状态点+副文案+行内重新选择)
   const [locLibs, setLocLibs] = useState<LocalLibConfig[]>([]);
   const [locBad, setLocBad] = useState<Record<string, boolean>>({});
+  // ④公共曲库系统库置顶条目(官方徽标·不可删;未授权/开关关→完全不渲染)
+  const pub = usePubEntry();
+  const pubVisible = pub.authorized && pub.showEntry;
   const refreshLocals = useCallback(() => {
     const list = localLib.all();
     setLocLibs(list);
@@ -90,7 +94,7 @@ export function MediaLibsScreen() {
   const [libStats, setLibStats] = useState<LibStats | null>(null);
   useEffect(() => { myLib.stats().then(setLibStats).catch(() => setLibStats(null)); }, []);
   // 从 ProviderEdit 保存/删除返回时刷新列表（屏幕停留挂载不会重走 mount）
-  useFocusEffect(useCallback(() => { refresh(); refreshLocals(); }, [refresh, refreshLocals]));
+  useFocusEffect(useCallback(() => { refresh(); refreshLocals(); pubCheck(); }, [refresh, refreshLocals]));
 
   // 按钮入口：Figma NM-REMOTE-SELECT-001 选择类型页（ProviderEditScreen 内部先选类型再连接）
   const addMenu = () => nav.navigate('ProviderEdit', {});
@@ -146,6 +150,26 @@ export function MediaLibsScreen() {
         <Text style={[st.intro, IS_HD && hd.intro]}>接入 Emby、Jellyfin、Navidrome、道理鱼（Subsonic 兼容）或 WebDAV，把私有音乐库变成曲库。</Text>
         {/* 0924 我的曲库入口卡(老板拍板:渐变黑胶大卡含统计行,置顶)——未登录时仍展示(进入后引导登录) */}
         <LibCard stats={libStats} onEnter={() => nav.navigate('MyLibrary', {})} />
+        {/* ④系统库置顶条目「公共曲库」(官方徽标 shield·不可删无⋯菜单;与②本机库行并列同卡;未授权不渲染) */}
+        {pubVisible ? (
+          <PressCard style={[ml.card, IS_HD && ml.cardHD]} hoverStyle={ml.cardHover} tvFocus
+            onPress={() => nav.navigate('PublicLibrary', {})}>
+            <View style={[ml.iconWrap, IS_HD && ml.iconWrapHD]}><Icon name="library" size={IS_HD ? 32 : 26} color={C.brandText} /></View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <View style={ml.titleRow}>
+                <Text style={[ml.title, IS_HD && ml.titleHD]} numberOfLines={1}>{pub.summary?.name || '公共曲库'}</Text>
+                <View style={[ml.typeChip, { flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
+                  <Icon name="shield" size={9} color={C.brandText} />
+                  <Text style={ml.typeChipText}>官方</Text>
+                </View>
+              </View>
+              <Text style={[ml.sub, IS_HD && ml.subHD]} numberOfLines={1}>
+                {pub.summary?.scan?.running ? '管理员更新中 · 完成后自动展示' : pub.summary?.scan && typeof pub.summary.scan.songs === 'number' ? `${pub.summary.scan.songs.toLocaleString()} 首 · 管理员共享` : '管理员共享的公共曲库'}
+              </Text>
+            </View>
+            <Icon name="chevronright" size={IS_HD ? 22 : 18} color={C.text3} />
+          </PressCard>
+        ) : null}
         {/* ②本机曲库行:与第三方媒体库同卡同流程;失效=灰置+denger 点+重新选择(点击整卡进编辑恢复) */}
         {locLibs.length ? (
           <View style={[ml.group, IS_WEB && ml.groupWeb]}>

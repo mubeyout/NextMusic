@@ -17,7 +17,7 @@ export interface LibStats { songs: number; artists: number; albums: number; tota
 const B = () => normalizeBase(store.base);
 
 /** 库内曲目 → SongItem(source='custom';hash=filename 供流/封面构造) */
-export function toSongItem(l: LibSong): SongItem {
+export function toSongItem(l: LibSong, lib?: string): SongItem {
   const s: SongItem = {
     name: l.name || l.filename.split('/').pop() || '未知曲目',
     singer: l.singer || '未知歌手',
@@ -28,8 +28,15 @@ export function toSongItem(l: LibSong): SongItem {
     hash: l.filename,
     albumName: l.album || undefined,
   } as SongItem;
+  if (lib) (s as SongItem & { _lib?: string })._lib = lib; // ④公共曲库:lib 随歌携带(队列/详情跨页播放不丢域)
   return s;
 }
+
+// v1.2→④:当前活跃库(播放/封面 URL 的 lib 参数默认源——切库即切换流地址域;公共曲库='public')
+// ④下沉服务层:PlayerProvider 消费(getActiveLib),屏只负责切(setActiveLib)
+let __activeLib: string | undefined;
+export function setActiveLib(id?: string) { __activeLib = id; }
+export function getActiveLib(): string | undefined { return __activeLib; }
 
 // 走查❌#2 根因修复:web 同源部署形态 store.base=''(相对路径 fetch)——原 `b ? 绝对URL : ''` 在该形态返回空串
 // → 播放 src 恒空/封面全灰。web(base 空)走相对路径,原生无 base 维持空串(由分支 toast 引导登录)

@@ -18,12 +18,16 @@ import { library } from '../state/library';
 import { downloads as dlStore, fmtBytes, downloadFails, clearFails, subscribeDownloads } from '../services/downloads';
 import { APP_VERSION, IS_HD } from '../services/appversion';
 import { api, store as httpStore, normalizeBase } from '../services/server';
+import { pubCheck, pubSetShowEntry, usePubEntry } from '../services/publicLibrary'; // ④公共曲库个人显示开关
 
 // ---------- 基本设置 ----------
 export function BasicSettingsScreen() {
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string) => void };
   const s = useSettings();
   const [cacheSize, setCacheSize] = useState('计算中…');
+  // ④账号设置「通知与显示」:显示公共曲库个人开关(读写 prefs 端点;未授权→该行不渲染)
+  const pub = usePubEntry();
+  useEffect(() => { pubCheck(); }, []);
 
   const dirSize = async (d: string, depth: number): Promise<number> => {
     if (depth > 3) return 0;
@@ -75,6 +79,14 @@ export function BasicSettingsScreen() {
         {/* carlink(20260920):CarLink/投屏连车机时切 HD 大屏 UI(参照 hd 版,横屏+大触点+D-pad);重启或再切回 */}
         <ToggleRow label="车机模式" value={s.carModeUi === true} onChange={v => settings.set('carModeUi', v)} />
       </Section>
+      {/* ④公共曲库个人显示开关(授权账号才渲染;关闭=仅隐藏自己的入口,数据/授权关系保留) */}
+      {pub.authorized ? (
+        <Section title="通知与显示">
+          <ToggleRow label="显示公共曲库" value={pub.showEntry} onChange={v => {
+            pubSetShowEntry(v).catch(() => toast('同步服务器失败，请稍后再试'));
+          }} />
+        </Section>
+      ) : null}
       <Section title="缓存">
         <StaticRow label="图片与网络缓存" value={cacheSize} />
         <ActionRow label="清除缓存" value="" onPress={clearCache} />

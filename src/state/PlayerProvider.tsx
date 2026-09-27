@@ -7,7 +7,7 @@ import { createMMKV } from 'react-native-mmkv';
 import type { SongItem } from '../services/server';
 import { api, store as httpStore, req, normalizeBase } from '../services/server';
 import { findLocalMatch } from '../services/localMatch'; // 跨源本地同名优先(老板 0922 播放优先级)
-import { streamUrl } from '../services/myLibrary'; // 我的曲库(自有服务器 custom 源,0924 P1)
+import { streamUrl, getActiveLib } from '../services/myLibrary'; // 我的曲库(自有服务器 custom 源,0924 P1);④公共曲库:lib 注入(getActiveLib)
 import { lxapi } from '../services/lxapi';
 import { customGetMusicUrl, activeSources } from '../services/customSource';
 import { providerApi, providers, PROVIDER_META, type ProviderType } from '../services/providers';
@@ -395,7 +395,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       // ③.6 我的曲库(自有服务器'custom'源):直出服务器流(Range ✓,token 在 query)——
       // 属「服务器端(本地)」层,不碰音源取链;设备本地同名/下载仍在前面优先
       if (t.source === 'custom') {
-        const cu = httpStore.token ? streamUrl(String(t.hash || '')) : '';
+        // ④公共曲库:lib=public 随歌携带(_lib)或活跃库注入——共用 custom 流端点(契约§0)
+        const cu = httpStore.token ? streamUrl(String(t.hash || ''), (t as { _lib?: string })._lib || getActiveLib()) : '';
         if (!cu) {
           setPlaying(false);
           toast('我的曲库需要登录服务器后播放');
