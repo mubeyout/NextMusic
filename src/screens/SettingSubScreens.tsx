@@ -225,12 +225,13 @@ export function AboutScreen() {
 
   return (
     <PageShell title="关于与帮助" onBack={() => nav.goBack()}>
-      {Platform.OS === 'web' ? (
         <Section title="关于 NextMusic">
           <StaticRow label="定位" value="自托管音乐系统 · 一个服务端四端播放" />
           <StaticRow label="四端" value="手机 / 桌面 / HD·车机 / Web" />
           <StaticRow label="曲库" value="本机 · 云端 · 公共 · 第三方 12 种协议" />
         </Section>
+
+      {Platform.OS === 'web' ? (
         <Section title="版本">
           <StaticRow label="Web 播放器" value={`NextMusic HD ${APP_VERSION}`} />
           <StaticRow label="服务器" value={srvInfo?.connected ? (srvInfo.name || '已连接') : '本地模式(未连接)'} />
