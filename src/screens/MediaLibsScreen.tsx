@@ -10,10 +10,8 @@ import { C } from '../theme/tokens';
 import { Platform } from 'react-native';
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
-import { LibCard } from './MyLibraryScreen'; // 我的曲库入口卡(0924)
 import { CloudLibCard } from './CloudLibraryScreen'; // spec③:云曲库入口卡(登录后渲染)
 import { useApp } from '../state/AppState';
-import { myLib, type LibStats } from '../services/myLibrary';
 import { pubCheck, usePubEntry } from '../services/publicLibrary'; // ④公共曲库系统库置顶条目
 import { ActionSheet } from '../components/ActionSheet';
 import { CollectSheet } from '../components/CollectSheet';
@@ -93,9 +91,6 @@ export function MediaLibsScreen() {
     });
   }, []);
   useEffect(refresh, []);
-  // 曲库统计(入口卡展示;失败静默——卡片降级为无统计文案)
-  const [libStats, setLibStats] = useState<LibStats | null>(null);
-  useEffect(() => { myLib.stats().then(setLibStats).catch(() => setLibStats(null)); }, []);
   // 从 ProviderEdit 保存/删除返回时刷新列表（屏幕停留挂载不会重走 mount）
   useFocusEffect(useCallback(() => { refresh(); refreshLocals(); pubCheck(); }, [refresh, refreshLocals]));
 
@@ -150,12 +145,10 @@ export function MediaLibsScreen() {
       <ScrollView
         contentContainerStyle={[{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingBottom: insets.bottom + 24 }, IS_HD && { paddingTop: 8 }]}
       >
-        <Text style={[st.intro, IS_HD && hd.intro]}>接入 Emby、Jellyfin、Navidrome、道理鱼（Subsonic 兼容）或 WebDAV，把私有音乐库变成曲库。</Text>
-        {/* 0924 我的曲库入口卡(老板拍板:渐变黑胶大卡含统计行,置顶)——未登录时仍展示(进入后引导登录) */}
-        <LibCard stats={libStats} onEnter={() => nav.navigate('MyLibrary', {})} />
+        {/* v3.2(老板 0927):三段式分组重设计——我的曲库(本机+云)/公共曲库/第三方媒体库;原「我的曲库」入口卡与云曲库指向同一服务器空间,撤并 */}
+        <Text style={[ml.sectionHead, IS_HD && ml.sectionHeadHD, { marginTop: 4 }]}>我的曲库</Text>
+        <View style={[ml.group, IS_WEB && ml.groupWeb]}>
         {/* ②本机曲库行:与第三方媒体库同卡同流程;失效=灰置+denger 点+重新选择(点击整卡进编辑恢复) */}
-        {locLibs.length ? (
-          <View style={[ml.group, IS_WEB && ml.groupWeb]}>
             {locLibs.map(l => {
               const bad = !!locBad[l.id];
               const locMenu = () => dialog.menu(l.name, [
@@ -193,12 +186,17 @@ export function MediaLibsScreen() {
                 </PressCard>
               );
             })}
-          </View>
-        ) : null}
-        {/* spec③:云曲库入口卡(登录后渲染);定稿v3.0细则1 四库总序:本机→云→公共→(分隔)→第三方 */}
-        {token ? <CloudLibCard onEnter={() => nav.navigate('CloudLibrary', {})} /> : null}
-        {/* ④公共曲库行(官方徽标 shield·不可删无⋯菜单;未授权不渲染)。定稿v3.0细则1 四库总序:本机→云→公共→(分隔)→第三方 */}
+          {/* spec③:云曲库入口卡(登录后渲染)——我的曲库组第二成员 */}
+          {token ? <CloudLibCard onEnter={() => nav.navigate('CloudLibrary', {})} /> : null}
+          {!locLibs.length && !token ? (
+            <Text style={[st.intro, IS_HD && hd.intro]}>登录后可开启云曲库，或点右上角 ＋ 添加本机曲库。</Text>
+          ) : null}
+        </View>
+        {/* ④公共曲库行(官方徽标 shield·不可删无⋯菜单;未授权不渲染) */}
         {pubVisible ? (
+          <>
+          <Text style={[ml.sectionHead, IS_HD && ml.sectionHeadHD]}>公共曲库</Text>
+          <View style={[ml.group, IS_WEB && ml.groupWeb]}>
           <PressCard style={[ml.card, IS_HD && ml.cardHD]} hoverStyle={ml.cardHover} tvFocus
             onPress={() => nav.navigate('PublicLibrary', {})}>
             <View style={[ml.iconWrap, IS_HD && ml.iconWrapHD]}><Icon name="library" size={IS_HD ? 32 : 26} color={C.brandText} /></View>
@@ -216,11 +214,13 @@ export function MediaLibsScreen() {
             </View>
             <Icon name="chevronright" size={IS_HD ? 22 : 18} color={C.text3} />
           </PressCard>
+          </View>
+          </>
         ) : null}
-        {/* 定稿细则1:公共曲库与第三方库们分组分隔 */}
-        {accts.length ? <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: C.strokeFaint, marginTop: 18 }} /> : null}
+        {/* 第三方媒体库组 */}
+        <Text style={[ml.sectionHead, IS_HD && ml.sectionHeadHD]}>第三方媒体库</Text>
         {accts.length === 0 ? (
-          <EmptyState icon="server" title="还没有添加媒体库" sub="点右上角 ＋ 接入 Plex / 飞牛 / 群晖 / Emby / Navidrome / WebDAV / 听风 等 11 种平台" />
+          <EmptyState icon="server" title="还没有第三方媒体库" sub="点右上角 ＋ 接入 Plex / 飞牛 / 群晖 / Emby / Navidrome / WebDAV / 听风 等 11 种平台" />
         ) : (
           /* v3.31 重设计：克制卡片——深色底+细描边+微投影，品牌 icon 左置，类型徽标+名称+地址三级；web hover 浮出 ⋯（原生常驻） */
           <View style={[ml.group, IS_WEB && ml.groupWeb]}>
@@ -1027,6 +1027,8 @@ const st = StyleSheet.create({
 // v3.31 列表页重设计样式（老板 0921：克制卡——深色底/细描边/微投影/品牌 icon 左置/类型徽标）
 const ml = StyleSheet.create({
   group: { gap: 10 },
+  sectionHead: { color: C.text3, fontSize: 12, fontWeight: '700', letterSpacing: 1.2, marginTop: 26, marginBottom: 10 },
+  sectionHeadHD: { fontSize: 14, letterSpacing: 1.6, marginTop: 30 },
   groupWeb: { alignSelf: 'center', width: '100%', maxWidth: 860 }, // lx168(老板 0923 02:58):与曲库浏览同宽 860 居中——原先 720 靠左,宽屏右半空白像"只有半截"
   card: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, paddingHorizontal: 14, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke, elevation: 1, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } },
   cardHD: { minHeight: 86, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16 },
