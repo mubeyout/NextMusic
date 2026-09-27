@@ -1,7 +1,7 @@
 // cloudLibrary —— 云曲库(登录个人空间)service 层(LEO spec③ · API contract v2 §5)
 // 云曲库 = 账号自有「自定义音乐目录」(契约 §2.1 用量口径);内容/流端点复用 myLibrary 既有族(无 lib=本人)
 // 配额:契约 §5.1 GET /api/cloud-library/quota(登录即可,不依赖公共曲库授权)
-// 删除:契约未覆盖删除端点(服务端上传链路 checkQuota 钩子已预留,P1 合入)——此处只留 TODO stub,不造假数据
+// 删除:POST /api/music/custom/remove(filenames 批量)——服务端端点随 release 树在线,[KAI 20260928] 接线原 stub
 import { Platform } from 'react-native';
 import { createMMKV } from 'react-native-mmkv';
 import { req, store } from './server';
@@ -47,11 +47,16 @@ export const cloudLib = {
     return out;
   },
 
-  /** TODO(P1 服务端):云曲库删除端点未入契约 v2(服务端上传链路 checkQuota 钩子已预留);
-   *  客户端分级确认 UI 已建好,端点合入后把本方法替换为真实请求即可。当前恒失败,不假删。 */
-  async remove(files: string[]): Promise<void> {
-    void files;
-    throw new Error('云曲库删除接口待服务端上线');
+  /** 云曲库删除:POST /api/music/custom/remove(filenames 批量;403=管理员未开放删除权限)
+   *  [KAI 20260928] 服务端端点随 release 树在线,原 stub 接线——分级确认 UI(spec③)直接生效 */
+  async remove(files: string[]): Promise<number> {
+    const r = await req('/api/music/custom/remove', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filenames: files }),
+    }) as { success?: boolean; deletedCount?: number; message?: string };
+    if (r && typeof r === 'object' && r.success === false) throw new Error(r.message || '删除失败');
+    return typeof r?.deletedCount === 'number' ? r.deletedCount : files.length;
   },
 };
 
