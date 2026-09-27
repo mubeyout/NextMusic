@@ -170,8 +170,9 @@ export function SourcesScreen() {
       ) : (
         <PageHeader title="音源管理" onBack={() => nav.goBack()} />
       )}
+      {/* lx207(LEO v2 规格①):宽屏全宽行——1280 居中替代 860 左贴 */}
       <ScrollView
-        contentContainerStyle={[{ paddingHorizontal: 20, paddingBottom: insets.bottom + 28 }, IS_HD && { maxWidth: 860, alignSelf: 'flex-start', width: '100%' }]}
+        contentContainerStyle={[{ paddingHorizontal: 20, paddingBottom: insets.bottom + 28 }, IS_HD && { maxWidth: 1280, alignSelf: 'center', width: '100%' }]}
         showsVerticalScrollIndicator={false}
       >
       {/* 服务器音源区(lx165 老板 0923):未登录 或 服务器无启用音源(全部被管理员禁用) → 整块隐藏。
