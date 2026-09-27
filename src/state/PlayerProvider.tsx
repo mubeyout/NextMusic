@@ -1020,7 +1020,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         // lx203(0927 老板实锤:投播只播一首):DLNA 渲染器曲终上报 STOPPED(Chromecast=IDLE),只认 IDLE 永不触发自动切歌;
         // 部分渲染器曲终 pos 归 0——near-end 或归零均视为播完(用户手动停=pos 在中途,不误触)
         const _st = String(p.state).toUpperCase();
-        if (p.dur > 0 && (_st === 'IDLE' || _st === 'STOPPED') && (p.pos >= p.dur - 3 || p.pos <= 1)) {
+        if (p.dur > 0 && (_st === 'IDLE' || _st === 'STOPPED') && p.pos >= p.dur - 3) {
           if (repeatRef.current === 'one') {
             api.seek(castRef.current.dev as never, 0).then(() => api.play(castRef.current!.dev as never)).catch(() => {});
           } else if (shuffleRef.current) {
