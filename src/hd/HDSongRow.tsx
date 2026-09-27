@@ -15,6 +15,7 @@ import type { CtxMenuItem } from './hdctxmenu';
 import { setHoverMenu } from './hdctxmenu';
 import { hdActions } from './HDActions';
 import { registerKbRow } from './hdkeyboard';
+import { presenceOf, usePresenceVersion } from '../services/cloudPresence'; // spec③:角标三态全端统一
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -31,6 +32,9 @@ export function HDSongRow({ song, index, onPress, onLongPress, onAction, playing
 }) {
   const { faved, toggle } = useFav(song);
   const { appendQueue } = usePlayer(); // D1 A1:＋加入队列
+  // spec③:行尾角标三态(全端统一,与 SongRow 同源判定)
+  usePresenceVersion();
+  const pv = presenceOf(song);
   // A1 hover 态(100ms 延迟防扫过闪烁;transition 由样式透明度承担)
   const [hov, setHov] = useState(false);
   const hovTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -117,6 +121,13 @@ export function HDSongRow({ song, index, onPress, onLongPress, onAction, playing
         <Text style={st.sub} numberOfLines={1}>{song.singer}{showAlbum && song.albumName ? ` · ${song.albumName}` : ''}</Text>
       </View>
       <View style={st.srcTag}><Text style={st.srcTagText}>{song.source}</Text></View>
+      {pv ? (
+        <Icon
+          name={pv === 'local' ? 'devices' : pv === 'cloud' ? 'cloud' : 'cloud-check'}
+          size={14}
+          color={pv === 'local' ? C.text3 : pv === 'cloud' ? C.brand : C.text2}
+        />
+      ) : null}
       {/* v3.20(老板:hover 选项改挤出模式):hoverZone 在流内,hover 宽度 34→96 挤压标题列(不再 absolute 覆盖);♡已收藏常驻(→64) */}
       {IS_WEB ? (
         <View style={[st.hoverZone, hov ? st.hoverZoneOn : faved ? st.hoverZoneFav : null]}>

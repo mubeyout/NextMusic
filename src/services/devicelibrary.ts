@@ -171,6 +171,9 @@ export function deviceSongs(): SongItem[] {
   }));
 }
 
+/** spec③:原始 DeviceTrack 列表(含 size——云曲库上传配额预检需要,deviceSongs() 的 SongItem 无尺寸) */
+export function deviceTracks(): DeviceTrack[] { return readAll(); }
+
 // MediaStore 版（带时长）
 let msCache: { uri: string; name: string; singer: string; album: string; durationMs: number }[] | null = null;
 export async function deviceSongsDetailed(): Promise<SongItem[]> {

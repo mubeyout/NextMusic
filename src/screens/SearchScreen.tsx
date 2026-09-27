@@ -10,6 +10,7 @@ import { ActionSheet } from '../components/ActionSheet';
 import { CollectSheet } from '../components/CollectSheet';
 import { toast } from '../components/Dialog';
 import { enqueueDownload, downloads as dlStore } from '../services/downloads';
+import { uploadWithFeedback } from '../services/cloudLibrary'; // spec③:本机曲库歌上传云曲库
 import { api } from '../services/server';
 import { StateOverlayCard } from '../components/StateOverlayCard';
 import { usePlayer } from '../state/PlayerProvider';
@@ -261,6 +262,8 @@ export function SearchScreen() {
         visible={!!actSong} onClose={() => setActSong(null)}
         title={actSong ? `${actSong.name} · ${actSong.singer}` : ''}
         items={actSong ? [
+          // spec③:本机曲库歌才提供上传入口(搜索结果里的 device 歌)
+          ...(actSong.source === 'device' ? [{ label: '上传到云曲库', onPress: () => { void uploadWithFeedback([actSong]); } }] : []),
           dlStore.isDownloaded(actSong)
             ? { label: '已下载 ✓', onPress: () => {} }
             : { label: '下载', onPress: () => { enqueueDownload([actSong]); } },

@@ -11,6 +11,8 @@ import { Platform } from 'react-native';
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
 import { LibCard } from './MyLibraryScreen'; // 我的曲库入口卡(0924)
+import { CloudLibCard } from './CloudLibraryScreen'; // spec③:云曲库入口卡(登录后渲染)
+import { useApp } from '../state/AppState';
 import { myLib, type LibStats } from '../services/myLibrary';
 import { ActionSheet } from '../components/ActionSheet';
 import { CollectSheet } from '../components/CollectSheet';
@@ -69,6 +71,7 @@ function coverGrad(name?: string) {
 export function MediaLibsScreen() {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string, p?: object) => void };
+  const { token } = useApp(); // spec③:云曲库入口登录后才渲染(connected+token 同 SourcesAccountScreens 登录态口径)
   const [accts, setAccts] = useState<ProviderAcct[]>([]);
   const [hoverId, setHoverId] = useState<string | null>(null); // web hover 门控（原生无 hover 常驻）
   const [testId, setTestId] = useState<string | null>(null);
@@ -135,6 +138,7 @@ export function MediaLibsScreen() {
         <Text style={[st.intro, IS_HD && hd.intro]}>接入 Emby、Jellyfin、Navidrome、道理鱼（Subsonic 兼容）或 WebDAV，把私有音乐库变成曲库。</Text>
         {/* 0924 我的曲库入口卡(老板拍板:渐变黑胶大卡含统计行,置顶)——未登录时仍展示(进入后引导登录) */}
         <LibCard stats={libStats} onEnter={() => nav.navigate('MyLibrary', {})} />
+        {token ? <CloudLibCard onEnter={() => nav.navigate('CloudLibrary', {})} /> : null}
         {accts.length === 0 ? (
           <EmptyState icon="server" title="还没有添加媒体库" sub="点右上角 ＋ 接入 Plex / 飞牛 / 群晖 / Emby / Navidrome / WebDAV / 听风 等 11 种平台" />
         ) : (
