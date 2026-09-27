@@ -254,7 +254,7 @@ export function CloudLibraryScreen() {
   const selSongs = useMemo(() => (songs || []).filter(s => sel.has(keyOf(s))), [songs, sel]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const play = async (i: number, list: LibSong[]) => {
-    const items = list.map(toSongItem);
+    const items = list.map(x => toSongItem(x));
     await playSong(items[i], items);
   };
   const rowMenu = (s: LibSong) => dialog.menu(`${s.name} · ${s.singer}`, [

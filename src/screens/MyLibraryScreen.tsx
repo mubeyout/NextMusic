@@ -278,7 +278,7 @@ export function MyLibraryScreen() {
 
   // v1.2:本机分区播放用 device 原始 SongItem(file:// 直播,不走服务器流);服务器库走 toSongItem
   const toPlayable = async (l: LibSong[]): Promise<SongItem[]> => {
-    if (scope.kind !== 'device') return l.map(toSongItem);
+    if (scope.kind !== 'device') return l.map(x => toSongItem(x));
     const { deviceSongsDetailed } = await import('../services/devicelibrary');
     const full = await deviceSongsDetailed();
     const byMid = new Map(full.map(d => [d.songmid, d]));
@@ -594,7 +594,7 @@ export function MyLibAlbumRoute(props: Record<string, unknown>) {
   }, [id]);
   const play = async (i: number) => {
     if (!songs) return;
-    const items = songs.map(toSongItem);
+    const items = songs.map(x => toSongItem(x));
     await playSong(items[i], items);
   };
   const UploadSheet = useUploadSheet();
@@ -637,7 +637,7 @@ export function MyLibArtistRoute(props: Record<string, unknown>) {
   }, [id]);
   const play = async (i: number) => {
     if (!data) return;
-    const items = data.songs.map(toSongItem);
+    const items = data.songs.map(x => toSongItem(x));
     await playSong(items[i], items);
   };
   const UploadSheet = useUploadSheet();

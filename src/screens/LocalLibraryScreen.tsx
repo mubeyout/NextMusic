@@ -20,8 +20,8 @@ import {
   type LocalLibConfig, type LocalTrack, type ScanProgress,
 } from '../services/localLibrary';
 
-type View = 'artists' | 'albums' | 'folders';
-const VIEWS: { key: View; label: string }[] = [
+type LibView = 'artists' | 'albums' | 'folders';
+const VIEWS: { key: LibView; label: string }[] = [
   { key: 'artists', label: '歌手' },
   { key: 'albums', label: '专辑' },
   { key: 'folders', label: '文件夹' },
@@ -38,7 +38,7 @@ export function LocalLibraryScreen({ route }: { route: { params: { libId: string
   const { playSong, current } = usePlayer();
   const [cfg, setCfg] = useState<LocalLibConfig | null>(() => localLib.get(route.params.libId) || null);
   const [avail, setAvail] = useState<boolean | null>(null); // null=检测中
-  const [view, setView] = useState<View>('artists');
+  const [view, setView] = useState<LibView>('artists');
   const [drill, setDrill] = useState<{ kind: 'artist' | 'album'; key: string; name: string } | null>(null);
   const [dirPath, setDirPath] = useState('');
   const [tick, setTick] = useState(0);

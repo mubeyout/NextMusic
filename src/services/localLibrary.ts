@@ -95,7 +95,7 @@ export const localLib = {
   },
   remove(id: string): void {
     writeConfigs(readConfigs().filter(c => c.id !== id));
-    kv.delete(K_TRACKS(id));
+    kv.remove(K_TRACKS(id));
     if (IS_WEB) void idbPurge(id);
   },
   tracks(id: string): LocalTrack[] { return readTracks(id); },

@@ -37,7 +37,7 @@ function cacheRead(): { summary: PubSummary | null; showEntry: boolean } | null 
   try { const v = pubKv.getString('state'); return v ? JSON.parse(v) as { summary: PubSummary | null; showEntry: boolean } : null; } catch { return null; }
 }
 function cacheWrite() { try { pubKv.set('state', JSON.stringify({ summary: st.summary, showEntry: st.showEntry })); } catch { /* 配额满忽略 */ } }
-function cacheClear() { try { pubKv.delete('state'); } catch { /* ignore */ } }
+function cacheClear() { try { pubKv.remove('state'); } catch { /* ignore */ } }
 // 启动缓存先行(被撤授权 → 首次校验 404 即时移除,铁律闭环)
 (() => {
   const c = cacheRead();
