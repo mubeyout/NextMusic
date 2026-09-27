@@ -135,15 +135,17 @@ export function QueueScreen() {
             }}>
               <Text style={[st.batchBtnText, st.batchBtnPriText]}>下载</Text>
             </T>
-            {/* spec③:批量传到云曲库(多选动作条;仅本机曲库歌生效)。v2.2收窄(LEO裁决:上传唯一源=本机曲库):队列行菜单/ActionSheet入口已移除,此动作条按保留清单留用 */}
-            <T style={st.batchBtn} onPress={() => {
-              const devs = upcoming.filter(t => sel.has(keyOf(t)) && t.source === 'device');
-              if (!devs.length) { toast('所选中没有本机曲库歌曲'); return; }
-              void uploadWithFeedback(devs);
-              exitSel();
-            }}>
-              <Text style={st.batchBtnText}>传到云曲库</Text>
-            </T>
+            {/* spec③:批量上传到云曲库(多选动作条;仅本机曲库歌生效)。v2.2收窄+v3.0定稿:上传唯一源=本机曲库,此动作条保留;HD 不显示——定稿细则6(③上传入口不显,无本地文件概念) */}
+            {!IS_HD ? (
+              <T style={st.batchBtn} onPress={() => {
+                const devs = upcoming.filter(t => sel.has(keyOf(t)) && t.source === 'device');
+                if (!devs.length) { toast('所选中没有本机曲库歌曲'); return; }
+                void uploadWithFeedback(devs);
+                exitSel();
+              }}>
+                <Text style={st.batchBtnText}>上传到云曲库</Text>
+              </T>
+            ) : null}
             <T style={st.batchBtn} onPress={() => {
               if (!sel.size) { toast('先选中歌曲'); return; }
               // 降序逐个移除(reorderQueue 单索引语义;正在播放曲目由其自身保护)

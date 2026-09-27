@@ -88,9 +88,15 @@ export function invalidatePresenceLocal() { localSnap = { dl: [], dev: [], at: 0
 
 // ── 判定(带 memo:列表页 200 行反复渲染防抖) ──
 const memo = new Map<string, Presence | null>();
-function keyOf(s: SongItem) { return `${s.source}|${s.songmid}|${s.hash || ''}|${s.interval || ''}`; }
+function keyOf(s: SongItem) { return `${s.source}|${s.songmid}|${s.hash || ''}|${s.interval || ''}|${(s as SongItem & { _lib?: string })._lib || ''}`; }
+
+/** 公共库歌(_lib='public'):不占角标轴(定稿v3.0 细则2——来源=副行文字标注,由 SongRow 承接) */
+function isPublicSong(s: SongItem): boolean {
+  return (s as SongItem & { _lib?: string })._lib === 'public';
+}
 
 export function presenceOf(song: SongItem): Presence | null {
+  if (isPublicSong(song)) return null;
   const k = keyOf(song);
   const hit = memo.get(k);
   if (hit !== undefined) return hit;
@@ -106,6 +112,15 @@ export function presenceOf(song: SongItem): Presence | null {
   if (memo.size > 3000) memo.clear();
   memo.set(k, r);
   return r;
+}
+
+// ── 定稿v3.0 细则2:角标数据契约——歌对象携带 locations:{local,cloud}(客户端 hash 缓存表即时计算,不服务端下发) ──
+export interface SongLocations { local: boolean; cloud: boolean }
+export function locationsOf(song: SongItem): SongLocations | null {
+  if (isPublicSong(song)) return { local: false, cloud: false };
+  const pv = presenceOf(song);
+  if (!pv) return null;
+  return { local: pv === 'local' || pv === 'both', cloud: pv === 'cloud' || pv === 'both' };
 }
 
 /** 订阅云端索引变化(SongRow 角标随索引加载刷新) */

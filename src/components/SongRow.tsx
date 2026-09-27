@@ -6,7 +6,7 @@ import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import type { SongItem } from '../services/server';
 import { registerKbRow } from '../hd/hdkeyboard';
-import { presenceOf, usePresenceVersion } from '../services/cloudPresence'; // spec③:角标三态(队列/搜索/歌单详情等列表行尾)
+import { locationsOf, usePresenceVersion } from '../services/cloudPresence'; // spec③:角标三态(队列/搜索/歌单详情等列表行尾);v3.0 细则2:locations 契约
 
 // 来源标签（老板 09-18：来源显示）——tf/provider/本地/在线五源统一短名；未知 source 原样展示
 const SOURCE_LABELS: Record<string, string> = {
@@ -19,12 +19,13 @@ export const sourceLabel = (s?: string) => (s ? SOURCE_LABELS[s] ?? s : '');
 
 // Figma Song Row: 350x46, art 46x46 r=6, title 13 w500 / sub 10, duration right, more icon 20
 // extra: 右侧操作位（下载按钮等）；onMore: ⋯ 菜单回调(不传且无 extra 则不渲染 ⋯——lx163 老板:死图标等于欺骗)
-export function SongRow({ song, onPress, playing, extra, onMore, onLongPress, leading }: { song: SongItem; onPress?: () => void; playing?: boolean; extra?: React.ReactNode; onMore?: (pos?: { x: number; y: number }) => void; onLongPress?: () => void; leading?: React.ReactNode }) { // lx167d:onLongPress(TV 长按管理);v3.33(老板:队列操作箱优化):onMore 带位置+leading 左槽(批量勾选)
+export function SongRow({ song, onPress, playing, extra, onMore, onLongPress, leading, sourceName }: { song: SongItem; onPress?: () => void; playing?: boolean; extra?: React.ReactNode; onMore?: (pos?: { x: number; y: number }) => void; onLongPress?: () => void; leading?: React.ReactNode; sourceName?: string }) { // lx167d:onLongPress(TV 长按管理);v3.33(老板:队列操作箱优化):onMore 带位置+leading 左槽(批量勾选);v3.0 细则2:sourceName=公共库歌副行源名
   const [focus, setFocus] = useState(false); // lx145:TV D-pad 光标(队列页无选中态)
   // spec③:行尾角标三态(14px)——仅本机 devices/text3 · 仅云端 cloud/brand · 双在 cloud-check/text2;
-  // 判定=hash 相同或 标题+歌手+时长±2s(cloudPresence);索引未加载时不标,防误报
+  // v3.0 细则2:locations:{local,cloud} 契约——公共库歌两者 false 不占角标轴(来源=副行文字)
   usePresenceVersion();
-  const pv = presenceOf(song);
+  const loc = locationsOf(song);
+  const isPub = (song as SongItem & { _lib?: string })._lib === 'public';
   const moreRef = useRef<unknown>(null); // v3.33:⋯ 按钮锚点(web 定位菜单)
   const kbRef = useRef<unknown>(null);
   // D3 A2:键盘导航注册(队列/媒体库浏览行;web only,native 注册表无人读)
@@ -57,15 +58,15 @@ export function SongRow({ song, onPress, playing, extra, onMore, onLongPress, le
       <View style={st.meta}>
         <Text style={[st.title, playing && { color: C.brandText }]} numberOfLines={1}>{song.name}</Text>
         <Text style={st.sub} numberOfLines={1}>
-          {sourceLabel(song.source) ? `${sourceLabel(song.source)} · ` : ''}{song.singer}{song.albumName ? ` · ${song.albumName}` : ''}{song._types?.flac ? ' · 无损' : ''}
+          {isPub ? `公共${sourceName ? ` · ${sourceName}` : ''} · ` : sourceLabel(song.source) ? `${sourceLabel(song.source)} · ` : ''}{song.singer}{song.albumName ? ` · ${song.albumName}` : ''}{song._types?.flac ? ' · 无损' : ''}
         </Text>
       </View>
       <Text style={st.dur}>{playing ? '正在播放' : song.interval}</Text>
-      {pv ? (
+      {loc && (loc.local || loc.cloud) ? (
         <Icon
-          name={pv === 'local' ? 'devices' : pv === 'cloud' ? 'cloud' : 'cloud-check'}
+          name={!loc.cloud ? 'devices' : !loc.local ? 'cloud' : 'cloud-check'}
           size={14}
-          color={pv === 'local' ? C.text3 : pv === 'cloud' ? C.brand : C.text2}
+          color={!loc.cloud ? C.text3 : !loc.local ? C.brand : C.text2}
         />
       ) : null}
       {extra != null ? (

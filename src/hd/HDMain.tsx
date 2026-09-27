@@ -45,6 +45,7 @@ import { MediaLibsScreen, ProviderBrowseRoute } from '../screens/MediaLibsScreen
 import { MyLibraryScreen, MyLibAlbumRoute, MyLibArtistRoute } from '../screens/MyLibraryScreen';
 import { PublicLibraryScreen, PublicLibAlbumRoute, PublicLibArtistRoute } from '../screens/PublicLibraryScreen'; // ④公共曲库(LEO v2.2 规格④)
 import { pubCheck, usePubEntry } from '../services/publicLibrary'; // ④侧栏固定行授权态
+import { localLib } from '../services/localLibrary'; // 细则1:侧栏本机曲库行
 import { ArtistFavScreen } from '../screens/ArtistFavScreen'; // lx161:收藏歌手
 import { ArtistDetailScreen } from '../screens/ArtistDetailScreen';
 import { AlbumFavScreen } from '../screens/AlbumFavScreen'; // v1.2.9 桌面:收藏专辑入口
@@ -151,6 +152,7 @@ export function HDMain() {
 
   // ④公共曲库侧栏固定行(授权+个人开关开才渲染;404/未授权完全不可见)
   const pub = usePubEntry();
+  const locLibsRail = localLib.all(); // 细则1:侧栏本机曲库行(有库才显示;导航时重读)
   useEffect(() => { pubCheck(); }, []);
 
   // 歌单列表(本地+同步)与"我喜欢的"计数——lx91 单次拉取;lx104:缓存秒出+我喜欢的去重+离线收藏合并
@@ -301,10 +303,19 @@ export function HDMain() {
           {/* 我的乐库 */}
           <Group label="我的乐库" top={8} />
           <NavItem icon="server" label="媒体库" active={innerRoute === 'MediaLibs'} onPress={() => railNav('MediaLibs')} />
+          {/* 定稿v3.0细则1 四库总序:本机曲库→云曲库→公共曲库→(分隔)→第三方库们;本机行有库才显示(细则1),云端=登录可见 */}
+          {locLibsRail.map(l => (
+            <NavItem key={'loc-' + l.id} icon="folder-music" label={l.name} active={innerRoute === 'LocalLibBrowse' && innerP?.libId === l.id} onPress={() => railNav('LocalLibBrowse', { libId: l.id })} />
+          ))}
+          {token ? (
+            <NavItem icon="cloud" label="云曲库" active={innerRoute === 'CloudLibrary'} onPress={() => railNav('CloudLibrary')} />
+          ) : null}
           {/* ④公共曲库:媒体库组固定行(library 图标;未授权/开关关→不渲染;官方共享库非个人连接) */}
           {pub.authorized && pub.showEntry ? (
             <NavItem icon="library" label="公共曲库" active={innerRoute === 'PublicLibrary'} onPress={() => railNav('PublicLibrary')} />
           ) : null}
+          {/* 定稿细则1:公共曲库与第三方库们分组分隔 */}
+          {providerAccts.length ? <View style={st.navSep} /> : null}
           {/* v3:已连接媒体库账号直入口(Emby/Jellyfin/Navidrome/WebDAV/道理鱼) */}
           {providerAccts.map(pa => {
             const on = innerRoute === 'ProviderBrowse' && innerP?.acctId === pa.id; // v3.27 账号选中态
@@ -573,6 +584,7 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
 }
 
 const st = StyleSheet.create({
+  navSep: { height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(255,255,255,.08)', marginLeft: 34, marginVertical: 6 },
   screen: { flex: 1, flexDirection: 'row', backgroundColor: C.bg },
   sidebarWrap: { width: H.sidebar, backgroundColor: C.glass, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border },
   // v1.1.9 web:侧栏常驻最顶层(内页卡片 marginLeft 让位,zIndex 保证转场时侧栏不被卡片盖住)

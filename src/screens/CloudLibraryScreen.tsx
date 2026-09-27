@@ -1,9 +1,11 @@
 // CloudLibraryScreen —— 云曲库(登录个人空间,LEO spec③)
 // 结构:用量条(≥80% 警示黄/100% 红;quota=-1 不限) + 离线只读横幅(缓存骨架回退)
-//      + 歌曲列表(按来源分组:我上传的/我下载的) + 管理多选 + 分级删除确认 + 上传(本机选歌器)
+//      + 歌曲列表(按来源分组:我上传的/我下载的) + 管理多选 + 分级删除确认
 // 登录后可见(入口在媒体库页,未登录不渲染);进行中上传=UploadQueue sheet 承接(spec⑪A)
+// v3.0 定稿作废项移除:本页「上传」按钮/本机选歌器已删——上传唯一源=本机曲库(③3.0 原则2);
+// 空态「去本机曲库」=纯跳转(不代开多选,尊重用户浏览节奏)
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable, TextInput, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
@@ -13,18 +15,16 @@ import { EmptyState } from '../components/PageChrome';
 import { SongRow } from '../components/SongRow';
 import { store as httpStore } from '../services/server';
 import { myLib, toSongItem, libCache, type LibSong } from '../services/myLibrary';
-import { cloudLib, fmtBytes, precheckUpload, type QuotaInfo } from '../services/cloudLibrary';
+import { cloudLib, fmtBytes, type QuotaInfo } from '../services/cloudLibrary';
 import { setCloudSongs, presenceOf } from '../services/cloudPresence';
-import { deviceTracks, type DeviceTrack } from '../services/devicelibrary';
 import { downloads } from '../services/downloads';
-import { enqueueUpload } from '../state/UploadQueue';
-import { useUploadSheet, pickAndUpload } from './UploadSheet';
+import { useUploadSheet } from './UploadSheet';
+import { localLib } from '../services/localLibrary';
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
 
 const WARN_YELLOW = '#E8B34B'; // spec③ 用量条 ≥80% 警示黄
 const DANGER_RED = '#E8618C';  // 100% 红 / 强警示(全站错误品红同源)
-const IS_WEB = Platform.OS === 'web';
 
 // ── 分级删除确认(LEO 裁决①) ─────────────────────────────────
 // 双在=轻确认;含仅云端副本=强警示红字+3s 倒计时二次点击;批量按唯一副本数升级文案
@@ -80,129 +80,11 @@ function DeleteConfirm({ list, onClose, onConfirm, busy }: { list: LibSong[]; on
   );
 }
 
-// ── 本机曲库选歌器(spec③:云曲库页上传按钮=半屏列表,搜索+多选+全选) ──
-function DevicePickSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  const [tracks, setTracks] = useState<DeviceTrack[] | null>(null);
-  const [kw, setKw] = useState('');
-  const [sel, setSel] = useState<Set<string>>(new Set());
-  const [busy, setBusy] = useState(false);
-  useEffect(() => {
-    if (!visible) return;
-    setKw(''); setSel(new Set()); setTracks(null);
-    try { setTracks(deviceTracks()); } catch { setTracks([]); }
-  }, [visible]);
-  const filtered = useMemo(() => {
-    if (!tracks) return [];
-    const k = kw.trim().toLowerCase();
-    if (!k) return tracks;
-    return tracks.filter(t => `${t.name} ${t.singer}`.toLowerCase().includes(k));
-  }, [tracks, kw]);
-  const toggle = (p: string) => setSel(prev => { const n = new Set(prev); if (n.has(p)) n.delete(p); else n.add(p); return n; });
-  const doUpload = async () => {
-    const list = (tracks || []).filter(t => sel.has(t.path));
-    if (!list.length || busy) return;
-    setBusy(true);
-    const go = (l: DeviceTrack[]) => {
-      enqueueUpload(l.map(t => ({ uri: t.path, name: t.path.split('/').pop() || t.name || 'audio' })), undefined, '云曲库');
-      setBusy(false); onClose();
-    };
-    try {
-      const pc = await precheckUpload(list.map(t => ({ name: t.path.split('/').pop() || t.name, size: t.size || 0 })));
-      if (pc.fit <= 0) {
-        setBusy(false);
-        toast(`云曲库空间不足：本次约需 ${fmtBytes(pc.est)}，剩余 ${fmtBytes(pc.remain)}`);
-        return;
-      }
-      if (pc.fit < list.length) {
-        setBusy(false);
-        dialog.confirm('配额不足', `剩余空间 ${fmtBytes(pc.remain)}，只能放下前 ${pc.fit} 首（已选 ${list.length} 首）。按可容纳的部分上传？`, () => { setBusy(true); go(list.slice(0, pc.fit)); });
-        return;
-      }
-      go(list);
-    } catch { setBusy(false); toast('上传前检查失败，请重试'); }
-  };
-  return (
-    <Modal transparent visible={visible} onRequestClose={onClose} animationType="slide">
-      <Pressable style={c.pickBackdrop} onPress={onClose}>
-        <Pressable style={c.pickSheet} onPress={() => {}}>
-          <View style={c.pickHead}>
-            <Text style={c.pickTitle}>选择本机歌曲</Text>
-            <Text style={c.pickSub}>{sel.size ? `已选 ${sel.size} 首` : '上传到云曲库'}</Text>
-          </View>
-          <View style={c.pickSearchWrap}>
-            <Icon name="search" size={13} color={C.text3} />
-            <TextInput
-              style={c.pickSearch}
-              placeholder="搜索歌名 / 歌手"
-              placeholderTextColor={C.text3}
-              value={kw}
-              onChangeText={setKw}
-            />
-          </View>
-          {!tracks ? (
-            <View style={c.pickEmpty}><ActivityIndicator color={C.brand} /></View>
-          ) : tracks.length === 0 ? (
-            <View style={c.pickEmpty}>
-              {IS_WEB ? (
-                <>
-                  <Text style={c.pickEmptyT}>浏览器无法读取本机曲库</Text>
-                  <Text style={c.pickEmptyS}>可直接选择文件上传到云曲库</Text>
-                  <TouchableOpacity style={c.pickFileBtn} onPress={() => { pickAndUpload(undefined, '云曲库'); onClose(); }}>
-                    <Icon name="upload" size={13} color="#04120a" />
-                    <Text style={c.pickFileBtnT}>选择文件</Text>
-                  </TouchableOpacity>
-                </>
-              ) : (
-                <>
-                  <Text style={c.pickEmptyT}>本机曲库还没有歌</Text>
-                  <Text style={c.pickEmptyS}>先到本机曲库扫描设备音乐，再回来上传</Text>
-                </>
-              )}
-            </View>
-          ) : (
-            <>
-              <ScrollView style={{ flexGrow: 0 }}>
-                {filtered.map(t => (
-                  <TouchableOpacity key={t.path} style={c.pickRow} onPress={() => toggle(t.path)} activeOpacity={0.75}>
-                    <View style={[c.chk, sel.has(t.path) && c.chkOn]}>
-                      {sel.has(t.path) ? <Icon name="check" size={12} color="#fff" /> : null}
-                    </View>
-                    <View style={c.pickMid}>
-                      <Text style={c.pickName} numberOfLines={1}>{t.name}</Text>
-                      <Text style={c.pickSinger} numberOfLines={1}>{t.singer || '未知歌手'}</Text>
-                    </View>
-                    <Text style={c.pickSize}>{fmtBytes(t.size)}</Text>
-                  </TouchableOpacity>
-                ))}
-                {!filtered.length ? <View style={c.pickEmpty}><Text style={c.pickEmptyS}>没有匹配的歌曲</Text></View> : null}
-              </ScrollView>
-              <View style={c.pickBar}>
-                <TouchableOpacity style={c.pickAllBtn} onPress={() => setSel(sel.size >= filtered.length ? new Set() : new Set(filtered.map(t => t.path)))}>
-                  <Text style={c.pickAllT}>{sel.size >= filtered.length && filtered.length > 0 ? '全不选' : '全选'}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[c.pickGo, (!sel.size || busy) && c.pickGoOff]}
-                  disabled={!sel.size || busy}
-                  onPress={doUpload}
-                  activeOpacity={0.8}
-                >
-                  {busy ? <ActivityIndicator size="small" color="#04120a" /> : <Icon name="upload" size={13} color="#04120a" />}
-                  <Text style={c.pickGoT}>{busy ? '检查配额…' : `传到云曲库${sel.size ? ` (${sel.size})` : ''}`}</Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          )}
-        </Pressable>
-      </Pressable>
-    </Modal>
-  );
-}
-
 // ── 主屏 ─────────────────────────────────────────────────────
 export function CloudLibraryScreen() {
   const insets = useSafeAreaInsets();
-  const nav = useNavigation() as { goBack: () => void };
-  const { playSong, current } = usePlayer();
+  const nav = useNavigation() as { goBack: () => void; navigate: (s: string, p?: object) => void };
+  const { playSong, current, queue, skipNext, reorderQueue } = usePlayer();
   const { token } = useApp();
   const logged = !!token;
 
@@ -213,7 +95,6 @@ export function CloudLibraryScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selMode, setSelMode] = useState(false);
   const [sel, setSel] = useState<Set<string>>(new Set());
-  const [pickerOpen, setPickerOpen] = useState(false);
   const [delTargets, setDelTargets] = useState<LibSong[] | null>(null);
   const [delBusy, setDelBusy] = useState(false);
   const UploadSheet = useUploadSheet(() => { void load(); });
@@ -257,6 +138,12 @@ export function CloudLibraryScreen() {
     const items = list.map(x => toSongItem(x));
     await playSong(items[i], items);
   };
+  // v3.0 空态「去本机曲库」=纯跳转(③3.0 原则2:不代开多选,尊重用户浏览节奏)
+  const goLocalLib = () => {
+    const libs = localLib.all();
+    if (libs.length) nav.navigate('LocalLibBrowse', { libId: libs[0].id });
+    else nav.navigate('MediaLibs', {});
+  };
   const rowMenu = (s: LibSong) => dialog.menu(`${s.name} · ${s.singer}`, [
     { label: '删除', danger: true, onPress: () => setDelTargets([s]) },
   ]);
@@ -266,6 +153,14 @@ export function CloudLibraryScreen() {
     setDelBusy(true);
     try {
       await cloudLib.remove(delTargets.map(s => s.filename)); // TODO(P1):服务端删除端点合入前恒失败
+      // 定稿v3.0 细则4:删除云端歌→队列联动——正在播放的云端歌被删→先跳下一首(不中断播放),
+      // 再降序移除队列匹配项(reorderQueue 自身保护正在播放曲目;skipNext 不变队列数组,索引稳定)
+      try {
+        const dead = new Set(delTargets.map(s => s.filename));
+        if (current?.hash && dead.has(current.hash)) await skipNext();
+        const idxs = queue.map((t, i) => (t.hash && dead.has(t.hash) ? i : -1)).filter(i => i >= 0).sort((a, b) => b - a);
+        idxs.forEach(i => reorderQueue(i, -2));
+      } catch { /* 队列联动失败不影响删除结果 */ }
       toast(`已删除 ${delTargets.length} 首`);
       setDelTargets(null); exitSel(); void load();
     } catch (e) {
@@ -322,14 +217,14 @@ export function CloudLibraryScreen() {
     }
     const isEmpty = !songs.length;
     if (isEmpty && !selMode) {
+      // spec③3.1 空态(定稿v3.0):无上传按钮,「去本机曲库」纯跳转
       return (
         <View style={c.emptyWrap}>
           <Icon name="cloud" size={30} color={C.text3} />
-          <Text style={c.emptyT1}>云曲库还是空的</Text>
-          <Text style={c.emptyT2}>从本机曲库选歌上传，或直接选择文件——云端自动整理，全设备可播</Text>
-          <TouchableOpacity style={c.emptyBtn} onPress={() => setPickerOpen(true)} disabled={offline} activeOpacity={0.85}>
-            <Icon name="upload" size={12} color="#04120a" />
-            <Text style={c.emptyBtnT}>{offline ? '离线中，暂不可上传' : '上传到云曲库'}</Text>
+          <Text style={c.emptyT1}>云端还是空的</Text>
+          <Text style={c.emptyT2}>去本机曲库，长按或 ⋯ 多选后上传</Text>
+          <TouchableOpacity style={c.emptyBtn} onPress={goLocalLib} activeOpacity={0.85}>
+            <Text style={c.emptyBtnT}>去本机曲库</Text>
           </TouchableOpacity>
         </View>
       );
@@ -387,9 +282,6 @@ export function CloudLibraryScreen() {
                 <Text style={c.headBtnT}>{selMode ? '完成' : '管理'}</Text>
               </TouchableOpacity>
             ) : null}
-            <TouchableOpacity style={c.headBtn} onPress={() => (offline ? toast('离线只读，暂不可上传') : setPickerOpen(true))} hitSlop={6} disabled={offline}>
-              <Icon name="upload" size={15} color={offline ? C.text3 : C.text2} />
-            </TouchableOpacity>
           </View>
         ) : null}
       </View>
@@ -422,7 +314,6 @@ export function CloudLibraryScreen() {
           </TouchableOpacity>
         </View>
       ) : null}
-      <DevicePickSheet visible={pickerOpen} onClose={() => setPickerOpen(false)} />
       {delTargets ? (
         <DeleteConfirm list={delTargets} busy={delBusy} onClose={() => { if (!delBusy) setDelTargets(null); }} onConfirm={() => void doDelete()} />
       ) : null}
@@ -496,30 +387,6 @@ const c = StyleSheet.create({
   delOk: { flex: 1, backgroundColor: C.brand, borderRadius: 999, paddingVertical: 10, alignItems: 'center' },
   delOkLock: { opacity: 0.45 },
   delOkT: { color: '#04120a', fontSize: 13, fontWeight: '800' },
-  // 选歌器
-  pickBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,.55)', justifyContent: 'flex-end' },
-  pickSheet: { width: '100%', maxHeight: '78%', backgroundColor: '#151517', borderTopLeftRadius: 20, borderTopRightRadius: 20, borderWidth: 1, borderColor: C.stroke, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 14 },
-  pickHead: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  pickTitle: { color: C.text, fontSize: 15, fontWeight: '800', flex: 1 },
-  pickSub: { color: C.text3, fontSize: 11 },
-  pickSearchWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.surface2, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 8 },
-  pickSearch: { flex: 1, color: C.text, fontSize: 12.5, paddingVertical: 6 },
-  pickRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
-  pickMid: { flex: 1, minWidth: 0 },
-  pickName: { color: C.text, fontSize: 13 },
-  pickSinger: { color: C.text3, fontSize: 10.5, marginTop: 2 },
-  pickSize: { color: C.text3, fontSize: 10.5 },
-  pickEmpty: { alignItems: 'center', justifyContent: 'center', paddingVertical: 44, gap: 6 },
-  pickEmptyT: { color: C.text, fontSize: 13, fontWeight: '700' },
-  pickEmptyS: { color: C.text3, fontSize: 11.5, textAlign: 'center', maxWidth: 240, lineHeight: 16 },
-  pickFileBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.brand, borderRadius: 999, paddingHorizontal: 18, paddingVertical: 8, marginTop: 8 },
-  pickFileBtnT: { color: '#04120a', fontSize: 12.5, fontWeight: '800' },
-  pickBar: { flexDirection: 'row', alignItems: 'center', gap: 10, borderTopWidth: 1, borderTopColor: C.strokeFaint, paddingTop: 10, marginTop: 6 },
-  pickAllBtn: { borderWidth: 1, borderColor: C.stroke, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 9 },
-  pickAllT: { color: C.text2, fontSize: 12, fontWeight: '600' },
-  pickGo: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: C.brand, borderRadius: 999, paddingVertical: 10 },
-  pickGoOff: { opacity: 0.45 },
-  pickGoT: { color: '#04120a', fontSize: 12.5, fontWeight: '800' },
   // 入口卡
   entryCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.strokeFaint, padding: 14, marginBottom: 14 },
   entryIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(30,215,96,.08)', borderWidth: 1, borderColor: 'rgba(30,215,96,.18)', alignItems: 'center', justifyContent: 'center' },

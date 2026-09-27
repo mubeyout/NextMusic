@@ -164,17 +164,26 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
     } finally { setBusy(null); }
   };
 
-  // 测试连接：只验证，不保存
+  // 测试连接：只验证，不保存(定稿v3.0 细则9:10s 超时→「连接超时，检查地址与防火墙」;成功显示延迟 ms)
   const testConn = async () => {
     if (picked === 'plex' && !a.token) { plexWebAuth(); return; }
     if (!a.base.trim()) { toast('请填写服务器地址'); return; }
     setBusy('test');
+    const t0 = Date.now();
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
-      await providerApi.connect({ ...a, base: a.base.trim() });
+      await Promise.race([
+        providerApi.connect({ ...a, base: a.base.trim() }),
+        new Promise<never>((_, rej) => { timer = setTimeout(() => rej(new Error('连接超时，检查地址与防火墙')), 10000); }),
+      ]);
+      if (timer) clearTimeout(timer);
       setTested(true);
-      toast('连接测试通过');
+      toast(`连接测试通过 · ${Date.now() - t0} ms`);
     } catch (e) {
-      dialog.alert('连接失败', (e as Error).message + '\n\n请检查地址、账号密码，以及服务器是否已在同一网络');
+      if (timer) clearTimeout(timer);
+      const msg = (e as Error).message || '连接失败';
+      if (msg.includes('超时')) dialog.alert('连接失败', msg);
+      else dialog.alert('连接失败', msg + '\n\n请检查地址、账号密码，以及服务器是否已在同一网络');
     } finally { setBusy(null); }
   };
 

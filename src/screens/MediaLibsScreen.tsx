@@ -153,26 +153,6 @@ export function MediaLibsScreen() {
         <Text style={[st.intro, IS_HD && hd.intro]}>接入 Emby、Jellyfin、Navidrome、道理鱼（Subsonic 兼容）或 WebDAV，把私有音乐库变成曲库。</Text>
         {/* 0924 我的曲库入口卡(老板拍板:渐变黑胶大卡含统计行,置顶)——未登录时仍展示(进入后引导登录) */}
         <LibCard stats={libStats} onEnter={() => nav.navigate('MyLibrary', {})} />
-        {/* ④系统库置顶条目「公共曲库」(官方徽标 shield·不可删无⋯菜单;与②本机库行并列同卡;未授权不渲染) */}
-        {pubVisible ? (
-          <PressCard style={[ml.card, IS_HD && ml.cardHD]} hoverStyle={ml.cardHover} tvFocus
-            onPress={() => nav.navigate('PublicLibrary', {})}>
-            <View style={[ml.iconWrap, IS_HD && ml.iconWrapHD]}><Icon name="library" size={IS_HD ? 32 : 26} color={C.brandText} /></View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <View style={ml.titleRow}>
-                <Text style={[ml.title, IS_HD && ml.titleHD]} numberOfLines={1}>{pub.summary?.name || '公共曲库'}</Text>
-                <View style={[ml.typeChip, { flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
-                  <Icon name="shield" size={9} color={C.brandText} />
-                  <Text style={ml.typeChipText}>官方</Text>
-                </View>
-              </View>
-              <Text style={[ml.sub, IS_HD && ml.subHD]} numberOfLines={1}>
-                {pub.summary?.scan?.running ? '管理员更新中 · 完成后自动展示' : pub.summary?.scan && typeof pub.summary.scan.songs === 'number' ? `${pub.summary.scan.songs.toLocaleString()} 首 · 管理员共享` : '管理员共享的公共曲库'}
-              </Text>
-            </View>
-            <Icon name="chevronright" size={IS_HD ? 22 : 18} color={C.text3} />
-          </PressCard>
-        ) : null}
         {/* ②本机曲库行:与第三方媒体库同卡同流程;失效=灰置+denger 点+重新选择(点击整卡进编辑恢复) */}
         {locLibs.length ? (
           <View style={[ml.group, IS_WEB && ml.groupWeb]}>
@@ -215,8 +195,30 @@ export function MediaLibsScreen() {
             })}
           </View>
         ) : null}
-        {/* spec③:云曲库入口卡(登录后渲染)——排序:公共(系统)置顶→本机→云→第三方 */}
+        {/* spec③:云曲库入口卡(登录后渲染);定稿v3.0细则1 四库总序:本机→云→公共→(分隔)→第三方 */}
         {token ? <CloudLibCard onEnter={() => nav.navigate('CloudLibrary', {})} /> : null}
+        {/* ④公共曲库行(官方徽标 shield·不可删无⋯菜单;未授权不渲染)。定稿v3.0细则1 四库总序:本机→云→公共→(分隔)→第三方 */}
+        {pubVisible ? (
+          <PressCard style={[ml.card, IS_HD && ml.cardHD]} hoverStyle={ml.cardHover} tvFocus
+            onPress={() => nav.navigate('PublicLibrary', {})}>
+            <View style={[ml.iconWrap, IS_HD && ml.iconWrapHD]}><Icon name="library" size={IS_HD ? 32 : 26} color={C.brandText} /></View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <View style={ml.titleRow}>
+                <Text style={[ml.title, IS_HD && ml.titleHD]} numberOfLines={1}>{pub.summary?.name || '公共曲库'}</Text>
+                <View style={[ml.typeChip, { flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
+                  <Icon name="shield" size={9} color={C.brandText} />
+                  <Text style={ml.typeChipText}>官方</Text>
+                </View>
+              </View>
+              <Text style={[ml.sub, IS_HD && ml.subHD]} numberOfLines={1}>
+                {pub.summary?.scan?.running ? '管理员更新中 · 完成后自动展示' : pub.summary?.scan && typeof pub.summary.scan.songs === 'number' ? `${pub.summary.scan.songs.toLocaleString()} 首 · 管理员共享` : '管理员共享的公共曲库'}
+              </Text>
+            </View>
+            <Icon name="chevronright" size={IS_HD ? 22 : 18} color={C.text3} />
+          </PressCard>
+        ) : null}
+        {/* 定稿细则1:公共曲库与第三方库们分组分隔 */}
+        {accts.length ? <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: C.strokeFaint, marginTop: 18 }} /> : null}
         {accts.length === 0 ? (
           <EmptyState icon="server" title="还没有添加媒体库" sub="点右上角 ＋ 接入 Plex / 飞牛 / 群晖 / Emby / Navidrome / WebDAV / 听风 等 11 种平台" />
         ) : (

@@ -13,6 +13,10 @@ import { SongRow } from '../components/SongRow';
 import { dialog, toast } from '../components/Dialog';
 import { usePlayer } from '../state/PlayerProvider';
 import { DiscCard } from './MyLibraryScreen';
+import { precheckUpload, fmtBytes } from '../services/cloudLibrary';
+import { enqueueUpload } from '../state/UploadQueue';
+import { useUploadSheet } from './UploadSheet';
+import { IS_HD } from '../services/appversion';
 import {
   localLib, localArtists, localAlbums, localSingerTracks, localAlbumTracks,
   localFolderView, checkLocalLib, rescanLocalLibrary,
@@ -35,7 +39,7 @@ function FilenameTag() {
 export function LocalLibraryScreen({ route }: { route: { params: { libId: string } } }) {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string, p?: object) => void };
-  const { playSong, current } = usePlayer();
+  const { playSong, current, appendQueue, playNextUp } = usePlayer();
   const [cfg, setCfg] = useState<LocalLibConfig | null>(() => localLib.get(route.params.libId) || null);
   const [avail, setAvail] = useState<boolean | null>(null); // null=检测中
   const [view, setView] = useState<LibView>('artists');
@@ -85,6 +89,16 @@ export function LocalLibraryScreen({ route }: { route: { params: { libId: string
     dialog.menu(cfg?.name || '本机曲库', [
       { label: '重新扫描', onPress: doRescan },
       { label: '编辑配置', onPress: () => nav.navigate('LocalLibEdit', { libId: route.params.libId }) },
+      // ⑥6.3 进入选择:列表顶栏⋯「多选」(全选作用域=当前视图可见项;HD 不显示——细则6 上传入口豁免)
+      ...(!IS_HD && cfg && cfg.trackCount > 0 ? [{
+        label: '多选',
+        onPress: () => {
+          const fv = view === 'folders' ? localFolderView(cfg.id, dirPath) : null;
+          const scope = fv ? [...fv.songs, ...fv.unknown]
+            : localAlbums(cfg.id).flatMap(a => localAlbumTracks(cfg.id, a.key));
+          enterSel(scope);
+        },
+      }] : []),
       { label: '删除库', danger: true, onPress: () => dialog.confirm('删除本机曲库', `确定删除「${cfg?.name}」吗？仅移除扫描记录，不删除设备上的音乐文件。`, () => { localLib.remove(route.params.libId); nav.goBack(); }) },
     ]);
   };
@@ -95,6 +109,80 @@ export function LocalLibraryScreen({ route }: { route: { params: { libId: string
     if (items.length) playSong(items[Math.min(idx, items.length - 1)], items);
     else toast('目录不可用，请重新选择后重试');
   };
+
+  // ── v3.0 定稿③3.4/⑥:上传唯一源=本机曲库——歌曲行⋯菜单「上传到云曲库」+ 统一选择模式 ──
+  const [selMode, setSelMode] = useState(false);
+  const [sel, setSel] = useState<Set<string>>(new Set());
+  const [selList, setSelList] = useState<LocalTrack[]>([]); // 选择作用域=进入选择时可见列表(⑥6.3)
+  const UploadSheet = useUploadSheet();
+
+  const exitSel = useCallback(() => { setSelMode(false); setSel(new Set()); }, []);
+  const toggleSel = (id: string) => setSel(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const enterSel = (list: LocalTrack[], ids: string[] = []) => { setSelList(list); setSelMode(true); setSel(new Set(ids)); };
+  const selTracks = () => selList.filter(t => sel.has(t.id));
+
+  // 上传(配额预检+hash 去重语义沿用 spec③ 链路;进行态=UploadQueue sheet 承接)
+  const uploadTracks = async (list: LocalTrack[]) => {
+    if (!list.length) return;
+    try {
+      const pc = await precheckUpload(list.map(t => ({ name: t.name, size: t.size || 0 })));
+      if (pc.fit <= 0) { toast(`云曲库空间不足：本次约需 ${fmtBytes(pc.est)}，剩余 ${fmtBytes(pc.remain)}`); return; }
+      const go = (l: LocalTrack[]) => {
+        enqueueUpload(l.map(t => ({ uri: t.uri, name: t.relPath.split('/').pop() || t.name || 'audio' })), undefined, '云曲库');
+        toast(`已加入上传队列（${l.length} 首）`);
+      };
+      if (pc.fit < list.length) {
+        dialog.confirm('配额不足', `剩余空间 ${fmtBytes(pc.remain)}，只能放下前 ${pc.fit} 首（已选 ${list.length} 首）。按可容纳的部分上传？`, () => go(list.slice(0, pc.fit)));
+        return;
+      }
+      go(list);
+    } catch { toast('上传前检查失败，请重试'); }
+  };
+
+  // ⑥6.4 单曲⋯菜单(与批量动作一一对应;上传/多选 HD 不显示——细则6:无本地文件概念)
+  const menuOf = (t: LocalTrack, list: LocalTrack[], idx: number) => {
+    dialog.menu(`${t.name} · ${t.singer || UNKNOWN_ARTIST}`, [
+      { label: '播放', onPress: () => play(list, idx) },
+      { label: '下一首播放', onPress: () => { void toPlayable([t], route.params.libId).then(it => { if (it[0]) playNextUp(it[0]); }); } },
+      { label: '加入队列', onPress: () => { void toPlayable([t], route.params.libId).then(it => { if (it.length) appendQueue(it); }); } },
+      ...(IS_HD ? [] : ([
+        { label: '上传到云曲库', onPress: () => void uploadTracks([t]) },
+        { label: '多选', onPress: () => enterSel(list, [t.id]) },
+      ] as { label: string; onPress: () => void }[])),
+    ]);
+  };
+
+  // ⑥6.2 多选动作条(播放/下一首/加入队列/上传到云曲库——收藏到歌单待 CollectSheet 批量面板,6.2#4)
+  const selectBar = selMode && !IS_HD ? (
+    <View style={[st.selBar, { paddingBottom: insets.bottom + 8 }]}>
+      <View style={st.selRow1}>
+        <Text style={st.selCount}>已选 {sel.size} 首</Text>
+        <TouchableOpacity hitSlop={6} onPress={() => setSel(sel.size >= selList.length && selList.length > 0 ? new Set() : new Set(selList.map(t => t.id)))}>
+          <Text style={st.selBtnT}>{sel.size >= selList.length && selList.length > 0 ? '全不选' : '全选'}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity hitSlop={6} onPress={exitSel}><Text style={st.selBtnT}>取消</Text></TouchableOpacity>
+      </View>
+      <View style={st.selRow2}>
+        <TouchableOpacity style={st.selGhost} onPress={() => { const list = selTracks(); exitSel(); void play(list, 0); }}>
+          <Text style={st.selGhostT}>播放</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={st.selGhost} onPress={() => { const list = selTracks(); exitSel(); void toPlayable(list, route.params.libId).then(items => { for (let i = items.length - 1; i >= 0; i--) playNextUp(items[i]); }); }}>
+          <Text style={st.selGhostT}>下一首</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={st.selGhost} onPress={() => { const list = selTracks(); exitSel(); void toPlayable(list, route.params.libId).then(items => { if (items.length) appendQueue(items); }); }}>
+          <Text style={st.selGhostT}>加入队列</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[st.selPri, !sel.size && st.selPriOff]}
+          disabled={!sel.size}
+          onPress={() => { const list = selTracks(); exitSel(); void uploadTracks(list); }}
+        >
+          <Text style={st.selPriT}>上传到云曲库{sel.size ? ` (${sel.size})` : ''}</Text>
+        </TouchableOpacity>
+      </View>
+      <Text style={st.selSub}>预计 +{fmtBytes(selTracks().reduce((n, t) => n + (t.size || 0), 0))} · hash 去重</Text>
+    </View>
+  ) : null;
 
   if (!cfg) return (
     <View style={st.screen}>
@@ -129,7 +217,7 @@ export function LocalLibraryScreen({ route }: { route: { params: { libId: string
     return (
       <View style={st.screen}>
         <View style={[st.header, { paddingTop: insets.top + 10 }]}>
-          <TouchableOpacity onPress={() => setDrill(null)} hitSlop={6} style={{ width: 26 }}>
+          <TouchableOpacity onPress={() => { exitSel(); setDrill(null); }} hitSlop={6} style={{ width: 26 }}>
             <Icon name="back" size={20} />
           </TouchableOpacity>
           <View style={{ flex: 1, minWidth: 0 }}>
@@ -147,12 +235,19 @@ export function LocalLibraryScreen({ route }: { route: { params: { libId: string
               key={t.id}
               song={{ name: t.name, singer: t.singer || UNKNOWN_ARTIST, source: 'device', songmid: t.uri || t.id, albumId: '', interval: t.durationSec ? `${Math.floor(t.durationSec / 60)}:${Math.round(t.durationSec % 60) < 10 ? '0' : ''}${Math.round(t.durationSec % 60)}` : '', albumName: t.album || undefined }}
               playing={current?.hash === t.id}
-              onPress={() => play(tracks, i)}
-              extra={t.tagSource === 'filename' ? <FilenameTag /> : undefined}
+              onPress={() => (selMode ? toggleSel(t.id) : play(tracks, i))}
+              onLongPress={selMode ? undefined : () => menuOf(t, tracks, i)}
+              onMore={selMode ? undefined : () => menuOf(t, tracks, i)}
+              leading={selMode ? (
+                <View style={[st.chk, sel.has(t.id) && st.chkOn]}>{sel.has(t.id) ? <Icon name="check" size={12} color="#fff" /> : null}</View>
+              ) : undefined}
+              extra={!selMode && t.tagSource === 'filename' ? <FilenameTag /> : undefined}
             />
           ))}
           {!tracks.length ? <Text style={st.emptyInline}>没有歌曲</Text> : null}
         </ScrollView>
+        {selectBar}
+        <UploadSheet.View />
       </View>
     );
   }
@@ -182,7 +277,7 @@ export function LocalLibraryScreen({ route }: { route: { params: { libId: string
       {/* 三视图胶囊 */}
       <View style={st.tabs}>
         {VIEWS.map(v => (
-          <TouchableOpacity key={v.key} style={[st.tab, view === v.key && st.tabOn]} onPress={() => setView(v.key)} activeOpacity={0.75}>
+          <TouchableOpacity key={v.key} style={[st.tab, view === v.key && st.tabOn]} onPress={() => { exitSel(); setView(v.key); }} activeOpacity={0.75}>
             <Text style={[st.tabText, view === v.key && st.tabTextOn]}>{v.label}</Text>
           </TouchableOpacity>
         ))}
@@ -212,7 +307,7 @@ export function LocalLibraryScreen({ route }: { route: { params: { libId: string
                 count={a.songCount}
                 sub={`${a.songCount} 首`}
                 unknown={a.name === UNKNOWN_ARTIST}
-                onPress={() => setDrill({ kind: 'artist', key: a.key, name: a.name })}
+                onPress={() => { exitSel(); setDrill({ kind: 'artist', key: a.key, name: a.name }); }}
               />
             ))}
           </View>
@@ -228,7 +323,7 @@ export function LocalLibraryScreen({ route }: { route: { params: { libId: string
                 count={a.songCount}
                 sub={a.byDir ? `${a.artist} · 文件夹分组` : a.artist}
                 unknown={!a.byDir && a.name === '本机音乐'}
-                onPress={() => setDrill({ kind: 'album', key: a.key, name: a.name })}
+                onPress={() => { exitSel(); setDrill({ kind: 'album', key: a.key, name: a.name }); }}
               />
             ))}
           </View>
@@ -238,19 +333,27 @@ export function LocalLibraryScreen({ route }: { route: { params: { libId: string
         <FolderPane
           libId={cfg.id}
           dirPath={dirPath}
-          onDir={setDirPath}
+          onDir={(nd) => { exitSel(); setDirPath(nd); }}
           onPlay={play}
           currentHash={current?.hash}
+          selMode={selMode}
+          sel={sel}
+          onToggle={toggleSel}
+          onMenu={menuOf}
         />
       )}
+      {selectBar}
+      <UploadSheet.View />
     </View>
   );
 }
 
 /** 文件夹视角:面包屑 + 子目录行 + 未分类分组 + 歌曲行 */
-function FolderPane({ libId, dirPath, onDir, onPlay, currentHash }: {
+function FolderPane({ libId, dirPath, onDir, onPlay, currentHash, selMode, sel, onToggle, onMenu }: {
   libId: string; dirPath: string; onDir: (p: string) => void;
   onPlay: (tracks: LocalTrack[], idx: number) => void; currentHash?: string;
+  selMode: boolean; sel: Set<string>; onToggle: (id: string) => void;
+  onMenu: (t: LocalTrack, list: LocalTrack[], idx: number) => void;
 }) {
   const fv = localFolderView(libId, dirPath);
   const segs = dirPath ? dirPath.split('/') : [];
@@ -307,8 +410,13 @@ function FolderPane({ libId, dirPath, onDir, onPlay, currentHash }: {
           key={t.id}
           song={{ name: t.name, singer: t.singer || UNKNOWN_ARTIST, source: 'device', songmid: t.uri || t.id, albumId: '', interval: t.durationSec ? `${Math.floor(t.durationSec / 60)}:${Math.round(t.durationSec % 60) < 10 ? '0' : ''}${Math.round(t.durationSec % 60)}` : '', albumName: t.album || undefined }}
           playing={currentHash === t.id}
-          onPress={() => onPlay(allSongs, i)}
-          extra={t.tagSource === 'filename' ? <FilenameTag /> : undefined}
+          onPress={() => (selMode ? onToggle(t.id) : onPlay(allSongs, i))}
+          onLongPress={selMode ? undefined : () => onMenu(t, allSongs, i)}
+          onMore={selMode ? undefined : () => onMenu(t, allSongs, i)}
+          leading={selMode ? (
+            <View style={[st.chk, sel.has(t.id) && st.chkOn]}>{sel.has(t.id) ? <Icon name="check" size={12} color="#fff" /> : null}</View>
+          ) : undefined}
+          extra={!selMode && t.tagSource === 'filename' ? <FilenameTag /> : undefined}
         />
       ))}
       {!fv.dirs.length && !allSongs.length ? <Text style={st.emptyInline}>空目录</Text> : null}
@@ -358,6 +466,20 @@ const st = StyleSheet.create({
   dirName: { flex: 1, color: C.text, fontSize: 13.5, fontWeight: '500', minWidth: 0 },
   dirCount: { color: C.text3, fontSize: 11 },
   fnTag: { color: C.text3, fontSize: 11, backgroundColor: C.surface2, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2, overflow: 'hidden' },
+  // 多选动作条(⑥6.2)
+  selBar: { backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.strokeFaint, paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
+  selRow1: { flexDirection: 'row', alignItems: 'center', gap: 18 },
+  selCount: { color: C.text2, fontSize: 12, fontWeight: '600', marginRight: 'auto' },
+  selBtnT: { color: C.brandText, fontSize: 12, fontWeight: '600' },
+  selRow2: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  selGhost: { borderWidth: 1, borderColor: C.stroke, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
+  selGhostT: { color: C.text2, fontSize: 12, fontWeight: '600' },
+  selPri: { flex: 1, backgroundColor: C.brand, borderRadius: 999, paddingVertical: 9, alignItems: 'center', justifyContent: 'center' },
+  selPriOff: { opacity: 0.45 },
+  selPriT: { color: C.onBrand, fontSize: 12.5, fontWeight: '800' },
+  selSub: { color: C.text3, fontSize: 10.5 },
+  chk: { width: 20, height: 20, borderRadius: 999, borderWidth: 1.5, borderColor: C.strokeStrong, alignItems: 'center', justifyContent: 'center' },
+  chkOn: { backgroundColor: C.brand, borderColor: C.brand },
 });
 
 // navigation 注册用包装(native-stack 组件类型兼容)

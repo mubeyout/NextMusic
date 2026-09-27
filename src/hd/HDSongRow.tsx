@@ -15,7 +15,8 @@ import type { CtxMenuItem } from './hdctxmenu';
 import { setHoverMenu } from './hdctxmenu';
 import { hdActions } from './HDActions';
 import { registerKbRow } from './hdkeyboard';
-import { presenceOf, usePresenceVersion } from '../services/cloudPresence'; // spec③:角标三态全端统一
+import { locationsOf, usePresenceVersion } from '../services/cloudPresence'; // spec③:角标三态全端统一;v3.0 细则2 locations 契约
+import { IS_HD, isCarUi } from '../services/appversion'; // 细则6:HD 角标 16px/车机不显角标
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -34,7 +35,8 @@ export function HDSongRow({ song, index, onPress, onLongPress, onAction, playing
   const { appendQueue } = usePlayer(); // D1 A1:＋加入队列
   // spec③:行尾角标三态(全端统一,与 SongRow 同源判定)
   usePresenceVersion();
-  const pv = presenceOf(song);
+  const loc = locationsOf(song);
+  const IS_CAR_UI = isCarUi() && !IS_HD; // 车机(phone 包内嵌 HD 壳)不显角标——细则6
   // A1 hover 态(100ms 延迟防扫过闪烁;transition 由样式透明度承担)
   const [hov, setHov] = useState(false);
   const hovTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -120,12 +122,13 @@ export function HDSongRow({ song, index, onPress, onLongPress, onAction, playing
         </Text>
         <Text style={st.sub} numberOfLines={1}>{song.singer}{showAlbum && song.albumName ? ` · ${song.albumName}` : ''}</Text>
       </View>
-      <View style={st.srcTag}><Text style={st.srcTagText}>{song.source}</Text></View>
-      {pv ? (
+      <View style={st.srcTag}><Text style={st.srcTagText}>{(song as SongItem & { _lib?: string })._lib === 'public' ? '公共' : song.source}</Text></View>
+      {/* 细则6:HD 显 16px;车机(phone 包 carModeUi 内嵌 HD 壳)不显角标;公共库歌不占角标轴(细则2) */}
+      {!IS_CAR_UI && loc && (loc.local || loc.cloud) ? (
         <Icon
-          name={pv === 'local' ? 'devices' : pv === 'cloud' ? 'cloud' : 'cloud-check'}
-          size={14}
-          color={pv === 'local' ? C.text3 : pv === 'cloud' ? C.brand : C.text2}
+          name={!loc.cloud ? 'devices' : !loc.local ? 'cloud' : 'cloud-check'}
+          size={16}
+          color={!loc.cloud ? C.text3 : !loc.local ? C.brand : C.text2}
         />
       ) : null}
       {/* v3.20(老板:hover 选项改挤出模式):hoverZone 在流内,hover 宽度 34→96 挤压标题列(不再 absolute 覆盖);♡已收藏常驻(→64) */}
