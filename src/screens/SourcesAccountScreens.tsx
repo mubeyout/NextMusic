@@ -394,8 +394,8 @@ const st = StyleSheet.create({
   knob: { width: 18, height: 18, borderRadius: 9, backgroundColor: '#8F969E' },
   knobOn: { backgroundColor: '#FFFFFF', marginLeft: 18 },
   // 按钮组(ghost 双钮并排)
-  btnRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  ghostBtn: { flex: 1, height: 40, borderRadius: 12, borderWidth: 1, borderColor: C.strokeStrong, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  btnRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 12 }, // lx206:窄屏自动换行(390px 下三按钮各~103px 放不下图标+文字)
+  ghostBtn: { flex: 1, minWidth: 142, height: 40, borderRadius: 12, borderWidth: 1, borderColor: C.strokeStrong, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }, // lx206:minWidth 保证图标+文字完整,放不下就换行(HD 宽屏单行不受影响)
   ghostText: { color: C.text, fontSize: 13, fontWeight: '500' },
   // 播放权限
   permRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 },
