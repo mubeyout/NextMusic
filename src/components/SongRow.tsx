@@ -6,6 +6,7 @@ import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import type { SongItem } from '../services/server';
 import { registerKbRow } from '../hd/hdkeyboard';
+import { presenceOf, usePresenceVersion } from '../services/cloudPresence'; // spec③:角标三态(队列/搜索/歌单详情等列表行尾)
 
 // 来源标签（老板 09-18：来源显示）——tf/provider/本地/在线五源统一短名；未知 source 原样展示
 const SOURCE_LABELS: Record<string, string> = {
@@ -20,6 +21,10 @@ export const sourceLabel = (s?: string) => (s ? SOURCE_LABELS[s] ?? s : '');
 // extra: 右侧操作位（下载按钮等）；onMore: ⋯ 菜单回调(不传且无 extra 则不渲染 ⋯——lx163 老板:死图标等于欺骗)
 export function SongRow({ song, onPress, playing, extra, onMore, onLongPress, leading }: { song: SongItem; onPress?: () => void; playing?: boolean; extra?: React.ReactNode; onMore?: (pos?: { x: number; y: number }) => void; onLongPress?: () => void; leading?: React.ReactNode }) { // lx167d:onLongPress(TV 长按管理);v3.33(老板:队列操作箱优化):onMore 带位置+leading 左槽(批量勾选)
   const [focus, setFocus] = useState(false); // lx145:TV D-pad 光标(队列页无选中态)
+  // spec③:行尾角标三态(14px)——仅本机 devices/text3 · 仅云端 cloud/brand · 双在 cloud-check/text2;
+  // 判定=hash 相同或 标题+歌手+时长±2s(cloudPresence);索引未加载时不标,防误报
+  usePresenceVersion();
+  const pv = presenceOf(song);
   const moreRef = useRef<unknown>(null); // v3.33:⋯ 按钮锚点(web 定位菜单)
   const kbRef = useRef<unknown>(null);
   // D3 A2:键盘导航注册(队列/媒体库浏览行;web only,native 注册表无人读)
@@ -56,6 +61,13 @@ export function SongRow({ song, onPress, playing, extra, onMore, onLongPress, le
         </Text>
       </View>
       <Text style={st.dur}>{playing ? '正在播放' : song.interval}</Text>
+      {pv ? (
+        <Icon
+          name={pv === 'local' ? 'devices' : pv === 'cloud' ? 'cloud' : 'cloud-check'}
+          size={14}
+          color={pv === 'local' ? C.text3 : pv === 'cloud' ? C.brand : C.text2}
+        />
+      ) : null}
       {extra != null ? (
         <View style={st.more}>{extra}</View>
       ) : onMore ? (

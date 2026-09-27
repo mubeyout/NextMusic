@@ -11,6 +11,8 @@ import { Platform } from 'react-native';
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
 import { LibCard } from './MyLibraryScreen'; // 我的曲库入口卡(0924)
+import { CloudLibCard } from './CloudLibraryScreen'; // spec③:云曲库入口卡(登录后渲染)
+import { useApp } from '../state/AppState';
 import { myLib, type LibStats } from '../services/myLibrary';
 import { pubCheck, usePubEntry } from '../services/publicLibrary'; // ④公共曲库系统库置顶条目
 import { ActionSheet } from '../components/ActionSheet';
@@ -71,6 +73,7 @@ function coverGrad(name?: string) {
 export function MediaLibsScreen() {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string, p?: object) => void };
+  const { token } = useApp(); // spec③:云曲库入口登录后才渲染(connected+token 同 SourcesAccountScreens 登录态口径)
   const [accts, setAccts] = useState<ProviderAcct[]>([]);
   const [hoverId, setHoverId] = useState<string | null>(null); // web hover 门控（原生无 hover 常驻）
   const [testId, setTestId] = useState<string | null>(null);
@@ -212,6 +215,8 @@ export function MediaLibsScreen() {
             })}
           </View>
         ) : null}
+        {/* spec③:云曲库入口卡(登录后渲染)——排序:公共(系统)置顶→本机→云→第三方 */}
+        {token ? <CloudLibCard onEnter={() => nav.navigate('CloudLibrary', {})} /> : null}
         {accts.length === 0 ? (
           <EmptyState icon="server" title="还没有添加媒体库" sub="点右上角 ＋ 接入 Plex / 飞牛 / 群晖 / Emby / Navidrome / WebDAV / 听风 等 11 种平台" />
         ) : (

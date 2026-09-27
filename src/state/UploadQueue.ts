@@ -112,6 +112,12 @@ async function runBatch(batch: UpBatch) {
   const failed = batch.items.filter(i => i.st === 'fail').length;
   batch.summary = { uploaded, skipped, failed };
   batch.doneAt = Date.now();
+  // spec③:上传历史落盘(云曲库页「我上传的」分组原料)——动态导入避免与 cloudLibrary 静态环
+  if (uploaded > 0) {
+    void import('../services/cloudLibrary').then(m => m.recordUploaded(
+      batch.items.filter(i => i.st === 'done').map(i => ({ name: i.name, size: 0 })),
+    )).catch(() => {});
+  }
   setStore({ batch: { ...batch, items: [...batch.items] }, finishedOpen: true });
 }
 
