@@ -12,6 +12,8 @@ import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { IS_HD } from '../services/appversion';
 import { PageHeader } from '../components/PageChrome';
+import { toast } from '../components/Dialog';
+import { LibBanner, LibActions, HomeSection, HomeRail, RailCard, ChipsRow } from '../components/LibraryHome'; // ⑤/⑦ 全库首页化骨架
 import { usePlayer } from '../state/PlayerProvider';
 import { coverUrl, setActiveLib, type LibSong, type LibAlbum, type LibArtist } from '../services/myLibrary';
 import { pubLib, pubCheck, pubToSongItem, pubSourceName, usePubEntry } from '../services/publicLibrary';
@@ -123,8 +125,84 @@ export function PublicLibraryScreen() {
     if (tab === 'songs') { setSongSize(PAGE); loadSongs(PAGE); }
   };
 
+  // ── ⑤/⑦ 全库首页化:库头横幅+快捷动作+最近添加横滑+分类入口(渐进色裹,列表逻辑不动) ──
+  const [randBusy, setRandBusy] = useState(false);
+  const [srcFilter, setSrcFilter] = useState('all'); // ⑤-A3 筛选 chips:多源时按源筛选(全部/源名)
+  const WEEK = 7 * 24 * 3600 * 1000;
+  const isNewSong = (s: LibSong) => !!s.mtime && Date.now() - s.mtime < WEEK; // ⑤-B6:7 天内 NEW 标
+
+  const playRandom = () => {
+    if (randBusy) return;
+    setRandBusy(true);
+    pubLib.songs('random', 50)
+      .then(r => {
+        const items = r.songs.map(pubToSongItem);
+        if (items.length) void playSong(items[Math.floor(Math.random() * items.length)], items);
+        else toast('库内还没有歌曲');
+      })
+      .catch(() => toast('随机播放失败，稍后再试'))
+      .finally(() => setRandBusy(false));
+  };
+
   const enterAlbum = (a: LibAlbum) => nav.navigate('PublicLibAlbum', { id: a.id, name: a.name, cover: a.coverFile });
   const enterArtist = (a: LibArtist) => nav.navigate('PublicLibArtist', { id: a.id, name: a.name });
+
+  // ⑤/⑦ 首页化内容分区:最近添加横滑(albums newest 复用)+分类入口四宫格(专辑/歌手/歌曲/随机播放);
+  // 热门 Top10 未做——服务端播放计数端点未暴露(pubLib 仅 recent/random,⑦.3-v2 不硬造)
+  const recentAlbums = (albums || []).slice(0, IS_HD ? 12 : 10);
+  const homeStats = scan && typeof scan.songs === 'number'
+    ? `${scan.songs.toLocaleString()} 首 · ${scan.albums ?? 0} 专辑 · ${scan.artists ?? 0} 歌手${Object.keys(summary?.sources || {}).length > 1 ? ` · ${Object.keys(summary?.sources || {}).length} 位共享` : ''}`
+    : '管理员共享曲库';
+  const homeBlock = entry.authorized ? (
+    <View style={{ gap: 12, marginBottom: 4 }}>
+      <View style={[d.homeWrap, IS_HD && d.homeWrapHD]}>
+        <LibBanner kind="public" name={summary?.name || '公共曲库'} stats={homeStats} />
+        <LibActions actions={[
+          { icon: 'shuffle', label: '随机播放', onPress: playRandom, primary: true, disabled: randBusy || !!scan?.running },
+          { icon: 'refresh', label: '刷新', onPress: doRefresh, disabled: !!scan?.running },
+        ]} />
+      </View>
+      {!scan?.running && !err ? (
+        <View style={[d.homeWrap, IS_HD && d.homeWrapHD, { marginBottom: 0 }]}>
+          {recentAlbums.length ? (
+            <HomeSection title="最近添加" actionLabel="全部专辑" onAction={() => setTab('albums')}>
+              <HomeRail>
+                {recentAlbums.map(a => (
+                  <RailCard key={a.id} name={a.name} sub={`${a.songCount} 首 · ${a.artist}`}
+                    cover={a.coverFile ? coverUrl(a.coverFile, 'public') : null}
+                    onPress={() => enterAlbum(a)} />
+                ))}
+              </HomeRail>
+            </HomeSection>
+          ) : null}
+          <HomeSection title="分类浏览">
+            <View style={[d.homeGrid, IS_HD && d.homeGridHD]}>
+              {([
+                { key: 'albums', label: `专辑${albumsTotal ? ` · ${albumsTotal}` : ''}`, icon: 'music' },
+                { key: 'artists', label: `歌手${artistsTotal ? ` · ${artistsTotal}` : ''}`, icon: 'user' },
+                { key: 'songs', label: '歌曲', icon: 'wave' },
+                { key: 'random', label: '随机播放', icon: 'shuffle' },
+              ] as { key: string; label: string; icon: 'music' | 'user' | 'wave' | 'shuffle' }[]).map(g => (
+                IS_HD ? (
+                  <HDTouch key={g.key} style={d.homeCell} focusStyle={d.tabFocus}
+                    onPress={() => g.key === 'random' ? playRandom() : setTab(g.key as Tab)}>
+                    <Icon name={g.icon} size={18} color={C.brandText} />
+                    <Text style={d.homeCellT}>{g.label}</Text>
+                  </HDTouch>
+                ) : (
+                  <TouchableOpacity key={g.key} style={d.homeCell} activeOpacity={0.75}
+                    onPress={() => g.key === 'random' ? playRandom() : setTab(g.key as Tab)}>
+                    <Icon name={g.icon} size={16} color={C.brandText} />
+                    <Text style={d.homeCellT}>{g.label}</Text>
+                  </TouchableOpacity>
+                )
+              ))}
+            </View>
+          </HomeSection>
+        </View>
+      ) : null}
+    </View>
+  ) : null;
 
   const body = () => {
     // 404 铁律联动:授权被撤/库停用 → 入口已移除,本页退场
@@ -192,13 +270,21 @@ export function PublicLibraryScreen() {
         </ScrollView>
       );
     }
-    // songs
+    // songs(⑤:源筛选 chips+NEW 标;播放上下文=筛选后可见列表)
     if (songs === null) return <SkelWall />;
+    const srcChips = [
+      { key: 'all', label: '全部' },
+      ...Object.entries(summary?.sources || {}).map(([k, v]) => ({ key: k, label: v || k })),
+    ];
+    const shownSongs = srcFilter === 'all' ? songs : songs.filter(s => (s as LibSong & { source?: string }).source === srcFilter);
     return (
       <ScrollView contentContainerStyle={{ paddingBottom: 140 + insets.bottom }}>
-        {songs.map((s, i) => (
-          <SongRow key={s.id} song={s} idx={i + 1} lib="public" sourceName={pubSourceName(s, summary)}
-            onPress={() => play(songs, i)} />
+        <View style={{ paddingHorizontal: 16, marginBottom: 4 }}>
+          <ChipsRow chips={srcChips} active={srcFilter} onChange={setSrcFilter} />
+        </View>
+        {shownSongs.map((s, i) => (
+          <SongRow key={s.id} song={s} idx={i + 1} lib="public" sourceName={pubSourceName(s, summary)} isNew={isNewSong(s)}
+            onPress={() => play(shownSongs, i)} />
         ))}
         {songs.length >= songSize && songSize < 200 ? (
           <TouchableOpacity style={d.moreBtn} activeOpacity={0.8}
@@ -206,7 +292,7 @@ export function PublicLibraryScreen() {
             {songsBusy ? <ActivityIndicator size="small" color="#04120a" /> : <Text style={d.moreT}>加载更多</Text>}
           </TouchableOpacity>
         ) : (
-          <Text style={d.endT}>{songs.length ? `${songs.length} 首` : '库内还没有歌曲'}</Text>
+          <Text style={d.endT}>{shownSongs.length ? `${shownSongs.length} 首` : '没有匹配的歌曲'}</Text>
         )}
       </ScrollView>
     );
@@ -224,7 +310,7 @@ export function PublicLibraryScreen() {
             <Icon name="back" size={17} color={C.text2} />
           </HDTouch>
           <Text style={d.hdTitle}>公共曲库</Text>
-          <Text style={d.hdStats} numberOfLines={1}>{statsLine}</Text>
+          <View style={{ flex: 1 }} />
           <HDTouch style={d.hdBack} onPress={doRefresh} focusStyle={d.focusRing}>
             <Icon name="refresh" size={16} color={C.text2} />
           </HDTouch>
@@ -233,12 +319,13 @@ export function PublicLibraryScreen() {
         <View style={d.head}>
           <TouchableOpacity style={d.headBtn} onPress={() => nav.goBack()}><Icon name="back" size={16} color={C.text2} /></TouchableOpacity>
           <Text style={d.headTitle}>公共曲库</Text>
-          <Text style={d.headStats} numberOfLines={1}>{statsLine}</Text>
+          <View style={{ flex: 1 }} />
           <TouchableOpacity style={d.headBtn} onPress={doRefresh}>
             <Icon name="refresh" size={15} color={C.text2} />
           </TouchableOpacity>
         </View>
       )}
+      {homeBlock}
       {davWide ? (
         /* 桌面双区:左竖 tab+右内容(与我的曲库同构) */
         <View style={d.wideCols}>
@@ -430,6 +517,13 @@ export function PublicLibArtistRoute(props: Record<string, unknown>) {
 // ── 样式(与我的曲库同族 token) ──
 const d = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
+  // ⑤/⑦ 首页化骨架容器与四宫格
+  homeWrap: { marginHorizontal: 16, gap: 12 },
+  homeWrapHD: { marginHorizontal: 30 },
+  homeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  homeGridHD: { gap: 10 },
+  homeCell: { width: '48.6%', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.surface2, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11 },
+  homeCellT: { color: C.text, fontSize: 12.5, fontWeight: '600' },
   head: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 16 },
   headBtn: { width: 32, height: 32, borderRadius: 10, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   headTitle: { color: C.text, fontSize: 17, fontWeight: '800' },

@@ -22,9 +22,11 @@ import { useUploadSheet } from './UploadSheet';
 import { localLib } from '../services/localLibrary';
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
+import { LibraryHome, HomeSection } from '../components/LibraryHome'; // ⑤/⑦ 全库首页化骨架
 
 const WARN_YELLOW = '#E8B34B'; // spec③ 用量条 ≥80% 警示黄
 const DANGER_RED = '#E8618C';  // 100% 红 / 强警示(全站错误品红同源)
+const WEEK_MS = 7 * 24 * 3600 * 1000; // ⑤-B6 NEW 标窗口(7 天内入库)
 
 // ── 分级删除确认(LEO 裁决①) ─────────────────────────────────
 // 双在=轻确认;含仅云端副本=强警示红字+3s 倒计时二次点击;批量按唯一副本数升级文案
@@ -130,6 +132,11 @@ export function CloudLibraryScreen() {
   }, [songs]);
 
   const keyOf = (s: LibSong) => s.id || s.filename;
+  // ⑤/⑦ 首页化:筛选视图(已同步/仅云端)+最近添加+双在分区数据(cloudPresence 判定)
+  const [pFilter, setPFilter] = useState<'all' | 'both' | 'cloudonly'>('all');
+  const recentCloud = useMemo(() => songs ? [...songs].sort((a, b) => (b.mtime || 0) - (a.mtime || 0)).slice(0, 4) : [], [songs]);
+  const bothCount = useMemo(() => songs ? songs.filter(s => presenceOf(toSongItem(s)) === 'both').length : 0, [songs]);
+  const cloudOnlyCount = useMemo(() => songs ? songs.filter(s => presenceOf(toSongItem(s)) === 'cloud').length : 0, [songs]);
   const toggleSel = (s: LibSong) => setSel(prev => { const n = new Set(prev); if (n.has(keyOf(s))) n.delete(keyOf(s)); else n.add(keyOf(s)); return n; });
   const exitSel = () => { setSelMode(false); setSel(new Set()); };
   const selSongs = useMemo(() => (songs || []).filter(s => sel.has(keyOf(s))), [songs, sel]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -229,6 +236,30 @@ export function CloudLibraryScreen() {
         </View>
       );
     }
+    // ⑤ 筛选视图:已同步(双在)/仅云端副本——点击分区卡进入,清除回到分组列表
+    if (pFilter !== 'all') {
+      const filtered = songs.filter(s => presenceOf(toSongItem(s)) === (pFilter === 'both' ? 'both' : 'cloud'));
+      return (
+        <ScrollView contentContainerStyle={{ paddingBottom: 140 + insets.bottom }}>
+          <View style={c.filterBar}>
+            <Text style={c.filterT} numberOfLines={1}>{pFilter === 'both' ? '已同步（本机与云端双在）' : '仅云端副本'} · {filtered.length} 首</Text>
+            <TouchableOpacity hitSlop={6} onPress={() => setPFilter('all')}><Text style={c.filterClear}>清除筛选</Text></TouchableOpacity>
+          </View>
+          {filtered.map((s, i) => {
+            const it = toSongItem(s);
+            return selMode ? (
+              <SongRow key={keyOf(s)} song={it} onPress={() => toggleSel(s)}
+                leading={<View style={[c.chk, sel.has(keyOf(s)) && c.chkOn]}>{sel.has(keyOf(s)) ? <Icon name="check" size={12} color="#fff" /> : null}</View>} />
+            ) : (
+              <SongRow key={keyOf(s)} song={it} playing={current?.hash === s.filename}
+                isNew={!!s.mtime && Date.now() - s.mtime < WEEK_MS}
+                onPress={() => void play(i, filtered)} onMore={() => rowMenu(s)} />
+            );
+          })}
+          {!filtered.length ? <Text style={c.emptyInline}>没有匹配的歌曲</Text> : null}
+        </ScrollView>
+      );
+    }
     const renderGroup = (title: string, list: LibSong[]) => list.length ? (
       <React.Fragment key={title}>
         <Text style={c.grp}>{title} · {list.length}</Text>
@@ -274,7 +305,7 @@ export function CloudLibraryScreen() {
           <Icon name="back" size={16} color={C.text2} />
         </TouchableOpacity>
         <Text style={c.headTitle}>云曲库</Text>
-        <Text style={c.headStats} numberOfLines={1}>{songs ? `${songs.length} 首` : ''}</Text>
+        <View style={{ flex: 1 }} />
         {logged ? (
           <View style={{ flexDirection: 'row', gap: 8 }}>
             {songs && songs.length && !offline ? (
@@ -285,6 +316,67 @@ export function CloudLibraryScreen() {
           </View>
         ) : null}
       </View>
+      {/* ⑤/⑦ 首页化:库头横幅+快捷动作+最近添加/已同步/仅云端分区(渐进色裹,分组列表与多选链路不动) */}
+      {logged ? (
+        <LibraryHome
+          kind="cloud" name="云曲库" sub="个人空间"
+          stats={songs ? `${songs.length.toLocaleString()} 首${quota && quota.quotaBytes >= 0 ? ` · 用量 ${Math.max(0, Math.min(100, quota.percent || 0))}%` : ''}` : undefined}
+          actions={[
+            {
+              icon: 'shuffle', label: '随机播放', primary: true, disabled: !songs?.length || offline,
+              onPress: () => { if (songs?.length) void play(Math.floor(Math.random() * songs.length), songs); },
+            },
+            {
+              icon: 'edit', label: selMode ? '退出管理' : '管理', disabled: !songs?.length || offline,
+              onPress: () => (selMode ? exitSel() : setSelMode(true)),
+            },
+            { icon: 'refresh', label: '刷新', onPress: () => { setPFilter('all'); void load(); } },
+          ]}
+        >
+          {songs && songs.length && !selMode && !offline ? (
+            <>
+              {recentCloud.length ? (
+                <HomeSection title="最近添加">
+                  {recentCloud.map((s, i) => {
+                    const it = toSongItem(s);
+                    return (
+                      <SongRow key={keyOf(s)} song={it} playing={current?.hash === s.filename}
+                        isNew={!!s.mtime && Date.now() - s.mtime < WEEK_MS}
+                        onPress={() => void play(i, recentCloud)} onMore={() => rowMenu(s)} />
+                    );
+                  })}
+                </HomeSection>
+              ) : null}
+              {bothCount > 0 || cloudOnlyCount > 0 ? (
+                <HomeSection title="同步状态">
+                  <View style={c.syncRow}>
+                    {bothCount > 0 ? (
+                      <TouchableOpacity style={c.syncCard} activeOpacity={0.8} onPress={() => setPFilter('both')}>
+                        <View style={c.syncIcon}><Icon name="cloud-check" size={17} color={C.brand} /></View>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={c.syncT}>已同步 {bothCount} 首</Text>
+                          <Text style={c.syncSub} numberOfLines={1}>本机与云端双在 · 离线可播</Text>
+                        </View>
+                        <Icon name="chevronright" size={14} color={C.text3} />
+                      </TouchableOpacity>
+                    ) : null}
+                    {cloudOnlyCount > 0 ? (
+                      <TouchableOpacity style={c.syncCard} activeOpacity={0.8} onPress={() => setPFilter('cloudonly')}>
+                        <View style={c.syncIcon}><Icon name="cloud" size={17} color={WARN_YELLOW} /></View>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={c.syncT}>仅云端 {cloudOnlyCount} 首</Text>
+                          <Text style={c.syncSub} numberOfLines={1}>云端唯一副本 · 建议下载备份</Text>
+                        </View>
+                        <Icon name="chevronright" size={14} color={C.text3} />
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                </HomeSection>
+              ) : null}
+            </>
+          ) : null}
+        </LibraryHome>
+      ) : null}
       {logged ? (
         <View style={{ paddingHorizontal: 16 }}>
           {quotaCard}
@@ -340,6 +432,16 @@ const c = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   head: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 16 },
   headTitle: { color: C.text, fontSize: 17, fontWeight: '800' },
+  // ⑤ 同步状态分区卡与筛选视图
+  syncRow: { flexDirection: 'row', gap: 10 },
+  syncCard: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.strokeFaint, padding: 12 },
+  syncIcon: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  syncT: { color: C.text, fontSize: 13, fontWeight: '700' },
+  syncSub: { color: C.text3, fontSize: 10.5, lineHeight: 14, marginTop: 1 },
+  filterBar: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 16, marginTop: 10, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: C.surface2 },
+  filterT: { flex: 1, color: C.text2, fontSize: 11.5 },
+  filterClear: { color: C.brandText, fontSize: 12, fontWeight: '600' },
+  emptyInline: { color: C.text2, fontSize: 12, textAlign: 'center', paddingVertical: 40 },
   headStats: { flex: 1, color: C.text3, fontSize: 10.5, textAlign: 'right', marginRight: 2 },
   headBtn: { height: 30, minWidth: 30, paddingHorizontal: 8, borderRadius: 9, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   headBtnT: { color: C.text2, fontSize: 12, fontWeight: '600' },

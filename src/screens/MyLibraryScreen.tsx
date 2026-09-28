@@ -10,6 +10,7 @@ import { HDTouch } from '../hd/HDTouch';
 import { Icon } from '../theme/Icon';
 import { C, T } from '../theme/tokens';
 import { dialog, toast } from '../components/Dialog';
+import { NewBadge } from '../components/LibraryHome'; // ⑤-B6 NEW 标(7 天内入库,brand 底 9px 小标)
 import { store as httpStore, req } from '../services/server';
 import type { SongItem } from '../services/server';
 import { deviceLibraryAgg, deviceSongs } from '../services/deviceLibraryAgg';
@@ -94,7 +95,7 @@ export function DiscCard({ name, sub, cover, count, round, focusable, onPress, u
 }
 
 /** 歌曲行(最近添加/随机30/详情列表;④公共曲库复用:lib=封面 URL 域,sourceName=副行标源(多源)) */
-export function SongRow({ song, idx, onPress, lib, sourceName }: { song: LibSong; idx?: number; onPress?: () => void; lib?: string; sourceName?: string }) {
+export function SongRow({ song, idx, onPress, lib, sourceName, isNew }: { song: LibSong; idx?: number; onPress?: () => void; lib?: string; sourceName?: string; isNew?: boolean }) { // ⑤:isNew=7 天内入库 NEW 标
   const [g1] = gradOf(song.album || song.singer);
   const sub = `${song.singer || '未知歌手'} · ${song.album || (song.subPath ? '文件夹分组' : '未知专辑')}${song.quality && song.quality !== '128k' ? ' · ' + song.quality.toUpperCase() : ''}${sourceName ? ' · ' + sourceName : ''}`;
   const sv = useRef(new Animated.Value(1)).current;
@@ -111,7 +112,10 @@ export function SongRow({ song, idx, onPress, lib, sourceName }: { song: LibSong
         {song.hasCover ? <Image source={{ uri: coverUrl(song.filename, lib) }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 } as never} resizeMode="cover" /> : <Icon name="music" size={15} color="#fff" />}
       </View>
       <View style={d.sgMid}>
-        <Text style={d.sgA} numberOfLines={1}>{song.name}</Text>
+        <View style={d.sgTitleRow}>
+          <Text style={d.sgA} numberOfLines={1}>{song.name}</Text>
+          {isNew ? <NewBadge /> : null}
+        </View>
         <Text style={d.sgB} numberOfLines={1}>{sub}</Text>
       </View>
       <Text style={d.dur}>{song.interval || song.ext.toUpperCase()}</Text>
@@ -730,6 +734,7 @@ const d = StyleSheet.create({
   sgIdx: { width: 22, textAlign: 'center', color: C.text3, fontSize: 11.5 },
   cvs: { width: 38, height: 38, borderRadius: 8, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   sgMid: { flex: 1, minWidth: 0 },
+  sgTitleRow: { flexDirection: 'row', alignItems: 'center' },
   sgA: { color: C.text, fontSize: 13 },
   sgB: { color: C.text3, fontSize: 10.5, marginTop: 2 },
   dur: { color: C.text3, fontSize: 10.5 },

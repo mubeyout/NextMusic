@@ -16,11 +16,12 @@ import { setHoverMenu } from './hdctxmenu';
 import { hdActions } from './HDActions';
 import { registerKbRow } from './hdkeyboard';
 import { locationsOf, usePresenceVersion } from '../services/cloudPresence'; // spec③:角标三态全端统一;v3.0 细则2 locations 契约
+import { NewBadge } from '../components/LibraryHome'; // ⑤-B6 NEW 标(7 天内入库,brand 底 9px 小标)
 import { IS_HD, isCarUi } from '../services/appversion'; // 细则6:HD 角标 16px/车机不显角标
 
 const IS_WEB = Platform.OS === 'web';
 
-export function HDSongRow({ song, index, onPress, onLongPress, onAction, playing, showAlbum = true, first, buildMenu }: {
+export function HDSongRow({ song, index, onPress, onLongPress, onAction, playing, showAlbum = true, first, buildMenu, isNew }: {
   song: SongItem;
   index?: number;
   onPress?: () => void;
@@ -29,6 +30,7 @@ export function HDSongRow({ song, index, onPress, onLongPress, onAction, playing
   playing?: boolean;
   showAlbum?: boolean;
   first?: boolean;
+  isNew?: boolean; // ⑤:7 天内入库 NEW 标
   buildMenu?: (song: SongItem) => CtxMenuItem[]; // v1.2.4 D1:web 行尾⋯/右键共用菜单数据
 }) {
   const { faved, toggle } = useFav(song);
@@ -116,10 +118,13 @@ export function HDSongRow({ song, index, onPress, onLongPress, onAction, playing
         ) : null}
       </View>
       <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
-        <Text style={[st.title, playing && { color: C.brand }]} numberOfLines={1}>
-          {song.name}
-          {song._types?.flac ? <Text style={st.hiRes}> 无损</Text> : null}
-        </Text>
+        <View style={st.titleRow}>
+          <Text style={[st.title, playing && { color: C.brand }]} numberOfLines={1}>
+            {song.name}
+            {song._types?.flac ? <Text style={st.hiRes}> 无损</Text> : null}
+          </Text>
+          {isNew ? <NewBadge /> : null}
+        </View>
         <Text style={st.sub} numberOfLines={1}>{song.singer}{showAlbum && song.albumName ? ` · ${song.albumName}` : ''}</Text>
       </View>
       <View style={st.srcTag}><Text style={st.srcTagText}>{(song as SongItem & { _lib?: string })._lib === 'public' ? '公共' : song.source}</Text></View>
@@ -184,6 +189,7 @@ const st = StyleSheet.create({
   art: { width: 36, height: 36, borderRadius: 6 },
   artPlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 6, backgroundColor: 'rgba(0,0,0,.45)', alignItems: 'center', justifyContent: 'center' },
   title: { color: C.text, fontSize: H.font.md, fontWeight: '600' },
+  titleRow: { flexDirection: 'row', alignItems: 'center' },
   sub: { color: C.text3, fontSize: H.font.xs },
   hiRes: { color: C.brand, fontSize: 7, fontWeight: '700' },
   srcTag: { backgroundColor: C.elev, borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },

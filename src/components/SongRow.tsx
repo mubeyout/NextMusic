@@ -7,6 +7,7 @@ import { C } from '../theme/tokens';
 import type { SongItem } from '../services/server';
 import { registerKbRow } from '../hd/hdkeyboard';
 import { locationsOf, usePresenceVersion } from '../services/cloudPresence'; // spec③:角标三态(队列/搜索/歌单详情等列表行尾);v3.0 细则2:locations 契约
+import { NewBadge } from './LibraryHome'; // ⑤-B6 NEW 标(7 天内入库,brand 底 9px 小标)
 
 // 来源标签（老板 09-18：来源显示）——tf/provider/本地/在线五源统一短名；未知 source 原样展示
 const SOURCE_LABELS: Record<string, string> = {
@@ -19,7 +20,7 @@ export const sourceLabel = (s?: string) => (s ? SOURCE_LABELS[s] ?? s : '');
 
 // Figma Song Row: 350x46, art 46x46 r=6, title 13 w500 / sub 10, duration right, more icon 20
 // extra: 右侧操作位（下载按钮等）；onMore: ⋯ 菜单回调(不传且无 extra 则不渲染 ⋯——lx163 老板:死图标等于欺骗)
-export function SongRow({ song, onPress, playing, extra, onMore, onLongPress, leading, sourceName }: { song: SongItem; onPress?: () => void; playing?: boolean; extra?: React.ReactNode; onMore?: (pos?: { x: number; y: number }) => void; onLongPress?: () => void; leading?: React.ReactNode; sourceName?: string }) { // lx167d:onLongPress(TV 长按管理);v3.33(老板:队列操作箱优化):onMore 带位置+leading 左槽(批量勾选);v3.0 细则2:sourceName=公共库歌副行源名
+export function SongRow({ song, onPress, playing, extra, onMore, onLongPress, leading, sourceName, isNew }: { song: SongItem; onPress?: () => void; playing?: boolean; extra?: React.ReactNode; onMore?: (pos?: { x: number; y: number }) => void; onLongPress?: () => void; leading?: React.ReactNode; sourceName?: string; isNew?: boolean }) { // lx167d:onLongPress(TV 长按管理);v3.33(老板:队列操作箱优化):onMore 带位置+leading 左槽(批量勾选);v3.0 细则2:sourceName=公共库歌副行源名;⑤:isNew=7 天内入库 NEW 标
   const [focus, setFocus] = useState(false); // lx145:TV D-pad 光标(队列页无选中态)
   // spec③:行尾角标三态(14px)——仅本机 devices/text3 · 仅云端 cloud/brand · 双在 cloud-check/text2;
   // v3.0 细则2:locations:{local,cloud} 契约——公共库歌两者 false 不占角标轴(来源=副行文字)
@@ -56,7 +57,10 @@ export function SongRow({ song, onPress, playing, extra, onMore, onLongPress, le
         {leading != null ? leading : song.img ? <Image source={{ uri: fixCoverUrl(song.img) }} style={st.art} /> : <View style={[st.art, st.fallback]} />}
       </View>
       <View style={st.meta}>
-        <Text style={[st.title, playing && { color: C.brandText }]} numberOfLines={1}>{song.name}</Text>
+        <View style={st.titleRow}>
+          <Text style={[st.title, playing && { color: C.brandText }]} numberOfLines={1}>{song.name}</Text>
+          {isNew ? <NewBadge /> : null}
+        </View>
         <Text style={st.sub} numberOfLines={1}>
           {isPub ? `公共${sourceName ? ` · ${sourceName}` : ''} · ` : sourceLabel(song.source) ? `${sourceLabel(song.source)} · ` : ''}{song.singer}{song.albumName ? ` · ${song.albumName}` : ''}{song._types?.flac ? ' · 无损' : ''}
         </Text>
@@ -97,6 +101,7 @@ const st = StyleSheet.create({
   art: { width: 46, height: 46 },
   fallback: { backgroundColor: C.surface2 },
   meta: { flex: 1, gap: 1, minWidth: 0 },
+  titleRow: { flexDirection: 'row', alignItems: 'center' },
   title: { color: C.text, fontSize: 13, lineHeight: 19, fontWeight: '500' },
   sub: { color: C.text2, fontSize: 10, lineHeight: 15 },
   dur: { color: C.text2, fontSize: 10, lineHeight: 15 },

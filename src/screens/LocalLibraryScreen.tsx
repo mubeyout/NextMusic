@@ -17,6 +17,8 @@ import { precheckUpload, fmtBytes } from '../services/cloudLibrary';
 import { enqueueUpload } from '../state/UploadQueue';
 import { useUploadSheet } from './UploadSheet';
 import { IS_HD } from '../services/appversion';
+import { GUTTER } from '../hd/hdstyle';
+import { LibBanner, LibActions, HomeSection, HomeRail, RailCard } from '../components/LibraryHome'; // ⑤/⑦ 全库首页化骨架
 import {
   localLib, localArtists, localAlbums, localSingerTracks, localAlbumTracks,
   localFolderView, checkLocalLib, rescanLocalLibrary,
@@ -30,6 +32,9 @@ const VIEWS: { key: LibView; label: string }[] = [
   { key: 'albums', label: '专辑' },
   { key: 'folders', label: '文件夹' },
 ];
+
+const WEEK_MS = 7 * 24 * 3600 * 1000;
+const isNewLocal = (t: LocalTrack) => Date.now() - t.addedAt < WEEK_MS; // ⑤-B6:7 天内入库 NEW 标(本机=扫描 addedAt)
 
 /** 歌曲行「文件名识别」小 tag(v3 A3:11px text3 surface2 底 radius 999) */
 function FilenameTag() {
@@ -193,6 +198,10 @@ export function LocalLibraryScreen({ route }: { route: { params: { libId: string
 
   const artists = localArtists(cfg.id);
   const albums = localAlbums(cfg.id);
+  // ⑤ 首页化数据:随机播放全量(与多选作用域同源)+最近添加(addedAt 排序)+根目录入口卡
+  const allTracks = albums.flatMap(a => localAlbumTracks(cfg.id, a.key));
+  const recentTracks = [...allTracks].sort((x, y) => y.addedAt - x.addedAt).slice(0, 4);
+  const rootDirs = localFolderView(cfg.id, '').dirs.slice(0, IS_HD ? 10 : 8);
 
   // ---------- 目录失效态(v3 A5):空态页+恢复入口,不自动删数据 ----------
   if (avail === false) {
@@ -235,6 +244,7 @@ export function LocalLibraryScreen({ route }: { route: { params: { libId: string
               key={t.id}
               song={{ name: t.name, singer: t.singer || UNKNOWN_ARTIST, source: 'device', songmid: t.uri || t.id, albumId: '', interval: t.durationSec ? `${Math.floor(t.durationSec / 60)}:${Math.round(t.durationSec % 60) < 10 ? '0' : ''}${Math.round(t.durationSec % 60)}` : '', albumName: t.album || undefined }}
               playing={current?.hash === t.id}
+              isNew={isNewLocal(t)}
               onPress={() => (selMode ? toggleSel(t.id) : play(tracks, i))}
               onLongPress={selMode ? undefined : () => menuOf(t, tracks, i)}
               onMore={selMode ? undefined : () => menuOf(t, tracks, i)}
@@ -256,13 +266,26 @@ export function LocalLibraryScreen({ route }: { route: { params: { libId: string
   return (
     <View style={st.screen}>
       <PageHeader
-        title={cfg.name}
+        title="本机曲库"
         right={(
           <TouchableOpacity onPress={openMenu} hitSlop={6}>
             <Icon name="more" size={22} />
           </TouchableOpacity>
         )}
       />
+      {/* ⑤/⑦ 首页化:库头横幅+快捷动作(渐进包裹,三视图/多选/上传链路不动) */}
+      <View style={[st.homeWrap, IS_HD && st.homeWrapHD]}>
+        <LibBanner kind="local" name={cfg.name}
+          stats={cfg.trackCount ? `${cfg.trackCount.toLocaleString()} 首 · ${albums.length} 专辑 · ${artists.length} 歌手` : '还未扫描'} />
+        <LibActions actions={[
+          { icon: 'refresh', label: '重扫', onPress: doRescan, disabled: !!rescan },
+          { icon: 'folder', label: '选目录', onPress: () => nav.navigate('LocalLibEdit', { libId: cfg.id }) },
+          {
+            icon: 'shuffle', label: '随机播放', primary: true, disabled: !allTracks.length || !!rescan,
+            onPress: () => void play(allTracks, Math.floor(Math.random() * allTracks.length)),
+          },
+        ]} />
+      </View>
       {/* 增量重扫进度(顶栏下细条) */}
       {rescan ? (
         <View style={st.rescanBar}>
@@ -283,6 +306,41 @@ export function LocalLibraryScreen({ route }: { route: { params: { libId: string
         ))}
         <Text style={st.statsText}>{cfg.trackCount} 首</Text>
       </View>
+
+      {/* ⑤ 首页化内容分区:最近添加(扫描 addedAt,NEW 标)+按文件夹入口卡(本机独有组织);能力缺失整段不渲染 */}
+      {cfg.trackCount > 0 && !rescan ? (
+        <View style={[st.homeWrap, IS_HD && st.homeWrapHD, st.homeSections]}>
+          {recentTracks.length ? (
+            <HomeSection title="最近添加" actionLabel="播放全部" onAction={() => void play(recentTracks, 0)}>
+              {recentTracks.map((t, i) => (
+                <SongRow
+                  key={t.id}
+                  song={{ name: t.name, singer: t.singer || UNKNOWN_ARTIST, source: 'device', songmid: t.uri || t.id, albumId: '', interval: t.durationSec ? `${Math.floor(t.durationSec / 60)}:${Math.round(t.durationSec % 60) < 10 ? '0' : ''}${Math.round(t.durationSec % 60)}` : '', albumName: t.album || undefined }}
+                  playing={current?.hash === t.id}
+                  isNew={isNewLocal(t)}
+                  onPress={() => (selMode ? toggleSel(t.id) : void play(recentTracks, i))}
+                  onLongPress={selMode ? undefined : () => menuOf(t, recentTracks, i)}
+                  onMore={selMode ? undefined : () => menuOf(t, recentTracks, i)}
+                  leading={selMode ? (
+                    <View style={[st.chk, sel.has(t.id) && st.chkOn]}>{sel.has(t.id) ? <Icon name="check" size={12} color="#fff" /> : null}</View>
+                  ) : undefined}
+                  extra={!selMode && t.tagSource === 'filename' ? <FilenameTag /> : undefined}
+                />
+              ))}
+            </HomeSection>
+          ) : null}
+          {rootDirs.length ? (
+            <HomeSection title="按文件夹">
+              <HomeRail>
+                {rootDirs.map(dd => (
+                  <RailCard key={dd.path} icon="folder" name={dd.name} sub={`${dd.count} 首`}
+                    onPress={() => { exitSel(); setView('folders'); setDirPath(dd.path); }} />
+                ))}
+              </HomeRail>
+            </HomeSection>
+          ) : null}
+        </View>
+      ) : null}
 
       {cfg.trackCount === 0 ? (
         <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
@@ -410,6 +468,7 @@ function FolderPane({ libId, dirPath, onDir, onPlay, currentHash, selMode, sel, 
           key={t.id}
           song={{ name: t.name, singer: t.singer || UNKNOWN_ARTIST, source: 'device', songmid: t.uri || t.id, albumId: '', interval: t.durationSec ? `${Math.floor(t.durationSec / 60)}:${Math.round(t.durationSec % 60) < 10 ? '0' : ''}${Math.round(t.durationSec % 60)}` : '', albumName: t.album || undefined }}
           playing={currentHash === t.id}
+          isNew={isNewLocal(t)}
           onPress={() => (selMode ? onToggle(t.id) : onPlay(allSongs, i))}
           onLongPress={selMode ? undefined : () => onMenu(t, allSongs, i)}
           onMore={selMode ? undefined : () => onMenu(t, allSongs, i)}
@@ -426,6 +485,10 @@ function FolderPane({ libId, dirPath, onDir, onPlay, currentHash, selMode, sel, 
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
+  // ⑤/⑦ 首页化骨架容器
+  homeWrap: { marginHorizontal: 16, gap: 12, marginTop: 2 },
+  homeWrapHD: { marginHorizontal: GUTTER },
+  homeSections: { marginBottom: 2 },
   missing: { color: C.text2, fontSize: 12, textAlign: 'center', paddingVertical: 40 },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 10, gap: 8 },
   title: { color: C.text, fontSize: 20, fontWeight: '700' },

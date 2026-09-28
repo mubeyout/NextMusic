@@ -19,6 +19,7 @@ import { SongRow } from '../components/SongRow';
 import { toast, dialog } from '../components/Dialog';
 import { dropdownMenu, isDropdownPlatform, type MenuAnchor } from '../components/DropdownMenu';
 import { PageHeader, EmptyState } from '../components/PageChrome';
+import { LibBanner, LibActions } from '../components/LibraryHome'; // ⑦.3-v2 壳统一:品牌 logo 横幅+连接状态点+快捷动作
 import { GUTTER, focus, pageBottom } from '../hd/hdstyle'; // v3.28:统一栅格/焦点环/播放条让位
 import { usePlayer } from '../state/PlayerProvider';
 import { library } from '../state/library';
@@ -414,6 +415,15 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
 
   const refreshSongs = () => { if (acct) loadSongs(acct); };
 
+  // ⑦.3-v2:整库刷新(重置分区缓存后重拉)+源健康状态点(全部分区失败=断连/部分失败=延迟/正常)
+  const refreshAll = () => {
+    if (!acct) return;
+    if (!isTf) { setAlbums({ data: null, err: null, busy: false }); setArtists({ data: null, err: null, busy: false }); loadAlbums(acct); loadArtists(acct); }
+    setLists({ data: null, err: null, busy: false }); loadLists(acct); loadSongs(acct);
+  };
+  const pvStatus = (albums.err && artists.err && songs.err) || (isTf && songs.err && lists.err) ? 'bad'
+    : albums.err || artists.err || songs.err || lists.err ? 'warn' : 'ok';
+
   const importDav = (name: string, ss: SongItem[]) => {
     if (!ss.length) return;
     libraryImport(name, ss);
@@ -501,6 +511,18 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
       {isDav ? (
         /* ---------- WebDAV 目录浏览 v3.31 行式 + 0922 三端适配：TV 焦点放大行 / 桌面≥900 双区（左列表+右操作栏）/ 窄窗单列 ---------- */
         <ScrollView contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : (IS_WEB ? Math.min(Math.max(winW * 0.02, 16), 40) : 20), paddingTop: 4, paddingBottom: ((current ? 100 : 0) + insets.bottom + 24) + (IS_HD ? 24 : 0) }}>
+          {/* ⑦.3-v2 壳统一:品牌 logo 横幅+连接状态点+快捷动作(内容=目录型 B 层能力:文件夹为主,不硬造热门/流派) */}
+          <View style={{ gap: 12, marginBottom: 8 }}>
+            <LibBanner kind="provider" name={acct.name || 'WebDAV'} sub={acct.base}
+              status={davErr ? 'bad' : davBusy ? 'warn' : 'ok'}
+              stats={davBusy ? '读取中' : davErr ? '连接失败' : `${davDirs.length} 个文件夹 · ${davSongs.length} 首`}
+              brand={<AcctGlyph type={acct.type} size={IS_HD ? 30 : 22} />} />
+            <LibActions actions={[
+              { icon: 'refresh', label: '刷新', onPress: () => void davLoad(), disabled: davBusy },
+              { icon: 'settings', label: '连接设置', onPress: () => nav.navigate('ProviderEdit', { acctId: acct.id }) },
+              ...(davSongs.length && !davSelMode ? [{ icon: 'play' as const, label: '播放全部', primary: true, onPress: () => playSong(davSongs[0], davSongs) }] : []),
+            ]} />
+          </View>
           {davBusy ? (
             <View style={[dv.listWrap, davWide && dv.listWrapWeb]}>
               {[0, 1, 2, 3, 4, 5].map(i => <View key={i} style={[dv.rowSkel, IS_HD && dv.rowSkelHD]} />)}
@@ -648,6 +670,17 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
         <ScrollView
           contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingBottom: IS_HD ? pageBottom(32) : (current ? 116 : 32), gap: IS_HD ? 22 : 16 }}
         >
+          {/* ⑦.3-v2 壳统一:品牌横幅+状态点+快捷动作;内容分区按源能力——A 层(Emby/Subsonic 系)=元数据+歌单,C 层(听风)=歌单为主 */}
+          <View style={{ gap: 12 }}>
+            <LibBanner kind="provider" name={acct.name || PROVIDER_META[acct.type].label} sub={acct.base}
+              status={pvStatus} stats={PROVIDER_META[acct.type].label}
+              brand={<AcctGlyph type={acct.type} size={IS_HD ? 30 : 22} />} />
+            <LibActions actions={[
+              { icon: 'refresh', label: '刷新', onPress: refreshAll },
+              { icon: 'settings', label: '连接设置', onPress: () => nav.navigate('ProviderEdit', { acctId: acct.id }) },
+              ...(songs.data?.length ? [{ icon: 'shuffle' as const, label: '随机播放', primary: true, onPress: () => { const d = songs.data || []; playSong(d[Math.floor(Math.random() * d.length)], d); } }] : []),
+            ]} />
+          </View>
           {isTf ? (() => {
             // 听风：providers.playlists 返回五类（liked:/recent:/mine:/pl:/top: 前缀），拆成分区
             const all = lists.data || [];
