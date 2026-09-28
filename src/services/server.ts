@@ -67,7 +67,9 @@ async function reqOnce(path: string, init: RequestInit & { base?: string; timeou
         return reqOnce(path, init, attempt + 1);
       }
       // lx163g:401=token 失效(服务器重建/换密)——用存档凭据自动重登一次并重放(attempt 1→2,登录请求自身 attempt=5 不进)
-      if (r.status === 401 && attempt < 2 && !path.includes('/api/user/login')) {
+      // [KAI 20260928 老板 16:43 指正]:仅**会话内 token 失效**才自动重登;未登录/已登出(store.token 空)的 401=匿名合法态(lx177)——
+      // 存档凭据过期时每个 401 烧一次注定失败的 10s 重登 POST,全局串行队列被堵死=未登录时全 app 交互冻结(媒体库 + 点不动)
+      if (r.status === 401 && attempt < 2 && !path.includes('/api/user/login') && store.token) {
         if (await tryRelogin()) return reqOnce(path, init, 2);
       }
       // lx177(老板 0923 08:20 登录非必须):未登录 401 不再广播跳登录页——
