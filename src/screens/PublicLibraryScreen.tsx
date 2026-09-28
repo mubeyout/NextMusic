@@ -14,6 +14,7 @@ import { IS_HD } from '../services/appversion';
 import { PageHeader } from '../components/PageChrome';
 import { toast } from '../components/Dialog';
 import { LibBanner, LibActions, HomeSection, HomeRail, RailCard, ChipsRow } from '../components/LibraryHome'; // ⑤/⑦ 全库首页化骨架
+import { AzIndex, azGroup, useAzJump } from '../components/AzIndex'; // ⑤-4 A-Z 字母索引条
 import { usePlayer } from '../state/PlayerProvider';
 import { coverUrl, setActiveLib, type LibSong, type LibAlbum, type LibArtist } from '../services/myLibrary';
 import { pubLib, pubCheck, pubToSongItem, pubSourceName, usePubEntry } from '../services/publicLibrary';
@@ -67,6 +68,9 @@ export function PublicLibraryScreen() {
   const [songSize, setSongSize] = useState(PAGE); // 契约 songs 无 offset:recent top-N 逐档扩(size≤200)
   const [songsBusy, setSongsBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  // ⑤-4 A-Z 字母索引条:专辑/歌手墙按首字母分块(分页数据分组;跳转覆盖已加载页,未加载字母不可达)
+  const { scrollRef: azScroll, regH: azRegH, jumpSeq: azJumpSeq } = useAzJump();
 
   // 分页追加去重(offset 窗口在数据变动时可能交叠)
   function dedup<T extends { id: string }>(prev: T[] | null, add: T[], reset: boolean): T[] {
@@ -238,36 +242,54 @@ export function PublicLibraryScreen() {
     }
     if (tab === 'albums') {
       if (albums === null) return <SkelWall />;
+      const azA = azGroup(albums, a => a.name); // 分组键=专辑名首字母
       return (
-        <ScrollView contentContainerStyle={{ paddingBottom: 140 + insets.bottom }}>
-          <View style={[d.wall, IS_HD && d.wallHD]}>
-            {albums.map(a => (
-              <DiscCard key={a.id} name={a.name} count={a.songCount}
-                sub={`${a.artist}${a.byDir ? ' · 文件夹分组' : ''}`}
-                cover={a.coverFile ? coverUrl(a.coverFile, 'public') : null}
-                unknown={!a.coverFile}
-                onPress={() => enterAlbum(a)} />
+        <View style={{ flex: 1 }}>
+          <ScrollView ref={azScroll} contentContainerStyle={{ paddingBottom: 140 + insets.bottom }}>
+            {azA.chunks.map(ch => (
+              <View key={ch.letter} onLayout={azRegH('alb:' + ch.letter)}>
+                <Text style={d.azGrp}>{ch.letter} · {ch.items.length}</Text>
+                <View style={[d.wall, IS_HD && d.wallHD, d.wallIn]}>
+                  {ch.items.map(a => (
+                    <DiscCard key={a.id} name={a.name} count={a.songCount}
+                      sub={`${a.artist}${a.byDir ? ' · 文件夹分组' : ''}`}
+                      cover={a.coverFile ? coverUrl(a.coverFile, 'public') : null}
+                      unknown={!a.coverFile}
+                      onPress={() => enterAlbum(a)} />
+                  ))}
+                </View>
+              </View>
             ))}
-          </View>
-          <LoadMore busy={albumsBusy} shown={albums.length} total={albumsTotal} onMore={() => loadAlbums()} unit="张专辑" />
-        </ScrollView>
+            <LoadMore busy={albumsBusy} shown={albums.length} total={albumsTotal} onMore={() => loadAlbums()} unit="张专辑" />
+          </ScrollView>
+          {azA.letters.length > 1 ? <AzIndex letters={azA.letters} onPick={l => azJumpSeq(azA.letters.map(x => 'alb:' + x), 'alb:' + l)} /> : null}
+        </View>
       );
     }
     if (tab === 'artists') {
       if (artists === null) return <SkelWall round />;
+      const azR = azGroup(artists, a => a.name); // 分组键=歌手名首字母
       return (
-        <ScrollView contentContainerStyle={{ paddingBottom: 140 + insets.bottom }}>
-          <View style={[d.wall4, IS_HD && d.wall4HD]}>
-            {artists.map(a => (
-              <DiscCard key={a.id} name={a.name} round count={a.albumCount}
-                sub={`${a.songCount} 首`}
-                cover={a.coverFile ? coverUrl(a.coverFile, 'public') : null}
-                unknown={a.name === '未知歌手'}
-                onPress={() => enterArtist(a)} />
+        <View style={{ flex: 1 }}>
+          <ScrollView ref={azScroll} contentContainerStyle={{ paddingBottom: 140 + insets.bottom }}>
+            {azR.chunks.map(ch => (
+              <View key={ch.letter} onLayout={azRegH('art:' + ch.letter)}>
+                <Text style={d.azGrp}>{ch.letter} · {ch.items.length}</Text>
+                <View style={[d.wall4, IS_HD && d.wall4HD, d.wallIn]}>
+                  {ch.items.map(a => (
+                    <DiscCard key={a.id} name={a.name} round count={a.albumCount}
+                      sub={`${a.songCount} 首`}
+                      cover={a.coverFile ? coverUrl(a.coverFile, 'public') : null}
+                      unknown={a.name === '未知歌手'}
+                      onPress={() => enterArtist(a)} />
+                  ))}
+                </View>
+              </View>
             ))}
-          </View>
-          <LoadMore busy={artistsBusy} shown={artists.length} total={artistsTotal} onMore={() => loadArtists()} unit="位歌手" />
-        </ScrollView>
+            <LoadMore busy={artistsBusy} shown={artists.length} total={artistsTotal} onMore={() => loadArtists()} unit="位歌手" />
+          </ScrollView>
+          {azR.letters.length > 1 ? <AzIndex letters={azR.letters} onPick={l => azJumpSeq(azR.letters.map(x => 'art:' + x), 'art:' + l)} /> : null}
+        </View>
       );
     }
     // songs(⑤:源筛选 chips+NEW 标;播放上下文=筛选后可见列表)
@@ -553,6 +575,9 @@ const d = StyleSheet.create({
   wallHD: { gap: 18, padding: 30, paddingBottom: 30 },
   wall4: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, padding: 16, paddingBottom: 24 },
   wall4HD: { gap: 20, padding: 30, paddingBottom: 30 },
+  // ⑤-4 字母分块墙:块内标题+紧凑纵向(块间节奏由块内 padding 承担)
+  azGrp: { color: C.text3, fontSize: 11, letterSpacing: 1.2, marginHorizontal: 16, marginTop: 12 },
+  wallIn: { paddingTop: 2, paddingBottom: 16 },
   skel: { aspectRatio: 1, borderRadius: 12, backgroundColor: 'rgba(255,255,255,.055)' },
   // 分页
   moreBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginHorizontal: 16, marginTop: 10, marginBottom: 8, paddingVertical: 11, borderRadius: 999, borderWidth: 1, borderColor: C.stroke },

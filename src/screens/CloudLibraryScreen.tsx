@@ -23,6 +23,7 @@ import { localLib } from '../services/localLibrary';
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
 import { LibraryHome, HomeSection, ChipsRow } from '../components/LibraryHome'; // ⑤/⑦ 全库首页化骨架
+import { AzIndex, azGroup, useAzJump } from '../components/AzIndex'; // ⑤-4 A-Z 字母索引条
 import { IS_HD } from '../services/appversion'; // ⑥ HD 分支适配
 import { HDTouch } from '../hd/HDTouch';
 import { focus, GUTTER } from '../hd/hdstyle';
@@ -306,6 +307,18 @@ export function CloudLibraryScreen() {
     else arr.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     return arr;
   }, [filteredSongs, sortBy]);
+  // ── ⑤-4 字母索引条:分组键=歌名首字母(localeCompare 近似拼音口径见 AzIndex;浏览/筛选/管理三态接线) ──
+  const azName = (s: LibSong) => s.name || s.filename || '';
+  const { scrollRef: azScroll, reg: azReg, jump: azJump } = useAzJump();
+  const browseAll = useMemo(() => (groups ? [...groups.uploaded, ...groups.downloaded] : []), [groups]);
+  const azBrowse = useMemo(() => azGroup(browseAll, azName, keyOf), [browseAll]);
+  const azFilter = useMemo(() => azGroup(filteredSongs, azName, keyOf), [filteredSongs]);
+  const azMgmt = useMemo(() => azGroup(mgmtSongs, azName, keyOf), [mgmtSongs]);
+  // 字母首项行包 View 登记 onLayout y(仅首项包,≤27 处);非首项原样返回
+  const azRow = (s: LibSong, prefix: string, firstIds: Map<string, string>, row: React.ReactNode) => {
+    const L = firstIds.get(keyOf(s));
+    return L ? <View key={keyOf(s)} onLayout={azReg(prefix + L)}>{row}</View> : row;
+  };
   // ⑥ 批量「下载到本机」:选中项里的仅云端副本(enqueueDownload 自带去重;逐首进度=下载队列原生)
   const selCloudOnly = useMemo(() => selSongs.filter(s => presenceOf(toSongItem(s)) === 'cloud'), [selSongs, presTick]); // eslint-disable-line react-hooks/exhaustive-deps
   const doDownload = () => {
@@ -428,11 +441,12 @@ export function CloudLibraryScreen() {
           <View style={[c.chipsWrap, IS_HD && c.chipsWrapHD]}>
             <ChipsRow chips={FILTER_CHIPS} active={pFilter} onChange={k => setPFilter(k as PFilter)} />
           </View>
-          <ScrollView contentContainerStyle={{ paddingBottom: 140 + insets.bottom }}>
+          {/* key=排序/筛选:重排即重挂,字母首项 onLayout 偏移保鲜(⑤-4) */}
+          <ScrollView key={`mgmt:${sortBy}:${pFilter}`} ref={azScroll} contentContainerStyle={{ paddingBottom: 140 + insets.bottom }}>
             {mgmtSongs.map(s => {
               const it = toSongItem(s);
               const prog = downloadProgress(it); // 逐首进度(下载中行内细条)
-              return (
+              return azRow(s, 'mgmt:', azMgmt.firstIds, (
                 <SongRow
                   key={keyOf(s)}
                   song={it}
@@ -442,10 +456,11 @@ export function CloudLibraryScreen() {
                     <View style={c.dlTrack}><View style={[c.dlFill, { width: `${Math.round(Math.max(0, Math.min(1, prog)) * 100)}%` }]} /></View>
                   ) : null}
                 />
-              );
+              ));
             })}
             {!mgmtSongs.length ? <Text style={c.emptyInline}>没有匹配的歌曲</Text> : null}
           </ScrollView>
+          {azMgmt.letters.length > 1 ? <AzIndex letters={azMgmt.letters} onPick={l => azJump('mgmt:' + l)} /> : null}
         </View>
       );
     }
@@ -453,21 +468,25 @@ export function CloudLibraryScreen() {
     if (pFilter !== 'all') {
       const filtered = filteredSongs;
       return (
-        <ScrollView contentContainerStyle={{ paddingBottom: 140 + insets.bottom }}>
-          <View style={c.filterBar}>
-            <Text style={c.filterT} numberOfLines={1}>{FILTER_TITLE[pFilter]} · {filtered.length} 首</Text>
-            <TouchableOpacity hitSlop={6} onPress={() => setPFilter('all')}><Text style={c.filterClear}>清除筛选</Text></TouchableOpacity>
-          </View>
-          {filtered.map((s, i) => {
-            const it = toSongItem(s);
-            return (
-              <SongRow key={keyOf(s)} song={it} playing={current?.hash === s.filename}
-                isNew={!!s.mtime && Date.now() - s.mtime < WEEK_MS}
-                onPress={() => void play(i, filtered)} onMore={() => rowMenu(s)} />
-            );
-          })}
-          {!filtered.length ? <Text style={c.emptyInline}>没有匹配的歌曲</Text> : null}
-        </ScrollView>
+        <View style={{ flex: 1 }}>
+          {/* key 含长度:收藏/副本态变化致成员变动即重挂,偏移保鲜(⑤-4) */}
+          <ScrollView key={`flt:${pFilter}:${filtered.length}`} ref={azScroll} contentContainerStyle={{ paddingBottom: 140 + insets.bottom }}>
+            <View style={c.filterBar}>
+              <Text style={c.filterT} numberOfLines={1}>{FILTER_TITLE[pFilter]} · {filtered.length} 首</Text>
+              <TouchableOpacity hitSlop={6} onPress={() => setPFilter('all')}><Text style={c.filterClear}>清除筛选</Text></TouchableOpacity>
+            </View>
+            {filtered.map((s, i) => {
+              const it = toSongItem(s);
+              return azRow(s, 'flt:', azFilter.firstIds, (
+                <SongRow key={keyOf(s)} song={it} playing={current?.hash === s.filename}
+                  isNew={!!s.mtime && Date.now() - s.mtime < WEEK_MS}
+                  onPress={() => void play(i, filtered)} onMore={() => rowMenu(s)} />
+              ));
+            })}
+            {!filtered.length ? <Text style={c.emptyInline}>没有匹配的歌曲</Text> : null}
+          </ScrollView>
+          {azFilter.letters.length > 1 ? <AzIndex letters={azFilter.letters} onPick={l => azJump('flt:' + l)} /> : null}
+        </View>
       );
     }
     const renderGroup = (title: string, list: LibSong[]) => list.length ? (
@@ -483,7 +502,7 @@ export function CloudLibraryScreen() {
               onPress={() => toggleSel(s)}
               leading={<View style={[c.chk, sel.has(keyOf(s)) && c.chkOn]}>{sel.has(keyOf(s)) ? <Icon name="check" size={12} color="#fff" /> : null}</View>}
             />
-          ) : (
+          ) : azRow(s, 'browse:', azBrowse.firstIds, (
             <SongRow
               key={keyOf(s)}
               song={it}
@@ -491,15 +510,19 @@ export function CloudLibraryScreen() {
               onPress={() => void play(idx, songs)}
               onMore={() => rowMenu(s)}
             />
-          );
+          ));
         })}
       </React.Fragment>
     ) : null;
     return (
-      <ScrollView contentContainerStyle={{ paddingBottom: 140 + insets.bottom }}>
-        {renderGroup('我上传的', groups.uploaded)}
-        {renderGroup('我下载的', groups.downloaded)}
-      </ScrollView>
+      <View style={{ flex: 1 }}>
+        {/* key 含长度:删除/上传致成员变动即重挂,字母首项偏移保鲜(⑤-4) */}
+        <ScrollView key={`browse:${songs.length}`} ref={azScroll} contentContainerStyle={{ paddingBottom: 140 + insets.bottom }}>
+          {renderGroup('我上传的', groups.uploaded)}
+          {renderGroup('我下载的', groups.downloaded)}
+        </ScrollView>
+        {azBrowse.letters.length > 1 ? <AzIndex letters={azBrowse.letters} onPick={l => azJump('browse:' + l)} /> : null}
+      </View>
     );
   };
 
