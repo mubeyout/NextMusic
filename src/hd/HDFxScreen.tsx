@@ -232,7 +232,7 @@ export function HDFxScreen() {
           <Toggle on={s.panner.enable} label="启用环绕" onChange={v => { setPanner({ enable: v }); force(); }} />
           {s.panner.enable ? (
             <View style={{ gap: 8 }}>
-              <HSlider label="速度" value={s.panner.speed} min={1} max={50} step={1} onChange={v => { setPanner({ speed: v }); force(); }} /> // v3.34:量纲修正(原 0.2-3 与存储 1-50 错位,默认 25 顶格+拖动跳整数)
+              <HSlider label="速度" value={s.panner.speed} min={1} max={50} step={1} onChange={v => { setPanner({ speed: v }); force(); }} />
               <HSlider label="距离" value={s.panner.distance} min={1} max={30} step={1} onChange={v => { setPanner({ distance: v }); force(); }} />
             </View>
           ) : null}
@@ -279,7 +279,7 @@ export function HDFxScreen() {
             </HDTouch>
             <HDTouch style={st.aeSwitchHit} hoverBg="transparent" onPress={() => { setViper({ autoeqOn: !s.viper.autoeqOn }); force(); }}>
               <Switch on={!!s.viper.autoeqName && s.viper.autoeqOn} />
-            </HDTouch> // v3.34:已启用/已停用文字 chip → 标准开关
+            </HDTouch>
           </View>
         </View>
       </ScrollView>
