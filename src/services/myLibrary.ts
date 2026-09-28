@@ -22,7 +22,7 @@ export function toSongItem(l: LibSong, lib?: string): SongItem {
     name: l.name || l.filename.split('/').pop() || '未知曲目',
     singer: l.singer || '未知歌手',
     source: 'custom',
-    songmid: l.songmid || l.id,
+    songmid: String(l.songmid ?? l.id ?? ''),
     albumId: '',
     interval: l.interval || '',
     hash: l.filename,

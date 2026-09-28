@@ -25,7 +25,7 @@ const toLibSong = (s: SongItem): LibSong => ({
   name: s.name, singer: s.singer || '', album: s.albumName || '',
   interval: s.interval || '', quality: '', // 设备库无音质分级
   filename: s.songmid, subPath: '',
-  ext: (s.songmid.split('.').pop() || '').toLowerCase(),
+  ext: (String(s.songmid ?? '').split('.').pop() || '').toLowerCase(),
   hasCover: false, hasLyric: false, // MediaStore 无封面元数据,UI 走渐变兜底
   mtime: 0, size: 0,
 });
