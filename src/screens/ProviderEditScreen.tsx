@@ -14,6 +14,14 @@ import { providers, providerApi, PROVIDER_META, providerIdentityId, type Provide
 import { library } from '../state/library';
 import { dialog, toast } from '../components/Dialog';
 import { plexBeginPin, plexPollPin, plexFinish } from '../services/providers-v2';
+// D2 品牌门：五类型新增连接拦免费（LEO 契约 library_brand）——grandfather：编辑存量连接不经此判
+import { license, BRAND_GATE_TYPES, type BrandGateType } from '../services/license';
+import { useLicense } from '../services/license';
+import { gating } from '../services/gating';
+import { GateSheet } from '../components/GateSheet';
+import { TOAST_DOWNGRADE, CTA, BRAND_BADGE } from '../services/benefits';
+
+const isBrandType = (t: ProviderType): t is ProviderType & BrandGateType => (BRAND_GATE_TYPES as readonly string[]).includes(t);
 
 // 类型卡数据；注：核心后台 LX Server 属于「使用方式与账号」的连接服务器流程，不是第三方媒体库，不在此列
 // icon:HD 卡片用；logo:真品牌 logo 资产（v2 对齐 Amcfy 12 平台；飞牛/听风 2026-09-18 补）
@@ -42,6 +50,20 @@ const TYPE_GROUPS: { label: string; items: typeof TYPE_CARDS }[] = [
   { label: '音乐服务器', items: TYPE_CARDS.filter(c => ['navidrome', 'emby', 'plex', 'daoliyu', 'songloft', 'mstream', 'audiostation', 'feiniu'].includes(c.type)) },
   { label: '文件 · 有声书', items: TYPE_CARDS.filter(c => ['webdav', 'audiobookshelf'].includes(c.type)) },
 ];
+
+// 品牌门 PRO 角标（金边框 chip——handoff §7-5；未授权时显示，授权后全消失）
+function ProBadge({ floating }: { floating?: boolean }) {
+  return (
+    <View style={[pbSt.chip, floating && pbSt.floating]}>
+      <Text style={pbSt.text}>{BRAND_BADGE}</Text>
+    </View>
+  );
+}
+const pbSt = StyleSheet.create({
+  chip: { borderWidth: 1.2, borderColor: C.brand, backgroundColor: C.brandDim, borderRadius: 6, paddingHorizontal: 5, paddingVertical: 1 },
+  floating: { position: 'absolute', top: 8, right: 8 },
+  text: { color: C.brandText, fontSize: 9.5, fontWeight: '700', letterSpacing: 0.5 },
+});
 // 数学居中:onLayout 量容器与内容,translateY 平移——不依赖 flex 引擎任何脾气(vc155 教训)
 function Center({ children }: { children: React.ReactNode }) {
   const [box, setBox] = useState({ H: 0, h: 0 });
@@ -76,6 +98,9 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
 
   const [picked, setPicked] = useState<ProviderType | null>(existing?.type ?? route?.params?.type ?? null);
   const [protoPage, setProtoPage] = useState(0);
+  // D2 品牌门：免费态新增品牌五类型连接拦截（auto 触发走频控三命）；brandGate=当前拦截的类型卡
+  const [brandGate, setBrandGate] = useState<ProviderType | null>(null);
+  const licView = useLicense(); // 兑换/试用后角标与拦截即时刷新
   // subsonic 系有 密码/Token 两种认证方式（Tab 容器）；emby/webdav 只有账号密码
   const [authTab, setAuthTab] = useState(0);
   const [a, setA] = useState<ProviderAcct>(existing ?? { id: `pv-${Date.now()}`, type: 'navidrome', name: '', base: '', user: '', pass: '' });
@@ -86,7 +111,17 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
   const subsonicFamily = picked === 'navidrome' || picked === 'subsonic';
   const copy: ConnectCopy = picked ? CONNECT_COPY[picked] ?? { desc: '' } : { desc: '' };
 
+  // 品牌门判定：仅新增连接（existing=编辑存量，grandfather 零触碰）；授权后（含试用/内测）即过
+  const gated = (t: ProviderType) => !existing && isBrandType(t) && !licView.licensed;
+
   const pickType = (t: ProviderType) => {
+    if (gated(t)) {
+      // 触发三命（auto）：首弹 Sheet → 当日已弹 Toast 降级 → 7 天内二次静默（留类型页，锁标即视觉提示）
+      const d = gating.shouldShow('library_brand', 'auto');
+      if (d === 'sheet') setBrandGate(t);
+      else if (d === 'toast') toast(TOAST_DOWNGRADE);
+      return;
+    }
     setPicked(t);
     setA(prev => ({ ...prev, type: t }));
     setTested(false);
@@ -242,6 +277,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                       {c.logo
                         ? <Image source={c.logo} style={{ width: 46, height: 46, borderRadius: 11 }} resizeMode="contain" />
                         : <Icon name={c.icon} size={30} color={C.brandText} />}
+                      {gated(c.type) ? <ProBadge floating /> : null}
                     </View>
                     <Text style={{ color: C.text2, fontSize: 11.5, fontWeight: '500' }} numberOfLines={1}>{SHORT_NAME[c.type] ?? c.title}</Text>
                   </TouchableOpacity>
@@ -280,7 +316,10 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                           ? <Image source={c.logo} style={{ width: 30, height: 30, borderRadius: 7 }} resizeMode="contain" />
                           : <Icon name={c.icon} size={24} color={C.brandText} />}
                         <View style={{ flex: 1, minWidth: 0 }}>
-                          <Text style={{ color: C.text, fontSize: 14, fontWeight: '600' }}>{c.title}</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <Text style={{ color: C.text, fontSize: 14, fontWeight: '600' }}>{c.title}</Text>
+                            {gated(c.type) ? <ProBadge /> : null}
+                          </View>
                           <Text style={{ color: C.text3, fontSize: 11.5 }} numberOfLines={1}>{c.sub}</Text>
                         </View>
                         <Icon name="chevronright" size={16} color={C.text3} />
@@ -311,6 +350,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                     : <Icon name={c.icon} size={52} color={C.brandText} />}
                   <Text style={st.typeRowTitle} numberOfLines={1} ellipsizeMode="tail">{c.title}</Text>
                   <Text style={st.typeRowSub} numberOfLines={1} ellipsizeMode="tail">{c.sub}</Text>
+                  {gated(c.type) ? <ProBadge floating /> : null}
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -352,6 +392,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                     </View>
                     <Text style={hdSt.typeTitle} numberOfLines={1} ellipsizeMode="tail">{c.title}</Text>
                     <Text style={hdSt.typeSub} numberOfLines={1} ellipsizeMode="tail">{c.sub}</Text>
+                    {gated(c.type) ? <ProBadge floating /> : null}
                   </HDTouch>
                 ))}
               </ScrollView>
@@ -362,6 +403,22 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
             <Text style={[st.desc, hdSt.desc]}>服务器地址与账号由用户明确填写，也可以从历史连接中选择。</Text>
           </ScrollView>
         )}
+
+        {/* D2 品牌门拦截弹层（GateSheet·library_brand 类型卡+等价物三行；弹出即记频控） */}
+        {brandGate ? (
+          <GateSheet
+            gate="library_brand"
+            brandType={isBrandType(brandGate) ? brandGate : undefined}
+            onUpgrade={() => { setBrandGate(null); nav.navigate('License'); }}
+            onTrial={() => {
+              const r = license.startTrial();
+              setBrandGate(null);
+              if (r.ok) { toast(`已开启试用 · ${CTA.trial}`); pickType(brandGate); } // 试用=Pro 全权益，品牌门即过
+              else toast(r.reason);
+            }}
+            onDismiss={() => setBrandGate(null)}
+          />
+        ) : null}
       </View>
     );
   }

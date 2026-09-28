@@ -11,9 +11,11 @@ import { providers } from '../services/providers';
 import { downloads as dlStore } from '../services/downloads';
 import { deviceTrackCount } from '../services/devicelibrary';
 import { APP_VERSION } from '../services/appversion';
+import { useLicense } from '../services/license';
 
 // 设置主页：图标语义修正（palette/cloud/globe/wave/info），全部入口可达
 const GROUPS: { icon: IconName; title: string; sub: string; to?: string }[] = [
+  { icon: 'shield', title: '授权与升级', sub: '兑换码 · 试用 · 家庭版', to: 'License' },
   { icon: 'sliders', title: '播放设置', sub: '默认音质', to: 'PlayerSettings' },
   { icon: 'music', title: '音源管理', sub: '', to: 'Sources' },
   { icon: 'devices', title: '媒体库', sub: 'Emby / Jellyfin / Navidrome / 道理鱼 / WebDAV', to: 'MediaLibs' },
@@ -30,12 +32,20 @@ export function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string) => void };
   const { connected, base, username } = useApp();
+  const lic = useLicense();
   const nSources = activeSources().length;
   const nDl = dlStore.all().length;
   const nPv = providers.all().length;
   const nLocal = deviceTrackCount();
 
   const sub = (g: typeof GROUPS[number]): string => {
+    if (g.title === '授权与升级') {
+      if (lic.tier === 'm1_beta') return '内测通道 · 全功能开放';
+      if (lic.tier === 'family') return '家庭版 · 已激活';
+      if (lic.tier === 'pro') return 'Pro · 已激活';
+      if (lic.tier === 'trial') return lic.trialExpired ? '试用已结束' : `Pro 试用剩 ${lic.trialDaysLeft} 天`;
+      return '免费版 · 可试用 Pro';
+    }
     if (g.title === '音源管理') return `${nSources} 个已启用`;
     if (g.title === '下载设置') return `${nDl} 首已下载`;
     if (g.title === '媒体库') return nPv ? `${nPv} 个已连接` : g.sub;

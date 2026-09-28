@@ -31,6 +31,7 @@ import { SettingsScreen } from './screens/SettingsScreen';
 import { HDSettingsScreen } from './hd/HDSettings';
 import { SourcesScreen, AccountScreen } from './screens/SourcesAccountScreens';
 import { BasicSettingsScreen, ThemeScreen, AboutScreen, DownloadsSettingsScreen, BackupSettingsScreen } from './screens/SettingSubScreens';
+import { LicenseScreen } from './screens/LicenseScreen'; // D2:授权与升级（兑换/试用/家庭补差入口）
 import { ManualScreen, DeployGuideScreen, FaqScreen, ChangelogScreen } from './screens/HelpScreens';
 import { ImportPlaylistScreen } from './screens/ImportPlaylistScreen';
 import { FxScreen } from './screens/FxScreen';
@@ -213,6 +214,7 @@ return (
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Settings" component={HD ? HDSettingsScreen : withEnter(SettingsScreen, true)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Sources" component={withEnter(SourcesScreen, true)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Account" component={withEnter(AccountScreen, true)} />
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="License" component={withEnter(LicenseScreen, true)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="BasicSettings" component={withEnter(BasicSettingsScreen, true)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Theme" component={withEnter(ThemeScreen, true)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="DownloadsSettings" component={withEnter(DownloadsSettingsScreen, true)} />
