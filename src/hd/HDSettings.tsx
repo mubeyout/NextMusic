@@ -18,6 +18,8 @@ import { api } from '../services/server';
 import { hdNav } from './hdnav';
 import { NativeModules } from 'react-native';
 import { SelectSheet } from '../components/SelectSheet';
+import { useFeatureGate, FeatureGateModal } from '../components/FeatureGate';
+import { LockGlyph } from '../components/GateSheet';
 
 const Restart = NativeModules.AppRestart as { restart: () => void } | undefined;
 const ACCENTS = [
@@ -44,7 +46,7 @@ const TABS = ['外观与界面', '播放体验', '账号与同步', '下载与�
 type Tab = typeof TABS[number];
 
 type RowDef =
-  | { kind: 'toggle'; title: string; desc?: string; icon?: IconName; value: boolean; onToggle: () => void }
+  | { kind: 'toggle'; title: string; desc?: string; icon?: IconName; value: boolean; locked?: boolean; onToggle: () => void }
   | { kind: 'select'; title: string; desc?: string; icon?: IconName; value: string; options: string[]; onPick: (v: string) => void }
   | { kind: 'nav'; title: string; desc?: string; icon?: IconName; to?: string; action?: () => void }
   | { kind: 'info'; title: string; desc?: string; icon?: IconName; value: string };
@@ -56,6 +58,9 @@ export function HDSettingsScreen() {
   const s = useSettings();
   const { connected, base, username, token, setAuth, disconnectServer } = useApp(); // lx184:token/setAuth 补齐(三态+退出登录)
   const { playing } = usePlayer();
+  // D2 lyrics_deep：翻译/罗马音=深度歌词功能——开启处拦免费（基础歌词显示不拦；OFF 恒可关=存量友好）
+  const lyrGate = useFeatureGate('lyrics_deep');
+  const lyrOn = (key: 'showLyricTranslation' | 'showLyricRoma') => lyrGate.guard(() => settings.set(key, true));
 
   const QUALITY_OPTS: string[] = ['128k', '320k', 'flac'];
 
@@ -76,8 +81,8 @@ export function HDSettingsScreen() {
       { kind: 'toggle', icon: 'palette', title: '纯黑背景', desc: 'OLED 友好的纯黑底色(仅深色模式)', value: s.pureBlack, onToggle: () => { settings.set('pureBlack', !s.pureBlack); if (IS_WEB) { hdWebReload(); } else hdRestart(playing); } },
       { kind: 'select', icon: 'palette', title: '界面主题', desc: IS_WEB ? '深色/浅色即时切换' : '深色(车机/TV 默认)或浅色,切换后自动重启生效', value: s.light ? '浅色' : '深色', options: ['深色', '浅色'], onPick: v => { settings.set('light', v === '浅色'); if (IS_WEB) { hdWebReload(); } else hdRestart(playing); } },
       { kind: 'select', icon: 'palette', title: '强调色', desc: IS_WEB ? '全局品牌色(即时生效)' : '全局品牌色(按钮/高亮/选中态),切换后自动重启生效', value: ACCENTS.find(a => a.color === s.accent)?.name ?? 'Next 绿', options: ACCENTS.map(a => a.name), onPick: v => { const hit = ACCENTS.find(a => a.name === v); if (hit) { settings.set('accent', hit.color); if (IS_WEB) { hdWebReload(); } else hdRestart(playing); } } },
-      { kind: 'toggle', icon: 'wave', title: '歌词翻译', desc: '歌词下方显示翻译', value: s.showLyricTranslation, onToggle: () => settings.set('showLyricTranslation', !s.showLyricTranslation) },
-      { kind: 'toggle', icon: 'wave', title: '歌词罗马音', desc: '显示罗马音注音', value: s.showLyricRoma, onToggle: () => settings.set('showLyricRoma', !s.showLyricRoma) },
+      { kind: 'toggle', icon: 'wave', title: '歌词翻译', desc: '歌词下方显示翻译', value: s.showLyricTranslation, locked: lyrGate.locked && !s.showLyricTranslation, onToggle: () => (s.showLyricTranslation ? settings.set('showLyricTranslation', false) : lyrOn('showLyricTranslation')) },
+      { kind: 'toggle', icon: 'wave', title: '歌词罗马音', desc: '显示罗马音注音', value: s.showLyricRoma, locked: lyrGate.locked && !s.showLyricRoma, onToggle: () => (s.showLyricRoma ? settings.set('showLyricRoma', false) : lyrOn('showLyricRoma')) },
       { kind: 'toggle', icon: 'wave', title: '歌词荧光效果', desc: '当前行荧光高亮', value: s.enableLyricGlow, onToggle: () => settings.set('enableLyricGlow', !s.enableLyricGlow) },
       { kind: 'select', icon: 'wave', title: '播放页背景', desc: '封面虚化/纯色/黑色', value: s.playerBackground === 'blur' ? '封面虚化' : s.playerBackground === 'solid' ? '纯色背景' : '黑色背景', options: ['封面虚化', '纯色背景', '黑色背景'], onPick: v => settings.set('playerBackground', v === '封面虚化' ? 'blur' : v === '纯色背景' ? 'solid' : 'dark') },
       // [audit 20260921] 以下死开关隐藏(设置审计:全仓零消费者;存储 key 保留)——接线或删除待拍板
@@ -221,6 +226,8 @@ export function HDSettingsScreen() {
         {rows[tab].map((r, i) => <SettingsRow key={`${r.title}_${i}`} row={r} />)}
       </View>
     </ScrollView>
+    {/* D2 lyrics_deep 门弹层（翻译/罗马音开启拦截；三命首弹在此记频） */}
+    <FeatureGateModal fg={lyrGate} />
     </>
   );
 }
@@ -251,7 +258,10 @@ function SettingsRow({ row }: { row: RowDef }) {
         <View style={st.rowIcon}><Icon name={row.icon} size={14} color={C.text3} /></View>
       ) : null}
       <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-        <Text style={st.rowTitle}>{row.title}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+          {row.kind === 'toggle' && row.locked ? <LockGlyph size={11} color="#595959" /> : null}
+          <Text style={st.rowTitle}>{row.title}</Text>
+        </View>
         {row.desc ? <Text style={st.rowDesc} numberOfLines={2}>{row.desc}</Text> : null}
       </View>
       {row.kind === 'toggle' ? (

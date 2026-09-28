@@ -33,6 +33,8 @@ import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { toast } from '../components/Dialog';
 import { ActionSheet } from '../components/ActionSheet';
+import { useFeatureGate, FeatureGateModal } from '../components/FeatureGate';
+import { LockGlyph } from '../components/GateSheet';
 import {
   FX_DEFAULT_PRESETS, FX_FREQ_LABELS, FX_REVERB_OPTIONS,
   subscribeFx, fxSnapshot, fxSyncState, fetchFxFromServer,
@@ -257,6 +259,9 @@ export function FxScreen() {
   const [managePreset, setManagePreset] = useState<string | null>(null);
   const [aeqQuery, setAeqQuery] = useState(''); // lx52 AutoEq 型号搜索
   const [advancedOpen, setAdvancedOpen] = useState(false); // lx57 高级折叠
+  // D2 eq_custom：自定义预设入口门（免费拦——guard 三命；内置预设应用/听感模式不拦；重命名/删除=存量管理不拦）
+  const eqGate = useFeatureGate('eq_custom');
+  const openAddPreset = () => { setInputVal(''); setPresetSheet({ mode: 'add' }); };
 
   useEffect(() => subscribeFx(() => force(x => x + 1)), []);
 
@@ -332,7 +337,9 @@ export function FxScreen() {
               </T>
             );
           })}
-          <T style={st.chipAdd} activeOpacity={0.7} onPress={() => { setInputVal(''); setPresetSheet({ mode: 'add' }); }}>
+          {/* D2 eq_custom：＋chip=自定义预设入口（免费锁标+三命拦截） */}
+          <T style={[st.chipAdd, eqGate.locked && st.chipAddLock]} activeOpacity={0.7} onPress={() => eqGate.guard(openAddPreset)}>
+            {eqGate.locked ? <LockGlyph size={11} color="#595959" /> : null}
             <Text style={st.chipAddText}>＋</Text>
           </T>
         </ScrollView>
@@ -550,6 +557,9 @@ export function FxScreen() {
         </Text>
       </ScrollView>
 
+      {/* D2 eq_custom 门弹层（三命首弹在此记频；试用成功重放=直接弹命名框） */}
+      <FeatureGateModal fg={eqGate} />
+
       {/* 添加 / 重命名预设 */}
       <ActionSheet
         visible={presetSheet !== null}
@@ -624,6 +634,7 @@ const st = StyleSheet.create({
   chipText: { color: C.text2, fontSize: 12, fontWeight: '600' },
   chipTextOn: { color: C.onBrand, fontWeight: '800' },
   chipAdd: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', borderColor: C.strokeStrong, alignItems: 'center', justifyContent: 'center' },
+  chipAddLock: { width: 48, flexDirection: 'row', gap: 4 }, // D2 锁态：锁标+＋并排（免费可发现）
   chipAddText: { color: C.text3, fontSize: 15, fontWeight: '800', lineHeight: 17 },
   modeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14, paddingHorizontal: 2 },
   modeCell: { width: '31%', flexGrow: 0, flexShrink: 0 },

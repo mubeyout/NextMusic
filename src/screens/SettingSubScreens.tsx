@@ -19,6 +19,7 @@ import { downloads as dlStore, fmtBytes, downloadFails, clearFails, subscribeDow
 import { APP_VERSION, IS_HD } from '../services/appversion';
 import { api, store as httpStore, normalizeBase } from '../services/server';
 import { pubCheck, pubSetShowEntry, usePubEntry } from '../services/publicLibrary'; // ④公共曲库个人显示开关
+import { useFeatureGate, FeatureGateModal } from '../components/FeatureGate';
 
 // ---------- 基本设置 ----------
 export function BasicSettingsScreen() {
@@ -412,6 +413,8 @@ export function BackupSettingsScreen() {
   const s = useSettings();
   const [dav, setDav] = useState<DavConf>(loadDav);
   const [busy, setBusy] = useState(false);
+  // D2 webdav_backup：云端备份/恢复入口门（免费拦；本地文件导出/导入=免费迁移路径不拦；服务器配置/测试不拦）
+  const bkGate = useFeatureGate('webdav_backup');
 
   const save = (patch: Partial<DavConf>) => {
     const next = { ...dav, ...patch };
@@ -527,8 +530,8 @@ export function BackupSettingsScreen() {
         <ActionRow label={busy ? '处理中…' : '测试连接'} onPress={test} />
       </Section>
       <Section title="备份">
-        <ActionRow label={busy ? '处理中…' : '立即备份'} onPress={backupNow} />
-        <ActionRow label="从云端恢复" onPress={restore} />
+        <ActionRow label={busy ? '处理中…' : '立即备份'} locked={bkGate.locked} onPress={() => bkGate.guard(backupNow)} />
+        <ActionRow label="从云端恢复" locked={bkGate.locked} onPress={() => bkGate.guard(restore)} />
       </Section>
       <Section title="本地文件（换机迁移 / 归档）">
         <ActionRow label="导出到文件" value="保存为 JSON" onPress={exportToFile} />
@@ -538,6 +541,9 @@ export function BackupSettingsScreen() {
         <ToggleRow label="歌单与收藏" value={s.backupPlaylists} onChange={v => settings.set('backupPlaylists', v)} />
         <ToggleRow label="设置项" value={s.backupSettings} onChange={v => settings.set('backupSettings', v)} />
       </Section>
+
+      {/* D2 webdav_backup 门弹层（三命首弹在此记频；试用成功重放原备份/恢复动作） */}
+      <FeatureGateModal fg={bkGate} />
     </PageShell>
   );
 }

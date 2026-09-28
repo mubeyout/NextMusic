@@ -7,6 +7,7 @@ import { H } from '../hd/hdtokens'; // v3.30:设置族页面进统一栅格
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import { Icon } from '../theme/Icon';
 import { PageHeader } from './PageChrome';
+import { LockGlyph } from './GateSheet';
 import { C } from '../theme/tokens';
 import { ActionSheet } from './ActionSheet';
 
@@ -45,10 +46,14 @@ export function ValueRow({ label, value, options, onPick }: {
   );
 }
 
-export function ActionRow({ label, value, destructive, onPress }: { label: string; value?: string; destructive?: boolean; onPress: () => void }) {
+// locked：D2 gate 拦截态锁标（LockGlyph 前缀 #595959——LockRow 同视觉语言）
+export function ActionRow({ label, value, destructive, locked, onPress }: { label: string; value?: string; destructive?: boolean; locked?: boolean; onPress: () => void }) {
   return (
     <TouchableOpacity style={[s.row, s.rowDivide]} activeOpacity={0.7} onPress={onPress}>
-      <Text style={[s.rowLabel, destructive && { color: '#FF6B6B' }]}>{label}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        {locked ? <LockGlyph size={13} color="#595959" /> : null}
+        <Text style={[s.rowLabel, destructive && { color: '#FF6B6B' }]}>{label}</Text>
+      </View>
       <View style={s.rowRight}>
         {value ? <Text style={s.rowValue}>{value}</Text> : null}
         <Icon name="chevronright" size={18} color={C.text3} />

@@ -16,6 +16,8 @@ import {
   saveNewPreset, deleteCustomPreset, renameCustomPreset,
   AUTOEQ_MODELS, fxSyncState, fetchFxFromServer, type SoundMode, type FxSettings,
 } from '../services/soundfx';
+import { useFeatureGate, FeatureGateModal } from '../components/FeatureGate';
+import { LockGlyph } from '../components/GateSheet';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -133,6 +135,14 @@ export function HDFxScreen() {
   const s: FxSettings = snap.settings;
   const mode = currentSoundMode();
   const [eqPickOpen, setEqPickOpen] = useState(false); // AutoEQ 型号弹层
+  // D2 eq_custom：存为预设入口门（免费拦——guard 三命；内置预设应用/听感模式不拦；长按重命名/删除=存量管理不拦）
+  const eqGate = useFeatureGate('eq_custom');
+  const savePreset = () => {
+    const n = window.prompt('保存当前 EQ 为预设', '我的预设');
+    if (!n) return;
+    const err = saveNewPreset(n);
+    toast(err || `已保存「${n.trim()}」`); force();
+  };
 
   const presets = [...FX_DEFAULT_PRESETS, ...snap.customPresets];
 
@@ -183,13 +193,9 @@ export function HDFxScreen() {
                 <Text style={[st.chipText, snap.activePresetName === p.name && { color: '#0b0f0d', fontWeight: '700' }]}>{p.name}</Text>
               </HDTouch>
             ))}
-            <HDTouch style={[st.chip, st.chipGhost]} hoverBg="#ffffff1a" onPress={() => {
-              const n = window.prompt('保存当前 EQ 为预设', '我的预设');
-              if (!n) return;
-              const err = saveNewPreset(n);
-              toast(err || `已保存「${n.trim()}」`); force();
-            }}>
-              <Icon name="add" size={12} color={C.text2} />
+            {/* D2 eq_custom：存为预设=入口（免费锁标替换加号+三命拦截） */}
+            <HDTouch style={[st.chip, st.chipGhost]} hoverBg="#ffffff1a" onPress={() => eqGate.guard(savePreset)}>
+              {eqGate.locked ? <LockGlyph size={11} color="#595959" /> : <Icon name="add" size={12} color={C.text2} />}
               <Text style={st.chipText}>存为预设</Text>
             </HDTouch>
           </View>
@@ -280,6 +286,8 @@ export function HDFxScreen() {
 
       {/* AutoEQ 型号弹层 */}
       {eqPickOpen ? <AutoeqPicker onClose={() => setEqPickOpen(false)} cur={s.viper.autoeqName} onPick={name => { setViper({ autoeqName: name, autoeqOn: !!name }); force(); setEqPickOpen(false); }} /> : null}
+      {/* D2 eq_custom 门弹层（三命首弹在此记频；试用成功重放=弹出命名框） */}
+      <FeatureGateModal fg={eqGate} />
     </View>
   );
 }
