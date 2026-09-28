@@ -16,7 +16,7 @@ const kv = createMMKV({ id: 'nextmusic-license' });
 // ⚠️ 开发钥占位（2026-09-28 生成于本机，私钥不入库）——生产发码钥上线时：
 //   1) 用生产 vendor 公钥替换下方常量（与 nextmusic-release 发码器 signCompact 的 privateKey 配对）；
 //   2) 发码器侧保持 canonicalJson/payload v2 格式不变即天然互通。
-export const LICENSE_PUBKEY_B64 = '7JYEEoaY/qRaPqfF3/W/3I1O/5jeLO9qpkmqnSHv9Ek='; // DEV-KEYPLACEHOLDER（生产替换点）
+export const LICENSE_PUBKEY_B64 = 'HyIqRVL7ag6xZtKb8+ZKFXuzokVjL3jBPt6ppzt/4qU='; // DEV-KEYPLACEHOLDER（生产替换点；开发钥配对私钥=~/.nextmusic/license-key.pem 20260928）
 const TRIAL_DAYS = 7;
 const DAY_MS = 86400000;
 
