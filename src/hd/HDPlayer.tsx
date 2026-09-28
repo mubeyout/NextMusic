@@ -54,10 +54,12 @@ function HD_VINYL_SVG(img?: string, size = 300, playing?: boolean): React.ReactN
     ...spec.wideBands.map((r, i) => h('circle', { key: 'w' + i, cx: c, cy: c, r, fill: 'none', stroke: VINYL_SPEC.wide.stroke, strokeOpacity: String(VINYL_SPEC.wide.opacity), strokeWidth: VINYL_SPEC.wide.width })),
     h('circle', { key: 'rim', cx: c, cy: c, r: spec.rimR, fill: 'none', stroke: VINYL_SPEC.rim.stroke, strokeOpacity: String(VINYL_SPEC.rim.opacity), strokeWidth: VINYL_SPEC.rim.width }),
     h('circle', { key: 'sheen', cx: c, cy: c, r: spec.radius, fill: 'url(#vdHdSheen)' }),
-    /* 盘心 label:深色纸底→正圆裁切封面(slice 不变形)→label 描边环→轴孔 */
+    /* 盘心 label:暗分离环(draft-2 4px 暗环,封面嵌进盘里不浮贴)→深色纸底→正圆裁切封面→label 描边环→轴孔环+轴孔 */
+    h('circle', { key: 'lblDark', cx: c, cy: c, r: 62 * s, fill: 'rgba(4,4,4,0.72)' }),
     h('circle', { key: 'lblBase', cx: c, cy: c, r: 58 * s, fill: '#101312' }),
     img ? h('image', { key: 'lblImg', href: img, xlinkHref: img, x: c - 56 * s, y: c - 56 * s, width: 112 * s, height: 112 * s, preserveAspectRatio: 'xMidYMid slice', clipPath: 'url(#hdLblClip)' }) : null, // v3.35:href 双写兼容(xlink 老内核)
-    h('circle', { key: 'lblRing', cx: c, cy: c, r: 58 * s, fill: 'none', stroke: '#FFFFFF2E', strokeWidth: 1.5 }),
+    h('circle', { key: 'lblRing', cx: c, cy: c, r: 58 * s, fill: 'none', stroke: '#FFFFFF12', strokeWidth: 1 }),
+    h('circle', { key: 'spindleRing', cx: c, cy: c, r: 8.5 * s, fill: 'rgba(255,255,255,0.05)' }),
     h('circle', { key: 'spindle', cx: c, cy: c, r: 6 * s, fill: '#000' }),
   );
 }
