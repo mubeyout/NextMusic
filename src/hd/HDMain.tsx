@@ -1,7 +1,7 @@
 // HD(车机/TV)主壳 —— 对齐桌面版:左侧 174dp 侧栏(发现/我的乐库/歌单 三组)
 // + 内容区(层叠保状态) + 底部 64dp 桌面式播放条
 // 业务层(播放引擎/音源/媒体库)全复用 phone 版,仅 UI 形态不同
-import React, { useEffect, useReducer, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, Platform, ActivityIndicator } from 'react-native';
 const IS_WEB = Platform.OS === 'web';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -111,8 +111,14 @@ const railNav = (s: string, p?: object) => {
 // HD 屏 token=桌面px×0.75,phone 屏是原生 px;v1.2.6 缩放源修正后并排密度差一截(设置子页字体特大)。
 // 全部桥接 phone 屏(队列/评论/Fx/媒体库族/下载/榜单广场/搜索/设置族/账号族)包 0.75 缩放,与 HD 屏密度统一;
 // TV/原生侧原样返回组件,零 diff。Route(投屏弹层)除外——absolute 弹层定位不适用 transform 缩放
+// [KAI 20261001] 桥接缩放包装必须按原组件缓存——原先每次调用新建 W 组件身份，
+// 而 HDMain JSX 里内联调用（component={withPhoneScale(X)}）→ HDMain 每次重淄=全部桥接屏
+// 整树重挂(状态/手势/滚动全灭+focus effect 重跑)。缓存后同原组件恒同身份，重淮不重挂。
+const phoneScaleCache = new Map<React.ComponentType<Record<string, unknown>>, React.ComponentType<Record<string, unknown>>>();
 export const withPhoneScale = (Cmp: React.ComponentType<Record<string, unknown>>) => {
   if (!IS_WEB) return Cmp;
+  const hit = phoneScaleCache.get(Cmp);
+  if (hit) return hit;
   // web: CSS zoom 替代 transform scale——zoom 参与布局,ScrollView 尺寸/滚轮坐标自动适配
   // (transform 0.75 下 RNW ScrollView 计算布局尺寸按未缩放值,底部内容不可达=裁切,老板实测)
   const W = (props: Record<string, unknown>) => (
@@ -121,6 +127,7 @@ export const withPhoneScale = (Cmp: React.ComponentType<Record<string, unknown>>
     </div>
   );
   W.displayName = 'PhoneScale';
+  phoneScaleCache.set(Cmp, W);
   return W;
 };
 
@@ -154,6 +161,9 @@ export function HDMain() {
   const pub = usePubEntry();
   const locLibsRail = localLib.all(); // 细则1:侧栏本机曲库行(有库才显示;导航时重读)
   useEffect(() => { pubCheck(); }, []);
+
+  // [KAI 20261001] Tabs 屏 children 稳定引用——只随 tab 变;HDMain 无关重渲不再级联进 Tabs 屏
+  const tabsChildren = useCallback(() => <TabsHost tab={tab} setTab={setTab} />, [tab, setTab]);
 
   // 歌单列表(本地+同步)与"我喜欢的"计数——lx91 单次拉取;lx104:缓存秒出+我喜欢的去重+离线收藏合并
   const [syncTick, setSyncTick] = useState(0);
@@ -371,7 +381,9 @@ export function HDMain() {
           {/* 坞108:TV 转场必须直切;坞57:fade 有变亮中间态 */}
           {/* [KAI 20261001] freezeOnBlur 关闭——冻结快照层事件死点:匿名态媒体库可见但点击无反应无焦点(老板 12:50 报障,浏览器实证:登录态同环境正常/匿名态 Pressable 零响应);冻结屏量级有限性能可接受 */}
           <InnerStack.Navigator screenOptions={{ headerShown: false, animation: 'none', contentStyle: { backgroundColor: C.bg }, freezeOnBlur: false }}>
-            <InnerStack.Screen name="Tabs">{() => <TabsHost tab={tab} setTab={setTab} />}</InnerStack.Screen>
+            {/* [KAI 20261001] Tabs children 稳定化:原内联箭头函数每次 HDMain 重淄换身份，
+            与屏无关的重渲(风暴期 281 次/3s)全部级联进 Tabs 屏;useCallback 只随 tab 变 */}
+            <InnerStack.Screen name="Tabs">{tabsChildren}</InnerStack.Screen>
             <InnerStack.Screen name="Player" component={HDPlayerSafe} />
             <InnerStack.Screen name="Queue" component={withPhoneScale(QueueScreen)} />
             <InnerStack.Screen name="Route" component={RoutePage} options={{ presentation: 'transparentModal' }} />

@@ -70,7 +70,15 @@ async function g<T>(p: Promise<unknown>): Promise<T> {
 // ── 授权态校验(summary 探测+prefs 个人开关;屏挂载/聚焦常调,30s 轻节流) ──
 let checking = false, lastCheck = 0;
 export function pubCheck(force = false): void {
-  if (!httpStore.token) { setSt({ authorized: false, summary: null }); return; } // 未登录:同形不可见(404 语义)
+  // [KAI 20261001] 匿名分支幂等 bail：未登录态已就位时不再重放 setSt——
+  // setSt 每次新对象→订阅者(HDMain usePubEntry)重淄→内联 withPhoneScale 新身份→整屏重挂→
+  // 重挂即重跑 focus effect→又 pubCheck：自激 94Hz 重淄风暴=匿名态媒体库整屏触摸死根因。
+  // 已处于未登录态时状态无变化，跳过。（登录→退出的一次性迁移仍会触发）
+  if (!httpStore.token) {
+    if (!st.authorized && st.summary == null) return;
+    setSt({ authorized: false, summary: null });
+    return;
+  } // 未登录:同形不可见(404 语义)
   if (checking || (!force && Date.now() - lastCheck < 30_000)) return;
   checking = true;
   (async () => {
