@@ -369,7 +369,8 @@ export function HDMain() {
         <NavigationIndependentTree>
         <NavigationContainer ref={hdInnerRef} theme={hdInnerTheme} onStateChange={() => { try { const r = hdInnerRef.getCurrentRoute() as unknown as { name?: string; params?: object } | undefined; setInnerRoute(r?.name || 'Tabs'); setInnerP((r?.params as Record<string, unknown>) || null); } catch { /* ignore */ } }}>
           {/* 坞108:TV 转场必须直切;坞57:fade 有变亮中间态 */}
-          <InnerStack.Navigator screenOptions={{ headerShown: false, animation: 'none', contentStyle: { backgroundColor: C.bg }, freezeOnBlur: true }}>
+          {/* [KAI 20261001] freezeOnBlur 关闭——冻结快照层事件死点:匿名态媒体库可见但点击无反应无焦点(老板 12:50 报障,浏览器实证:登录态同环境正常/匿名态 Pressable 零响应);冻结屏量级有限性能可接受 */}
+          <InnerStack.Navigator screenOptions={{ headerShown: false, animation: 'none', contentStyle: { backgroundColor: C.bg }, freezeOnBlur: false }}>
             <InnerStack.Screen name="Tabs">{() => <TabsHost tab={tab} setTab={setTab} />}</InnerStack.Screen>
             <InnerStack.Screen name="Player" component={HDPlayerSafe} />
             <InnerStack.Screen name="Queue" component={withPhoneScale(QueueScreen)} />
