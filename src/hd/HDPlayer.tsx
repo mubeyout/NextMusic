@@ -107,8 +107,9 @@ export function HDPlayer() {
   const [winH, setWinH] = useState(() => (typeof window !== 'undefined' && typeof window.innerHeight === 'number' ? window.innerHeight : 800));
   // lx180:可视化开关响应式镜像——settings 变更立即驱动 effect
   const [showViz, setShowViz] = useState(settings.get().showDetailVisualizer !== false);
+  const [botInset, setBotInset] = useState(settings.get().hdBottomInset || 0);
   useEffect(() => {
-    return onSettings(() => setShowViz(settings.get().showDetailVisualizer !== false));
+    const un = onSettings(() => { setShowViz(settings.get().showDetailVisualizer !== false); setBotInset(settings.get().hdBottomInset || 0); });
   }, []);
   // [Fix 2026-09-14] Hermes 也定义 window global——typeof window 守卫穿透,native 上 window.addEventListener 不存在
   // → HD/TV 进播放页必崩(TV 实锤 vc169: TypeError undefined is not a function, 老板 09-14 反馈闪退)。守卫改 IS_WEB
@@ -292,7 +293,7 @@ export function HDPlayer() {
         </HDTouch>
       </View>
 
-      <View style={[st.main, IS_WEB && st.mainWeb, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+      <View style={[st.main, IS_WEB && st.mainWeb, { paddingBottom: Math.max(insets.bottom + botInset, 16) }]}>
         <View style={st.rowWrap}>
         <View style={[st.artCol, IS_WEB && { width: '45%' }]}> {/* v3.19(老板:.r-1vcqxpo→45%):web 唱片列宽 344→45%,TV 保持 344 */}
           {/* lx125:粒子环(单圈 48 粒,FFT 分区驱动) */}

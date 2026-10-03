@@ -90,6 +90,7 @@ export function HDSettingsScreen() {
       { kind: 'toggle', icon: 'wave', title: '播放页可视化', desc: '频谱环/粒子', value: s.showDetailVisualizer, onToggle: () => settings.set('showDetailVisualizer', !s.showDetailVisualizer) },
       { kind: 'toggle', icon: 'fullscreen', title: '屏幕常亮', desc: '播放时阻止休眠', value: s.keepScreenAwake, onToggle: () => settings.set('keepScreenAwake', !s.keepScreenAwake) },
       { kind: 'toggle', icon: 'edit', title: '键盘快捷键', desc: '空格播放 · N/P 切歌 · Alt+←→ 切歌/快进 · ⌘F 搜索', value: s.enableKeyboardShortcuts, onToggle: () => settings.set('enableKeyboardShortcuts', !s.enableKeyboardShortcuts) },
+      { kind: 'select', icon: 'fullscreen', title: '车机底部补偿', desc: '系统栏遮挡播放器底部时增大让位（车机自绘 bar 不上报 insets 时用;即时生效）', value: String(s.hdBottomInset || 0), options: ['0', '16', '24', '32', '48', '64', '80', '96', '120'], onPick: v => settings.set('hdBottomInset', Number(v)) },
       { kind: 'select', icon: 'fullscreen', title: '界面缩放', desc: '全局字号/触点/行高缩放(桌面即时生效,手机/TV 切换后重启生效)', value: s.uiScale || '100%', options: IS_WEB ? ['100%', '110%', '125%', '150%', '175%'] : ['90%', '100%', '110%', '125%'], onPick: v => { settings.set('uiScale', v); if (IS_WEB) { const z = Math.max(0.75, Math.min(2, Number(v.replace('%', '')) / 100)); document.documentElement.style.zoom = String(z); } else hdRestart(playing); } }, // v3.28:tsconfig 补 dom 后 document 直用
     ],
     '播放体验': [

@@ -22,6 +22,7 @@ export interface AppSettings {
   accent: string;                // hex
   light: boolean;                // 浅色主题（桌面 Web 同款浅色盘）
   uiScale: string;               // HD 界面缩放档位(90%/100%/110%/125%,重启生效)
+  hdBottomInset: number;         // 车机底部安全区补偿 px(系统 bar 不上报 insets 的车机自绘栏,播放器底部让位;即时生效)
   showTabLabels: boolean;
   // 启动
   startupPage: 'home' | 'explore' | 'my';
@@ -106,6 +107,7 @@ export const DEFAULTS: AppSettings = {
   accent: '#1ED760',
   light: false,
   uiScale: Platform.OS === 'web' ? '125%' : '100%', // 桌面默认 125%(老板定),CSS zoom 生效;原生重启生效
+  hdBottomInset: 0,
   showTabLabels: true,
   startupPage: 'home',
   restorePlayback: true, // 全端默认开：冷启动恢复队列+当前曲（暂停态），点播放才取链续播——不卡启动、不丢上下文（lx45）
