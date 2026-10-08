@@ -281,6 +281,15 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                   </View>
                   <Text style={{ color: C.text2, fontSize: 11.5, fontWeight: '500' }} numberOfLines={1}>本机曲库</Text>
                 </TouchableOpacity>
+                {/* [web] 本地曲库(服务器侧目录绑定,升级稿 §二;浏览器无设备文件→服务器目录语义) */}
+                {Platform.OS === 'web' ? (
+                  <TouchableOpacity onPress={() => nav.navigate('ServerLocalLib', {})} activeOpacity={0.7} style={{ width: 80, alignItems: 'center', gap: 7 }}>
+                    <View style={{ width: 74, height: 74, borderRadius: 18, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.brand + '55' }}>
+                      <Icon name="server" size={28} color={C.brandText} />
+                    </View>
+                    <Text style={{ color: C.text2, fontSize: 11.5, fontWeight: '500' }} numberOfLines={1}>本地曲库</Text>
+                  </TouchableOpacity>
+                ) : null}
                 {TYPE_CARDS.map(c => (
                   <TouchableOpacity key={c.type} onPress={() => pickType(c.type)} activeOpacity={0.7} style={{ width: 80, alignItems: 'center', gap: 7 }}>
                     <View style={{ width: 74, height: 74, borderRadius: 18, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }}>
@@ -315,6 +324,20 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                     </View>
                     <Icon name="chevronright" size={16} color={C.text3} />
                   </TouchableOpacity>
+                  {/* [web] 本地曲库行(服务器侧目录;升级稿 §二) */}
+                  {Platform.OS === 'web' ? (
+                    <TouchableOpacity onPress={() => nav.navigate('ServerLocalLib', {})} activeOpacity={0.75}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.surface2, borderRadius: 13, paddingVertical: 6, paddingHorizontal: 12, borderWidth: 1, borderColor: C.brand + '55', marginTop: 8 }}>
+                      <View style={{ width: 30, height: 30, borderRadius: 7, alignItems: 'center', justifyContent: 'center' }}>
+                        <Icon name="server" size={22} color={C.brandText} />
+                      </View>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={{ color: C.text, fontSize: 14, fontWeight: '600' }}>本地曲库</Text>
+                        <Text style={{ color: C.text3, fontSize: 11.5 }} numberOfLines={1}>绑定服务器目录，扫描入库即可听</Text>
+                      </View>
+                      <Icon name="chevronright" size={16} color={C.text3} />
+                    </TouchableOpacity>
+                  ) : null}
                 </View>
                 {TYPE_GROUPS.map(g => (
                   <View key={g.label} style={{ marginBottom: 12 }}>

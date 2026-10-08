@@ -49,6 +49,6 @@ export default defineConfig({
     // 纯浏览器(服务端部署)无 → ReferenceError。词法替换为 globalThat,两端皆可
     global: 'globalThis',
   },
-  server: { port: 5199, strictPort: true, proxy: { '/api': 'http://127.0.0.1:9527' } }, // dev 验证用:web 形态音源调用走相对路径 /api,同源转发到本地服务
+  server: { port: 5199, strictPort: true, proxy: { '/api': process.env.NM_API_PROXY || 'http://127.0.0.1:9527' } }, // dev 验证用:web 形态音源调用走相对路径 /api,同源转发到本地服务(NM_API_PROXY 可指向验证实例)
   build: { outDir: R('dist'), emptyOutDir: true, chunkSizeWarningLimit: 4096 },
 });

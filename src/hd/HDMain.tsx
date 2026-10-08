@@ -403,7 +403,8 @@ export function HDMain() {
             {/* v3.20:web 全宽 HD 版 Fx(注释放 Navigator 内会炸——lx168 红线,注释放表达式内) */}
             <InnerStack.Screen name="Fx" component={IS_WEB ? HDFxScreen : withPhoneScale(FxScreen)} />
             <InnerStack.Screen name="MediaLibs" component={withPhoneScale(MediaLibsScreen)} />
-            <InnerStack.Screen name="CloudLibrary" component={withPhoneScale(CloudLibraryScreen)} /> {/* [KAI 20261008] 云曲库注册补齐 */}
+            {/* [KAI 20261008] 云曲库注册补齐(lx168 红线:注释放 Navigator 内会炸,同独占一行才安全) */}
+            <InnerStack.Screen name="CloudLibrary" component={withPhoneScale(CloudLibraryScreen)} />
             <InnerStack.Screen name="MyLibrary" component={withPhoneScale(MyLibraryScreen)} />
             <InnerStack.Screen name="MyLibAlbum" component={withPhoneScale(MyLibAlbumRoute)} />
             <InnerStack.Screen name="MyLibArtist" component={withPhoneScale(MyLibArtistRoute)} />

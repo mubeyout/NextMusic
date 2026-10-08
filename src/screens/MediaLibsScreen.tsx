@@ -29,6 +29,7 @@ import {
   type ProviderAcct, type ProviderType, type PvArtist, type PvAlbum, type PvPlaylist,
 } from '../services/providers';
 import { localLib, checkLocalLib, type LocalLibConfig } from '../services/localLibrary';
+import { useSlbEntries, slbRefresh } from '../services/serverLocalLibrary'; // [web]本地曲库(服务器侧目录,升级稿 §二)
 import type { SongItem } from '../services/server';
 
 // 有品牌 logo 的类型用 BrandIcon，其余回退语义图标
@@ -81,6 +82,8 @@ export function MediaLibsScreen() {
   // ②本机曲库行(含失效态 v3 A5:灰置+danger 状态点+副文案+行内重新选择)
   const [locLibs, setLocLibs] = useState<LocalLibConfig[]>([]);
   const [locBad, setLocBad] = useState<Record<string, boolean>>({});
+  // [web]本地曲库行(服务器侧目录;有库才显示行,同 APK 模式——共享库 unlocked 即可浏览)
+  const serverLibs = useSlbEntries().filter(e => !e.locked);
   // ④公共曲库系统库置顶条目(官方徽标·不可删;未授权/开关关→完全不渲染)
   const pub = usePubEntry();
   const pubVisible = pub.authorized && pub.showEntry;
@@ -93,7 +96,7 @@ export function MediaLibsScreen() {
   }, []);
   useEffect(refresh, []);
   // 从 ProviderEdit 保存/删除返回时刷新列表（屏幕停留挂载不会重走 mount）
-  useFocusEffect(useCallback(() => { refresh(); refreshLocals(); pubCheck(); }, [refresh, refreshLocals]));
+  useFocusEffect(useCallback(() => { refresh(); refreshLocals(); pubCheck(); slbRefresh(); }, [refresh, refreshLocals]));
 
   // 按钮入口：Figma NM-REMOTE-SELECT-001 选择类型页（ProviderEditScreen 内部先选类型再连接）
   const addMenu = () => nav.navigate('ProviderEdit', {});
@@ -187,9 +190,47 @@ export function MediaLibsScreen() {
                 </PressCard>
               );
             })}
+            {/* [web] 本地曲库行(服务器侧目录;有库才显示行,同 APK 模式)——浏览/播放走 lib 路由,管理进 ServerLocalLib */}
+            {IS_WEB ? serverLibs.map(l => (
+              <PressCard
+                key={'slb-' + l.id}
+                style={[ml.card, IS_HD && ml.cardHD]}
+                hoverStyle={ml.cardHover} tvFocus
+                onPress={() => nav.navigate('ServerLocalLib', { libId: l.id })}
+              >
+                <View style={[ml.iconWrap, IS_HD && ml.iconWrapHD]}><Icon name="folder-music" size={IS_HD ? 32 : 26} color={C.brandText} /></View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <View style={ml.titleRow}>
+                    <Text style={[ml.title, IS_HD && ml.titleHD]} numberOfLines={1}>{l.name}</Text>
+                    <View style={ml.typeChip}><Text style={ml.typeChipText}>服务器</Text></View>
+                  </View>
+                  <Text style={[ml.sub, IS_HD && ml.subHD]} numberOfLines={1}>
+                    {l.trackCount ? `${l.trackCount.toLocaleString()} 首 · 服务器目录` : '未扫描 · 服务器目录'}
+                  </Text>
+                </View>
+                <Icon name="chevronright" size={IS_HD ? 22 : 18} color={C.text3} />
+              </PressCard>
+            )) : null}
+            {/* [web] T1 入口卡:空态「绑定服务器目录」三步引导(升级稿 §二 T1 步1) */}
+            {IS_WEB && !serverLibs.length ? (
+              <PressCard
+                style={[ml.card, IS_HD && ml.cardHD]}
+                hoverStyle={ml.cardHover} tvFocus
+                onPress={() => nav.navigate('ServerLocalLib', {})}
+              >
+                <View style={[ml.iconWrap, IS_HD && ml.iconWrapHD]}><Icon name="folder-music" size={IS_HD ? 32 : 26} color={C.brandText} /></View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <View style={ml.titleRow}>
+                    <Text style={[ml.title, IS_HD && ml.titleHD]} numberOfLines={1}>绑定服务器目录</Text>
+                  </View>
+                  <Text style={[ml.sub, IS_HD && ml.subHD]} numberOfLines={1}>本地曲库 · 绑定目录 → 扫描入库 → 开始听歌</Text>
+                </View>
+                <Icon name="add" size={IS_HD ? 20 : 17} color={C.brand} />
+              </PressCard>
+            ) : null}
           {/* spec③:云曲库入口卡(登录后渲染)——我的曲库组第二成员 */}
           {token ? <CloudLibCard onEnter={() => nav.navigate('CloudLibrary', {})} /> : null}
-          {!locLibs.length && !token ? (
+          {!locLibs.length && !serverLibs.length && !token && !IS_WEB ? (
             <Text style={[st.intro, IS_HD && hd.intro]}>登录后可开启云曲库，或点右上角 ＋ 添加本机曲库。</Text>
           ) : null}
         </View>

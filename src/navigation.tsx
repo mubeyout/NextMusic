@@ -39,6 +39,7 @@ import { ProviderEditScreen } from './screens/ProviderEditScreen';
 import { MediaLibsScreen, ProviderBrowseRoute } from './screens/MediaLibsScreen';
 import { LocalLibraryEditScreen } from './screens/LocalLibraryEditScreen';
 import { LocalLibraryRoute } from './screens/LocalLibraryScreen';
+import { ServerLocalLibraryScreen } from './screens/ServerLocalLibraryScreen'; // [web]本地曲库(服务器侧目录,升级稿 §二)
 import { MyLibraryScreen, MyLibAlbumRoute, MyLibArtistRoute } from './screens/MyLibraryScreen';
 import { PublicLibraryScreen, PublicLibAlbumRoute, PublicLibArtistRoute } from './screens/PublicLibraryScreen'; // ④公共曲库(LEO v2.2 规格④)
 import { CloudLibraryScreen } from './screens/CloudLibraryScreen'; // spec③:云曲库(登录个人空间)
@@ -232,6 +233,8 @@ return (
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ProviderDetail" component={withEnter(ProviderDetailScreen)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="LocalLibEdit" component={withEnter(LocalLibraryEditScreen)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="LocalLibBrowse" component={withEnter(LocalLibraryRoute, true)} />
+        {/* [web]本地曲库(服务器目录绑定/导入/浏览)——phone web 由 MediaLibs 入口进入 */}
+        <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="ServerLocalLib" component={withEnter(ServerLocalLibraryScreen, true)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="Downloads" component={withEnter(DownloadsScreen)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="BoardsSquare" component={withEnter(BoardsSquareScreen)} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="DeviceMusic" component={withEnter(DeviceMusicScreen)} />
