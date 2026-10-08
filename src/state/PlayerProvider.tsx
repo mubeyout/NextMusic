@@ -836,20 +836,21 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // —— 恢复上次播放状态（基本设置 → 启动 → 恢复上次播放状态）——
-  // 持久化：队列/当前曲/索引在变化时节流写入；lx163h:快照序列化再加 5s 节流(此前 position 每秒打点→每秒 200 首全量 stringify,弱芯片 JS 线程常态卡)
-  const persistSnapshot = useRef<number>(0);
+  // 持久化：队列/当前曲变化后防抖写入。lx-fix-1008:原「setup 刷节流戳+5s 节流+1.5s timeout」自死锁——timeout 恒在 setup 后
+  // 1.5s 触发,距节流戳必 <5s,快照永远写不进(docker web 刷新即丢歌曲/进度的根因)。改依赖稳定 5.2s 后写:
+  // 连续切歌由 cleanup 重置计时天然合并(序列化频率不升,保 lx163h 意图),页面存活 >5.2s 最后一态必落盘。
+  const persistSnapshot = useRef<number>(0); // 上次成功写入时间戳(与 1008b interval 共用节流)
+  const repDurRef = useRef(0); repDurRef.current = duration; // 1008b:interval 侧实时时长镜像
   useEffect(() => {
     const t = setTimeout(() => {
       try {
         if (queue.length && current) {
-          if (Date.now() - persistSnapshot.current < 5000) return; // 5s 内已写过,跳过重序列化(pos 丢最近 4s,可接受)
           persistSnapshot.current = Date.now();
           // pos/p/d:断点续播(settings.__rr 时消费)与桌面冷启动恢复(web 默认带进度);手机冷启动仍从 0,避免取链失效卡启动
           playbackKv.set('snapshot', JSON.stringify({ q: queue.slice(0, 200), i: idxRef.current, pos: Math.floor(position), p: playing, d: Math.floor(duration) }));
         } else playbackKv.set('snapshot', '');
       } catch { /* 超大队列放弃快照 */ }
-    }, 1500);
-    persistSnapshot.current = Date.now();
+    }, 5200);
     // lx163:播放列表同步——队列变化(节流 3s)推服务器 defaultList(他端/网页可恢复);冷启本地空队列时从服务器拉回
     if (queue.length) {
       clearTimeout(queuePushTimer.current);
@@ -869,6 +870,19 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
     return () => clearTimeout(t);
   }, [queue, current]);
+  // lx-fix-1008b:播放期间每 30s 用实时 ref 补写进度——防抖仅由队列/切歌触发,其闭包 pos 恒为触发时刻旧值(切歌后≈曲首);
+  // interval 保证同曲长听场景刷新后回到最近 30s 内进度(200 首 stringify 每 30s 一次,远低于 lx163h 担心的每秒级)
+  useEffect(() => {
+    const iv = setInterval(() => {
+      try {
+        if (!queueRef.current.length) return; // 空队列不写,留给上面 else 分支清空
+        if (Date.now() - persistSnapshot.current < 5000) return; // 与防抖写共用节流,避免密集双写
+        persistSnapshot.current = Date.now();
+        playbackKv.set('snapshot', JSON.stringify({ q: queueRef.current.slice(0, 200), i: idxRef.current, pos: Math.floor(repPosRef.current), p: repPlayingRef.current, d: Math.floor(repDurRef.current) }));
+      } catch { /* ignore */ }
+    }, 30000);
+    return () => clearInterval(iv);
+  }, []);
   // 恢复/自愈：JS 重建（Activity 被系统回收后重开）而原生前台服务仍在播/暂停时，lib 的 internalStore 已归零，
   // current=null → MiniPlayer 不渲染、播放页进不去（喇叭在响但 UI 失联）。
   // 挂载时 + 每次回前台探测一次：原生在持有音频而 UI 无队列 → 从快照复活。
