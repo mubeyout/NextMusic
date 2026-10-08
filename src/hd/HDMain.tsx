@@ -42,10 +42,13 @@ import { ImportPlaylistScreen } from '../screens/ImportPlaylistScreen';
 import { FxScreen } from '../screens/FxScreen';
 import { HDFxScreen } from './HDFxScreen'; // v3.20(老板):web/pc 重构版均衡器与音效页
 import { MediaLibsScreen, ProviderBrowseRoute } from '../screens/MediaLibsScreen';
+import { CloudLibraryScreen } from '../screens/CloudLibraryScreen'; // [KAI 20261008 老板 02:28] 云曲库轨道入口存在但屏幕从未注册=railNav 静默无操作=留发现页
 import { MyLibraryScreen, MyLibAlbumRoute, MyLibArtistRoute } from '../screens/MyLibraryScreen';
 import { PublicLibraryScreen, PublicLibAlbumRoute, PublicLibArtistRoute } from '../screens/PublicLibraryScreen'; // ④公共曲库(LEO v2.2 规格④)
 import { pubCheck, usePubEntry } from '../services/publicLibrary'; // ④侧栏固定行授权态
 import { localLib } from '../services/localLibrary'; // 细则1:侧栏本机曲库行
+import { ServerLocalLibraryScreen } from '../screens/ServerLocalLibraryScreen'; // [web]本地曲库(服务器侧目录,升级稿 §二)
+import { useSlbEntries, slbRefresh } from '../services/serverLocalLibrary';
 import { ArtistFavScreen } from '../screens/ArtistFavScreen'; // lx161:收藏歌手
 import { ArtistDetailScreen } from '../screens/ArtistDetailScreen';
 import { AlbumFavScreen } from '../screens/AlbumFavScreen'; // v1.2.9 桌面:收藏专辑入口
@@ -160,7 +163,8 @@ export function HDMain() {
   // ④公共曲库侧栏固定行(授权+个人开关开才渲染;404/未授权完全不可见)
   const pub = usePubEntry();
   const locLibsRail = localLib.all(); // 细则1:侧栏本机曲库行(有库才显示;导航时重读)
-  useEffect(() => { pubCheck(); }, []);
+  const slbRail = useSlbEntries().filter(e => !e.locked); // [web]本地曲库侧栏行(服务器侧目录;有库才显示)
+  useEffect(() => { pubCheck(); slbRefresh(); }, []);
 
   // [KAI 20261001] Tabs 屏 children 稳定引用——只随 tab 变;HDMain 无关重渲不再级联进 Tabs 屏
   const tabsChildren = useCallback(() => <TabsHost tab={tab} setTab={setTab} />, [tab, setTab]);
@@ -317,6 +321,10 @@ export function HDMain() {
           {locLibsRail.map(l => (
             <NavItem key={'loc-' + l.id} icon="folder-music" label={l.name} active={innerRoute === 'LocalLibBrowse' && innerP?.libId === l.id} onPress={() => railNav('LocalLibBrowse', { libId: l.id })} />
           ))}
+          {/* [web] 本地曲库行(服务器侧目录;有库才显示,同 APK 模式)——浏览进 ServerLocalLib */}
+          {IS_WEB && slbRail.map(l => (
+            <NavItem key={'slb-' + l.id} icon="folder-music" label={l.name} active={innerRoute === 'ServerLocalLib' && innerP?.libId === l.id} onPress={() => railNav('ServerLocalLib', { libId: l.id })} />
+          ))}
           {token ? (
             <NavItem icon="cloud" label="云曲库" active={innerRoute === 'CloudLibrary'} onPress={() => railNav('CloudLibrary')} />
           ) : null}
@@ -395,11 +403,13 @@ export function HDMain() {
             {/* v3.20:web 全宽 HD 版 Fx(注释放 Navigator 内会炸——lx168 红线,注释放表达式内) */}
             <InnerStack.Screen name="Fx" component={IS_WEB ? HDFxScreen : withPhoneScale(FxScreen)} />
             <InnerStack.Screen name="MediaLibs" component={withPhoneScale(MediaLibsScreen)} />
+            <InnerStack.Screen name="CloudLibrary" component={withPhoneScale(CloudLibraryScreen)} /> {/* [KAI 20261008] 云曲库注册补齐 */}
             <InnerStack.Screen name="MyLibrary" component={withPhoneScale(MyLibraryScreen)} />
             <InnerStack.Screen name="MyLibAlbum" component={withPhoneScale(MyLibAlbumRoute)} />
             <InnerStack.Screen name="MyLibArtist" component={withPhoneScale(MyLibArtistRoute)} />
             {/* ④公共曲库三路由(浏览+专辑/歌手详情;phone 桥接缩放同 MyLibrary 族) */}
             <InnerStack.Screen name="PublicLibrary" component={withPhoneScale(PublicLibraryScreen)} />
+            <InnerStack.Screen name="ServerLocalLib" component={withPhoneScale(ServerLocalLibraryScreen)} />
             <InnerStack.Screen name="PublicLibAlbum" component={withPhoneScale(PublicLibAlbumRoute)} />
             <InnerStack.Screen name="PublicLibArtist" component={withPhoneScale(PublicLibArtistRoute)} />
             <InnerStack.Screen name="ArtistFavs" component={withPhoneScale(ArtistFavScreen)} />
