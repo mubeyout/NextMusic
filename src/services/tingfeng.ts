@@ -1,5 +1,11 @@
-// 听风音乐（RoCeOS Tingfeng）引擎 — 协议实测 2026-09-16（memory/tingfeng-api.md）
+// 听风音乐（RoCeOS Tingfeng）引擎 — 协议实测 2026-09-16（memory/tingfeng-api.md）；2026-10-08 重写级适配（memory/2026-10-08-tingfeng-v2.md）
 // RoCeOS 路由器内置网易云服务：/api/v1/*，Bearer 认证，song/{id} 出直链 mp3+LRC
+// 2026-10-08 上游重写：听风并入 RoCeOS 单体（roceos :8080，经 nginx :80/:443 对外），独立端口 88 已死。
+//   API 面实测不变：路径/信封(code制)/Bearer/X-New-Token 滑动轮换/refresh 全部保留；
+//   新增登录防爆破：连续失败触发验证码（GET /auth/captcha + captcha_id/captcha_answer 字段）与 429 锁定，
+//   以及可选两步验证（requiresTwoFactor/twoFactorToken → /auth/login/2fa，App 侧不支持需明示报错）。
+//   本文件核心适配 = base 迁移：老账号 base 形如 http://op.mubey.top:88 → 自动去掉 :88（回落 80），
+//   在 tfCall/tfRefresh 入口自愈 sess.base，resolveSess 持久化时回写迁移后的 base。
 // 2026-09-16 改版：并入第三方媒体库体系（providers.ts type='tingfeng'）——本文件只做协议引擎，
 // 会话(sess)由调用方持有；token 轮换直接写回 sess，由调用方决定持久化。
 // 旧独立屏配置（nextmusic-tingfeng MMKV）仅作一次性迁移源：自动转成 provider 账号。
@@ -15,7 +21,7 @@ function readLegacy(): LegacyCfg | null {
 function clearLegacy() { kv.set('cfg', ''); }
 
 export interface TfSess {
-  base: string;      // http://10.0.0.1 或 http://op.mubey.top:88
+  base: string;      // http://10.0.0.1 / http://op.mubey.top（80/443 经 nginx；老 :88 已死，normalizeBase 自动迁移）
   token?: string;    // accessToken（Bearer）
   refresh?: string;  // refreshToken
   user?: string;     // 账号（供 token 失效自动重登）
@@ -64,6 +70,10 @@ export function normalizeBase(url: string): string {
   let u = (url || '').trim().replace(/\/+$/, '');
   if (!u) return '';
   if (!/^https?:\/\//.test(u)) u = 'http://' + u;
+  // 2026-10-08 上游重写：独立端口 88 已随服务并入 RoCeOS 单体而消亡（连接层拒/超时），
+  // nginx :80/:443 承接全部 /api/v1。老存储/输入的 :88 一律剥掉回落默认端口。
+  // https 不动（443 同样可用了）；其余显式端口视为用户自有反代，尊重保留。
+  u = u.replace(/^(http:\/\/[^/:]+):88(?=$|\/)/i, '$1');
   return u;
 }
 
@@ -77,9 +87,9 @@ async function raw(base: string, path: string, init?: RequestInit & { token?: st
   } finally { clearTimeout(t); }
 }
 
-interface Envelope<T> { code: number; message?: string; data: T }
+interface Envelope<T> { code: number; message?: string; captcha_required?: boolean; data: T }
 
-/** 登录：成功返回会话所需的双 token + 昵称 */
+/** 登录：成功返回会话所需的双 token + 昵称；2026-10-08 适配：防爆破验证码/两步验证的明确报错 */
 export async function tfLogin(userInput: string, username: string, password: string): Promise<{ base: string; token: string; refresh: string; nickname: string }> {
   const base = normalizeBase(userInput);
   if (!base) throw new Error('请输入服务器地址');
@@ -89,8 +99,16 @@ export async function tfLogin(userInput: string, username: string, password: str
     body: JSON.stringify({ username, password }),
     timeout: 12000,
   });
-  const j = await r.json().catch(() => null) as (Envelope<{ user?: { nickname?: string; username?: string }; accessToken: string; refreshToken: string }> | null);
+  const j = await r.json().catch(() => null) as (Envelope<{ user?: { nickname?: string; username?: string }; accessToken: string; refreshToken: string; requiresTwoFactor?: boolean }> | null);
+  // 两步验证（2026-10-08 新增）：登录返回 twoFactorToken 而非 accessToken，App 侧无二次输入 UI，明示报错
+  if (j?.code === 200 && j.data?.requiresTwoFactor) {
+    throw new Error('该账号已开启两步验证，请在 RoCeOS 网页端关闭后再连接');
+  }
   if (!j || j.code !== 200 || !j.data?.accessToken) {
+    // 防爆破（2026-10-08 新增）：连续失败触发验证码（captcha_required 标志/429 锁定），窗口过后自恢复
+    if (j?.captcha_required || j?.code === 429) {
+      throw new Error(j.message || '登录失败次数过多，已触发验证码保护，请稍后再试');
+    }
     throw new Error(j?.message || '连接失败：账户或密码错误');
   }
   return {
@@ -101,9 +119,10 @@ export async function tfLogin(userInput: string, username: string, password: str
   };
 }
 
-/** 引擎调用：Bearer + 滑动 token 轮换（X-New-Token 写回 sess）+ 401 刷新重放一次 */
+/** 引擎调用：Bearer + 滑动 token 轮换（X-New-Token 写回 sess）+ 401 刷新重放一次；base 老端口自愈（:88→80） */
 export async function tfCall<T>(sess: TfSess, path: string, init?: RequestInit & { timeout?: number }, retried = false): Promise<T> {
   if (!sess.token) throw new Error('听风音乐未连接');
+  sess.base = normalizeBase(sess.base); // 2026-10-08：老存储的 :88 base 在此自愈，避免存量账号整体失效
   const r = await raw(sess.base, path, { ...init, token: sess.token }, init?.timeout);
   const nt = r.headers.get('X-New-Token'), nr = r.headers.get('X-New-Refresh-Token');
   if (nt) { sess.token = nt; sess.refresh = nr || sess.refresh; }
@@ -123,6 +142,7 @@ export async function tfCall<T>(sess: TfSess, path: string, init?: RequestInit &
 
 async function tfRefresh(sess: TfSess): Promise<boolean> {
   if (!sess.refresh) return false;
+  sess.base = normalizeBase(sess.base);
   try {
     const r = await raw(sess.base, '/api/v1/auth/refresh', {
       method: 'POST',
@@ -226,13 +246,13 @@ async function resolveSess(pid?: string): Promise<{ sess: TfSess; persist: Persi
     }
   }
   if (!acct) throw new Error('听风音乐未连接：请在 我的→媒体库 添加');
-  const sess: TfSess = { base: acct.base, token: acct.token, refresh: acct.tfRefresh, user: acct.user, pass: acct.pass };
-  const origToken = acct.token, origRefresh = acct.tfRefresh;
+  const sess: TfSess = { base: normalizeBase(acct.base), token: acct.token, refresh: acct.tfRefresh, user: acct.user, pass: acct.pass };
+  const origToken = acct.token, origRefresh = acct.tfRefresh, origBase = acct.base;
   return {
     sess,
     persist: () => {
-      if (sess.token && (sess.token !== origToken || sess.refresh !== origRefresh)) {
-        mod.providers.save({ ...acct, token: sess.token, tfRefresh: sess.refresh });
+      if (sess.token && (sess.token !== origToken || sess.refresh !== origRefresh || sess.base !== origBase)) {
+        mod.providers.save({ ...acct, base: sess.base, token: sess.token, tfRefresh: sess.refresh });
       }
     },
   };
