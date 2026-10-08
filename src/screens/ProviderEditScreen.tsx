@@ -237,7 +237,17 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
       if (dup) toast('已更新现有同账号连接');
       nav.goBack();
     } catch (e) {
-      dialog.alert('连接失败', (e as Error).message + '\n\n请检查地址、账号密码，以及服务器是否已在同一网络');
+      // [KAI 20261008 老板 01:53 指正] 编辑已连接库时连接失败≠放弃修改——服务器搬家/换密码场景恰恰连不上,
+      // 原逻辑直接报错不保存=修改永远无法生效。改为确认后离线保存(连接在使用时重试)。
+      if (existing) {
+        dialog.confirm('连接失败', (e as Error).message + '\n\n仍要保存修改吗？（连接将在使用时重试）', () => {
+          providers.save({ ...a, id: existing.id, base: a.base.trim(), name: a.name.trim() || PROVIDER_META[a.type].label.split(' / ')[0] } as ProviderAcct);
+          toast('已保存（待重连）');
+          nav.goBack();
+        });
+      } else {
+        dialog.alert('连接失败', (e as Error).message + '\n\n请检查地址、账号密码，以及服务器是否已在同一网络');
+      }
     } finally { setBusy(null); }
   };
 
