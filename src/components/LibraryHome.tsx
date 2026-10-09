@@ -196,7 +196,7 @@ const lh = StyleSheet.create({
   bannerHD: { height: 116, borderRadius: 18 },
   bannerGrad: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
   bannerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14 },
-  kindIcon: { width: 42, height: 42, borderRadius: 13, backgroundColor: 'rgba(255,255,255,.10)', alignItems: 'center', justifyContent: 'center' },
+  kindIcon: { width: 44, height: 44, borderRadius: 13, backgroundColor: 'rgba(255,255,255,.10)', alignItems: 'center', justifyContent: 'center' }, // [LEO 裁定① 10-09] 42→44 收敛:与 hub 卡 iconWrap 同值,2px 残差消灭,一处 token 走全库族
   kindIconHD: { width: 52, height: 52, borderRadius: 16 },
   brandWrap: { width: 42, height: 42, borderRadius: 13, backgroundColor: 'rgba(255,255,255,.10)', alignItems: 'center', justifyContent: 'center' },
   brandWrapHD: { width: 52, height: 52, borderRadius: 16 },
