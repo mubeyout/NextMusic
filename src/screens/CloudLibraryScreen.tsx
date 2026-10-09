@@ -406,6 +406,8 @@ export function CloudLibraryScreen() {
     </STouch>
   ) : null;
 
+  // ── [库族重设计v1 B1] 用量条已撤(原 quotaCard 块)——配额在 banner stats 行,≥80% bannerExtra 入存储明细 sheet(StorageSheet 保留) ──
+
   // ── 列表体 ──
   const body = () => {
     if (!logged) {
@@ -427,7 +429,7 @@ export function CloudLibraryScreen() {
         <View style={c.emptyWrap}>
           <Icon name="cloud" size={30} color={C.text3} />
           <Text style={c.emptyT1}>云端还是空的</Text>
-          <Text style={c.emptyT2}>去本机曲库，长按或 ⋯ 多选后上传</Text>
+          <Text style={c.emptyT2}>上传第一首歌，手机电脑随时听</Text>
           <TouchableOpacity style={c.emptyBtn} onPress={goLocalLib} activeOpacity={0.85}>
             <Text style={c.emptyBtnT}>去本机曲库</Text>
           </TouchableOpacity>
@@ -566,16 +568,24 @@ export function CloudLibraryScreen() {
         <LibraryHome
           kind="cloud" name="云曲库" sub="个人空间"
           stats={songs ? `${songs.length.toLocaleString()} 首${quota && quota.quotaBytes >= 0 ? ` · 用量 ${Math.max(0, Math.min(100, quota.percent || 0))}%` : ''}` : undefined}
+          status={!logged ? null : offline ? 'bad' : quota && quota.quotaBytes >= 0 && (quota.percent || 0) >= 80 ? 'warn' : 'ok'}
+          bannerExtra={logged && quota && quota.quotaBytes >= 0 && (quota.percent || 0) >= 80 ? (
+            <TouchableOpacity hitSlop={8} onPress={() => setStorageOpen(true)} style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: '#ffffff14' }}>
+              <Text style={{ fontSize: 11, color: '#E8B34B' }}>存储明细</Text>
+            </TouchableOpacity>
+          ) : null}
           actions={[
             {
-              icon: 'shuffle', label: '随机播放', primary: true, disabled: !songs?.length || offline,
+              icon: 'play', label: '播放全部', primary: true, disabled: !songs?.length || offline,
+              onPress: () => { if (songs?.length) void play(0, songs); },
+            },
+            {
+              icon: 'shuffle', label: '随机播放', disabled: !songs?.length || offline,
               onPress: () => { if (songs?.length) void play(Math.floor(Math.random() * songs.length), songs); },
             },
             {
-              icon: 'edit', label: selMode ? '退出管理' : '管理', disabled: !songs?.length || offline,
-              onPress: () => (selMode ? exitSel() : setSelMode(true)),
+              icon: 'upload', label: '上传', disabled: offline, onPress: goLocalLib, // [B1] 上传降为动作行第三位(v3.0 上传源=本机曲库,纯跳转)
             },
-            { icon: 'refresh', label: '刷新', onPress: () => { setPFilter('all'); void load(); } },
           ]}
         >
           {songs && songs.length && !selMode && !offline ? (
@@ -624,7 +634,7 @@ export function CloudLibraryScreen() {
       ) : null}
       {logged ? (
         <View style={{ paddingHorizontal: 16 }}>
-          {quotaCard}
+          {/* [库族重设计v1 B1] 用量条已撤:配额数字进 banner stats,≥80% 状态点变暖+bannerExtra 入存储明细 sheet */}
           {offline ? (
             <View style={c.offBar}>
               <Icon name="wifi-off" size={13} color={WARN_YELLOW} />
