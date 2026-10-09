@@ -173,9 +173,12 @@ export function MediaLibsScreen() {
                       <Text style={[ml.title, IS_HD && ml.titleHD]} numberOfLines={1}>{l.name}</Text>
                       <View style={ml.typeChip}><Text style={ml.typeChipText}>本机</Text></View>
                     </View>
-                    <Text style={[ml.sub, IS_HD && ml.subHD]} numberOfLines={1}>
-                      {bad ? '目录不可用（SD 卡拔出/目录被移除）' : `${l.rootLabel || '本机目录'}${l.trackCount ? ` · ${l.trackCount} 首` : ' · 未扫描'}`}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: bad ? '#8A8F98' : '#3FBF7F' }} />
+                      <Text style={[ml.sub, IS_HD && ml.subHD]} numberOfLines={1}>
+                        {bad ? '目录不可用（SD 卡拔出/目录被移除）' : `正常 · ${l.rootLabel || '本机目录'}${l.trackCount ? ` · ${l.trackCount} 首` : ' · 未扫描'}`}
+                      </Text>
+                    </View>
                   </View>
                   {bad ? (
                     <T style={ml.repickBtn} hitSlop={6} onPress={() => nav.navigate('LocalLibEdit', { libId: l.id })}>
@@ -204,9 +207,12 @@ export function MediaLibsScreen() {
                     <Text style={[ml.title, IS_HD && ml.titleHD]} numberOfLines={1}>{l.name}</Text>
                     <View style={ml.typeChip}><Text style={ml.typeChipText}>服务器</Text></View>
                   </View>
-                  <Text style={[ml.sub, IS_HD && ml.subHD]} numberOfLines={1}>
-                    {l.trackCount ? `${l.trackCount.toLocaleString()} 首 · 服务器目录` : '未扫描 · 服务器目录'}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: l.trackCount ? '#3FBF7F' : '#8A8F98' }} />
+                    <Text style={[ml.sub, IS_HD && ml.subHD]} numberOfLines={1}>
+                      {l.trackCount ? `就绪 · ${l.trackCount.toLocaleString()} 首 · 服务器目录` : '未扫描 · 服务器目录'}
+                    </Text>
+                  </View>
                 </View>
                 <Icon name="chevronright" size={IS_HD ? 22 : 18} color={C.text3} />
               </PressCard>
@@ -283,7 +289,10 @@ export function MediaLibsScreen() {
                       <Text style={[ml.title, IS_HD && ml.titleHD]} numberOfLines={1}>{a.name || label}</Text>
                       <View style={ml.typeChip}><Text style={ml.typeChipText}>{label}</Text></View>
                     </View>
-                    <Text style={[ml.sub, IS_HD && ml.subHD]} numberOfLines={1}>{a.base}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#3FBF7F' }} />
+                      <Text style={[ml.sub, IS_HD && ml.subHD]} numberOfLines={1}>已连接 · {a.base}</Text>
+                    </View>
                   </View>
                   {testId === a.id ? <ActivityIndicator size="small" color={C.brand} style={ml.spin} /> : null}
                   {/* lx167:⋯ 菜单常驻——原先 web 靠 hover 浮出,HD/桌面/触屏无 hover 等于没有管理入口 */}

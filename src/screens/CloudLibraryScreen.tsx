@@ -681,12 +681,31 @@ export function CloudLibraryScreen() {
 
 // ── 媒体库页入口卡(登录后渲染,未登录不渲染——spec③ 登录个人空间) ──
 export function CloudLibCard({ onEnter }: { onEnter: () => void }) {
+  // [二波② LEO 缺口单] 信息层:首歌数+配额(SWR 缓存优先,静默失败降级原文案)+状态点
+  const [info, setInfo] = useState<{ n: number; used: string; pct: number } | null>(null);
+  useEffect(() => {
+    let dead = false;
+    const cached = libCache.get<{ n: number; used: string; pct: number }>('cloudlib:card');
+    if (cached) setInfo(cached);
+    Promise.all([cloudLib.songs().catch(() => null), cloudLib.quota().catch(() => null)])
+      .then(([songs, quota]) => {
+        if (dead || !songs) return;
+        const v = { n: songs.length, used: fmtBytes(quota?.usedBytes || 0), pct: quota && quota.quotaBytes >= 0 ? Math.max(0, Math.min(100, quota.percent || 0)) : -1 };
+        setInfo(v); libCache.set('cloudlib:card', v);
+      });
+    return () => { dead = true; };
+  }, []);
   return (
     <TouchableOpacity style={c.entryCard} onPress={onEnter} activeOpacity={0.8}>
       <View style={c.entryIcon}><Icon name="cloud" size={20} color={C.brand} /></View>
       <View style={{ flex: 1 }}>
         <Text style={c.entryTitle}>云曲库</Text>
-        <Text style={c.entrySub}>个人云端空间 · 用量 / 上传 / 文件管理</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#3FBF7F' }} />
+          <Text style={c.entrySub} numberOfLines={1}>
+            {info ? `${info.n} 首 · ${info.used}${info.pct >= 0 ? ` · 配额 ${info.pct}%` : ''}` : '个人云端空间 · 用量 / 上传 / 文件管理'}
+          </Text>
+        </View>
       </View>
       <Icon name="chevronright" size={13} color={C.text3} />
     </TouchableOpacity>
