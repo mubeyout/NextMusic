@@ -319,26 +319,25 @@ export function HDMain() {
           <NavItem icon="server" label="媒体库" active={innerRoute === 'MediaLibs'} onPress={() => railNav('MediaLibs')} />
           {/* 定稿v3.0细则1 四库总序:本机曲库→云曲库→公共曲库→(分隔)→第三方库们;本机行有库才显示(细则1),云端=登录可见 */}
           {locLibsRail.map(l => (
-            <NavItem key={'loc-' + l.id} icon="folder-music" label={l.name} active={innerRoute === 'LocalLibBrowse' && innerP?.libId === l.id} onPress={() => railNav('LocalLibBrowse', { libId: l.id })} />
+            <NavItem key={'loc-' + l.id} icon="folder-music" label={l.name} active={innerRoute === 'LocalLibBrowse' && innerP?.libId === l.id} child onPress={() => railNav('LocalLibBrowse', { libId: l.id })} />
           ))}
           {/* [web] 本地曲库行(服务器侧目录;有库才显示,同 APK 模式)——浏览进 ServerLocalLib */}
           {IS_WEB && slbRail.map(l => (
-            <NavItem key={'slb-' + l.id} icon="folder-music" label={l.name} active={innerRoute === 'ServerLocalLib' && innerP?.libId === l.id} onPress={() => railNav('ServerLocalLib', { libId: l.id })} />
+            <NavItem key={'slb-' + l.id} icon="folder-music" label={l.name} active={innerRoute === 'ServerLocalLib' && innerP?.libId === l.id} child onPress={() => railNav('ServerLocalLib', { libId: l.id })} />
           ))}
           {token ? (
-            <NavItem icon="cloud" label="云曲库" active={innerRoute === 'CloudLibrary'} onPress={() => railNav('CloudLibrary')} />
+            <NavItem icon="cloud" label="云曲库" active={innerRoute === 'CloudLibrary'} child onPress={() => railNav('CloudLibrary')} />
           ) : null}
           {/* ④公共曲库:媒体库组固定行(library 图标;未授权/开关关→不渲染;官方共享库非个人连接) */}
           {pub.authorized && pub.showEntry ? (
-            <NavItem icon="library" label="公共曲库" active={innerRoute === 'PublicLibrary'} onPress={() => railNav('PublicLibrary')} />
+            <NavItem icon="library" label="公共曲库" active={innerRoute === 'PublicLibrary'} child onPress={() => railNav('PublicLibrary')} />
           ) : null}
-          {/* 定稿细则1:公共曲库与第三方库们分组分隔 */}
-          {providerAccts.length ? <View style={st.navSep} /> : null}
+          {/* [库族重设计v1 PartA] navSep 已删:组内统一缩进树,零分割线 */}
           {/* v3:已连接媒体库账号直入口(Emby/Jellyfin/Navidrome/WebDAV/道理鱼) */}
           {providerAccts.map(pa => {
             const on = innerRoute === 'ProviderBrowse' && innerP?.acctId === pa.id; // v3.27 账号选中态
             return (
-            <HDTouch key={pa.id} style={[st.navItem, { paddingLeft: 34 }, on && st.navItemOn]} focusStyle={st.navFocus} hoverBg={IS_WEB && !on ? C.hover : false}
+            <HDTouch key={pa.id} style={[st.navItem, st.navItemChild, on && st.navItemOn]} focusStyle={st.navFocus} hoverBg={IS_WEB && !on ? C.hover : false}
               onPress={() => railNav('ProviderBrowse', { acctId: pa.id })}>
               <BrandIcon name={pa.type as never} size={16} />
               <Text style={[st.navLabel, on && { fontWeight: '700', color: C.text }]} numberOfLines={1}>{pa.name}</Text>
@@ -494,9 +493,9 @@ function Group({ label, top = 4 }: { label: string; top?: number }) {
   return <Text style={[st.group, { marginTop: top + 5 }, IS_WEB && { paddingHorizontal: 18 }]}>{label}</Text>;
 }
 
-function NavItem({ icon, label, active, first, onPress }: { icon: string; label: string; active?: boolean; first?: boolean; onPress: () => void }) {
+function NavItem({ icon, label, active, first, child, onPress }: { icon: string; label: string; active?: boolean; first?: boolean; child?: boolean; onPress: () => void }) {
   return (
-    <HDTouch style={[st.navItem, active && st.navItemOn]} focusStyle={st.navFocus} hoverBg={IS_WEB && !active ? C.hover : false} hasTVPreferredFocus={first}
+    <HDTouch style={[st.navItem, child && st.navItemChild, active && st.navItemOn]} focusStyle={st.navFocus} hoverBg={IS_WEB && !active ? C.hover : false} hasTVPreferredFocus={first}
       onPress={onPress}>
       <Icon name={icon as never} size={16} color={active ? C.text : C.text2} />
       <Text style={[st.navLabel, active && { fontWeight: '700', color: C.text }]} numberOfLines={1}>{label}</Text>
@@ -608,7 +607,7 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
 }
 
 const st = StyleSheet.create({
-  navSep: { height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(255,255,255,.08)', marginLeft: 34, marginVertical: 6 },
+  navItemChild: { paddingLeft: 34 }, // [库族重设计v1 PartA] 子行统一缩进(与第三方现行 34 一致,不发明新值)
   screen: { flex: 1, flexDirection: 'row', backgroundColor: C.bg },
   sidebarWrap: { width: H.sidebar, backgroundColor: C.glass, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border },
   // v1.1.9 web:侧栏常驻最顶层(内页卡片 marginLeft 让位,zIndex 保证转场时侧栏不被卡片盖住)
