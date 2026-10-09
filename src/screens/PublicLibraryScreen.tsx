@@ -154,22 +154,42 @@ export function PublicLibraryScreen() {
   // ⑤/⑦ 首页化内容分区:最近添加横滑(albums newest 复用)+分类入口四宫格(专辑/歌手/歌曲/随机播放);
   // 热门 Top10 未做——服务端播放计数端点未暴露(pubLib 仅 recent/random,⑦.3-v2 不硬造)
   const recentAlbums = (albums || []).slice(0, IS_HD ? 12 : 10);
+  // [二波①] 源数据:名字表(summary.sources id→name)+健康近似(scan 成功=全绿,lastError=暖)
+  const srcEntries = Object.entries(summary?.sources || {});
+  const srcTotal = srcEntries.length;
+  const srcOk = scan?.lastError ? Math.max(0, srcTotal - 1) : srcTotal; // v1 近似:无逐源健康端点,scan 错误=减一,待服务端补字段
+  const agoText = scan?.syncedAt ? (() => { const m = Math.floor((Date.now() - scan.syncedAt) / 60000); if (m < 60) return `${m || 1} 分钟前`; const h = Math.floor(m / 60); if (h < 24) return `${h} 小时前`; return `${Math.floor(h / 24)} 天前`; })() : '';
   const homeStats = scan && typeof scan.songs === 'number'
-    ? `${scan.songs.toLocaleString()} 首 · ${scan.albums ?? 0} 专辑 · ${scan.artists ?? 0} 歌手${Object.keys(summary?.sources || {}).length > 1 ? ` · ${Object.keys(summary?.sources || {}).length} 位共享` : ''}`
+    ? `${scan.songs.toLocaleString()} 首 · ${scan.albums ?? 0} 专辑 · ${scan.artists ?? 0} 歌手${agoText ? ` ｜ 最近更新 ${agoText} · 官方共享` : ''}`
     : '管理员共享曲库';
+  // [二波①] 源筛选复用既有 srcFilter(L134);组件级 srcChips 供页顶常驻行(songs 体内有局部同名表,作用域隔离)
+  const srcChips = [{ key: 'all', label: '全部' }, ...srcEntries.map(([id, name]) => ({ key: id, label: `仅${name}` }))];
   const homeBlock = entry.authorized ? (
     <View style={{ gap: 12, marginBottom: 4 }}>
       <View style={[d.homeWrap, IS_HD && d.homeWrapHD]}>
-        <LibBanner kind="public" name={summary?.name || '公共曲库'} stats={homeStats} />
+        <LibBanner kind="public" name={summary?.name || '公共曲库'} stats={homeStats}
+          sub={srcTotal > 0 ? `${srcOk} / ${srcTotal} 源正常` : undefined}
+          status={!scan ? null : scan.lastError ? 'warn' : 'ok'} />
         <LibActions actions={[
-          { icon: 'shuffle', label: '随机播放', onPress: playRandom, primary: true, disabled: randBusy || !!scan?.running },
+          { icon: 'shuffle', label: '随机漫步', onPress: playRandom, primary: true, disabled: randBusy || !!scan?.running },
           { icon: 'refresh', label: '刷新', onPress: doRefresh, disabled: !!scan?.running },
         ]} />
       </View>
+      {/* [二波①] 多源筛选 chips 页顶常驻(按已连源动态;过滤歌曲视图) */}
+      {srcTotal > 1 && entry.authorized && !scan?.running ? (
+        <View style={{ paddingHorizontal: 16 }}>
+          <ChipsRow chips={srcChips} active={srcFilter} onChange={k => setSrcFilter(k)} />
+        </View>
+      ) : null}
       {!scan?.running && !err ? (
         <View style={[d.homeWrap, IS_HD && d.homeWrapHD, { marginBottom: 0 }]}>
           {recentAlbums.length ? (
-            <HomeSection title="最近添加" actionLabel="全部专辑" onAction={() => setTab('albums')}>
+            <HomeSection title="最近更新" actionLabel="全部专辑" onAction={() => setTab('albums')}>
+              {songs && songs.length ? (
+                <Text style={{ fontSize: 12, color: C.text3, marginBottom: 8 }}>
+                  本周新增 {songs.filter(s => s.mtime && Date.now() - s.mtime < 7 * 86400000).length} 首
+                </Text>
+              ) : null}
               <HomeRail>
                 {recentAlbums.map(a => (
                   <RailCard key={a.id} name={a.name} sub={`${a.songCount} 首 · ${a.artist}`}
@@ -182,10 +202,10 @@ export function PublicLibraryScreen() {
           <HomeSection title="分类浏览">
             <View style={[d.homeGrid, IS_HD && d.homeGridHD]}>
               {([
-                { key: 'albums', label: `专辑${albumsTotal ? ` · ${albumsTotal}` : ''}`, icon: 'music' },
-                { key: 'artists', label: `歌手${artistsTotal ? ` · ${artistsTotal}` : ''}`, icon: 'user' },
+                { key: 'albums', label: `专辑 ${albumsTotal || 0} 张`, icon: 'music' },
+                { key: 'artists', label: `歌手 ${artistsTotal || 0} 位`, icon: 'user' },
                 { key: 'songs', label: '歌曲', icon: 'wave' },
-                { key: 'random', label: '随机播放', icon: 'shuffle' },
+                { key: 'random', label: '随机漫步 整库随机', icon: 'shuffle' },
               ] as { key: string; label: string; icon: 'music' | 'user' | 'wave' | 'shuffle' }[]).map(g => (
                 IS_HD ? (
                   <HDTouch key={g.key} style={d.homeCell} focusStyle={d.tabFocus}
