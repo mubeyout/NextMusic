@@ -784,7 +784,7 @@ const c = StyleSheet.create({
   delOkLock: { opacity: 0.45 },
   delOkT: { color: '#04120a', fontSize: 13, fontWeight: '800' },
   // 入口卡
-  entryCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.strokeFaint, padding: 14, flexGrow: 1, flexBasis: '48%', minHeight: 72 }, // [hub 网格] 对齐 ml.card:flexBasis 48%+flexGrow+minHeight,marginBottom 删(网格 gap 由 group 管)
+  entryCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.strokeFaint, padding: 14, flexBasis: '48%', minHeight: 72 }, // [老板反馈] 删flexGrow同ml.card——单卡不拉伸居左
   entryIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }, // [hub 网格] 40→44 对齐 ml.iconWrap 统一值,cloud 品牌色改通用底
   entryTitle: { color: C.text, fontSize: 14, fontWeight: '700' },
   entrySub: { color: C.text3, fontSize: 10.5, marginTop: 2 },
