@@ -329,7 +329,8 @@ function mapEmbySong(a: ProviderAcct, pid: string, it: Record<string, unknown>, 
 /** 转码流（Emby/JF）：PlaySessionId 必须唯一 —— Emby 按 session 命名转码临时目录，缺省时重试 job 会复用同一目录互删文件（实测 ffmpeg exit 1） */
 function transcodeUrlFor(a: ProviderAcct, itemId: string): { url: string; headers?: Record<string, string> } {
   const psid = 'nm' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
-  return { url: `${embyRoot(a)}/Audio/${itemId}/stream.mp3?audioBitRate=320&PlaySessionId=${psid}`, headers: embyHeaders(a) };
+  // [1010 web 修复] api_key 入 query——web 端音频走 DownloadProxy 纯 URL 转发,headers(X-Emby-Token)会被丢 → Emby 401;封面 URL 同款先例
+  return { url: `${embyRoot(a)}/Audio/${itemId}/stream.mp3?audioBitRate=320&PlaySessionId=${psid}${a.token ? `&api_key=${encodeURIComponent(a.token)}` : ''}`, headers: embyHeaders(a) };
 }
 
 /** ExoPlayer 可直解的音频容器；其余（ape/wma/alac/aiff…）直流必败，只能转码 */
@@ -614,7 +615,7 @@ export const providerApi = {
       // 无损容器 ExoPlayer 解不了（ape/wma/alac...）：直流必报 UnrecognizedInputFormatException，直接出转码流
       const c = song.container;
       if (c && !DIRECT_PLAY_OK.has(c)) return transcodeUrlFor(a, itemId);
-      return { url: `${embyRoot(a)}/Audio/${itemId}/stream?static=true`, headers: embyHeaders(a) };
+      return { url: `${embyRoot(a)}/Audio/${itemId}/stream?static=true${a.token ? `&api_key=${encodeURIComponent(a.token)}` : ''}`, headers: embyHeaders(a) }; // [1010] api_key 入 query 同上
     }
     return null;
   },
