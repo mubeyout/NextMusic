@@ -4,7 +4,7 @@
 // 扫描中(summary.scan.running)=「管理员更新中」骨架屏占位;
 // 404 铁律:任何内容端点 404 → 入口移除+清缓存(onPub404)+本页退场空态;播放走 lib=public 现有 custom 路径
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform, useWindowDimensions, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform, useWindowDimensions, Animated, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { HDTouch } from '../hd/HDTouch';
@@ -173,6 +173,7 @@ export function PublicLibraryScreen() {
   const songsCount = scan && typeof scan.songs === 'number' ? scan.songs.toLocaleString() : String(songs?.length || 0); // [1010] 宫格计数
   // [二波①] 源筛选复用既有 srcFilter(L134);组件级 srcChips 供页顶常驻行(songs 体内有局部同名表,作用域隔离)
   const srcChips = [{ key: 'all', label: '全部' }, ...srcEntries.map(([id, name]) => ({ key: id, label: `仅${pubSrcName(name, id)}` }))];
+  const weekNew = songs ? songs.filter(s => s.mtime && Date.now() - s.mtime < 7 * 86400000).length : 0; // [三次对稿] phead sub=本周新增(基准稿)
   // [老板 1010 二次对稿] 首页内嵌歌曲列表:未加载时轻拉首页份量(songs tab 有独立分页加载;deps 在状态声明后求值安全)
   useEffect(() => {
     if (entry.authorized && !scan?.running && !err && songs === null) loadSongs(PAGE);
@@ -212,26 +213,42 @@ export function PublicLibraryScreen() {
                   本周新增 {songs.filter(s => s.mtime && Date.now() - s.mtime < 7 * 86400000).length} 首
                 </Text>
               ) : null}
-              {/* [老板 1010] v5.6 按稿:横滑墙→封面网格(定宽卡 150 自然换行,自适应硬规则) */}
+              {/* [三次对稿] 基准稿 cgrid repeat(4,1fr):四列等分网格(HD/web)——卡=方形封面+名+歌手·首数;phone 两列 */}
               <View style={d.recGrid}>
                 {recentAlbums.map(a => (
-                  <RailCard key={a.id} name={a.name} sub={`${a.songCount} 首 · ${a.artist}`}
-                    cover={a.coverFile ? coverUrl(a.coverFile, 'public') : null}
-                    onPress={() => enterAlbum(a)} />
+                  <View key={a.id} style={[d.recCell, !IS_HD && d.recCellP]}>
+                    {IS_HD ? (
+                      <HDTouch style={{ width: '100%' }} focusStyle={d.tabFocus} onPress={() => enterAlbum(a)}>
+                        <RecAlbumCard a={a} />
+                      </HDTouch>
+                    ) : (
+                      <TouchableOpacity style={{ width: '100%' }} activeOpacity={0.8} onPress={() => enterAlbum(a)}>
+                        <RecAlbumCard a={a} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 ))}
               </View>
             </HomeSection>
           ) : null}
-          {/* [老板 1010 二次对稿] v5.6 按稿:分类浏览四宫格撤(稿内无此区,专辑/歌手仍由下方 tabs 承担)——歌曲区+源筛选 chips+内嵌歌曲列表 */}
+          {/* [三次对稿] 基准稿歌曲区=表头+表行式(标题/专辑/时长列,小行高) */}
           <HomeSection title="歌曲" count={typeof scan?.songs === 'number' ? scan.songs : undefined} actionLabel="全部 ›" onAction={() => setTab('songs')}>
             {srcTotal > 1 ? (
               <View style={{ marginBottom: 8 }}>
                 <ChipsRow chips={srcChips} active={srcFilter} onChange={k => setSrcFilter(k)} />
               </View>
             ) : null}
-            {(srcFilter === 'all' ? songs || [] : (songs || []).filter(s => (s as LibSong & { source?: string }).source === srcFilter)).slice(0, 8).map((s, i, arr) => (
-              <SongRow key={s.id} song={s} idx={i + 1} lib="public" sourceName={pubSourceName(s, summary)} isNew={isNewSong(s)}
-                onPress={() => play(srcFilter === 'all' ? songs : arr.slice(0, 8), i)} />
+            <View style={d.lhead}><Text style={[d.lhT, { width: 34 }]}/><Text style={[d.lhT, { flex: 1 }]}>标题</Text><Text style={d.lhT}>专辑</Text><Text style={[d.lhT, d.lhR]}>时长</Text></View>
+            {(srcFilter === 'all' ? songs || [] : (songs || []).filter(s => (s as LibSong & { source?: string }).source === srcFilter)).slice(0, 8).map((s, i) => (
+              <TouchableOpacity key={s.id} style={d.lrow} activeOpacity={0.75} onPress={() => play(srcFilter === 'all' ? songs : (songs || []).filter(x => (x as LibSong & { source?: string }).source === srcFilter), i)}>
+                <View style={[d.lcov, { backgroundColor: C.surface2 }]}><Icon name="music" size={13} color={C.text3} /></View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={d.ln} numberOfLines={1}>{s.name}</Text>
+                  <Text style={d.la2} numberOfLines={1}>{s.singer || '未知歌手'}</Text>
+                </View>
+                <Text style={d.lal} numberOfLines={1}>{s.album || '—'}</Text>
+                <Text style={d.ldu}>{s.interval || ''}</Text>
+              </TouchableOpacity>
             ))}
           </HomeSection>
           </View>
@@ -397,8 +414,9 @@ export function PublicLibraryScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Text style={d.hdTitle}>公共曲库</Text>
               <View style={[d.pheadDot, { backgroundColor: !scan ? C.text3 : scan.lastError ? '#E8B33D' : C.brand }]} />
+              <Text style={d.pheadDotT}>{srcTotal > 0 ? `${srcOk}/${srcTotal} 源正常` : ''}</Text>
             </View>
-            <Text style={d.pheadSub} numberOfLines={1}>{srcTotal > 0 ? `${srcOk}/${srcTotal} 源正常 · ` : ''}官方共享</Text>
+            <Text style={d.pheadSub} numberOfLines={1}>{weekNew > 0 ? `本周新增 ${weekNew} 首 · ` : ''}官方共享</Text>
           </View>
           <HDTouch style={d.hdBack} onPress={doRefresh} focusStyle={d.focusRing}>
             <Icon name="refresh" size={16} color={C.text2} />
@@ -411,8 +429,9 @@ export function PublicLibraryScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
               <Text style={d.headTitle}>公共曲库</Text>
               <View style={[d.pheadDot, { backgroundColor: !scan ? C.text3 : scan.lastError ? '#E8B33D' : C.brand }]} />
+              <Text style={d.pheadDotT}>{srcTotal > 0 ? `${srcOk}/${srcTotal} 源正常` : ''}</Text>
             </View>
-            <Text style={d.pheadSub} numberOfLines={1}>{srcTotal > 0 ? `${srcOk}/${srcTotal} 源正常 · ` : ''}官方共享</Text>
+            <Text style={d.pheadSub} numberOfLines={1}>{weekNew > 0 ? `本周新增 ${weekNew} 首 · ` : ''}官方共享</Text>
           </View>
           <TouchableOpacity style={d.headBtn} onPress={doRefresh}>
             <Icon name="refresh" size={15} color={C.text2} />
@@ -609,6 +628,23 @@ export function PublicLibArtistRoute(props: Record<string, unknown>) {
 }
 
 // ── 样式(与我的曲库同族 token) ──
+// [三次对稿] 基准稿 .cv 专辑卡:方形封面+名+歌手·首数(四列网格内,width 100% 填满单元格)
+function RecAlbumCard({ a }: { a: LibAlbum }) {
+  return (
+    <View style={{ width: '100%' }}>
+      {a.coverFile ? (
+        <Image source={{ uri: coverUrl(a.coverFile, 'public') }} style={d.recArt} />
+      ) : (
+        <View style={[d.recArt, { backgroundColor: C.artTint2, alignItems: 'center', justifyContent: 'center' }]}>
+          <Icon name="music" size={22} color={C.text3} />
+        </View>
+      )}
+      <Text style={d.recT} numberOfLines={1}>{a.name}</Text>
+      <Text style={d.recS} numberOfLines={1}>{a.artist || '未知'} · {a.songCount} 首</Text>
+    </View>
+  );
+}
+
 const d = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   // ⑤/⑦ 首页化骨架容器与四宫格
@@ -621,6 +657,12 @@ const d = StyleSheet.create({
   // [LEO 裁定 1010] 最近更新榜侧卡(基准稿 side5 形态:金字号/歌名/歌手)
   row2: { flexDirection: 'row', gap: 14, alignItems: 'flex-start' },
   recGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  recCell: { flexBasis: '23.5%' }, // [三次对稿] 基准稿四列等分(repeat(4,1fr) 减 gap 余量)
+  recCellP: { flexBasis: '48.6%' }, // phone 两列
+  recArt: { width: '100%', aspectRatio: 1, borderRadius: 10, backgroundColor: C.surface2 },
+  recT: { color: C.text, fontSize: 12.5, fontWeight: '600', marginTop: 8 },
+  recS: { color: C.text3, fontSize: 10.5, marginTop: 2 },
+  pheadDotT: { color: C.brand, fontSize: 11, fontWeight: '600' }, // [三次对稿] dot 旁文字(基准稿 .dot 带文字)
   topCardSide: { width: 250, flexShrink: 0 },
   topCard: { backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.stroke, padding: 16 },
   topCardT: { color: C.text, fontSize: 14, fontWeight: '800', marginBottom: 6 },
@@ -636,6 +678,16 @@ const d = StyleSheet.create({
   hdHead: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 12 },
   pheadDot: { width: 8, height: 8, borderRadius: 4 }, // [老板 1010 二次对稿] v5.6 phead 源状态点(绿/暖/灰)
   pheadSub: { color: C.text3, fontSize: 11, lineHeight: 15, marginTop: 1 },
+  // [三次对稿] 表头+表行式歌曲列表(基准稿 listhead/srow)
+  lhead: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 26, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.stroke },
+  lhT: { color: C.text3, fontSize: 10.5, fontWeight: '600', letterSpacing: 1 },
+  lhR: { textAlign: 'right' },
+  lrow: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 46, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint },
+  lcov: { width: 34, height: 34, borderRadius: 6, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  ln: { color: C.text, fontSize: 13, fontWeight: '600' },
+  la2: { color: C.text3, fontSize: 10.5, marginTop: 1 },
+  lal: { color: C.text3, fontSize: 11.5, width: 110 },
+  ldu: { color: C.text3, fontSize: 11, width: 40, textAlign: 'right' },
   hdBack: { width: 36, height: 36, borderRadius: 10, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   hdTitle: { color: C.text, fontSize: 20, fontWeight: '800' },
   hdStats: { flex: 1, color: C.text3, fontSize: 11, textAlign: 'right', marginRight: 2 },
