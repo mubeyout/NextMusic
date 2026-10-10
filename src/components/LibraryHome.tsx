@@ -86,6 +86,106 @@ export function LibActions({ actions }: { actions: LibQuickAction[] }) {
   );
 }
 
+// ── [v5.5 1010] 双渐变英雄卡+双入口(三库页共用;老板令:统计在卡内不放页顶;自适应:HD/web 并排、phone 堆叠) ──
+export type HeroGrad = 'gold' | 'violet' | 'green' | 'teal' | 'blue' | 'sunset';
+const HERO_GRADS: Record<HeroGrad, [string, string, string]> = {
+  gold: ['#8a6d2f', '#c9a24d', '#e8cf8a'],
+  violet: ['#4a3a8f', '#6f5bc4', '#9d8fe0'],
+  green: ['#1a6b45', '#2aa05f', '#5fd894'],
+  teal: ['#16697a', '#2a9db3', '#6fd0dd'],
+  blue: ['#2a4a8f', '#4a72c9', '#89a9e8'],
+  sunset: ['#8f4a2a', '#c97a3d', '#e8b06f'],
+};
+export interface LibHero { grad: HeroGrad; big: string; st: React.ReactNode; mini?: string; icon?: IconName; onPress?: () => void; disabled?: boolean }
+
+function HeroCard({ h }: { h: LibHero }) {
+  const g = HERO_GRADS[h.grad];
+  return (
+    <View style={[hv.hero, !IS_HD && hv.heroPhone]}>
+      <LinearGradient colors={g} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={hv.heroGrad} />
+      {/* glow 装饰圆(基准稿 .glow) */}
+      <View style={hv.glow} pointerEvents="none" />
+      <View style={hv.heroBody}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={hv.big} numberOfLines={1}>{h.big}</Text>
+          <Text style={hv.st} numberOfLines={1}>{h.st}</Text>
+          {h.mini ? <Text style={hv.mini} numberOfLines={1}>{h.mini}</Text> : null}
+        </View>
+        <View style={[hv.playBtn, IS_HD && hv.playBtnHD]}>
+          <Icon name={h.icon || 'play'} size={IS_HD ? 24 : 20} color="#FFFFFF" />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+export function HeroPair({ heroes, duo }: {
+  heroes: LibHero[];
+  duo?: { playAll: () => void; shuffle: () => void; playLabel?: string; shuffleLabel?: string; disabled?: boolean };
+}) {
+  const list = heroes.slice(0, 2);
+  if (!list.length) return null;
+  return (
+    <View>
+      <View style={[hv.row, !IS_HD && hv.rowPhone]}>
+        {list.map(h => IS_HD ? (
+          <HDTouch key={h.big} style={hv.cell} focusStyle={focus(16)} onPress={h.onPress} disabled={h.disabled}>
+            <HeroCard h={h} />
+          </HDTouch>
+        ) : (
+          <TouchableOpacity key={h.big} style={hv.cell} activeOpacity={0.85} onPress={h.onPress} disabled={h.disabled}>
+            <HeroCard h={h} />
+          </TouchableOpacity>
+        ))}
+      </View>
+      {duo ? (
+        <View style={hv.duo}>
+          {IS_HD ? (
+            <>
+              <HDTouch style={[hv.duoBtn, hv.duoPri]} focusStyle={focus(12)} onPress={duo.playAll} disabled={duo.disabled}>
+                <Icon name="play" size={17} color="#062B15" /><Text style={hv.duoPriT}>{duo.playLabel || '播放全部'}·整库</Text>
+              </HDTouch>
+              <HDTouch style={hv.duoBtn} focusStyle={focus(12)} onPress={duo.shuffle} disabled={duo.disabled}>
+                <Icon name="shuffle" size={16} color={C.text2} /><Text style={hv.duoGhoT}>{duo.shuffleLabel || '随机播放'}·不重复</Text>
+              </HDTouch>
+            </>
+          ) : (
+            <>
+              <TouchableOpacity style={[hv.duoBtn, hv.duoPri]} activeOpacity={0.8} onPress={duo.playAll} disabled={duo.disabled}>
+                <Icon name="play" size={15} color="#062B15" /><Text style={hv.duoPriT}>{duo.playLabel || '播放全部'}·整库</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={hv.duoBtn} activeOpacity={0.8} onPress={duo.shuffle} disabled={duo.disabled}>
+                <Icon name="shuffle" size={14} color={C.text2} /><Text style={hv.duoGhoT}>{duo.shuffleLabel || '随机播放'}·不重复</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+const hv = StyleSheet.create({
+  row: { flexDirection: 'row', gap: 14 },
+  rowPhone: { flexDirection: 'column', gap: 10 }, // 自适应:phone 堆叠(窄屏统计行放不下双列)
+  cell: { flex: 1, minWidth: 0 },
+  hero: { borderRadius: 16, minHeight: 170, overflow: 'hidden' },
+  heroPhone: { minHeight: 116 },
+  heroGrad: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  glow: { position: 'absolute', right: -30, top: -40, width: 180, height: 180, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.10)' },
+  heroBody: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 20, paddingHorizontal: 20 },
+  big: { color: '#FFFFFF', fontSize: 19, lineHeight: 24, fontWeight: '800', textShadowColor: 'rgba(0,0,0,0.25)', textShadowRadius: 6, textShadowOffset: { width: 0, height: 1 } },
+  st: { color: 'rgba(255,255,255,0.92)', fontSize: 12.5, lineHeight: 18, marginTop: 6, fontWeight: '500' },
+  mini: { color: 'rgba(255,255,255,0.75)', fontSize: 10.5, lineHeight: 15, marginTop: 4 },
+  playBtn: { width: 46, height: 46, borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.42)', alignItems: 'center', justifyContent: 'center' },
+  playBtnHD: { width: 54, height: 54 },
+  duo: { flexDirection: 'row', gap: 10, marginTop: 12, marginBottom: 2 },
+  duoBtn: { height: 36, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, flex: 1, borderRadius: 10, borderWidth: 1, borderColor: C.stroke, backgroundColor: C.surface },
+  duoPri: { backgroundColor: C.brand, borderColor: C.brand },
+  duoPriT: { color: '#062B15', fontSize: 12.5, fontWeight: '700' },
+  duoGhoT: { color: C.text2, fontSize: 12.5, fontWeight: '600' },
+});
+
 // ── 第三段 · 筛选 chips(共享件;视图切换=各页既有 tabs/胶囊,插槽式接入) ──
 export function ChipsRow({ chips, active, onChange }: {
   chips: { key: string; label: string }[]; active: string; onChange: (k: string) => void;
@@ -173,15 +273,25 @@ export function RailCard({ cover, name, sub, icon, onPress }: {
 }
 
 // 组合态:四段一次到位(结构简单的页直接用;需在中间插自有 tabs 的页用上面的分段件)
-export function LibraryHome({ kind, name, stats, sub, status, brand, bannerExtra, actions, filters, children }: {
+export function LibraryHome({ kind, name, stats, sub, status, brand, bannerExtra, actions, heroes, duo, filters, children }: {
   kind: LibKind; name: string; stats?: string; sub?: string; status?: LibStatus | null;
   brand?: React.ReactNode; bannerExtra?: React.ReactNode;
-  actions: LibQuickAction[]; filters?: React.ReactNode; children?: React.ReactNode;
+  actions?: LibQuickAction[];
+  /** [v5.5 1010] 双渐变英雄卡(提供时替代横幅+动作行——老板令:统计在卡内不放页顶);duo=双入口真播放 */
+  heroes?: LibHero[];
+  duo?: { playAll: () => void; shuffle: () => void; playLabel?: string; shuffleLabel?: string; disabled?: boolean };
+  filters?: React.ReactNode; children?: React.ReactNode;
 }) {
   return (
     <View style={[lh.wrap, IS_HD && lh.wrapHD]}>
-      <LibBanner kind={kind} name={name} stats={stats} sub={sub} status={status} brand={brand} extra={bannerExtra} />
-      <LibActions actions={actions} />
+      {heroes ? (
+        <HeroPair heroes={heroes} duo={duo} />
+      ) : (
+        <>
+          <LibBanner kind={kind} name={name} stats={stats} sub={sub} status={status} brand={brand} extra={bannerExtra} />
+          <LibActions actions={actions || []} />
+        </>
+      )}
       {filters}
       {children}
     </View>

@@ -543,6 +543,9 @@ export function CloudLibraryScreen() {
         <View style={{ flex: 1 }} />
         {logged ? (
           <View style={{ flexDirection: 'row', gap: 8 }}>
+            {/* [v5.5 1010] v3:横幅退役,上传/存储明细收进页头 */}
+            <STouch style={c.headBtn} onPress={offline ? undefined : goLocalLib} hitSlop={6} pill={9}><Text style={c.headBtnT}>上传</Text></STouch>
+            {quota ? <STouch style={c.headBtn} onPress={() => setStorageOpen(true)} hitSlop={6} pill={9}><Text style={c.headBtnT}>明细</Text></STouch> : null}
             {songs && songs.length && !offline ? (
               selMode ? (
                 <>
@@ -563,30 +566,29 @@ export function CloudLibraryScreen() {
           </View>
         ) : null}
       </View>
-      {/* ⑤/⑦ 首页化:库头横幅+快捷动作+最近添加/已同步/仅云端分区(渐进色裹,分组列表与多选链路不动) */}
+      {/* ⑤/⑦ 首页化:[v5.5 1010] v3 双渐变英雄卡(统计在卡内)+双入口真播放;上传/存储明细收进页头钮 */}
       {logged ? (
         <LibraryHome
           kind="cloud" name="云曲库" sub="个人空间"
-          stats={songs ? `${songs.length.toLocaleString()} 首${quota && quota.quotaBytes >= 0 ? ` · 用量 ${Math.max(0, Math.min(100, quota.percent || 0))}%` : ''}` : undefined}
-          status={!logged ? null : offline ? 'bad' : quota && quota.quotaBytes >= 0 && (quota.percent || 0) >= 80 ? 'warn' : 'ok'}
-          bannerExtra={logged && quota && quota.quotaBytes >= 0 && (quota.percent || 0) >= 80 ? (
-            <TouchableOpacity hitSlop={8} onPress={() => setStorageOpen(true)} style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: '#ffffff14' }}>
-              <Text style={{ fontSize: 11, color: '#E8B34B' }}>存储明细</Text>
-            </TouchableOpacity>
-          ) : null}
-          actions={[
+          heroes={songs ? [
             {
-              icon: 'play', label: '播放全部', primary: true, disabled: !songs?.length || offline,
-              onPress: () => { if (songs?.length) void play(0, songs); },
+              grad: 'gold' as const, big: '播放全部', icon: 'play' as const,
+              st: <><Text style={c.heroStB}>{songs.length.toLocaleString()} 首</Text>{` · ${fmtBytes(quota?.usedBytes || 0)} · 仅云端 ${cloudOnlyCount}`}</>,
+              mini: quota && quota.quotaBytes > 0 ? `剩余配额 ${fmtBytes(Math.max(0, quota.quotaBytes - quota.usedBytes))}` : '个人云端空间',
+              onPress: () => { if (songs.length) void play(0, songs); }, disabled: !songs.length || offline,
             },
             {
-              icon: 'shuffle', label: '随机播放', disabled: !songs?.length || offline,
-              onPress: () => { if (songs?.length) void play(Math.floor(Math.random() * songs.length), songs); },
+              grad: 'violet' as const, big: '最近上传', icon: 'play' as const,
+              st: <><Text style={c.heroStB}>{recentCloud.length} 首</Text>{' · 最近入库'}</>,
+              mini: '来自本机曲库挑歌上传',
+              onPress: () => { if (recentCloud.length) void play(0, recentCloud); }, disabled: !recentCloud.length || offline,
             },
-            {
-              icon: 'upload', label: '上传', disabled: offline, onPress: goLocalLib, // [B1] 上传降为动作行第三位(v3.0 上传源=本机曲库,纯跳转)
-            },
-          ]}
+          ] : undefined}
+          duo={{
+            playAll: () => { if (songs?.length) void play(0, songs); },
+            shuffle: () => { if (songs?.length) void play(Math.floor(Math.random() * songs.length), songs); },
+            disabled: !songs?.length || offline,
+          }}
         >
           {songs && songs.length && !selMode && !offline ? (
             <>
@@ -789,6 +791,7 @@ const c = StyleSheet.create({
   entryIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }, // [hub 网格] 40→44 对齐 ml.iconWrap 统一值,cloud 品牌色改通用底
   entryIconHD: { width: 52, height: 52, borderRadius: 14 }, // [1010 统一] 与 ml.iconWrapHD 同值
   entryTitle: { color: C.text, fontSize: 14.5, lineHeight: 20, fontWeight: '600' }, // [1010 统一] 14/700→14.5/600 与 ml.title 同值
+  heroStB: { color: '#FFFFFF', fontWeight: '800' }, // [v5.5] 英雄卡统计行加粗段
   entryTitleHD: { fontSize: 16.5, lineHeight: 23 },
   entrySub: { color: C.text3, fontSize: 11, lineHeight: 15, marginTop: 2 }, // [1010 统一] 10.5→11 与 ml.sub 同值
   entrySubHD: { fontSize: 12.5, lineHeight: 17 },
