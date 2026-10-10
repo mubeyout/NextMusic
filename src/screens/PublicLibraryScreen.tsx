@@ -555,12 +555,12 @@ export function PublicLibAlbumRoute(props: Record<string, unknown>) {
       {err ? <ErrBack err={err} /> : !songs ? (
         <View style={{ padding: 24 }}><ActivityIndicator color={C.brand} /></View>
       ) : (
-        <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
           <View style={d.albHead}>
             <DiscCard name={name} cover={cover ? coverUrl(cover, 'public') : null} unknown={!cover} onPress={undefined} />
-            <View style={{ flex: 1 } as never}>
+            <View style={{ flex: 1, minWidth: 0 } as never}>
               <Text style={d.albName} numberOfLines={2}>{name}</Text>
-              <Text style={d.albSub}>{album?.artist}{album?.byDir ? ' · 文件夹分组' : ''} · {songs.length} 首 · 公共曲库</Text>
+              <Text style={d.albSub} numberOfLines={1}>{album?.artist}{album?.byDir ? ' · 文件夹分组' : ''} · {songs.length} 首 · 公共曲库</Text>
               {songs.length ? <TouchableOpacity style={d.playAll} onPress={() => play(0)}><Icon name="play" size={12} color="#04120a" /><Text style={d.playAllT}>播放全部</Text></TouchableOpacity> : null}
             </View>
           </View>
@@ -598,12 +598,12 @@ export function PublicLibArtistRoute(props: Record<string, unknown>) {
       {err ? <ErrBack err={err} /> : !data ? (
         <View style={{ padding: 24 }}><ActivityIndicator color={C.brand} /></View>
       ) : (
-        <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
           <View style={d.albHead}>
             <DiscCard name={name} round cover={data.artist.coverFile ? coverUrl(data.artist.coverFile, 'public') : null} unknown={!data.artist.coverFile} onPress={undefined} />
-            <View style={{ flex: 1 } as never}>
+            <View style={{ flex: 1, minWidth: 0 } as never}>
               <Text style={d.albName} numberOfLines={2}>{name}</Text>
-              <Text style={d.albSub}>{data.songs.length} 首 · {data.albums.length} 专辑 · 公共曲库</Text>
+              <Text style={d.albSub} numberOfLines={1}>{data.songs.length} 首 · {data.albums.length} 专辑 · 公共曲库</Text>
               {data.songs.length ? <TouchableOpacity style={d.playAll} onPress={() => play(0)}><Icon name="play" size={12} color="#04120a" /><Text style={d.playAllT}>播放全部</Text></TouchableOpacity> : null}
             </View>
           </View>

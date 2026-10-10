@@ -621,12 +621,12 @@ export function MyLibAlbumRoute(props: Record<string, unknown>) {
       {err ? <Text style={d.errText}>加载失败：{err}</Text> : !songs ? (
         <View style={{ padding: 24 }}><ActivityIndicator color={C.brand} /></View>
       ) : (
-        <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
           <View style={d.albHead}>
             <DiscCard name={name} count={undefined} cover={cover ? coverUrl(cover) : null} unknown={!cover} onPress={undefined} />
-            <View style={{ flex: 1 } as never}>
+            <View style={{ flex: 1, minWidth: 0 } as never}>
               <Text style={d.albName} numberOfLines={2}>{name}</Text>
-              <Text style={d.albSub}>{album?.artist}{album?.byDir ? ' · 文件夹分组' : ''} · {songs.length} 首</Text>
+              <Text style={d.albSub} numberOfLines={1}>{album?.artist}{album?.byDir ? ' · 文件夹分组' : ''} · {songs.length} 首</Text>
               {songs.length ? <TouchableOpacity style={d.playAll} onPress={() => play(0)}><Icon name="play" size={12} color="#04120a" /><Text style={d.playAllT}>播放全部</Text></TouchableOpacity> : null}
             </View>
           </View>
@@ -664,12 +664,12 @@ export function MyLibArtistRoute(props: Record<string, unknown>) {
       {err ? <Text style={d.errText}>加载失败：{err}</Text> : !data ? (
         <View style={{ padding: 24 }}><ActivityIndicator color={C.brand} /></View>
       ) : (
-        <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
           <View style={d.albHead}>
             <DiscCard name={name} round cover={data.artist.coverFile ? coverUrl(data.artist.coverFile) : null} unknown={!data.artist.coverFile} onPress={undefined} />
-            <View style={{ flex: 1 } as never}>
+            <View style={{ flex: 1, minWidth: 0 } as never}>
               <Text style={d.albName} numberOfLines={2}>{name}</Text>
-              <Text style={d.albSub}>{data.songs.length} 首 · {data.albums.length} 专辑</Text>
+              <Text style={d.albSub} numberOfLines={1}>{data.songs.length} 首 · {data.albums.length} 专辑</Text>
               {data.songs.length ? <TouchableOpacity style={d.playAll} onPress={() => play(0)}><Icon name="play" size={12} color="#04120a" /><Text style={d.playAllT}>播放全部</Text></TouchableOpacity> : null}
             </View>
           </View>
