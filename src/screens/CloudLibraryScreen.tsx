@@ -680,7 +680,7 @@ export function CloudLibraryScreen() {
 }
 
 // ── 媒体库页入口卡(登录后渲染,未登录不渲染——spec③ 登录个人空间) ──
-export function CloudLibCard({ onEnter }: { onEnter: () => void }) {
+export function CloudLibCard({ onEnter, basisStyle }: { onEnter: () => void; basisStyle?: { flexBasis: '48%' | '31%' | '23%' } }) {
   // [二波② LEO 缺口单] 信息层:首歌数+配额(SWR 缓存优先,静默失败降级原文案)+状态点
   const [info, setInfo] = useState<{ n: number; used: string; pct: number } | null>(null);
   useEffect(() => {
@@ -696,7 +696,7 @@ export function CloudLibCard({ onEnter }: { onEnter: () => void }) {
     return () => { dead = true; };
   }, []);
   return (
-    <TouchableOpacity style={[c.entryCard, IS_HD && c.entryCardHD]} onPress={onEnter} activeOpacity={0.8}>
+    <TouchableOpacity style={[c.entryCard, IS_HD && c.entryCardHD, basisStyle]} onPress={onEnter} activeOpacity={0.8}>
       <View style={[c.entryIcon, IS_HD && c.entryIconHD]}><Icon name="cloud" size={IS_HD ? 32 : 26} color={C.brand} /></View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={[c.entryTitle, IS_HD && c.entryTitleHD]}>云曲库</Text>

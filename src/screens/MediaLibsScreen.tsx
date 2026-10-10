@@ -123,6 +123,11 @@ export function MediaLibsScreen() {
     openMenu(a);
   };
 
+  // [老板 1010] hub 卡片自动布局:按组内实际卡数自适应列数(3→三列,4+→HD 四列;phone 恒两列)——告别 2+1 孤行
+  const gridBasis = (n: number): '48%' | '31%' | '23%' => (!IS_HD || n <= 2) ? '48%' : n === 3 ? '31%' : '23%';
+  const myLibCount = locLibs.length + (IS_WEB ? (serverLibs.length || 1) : 0) + (token ? 1 : 0); // web 空态也渲染「绑定服务器目录」卡
+  const myLibBasis = { flexBasis: gridBasis(myLibCount) };
+
   return (
     <View style={st.screen}>
       {IS_HD ? (
@@ -162,7 +167,7 @@ export function MediaLibsScreen() {
               return (
                 <PressCard
                   key={l.id}
-                  style={[ml.card, IS_HD && ml.cardHD, bad && { opacity: 0.55 }]}
+                  style={[ml.card, IS_HD && ml.cardHD, bad && { opacity: 0.55 }, myLibBasis]}
                   hoverStyle={ml.cardHover}
                   onPress={() => bad ? nav.navigate('LocalLibEdit', { libId: l.id }) : nav.navigate('LocalLibBrowse', { libId: l.id })}
                   onLongPress={IS_WEB ? undefined : locMenu}
@@ -197,7 +202,7 @@ export function MediaLibsScreen() {
             {IS_WEB ? serverLibs.map(l => (
               <PressCard
                 key={'slb-' + l.id}
-                style={[ml.card, IS_HD && ml.cardHD]}
+                style={[ml.card, IS_HD && ml.cardHD, myLibBasis]}
                 hoverStyle={ml.cardHover} tvFocus
                 onPress={() => nav.navigate('ServerLocalLib', { libId: l.id })}
               >
@@ -220,7 +225,7 @@ export function MediaLibsScreen() {
             {/* [web] T1 入口卡:空态「绑定服务器目录」三步引导(升级稿 §二 T1 步1) */}
             {IS_WEB && !serverLibs.length ? (
               <PressCard
-                style={[ml.card, IS_HD && ml.cardHD]}
+                style={[ml.card, IS_HD && ml.cardHD, myLibBasis]}
                 hoverStyle={ml.cardHover} tvFocus
                 onPress={() => nav.navigate('ServerLocalLib', {})}
               >
@@ -235,7 +240,7 @@ export function MediaLibsScreen() {
               </PressCard>
             ) : null}
           {/* spec③:云曲库入口卡(登录后渲染)——我的曲库组第二成员 */}
-          {token ? <CloudLibCard onEnter={() => nav.navigate('CloudLibrary', {})} /> : null}
+          {token ? <CloudLibCard onEnter={() => nav.navigate('CloudLibrary', {})} basisStyle={myLibBasis} /> : null}
           {!locLibs.length && !serverLibs.length && !token && !IS_WEB ? (
             <Text style={[st.intro, IS_HD && hd.intro]}>登录后可开启云曲库，或点右上角 ＋ 添加本机曲库。</Text>
           ) : null}
@@ -277,7 +282,7 @@ export function MediaLibsScreen() {
               return (
                 <PressCard
                   key={a.id}
-                  style={[ml.card, IS_HD && ml.cardHD]}
+                  style={[ml.card, IS_HD && ml.cardHD, { flexBasis: gridBasis(accts.length) }]}
                   hoverStyle={ml.cardHover}
                   onPress={() => nav.navigate('ProviderBrowse', { acctId: a.id })}
                   onLongPress={IS_WEB ? undefined : () => openMenu(a)}
