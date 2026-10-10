@@ -11,10 +11,8 @@
 //   HD/web 端因 RNW+svg shim React#130 历史坑直出 DOM(HDPlayer 内),
 //   但半径序列/渐变规格一律取 vinylDiscSpec/VINYL_SPEC,勿在调用方手写胶纹
 import React from 'react';
-import { View, Image } from 'react-native';
-
-/** [老板 1010] Amcfy 真盘(820×820 透明底,APK 提取;源 NextMusic-design/docs/mockups/assets/disc.webp)——播放条/双端播放页共用单源 */
-export const DISC_IMG = require('../assets/disc.webp');
+import { View } from 'react-native';
+import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 
 /** draft-2 .disc 三层渐变的参数化(两端共用,单源) */
 export const VINYL_SPEC = {
@@ -75,14 +73,53 @@ export function vinylDiscSpec(size: number): VinylDiscSpec {
  * draft-2 唱片盘体。children = 盘心封面槽(位置/裁切由调用方传入,本组件只管盘体)。
  * 旋转机制也归调用方:phone=外层 Animated rotate,HD/web=nm-vinyl-spin CSS。
  */
-export function VinylDisc({ size, children }: {
+export function VinylDisc({ size, children, gradientId = 'vd', sheen = true }: {
   size: number;
   children?: React.ReactNode;
+  /** 同屏多实例时的渐变 id 前缀(默认单实例够用) */
+  gradientId?: string;
+  /** 偏心 sheen 开关(验收裁撤用) */
+  sheen?: boolean;
 }) {
-  // [老板 1010] 真盘换皮:只换黑胶盘体(draft-2 几何退役→Amcfy 真盘图);封面仍由 children 提供嵌在盘心(老板令:只换黑胶唱片,封面要留);VINYL_SPEC/vinylDiscSpec 保留供 HDPlayer label 几何用
+  const spec = vinylDiscSpec(size);
+  const { center: c, radius: R } = spec;
+  const baseId = `${gradientId}Base`;
+  const sheenId = `${gradientId}Sheen`;
   return (
-    <View style={{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden' }}>
-      <Image source={DISC_IMG} style={{ width: size, height: size }} resizeMode="cover" />
+    <View style={{ width: size, height: size }}>
+      <Svg width={size} height={size}>
+        <Defs>
+          <RadialGradient id={baseId} cx="50%" cy="50%" r="50%">
+            {VINYL_SPEC.baseStops.map((s, i) => (
+              <Stop key={i} offset={s.offset} stopColor={s.color} />
+            ))}
+          </RadialGradient>
+          {sheen ? (
+            <RadialGradient id={sheenId} cx={VINYL_SPEC.sheen.cx} cy={VINYL_SPEC.sheen.cy} r={VINYL_SPEC.sheen.r}>
+              {VINYL_SPEC.sheen.stops.map((s, i) => (
+                <Stop key={i} offset={s.offset} stopColor="#FFFFFF" stopOpacity={String(s.opacity)} />
+              ))}
+            </RadialGradient>
+          ) : null}
+        </Defs>
+        {/* 盘底 */}
+        <Circle cx={c} cy={c} r={R} fill={`url(#${baseId})`} />
+        {/* 细胶纹(程序化循环) */}
+        {spec.fineGrooves.map((r, i) => (
+          <Circle key={`f${i}`} cx={c} cy={c} r={r} fill="none"
+            stroke={VINYL_SPEC.fine.stroke} strokeOpacity={VINYL_SPEC.fine.opacity} strokeWidth={VINYL_SPEC.fine.width} />
+        ))}
+        {/* 宽纹带 */}
+        {spec.wideBands.map((r, i) => (
+          <Circle key={`w${i}`} cx={c} cy={c} r={r} fill="none"
+            stroke={VINYL_SPEC.wide.stroke} strokeOpacity={VINYL_SPEC.wide.opacity} strokeWidth={VINYL_SPEC.wide.width} />
+        ))}
+        {/* 盘缘内描边 */}
+        <Circle cx={c} cy={c} r={spec.rimR} fill="none"
+          stroke={VINYL_SPEC.rim.stroke} strokeOpacity={VINYL_SPEC.rim.opacity} strokeWidth={VINYL_SPEC.rim.width} />
+        {/* 偏心 sheen(裁量保留,让旋转可见) */}
+        {sheen ? <Circle cx={c} cy={c} r={R} fill={`url(#${sheenId})`} /> : null}
+      </Svg>
       {children}
     </View>
   );

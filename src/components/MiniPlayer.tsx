@@ -10,7 +10,7 @@ import { CollectSheet } from './CollectSheet';
 import { useFav } from '../state/useFav'; // lx157:收藏状态统一三源联动
 import { isFav } from '../state/favorites';
 import { toast } from './Dialog';
-import { DISC_IMG } from './VinylDisc'; // [老板 1010] 播放条黑胶真盘单源
+import LinearGradient from 'react-native-linear-gradient'; // [老板 1010] 小盘改几何绘制(盘图实测不达标)
 
 // Figma Player/Mini: 350x72 r=8, art 52x52 r=6, meta center-left, right icons
 // standalone=true:内页独立挂载(底部自补安全区 inset);主 tab 内由 TabBar 吃掉 inset 不传
@@ -52,7 +52,7 @@ export function MiniPlayer({ standalone }: { standalone?: boolean } = {}) {
         <TouchableOpacity activeOpacity={0.9} style={st.card} onPress={() => nav.navigate('Main')}>
           <View style={st.row}>
             <View style={st.vinylWrap}>
-              <Image source={DISC_IMG} style={st.vinylDisc} resizeMode="cover" />
+              <LinearGradient colors={['#171717', '#0e0e0e', '#191919', '#060606']} style={st.vinylDisc} />
               <View style={[st.vinylLabel, st.vinylLabelFallback]} />
             </View>
             <View style={st.meta}>
@@ -71,7 +71,7 @@ export function MiniPlayer({ standalone }: { standalone?: boolean } = {}) {
       <TouchableOpacity activeOpacity={0.9} style={st.card} onPress={() => nav.navigate('Player')}>
         <View style={st.row}>
           <Animated.View style={[st.vinylWrap, { transform: [{ rotate: spinDeg }] }]}>
-            <Image source={DISC_IMG} style={st.vinylDisc} resizeMode="cover" />
+            <LinearGradient colors={['#171717', '#0e0e0e', '#191919', '#060606']} style={st.vinylDisc} />
             {current.img ? <Image source={{ uri: current.img }} style={st.vinylLabel} /> : <View style={[st.vinylLabel, st.vinylLabelFallback]} />}
           </Animated.View>
           <View style={st.meta}>

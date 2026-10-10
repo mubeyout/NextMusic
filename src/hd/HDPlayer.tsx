@@ -2,7 +2,7 @@
 // v1 教训:固定尺寸溢出;v2 教训:深色底 panel 突兀(老板:粗糙,直接取消)
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, Animated, Easing, ScrollView, ActivityIndicator, type ImageStyle, type ViewStyle, type TextStyle } from 'react-native';
-import { vinylDiscSpec, DISC_IMG } from '../components/VinylDisc'; // 唱片:label 几何单源 + [老板 1010] Amcfy 真盘图
+import { VINYL_SPEC, vinylDiscSpec } from '../components/VinylDisc'; // 唱片:draft-2 几何单源(盘图实测质量不达标回退几何绘制,老板 1010)
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
 import { fixCoverUrl } from '../utils/cover'; // lxfix:kw 图床域名自愈
@@ -39,13 +39,21 @@ function HD_VINYL_SVG(img?: string, size = 300, playing?: boolean): React.ReactN
   const spec = vinylDiscSpec(size);
   const c = spec.center;
   const s = size / 300; // label 区沿用 300 基准比例(盘心 38% 经典黑胶)
+  const base = h('radialGradient', { id: 'vdHdBase', cx: '50%', cy: '50%', r: '50%' },
+    VINYL_SPEC.baseStops.map((st, i) => h('stop', { key: i, offset: st.offset, stopColor: st.color })));
+  const sheen = h('radialGradient', { id: 'vdHdSheen', cx: VINYL_SPEC.sheen.cx, cy: VINYL_SPEC.sheen.cy, r: VINYL_SPEC.sheen.r },
+    VINYL_SPEC.sheen.stops.map((st, i) => h('stop', { key: i, offset: st.offset, stopColor: '#FFFFFF', stopOpacity: String(st.opacity) })));
   return h('svg', { width: size, height: size, viewBox: `0 0 ${size} ${size}`, className: 'nm-vinyl-spin' + (playing ? '' : ' nm-vinyl-paused'),
     // [Fix 2026-09-14] 删根元素 boxShadow:svg 根上 border-radius 不裁剪阴影(Chromium)→方形半透明阴影框随唱片旋转,浅色背景下可见(老板:半透明矩形跟着旋转)
     style: { position: 'absolute', top: 0, left: 0 } as never },
-    h('defs', null,
+    h('defs', null, base, sheen,
       h('clipPath', { id: 'hdLblClip', key: 'lc' }, h('circle', { key: 'c', cx: c, cy: c, r: 56 * s }))),
-    /* [老板 1010] 盘体=Amcfy 真盘图(draft-2 几何退役;只换黑胶唱片,封面 label 沿用既有几何) */
-    h('image', { key: 'disc', href: DISC_IMG, xlinkHref: DISC_IMG, x: 0, y: 0, width: size, height: size, preserveAspectRatio: 'xMidYMid slice' }),
+    /* [老板 1010] 盘体回几何绘制(draft-2 单源;盘图实测不达标) */
+    h('circle', { key: 'base', cx: c, cy: c, r: spec.radius, fill: 'url(#vdHdBase)' }),
+    ...spec.fineGrooves.map((r, i) => h('circle', { key: 'f' + i, cx: c, cy: c, r, fill: 'none', stroke: VINYL_SPEC.fine.stroke, strokeOpacity: String(VINYL_SPEC.fine.opacity), strokeWidth: VINYL_SPEC.fine.width })),
+    ...spec.wideBands.map((r, i) => h('circle', { key: 'w' + i, cx: c, cy: c, r, fill: 'none', stroke: VINYL_SPEC.wide.stroke, strokeOpacity: String(VINYL_SPEC.wide.opacity), strokeWidth: VINYL_SPEC.wide.width })),
+    h('circle', { key: 'rim', cx: c, cy: c, r: spec.rimR, fill: 'none', stroke: VINYL_SPEC.rim.stroke, strokeOpacity: String(VINYL_SPEC.rim.opacity), strokeWidth: VINYL_SPEC.rim.width }),
+    h('circle', { key: 'sheen', cx: c, cy: c, r: spec.radius, fill: 'url(#vdHdSheen)' }),
     /* 盘心 label:暗分离环(draft-2 4px 暗环,封面嵌进盘里不浮贴)→深色纸底→正圆裁切封面→label 描边环→轴孔环+轴孔 */
     h('circle', { key: 'lblDark', cx: c, cy: c, r: 62 * s, fill: 'rgba(4,4,4,0.72)' }),
     h('circle', { key: 'lblBase', cx: c, cy: c, r: 58 * s, fill: '#101312' }),
