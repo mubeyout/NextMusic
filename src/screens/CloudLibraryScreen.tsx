@@ -5,7 +5,7 @@
 // v3.0 定稿作废项移除:本页「上传」按钮/本机选歌器已删——上传唯一源=本机曲库(③3.0 原则2);
 // 空态「去本机曲库」=纯跳转(不代开多选,尊重用户浏览节奏)
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable, ActivityIndicator, type StyleProp, type ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable, ActivityIndicator, Image, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
@@ -14,7 +14,7 @@ import { toast, dialog } from '../components/Dialog';
 import { EmptyState } from '../components/PageChrome';
 import { SongRow } from '../components/SongRow';
 import { store as httpStore } from '../services/server';
-import { myLib, toSongItem, libCache, type LibSong } from '../services/myLibrary';
+import { myLib, toSongItem, libCache, coverUrl, type LibSong } from '../services/myLibrary';
 import { cloudLib, fmtBytes, type QuotaInfo } from '../services/cloudLibrary';
 import { setCloudSongs, presenceOf, subscribePresence } from '../services/cloudPresence';
 import { downloads, enqueueDownload, downloadProgress, subscribeDownloads } from '../services/downloads';
@@ -637,7 +637,13 @@ export function CloudLibraryScreen() {
                     {shown.map(([album, list]) => (
                       <View key={album} style={c.albGrp}>
                         <View style={c.albHead}>
-                          <View style={c.albArt}><Icon name="music" size={22} color={C.text3} /></View>
+                          <View style={c.albArt}>
+                            {list[0] ? (
+                              <Image source={{ uri: coverUrl(list[0].filename) }} style={c.albArtImg} />
+                            ) : (
+                              <Icon name="music" size={22} color={C.text3} />
+                            )}
+                          </View>
                           <Text style={c.albT} numberOfLines={1}>{album}</Text>
                           <Text style={c.albC}>{list.length} 首</Text>
                         </View>
@@ -819,7 +825,8 @@ const c = StyleSheet.create({
   // [两段式·LEO 1010] 云页专辑分组(行头/占位封面/展开钮)
   albGrp: { gap: 2 },
   albHead: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
-  albArt: { width: 44, height: 44, borderRadius: 10, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  albArt: { width: 44, height: 44, borderRadius: 10, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  albArtImg: { width: '100%', height: '100%' }, // [批5b] 专辑代表封面(组内首曲内嵌图,cover 端点链;无图回落矢量)
   albT: { flex: 1, minWidth: 0, color: C.text, fontSize: 13.5, fontWeight: '700' },
   albC: { color: C.text3, fontSize: 11 },
   albMore: { paddingVertical: 10, alignItems: 'center' },
