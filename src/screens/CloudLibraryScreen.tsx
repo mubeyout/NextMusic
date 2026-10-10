@@ -696,13 +696,13 @@ export function CloudLibCard({ onEnter }: { onEnter: () => void }) {
     return () => { dead = true; };
   }, []);
   return (
-    <TouchableOpacity style={c.entryCard} onPress={onEnter} activeOpacity={0.8}>
-      <View style={c.entryIcon}><Icon name="cloud" size={20} color={C.brand} /></View>
-      <View style={{ flex: 1 }}>
-        <Text style={c.entryTitle}>云曲库</Text>
+    <TouchableOpacity style={[c.entryCard, IS_HD && c.entryCardHD]} onPress={onEnter} activeOpacity={0.8}>
+      <View style={[c.entryIcon, IS_HD && c.entryIconHD]}><Icon name="cloud" size={IS_HD ? 32 : 26} color={C.brand} /></View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={[c.entryTitle, IS_HD && c.entryTitleHD]}>云曲库</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#3FBF7F' }} />
-          <Text style={c.entrySub} numberOfLines={1}>
+          <Text style={[c.entrySub, IS_HD && c.entrySubHD]} numberOfLines={1}>
             {info ? `${info.n} 首 · ${info.used}${info.pct >= 0 ? ` · 配额 ${info.pct}%` : ''}` : '个人云端空间 · 用量 / 上传 / 文件管理'}
           </Text>
         </View>
@@ -785,7 +785,11 @@ const c = StyleSheet.create({
   delOkT: { color: '#04120a', fontSize: 13, fontWeight: '800' },
   // 入口卡
   entryCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.strokeFaint, padding: 14, flexBasis: '48%', minHeight: 72 }, // [老板反馈] 删flexGrow同ml.card——单卡不拉伸居左
+  entryCardHD: { minHeight: 86, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16 }, // [1010 统一] 与 ml.cardHD 同值(原无 HD 变体)
   entryIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }, // [hub 网格] 40→44 对齐 ml.iconWrap 统一值,cloud 品牌色改通用底
-  entryTitle: { color: C.text, fontSize: 14, fontWeight: '700' },
-  entrySub: { color: C.text3, fontSize: 10.5, marginTop: 2 },
+  entryIconHD: { width: 52, height: 52, borderRadius: 14 }, // [1010 统一] 与 ml.iconWrapHD 同值
+  entryTitle: { color: C.text, fontSize: 14.5, lineHeight: 20, fontWeight: '600' }, // [1010 统一] 14/700→14.5/600 与 ml.title 同值
+  entryTitleHD: { fontSize: 16.5, lineHeight: 23 },
+  entrySub: { color: C.text3, fontSize: 11, lineHeight: 15, marginTop: 2 }, // [1010 统一] 10.5→11 与 ml.sub 同值
+  entrySubHD: { fontSize: 12.5, lineHeight: 17 },
 });

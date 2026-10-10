@@ -283,7 +283,7 @@ export function MediaLibsScreen() {
                   onLongPress={IS_WEB ? undefined : () => openMenu(a)}
                   onHoverIn={IS_WEB ? () => setHoverId(a.id) : undefined}
                   onHoverOut={IS_WEB ? () => setHoverId(null) : undefined}                >
-                  <View style={[ml.iconWrap, IS_HD && ml.iconWrapHD]}><AcctGlyph type={a.type} size={IS_HD ? 34 : 28} /></View>
+                  <View style={[ml.iconWrap, IS_HD && ml.iconWrapHD]}><AcctGlyph type={a.type} size={IS_HD ? 32 : 26} /></View>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <View style={ml.titleRow}>
                       <Text style={[ml.title, IS_HD && ml.titleHD]} numberOfLines={1}>{a.name || label}</Text>
@@ -1112,7 +1112,7 @@ const ml = StyleSheet.create({
   group: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 }, // [老板拍板 10-09] hub 网格卡片风:flexWrap 换行,卡宽 flexBasis 48%=两列
   sectionHead: { color: C.text3, fontSize: 12, fontWeight: '700', letterSpacing: 1.2, marginTop: 26, marginBottom: 10 },
   sectionHeadHD: { fontSize: 14, letterSpacing: 1.6, marginTop: 30 },
-  groupWeb: { alignSelf: 'center', width: '100%', maxWidth: 860 }, // lx168(老板 0923 02:58):与曲库浏览同宽 860 居中——原先 720 靠左,宽屏右半空白像"只有半截"
+  groupWeb: { alignSelf: 'flex-start', width: '100%', maxWidth: 860 }, // [老板 1010] 卡片网格居左——与 dv.listWrapWeb 同规(flex-start+限宽860);居中与整体样式规范不一致
   card: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, paddingHorizontal: 14, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke, elevation: 1, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, flexBasis: '48%' }, // [老板反馈] 删flexGrow——单卡不拉伸,保持48%宽居左对齐
   cardHD: { minHeight: 86, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16 },
   cardHover: { borderColor: C.strokeStrong, backgroundColor: C.surface2 }, // hover 细描边提亮,克制不加投影
