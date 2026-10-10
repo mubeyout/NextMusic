@@ -114,7 +114,7 @@ export function ProviderDetailScreen() {
         <View style={st.headCard}>
           {!isArtist ? (
             p.cover ? <Image source={{ uri: p.cover }} style={[st.cover, IS_HD && dv.cover]} />
-              : <View style={[st.cover, IS_HD && dv.cover, st.coverFallback]}><Text style={st.glyph}>♫</Text></View>
+              : <View style={[st.cover, IS_HD && dv.cover, st.coverFallback]}><Icon name="music" size={32} color={C.text2} /></View>
           ) : (
             <View style={[st.cover, IS_HD && dv.cover, st.artistFallback]}><Text style={st.artistInitial}>{p.name.slice(0, 1)}</Text></View>
           )}
@@ -147,7 +147,7 @@ export function ProviderDetailScreen() {
                   })}
                 >
                   {al.cover ? <Image source={{ uri: al.cover }} style={st.albumCover} />
-                    : <View style={[st.albumCover, st.coverFallback]}><Text style={st.glyph}>♫</Text></View>}
+                    : <View style={[st.albumCover, st.coverFallback]}><Icon name="music" size={32} color={C.text2} /></View>}
                   <Text style={[st.albumName, IS_HD && dv.albumName]} numberOfLines={1}>{al.name}</Text>
                   <Text style={[st.albumMeta, IS_HD && dv.albumMeta]} numberOfLines={1}>{al.year || ''}{al.songCount ? ` · ${al.songCount}首` : ''}</Text>
                 </T>

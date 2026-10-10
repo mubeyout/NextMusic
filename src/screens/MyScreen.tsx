@@ -242,7 +242,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
                     <Image source={{ uri: g.img }} style={st.plCover} />
                   ) : (
                     <LinearGradient colors={COVER_GRADS[i % COVER_GRADS.length]} style={st.plCover}>
-                      <Text style={st.plGlyph}>♫</Text>
+                      <Icon name="music" size={26} color={C.white} />
                     </LinearGradient>
                   )}
                   <Text style={st.plName} numberOfLines={1}>{g.name}</Text>
@@ -286,7 +286,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
             : albums == null ? <View style={st.center}><ActivityIndicator color={C.brand} /></View>
             : albums.length ? albums.map(a => (
               <TouchableOpacity key={a.id} style={st.row} activeOpacity={0.8} onPress={() => openAlbum(a)}>
-                {a.img ? <Image source={{ uri: a.img }} style={st.art} /> : <View style={[st.art, st.artFallback]}><Text style={st.rowGlyph}>♫</Text></View>}
+                {a.img ? <Image source={{ uri: a.img }} style={st.art} /> : <View style={[st.art, st.artFallback]}><Icon name="music" size={20} color={C.text2} /></View>}
                 <View style={{ flex: 1 }}>
                   <Text style={st.rowName} numberOfLines={1}>{a.name}</Text>
                   <Text style={st.rowMeta} numberOfLines={1}>{a.singer || ''}</Text>

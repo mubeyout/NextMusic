@@ -67,7 +67,7 @@ function PlaylistCard({ pl, onPress }: PlaylistCardProps) {
       {pl.img ? (
         <Image source={{ uri: pl.img }} style={p.art} />
       ) : (
-        <View style={[p.art, p.artFallback]}><Text style={p.glyph}>♫</Text></View>
+        <View style={[p.art, p.artFallback]}><Icon name="music" size={24} color={C.text} /></View>
       )}
       <Text style={p.name} numberOfLines={2}>{pl.name}</Text>
       <Text style={p.meta} numberOfLines={1}>{pl.author || ''}{pl.total ? ` · ${pl.total}首` : ''}</Text>
@@ -286,7 +286,7 @@ export function ExploreScreen() {
                   >
                     {first?.img
                       ? <Image source={{ uri: first.img }} style={st.catArt} />
-                      : <View style={[st.catArt, st.catFallback]}><Text style={st.catGlyph}>♫</Text></View>}
+                      : <View style={[st.catArt, st.catFallback]}><Icon name="music" size={26} color={C.white} /></View>}
                     <View style={st.catShade} />
                     <Text style={st.catLabel}>{c.label}</Text>
                   </TouchableOpacity>

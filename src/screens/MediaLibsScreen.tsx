@@ -962,7 +962,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                         {mine.map(pl => (
                           <T key={pl.id} style={[st.albumCell, IS_WEB && st.albumCellWeb]} activeOpacity={0.85} focusStyle={focus(10)} onPress={() => toDetail(pl)}>
                             {pl.cover ? <Image source={{ uri: pl.cover }} style={st.albumCover} />
-                              : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name) as ViewStyle]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
+                              : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name) as ViewStyle]}><Icon name="music" size={22} color="#ffffffb3" /></View>}
                             <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{pl.name}</Text>
                             <Text style={[st.albumMeta, IS_HD && bv.albumMeta]} numberOfLines={1}>{pl.songCount ? `${pl.songCount}首` : ''}</Text>
                           </T>
@@ -983,7 +983,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                         {recs.map(pl => (
                           <T key={pl.id} style={[st.albumCell, IS_WEB && st.albumCellWeb]} activeOpacity={0.85} focusStyle={focus(10)} onPress={() => toDetail(pl)}>
                             {pl.cover ? <Image source={{ uri: pl.cover }} style={st.albumCover} />
-                              : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name) as ViewStyle]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
+                              : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name) as ViewStyle]}><Icon name="music" size={22} color="#ffffffb3" /></View>}
                             <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{pl.name}</Text>
                           </T>
                         ))}
@@ -1003,7 +1003,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                         {tops.map(pl => (
                           <T key={pl.id} style={[st.albumCell, IS_WEB && st.albumCellWeb]} activeOpacity={0.85} focusStyle={focus(10)} onPress={() => toDetail(pl)}>
                             {pl.cover ? <Image source={{ uri: pl.cover }} style={st.albumCover} />
-                              : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name) as ViewStyle]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
+                              : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name) as ViewStyle]}><Icon name="music" size={22} color="#ffffffb3" /></View>}
                             <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{pl.name}</Text>
                           </T>
                         ))}
@@ -1087,7 +1087,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                           sub: [al.artist, al.songCount ? `${al.songCount}首` : null].filter(Boolean).join(' · ') || undefined,
                         })}>
                         {al.cover ? <Image source={{ uri: al.cover }} style={st.albumCover} />
-                          : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(al.name) as ViewStyle]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
+                          : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(al.name) as ViewStyle]}><Icon name="music" size={22} color="#ffffffb3" /></View>}
                         <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{al.name}</Text>
                         <Text style={[st.albumMeta, IS_HD && bv.albumMeta]} numberOfLines={1}>{al.artist || ''}{al.songCount ? ` · ${al.songCount}首` : ''}</Text>
                       </T>
@@ -1129,7 +1129,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                     <T key={pl.id} style={[st.plRow, IS_HD && bv.row]} activeOpacity={0.75} focusStyle={focus(12)}
                       onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'playlist', id: pl.id, name: pl.name, cover: pl.cover, sub: pl.songCount ? `${pl.songCount} 首` : undefined })}>
                       {pl.cover ? <Image source={{ uri: pl.cover }} style={[st.artistArt, IS_HD && bv.art]} />
-                        : <View style={[st.artistArt, IS_HD && bv.art, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name) as ViewStyle]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
+                        : <View style={[st.artistArt, IS_HD && bv.art, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name) as ViewStyle]}><Icon name="music" size={22} color="#ffffffb3" /></View>}
                       <View style={{ flex: 1, minWidth: 0 }}>
                         <Text style={[st.artistName, IS_HD && bv.rowTitle]} numberOfLines={1}>{pl.name}</Text>
                         <Text style={[st.artistMeta, IS_HD && bv.rowSub]} numberOfLines={1}>{pl.songCount ? `${pl.songCount} 首` : ''}</Text>
@@ -1232,7 +1232,7 @@ function PvCard({ cover, name, meta, round, onPress }: {
           { width: size, height: size, borderRadius: round ? size / 2 : 10, alignItems: 'center', justifyContent: 'center' },
           round ? { backgroundColor: C.artTint2 } : coverGrad(name) as ViewStyle,
         ]}>
-          <Text style={round ? st.artistInitial : [st.albumGlyph, { color: '#ffffffb3' }]}>{round ? name.slice(0, 1) : '♫'}</Text>
+          {round ? <Text style={st.artistInitial}>{name.slice(0, 1)}</Text> : <Icon name="music" size={22} color="#ffffffb3" />}
         </View>
       )}
       <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{name}</Text>

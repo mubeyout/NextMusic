@@ -142,7 +142,7 @@ export function PlaylistDetailScreen() {
           {cover ? (
             <Image source={{ uri: cover }} style={st.cover} />
           ) : (
-            <View style={[st.cover, st.coverFallback]}><Text style={st.coverGlyph}>♫</Text></View>
+            <View style={[st.cover, st.coverFallback]}><Icon name="music" size={40} color={C.text} /></View>
           )}
           <View style={st.headMeta}>
             <Text style={st.title} numberOfLines={2}>{title}</Text>
