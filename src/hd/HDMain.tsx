@@ -538,7 +538,7 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
         <HDTouch style={st.pbCoverTouch} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 9 }} hoverBg={IS_WEB ? C.hover : false} onPress={() => hdNav()?.navigate('Player')}>
           {current?.img
             ? <Image source={{ uri: current.img }} style={st.pbArt} />
-            : <View style={[st.pbArt, { backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' }]}><Text style={{ color: C.text3, fontSize: 14 }}>♪</Text></View>}
+            : <View style={[st.pbArt, { backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={14} color={C.text3} /></View>} {/* [审计 1010] ♪ 字形→真矢量 */}
         </HDTouch>
         <View style={{ minWidth: 0, flex: 1, gap: 1 }}>
           <Text style={st.pbTitle} numberOfLines={1}>{current?.name ?? '未在播放'}</Text>

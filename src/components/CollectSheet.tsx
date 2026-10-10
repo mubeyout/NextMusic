@@ -105,7 +105,7 @@ export function CollectSheet({ song, visible, onClose }: { song: SongItem | null
             {remotePls.map(pl => (
               <TouchableOpacity key={`r-${pl.name}`} style={s.row} onPress={() => toggleRemote(pl.name, pl.has)}>
                 <View style={[s.rowIcon, pl.has && { backgroundColor: C.heart + '1A' }]}>
-                  <Text style={[s.rowGlyph, pl.has && { color: C.heart }]}>♫</Text>
+                  <Icon name="music" size={16} color={pl.has ? C.heart : C.text2} /> {/* [审计 1010] ♫ 字形→真矢量 */}
                 </View>
                 <Text style={s.rowTitle} numberOfLines={1}>{pl.name}</Text>
                 <Text style={s.sub}>{pl.has ? `已收藏 · 点击移除` : `${pl.count} 首`}</Text>
@@ -117,7 +117,7 @@ export function CollectSheet({ song, visible, onClose }: { song: SongItem | null
               return (
                 <TouchableOpacity key={pl.id} style={s.row} onPress={() => toggleLocal(pl.id, pl.name, has)}>
                   <View style={[s.rowIcon, has && { backgroundColor: C.heart + '1A' }]}>
-                    <Text style={[s.rowGlyph, has && { color: C.heart }]}>♫</Text>
+                    <Icon name="music" size={16} color={has ? C.heart : C.text2} /> {/* [审计 1010] ♫ 字形→真矢量 */}
                   </View>
                   <Text style={s.rowTitle} numberOfLines={1}>{pl.name}</Text>
                   <Text style={s.sub}>{has ? `已收藏 · 点击移除` : `${pl.songs.length} 首`}</Text>
