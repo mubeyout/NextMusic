@@ -4,8 +4,8 @@
 //   API 面实测不变：路径/信封(code制)/Bearer/X-New-Token 滑动轮换/refresh 全部保留；
 //   新增登录防爆破：连续失败触发验证码（GET /auth/captcha + captcha_id/captcha_answer 字段）与 429 锁定，
 //   以及可选两步验证（requiresTwoFactor/twoFactorToken → /auth/login/2fa，App 侧不支持需明示报错）。
-//   本文件核心适配 = base 迁移：老账号 base 形如 http://op.mubey.top:88 → 自动去掉 :88（回落 80），
-//   在 tfCall/tfRefresh 入口自愈 sess.base，resolveSess 持久化时回写迁移后的 base。
+//   [1010 端口策略] WAN 发布 :88(DNAT)、LAN 只监听 :80——不再无脑剥 :88，改由 baseVariant 连接层回退：
+//   tfLogin 先按输入原样连、失败换端口重试；tfCall 同理；登录成功的 base 即可用端口，由调用方持久化自愈。
 // 2026-09-16 改版：并入第三方媒体库体系（providers.ts type='tingfeng'）——本文件只做协议引擎，
 // 会话(sess)由调用方持有；token 轮换直接写回 sess，由调用方决定持久化。
 // 旧独立屏配置（nextmusic-tingfeng MMKV）仅作一次性迁移源：自动转成 provider 账号。
@@ -70,11 +70,22 @@ export function normalizeBase(url: string): string {
   let u = (url || '').trim().replace(/\/+$/, '');
   if (!u) return '';
   if (!/^https?:\/\//.test(u)) u = 'http://' + u;
-  // 2026-10-08 上游重写：独立端口 88 已随服务并入 RoCeOS 单体而消亡（连接层拒/超时），
-  // nginx :80/:443 承接全部 /api/v1。老存储/输入的 :88 一律剥掉回落默认端口。
-  // https 不动（443 同样可用了）；其余显式端口视为用户自有反代，尊重保留。
-  u = u.replace(/^(http:\/\/[^/:]+):88(?=$|\/)/i, '$1');
+  // [1010 修正] 不再无脑剥 :88——WAN 侧发布端口恰是 88(DNAT),剥掉后在外网环境下直连 :80 会挂死;
+  // 端口适配改由 baseVariant 连接层回退承担(见 tfLogin/tfCall)。https/其余显式端口尊重保留。
   return u;
+}
+
+/** 同主机端口变体::88 ⇄ 默认 80(WAN DNAT 88 / LAN 只监听 80,两端互为回退);https 不变体 */
+export function baseVariant(u: string): string {
+  if (/^(http:\/\/[^/:]+):88(?=$|\/)/i.test(u)) return u.replace(/^(http:\/\/[^/:]+):88(?=$|\/)/i, '$1');
+  if (/^http:\/\/[^/:]+(?=$|\/)/i.test(u)) return u.replace(/^(http:\/\/[^/:]+)(?=$|\/)/i, '$1:88');
+  return u;
+}
+
+/** 连接层错误判定(fetch 网络层/超时中止;密码错/验证码等业务错误不算) */
+function isConnErr(e: unknown): boolean {
+  const n = (e as { name?: string })?.name || '';
+  return n === 'AbortError' || n === 'TypeError' || n === 'NetworkError';
 }
 
 async function raw(base: string, path: string, init?: RequestInit & { token?: string; timeout?: number }, timeoutMs?: number): Promise<Response> {
@@ -91,8 +102,19 @@ interface Envelope<T> { code: number; message?: string; captcha_required?: boole
 
 /** 登录：成功返回会话所需的双 token + 昵称；2026-10-08 适配：防爆破验证码/两步验证的明确报错 */
 export async function tfLogin(userInput: string, username: string, password: string): Promise<{ base: string; token: string; refresh: string; nickname: string }> {
-  const base = normalizeBase(userInput);
-  if (!base) throw new Error('请输入服务器地址');
+  const primary = normalizeBase(userInput);
+  if (!primary) throw new Error('请输入服务器地址');
+  // [1010 端口回退] 先按输入原样连；连接层失败(超时/拒连)再试同主机另一端口——WAN 发布 :88、LAN 只通 :80；返回的 base 即可用端口(调用方持久化自愈)
+  try {
+    return await tfLoginOnce(primary, username, password);
+  } catch (e) {
+    const alt = baseVariant(primary);
+    if (alt !== primary && isConnErr(e)) return tfLoginOnce(alt, username, password);
+    throw e;
+  }
+}
+
+async function tfLoginOnce(base: string, username: string, password: string): Promise<{ base: string; token: string; refresh: string; nickname: string }> {
   const r = await raw(base, '/api/v1/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -119,11 +141,21 @@ export async function tfLogin(userInput: string, username: string, password: str
   };
 }
 
-/** 引擎调用：Bearer + 滑动 token 轮换（X-New-Token 写回 sess）+ 401 刷新重放一次；base 老端口自愈（:88→80） */
-export async function tfCall<T>(sess: TfSess, path: string, init?: RequestInit & { timeout?: number }, retried = false): Promise<T> {
+/** 引擎调用：Bearer + 滑动 token 轮换（X-New-Token 写回 sess）+ 401 刷新重放一次；[1010] 连接层失败自动换端口重试一次 */
+export async function tfCall<T>(sess: TfSess, path: string, init?: RequestInit & { timeout?: number }, retried = false, portFallback = false): Promise<T> {
   if (!sess.token) throw new Error('听风音乐未连接');
-  sess.base = normalizeBase(sess.base); // 2026-10-08：老存储的 :88 base 在此自愈，避免存量账号整体失效
-  const r = await raw(sess.base, path, { ...init, token: sess.token }, init?.timeout);
+  sess.base = normalizeBase(sess.base);
+  let r: Response;
+  try {
+    r = await raw(sess.base, path, { ...init, token: sess.token }, init?.timeout);
+  } catch (e) {
+    // [1010 端口回退] WAN:88↔LAN:80 同主机互换重试一次；成功后 sess.base 留在可用端口，由调用方持久化自愈
+    if (!portFallback && isConnErr(e)) {
+      const alt = baseVariant(sess.base);
+      if (alt !== sess.base) { sess.base = alt; return tfCall<T>(sess, path, init, retried, true); }
+    }
+    throw e;
+  }
   const nt = r.headers.get('X-New-Token'), nr = r.headers.get('X-New-Refresh-Token');
   if (nt) { sess.token = nt; sess.refresh = nr || sess.refresh; }
   let j: Envelope<T>;
