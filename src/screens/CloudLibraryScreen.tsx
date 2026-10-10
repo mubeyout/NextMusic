@@ -680,7 +680,7 @@ export function CloudLibraryScreen() {
 }
 
 // ── 媒体库页入口卡(登录后渲染,未登录不渲染——spec③ 登录个人空间) ──
-export function CloudLibCard({ onEnter, basisStyle }: { onEnter: () => void; basisStyle?: { flexBasis: '48%' | '31%' | '23%' } }) {
+export function CloudLibCard({ onEnter }: { onEnter: () => void }) {
   // [二波② LEO 缺口单] 信息层:首歌数+配额(SWR 缓存优先,静默失败降级原文案)+状态点
   const [info, setInfo] = useState<{ n: number; used: string; pct: number } | null>(null);
   useEffect(() => {
@@ -696,7 +696,7 @@ export function CloudLibCard({ onEnter, basisStyle }: { onEnter: () => void; bas
     return () => { dead = true; };
   }, []);
   return (
-    <TouchableOpacity style={[c.entryCard, IS_HD && c.entryCardHD, basisStyle]} onPress={onEnter} activeOpacity={0.8}>
+    <TouchableOpacity style={[c.entryCard, IS_HD && c.entryCardHD]} onPress={onEnter} activeOpacity={0.8}>
       <View style={[c.entryIcon, IS_HD && c.entryIconHD]}><Icon name="cloud" size={IS_HD ? 32 : 26} color={C.brand} /></View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={[c.entryTitle, IS_HD && c.entryTitleHD]}>云曲库</Text>
@@ -785,7 +785,7 @@ const c = StyleSheet.create({
   delOkT: { color: '#04120a', fontSize: 13, fontWeight: '800' },
   // 入口卡
   entryCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.strokeFaint, padding: 14, flexBasis: '48%', minHeight: 72 }, // [老板反馈] 删flexGrow同ml.card——单卡不拉伸居左
-  entryCardHD: { minHeight: 86, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16 }, // [1010 统一] 与 ml.cardHD 同值(原无 HD 变体)
+  entryCardHD: { minHeight: 86, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16, flexBasis: 375 }, // [1010 统一] 与 ml.cardHD 同值(定宽卡+自然换行)
   entryIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }, // [hub 网格] 40→44 对齐 ml.iconWrap 统一值,cloud 品牌色改通用底
   entryIconHD: { width: 52, height: 52, borderRadius: 14 }, // [1010 统一] 与 ml.iconWrapHD 同值
   entryTitle: { color: C.text, fontSize: 14.5, lineHeight: 20, fontWeight: '600' }, // [1010 统一] 14/700→14.5/600 与 ml.title 同值

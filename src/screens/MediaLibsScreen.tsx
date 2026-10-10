@@ -123,11 +123,6 @@ export function MediaLibsScreen() {
     openMenu(a);
   };
 
-  // [老板 1010] hub 卡片自动布局:按组内实际卡数自适应列数(3→三列,4+→HD 四列;phone 恒两列)——告别 2+1 孤行
-  const gridBasis = (n: number): '48%' | '31%' | '23%' => (!IS_HD || n <= 2) ? '48%' : n === 3 ? '31%' : '23%';
-  const myLibCount = locLibs.length + (IS_WEB ? (serverLibs.length || 1) : 0) + (token ? 1 : 0); // web 空态也渲染「绑定服务器目录」卡
-  const myLibBasis = { flexBasis: gridBasis(myLibCount) };
-
   return (
     <View style={st.screen}>
       {IS_HD ? (
@@ -167,7 +162,7 @@ export function MediaLibsScreen() {
               return (
                 <PressCard
                   key={l.id}
-                  style={[ml.card, IS_HD && ml.cardHD, bad && { opacity: 0.55 }, myLibBasis]}
+                  style={[ml.card, IS_HD && ml.cardHD, bad && { opacity: 0.55 }]}
                   hoverStyle={ml.cardHover}
                   onPress={() => bad ? nav.navigate('LocalLibEdit', { libId: l.id }) : nav.navigate('LocalLibBrowse', { libId: l.id })}
                   onLongPress={IS_WEB ? undefined : locMenu}
@@ -202,7 +197,7 @@ export function MediaLibsScreen() {
             {IS_WEB ? serverLibs.map(l => (
               <PressCard
                 key={'slb-' + l.id}
-                style={[ml.card, IS_HD && ml.cardHD, myLibBasis]}
+                style={[ml.card, IS_HD && ml.cardHD]}
                 hoverStyle={ml.cardHover} tvFocus
                 onPress={() => nav.navigate('ServerLocalLib', { libId: l.id })}
               >
@@ -225,7 +220,7 @@ export function MediaLibsScreen() {
             {/* [web] T1 入口卡:空态「绑定服务器目录」三步引导(升级稿 §二 T1 步1) */}
             {IS_WEB && !serverLibs.length ? (
               <PressCard
-                style={[ml.card, IS_HD && ml.cardHD, myLibBasis]}
+                style={[ml.card, IS_HD && ml.cardHD]}
                 hoverStyle={ml.cardHover} tvFocus
                 onPress={() => nav.navigate('ServerLocalLib', {})}
               >
@@ -240,7 +235,7 @@ export function MediaLibsScreen() {
               </PressCard>
             ) : null}
           {/* spec③:云曲库入口卡(登录后渲染)——我的曲库组第二成员 */}
-          {token ? <CloudLibCard onEnter={() => nav.navigate('CloudLibrary', {})} basisStyle={myLibBasis} /> : null}
+          {token ? <CloudLibCard onEnter={() => nav.navigate('CloudLibrary', {})} /> : null}
           {!locLibs.length && !serverLibs.length && !token && !IS_WEB ? (
             <Text style={[st.intro, IS_HD && hd.intro]}>登录后可开启云曲库，或点右上角 ＋ 添加本机曲库。</Text>
           ) : null}
@@ -282,7 +277,7 @@ export function MediaLibsScreen() {
               return (
                 <PressCard
                   key={a.id}
-                  style={[ml.card, IS_HD && ml.cardHD, { flexBasis: gridBasis(accts.length) }]}
+                  style={[ml.card, IS_HD && ml.cardHD]}
                   hoverStyle={ml.cardHover}
                   onPress={() => nav.navigate('ProviderBrowse', { acctId: a.id })}
                   onLongPress={IS_WEB ? undefined : () => openMenu(a)}
@@ -1117,9 +1112,9 @@ const ml = StyleSheet.create({
   group: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 }, // [老板拍板 10-09] hub 网格卡片风:flexWrap 换行,卡宽 flexBasis 48%=两列
   sectionHead: { color: C.text3, fontSize: 12, fontWeight: '700', letterSpacing: 1.2, marginTop: 26, marginBottom: 10 },
   sectionHeadHD: { fontSize: 14, letterSpacing: 1.6, marginTop: 30 },
-  groupWeb: { alignSelf: 'flex-start', width: '100%', maxWidth: 860 }, // [老板 1010] 卡片网格居左——与 dv.listWrapWeb 同规(flex-start+限宽860);居中与整体样式规范不一致
+  groupWeb: { alignSelf: 'flex-start', width: '100%', maxWidth: 1160 }, // [老板 1010] 容器加宽 860→1160 配合定宽卡片:一行自然容 3×375px,卡不再随列数缩小
   card: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, paddingHorizontal: 14, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke, elevation: 1, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, flexBasis: '48%' }, // [老板反馈] 删flexGrow——单卡不拉伸,保持48%宽居左对齐
-  cardHD: { minHeight: 86, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16 },
+  cardHD: { minHeight: 86, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16, flexBasis: 375 }, // [老板 1010] HD/web 定宽卡 375px+自然换行——卡不随卡数缩水,孤卡同宽不拉伸;phone 维持 48% 两列
   cardHover: { borderColor: C.strokeStrong, backgroundColor: C.surface2 }, // hover 细描边提亮,克制不加投影
   iconWrap: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }, // [库族重设计v1 B4] 46→44 对齐 LibBanner kindIcon 现值(规格统一表)
   iconWrapHD: { width: 52, height: 52, borderRadius: 14 }, // [B4] 56→52 同源对齐
