@@ -148,6 +148,14 @@ export function PublicLibraryScreen() {
       .finally(() => setRandBusy(false));
   };
 
+  // [老板 1010 对齐 LEO 设计] 播放全部:当前源筛选下可见列表整队播放(与云曲库同款主动作)
+  const playAll = () => {
+    if (!songs?.length) { toast('库内还没有歌曲'); return; }
+    const list = srcFilter === 'all' ? songs : songs.filter(s => (s as LibSong & { source?: string }).source === srcFilter);
+    if (!list.length) { toast('当前筛选下没有歌曲'); return; }
+    void play(list, 0);
+  };
+
   const enterAlbum = (a: LibAlbum) => nav.navigate('PublicLibAlbum', { id: a.id, name: a.name, cover: a.coverFile });
   const enterArtist = (a: LibArtist) => nav.navigate('PublicLibArtist', { id: a.id, name: a.name });
 
@@ -162,6 +170,7 @@ export function PublicLibraryScreen() {
   const homeStats = scan && typeof scan.songs === 'number'
     ? `${scan.songs.toLocaleString()} 首 · ${scan.albums ?? 0} 专辑 · ${scan.artists ?? 0} 歌手${agoText ? ` ｜ 最近更新 ${agoText} · 官方共享` : ''}`
     : '管理员共享曲库';
+  const songsCount = scan && typeof scan.songs === 'number' ? scan.songs.toLocaleString() : String(songs?.length || 0); // [1010] 宫格计数
   // [二波①] 源筛选复用既有 srcFilter(L134);组件级 srcChips 供页顶常驻行(songs 体内有局部同名表,作用域隔离)
   const srcChips = [{ key: 'all', label: '全部' }, ...srcEntries.map(([id, name]) => ({ key: id, label: `仅${name}` }))];
   const homeBlock = entry.authorized ? (
@@ -171,7 +180,8 @@ export function PublicLibraryScreen() {
           sub={srcTotal > 0 ? `${srcOk} / ${srcTotal} 源正常` : undefined}
           status={!scan ? null : scan.lastError ? 'warn' : 'ok'} />
         <LibActions actions={[
-          { icon: 'shuffle', label: '随机漫步', onPress: playRandom, primary: true, disabled: randBusy || !!scan?.running },
+          { icon: 'play', label: '播放全部', onPress: playAll, primary: true, disabled: !songs?.length || !!scan?.running },
+          { icon: 'shuffle', label: '随机漫步', onPress: playRandom, disabled: randBusy || !!scan?.running },
           { icon: 'refresh', label: '刷新', onPress: doRefresh, disabled: !!scan?.running },
         ]} />
       </View>
@@ -204,7 +214,7 @@ export function PublicLibraryScreen() {
               {([
                 { key: 'albums', label: `专辑 ${albumsTotal || 0} 张`, icon: 'music' },
                 { key: 'artists', label: `歌手 ${artistsTotal || 0} 位`, icon: 'user' },
-                { key: 'songs', label: '歌曲', icon: 'wave' },
+                { key: 'songs', label: `歌曲 ${songsCount} 首`, icon: 'wave' },
                 { key: 'random', label: '随机漫步 整库随机', icon: 'shuffle' },
               ] as { key: string; label: string; icon: 'music' | 'user' | 'wave' | 'shuffle' }[]).map(g => (
                 IS_HD ? (
@@ -319,24 +329,34 @@ export function PublicLibraryScreen() {
       ...Object.entries(summary?.sources || {}).map(([k, v]) => ({ key: k, label: v || k })),
     ];
     const shownSongs = srcFilter === 'all' ? songs : songs.filter(s => (s as LibSong & { source?: string }).source === srcFilter);
+    // [老板 1010 对齐设计] 全部歌曲 A-Z 索引:按歌名首字母分块(复用专辑/歌手同款 AzIndex+跳转)
+    const azS = azGroup(shownSongs.map((s, i) => ({ s, i })), x => x.s.name);
     return (
-      <ScrollView contentContainerStyle={{ paddingBottom: 140 + insets.bottom }}>
-        <View style={{ paddingHorizontal: 16, marginBottom: 4 }}>
-          <ChipsRow chips={srcChips} active={srcFilter} onChange={setSrcFilter} />
-        </View>
-        {shownSongs.map((s, i) => (
-          <SongRow key={s.id} song={s} idx={i + 1} lib="public" sourceName={pubSourceName(s, summary)} isNew={isNewSong(s)}
-            onPress={() => play(shownSongs, i)} />
-        ))}
-        {songs.length >= songSize && songSize < 200 ? (
-          <TouchableOpacity style={d.moreBtn} activeOpacity={0.8}
-            onPress={() => { const n = Math.min(songSize + PAGE, 200); setSongSize(n); loadSongs(n); }}>
-            {songsBusy ? <ActivityIndicator size="small" color="#04120a" /> : <Text style={d.moreT}>加载更多</Text>}
-          </TouchableOpacity>
-        ) : (
-          <Text style={d.endT}>{shownSongs.length ? `${shownSongs.length} 首` : '没有匹配的歌曲'}</Text>
-        )}
-      </ScrollView>
+      <View style={{ flex: 1 }}>
+        <ScrollView ref={azScroll} contentContainerStyle={{ paddingBottom: 140 + insets.bottom }}>
+          <View style={{ paddingHorizontal: 16, marginBottom: 4 }}>
+            <ChipsRow chips={srcChips} active={srcFilter} onChange={setSrcFilter} />
+          </View>
+          {azS.chunks.map(ch => (
+            <View key={ch.letter} onLayout={azRegH('sng:' + ch.letter)}>
+              <Text style={d.azGrp}>{ch.letter} · {ch.items.length}</Text>
+              {ch.items.map(({ s, i }) => (
+                <SongRow key={s.id} song={s} idx={i + 1} lib="public" sourceName={pubSourceName(s, summary)} isNew={isNewSong(s)}
+                  onPress={() => play(shownSongs, i)} />
+              ))}
+            </View>
+          ))}
+          {songs.length >= songSize && songSize < 200 ? (
+            <TouchableOpacity style={d.moreBtn} activeOpacity={0.8}
+              onPress={() => { const n = Math.min(songSize + PAGE, 200); setSongSize(n); loadSongs(n); }}>
+              {songsBusy ? <ActivityIndicator size="small" color="#04120a" /> : <Text style={d.moreT}>加载更多</Text>}
+            </TouchableOpacity>
+          ) : (
+            <Text style={d.endT}>{shownSongs.length ? `${shownSongs.length} 首` : '没有匹配的歌曲'}</Text>
+          )}
+        </ScrollView>
+        {azS.letters.length > 1 ? <AzIndex letters={azS.letters} onPick={l => azJumpSeq(azS.letters.map(x => 'sng:' + x), 'sng:' + l)} /> : null}
+      </View>
     );
   };
 
