@@ -17,7 +17,7 @@ import { PageHeader, EmptyState } from '../components/PageChrome';
 import { SongRow } from '../components/SongRow';
 import { toast, dialog } from '../components/Dialog';
 import { usePlayer } from '../state/PlayerProvider';
-import { LibBanner, LibActions, ChipsRow, HomeSection } from '../components/LibraryHome';
+import { HeroPair, HomeSection, ChipsRow } from '../components/LibraryHome';
 import { AzIndex, azGroup, useAzJump } from '../components/AzIndex'; // T3 字母索引条(⑤-4 同款)
 import { DiscCard } from './MyLibraryScreen';
 import { req } from '../services/server';
@@ -434,18 +434,27 @@ function BrowseView({ libId }: { libId: string }) {
         ref={az.scrollRef}
         contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingTop: IS_HD ? 8 : 4, paddingBottom: insets.bottom + 120, gap: IS_HD ? 20 : 14 }}
       >
-        {/* ⑦ 模板 web 版:库头横幅(本机系类型色)+快捷动作 */}
-        <LibBanner
-          kind="local" name={libName}
-          stats={data ? `${data.stats.songs.toLocaleString()} 首 · 专辑 ${data.stats.albums} · 歌手 ${data.stats.artists}` : '读取中…'}
-          sub={cfg?.dir || undefined}
-          status={err ? 'bad' : busy || job?.phase === 'scanning' ? 'warn' : 'ok'}
+        {/* [v5.5 1010] v3 双渐变英雄卡(统计在卡内)+双入口真播放;重新扫描收 duo.more;横幅+动作行退役 */}
+        <HeroPair
+          heroes={[
+            {
+              grad: 'green', big: '播放全部', icon: 'play',
+              st: data ? <><Text style={{ fontWeight: '800' }}>{data.stats.songs.toLocaleString()} 首</Text>{` · 专辑 ${data.stats.albums} · 歌手 ${data.stats.artists}`}</> : '读取中…',
+              mini: cfg?.dir || undefined,
+              onPress: playAll, disabled: !songs.length,
+            },
+            {
+              grad: 'teal', big: '随机漫步', icon: 'shuffle',
+              st: <>换个口味 · <Text style={{ fontWeight: '800' }}>整库随机</Text></>,
+              mini: '不重复播放直到听完',
+              onPress: shuffle, disabled: !songs.length,
+            },
+          ]}
+          duo={{
+            playAll, shuffle, disabled: !songs.length,
+            more: { icon: 'refresh', label: '重新扫描', onPress: () => { if (isAdmin) handle.current = startScan({ id: libId }); else toast('扫描由服务器管理员操作'); } },
+          }}
         />
-        <LibActions actions={[
-          { icon: 'play', label: '播放全部', primary: true, disabled: !songs.length, onPress: playAll },
-          { icon: 'shuffle', label: '随机播放', disabled: !songs.length, onPress: shuffle },
-          { icon: 'refresh', label: '重新扫描', onPress: () => { if (isAdmin) handle.current = startScan({ id: libId }); else toast('扫描由服务器管理员操作'); } },
-        ]} />
 
         {scanCard}
 

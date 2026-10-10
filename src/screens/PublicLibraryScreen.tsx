@@ -13,7 +13,7 @@ import { C } from '../theme/tokens';
 import { IS_HD } from '../services/appversion';
 import { PageHeader } from '../components/PageChrome';
 import { toast } from '../components/Dialog';
-import { LibBanner, LibActions, HomeSection, HomeRail, RailCard, ChipsRow } from '../components/LibraryHome'; // ⑤/⑦ 全库首页化骨架
+import { HeroPair, HomeSection, HomeRail, RailCard, ChipsRow } from '../components/LibraryHome'; // ⑤/⑦ 全库首页化骨架
 import { AzIndex, azGroup, useAzJump } from '../components/AzIndex'; // ⑤-4 A-Z 字母索引条
 import { usePlayer } from '../state/PlayerProvider';
 import { coverUrl, setActiveLib, type LibSong, type LibAlbum, type LibArtist } from '../services/myLibrary';
@@ -176,14 +176,30 @@ export function PublicLibraryScreen() {
   const homeBlock = entry.authorized ? (
     <View style={{ gap: 12, marginBottom: 4 }}>
       <View style={[d.homeWrap, IS_HD && d.homeWrapHD]}>
-        <LibBanner kind="public" name={summary?.name || '公共曲库'} stats={homeStats}
-          sub={srcTotal > 0 ? `${srcOk} / ${srcTotal} 源正常` : undefined}
-          status={!scan ? null : scan.lastError ? 'warn' : 'ok'} />
-        <LibActions actions={[
-          { icon: 'play', label: '播放全部', onPress: playAll, primary: true, disabled: !songs?.length || !!scan?.running },
-          { icon: 'shuffle', label: '随机漫步', onPress: playRandom, disabled: randBusy || !!scan?.running },
-          { icon: 'refresh', label: '刷新', onPress: doRefresh, disabled: !!scan?.running },
-        ]} />
+        {/* [v5.5 1010] v3 双渐变英雄卡(统计在卡内)+双入口真播放;刷新收 duo.more;横幅+动作行退役 */}
+        <HeroPair
+          heroes={[
+            {
+              grad: 'blue', big: '播放全部', icon: 'play',
+              st: scan && typeof scan.songs === 'number'
+                ? <><Text style={{ fontWeight: '800' }}>{scan.songs.toLocaleString()} 首</Text>{` · 专辑 ${scan.albums ?? 0} · 歌手 ${scan.artists ?? 0}`}</>
+                : '管理员共享曲库',
+              mini: [srcTotal > 0 ? `${srcOk}/${srcTotal} 源正常` : null, agoText ? `最近更新 ${agoText}` : null].filter(Boolean).join(' · ') || undefined,
+              onPress: playAll, disabled: !songs?.length || !!scan?.running,
+            },
+            {
+              grad: 'sunset', big: '随机播放', icon: 'shuffle',
+              st: <>整库随机 · <Text style={{ fontWeight: '800' }}>换个口味</Text></>,
+              mini: scan && typeof scan.songs === 'number' ? `从 ${scan.songs.toLocaleString()} 首中发现遗珠` : undefined,
+              onPress: playRandom, disabled: randBusy || !!scan?.running,
+            },
+          ]}
+          duo={{
+            playAll, shuffle: playRandom, shuffleLabel: '随机漫步',
+            disabled: !!scan?.running || !songs?.length,
+            more: { icon: 'refresh', label: '刷新', onPress: doRefresh, disabled: !!scan?.running },
+          }}
+        />
       </View>
       {/* [二波①] 多源筛选 chips 页顶常驻(按已连源动态;过滤歌曲视图) */}
       {srcTotal > 1 && entry.authorized && !scan?.running ? (

@@ -121,7 +121,7 @@ function HeroCard({ h }: { h: LibHero }) {
 
 export function HeroPair({ heroes, duo }: {
   heroes: LibHero[];
-  duo?: { playAll: () => void; shuffle: () => void; playLabel?: string; shuffleLabel?: string; disabled?: boolean };
+  duo?: { playAll: () => void; shuffle: () => void; playLabel?: string; shuffleLabel?: string; disabled?: boolean; more?: { icon: IconName; label: string; onPress: () => void; disabled?: boolean } };
 }) {
   const list = heroes.slice(0, 2);
   if (!list.length) return null;
@@ -148,6 +148,11 @@ export function HeroPair({ heroes, duo }: {
               <HDTouch style={hv.duoBtn} focusStyle={focus(12)} onPress={duo.shuffle} disabled={duo.disabled}>
                 <Icon name="shuffle" size={16} color={C.text2} /><Text style={hv.duoGhoT}>{duo.shuffleLabel || '随机播放'}·不重复</Text>
               </HDTouch>
+              {duo.more ? (
+                <HDTouch style={[hv.duoBtn, { flex: 0, paddingHorizontal: 14 }]} focusStyle={focus(12)} onPress={duo.more.onPress} disabled={duo.more.disabled}>
+                  <Icon name={duo.more.icon} size={15} color={C.text2} /><Text style={hv.duoGhoT}>{duo.more.label}</Text>
+                </HDTouch>
+              ) : null}
             </>
           ) : (
             <>
@@ -157,6 +162,11 @@ export function HeroPair({ heroes, duo }: {
               <TouchableOpacity style={hv.duoBtn} activeOpacity={0.8} onPress={duo.shuffle} disabled={duo.disabled}>
                 <Icon name="shuffle" size={14} color={C.text2} /><Text style={hv.duoGhoT}>{duo.shuffleLabel || '随机播放'}·不重复</Text>
               </TouchableOpacity>
+              {duo.more ? (
+                <TouchableOpacity style={[hv.duoBtn, { flex: 0, paddingHorizontal: 12 }]} activeOpacity={0.8} onPress={duo.more.onPress} disabled={duo.more.disabled}>
+                  <Icon name={duo.more.icon} size={13} color={C.text2} /><Text style={hv.duoGhoT}>{duo.more.label}</Text>
+                </TouchableOpacity>
+              ) : null}
             </>
           )}
         </View>
@@ -277,9 +287,9 @@ export function LibraryHome({ kind, name, stats, sub, status, brand, bannerExtra
   kind: LibKind; name: string; stats?: string; sub?: string; status?: LibStatus | null;
   brand?: React.ReactNode; bannerExtra?: React.ReactNode;
   actions?: LibQuickAction[];
-  /** [v5.5 1010] 双渐变英雄卡(提供时替代横幅+动作行——老板令:统计在卡内不放页顶);duo=双入口真播放 */
+  /** [v5.5 1010] 双渐变英雄卡(提供时替代横幅+动作行——老板令:统计在卡内不放页顶);duo=双入口真播放;more=收纳第三动作(扫描/刷新等) */
   heroes?: LibHero[];
-  duo?: { playAll: () => void; shuffle: () => void; playLabel?: string; shuffleLabel?: string; disabled?: boolean };
+  duo?: { playAll: () => void; shuffle: () => void; playLabel?: string; shuffleLabel?: string; disabled?: boolean; more?: { icon: IconName; label: string; onPress: () => void; disabled?: boolean } };
   filters?: React.ReactNode; children?: React.ReactNode;
 }) {
   return (
