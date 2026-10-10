@@ -36,7 +36,7 @@ export function PublicLibraryScreen() {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string, p?: object) => void };
   const { playSong } = usePlayer();
-  const { width } = useWindowDimensions();
+  const { width, height: winH } = useWindowDimensions();
   const entry = usePubEntry();
   const summary = entry.summary;
   const scan = summary?.scan;
@@ -440,10 +440,12 @@ export function PublicLibraryScreen() {
           </TouchableOpacity>
         </View>
       )}
-      {homeBlock}
-      {davWide ? (
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} nestedScrollEnabled>
+        {/* [老板 1010 16:25] 外层滚动修复:homeBlock 增高后 tab 区被挤出一屏外;tab 区限高保内滚(A-Z 跳转不坏) */}
+        {homeBlock}
+        {davWide ? (
         /* 桌面双区:左竖 tab+右内容(与我的曲库同构) */
-        <View style={d.wideCols}>
+        <View style={[d.wideCols, { height: Math.max(420, winH - 150) }]}>
           <View style={d.wideSide}>
             <Text style={d.sideCap}>{summary?.name || '公共曲库'}</Text>
             {TABS.map(t => (
@@ -475,9 +477,10 @@ export function PublicLibraryScreen() {
               ))}
             </ScrollView>
           </View>
-          <View style={{ flex: 1 }}>{body()}</View>
+          <View style={{ height: Math.max(420, winH - 170) }}>{body()}</View>
         </>
       )}
+      </ScrollView>
     </View>
   );
 }
@@ -557,7 +560,7 @@ export function PublicLibAlbumRoute(props: Record<string, unknown>) {
       ) : (
         <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
           <View style={d.albHead}>
-            <DiscCard name={name} cover={cover ? coverUrl(cover, 'public') : null} unknown={!cover} onPress={undefined} />
+            <DiscCard name={name} cover={cover ? coverUrl(cover, 'public') : null} unknown={!cover} onPress={undefined} fixedWidth={IS_HD ? 150 : 116} />
             <View style={{ flex: 1, minWidth: 0 } as never}>
               <Text style={d.albName} numberOfLines={2}>{name}</Text>
               <Text style={d.albSub} numberOfLines={1}>{album?.artist}{album?.byDir ? ' · 文件夹分组' : ''} · {songs.length} 首 · 公共曲库</Text>
@@ -600,7 +603,7 @@ export function PublicLibArtistRoute(props: Record<string, unknown>) {
       ) : (
         <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
           <View style={d.albHead}>
-            <DiscCard name={name} round cover={data.artist.coverFile ? coverUrl(data.artist.coverFile, 'public') : null} unknown={!data.artist.coverFile} onPress={undefined} />
+            <DiscCard name={name} round cover={data.artist.coverFile ? coverUrl(data.artist.coverFile, 'public') : null} unknown={!data.artist.coverFile} onPress={undefined} fixedWidth={IS_HD ? 150 : 116} />
             <View style={{ flex: 1, minWidth: 0 } as never}>
               <Text style={d.albName} numberOfLines={2}>{name}</Text>
               <Text style={d.albSub} numberOfLines={1}>{data.songs.length} 首 · {data.albums.length} 专辑 · 公共曲库</Text>

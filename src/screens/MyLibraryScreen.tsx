@@ -49,9 +49,9 @@ function gradOf(name?: string) {
 }
 
 /** 唱片卡(sleeve+黑胶圆+N首徽标;封面缺失=渐变+图标;未知=灰阶)——②本机曲库三视图复用(导出) */
-export function DiscCard({ name, sub, cover, count, round, focusable, onPress, unknown, size = 1 }: {
+export function DiscCard({ name, sub, cover, count, round, focusable, onPress, unknown, size = 1, fixedWidth }: {
   name: string; sub?: string; cover?: string | null; count?: number; round?: boolean;
-  focusable?: boolean; onPress?: () => void; unknown?: boolean; size?: number;
+  focusable?: boolean; onPress?: () => void; unknown?: boolean; size?: number; fixedWidth?: number;
 }) {
   const [g1, g2] = gradOf(name);
   const dim = unknown ? { opacity: 0.75 } : undefined;
@@ -59,10 +59,11 @@ export function DiscCard({ name, sub, cover, count, round, focusable, onPress, u
   // 六屏墙+四详情头一处修——替换固定三列百分比(老板令:宽度自适应优先于形态硬切)
   const [basis, setBasis] = useState<string | null>(null);
   const measure = (e: { nativeEvent: { layout: { width: number } } }) => {
-    if (basis != null) return;
+    if (basis != null || fixedWidth != null) return; // fixedWidth 头图场景不自适应(单卡头按宽分档会算出巨封——墙阈值只适用于多卡墙)
     const parent = e.nativeEvent.layout.width / 0.31;
     setBasis(parent >= 1500 ? '15%' : parent >= 1100 ? '18%' : parent >= 800 ? '23%' : parent >= 560 ? '31%' : '48%');
   };
+  const cellStyle = fixedWidth != null ? [{ width: fixedWidth, gap: 7 }] : [d.disc, basis != null && { width: basis }];
   const sleeve = (
     <View style={[d.sleeve, round && d.sleeveRound, { aspectRatio: 1 } as never, unknown && d.sleeveUnknown]}>
       {cover ? (
@@ -85,7 +86,7 @@ export function DiscCard({ name, sub, cover, count, round, focusable, onPress, u
   // [批A] 外层 View 承宽(onLayout 测父宽)+内层触填满——HDTouch/TO 均不承宽职责
   if (IS_HD || focusable) {
     return (
-      <View style={[d.disc, basis != null && { width: basis }] as never} onLayout={measure}>
+      <View style={cellStyle as never} onLayout={measure}>
         <HDTouch style={{ width: '100%', gap: 7 } as never} onPress={onPress} focusStyle={d.discFocus} focusBg={undefined}>
           {sleeve}{label}
         </HDTouch>
@@ -95,7 +96,7 @@ export function DiscCard({ name, sub, cover, count, round, focusable, onPress, u
   // A7 按压态:缩放反馈(Animated.Value,零 re-render)
   const pv = useRef(new Animated.Value(1)).current;
   return (
-    <View style={[d.disc, basis != null && { width: basis }] as never} onLayout={measure}>
+    <View style={cellStyle as never} onLayout={measure}>
       <AnimatedTouchableOpacity
         style={[{ width: '100%', gap: 7 }, { transform: [{ scale: pv }] }] as never}
         onPress={onPress}
@@ -623,7 +624,7 @@ export function MyLibAlbumRoute(props: Record<string, unknown>) {
       ) : (
         <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
           <View style={d.albHead}>
-            <DiscCard name={name} count={undefined} cover={cover ? coverUrl(cover) : null} unknown={!cover} onPress={undefined} />
+            <DiscCard name={name} count={undefined} cover={cover ? coverUrl(cover) : null} unknown={!cover} onPress={undefined} fixedWidth={IS_HD ? 150 : 116} />
             <View style={{ flex: 1, minWidth: 0 } as never}>
               <Text style={d.albName} numberOfLines={2}>{name}</Text>
               <Text style={d.albSub} numberOfLines={1}>{album?.artist}{album?.byDir ? ' · 文件夹分组' : ''} · {songs.length} 首</Text>
@@ -666,7 +667,7 @@ export function MyLibArtistRoute(props: Record<string, unknown>) {
       ) : (
         <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
           <View style={d.albHead}>
-            <DiscCard name={name} round cover={data.artist.coverFile ? coverUrl(data.artist.coverFile) : null} unknown={!data.artist.coverFile} onPress={undefined} />
+            <DiscCard name={name} round cover={data.artist.coverFile ? coverUrl(data.artist.coverFile) : null} unknown={!data.artist.coverFile} onPress={undefined} fixedWidth={IS_HD ? 150 : 116} />
             <View style={{ flex: 1, minWidth: 0 } as never}>
               <Text style={d.albName} numberOfLines={2}>{name}</Text>
               <Text style={d.albSub} numberOfLines={1}>{data.songs.length} 首 · {data.albums.length} 专辑</Text>
