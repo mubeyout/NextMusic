@@ -40,7 +40,7 @@ export function PublicLibraryScreen() {
   const entry = usePubEntry();
   const summary = entry.summary;
   const scan = summary?.scan;
-  const davWide = IS_WEB && width >= 900 && !IS_TV;
+  const davWide = false as boolean; // [老板 1010 16:51] 竖向侧 tab 废空间——全面改横向流式(参照为我推荐/探索);davWide 双区退役
   const recBasis = width >= 1100 ? '23.5%' : width >= 720 ? '31.5%' : '48.6%'; // [老板 1010 自适应] 封面网格列数随窗宽:宽4列/中3列/窄2列
   const row2Wide = width >= 900; // row2 双栏阈值(窄窗上下堆叠,不再按形态硬切)
   const PAGE = IS_HD ? 100 : 50; // ④分页 50/100
