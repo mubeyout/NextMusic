@@ -17,6 +17,7 @@ import brandSongloft from '../../src/assets/brands/songloft.png';
 import brandFeiniu from '../../src/assets/brands/feiniu.png';
 import brandTingfeng from '../../src/assets/brands/tingfeng.png';
 import brandSubsonic from '../../src/assets/brands/subsonic.png';
+import discWebp from '../../src/assets/disc.webp'; // [老板 1010] Amcfy 真盘(播放条/播放页黑胶)
 const ASSET_URLS: Record<string, string> = {
   'mark.png': markUrl,
   'brands/emby.png': brandEmby,
@@ -32,6 +33,7 @@ const ASSET_URLS: Record<string, string> = {
   'brands/feiniu.png': brandFeiniu,
   'brands/tingfeng.png': brandTingfeng,
   'brands/subsonic.png': brandSubsonic,
+  'disc.webp': discWebp,
 };
 const ASSET_MODULES: Record<string, unknown> = { 'autoeq_pack.json': autoeqPack };
 (globalThis as { require?: unknown }).require = (id: string): unknown => {
