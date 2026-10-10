@@ -1112,7 +1112,7 @@ const ml = StyleSheet.create({
   group: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 }, // [老板拍板 10-09] hub 网格卡片风:flexWrap 换行,卡宽 flexBasis 48%=两列
   sectionHead: { color: C.text3, fontSize: 12, fontWeight: '700', letterSpacing: 1.2, marginTop: 26, marginBottom: 10 },
   sectionHeadHD: { fontSize: 14, letterSpacing: 1.6, marginTop: 30 },
-  groupWeb: { alignSelf: 'flex-start', width: '100%', maxWidth: 1160 }, // [老板 1010] 容器加宽 860→1160 配合定宽卡片:一行自然容 3×375px,卡不再随列数缩小
+  groupWeb: { width: '100%' }, // [老板 1010] 占满整屏(去 maxWidth 860/1160)——定宽卡 375px 自然铺排;列表区 dv.listWrapWeb 维持 860 可读性不动
   card: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, paddingHorizontal: 14, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke, elevation: 1, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, flexBasis: '48%' }, // [老板反馈] 删flexGrow——单卡不拉伸,保持48%宽居左对齐
   cardHD: { minHeight: 86, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16, flexBasis: 375 }, // [老板 1010] HD/web 定宽卡 375px+自然换行——卡不随卡数缩水,孤卡同宽不拉伸;phone 维持 48% 两列
   cardHover: { borderColor: C.strokeStrong, backgroundColor: C.surface2 }, // hover 细描边提亮,克制不加投影
