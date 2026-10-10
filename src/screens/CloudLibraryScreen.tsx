@@ -578,17 +578,12 @@ export function CloudLibraryScreen() {
               onPress: () => { if (songs.length) void play(0, songs); }, disabled: !songs.length || offline,
             },
             {
-              grad: 'violet' as const, big: '最近上传', icon: 'play' as const,
-              st: <><Text style={c.heroStB}>{recentCloud.length} 首</Text>{' · 最近入库'}</>,
-              mini: '来自本机曲库挑歌上传',
-              onPress: () => { if (recentCloud.length) void play(0, recentCloud); }, disabled: !recentCloud.length || offline,
+              grad: 'violet' as const, big: '随机播放', icon: 'shuffle' as const,
+              st: <>整库随机 · <Text style={c.heroStB}>换个口味</Text></>,
+              mini: recentCloud.length ? `最近上传 ${recentCloud.length} 首 · 来自本机曲库` : '来自本机曲库挑歌上传',
+              onPress: () => { if (songs.length) void play(Math.floor(Math.random() * songs.length), songs); }, disabled: !songs.length || offline,
             },
           ] : undefined}
-          duo={{
-            playAll: () => { if (songs?.length) void play(0, songs); },
-            shuffle: () => { if (songs?.length) void play(Math.floor(Math.random() * songs.length), songs); },
-            disabled: !songs?.length || offline,
-          }}
         >
           {songs && songs.length && !selMode && !offline ? (
             <>

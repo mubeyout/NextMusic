@@ -434,7 +434,7 @@ function BrowseView({ libId }: { libId: string }) {
         ref={az.scrollRef}
         contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingTop: IS_HD ? 8 : 4, paddingBottom: insets.bottom + 120, gap: IS_HD ? 20 : 14 }}
       >
-        {/* [v5.5 1010] v3 双渐变英雄卡(统计在卡内)+双入口真播放;重新扫描收 duo.more;横幅+动作行退役 */}
+        {/* [v5.6 1010 去重版] 双英雄卡即入口(播放全部+随机播放),无页内入口行;重新扫描在页头⋯菜单(既有) */}
         <HeroPair
           heroes={[
             {
@@ -444,16 +444,12 @@ function BrowseView({ libId }: { libId: string }) {
               onPress: playAll, disabled: !songs.length,
             },
             {
-              grad: 'teal', big: '随机漫步', icon: 'shuffle',
+              grad: 'teal', big: '随机播放', icon: 'shuffle',
               st: <>换个口味 · <Text style={{ fontWeight: '800' }}>整库随机</Text></>,
               mini: '不重复播放直到听完',
               onPress: shuffle, disabled: !songs.length,
             },
           ]}
-          duo={{
-            playAll, shuffle, disabled: !songs.length,
-            more: { icon: 'refresh', label: '重新扫描', onPress: () => { if (isAdmin) handle.current = startScan({ id: libId }); else toast('扫描由服务器管理员操作'); } },
-          }}
         />
 
         {scanCard}

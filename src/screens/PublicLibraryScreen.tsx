@@ -194,11 +194,6 @@ export function PublicLibraryScreen() {
               onPress: playRandom, disabled: randBusy || !!scan?.running,
             },
           ]}
-          duo={{
-            playAll, shuffle: playRandom, shuffleLabel: '随机漫步',
-            disabled: !!scan?.running || !songs?.length,
-            more: { icon: 'refresh', label: '刷新', onPress: doRefresh, disabled: !!scan?.running },
-          }}
         />
       </View>
       {/* [二波①] 多源筛选 chips 页顶常驻(按已连源动态;过滤歌曲视图) */}
