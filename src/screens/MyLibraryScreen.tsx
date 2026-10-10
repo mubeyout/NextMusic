@@ -122,8 +122,14 @@ export function SongRow({ song, idx, onPress, lib, sourceName, isNew }: { song: 
       activeOpacity={1}
     >
       {idx !== undefined && <Text style={d.sgIdx}>{idx + 1}</Text>}
-      <View style={[d.cvs, { backgroundColor: song.hasCover ? undefined : g1 }]}>
-        {song.hasCover ? <Image source={{ uri: coverUrl(song.filename, lib) }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 } as never} resizeMode="cover" /> : <Icon name="music" size={15} color="#fff" />}
+      <View style={[d.cvs, { backgroundColor: (song as LibSong & { coverHttp?: string }).coverHttp || song.hasCover ? undefined : g1 }]}>
+        {(song as LibSong & { coverHttp?: string }).coverHttp ? (
+          <Image source={{ uri: (song as LibSong & { coverHttp?: string }).coverHttp! }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 } as never} resizeMode="cover" /> // [识别补全 1010] 在线封面直链(优先于嵌入图)
+        ) : song.hasCover ? (
+          <Image source={{ uri: coverUrl(song.filename, lib) }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 } as never} resizeMode="cover" />
+        ) : (
+          <Icon name="music" size={15} color="#fff" />
+        )}
       </View>
       <View style={d.sgMid}>
         <View style={d.sgTitleRow}>

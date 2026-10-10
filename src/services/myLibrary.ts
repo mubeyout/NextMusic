@@ -28,6 +28,9 @@ export function toSongItem(l: LibSong, lib?: string): SongItem {
     hash: l.filename,
     albumName: l.album || undefined,
   } as SongItem;
+  // [识别补全 1010] 在线识别封面直链→img(播放条/黑胶盘心/详情页封面全链受益)
+  const coverHttp = (l as LibSong & { coverHttp?: string }).coverHttp;
+  if (coverHttp) s.img = coverHttp;
   if (lib) (s as SongItem & { _lib?: string })._lib = lib; // ④公共曲库:lib 随歌携带(队列/详情跨页播放不丢域)
   return s;
 }
