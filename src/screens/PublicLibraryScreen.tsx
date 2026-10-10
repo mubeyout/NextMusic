@@ -173,6 +173,10 @@ export function PublicLibraryScreen() {
   const songsCount = scan && typeof scan.songs === 'number' ? scan.songs.toLocaleString() : String(songs?.length || 0); // [1010] 宫格计数
   // [二波①] 源筛选复用既有 srcFilter(L134);组件级 srcChips 供页顶常驻行(songs 体内有局部同名表,作用域隔离)
   const srcChips = [{ key: 'all', label: '全部' }, ...srcEntries.map(([id, name]) => ({ key: id, label: `仅${pubSrcName(name, id)}` }))];
+  // [老板 1010 二次对稿] 首页内嵌歌曲列表:未加载时轻拉首页份量(songs tab 有独立分页加载;deps 在状态声明后求值安全)
+  useEffect(() => {
+    if (entry.authorized && !scan?.running && !err && songs === null) loadSongs(PAGE);
+  }, [entry.authorized, scan?.running, err, songs]);
   const homeBlock = entry.authorized ? (
     <View style={{ gap: 12, marginBottom: 4 }}>
       <View style={[d.homeWrap, IS_HD && d.homeWrapHD]}>
@@ -196,12 +200,6 @@ export function PublicLibraryScreen() {
           ]}
         />
       </View>
-      {/* [二波①] 多源筛选 chips 页顶常驻(按已连源动态;过滤歌曲视图) */}
-      {srcTotal > 1 && entry.authorized && !scan?.running ? (
-        <View style={{ paddingHorizontal: 16 }}>
-          <ChipsRow chips={srcChips} active={srcFilter} onChange={k => setSrcFilter(k)} />
-        </View>
-      ) : null}
       {!scan?.running && !err ? (
         <View style={[d.homeWrap, IS_HD && d.homeWrapHD, { marginBottom: 0 }]}>
           {/* [老板 1010] v5.6 按稿:row2 双栏——左(最近更新网格+分类浏览) 右(最近更新榜侧卡);phone 堆叠 */}
@@ -224,29 +222,17 @@ export function PublicLibraryScreen() {
               </View>
             </HomeSection>
           ) : null}
-          <HomeSection title="分类浏览">
-            <View style={[d.homeGrid, IS_HD && d.homeGridHD]}>
-              {([
-                { key: 'albums', label: `专辑 ${albumsTotal || 0} 张`, icon: 'music' },
-                { key: 'artists', label: `歌手 ${artistsTotal || 0} 位`, icon: 'user' },
-                { key: 'songs', label: `歌曲 ${songsCount} 首`, icon: 'wave' },
-                { key: 'random', label: '随机漫步 整库随机', icon: 'shuffle' },
-              ] as { key: string; label: string; icon: 'music' | 'user' | 'wave' | 'shuffle' }[]).map(g => (
-                IS_HD ? (
-                  <HDTouch key={g.key} style={d.homeCell} focusStyle={d.tabFocus}
-                    onPress={() => g.key === 'random' ? playRandom() : setTab(g.key as Tab)}>
-                    <Icon name={g.icon} size={18} color={C.brandText} />
-                    <Text style={d.homeCellT}>{g.label}</Text>
-                  </HDTouch>
-                ) : (
-                  <TouchableOpacity key={g.key} style={d.homeCell} activeOpacity={0.75}
-                    onPress={() => g.key === 'random' ? playRandom() : setTab(g.key as Tab)}>
-                    <Icon name={g.icon} size={16} color={C.brandText} />
-                    <Text style={d.homeCellT}>{g.label}</Text>
-                  </TouchableOpacity>
-                )
-              ))}
-            </View>
+          {/* [老板 1010 二次对稿] v5.6 按稿:分类浏览四宫格撤(稿内无此区,专辑/歌手仍由下方 tabs 承担)——歌曲区+源筛选 chips+内嵌歌曲列表 */}
+          <HomeSection title="歌曲" count={typeof scan?.songs === 'number' ? scan.songs : undefined} actionLabel="全部 ›" onAction={() => setTab('songs')}>
+            {srcTotal > 1 ? (
+              <View style={{ marginBottom: 8 }}>
+                <ChipsRow chips={srcChips} active={srcFilter} onChange={k => setSrcFilter(k)} />
+              </View>
+            ) : null}
+            {(srcFilter === 'all' ? songs || [] : (songs || []).filter(s => (s as LibSong & { source?: string }).source === srcFilter)).slice(0, 8).map((s, i, arr) => (
+              <SongRow key={s.id} song={s} idx={i + 1} lib="public" sourceName={pubSourceName(s, summary)} isNew={isNewSong(s)}
+                onPress={() => play(srcFilter === 'all' ? songs : arr.slice(0, 8), i)} />
+            ))}
           </HomeSection>
           </View>
           {/* [LEO 裁定 1010] Top10 降级=最近更新榜:右侧栏(side5 形态,phone 整行) */}
@@ -407,8 +393,13 @@ export function PublicLibraryScreen() {
           <HDTouch style={d.hdBack} onPress={() => nav.goBack()} focusStyle={d.focusRing} hasTVPreferredFocus>
             <Icon name="back" size={17} color={C.text2} />
           </HDTouch>
-          <Text style={d.hdTitle}>公共曲库</Text>
-          <View style={{ flex: 1 }} />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={d.hdTitle}>公共曲库</Text>
+              <View style={[d.pheadDot, { backgroundColor: !scan ? C.text3 : scan.lastError ? '#E8B33D' : C.brand }]} />
+            </View>
+            <Text style={d.pheadSub} numberOfLines={1}>{srcTotal > 0 ? `${srcOk}/${srcTotal} 源正常 · ` : ''}官方共享</Text>
+          </View>
           <HDTouch style={d.hdBack} onPress={doRefresh} focusStyle={d.focusRing}>
             <Icon name="refresh" size={16} color={C.text2} />
           </HDTouch>
@@ -416,8 +407,13 @@ export function PublicLibraryScreen() {
       ) : (
         <View style={d.head}>
           <TouchableOpacity style={d.headBtn} onPress={() => nav.goBack()}><Icon name="back" size={16} color={C.text2} /></TouchableOpacity>
-          <Text style={d.headTitle}>公共曲库</Text>
-          <View style={{ flex: 1 }} />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+              <Text style={d.headTitle}>公共曲库</Text>
+              <View style={[d.pheadDot, { backgroundColor: !scan ? C.text3 : scan.lastError ? '#E8B33D' : C.brand }]} />
+            </View>
+            <Text style={d.pheadSub} numberOfLines={1}>{srcTotal > 0 ? `${srcOk}/${srcTotal} 源正常 · ` : ''}官方共享</Text>
+          </View>
           <TouchableOpacity style={d.headBtn} onPress={doRefresh}>
             <Icon name="refresh" size={15} color={C.text2} />
           </TouchableOpacity>
@@ -638,6 +634,8 @@ const d = StyleSheet.create({
   headTitle: { color: C.text, fontSize: 17, fontWeight: '800' },
   headStats: { flex: 1, color: C.text3, fontSize: 10.5, textAlign: 'right', marginRight: 2 },
   hdHead: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 12 },
+  pheadDot: { width: 8, height: 8, borderRadius: 4 }, // [老板 1010 二次对稿] v5.6 phead 源状态点(绿/暖/灰)
+  pheadSub: { color: C.text3, fontSize: 11, lineHeight: 15, marginTop: 1 },
   hdBack: { width: 36, height: 36, borderRadius: 10, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   hdTitle: { color: C.text, fontSize: 20, fontWeight: '800' },
   hdStats: { flex: 1, color: C.text3, fontSize: 11, textAlign: 'right', marginRight: 2 },
