@@ -51,8 +51,9 @@ export function streamUrl(filename: string, lib?: string): string {
   return `${b}/api/music/custom/file` + Q(filename, lib);
 }
 
-/** 封面地址(嵌入图代打;web 同源走相对,原生需 base+token) */
+/** 封面地址(嵌入图代打;web 同源走相对,原生需 base+token)——http(s) 直链直通(在线识别补全的封面不经本地端点) */
 export function coverUrl(filename: string, lib?: string): string {
+  if (/^https?:\/\//.test(String(filename || ''))) return filename; // [识别补全 1010] 在线元数据封面直通
   const b = B();
   if (!b) return IS_WEB_PLAT && store.token ? '/api/music/custom/cover' + Q(filename, lib) : '';
   return store.token ? `${b}/api/music/custom/cover` + Q(filename, lib) : '';
