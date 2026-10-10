@@ -188,8 +188,8 @@ const hv = StyleSheet.create({
   row: { flexDirection: 'row', gap: 14 },
   rowPhone: { flexDirection: 'column', gap: 10 }, // 自适应:phone 堆叠(窄屏统计行放不下双列)
   cell: { flex: 1, minWidth: 0 },
-  hero: { borderRadius: 16, minHeight: 170, overflow: 'hidden' },
-  heroPhone: { minHeight: 116 },
+  hero: { borderRadius: 16, minHeight: 128, overflow: 'hidden' }, // [老板 1010] 170→128 与为我推荐快捷卡同高（统合令）
+  heroPhone: { minHeight: 128 },
   heroGrad: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   glow: { position: 'absolute', right: -30, top: -40, width: 180, height: 180, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.10)' },
   heroBody: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 20, paddingHorizontal: 20 },

@@ -35,6 +35,7 @@ export interface ProviderAcct {
   root?: string;       // 探测出的 API 根路径（emby 可能带 /emby）
   tfRefresh?: string;  // 听风 refreshToken（token 轮换/刷新用；accessToken 在 token 字段）；Songloft 也存这
   clientId?: string;   // Plex 客户端标识（PIN 授权轮询需要，跨会话保持稳定）
+  quality?: number;    // [批5a] 账号级音质档(128/192/256/320 kbps；缺省=无损原始流)——取链时优先于全局设置，qrow 点选持久化
 }
 
 export const PROVIDER_META: Record<ProviderType, { label: string; hint: string; placeholder: string }> = {
@@ -307,7 +308,8 @@ function mapSubSong(a: ProviderAcct, pid: string, s: Record<string, unknown>, al
     albumName: s.album ? String(s.album) : undefined,
     interval: fmtSec(Number(s.duration)),
     img: s.coverArt ? subUrl(a, 'getCoverArt', { id: String(s.coverArt), size: '300' }) : undefined,
-  } as SongItem;
+    pvFav: s.starred ? true : undefined, // [批5a] subsonic starred 字段→收藏态(歌曲菜单据此显「取消源收藏」)
+  } as SongItem & { pvFav?: boolean };
 }
 // Emby/Jellyfin item → SongItem（专辑/歌单/随机 共用）
 function mapEmbySong(a: ProviderAcct, pid: string, it: Record<string, unknown>, albumId?: string): SongItem {
@@ -323,14 +325,16 @@ function mapEmbySong(a: ProviderAcct, pid: string, it: Record<string, unknown>, 
     img: (it.ImageTags as Record<string, string> | undefined)?.Primary
       ? `${embyRoot(a)}/Items/${it.Id}/Images/Primary?maxWidth=300${a.token ? `&api_key=${a.token}` : ''}`
       : undefined,
-  } as SongItem;
+    pvFav: !!(it.UserData as Record<string, unknown> | undefined)?.IsFavorite, // [批5a] emby/jf 收藏态(UserData.IsFavorite)→歌曲菜单据此显「取消源收藏」
+  } as SongItem & { pvFav?: boolean };
 }
 
-/** 转码流（Emby/JF）：PlaySessionId 必须唯一 —— Emby 按 session 命名转码临时目录，缺省时重试 job 会复用同一目录互删文件（实测 ffmpeg exit 1） */
-function transcodeUrlFor(a: ProviderAcct, itemId: string): { url: string; headers?: Record<string, string> } {
+/** 转码流（Emby/JF）：PlaySessionId 必须唯一 —— Emby 按 session 命名转码临时目录，缺省时重试 job 会复用同一目录互删文件（实测 ffmpeg exit 1）
+ *  [批5a] bitrate 缺省 320；账号级音质档(acct.quality)由调用方传入按档出码率 */
+function transcodeUrlFor(a: ProviderAcct, itemId: string, bitrate?: number): { url: string; headers?: Record<string, string> } {
   const psid = 'nm' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
   // [1010 web 修复] api_key 入 query——web 端音频走 DownloadProxy 纯 URL 转发,headers(X-Emby-Token)会被丢 → Emby 401;封面 URL 同款先例
-  return { url: `${embyRoot(a)}/Audio/${itemId}/stream.mp3?audioBitRate=320&PlaySessionId=${psid}${a.token ? `&api_key=${encodeURIComponent(a.token)}` : ''}`, headers: embyHeaders(a) };
+  return { url: `${embyRoot(a)}/Audio/${itemId}/stream.mp3?audioBitRate=${bitrate ?? 320}&PlaySessionId=${psid}${a.token ? `&api_key=${encodeURIComponent(a.token)}` : ''}`, headers: embyHeaders(a) };
 }
 
 /** ExoPlayer 可直解的音频容器；其余（ape/wma/alac/aiff…）直流必败，只能转码 */
@@ -610,10 +614,15 @@ export const providerApi = {
     if (!a || !itemId) return null;
     const proto = PROTOCOL[a.type];
     if (isV2Type(a.type)) { const e2 = V2[V2_ENGINES[a.type] as keyof typeof V2] as { streamOf(a: ProviderAcct, id: string): StreamResult }; return e2.streamOf(a, itemId); }
-    if (proto === 'subsonic') return { url: subUrl(a, 'stream', { id: itemId, maxBitRate: '0', format: 'raw' }) };
+    // [批5a] 账号级音质档：设档(128-320)→ maxBitRate 限码率让服务端按需转码(不带 format=raw)；未设→无损原始流直出
+    if (proto === 'subsonic') return a.quality
+      ? { url: subUrl(a, 'stream', { id: itemId, maxBitRate: String(a.quality) }) }
+      : { url: subUrl(a, 'stream', { id: itemId, maxBitRate: '0', format: 'raw' }) };
     if (proto === 'emby' || proto === 'jellyfin') {
       // 无损容器 ExoPlayer 解不了（ape/wma/alac...）：直流必报 UnrecognizedInputFormatException，直接出转码流
       const c = song.container;
+      // [批5a] 账号级音质档：设档→统一走服务端转码出对应码率；未设→原逻辑(直流优先,解不了的容器才转码)
+      if (a.quality) return transcodeUrlFor(a, itemId, a.quality);
       if (c && !DIRECT_PLAY_OK.has(c)) return transcodeUrlFor(a, itemId);
       return { url: `${embyRoot(a)}/Audio/${itemId}/stream?static=true${a.token ? `&api_key=${encodeURIComponent(a.token)}` : ''}`, headers: embyHeaders(a) }; // [1010] api_key 入 query 同上
     }
@@ -635,10 +644,10 @@ export const providerApi = {
     if (!a || !itemId) return null;
     const proto = PROTOCOL[a.type];
     if (isV2Type(a.type)) return null; // v2 协议无服务端转码概念；Plex part.key 由 PMS 自行决定直放/转码
-    if (proto === 'subsonic') return { url: subUrl(a, 'stream', { id: itemId, maxBitRate: '320' }) };
+    if (proto === 'subsonic') return { url: subUrl(a, 'stream', { id: itemId, maxBitRate: String(a.quality ?? 320) }) };
     if (proto === 'emby' || proto === 'jellyfin') {
-      // 服务端转码 mp3：外网/弱网下比无损直流可靠得多；PlaySessionId 唯一化防转码目录互删
-      return transcodeUrlFor(a, itemId);
+      // 服务端转码 mp3：外网/弱网下比无损直流可靠得多；PlaySessionId 唯一化防转码目录互删；[批5a]码率随账号音质档
+      return transcodeUrlFor(a, itemId, a.quality);
     }
     return null;
   },
@@ -667,6 +676,76 @@ export const providerApi = {
       else if (ev === 'progress') await embyFetch(a, '/Sessions/Playing/Progress', { method: 'POST', body });
       else await embyFetch(a, '/Sessions/Playing/Stopped', { method: 'POST', body });
     } catch { /* 统计失败不影响播放 */ }
+  },
+
+  /** [批5a] 相似电台：subsonic 系 getSimilarSongs2(id=song/artist/album,501·未实现·空结果→getTopSongs 按艺人名回退)。
+   *  emby/jf InstantMix(按对象类型选 /Artists|/Albums|/Songs/{id}/InstantMix,泛型 /Items/{id}/InstantMix 兜底;
+   *  全不可用→Artists/Similar 拿相似艺人前 3 位各拉随机曲目聚合)。返回 SongItem[] 直接走 playSong 队列。
+   *  无端点能力的源(听风/WebDAV/v2 族)直接 throw——UI 已按 PV_CAPS 能力表屏蔽入口,不亮芯片不造假 */
+  async similarFor(a: ProviderAcct, songOrArtistId: string, opts?: { kind?: 'song' | 'album' | 'artist'; artistName?: string }): Promise<SongItem[]> {
+    const pid = a.id;
+    if (isV2Type(a.type)) throw new Error('该源暂不支持相似电台');
+    if (PROTOCOL[a.type] === 'subsonic') {
+      let base: SongItem[] = [];
+      try {
+        const d = await subCall<{ similarSongs?: { song?: Record<string, unknown>[] } }>(a, 'getSimilarSongs2', { id: songOrArtistId, count: '50' });
+        base = (d.similarSongs?.song || []).map(s => mapSubSong(a, pid, s));
+      } catch { /* 老服务器 501/未实现 → getTopSongs 回退 */ }
+      if (!base.length && opts?.artistName) {
+        const d = await subCall<{ topSongs?: { song?: Record<string, unknown>[] } }>(a, 'getTopSongs', { artist: opts.artistName, count: '50' });
+        base = (d.topSongs?.song || []).map(s => mapSubSong(a, pid, s));
+      }
+      if (!base.length) throw new Error(opts?.artistName ? '服务器没有返回相似歌曲' : '服务器不支持相似歌曲（且无艺人名无法回退 TopSongs）');
+      return base;
+    }
+    if (PROTOCOL[a.type] === 'emby' || PROTOCOL[a.type] === 'jellyfin') {
+      const uid = a.userId || '';
+      const kindPath = opts?.kind === 'artist' ? `/Artists/${songOrArtistId}/InstantMix`
+        : opts?.kind === 'album' ? `/Albums/${songOrArtistId}/InstantMix`
+          : opts?.kind === 'song' ? `/Songs/${songOrArtistId}/InstantMix`
+            : `/Items/${songOrArtistId}/InstantMix`;
+      const paths = [...new Set([kindPath, `/Items/${songOrArtistId}/InstantMix`])]; // 泛型端点兜底(JF 10.9+)
+      for (const p of paths) {
+        try {
+          const d = (await embyFetch(a, `${p}?userId=${uid}&Limit=50&Fields=Container`)) as { Items?: Record<string, unknown>[] };
+          const arr = (d.Items || []).map(it => mapEmbySong(a, pid, it));
+          if (arr.length) return arr;
+        } catch { /* 端点不可用 → 下一候选 */ }
+      }
+      // InstantMix 全不可用：Artists/Similar 拿相似艺人，前 3 位各拉随机曲目聚合(真实端点真数据)
+      const sim = (await embyFetch(a, `/Artists/${songOrArtistId}/Similar?userId=${uid}&Limit=8`)) as { Items?: Record<string, unknown>[] };
+      const arts = (sim.Items || []).slice(0, 3).map(x => String(x.Id)).filter(Boolean);
+      if (!arts.length) throw new Error('服务器没有返回相似内容');
+      const qs = await Promise.all(arts.map(aid =>
+        embyFetch(a, `/Users/${uid}/Items?IncludeItemTypes=Audio&Recursive=true&ArtistIds=${aid}&SortBy=Random&Limit=12&Fields=Container`)
+          .catch(() => null)));
+      const out: SongItem[] = [];
+      const seen = new Set<string>();
+      for (const q of qs) {
+        for (const it of ((q as { Items?: Record<string, unknown>[] } | null)?.Items || [])) {
+          const s2 = mapEmbySong(a, pid, it);
+          if (!seen.has(String(s2.songmid))) { seen.add(String(s2.songmid)); out.push(s2); }
+        }
+      }
+      if (!out.length) throw new Error('服务器没有返回相似歌曲');
+      return out;
+    }
+    throw new Error('该源暂不支持相似电台');
+  },
+
+  /** [批5a] 收藏打星(源侧)：subsonic 系 star/unstar(id=)；emby/jf POST/DELETE /Users/{uid}/FavoriteItems/{id}。
+   *  听风/WebDAV/v2 族无对应 API(能力表恒 dim,UI 不出菜单项)；失败 throw 由调用方 toast */
+  async favorite(a: ProviderAcct, itemId: string, on: boolean): Promise<void> {
+    if (isV2Type(a.type)) throw new Error('该源暂不支持收藏打星');
+    if (PROTOCOL[a.type] === 'subsonic') {
+      await subCall(a, on ? 'star' : 'unstar', { id: itemId });
+      return;
+    }
+    if (PROTOCOL[a.type] === 'emby' || PROTOCOL[a.type] === 'jellyfin') {
+      await embyFetch(a, `/Users/${a.userId}/FavoriteItems/${itemId}`, { method: on ? 'POST' : 'DELETE' });
+      return;
+    }
+    throw new Error('该源暂不支持收藏打星');
   },
 
   /** WebDAV 目录浏览：返回子目录 + 音频文件（音频文件已转 SongItem） */

@@ -13,7 +13,7 @@ import { C } from '../theme/tokens';
 import { IS_HD } from '../services/appversion';
 import { PageHeader } from '../components/PageChrome';
 import { toast } from '../components/Dialog';
-import { HeroPair, HomeSection, HomeRail, RailCard, ChipsRow } from '../components/LibraryHome'; // ⑤/⑦ 全库首页化骨架
+import { HeroPair, HomeSection, RailCard, ChipsRow } from '../components/LibraryHome'; // ⑤/⑦ 全库首页化骨架
 import { AzIndex, azGroup, useAzJump } from '../components/AzIndex'; // ⑤-4 A-Z 字母索引条
 import { usePlayer } from '../state/PlayerProvider';
 import { coverUrl, setActiveLib, type LibSong, type LibAlbum, type LibArtist } from '../services/myLibrary';
@@ -204,6 +204,9 @@ export function PublicLibraryScreen() {
       ) : null}
       {!scan?.running && !err ? (
         <View style={[d.homeWrap, IS_HD && d.homeWrapHD, { marginBottom: 0 }]}>
+          {/* [老板 1010] v5.6 按稿:row2 双栏——左(最近更新网格+分类浏览) 右(最近更新榜侧卡);phone 堆叠 */}
+          <View style={[d.row2, !IS_HD && { flexDirection: 'column' }]}>
+          <View style={{ flex: 1, minWidth: 0, gap: 12 }}>
           {recentAlbums.length ? (
             <HomeSection title="最近更新" actionLabel="全部专辑" onAction={() => setTab('albums')}>
               {songs && songs.length ? (
@@ -211,13 +214,14 @@ export function PublicLibraryScreen() {
                   本周新增 {songs.filter(s => s.mtime && Date.now() - s.mtime < 7 * 86400000).length} 首
                 </Text>
               ) : null}
-              <HomeRail>
+              {/* [老板 1010] v5.6 按稿:横滑墙→封面网格(定宽卡 150 自然换行,自适应硬规则) */}
+              <View style={d.recGrid}>
                 {recentAlbums.map(a => (
                   <RailCard key={a.id} name={a.name} sub={`${a.songCount} 首 · ${a.artist}`}
                     cover={a.coverFile ? coverUrl(a.coverFile, 'public') : null}
                     onPress={() => enterAlbum(a)} />
                 ))}
-              </HomeRail>
+              </View>
             </HomeSection>
           ) : null}
           <HomeSection title="分类浏览">
@@ -244,12 +248,13 @@ export function PublicLibraryScreen() {
               ))}
             </View>
           </HomeSection>
-          {/* [LEO 裁定 1010] Top10 降级=最近更新榜(recent 真数据,金字号侧卡形态;服务端有播放计数端点后升回热门榜) */}
+          </View>
+          {/* [LEO 裁定 1010] Top10 降级=最近更新榜:右侧栏(side5 形态,phone 整行) */}
           {songs && songs.length ? (() => {
             const topList = [...songs].filter(s => s.mtime).sort((a, b) => (b.mtime || 0) - (a.mtime || 0)).slice(0, 10);
             if (!topList.length) return null;
             return (
-              <View style={d.topCard}>
+              <View style={[d.topCard, IS_HD && d.topCardSide]}>
                 <Text style={d.topCardT}>最近更新榜</Text>
                 {topList.map((s, i) => (
                   <TouchableOpacity key={s.id} style={d.topRow} activeOpacity={0.75} onPress={() => void play(topList, i)}>
@@ -263,6 +268,7 @@ export function PublicLibraryScreen() {
               </View>
             );
           })() : null}
+          </View>
         </View>
       ) : null}
     </View>
@@ -617,6 +623,9 @@ const d = StyleSheet.create({
   homeCell: { width: '48.6%', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.surface2, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11 },
   homeCellT: { color: C.text, fontSize: 12.5, fontWeight: '600' },
   // [LEO 裁定 1010] 最近更新榜侧卡(基准稿 side5 形态:金字号/歌名/歌手)
+  row2: { flexDirection: 'row', gap: 14, alignItems: 'flex-start' },
+  recGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  topCardSide: { width: 250, flexShrink: 0 },
   topCard: { backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.stroke, padding: 16 },
   topCardT: { color: C.text, fontSize: 14, fontWeight: '800', marginBottom: 6 },
   topRow: { flexDirection: 'row', gap: 10, alignItems: 'center', paddingVertical: 7, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint },

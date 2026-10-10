@@ -461,11 +461,11 @@ const st = StyleSheet.create({
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   quickDis: { opacity: 0.5 }, // #012②:disabled 态视觉反馈
   quickCard: {
-    height: 88, borderRadius: 14,
+    height: 128, borderRadius: 14, // [老板 1010] 88→128 与库页英雄卡同高（统合令）
     backgroundColor: C.elev, flexDirection: 'row', alignItems: 'center', gap: 12, overflow: 'hidden',
     paddingHorizontal: 12,
   },
-  quickArt: { width: 64, height: 64, borderRadius: 12 },
+  quickArt: { width: 80, height: 80, borderRadius: 14 },
   quickLabel: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '600', flex: 1, paddingRight: 4 },
   sectionRow: { height: 26, flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
   sectionTitle: { flex: 1, color: C.text, fontSize: 17, lineHeight: 25, fontWeight: '700' },

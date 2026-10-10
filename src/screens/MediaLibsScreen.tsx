@@ -360,7 +360,7 @@ interface SegState<T> { data: T | null; err: string | null; busy: boolean; }
 
 // ---------- [v5.6 1010·LEO 基准稿v5.6] 第三方单源页 v5 静态能力表 ----------
 // 从 providers.ts / providers-v2.ts 各引擎实际接线推导(streamFor/streamOf·transcodeFor·scrobble·playlists·Items/Latest):
-// 相似电台/收藏打星=全族未接端点(恒 dim);进度同步=ABS 专有且 v1 未接(dim);最新入库=emby/jf Items/Latest 原生
+// 批5a:相似电台(similarFor)+收藏打星(favorite)已接 subsonic系+emby/jf(听风/WebDAV/v2 族无对应 API 恒 dim);进度同步=ABS 专有且 v1 未接(dim);最新入库=emby/jf Items/Latest 原生
 interface PvCaps {
   link: boolean;      // 万能取链(streamFor/streamOf 已接)
   transcode: boolean; // 服务端转码(transcodeFor:emby/jf 转码流·subsonic 系限码率)
@@ -375,10 +375,10 @@ interface PvCaps {
 type DimKey = 'songs' | 'albums' | 'artists' | 'lists' | 'favs' | 'folders' | 'radio';
 const PV_CAPS: Record<ProviderType, PvCaps> = {
   // 六已接源(增量批1)
-  emby:     { link: true, transcode: true,  radio: false, star: false, scrobble: true,  playlist: true,  progress: false, latest: true,  albums: true,  artists: true },
-  jellyfin: { link: true, transcode: true,  radio: false, star: false, scrobble: true,  playlist: true,  progress: false, latest: true,  albums: true,  artists: true },
-  subsonic: { link: true, transcode: true,  radio: false, star: false, scrobble: true,  playlist: true,  progress: false, latest: false, albums: true,  artists: true },
-  navidrome:{ link: true, transcode: true,  radio: false, star: false, scrobble: true,  playlist: true,  progress: false, latest: false, albums: true,  artists: true },
+  emby:     { link: true, transcode: true,  radio: true,  star: true,  scrobble: true,  playlist: true,  progress: false, latest: true,  albums: true,  artists: true },
+  jellyfin: { link: true, transcode: true,  radio: true,  star: true,  scrobble: true,  playlist: true,  progress: false, latest: true,  albums: true,  artists: true },
+  subsonic: { link: true, transcode: true,  radio: true,  star: true,  scrobble: true,  playlist: true,  progress: false, latest: false, albums: true,  artists: true },
+  navidrome:{ link: true, transcode: true,  radio: true,  star: true,  scrobble: true,  playlist: true,  progress: false, latest: false, albums: true,  artists: true },
   webdav:   { link: true, transcode: false, radio: false, star: false, scrobble: false, playlist: false, progress: false, latest: false, albums: false, artists: false },
   tingfeng: { link: true, transcode: false, radio: false, star: false, scrobble: false, playlist: true,  progress: false, latest: false, albums: false, artists: false },
   // 后续批(Songloft/群晖/飞牛/道理鱼/ABS 等;接线以 providers-v2 现状为准,待后续批拉齐)
@@ -399,6 +399,15 @@ const CAP_DEFS: { key: 'link' | 'transcode' | 'radio' | 'star' | 'scrobble' | 'p
   { key: 'scrobble', label: '播放上报' },
   { key: 'playlist', label: '歌单同步' },
   { key: 'progress', label: '进度同步' },
+];
+// [批5a] 音质档按钮组(基准稿 qrow):v=kbps 传引擎限码率(subsonic maxBitRate / emby·jf audioBitRate);末档=无损(原始流直出)
+// 仅服务端转码能力源(caps.transcode:emby/jf/subsonic系)渲染——WebDAV/听风/v2 族无端点不显,不亮不造假
+const PV_QUALITIES: { label: string; v?: number }[] = [
+  { label: '128', v: 128 },
+  { label: '192', v: 192 },
+  { label: '256', v: 256 },
+  { label: '320', v: 320 },
+  { label: '无损' },
 ];
 // 品牌渐变映射(HERO_GRADS 已扩品牌档;plex=金复用 gold;未映射源回退 blue)
 const BRAND_HERO_GRAD: Partial<Record<ProviderType, HeroGrad>> = {
@@ -442,6 +451,8 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
   const [dimTab, setDimTab] = useState<DimKey>('albums');
   // [v5.6 1010] 最新入库(Items/Latest):仅 emby/jf 引擎有此端点(能力表驱动);拉不到不渲染副卡,不造假数据
   const [latest, setLatest] = useState<SegState<PvAlbum[]>>({ data: null, err: null, busy: false });
+  // [批5a] 账号级音质档重渲染钟摆(档位真身存 ProviderAcct.quality,qrow 点选落盘后 setQSel 触发重读 acct)
+  const [, setQSel] = useState<number | undefined>(undefined);
 
   // webdav 状态（沿用目录浏览）
   const [davDir, setDavDir] = useState('/');
@@ -539,6 +550,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
     if (id === acctId) return;
     setAcctId(id);
     setDavDir('/'); setDavDirs([]); setDavSongs([]); setDavBusy(true);
+    setQSel(undefined); // [批5a] 音质档随账号切换重读(acct.quality 渲染时取真值)
     resetAll();
     setExpanded({});
   };
@@ -623,6 +635,27 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
     const sh = [...d];
     for (let i = sh.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [sh[i], sh[j]] = [sh[j], sh[i]]; }
     playSong(sh[0], sh);
+  };
+
+  // [批5a] 相似电台:长按专辑卡/艺人行/最新入库卡 或歌曲菜单「相似电台」——引擎 similarFor
+  // (subsonic getSimilarSongs2·getTopSongs 回退 / emby·jf InstantMix·Artists/Similar 回退)→playSong 队列;失败 toast 不造假
+  const playRadio = (id: string, name: string, kind: 'song' | 'album' | 'artist', artistName?: string) => {
+    if (!acct || !caps.radio || !id) return;
+    toast(`正在生成「${name}」相似电台…`);
+    providerApi.similarFor(acct, id, { kind, artistName })
+      .then(q => { if (q.length) { playSong(q[0], q); toast(`相似电台已开播 · ${q.length} 首`); } else toast('服务器没有返回相似歌曲'); })
+      .catch(e => toast(`相似电台失败：${(e as Error).message}`));
+  };
+  // [批5a] 源侧收藏打星:subsonic star/unstar · emby/jf FavoriteItems;songmid=pid:itemId 解析回源账号;成功 toast
+  const pvFavToggle = (s: SongItem) => {
+    const [spid, iid] = String(s.songmid ?? '').split(':');
+    if (!acct || !iid) return;
+    const ta = providers.get(spid) || acct;
+    if (!PV_CAPS[ta.type].star) return;
+    const on = (s as { pvFav?: boolean }).pvFav !== true; // 已收藏→取消
+    providerApi.favorite(ta, iid, on)
+      .then(() => { toast(on ? `已收藏到「${ta.name || PROVIDER_META[ta.type].label}」` : '已取消收藏'); setActSong(null); })
+      .catch(e => toast(`收藏失败：${(e as Error).message}`));
   };
 
   // 主卡统计(真实数据:emby/jf 列表端点上限 300、subsonic 系 200,贴满显 + 不吹总数)
@@ -905,6 +938,22 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
             })}
           </View>
 
+          {/* [批5a] 音质档 qrow(基准稿):仅服务端转码能力源显(emby/jf/subsonic系)——128/192/256/320/无损;当前档高亮,点选持久化到账号(ProviderAcct.quality),取链时引擎读取 */}
+          {caps.transcode ? (
+            <View style={pv.qrow}>
+              <Text style={pv.qLabel}>音质档</Text>
+              {PV_QUALITIES.map(t => {
+                const on = acct.quality === t.v; // 缺省(undefined)=无损档
+                return (
+                  <T key={t.label} style={[pv.qBtn, on && pv.qBtnOn]} focusStyle={focus(10)}
+                    onPress={() => { providers.save({ ...acct, quality: t.v }); setQSel(t.v); toast(t.v ? `音质档已设为 ${t.v}k · 账号级，下次取链生效` : '音质档已设为无损 · 原始流直出'); }}>
+                    <Text style={[pv.qBtnT, on && pv.qBtnTOn]}>{t.label}</Text>
+                  </T>
+                );
+              })}
+            </View>
+          ) : null}
+
           {/* 维度 tabs(按源能力;灰=该源无此维度) */}
           <View style={pv.dimtabs}>
             {dimDefs.map(t => t.on ? (
@@ -1068,6 +1117,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                       {latest.data.map(al => (
                         <PvCard key={al.id} cover={al.cover} name={al.name}
                           meta={[al.artist, al.year ? String(al.year) : null, al.songCount ? `${al.songCount} 首` : null].filter(Boolean).join(' · ')}
+                          onLongPress={caps.radio ? () => playRadio(al.id, al.name, 'album', al.artist) : undefined}
                           onPress={() => nav.navigate('ProviderDetail', {
                             acctId: acct.id, kind: 'album', id: al.id, name: al.name, cover: al.cover,
                             sub: [al.artist, al.songCount ? `${al.songCount}首` : null].filter(Boolean).join(' · ') || undefined,
@@ -1082,6 +1132,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                   <View style={st.albumGrid}>
                     {(albums.data || []).map(al => (
                       <T key={al.id} style={[st.albumCell, IS_WEB && st.albumCellWeb]} activeOpacity={0.85} focusStyle={focus(10)}
+                        onLongPress={caps.radio ? () => playRadio(al.id, al.name, 'album', al.artist) : undefined}
                         onPress={() => nav.navigate('ProviderDetail', {
                           acctId: acct.id, kind: 'album', id: al.id, name: al.name, cover: al.cover,
                           sub: [al.artist, al.songCount ? `${al.songCount}首` : null].filter(Boolean).join(' · ') || undefined,
@@ -1105,6 +1156,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                   {artists.data && artists.data.length === 0 ? <EmptyState icon="music" title="没有找到艺术家" /> : null}
                   {(artists.data || []).map(ar => (
                     <T key={ar.id} style={[st.artistRow, IS_HD && bv.row]} activeOpacity={0.75} focusStyle={focus(12)}
+                      onLongPress={caps.radio ? () => playRadio(ar.id, ar.name, 'artist', ar.name) : undefined}
                       onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'artist', id: ar.id, name: ar.name, sub: ar.albumCount ? `${ar.albumCount} 张专辑` : undefined })}>
                       {ar.cover ? <Image source={{ uri: ar.cover }} style={[st.artistArt, IS_HD && bv.art]} />
                         : <View style={[st.artistArt, IS_HD && bv.art, st.artistFallback]}><Text style={st.artistInitial}>{ar.name.slice(0, 1)}</Text></View>}
@@ -1153,6 +1205,17 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
           dlStore.isDownloaded(actSong)
             ? { label: '已下载 ✓', onPress: () => {} }
             : { label: '下载到本地', onPress: () => { const n = enqueueDownload([actSong]); toast(n ? `已加入下载队列 · ${actSong.name}` : '该歌曲已在下载队列'); } },
+          ...(() => { // [批5a] 源侧真实能力项:收藏打星+相似电台(仅已接线源;songmid=pid:itemId 解析回源账号,无能力不显项)
+            const [spid, iid] = String(actSong.songmid ?? '').split(':');
+            const ta = acct && acct.type !== 'webdav' ? (providers.get(spid) || acct) : undefined;
+            if (!ta || !iid) return [];
+            const tc = PV_CAPS[ta.type];
+            const starred = (actSong as { pvFav?: boolean }).pvFav === true;
+            return [
+              ...(tc.star ? [{ label: starred ? '取消源收藏' : '收藏到源 · 打星', onPress: () => pvFavToggle(actSong) }] : []),
+              ...(tc.radio ? [{ label: '相似电台', onPress: () => playRadio(iid, actSong.name, 'song', actSong.singer) }] : []),
+            ];
+          })(),
           { label: '收藏到歌单', onPress: () => setCollect(true) },
         ] : []}
       />
@@ -1219,12 +1282,12 @@ function Rail({ children }: { children: React.ReactNode }) {
   );
 }
 
-function PvCard({ cover, name, meta, round, onPress }: {
-  cover?: string; name: string; meta?: string; round?: boolean; onPress: () => void;
+function PvCard({ cover, name, meta, round, onPress, onLongPress }: {
+  cover?: string; name: string; meta?: string; round?: boolean; onPress: () => void; onLongPress?: () => void;
 }) {
   const size = IS_HD ? 148 : (IS_WEB ? 132 : 112);
   return (
-    <T style={{ width: size, gap: 5 }} activeOpacity={0.85} onPress={onPress} focusStyle={focus(10)}>
+    <T style={{ width: size, gap: 5 }} activeOpacity={0.85} onPress={onPress} onLongPress={onLongPress} focusStyle={focus(10)}>
       {cover ? (
         <Image source={{ uri: cover }} style={{ width: size, height: size, borderRadius: round ? size / 2 : 10, backgroundColor: C.surface2 }} />
       ) : (
@@ -1431,6 +1494,13 @@ const pv = StyleSheet.create({
   dimtabCntOn: { color: C.onBrand },
   dimtabOff: { opacity: 0.4 },
   dimtabTOff: { color: C.text3, fontSize: 12.5, fontWeight: '600' },
+  // [批5a] 音质档 qrow(仅转码能力源):当前档品牌底高亮,选档持久化 ProviderAcct.quality 由引擎取链时读取
+  qrow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
+  qLabel: { color: C.text3, fontSize: 11, fontWeight: '600', marginRight: 2 },
+  qBtn: { height: 26, paddingHorizontal: 11, borderRadius: 8, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke, alignItems: 'center', justifyContent: 'center' },
+  qBtnOn: { backgroundColor: C.brand, borderColor: C.brand },
+  qBtnT: { color: C.text2, fontSize: 11, fontWeight: '600' },
+  qBtnTOn: { color: C.onBrand, fontWeight: '700' },
 });
 
 // navigation 注册用包装（native-stack 组件类型兼容）
