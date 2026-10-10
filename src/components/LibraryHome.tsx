@@ -132,11 +132,12 @@ export function HeroPair({ heroes, duo }: {
   heroes: LibHero[];
   duo?: { playAll: () => void; shuffle: () => void; playLabel?: string; shuffleLabel?: string; disabled?: boolean; more?: { icon: IconName; label: string; onPress: () => void; disabled?: boolean } };
 }) {
+  const [w, setW] = React.useState(0); // [老板 1010 自适应] 实测容器宽——窄窗(<640)英雄卡堆叠,宽窗并排;不再按形态硬切
   const list = heroes.slice(0, 2);
   if (!list.length) return null;
   return (
-    <View>
-      <View style={[hv.row, !IS_HD && hv.rowPhone]}>
+    <View onLayout={e => setW(e.nativeEvent.layout.width)}>
+      <View style={[hv.row, w > 0 && w < 640 && hv.rowPhone]}>
         {list.map(h => IS_HD ? (
           <HDTouch key={h.big} style={hv.cell} focusStyle={focus(16)} onPress={h.onPress} disabled={h.disabled}>
             <HeroCard h={h} />

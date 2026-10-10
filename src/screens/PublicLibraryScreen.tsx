@@ -41,6 +41,8 @@ export function PublicLibraryScreen() {
   const summary = entry.summary;
   const scan = summary?.scan;
   const davWide = IS_WEB && width >= 900 && !IS_TV;
+  const recBasis = width >= 1100 ? '23.5%' : width >= 720 ? '31.5%' : '48.6%'; // [老板 1010 自适应] 封面网格列数随窗宽:宽4列/中3列/窄2列
+  const row2Wide = width >= 900; // row2 双栏阈值(窄窗上下堆叠,不再按形态硬切)
   const PAGE = IS_HD ? 100 : 50; // ④分页 50/100
 
   // 进页即强校验(缓存过期→404 即时退场);播放域切 public(流/封面 lib=public)
@@ -204,7 +206,7 @@ export function PublicLibraryScreen() {
       {!scan?.running && !err ? (
         <View style={[d.homeWrap, IS_HD && d.homeWrapHD, { marginBottom: 0 }]}>
           {/* [老板 1010] v5.6 按稿:row2 双栏——左(最近更新网格+分类浏览) 右(最近更新榜侧卡);phone 堆叠 */}
-          <View style={[d.row2, !IS_HD && { flexDirection: 'column' }]}>
+          <View style={[d.row2, !row2Wide && { flexDirection: 'column' }]}>
           <View style={{ flex: 1, minWidth: 0, gap: 12 }}>
           {recentAlbums.length ? (
             <HomeSection title="最近更新" actionLabel="全部专辑" onAction={() => setTab('albums')}>
@@ -216,7 +218,7 @@ export function PublicLibraryScreen() {
               {/* [三次对稿] 基准稿 cgrid repeat(4,1fr):四列等分网格(HD/web)——卡=方形封面+名+歌手·首数;phone 两列 */}
               <View style={d.recGrid}>
                 {recentAlbums.map(a => (
-                  <View key={a.id} style={[d.recCell, !IS_HD && d.recCellP]}>
+                  <View key={a.id} style={{ flexBasis: recBasis }}>
                     {IS_HD ? (
                       <HDTouch style={{ width: '100%' }} focusStyle={d.tabFocus} onPress={() => enterAlbum(a)}>
                         <RecAlbumCard a={a} />
@@ -238,7 +240,7 @@ export function PublicLibraryScreen() {
                 <ChipsRow chips={srcChips} active={srcFilter} onChange={k => setSrcFilter(k)} />
               </View>
             ) : null}
-            <View style={d.lhead}><Text style={[d.lhT, { width: 34 }]}/><Text style={[d.lhT, { flex: 1 }]}>标题</Text><Text style={d.lhT}>专辑</Text><Text style={[d.lhT, d.lhR]}>时长</Text></View>
+            <View style={d.lhead}><View style={{ width: 34 }} /><Text style={[d.lhT, { flex: 1 }]}>标题</Text><Text style={[d.lhT, { width: 110 }]}>专辑</Text><Text style={[d.lhT, d.lhR, { width: 40 }]}>时长</Text></View>
             {(srcFilter === 'all' ? songs || [] : (songs || []).filter(s => (s as LibSong & { source?: string }).source === srcFilter)).slice(0, 8).map((s, i) => (
               <TouchableOpacity key={s.id} style={d.lrow} activeOpacity={0.75} onPress={() => play(srcFilter === 'all' ? songs : (songs || []).filter(x => (x as LibSong & { source?: string }).source === srcFilter), i)}>
                 <View style={[d.lcov, { backgroundColor: C.surface2 }]}><Icon name="music" size={13} color={C.text3} /></View>
@@ -257,7 +259,7 @@ export function PublicLibraryScreen() {
             const topList = [...songs].filter(s => s.mtime).sort((a, b) => (b.mtime || 0) - (a.mtime || 0)).slice(0, 10);
             if (!topList.length) return null;
             return (
-              <View style={[d.topCard, IS_HD && d.topCardSide]}>
+              <View style={[d.topCard, row2Wide && d.topCardSide]}>
                 <Text style={d.topCardT}>最近更新榜</Text>
                 {topList.map((s, i) => (
                   <TouchableOpacity key={s.id} style={d.topRow} activeOpacity={0.75} onPress={() => void play(topList, i)}>
