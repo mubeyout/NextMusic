@@ -69,3 +69,16 @@
 ## 构建部署链(每日验证过)
 tsc → vite build(HD) → tar|docker cp→/server/public/music/ → APP_FLAVOR=phone build → cp→music-phone/ → docker commit → git push
 坑: dist属主/脱敏层/phone构建后回建HD/EACCES chown 1000:1000
+
+## v5.6 去重版变更（老板 1341 令，LEO 1342 供稿）— 批2已返工上线(b081d52)
+- 三库页(本地/云/公共)**删页内入口行**——双英雄卡即「播放全部+随机播放」入口
+- 云页第二卡: 最近上传→**随机播放**(上传信息降级 mini 行)
+- 本地页: 随机漫步→随机播放; 重扫留页头⋯菜单(既有)
+- **仅第三方页保留入口行**(英雄卡=库身份卡非动作卡)
+- 审计脚本: NextMusic-design/tools/audit_graphics.py(LEO验证基准 PASS 0 违规)
+- HeroPair duo/more 机制保留(第三方页用)
+
+## 两段式裁定·LEO 10-10（云页网格）
+- 现在(批2.x)：云页网格区降级=按专辑分组歌曲列表——专辑名行头(sectionHead样式)+组内复用现有歌行；封面位=音符填充图标占位(过审计)；英雄卡/列表/双入口不动
+- 后续(服务端批)：补 /api/music/custom/albums 聚合端点+上传时 ID3 封面提取(复用本地曲库扫描链路)→网格升回封面墙(v5.6 原案)
+- 公共页 Top10=最近更新榜(recent 真数据金字号侧卡)——已落码

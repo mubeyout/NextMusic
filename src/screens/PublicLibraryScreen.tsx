@@ -244,6 +244,25 @@ export function PublicLibraryScreen() {
               ))}
             </View>
           </HomeSection>
+          {/* [LEO 裁定 1010] Top10 降级=最近更新榜(recent 真数据,金字号侧卡形态;服务端有播放计数端点后升回热门榜) */}
+          {songs && songs.length ? (() => {
+            const topList = [...songs].filter(s => s.mtime).sort((a, b) => (b.mtime || 0) - (a.mtime || 0)).slice(0, 10);
+            if (!topList.length) return null;
+            return (
+              <View style={d.topCard}>
+                <Text style={d.topCardT}>最近更新榜</Text>
+                {topList.map((s, i) => (
+                  <TouchableOpacity key={s.id} style={d.topRow} activeOpacity={0.75} onPress={() => void play(topList, i)}>
+                    <Text style={[d.topNo, i > 2 && d.topNoDim]}>{i + 1}</Text>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={d.topName} numberOfLines={1}>{s.name}</Text>
+                      <Text style={d.topArtist} numberOfLines={1}>{s.singer || '未知歌手'}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            );
+          })() : null}
         </View>
       ) : null}
     </View>
@@ -597,6 +616,14 @@ const d = StyleSheet.create({
   homeGridHD: { gap: 10 },
   homeCell: { width: '48.6%', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.surface2, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11 },
   homeCellT: { color: C.text, fontSize: 12.5, fontWeight: '600' },
+  // [LEO 裁定 1010] 最近更新榜侧卡(基准稿 side5 形态:金字号/歌名/歌手)
+  topCard: { backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.stroke, padding: 16 },
+  topCardT: { color: C.text, fontSize: 14, fontWeight: '800', marginBottom: 6 },
+  topRow: { flexDirection: 'row', gap: 10, alignItems: 'center', paddingVertical: 7, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint },
+  topNo: { width: 16, fontSize: 12.5, fontWeight: '800', color: '#F0C75E', textAlign: 'center' },
+  topNoDim: { color: C.text3, fontWeight: '700' },
+  topName: { color: C.text, fontSize: 12.5, fontWeight: '600' },
+  topArtist: { color: C.text3, fontSize: 10, marginTop: 1 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 16 },
   headBtn: { width: 32, height: 32, borderRadius: 10, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   headTitle: { color: C.text, fontSize: 17, fontWeight: '800' },

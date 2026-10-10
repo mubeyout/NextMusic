@@ -218,6 +218,7 @@ export function CloudLibraryScreen() {
   const [offline, setOffline] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [selMode, setSelMode] = useState(false);
+  const [albExpand, setAlbExpand] = useState(false); // [两段式·LEO 1010] 云页专辑分组展开态(默认只出前6张,全部可展)
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [delTargets, setDelTargets] = useState<LibSong[] | null>(null);
   const [delBusy, setDelBusy] = useState(false);
@@ -625,6 +626,34 @@ export function CloudLibraryScreen() {
                   </View>
                 </HomeSection>
               ) : null}
+              {/* [两段式·LEO 10-10 裁定] 云页网格区降级=按专辑分组歌曲列表(封面位音符占位过审计;服务端补 albums 端点后升回封面墙) */}
+              {songs && songs.length ? (() => {
+                const grp = new Map<string, typeof songs[number][]>();
+                for (const s of songs) { const k = s.album || '未知专辑'; const a = grp.get(k); if (a) a.push(s); else grp.set(k, [s]); }
+                const arr = [...grp.entries()].sort((a, b) => b[1].length - a[1].length);
+                const shown = albExpand ? arr : arr.slice(0, 6);
+                return (
+                  <HomeSection title="专辑" count={arr.length}>
+                    {shown.map(([album, list]) => (
+                      <View key={album} style={c.albGrp}>
+                        <View style={c.albHead}>
+                          <View style={c.albArt}><Icon name="music" size={22} color={C.text3} /></View>
+                          <Text style={c.albT} numberOfLines={1}>{album}</Text>
+                          <Text style={c.albC}>{list.length} 首</Text>
+                        </View>
+                        {list.map(s => { const it = toSongItem(s); return (
+                          <SongRow key={keyOf(s)} song={it} playing={current?.hash === s.filename} onPress={() => void play(songs.indexOf(s), songs)} onMore={() => rowMenu(s)} />
+                        ); })}
+                      </View>
+                    ))}
+                    {arr.length > 6 ? (
+                      <TouchableOpacity style={c.albMore} activeOpacity={0.75} onPress={() => setAlbExpand(v => !v)}>
+                        <Text style={c.albMoreT}>{albExpand ? '收起' : `全部 ${arr.length} 张专辑`}</Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </HomeSection>
+                );
+              })() : null}
             </>
           ) : null}
         </LibraryHome>
@@ -787,6 +816,14 @@ const c = StyleSheet.create({
   entryIconHD: { width: 52, height: 52, borderRadius: 14 }, // [1010 统一] 与 ml.iconWrapHD 同值
   entryTitle: { color: C.text, fontSize: 14.5, lineHeight: 20, fontWeight: '600' }, // [1010 统一] 14/700→14.5/600 与 ml.title 同值
   heroStB: { color: '#FFFFFF', fontWeight: '800' }, // [v5.5] 英雄卡统计行加粗段
+  // [两段式·LEO 1010] 云页专辑分组(行头/占位封面/展开钮)
+  albGrp: { gap: 2 },
+  albHead: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
+  albArt: { width: 44, height: 44, borderRadius: 10, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  albT: { flex: 1, minWidth: 0, color: C.text, fontSize: 13.5, fontWeight: '700' },
+  albC: { color: C.text3, fontSize: 11 },
+  albMore: { paddingVertical: 10, alignItems: 'center' },
+  albMoreT: { color: C.text2, fontSize: 12, fontWeight: '600' },
   entryTitleHD: { fontSize: 16.5, lineHeight: 23 },
   entrySub: { color: C.text3, fontSize: 11, lineHeight: 15, marginTop: 2 }, // [1010 统一] 10.5→11 与 ml.sub 同值
   entrySubHD: { fontSize: 12.5, lineHeight: 17 },

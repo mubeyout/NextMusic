@@ -19,7 +19,7 @@ import { SongRow } from '../components/SongRow';
 import { toast, dialog } from '../components/Dialog';
 import { dropdownMenu, isDropdownPlatform, type MenuAnchor } from '../components/DropdownMenu';
 import { PageHeader, EmptyState } from '../components/PageChrome';
-import { LibBanner, LibActions } from '../components/LibraryHome'; // ⑦.3-v2 壳统一:品牌 logo 横幅+连接状态点+快捷动作
+import { LibBanner, LibActions, HeroPair, type LibHero, type HeroGrad } from '../components/LibraryHome'; // ⑦.3-v2 壳统一 + [v5.6 1010] HeroPair 英雄卡对(第三方页源身份卡+duo 入口行)
 import { GUTTER, focus, pageBottom } from '../hd/hdstyle'; // v3.28:统一栅格/焦点环/播放条让位
 import { usePlayer } from '../state/PlayerProvider';
 import { library } from '../state/library';
@@ -358,6 +358,56 @@ const AnimatedTO = Animated.createAnimatedComponent(TouchableOpacity);
 // 单段数据缓存：null=未加载
 interface SegState<T> { data: T | null; err: string | null; busy: boolean; }
 
+// ---------- [v5.6 1010·LEO 基准稿v5.6] 第三方单源页 v5 静态能力表 ----------
+// 从 providers.ts / providers-v2.ts 各引擎实际接线推导(streamFor/streamOf·transcodeFor·scrobble·playlists·Items/Latest):
+// 相似电台/收藏打星=全族未接端点(恒 dim);进度同步=ABS 专有且 v1 未接(dim);最新入库=emby/jf Items/Latest 原生
+interface PvCaps {
+  link: boolean;      // 万能取链(streamFor/streamOf 已接)
+  transcode: boolean; // 服务端转码(transcodeFor:emby/jf 转码流·subsonic 系限码率)
+  radio: boolean;     // 相似电台
+  star: boolean;      // 收藏打星
+  scrobble: boolean;  // 播放上报(scrobble?id= / PlayedItems+Sessions)
+  playlist: boolean;  // 歌单同步(playlists() 已接)
+  progress: boolean;  // 进度同步(ABS 专有,v1 未接)
+  latest: boolean;    // 最新入库端点(Items/Latest)
+  albums: boolean; artists: boolean; // 维度 tabs 显隐
+}
+type DimKey = 'songs' | 'albums' | 'artists' | 'lists' | 'favs' | 'folders' | 'radio';
+const PV_CAPS: Record<ProviderType, PvCaps> = {
+  // 六已接源(增量批1)
+  emby:     { link: true, transcode: true,  radio: false, star: false, scrobble: true,  playlist: true,  progress: false, latest: true,  albums: true,  artists: true },
+  jellyfin: { link: true, transcode: true,  radio: false, star: false, scrobble: true,  playlist: true,  progress: false, latest: true,  albums: true,  artists: true },
+  subsonic: { link: true, transcode: true,  radio: false, star: false, scrobble: true,  playlist: true,  progress: false, latest: false, albums: true,  artists: true },
+  navidrome:{ link: true, transcode: true,  radio: false, star: false, scrobble: true,  playlist: true,  progress: false, latest: false, albums: true,  artists: true },
+  webdav:   { link: true, transcode: false, radio: false, star: false, scrobble: false, playlist: false, progress: false, latest: false, albums: false, artists: false },
+  tingfeng: { link: true, transcode: false, radio: false, star: false, scrobble: false, playlist: true,  progress: false, latest: false, albums: false, artists: false },
+  // 后续批(Songloft/群晖/飞牛/道理鱼/ABS 等;接线以 providers-v2 现状为准,待后续批拉齐)
+  plex:           { link: true, transcode: false, radio: false, star: false, scrobble: true,  playlist: true, progress: false, latest: false, albums: true, artists: true },
+  audiobookshelf: { link: true, transcode: false, radio: false, star: false, scrobble: false, playlist: true, progress: false, latest: false, albums: true, artists: true },
+  audiostation:   { link: true, transcode: false, radio: false, star: false, scrobble: false, playlist: true, progress: false, latest: false, albums: true, artists: true },
+  mstream:        { link: true, transcode: false, radio: false, star: false, scrobble: false, playlist: true, progress: false, latest: false, albums: true, artists: true },
+  songloft:       { link: true, transcode: false, radio: false, star: false, scrobble: true,  playlist: true, progress: false, latest: false, albums: true, artists: true },
+  feiniu:         { link: true, transcode: false, radio: false, star: false, scrobble: false, playlist: true, progress: false, latest: false, albums: true, artists: true },
+  daoliyu:        { link: true, transcode: false, radio: false, star: false, scrobble: true,  playlist: true, progress: false, latest: false, albums: true, artists: true },
+};
+// 能力芯片展示序列(基准稿 caps 行;dim=该源引擎未接)
+const CAP_DEFS: { key: 'link' | 'transcode' | 'radio' | 'star' | 'scrobble' | 'playlist' | 'progress'; label: string }[] = [
+  { key: 'link', label: '万能取链' },
+  { key: 'transcode', label: '服务端转码' },
+  { key: 'radio', label: '相似电台' },
+  { key: 'star', label: '收藏打星' },
+  { key: 'scrobble', label: '播放上报' },
+  { key: 'playlist', label: '歌单同步' },
+  { key: 'progress', label: '进度同步' },
+];
+// 品牌渐变映射(HERO_GRADS 已扩品牌档;plex=金复用 gold;未映射源回退 blue)
+const BRAND_HERO_GRAD: Partial<Record<ProviderType, HeroGrad>> = {
+  emby: 'emby', jellyfin: 'jellyfin', navidrome: 'navidrome', subsonic: 'subsonic',
+  webdav: 'webdav', tingfeng: 'tingfeng', plex: 'gold',
+};
+// 源健康点配色(同 LibStatus 三态:正常 brand/延迟 warn/断连 danger)
+const PV_STATUS_COLOR: Record<string, string> = { ok: C.brand, warn: '#E8B33D', bad: '#D94D45' };
+
 export function ProviderBrowseScreen({ route }: { route: { params: { acctId: string } } }) {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string, p?: object) => void };
@@ -388,6 +438,10 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
   const [songs, setSongs] = useState<SegState<SongItem[]>>({ data: null, err: null, busy: false });
   const [lists, setLists] = useState<SegState<PvPlaylist[]>>({ data: null, err: null, busy: false });
   const [swSheet, setSwSheet] = useState(false);
+  // [v5.6 1010] 维度 tabs 当前项(songs/albums/artists/lists;收藏/文件夹/电台=后续批能力,本批恒灰)
+  const [dimTab, setDimTab] = useState<DimKey>('albums');
+  // [v5.6 1010] 最新入库(Items/Latest):仅 emby/jf 引擎有此端点(能力表驱动);拉不到不渲染副卡,不造假数据
+  const [latest, setLatest] = useState<SegState<PvAlbum[]>>({ data: null, err: null, busy: false });
 
   // webdav 状态（沿用目录浏览）
   const [davDir, setDavDir] = useState('/');
@@ -404,6 +458,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
     setArtists({ data: null, err: null, busy: false });
     setSongs({ data: null, err: null, busy: false });
     setLists({ data: null, err: null, busy: false });
+    setLatest({ data: null, err: null, busy: false });
   };
 
   // 分段数据加载器（懒加载与重试共用；不能只重置 state 依赖 effect 重跑——deps 不含 state）
@@ -431,6 +486,31 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
       .then(d => setLists({ data: d, err: null, busy: false }))
       .catch(e => setLists({ data: null, err: (e as Error).message, busy: false }));
   };
+  // [v5.6 1010] 最新入库:Items/Latest(JF 谱系原生端点;能力表 latest=true 才拉);失败静默(副卡不渲染),旧数据保留
+  const loadLatest = (a: ProviderAcct, force = false) => {
+    if (!PV_CAPS[a.type].latest) return;
+    setLatest(s => (s.data || s.busy ? (force ? { ...s, busy: true } : s) : { ...s, busy: true }));
+    const root = a.root || (a.type === 'emby' ? `${a.base.trim().replace(/\/+$/, '')}/emby` : a.base.trim().replace(/\/+$/, ''));
+    const q = a.token ? `&api_key=${encodeURIComponent(a.token)}` : ''; // query token:web 端 <img> 带不了 header,同既有封面 URL 先例
+    fetch(`${root}/Users/${a.userId}/Items/Latest?IncludeItemTypes=MusicAlbum&Limit=12${q}`)
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then((d: unknown) => {
+        const items = (Array.isArray(d) ? d : ((d as { Items?: Record<string, unknown>[] }).Items || [])) as Record<string, unknown>[];
+        setLatest({
+          data: items.map(it => ({
+            id: String(it.Id), name: String(it.Name || ''),
+            artist: it.AlbumArtist ? String(it.AlbumArtist)
+              : (Array.isArray(it.Artists) && (it.Artists as unknown[]).length ? String((it.Artists as unknown[])[0]) : undefined),
+            songCount: it.ChildCount ? Number(it.ChildCount) : undefined,
+            year: it.ProductionYear ? Number(it.ProductionYear) : undefined,
+            cover: (it.ImageTags as Record<string, string> | undefined)?.Primary
+              ? `${root}/Items/${it.Id}/Images/Primary?maxWidth=300${q}` : undefined,
+          })),
+          err: null, busy: false,
+        });
+      })
+      .catch(e => setLatest(s => (s.data ? s : { data: null, err: (e as Error).message, busy: false })));
+  };
 
   // 听风无专辑/艺术家概念：歌曲=新歌速递；歌单数组含 liked:/recent:/mine:/pl:/top: 五类
   const isTf = acct?.type === 'tingfeng';
@@ -439,7 +519,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
   useEffect(() => {
     if (!acct || isDav) return;
     if (!isTf) { loadAlbums(acct); loadArtists(acct); }
-    loadSongs(acct); loadLists(acct);
+    loadSongs(acct); loadLists(acct); loadLatest(acct);
   }, [acctId, isDav]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // WebDAV 目录加载
@@ -470,6 +550,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
     if (!acct) return;
     if (!isTf) { setAlbums({ data: null, err: null, busy: false }); setArtists({ data: null, err: null, busy: false }); loadAlbums(acct); loadArtists(acct); }
     setLists({ data: null, err: null, busy: false }); loadLists(acct); loadSongs(acct);
+    setLatest({ data: null, err: null, busy: false }); loadLatest(acct, true);
   };
   const pvStatus = (albums.err && artists.err && songs.err) || (isTf && songs.err && lists.err) ? 'bad'
     : albums.err || artists.err || songs.err || lists.err ? 'warn' : 'ok';
@@ -523,6 +604,74 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
 
   // ---------- render ----------
   const allAccts = providers.all();
+
+  // ---------- [v5.6 1010] 第三方页 v5 头区派生值:能力表/品牌渐变/英雄卡对/维度 tabs(统计=既有 SegState 真值) ----------
+  const caps = PV_CAPS[acct.type];
+  const brandLabel = PROVIDER_META[acct.type].label;
+  const heroGrad: HeroGrad = BRAND_HERO_GRAD[acct.type] || 'blue';
+  const statusWord = pvStatus === 'ok' ? '连接正常' : pvStatus === 'warn' ? '连接波动' : '连接异常';
+
+  // duo 双入口真播放(songs 队列:播放全部原序/随机播放洗牌)——仅第三方页保留入口行(v5.6 老板令)
+  const playProviderAll = () => {
+    const d = songs.data || [];
+    if (!d.length) { toast('库里还没有歌曲'); return; }
+    playSong(d[0], d);
+  };
+  const playProviderShuffle = () => {
+    const d = songs.data || [];
+    if (!d.length) { toast('库里还没有歌曲'); return; }
+    const sh = [...d];
+    for (let i = sh.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [sh[i], sh[j]] = [sh[j], sh[i]]; }
+    playSong(sh[0], sh);
+  };
+
+  // 主卡统计(真实数据:emby/jf 列表端点上限 300、subsonic 系 200,贴满显 + 不吹总数)
+  const songTotal = (albums.data || []).reduce((n, al) => n + (al.songCount || 0), 0);
+  const listCap = acct.type === 'emby' || acct.type === 'jellyfin' ? 300 : 200;
+  const fmtCap = (n: number, cap: number) => (n >= cap ? `${n}+` : String(n));
+  const heroStats: React.ReactNode = isTf
+    ? (lists.data ? `歌单 ${lists.data.length} · 新歌 ${songs.data?.length ?? 0} 首` : '统计读取中…')
+    : albums.data != null || artists.data != null
+      ? (<>{songTotal > 0 ? <><Text style={pv.heroStB}>{songTotal.toLocaleString()} 首</Text>{' · '}</> : null}{`专辑 ${fmtCap(albums.data?.length || 0, listCap)} · 艺人 ${fmtCap(artists.data?.length || 0, listCap)}`}</>)
+      : (albums.err && artists.err ? '统计暂不可用' : '统计读取中…');
+
+  // 英雄卡对:主卡=源身份卡(品牌渐变+真实统计+连接 mini+播放钮,点击=播放全部);副卡=violet 最新入库(有 Latest 数据才渲染)
+  const heroes: LibHero[] = [{
+    grad: heroGrad,
+    big: acct.name && acct.name !== brandLabel ? `${brandLabel} · ${acct.name}` : brandLabel,
+    st: heroStats,
+    mini: `${statusWord}${acct.user ? ` · ${acct.user}` : ''} · ${acct.base}`,
+    icon: 'play',
+    onPress: playProviderAll,
+    disabled: !songs.data?.length,
+  }];
+  if (latest.data?.length) {
+    heroes.push({
+      grad: 'violet', big: '最新入库', icon: 'play',
+      st: <>最近入库 <Text style={pv.heroStB}>{latest.data.length} 张专辑</Text></>,
+      mini: latest.data[0]?.name ? `新到《${latest.data[0].name}》 · Items/Latest 端点` : 'Items/Latest 端点 · 实时',
+      onPress: () => {
+        const first = latest.data?.[0];
+        if (!first) return;
+        providerApi.albumSongs(acct, first.id)
+          .then(ss => { if (ss.length) playSong(ss[0], ss); else toast('这张专辑还没有歌曲'); })
+          .catch(e => toast(`取歌失败：${(e as Error).message}`));
+      },
+    });
+  }
+
+  // 维度 tabs(按源能力;count=SegState 真值;收藏/文件夹/电台=后续批能力,本批六源全灰)
+  const dimDefs: { key: DimKey; label: string; on: boolean; count?: string }[] = [
+    { key: 'songs', label: isTf ? '新歌' : '歌曲', on: true, count: songs.data ? String(songs.data.length) : undefined },
+    { key: 'albums', label: '专辑', on: caps.albums, count: albums.data ? fmtCap(albums.data.length, listCap) : undefined },
+    { key: 'artists', label: '艺人', on: caps.artists, count: artists.data ? fmtCap(artists.data.length, listCap) : undefined },
+    { key: 'lists', label: '歌单', on: caps.playlist, count: lists.data ? String(lists.data.length) : undefined },
+    { key: 'favs', label: '收藏', on: false },
+    { key: 'folders', label: '文件夹', on: false },
+    { key: 'radio', label: '电台', on: false },
+  ];
+  const dimOk = (k: DimKey) => (k === 'songs' ? true : k === 'albums' ? caps.albums : k === 'artists' ? caps.artists : k === 'lists' ? caps.playlist : false);
+  const dim = dimOk(dimTab) ? dimTab : (caps.albums ? 'albums' : 'lists'); // 切账号后当前维度不可用时回退默认
 
   return (
     <View style={st.screen}>
@@ -720,16 +869,54 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
         <ScrollView
           contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingBottom: IS_HD ? pageBottom(32) : (current ? 116 : 32), gap: IS_HD ? 22 : 16 }}
         >
-          {/* ⑦.3-v2 壳统一:品牌横幅+状态点+快捷动作;内容分区按源能力——A 层(Emby/Subsonic 系)=元数据+歌单,C 层(听风)=歌单为主 */}
-          <View style={{ gap: 12 }}>
-            <LibBanner kind="provider" name={acct.name || PROVIDER_META[acct.type].label} sub={acct.base}
-              status={pvStatus} stats={PROVIDER_META[acct.type].label}
-              brand={<AcctGlyph type={acct.type} size={IS_HD ? 30 : 22} />} />
-            <LibActions actions={[
-              { icon: 'refresh', label: '刷新', onPress: refreshAll },
-              { icon: 'settings', label: '连接设置', onPress: () => nav.navigate('ProviderEdit', { acctId: acct.id }) },
-              ...(songs.data?.length ? [{ icon: 'shuffle' as const, label: '随机播放', primary: true, onPress: () => { const d = songs.data || []; playSong(d[Math.floor(Math.random() * d.length)], d); } }] : []),
-            ]} />
+          {/* [v5.6 1010·LEO 基准稿] phead:品牌标+源名+账号@地址 sub+连接状态点(辉光)+右上 刷新/连接设置 */}
+          <View style={pv.phead}>
+            <View style={[pv.pheadLogo, IS_HD && pv.pheadLogoHD]}><AcctGlyph type={acct.type} size={IS_HD ? 30 : 24} /></View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <View style={pv.pheadNameRow}>
+                <Text style={[pv.pheadName, IS_HD && pv.pheadNameHD]} numberOfLines={1}>{acct.name || PROVIDER_META[acct.type].label}</Text>
+                <View style={[pv.dot, { backgroundColor: PV_STATUS_COLOR[pvStatus], shadowColor: PV_STATUS_COLOR[pvStatus] }]} />
+              </View>
+              <Text style={pv.pheadSub} numberOfLines={1}>
+                {PROVIDER_META[acct.type].label}{acct.user ? ` · ${acct.user}` : ''} · {acct.base}
+              </Text>
+            </View>
+            <T style={[pv.pheadBtn, IS_HD && pv.pheadBtnHD]} focusStyle={focus(12)} onPress={refreshAll}>
+              <Icon name="refresh" size={IS_HD ? 19 : 16} color={C.text2} />
+            </T>
+            <T style={[pv.pheadBtn, IS_HD && pv.pheadBtnHD]} focusStyle={focus(12)} onPress={() => nav.navigate('ProviderEdit', { acctId: acct.id })}>
+              <Icon name="settings" size={IS_HD ? 19 : 16} color={C.text2} />
+            </T>
+          </View>
+
+          {/* 英雄卡对(仅第三方页保留 duo 入口行——英雄卡=源身份卡非动作卡):主卡=品牌渐变身份卡(真实统计+连接 mini+播放钮);副卡=violet 最新入库(有 Latest 数据才渲染) */}
+          <HeroPair heroes={heroes} duo={{ playAll: playProviderAll, shuffle: playProviderShuffle, disabled: !songs.data?.length }} />
+
+          {/* 能力芯片 caps:按源引擎实际接线显隐(dim=不支持)——万能取链/服务端转码/相似电台/收藏打星/播放上报/歌单同步/进度同步 */}
+          <View style={pv.caps}>
+            {CAP_DEFS.map(cd => {
+              const on = caps[cd.key];
+              return (
+                <View key={cd.key} style={[pv.cap, !on && pv.capDim]}>
+                  <View style={[pv.capDot, { backgroundColor: on ? C.brand : C.text3 }]} />
+                  <Text style={[pv.capT, on && pv.capTOn]}>{cd.label}</Text>
+                </View>
+              );
+            })}
+          </View>
+
+          {/* 维度 tabs(按源能力;灰=该源无此维度) */}
+          <View style={pv.dimtabs}>
+            {dimDefs.map(t => t.on ? (
+              <T key={t.key} style={[pv.dimtab, IS_HD && pv.dimtabHD, dim === t.key && pv.dimtabOn]} focusStyle={focus(999)} onPress={() => setDimTab(t.key)}>
+                <Text style={[pv.dimtabT, dim === t.key && pv.dimtabTOn]}>{t.label}</Text>
+                {t.count ? <Text style={[pv.dimtabCnt, dim === t.key && pv.dimtabCntOn]}>{t.count}</Text> : null}
+              </T>
+            ) : (
+              <View key={t.key} style={[pv.dimtab, IS_HD && pv.dimtabHD, pv.dimtabOff]}>
+                <Text style={pv.dimtabTOff}>{t.label}</Text>
+              </View>
+            ))}
           </View>
           {isTf ? (() => {
             // 听风：providers.playlists 返回五类（liked:/recent:/mine:/pl:/top: 前缀），拆成分区
@@ -745,6 +932,8 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
             });
             return (
               <>
+                {/* [v5.6] 歌单维度 tab:我的音乐/我的歌单/推荐/排行(原分区纵排收进 tab) */}
+                {dim === 'lists' ? (<>
                 {/* 我的音乐：继续收听 / 我喜欢的 双入口卡 */}
                 <View>
                   <SectionHead title="我的音乐" />
@@ -824,8 +1013,10 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                     )}
                   </View>
                 ) : null}
+                </>) : null}
 
-                {/* 新歌速递 */}
+                {/* 新歌速递([v5.6] 歌曲维度 tab) */}
+                {dim === 'songs' ? (
                 <View>
                   <SectionHead title="新歌速递" actionLabel="换一批" onAction={refreshSongs} />
                   <SegBody state={songs} onRetry={refreshSongs}>
@@ -835,24 +1026,20 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                         <Icon name="play" size={14} color={C.onBrand} />
                         <Text style={st.shuffleBtnText}>播放全部</Text>
                       </T>
-                      {(songs.data?.length || 0) > 8 && !expanded.tfSongs ? <Text style={sec.previewHint}>前 8 首</Text> : null}
+                      {songs.data?.length ? <Text style={sec.previewHint}>共 {songs.data.length} 首</Text> : null}
                     </View>
-                    {(expanded.tfSongs ? songs.data || [] : (songs.data || []).slice(0, 8)).map((s, i) => (
+                    {(songs.data || []).map((s, i) => (
                       <SongRow key={`${s.songmid}-${i}`} song={s} playing={current?.songmid === s.songmid} onPress={() => playSong(s, songs.data || [])} onMore={() => setActSong(s)} />
                     ))}
-                    {(songs.data?.length || 0) > 8 ? (
-                      <T style={sec.moreRow} focusStyle={focus(10)} onPress={() => setExpanded(e => ({ ...e, tfSongs: !e.tfSongs }))}>
-                        <Text style={sec.moreText}>{expanded.tfSongs ? '收起' : `展开全部 ${songs.data!.length} 首`}</Text>
-                        <Icon name="chevronright" size={13} color={C.text2} />
-                      </T>
-                    ) : null}
                   </SegBody>
                 </View>
+                ) : null}
               </>
             );
           })() : (
             <>
-              {/* 随机来点 */}
+              {/* 歌曲([v5.6] 维度 tab):随机来点全量列表+换一批 */}
+              {dim === 'songs' ? (
               <View>
                 <SectionHead title="随机来点" actionLabel="换一批" onAction={refreshSongs} />
                 <SegBody state={songs} onRetry={refreshSongs}>
@@ -862,91 +1049,83 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                       <Icon name="play" size={14} color={C.onBrand} />
                       <Text style={st.shuffleBtnText}>播放全部</Text>
                     </T>
-                    {(songs.data?.length || 0) > 8 && !expanded.songs ? <Text style={sec.previewHint}>前 8 首</Text> : null}
+                    {songs.data?.length ? <Text style={sec.previewHint}>共 {songs.data.length} 首</Text> : null}
                   </View>
-                  {(expanded.songs ? songs.data || [] : (songs.data || []).slice(0, 8)).map((s, i) => (
+                  {(songs.data || []).map((s, i) => (
                     <SongRow key={`${s.songmid}-${i}`} song={s} playing={current?.songmid === s.songmid} onPress={() => playSong(s, songs.data || [])} onMore={() => setActSong(s)} />
                   ))}
-                  {(songs.data?.length || 0) > 8 ? (
-                    <T style={sec.moreRow} focusStyle={focus(10)} onPress={() => setExpanded(e => ({ ...e, songs: !e.songs }))}>
-                      <Text style={sec.moreText}>{expanded.songs ? '收起' : `展开全部 ${songs.data!.length} 首`}</Text>
-                      <Icon name="chevronright" size={13} color={C.text2} />
-                    </T>
-                  ) : null}
                 </SegBody>
               </View>
+              ) : null}
 
-              {/* 专辑 */}
+              {/* 专辑([v5.6] 维度 tab):最近入库横滑(Items/Latest 真数据,仅 emby/jf)+全量专辑墙(百分比定宽自然换行) */}
+              {dim === 'albums' ? (
               <View>
-                <SectionHead title="专辑" count={albums.data?.length} actionLabel={expanded.albums ? '收起' : '全部'} onAction={() => setExpanded(e => ({ ...e, albums: !e.albums }))} />
-                <SegBody state={albums} onRetry={() => { setAlbums({ data: null, err: null, busy: false }); if (acct) loadAlbums(acct); }}>
-                  {albums.data && albums.data.length === 0 ? <EmptyState icon="music" title="服务器上没有专辑" sub="先在媒体服务器里添加音乐库" /> : null}
-                  {expanded.albums ? (
-                    <View style={st.albumGrid}>
-                      {(albums.data || []).map(al => (
-                        <T key={al.id} style={[st.albumCell, IS_WEB && st.albumCellWeb]} activeOpacity={0.85} focusStyle={focus(10)}
-                          onPress={() => nav.navigate('ProviderDetail', {
-                            acctId: acct.id, kind: 'album', id: al.id, name: al.name, cover: al.cover,
-                            sub: [al.artist, al.songCount ? `${al.songCount}首` : null].filter(Boolean).join(' · ') || undefined,
-                          })}>
-                          {al.cover ? <Image source={{ uri: al.cover }} style={st.albumCover} />
-                            : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(al.name) as ViewStyle]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
-                          <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{al.name}</Text>
-                          <Text style={[st.albumMeta, IS_HD && bv.albumMeta]} numberOfLines={1}>{al.artist || ''}{al.songCount ? ` · ${al.songCount}首` : ''}</Text>
-                        </T>
-                      ))}
-                    </View>
-                  ) : (
+                {latest.data?.length ? (
+                  <View style={{ marginBottom: 4 }}>
+                    <SectionHead title="最近入库" count={latest.data.length} actionLabel="换一批" onAction={() => { if (acct) loadLatest(acct, true); }} />
                     <Rail>
-                      {(albums.data || []).slice(0, 10).map(al => (
-                        <PvCard key={al.id} cover={al.cover} name={al.name} meta={al.artist || (al.songCount ? `${al.songCount} 首` : '')}
+                      {latest.data.map(al => (
+                        <PvCard key={al.id} cover={al.cover} name={al.name}
+                          meta={[al.artist, al.year ? String(al.year) : null, al.songCount ? `${al.songCount} 首` : null].filter(Boolean).join(' · ')}
                           onPress={() => nav.navigate('ProviderDetail', {
                             acctId: acct.id, kind: 'album', id: al.id, name: al.name, cover: al.cover,
                             sub: [al.artist, al.songCount ? `${al.songCount}首` : null].filter(Boolean).join(' · ') || undefined,
                           })} />
                       ))}
                     </Rail>
-                  )}
+                  </View>
+                ) : null}
+                <SectionHead title="专辑" count={albums.data?.length} />
+                <SegBody state={albums} onRetry={() => { setAlbums({ data: null, err: null, busy: false }); if (acct) loadAlbums(acct); }}>
+                  {albums.data && albums.data.length === 0 ? <EmptyState icon="music" title="服务器上没有专辑" sub="先在媒体服务器里添加音乐库" /> : null}
+                  <View style={st.albumGrid}>
+                    {(albums.data || []).map(al => (
+                      <T key={al.id} style={[st.albumCell, IS_WEB && st.albumCellWeb]} activeOpacity={0.85} focusStyle={focus(10)}
+                        onPress={() => nav.navigate('ProviderDetail', {
+                          acctId: acct.id, kind: 'album', id: al.id, name: al.name, cover: al.cover,
+                          sub: [al.artist, al.songCount ? `${al.songCount}首` : null].filter(Boolean).join(' · ') || undefined,
+                        })}>
+                        {al.cover ? <Image source={{ uri: al.cover }} style={st.albumCover} />
+                          : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(al.name) as ViewStyle]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
+                        <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{al.name}</Text>
+                        <Text style={[st.albumMeta, IS_HD && bv.albumMeta]} numberOfLines={1}>{al.artist || ''}{al.songCount ? ` · ${al.songCount}首` : ''}</Text>
+                      </T>
+                    ))}
+                  </View>
                 </SegBody>
               </View>
+              ) : null}
 
-              {/* 艺术家 */}
+              {/* 艺术家([v5.6] 维度 tab):全量行式列表 */}
+              {dim === 'artists' ? (
               <View>
-                <SectionHead title="艺术家" count={artists.data?.length} actionLabel={expanded.artists ? '收起' : '全部'} onAction={() => setExpanded(e => ({ ...e, artists: !e.artists }))} />
+                <SectionHead title="艺术家" count={artists.data?.length} />
                 <SegBody state={artists} onRetry={() => { setArtists({ data: null, err: null, busy: false }); if (acct) loadArtists(acct); }}>
                   {artists.data && artists.data.length === 0 ? <EmptyState icon="music" title="没有找到艺术家" /> : null}
-                  {expanded.artists ? (
-                    <>
-                      {(artists.data || []).map(ar => (
-                        <T key={ar.id} style={[st.artistRow, IS_HD && bv.row]} activeOpacity={0.75} focusStyle={focus(12)}
-                          onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'artist', id: ar.id, name: ar.name, sub: ar.albumCount ? `${ar.albumCount} 张专辑` : undefined })}>
-                          {ar.cover ? <Image source={{ uri: ar.cover }} style={[st.artistArt, IS_HD && bv.art]} />
-                            : <View style={[st.artistArt, IS_HD && bv.art, st.artistFallback]}><Text style={st.artistInitial}>{ar.name.slice(0, 1)}</Text></View>}
-                          <View style={{ flex: 1, minWidth: 0 }}>
-                            <Text style={[st.artistName, IS_HD && bv.rowTitle]} numberOfLines={1}>{ar.name}</Text>
-                            <Text style={[st.artistMeta, IS_HD && bv.rowSub]} numberOfLines={1}>{ar.albumCount ? `${ar.albumCount} 张专辑` : PROVIDER_META[acct.type].label}</Text>
-                          </View>
-                          <Icon name="chevronright" size={18} color={C.text3} />
-                        </T>
-                      ))}
-                    </>
-                  ) : (
-                    <Rail>
-                      {(artists.data || []).slice(0, 10).map(ar => (
-                        <PvCard key={ar.id} round cover={ar.cover} name={ar.name} meta={ar.albumCount ? `${ar.albumCount} 张专辑` : ''}
-                          onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'artist', id: ar.id, name: ar.name, sub: ar.albumCount ? `${ar.albumCount} 张专辑` : undefined })} />
-                      ))}
-                    </Rail>
-                  )}
+                  {(artists.data || []).map(ar => (
+                    <T key={ar.id} style={[st.artistRow, IS_HD && bv.row]} activeOpacity={0.75} focusStyle={focus(12)}
+                      onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'artist', id: ar.id, name: ar.name, sub: ar.albumCount ? `${ar.albumCount} 张专辑` : undefined })}>
+                      {ar.cover ? <Image source={{ uri: ar.cover }} style={[st.artistArt, IS_HD && bv.art]} />
+                        : <View style={[st.artistArt, IS_HD && bv.art, st.artistFallback]}><Text style={st.artistInitial}>{ar.name.slice(0, 1)}</Text></View>}
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={[st.artistName, IS_HD && bv.rowTitle]} numberOfLines={1}>{ar.name}</Text>
+                        <Text style={[st.artistMeta, IS_HD && bv.rowSub]} numberOfLines={1}>{ar.albumCount ? `${ar.albumCount} 张专辑` : PROVIDER_META[acct.type].label}</Text>
+                      </View>
+                      <Icon name="chevronright" size={18} color={C.text3} />
+                    </T>
+                  ))}
                 </SegBody>
               </View>
+              ) : null}
 
-              {/* 歌单 */}
+              {/* 歌单([v5.6] 维度 tab):全量行式列表 */}
+              {dim === 'lists' ? (
               <View>
-                <SectionHead title="歌单" count={lists.data?.length} actionLabel={expanded.lists ? '收起' : '全部'} onAction={() => setExpanded(e => ({ ...e, lists: !e.lists }))} />
+                <SectionHead title="歌单" count={lists.data?.length} />
                 <SegBody state={lists} onRetry={() => { setLists({ data: null, err: null, busy: false }); if (acct) loadLists(acct); }}>
                   {lists.data && lists.data.length === 0 ? <EmptyState icon="music" title="服务器上没有歌单" sub="在媒体服务器或 amcfy 等客户端里创建" /> : null}
-                  {(expanded.lists ? lists.data || [] : (lists.data || []).slice(0, 6)).map(pl => (
+                  {(lists.data || []).map(pl => (
                     <T key={pl.id} style={[st.plRow, IS_HD && bv.row]} activeOpacity={0.75} focusStyle={focus(12)}
                       onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'playlist', id: pl.id, name: pl.name, cover: pl.cover, sub: pl.songCount ? `${pl.songCount} 首` : undefined })}>
                       {pl.cover ? <Image source={{ uri: pl.cover }} style={[st.artistArt, IS_HD && bv.art]} />
@@ -958,14 +1137,9 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                       <Icon name="chevronright" size={18} color={C.text3} />
                     </T>
                   ))}
-                  {(lists.data?.length || 0) > 6 ? (
-                    <T style={sec.moreRow} focusStyle={focus(10)} onPress={() => setExpanded(e => ({ ...e, lists: !e.lists }))}>
-                      <Text style={sec.moreText}>{expanded.lists ? '收起' : `展开全部 ${lists.data!.length} 个歌单`}</Text>
-                      <Icon name="chevronright" size={13} color={C.text2} />
-                    </T>
-                  ) : null}
                 </SegBody>
               </View>
+              ) : null}
             </>
           )}
         </ScrollView>
@@ -1226,6 +1400,37 @@ const sec = StyleSheet.create({
   dualCover: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   dualTitle: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '600' },
   dualMeta: { color: C.text2, fontSize: 11, lineHeight: 15, marginTop: 2 },
+});
+
+// [v5.6 1010·LEO 基准稿] 第三方页 v5 样式:phead(品牌标+状态点辉光)/能力芯片/维度 tabs/英雄卡 st 内嵌粗体
+const pv = StyleSheet.create({
+  phead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  pheadLogo: { width: 44, height: 44, borderRadius: 13, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  pheadLogoHD: { width: 52, height: 52, borderRadius: 16 },
+  pheadNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  pheadName: { color: C.text, fontSize: 19, lineHeight: 25, fontWeight: '800', flexShrink: 1 },
+  pheadNameHD: { fontSize: 22, lineHeight: 29 },
+  pheadSub: { color: C.text3, fontSize: 11.5, lineHeight: 16, marginTop: 2 },
+  dot: { width: 9, height: 9, borderRadius: 5, flexShrink: 0, shadowOpacity: 0.8, shadowRadius: 6, shadowOffset: { width: 0, height: 0 }, elevation: 2 }, // 状态点+辉光(shadowColor 随状态内联)
+  pheadBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke, alignItems: 'center', justifyContent: 'center' },
+  pheadBtnHD: { width: 42, height: 42, borderRadius: 12 },
+  heroStB: { fontWeight: '800', color: '#FFFFFF' }, // 英雄卡 st 行内粗体(统计数,基准稿 <b> 同形)
+  caps: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  cap: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 26, paddingHorizontal: 10, borderRadius: 999, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke },
+  capDim: { opacity: 0.45 },
+  capDot: { width: 5, height: 5, borderRadius: 3 },
+  capT: { color: C.text2, fontSize: 11, fontWeight: '600' },
+  capTOn: { color: C.text },
+  dimtabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  dimtab: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 32, paddingHorizontal: 13, borderRadius: 10, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke },
+  dimtabHD: { height: 40, paddingHorizontal: 16 },
+  dimtabOn: { backgroundColor: C.brand, borderColor: C.brand },
+  dimtabT: { color: C.text2, fontSize: 12.5, fontWeight: '600' },
+  dimtabTOn: { color: C.onBrand, fontWeight: '700' },
+  dimtabCnt: { color: C.text3, fontSize: 10.5, fontVariant: ['tabular-nums'] },
+  dimtabCntOn: { color: C.onBrand },
+  dimtabOff: { opacity: 0.4 },
+  dimtabTOff: { color: C.text3, fontSize: 12.5, fontWeight: '600' },
 });
 
 // navigation 注册用包装（native-stack 组件类型兼容）

@@ -87,7 +87,9 @@ export function LibActions({ actions }: { actions: LibQuickAction[] }) {
 }
 
 // ── [v5.5 1010] 双渐变英雄卡+双入口(三库页共用;老板令:统计在卡内不放页顶;自适应:HD/web 并排、phone 堆叠) ──
-export type HeroGrad = 'gold' | 'violet' | 'green' | 'teal' | 'blue' | 'sunset';
+export type HeroGrad = 'gold' | 'violet' | 'green' | 'teal' | 'blue' | 'sunset'
+// [v5.6 1010] 品牌渐变档:第三方单源页源身份卡用(spec④ 品牌映射;plex=金直接复用 gold 不另设档)
+  | 'emby' | 'jellyfin' | 'navidrome' | 'subsonic' | 'webdav' | 'tingfeng';
 const HERO_GRADS: Record<HeroGrad, [string, string, string]> = {
   gold: ['#8a6d2f', '#c9a24d', '#e8cf8a'],
   violet: ['#4a3a8f', '#6f5bc4', '#9d8fe0'],
@@ -95,6 +97,13 @@ const HERO_GRADS: Record<HeroGrad, [string, string, string]> = {
   teal: ['#16697a', '#2a9db3', '#6fd0dd'],
   blue: ['#2a4a8f', '#4a72c9', '#89a9e8'],
   sunset: ['#8f4a2a', '#c97a3d', '#e8b06f'],
+  // [v5.6 1010] 品牌渐变:基准稿品牌 token(emby/nas/tingfeng 原值)+jellyfin/navidrome/subsonic 按系配色(暗→中→亮三段)
+  emby: ['#5b9146', '#78b357', '#a5d98b'],
+  jellyfin: ['#7a4a9e', '#9d6fc4', '#c9aee8'],
+  navidrome: ['#2a6e8f', '#4a8fb3', '#8fc6e0'],
+  subsonic: ['#2a6e8f', '#4a8fb3', '#8fc6e0'],
+  webdav: ['#3a5a8f', '#5578b8', '#8faee0'],
+  tingfeng: ['#8f5a3a', '#c9894a', '#e8c08a'],
 };
 export interface LibHero { grad: HeroGrad; big: string; st: React.ReactNode; mini?: string; icon?: IconName; onPress?: () => void; disabled?: boolean }
 
