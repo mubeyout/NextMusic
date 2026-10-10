@@ -120,7 +120,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
     })),
     ...syncPls.filter(u => !localGridNames.has(u.name)).map(u => {
       const songs = (u.list || []).map(lxToApp);
-      return { key: u.id, name: u.name, count: songs.length, img: songs[0]?.img, songs };
+      return { key: u.id, name: u.name, count: songs.length, img: (u as { cover?: string }).cover || songs[0]?.img, songs }; // [识别补全 1010] 服务端动态派生封面优先(存量歌单快照无 img 根治)
     }),
   ];
 
