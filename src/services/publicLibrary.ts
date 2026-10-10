@@ -10,7 +10,9 @@ import type { SongItem } from './server';
 import { toSongItem, type LibSong, type LibAlbum, type LibArtist } from './myLibrary';
 
 export interface PubScanStatus { running: boolean; startedAt: number; lastError: string | null; syncedAt: number; songs: number; albums: number; artists: number; totalBytes: number }
-export interface PubSummary { name: string; scan: PubScanStatus; sources?: Record<string, string> | null }
+// [1010 崩溃修复] sources value 线上实为对象({name,...})而非 string(类型与运行时不符→chips 直接渲染对象炸 React#31);联合类型+pubSrcName 归一
+export type PubSourceMeta = string | { name?: string; label?: string };
+export interface PubSummary { name: string; scan: PubScanStatus; sources?: Record<string, PubSourceMeta> | null }
 export interface PubEntryState { authorized: boolean; showEntry: boolean; summary: PubSummary | null }
 
 // ── 入口态(轻订阅 store:三端入口+账号设置行共用) ──
@@ -131,10 +133,17 @@ export const pubLib = {
 /** 公共曲库歌 → SongItem(_lib='public' 随歌携带:队列/跨页播放 URL 域不丢) */
 export function pubToSongItem(l: LibSong): SongItem { return toSongItem(l, 'public'); }
 
+/** 源名归一(1010):string 直用;对象取 name/label;空回退 key——防对象进 Text 炸 React#31 */
+export function pubSrcName(v: PubSourceMeta | undefined | null, k = ''): string {
+  if (typeof v === 'string' && v) return v;
+  if (v && typeof v === 'object') { const n = v.name ?? v.label; if (n) return n; }
+  return k;
+}
+
 /** 副行源名(v2.2 多源:歌.sourceName 优先 → summary.sources 映射 → 都没有留位不显) */
 export function pubSourceName(song: LibSong, summary: PubSummary | null): string | undefined {
   const ext = song as LibSong & { sourceName?: string; source?: string };
   if (ext.sourceName) return ext.sourceName;
-  if (summary?.sources && ext.source && summary.sources[ext.source]) return summary.sources[ext.source];
+  if (summary?.sources && ext.source && summary.sources[ext.source]) return pubSrcName(summary.sources[ext.source], ext.source) || undefined;
   return undefined;
 }

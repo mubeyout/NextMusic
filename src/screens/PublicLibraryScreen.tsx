@@ -17,7 +17,7 @@ import { LibBanner, LibActions, HomeSection, HomeRail, RailCard, ChipsRow } from
 import { AzIndex, azGroup, useAzJump } from '../components/AzIndex'; // ⑤-4 A-Z 字母索引条
 import { usePlayer } from '../state/PlayerProvider';
 import { coverUrl, setActiveLib, type LibSong, type LibAlbum, type LibArtist } from '../services/myLibrary';
-import { pubLib, pubCheck, pubToSongItem, pubSourceName, usePubEntry } from '../services/publicLibrary';
+import { pubLib, pubCheck, pubToSongItem, pubSourceName, pubSrcName, usePubEntry } from '../services/publicLibrary';
 import { DiscCard, SongRow } from './MyLibraryScreen';
 
 const IS_WEB = Platform.OS === 'web';
@@ -172,7 +172,7 @@ export function PublicLibraryScreen() {
     : '管理员共享曲库';
   const songsCount = scan && typeof scan.songs === 'number' ? scan.songs.toLocaleString() : String(songs?.length || 0); // [1010] 宫格计数
   // [二波①] 源筛选复用既有 srcFilter(L134);组件级 srcChips 供页顶常驻行(songs 体内有局部同名表,作用域隔离)
-  const srcChips = [{ key: 'all', label: '全部' }, ...srcEntries.map(([id, name]) => ({ key: id, label: `仅${name}` }))];
+  const srcChips = [{ key: 'all', label: '全部' }, ...srcEntries.map(([id, name]) => ({ key: id, label: `仅${pubSrcName(name, id)}` }))];
   const homeBlock = entry.authorized ? (
     <View style={{ gap: 12, marginBottom: 4 }}>
       <View style={[d.homeWrap, IS_HD && d.homeWrapHD]}>
@@ -326,7 +326,7 @@ export function PublicLibraryScreen() {
     if (songs === null) return <SkelWall />;
     const srcChips = [
       { key: 'all', label: '全部' },
-      ...Object.entries(summary?.sources || {}).map(([k, v]) => ({ key: k, label: v || k })),
+      ...Object.entries(summary?.sources || {}).map(([k, v]) => ({ key: k, label: pubSrcName(v, k) })), // [1010 崩溃修复] v 可能是对象——pubSrcName 归一,回退 key
     ];
     const shownSongs = srcFilter === 'all' ? songs : songs.filter(s => (s as LibSong & { source?: string }).source === srcFilter);
     // [老板 1010 对齐设计] 全部歌曲 A-Z 索引:按歌名首字母分块(复用专辑/歌手同款 AzIndex+跳转)
