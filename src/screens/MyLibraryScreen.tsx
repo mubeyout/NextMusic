@@ -55,6 +55,14 @@ export function DiscCard({ name, sub, cover, count, round, focusable, onPress, u
 }) {
   const [g1, g2] = gradOf(name);
   const dim = unknown ? { opacity: 0.75 } : undefined;
+  // [审计P0·批A 1010] 自适应列宽:首帧 31% 测出父宽→按宽分档列基(≥1500→15%六列/≥1100→18%五列/≥800→23%四列/≥560→31%三列/窄→48%两列)
+  // 六屏墙+四详情头一处修——替换固定三列百分比(老板令:宽度自适应优先于形态硬切)
+  const [basis, setBasis] = useState<string | null>(null);
+  const measure = (e: { nativeEvent: { layout: { width: number } } }) => {
+    if (basis != null) return;
+    const parent = e.nativeEvent.layout.width / 0.31;
+    setBasis(parent >= 1500 ? '15%' : parent >= 1100 ? '18%' : parent >= 800 ? '23%' : parent >= 560 ? '31%' : '48%');
+  };
   const sleeve = (
     <View style={[d.sleeve, round && d.sleeveRound, { aspectRatio: 1 } as never, unknown && d.sleeveUnknown]}>
       {cover ? (
@@ -74,23 +82,28 @@ export function DiscCard({ name, sub, cover, count, round, focusable, onPress, u
       {sub ? <Text style={d.discSub} numberOfLines={1}>{sub}</Text> : null}
     </View>
   );
+  // [批A] 外层 View 承宽(onLayout 测父宽)+内层触填满——HDTouch/TO 均不承宽职责
   if (IS_HD || focusable) {
     return (
-      <HDTouch style={d.disc as never} onPress={onPress} focusStyle={d.discFocus} focusBg={undefined}>
-        {sleeve}{label}
-      </HDTouch>
+      <View style={[d.disc, basis != null && { width: basis }] as never} onLayout={measure}>
+        <HDTouch style={{ width: '100%', gap: 7 } as never} onPress={onPress} focusStyle={d.discFocus} focusBg={undefined}>
+          {sleeve}{label}
+        </HDTouch>
+      </View>
     );
   }
   // A7 按压态:缩放反馈(Animated.Value,零 re-render)
   const pv = useRef(new Animated.Value(1)).current;
   return (
-    <AnimatedTouchableOpacity
-      style={[d.disc as never, { transform: [{ scale: pv }] }] as never}
-      onPress={onPress}
-      onPressIn={() => Animated.spring(pv, { toValue: 0.96, useNativeDriver: Platform.OS !== 'web', speed: 50, bounciness: 4 }).start()}
-      onPressOut={() => Animated.spring(pv, { toValue: 1, useNativeDriver: Platform.OS !== 'web', speed: 50, bounciness: 4 }).start()}
-      activeOpacity={1}
-    >{sleeve}{label}</AnimatedTouchableOpacity>
+    <View style={[d.disc, basis != null && { width: basis }] as never} onLayout={measure}>
+      <AnimatedTouchableOpacity
+        style={[{ width: '100%', gap: 7 }, { transform: [{ scale: pv }] }] as never}
+        onPress={onPress}
+        onPressIn={() => Animated.spring(pv, { toValue: 0.96, useNativeDriver: Platform.OS !== 'web', speed: 50, bounciness: 4 }).start()}
+        onPressOut={() => Animated.spring(pv, { toValue: 1, useNativeDriver: Platform.OS !== 'web', speed: 50, bounciness: 4 }).start()}
+        activeOpacity={1}
+      >{sleeve}{label}</AnimatedTouchableOpacity>
+    </View>
   );
 }
 

@@ -1,5 +1,6 @@
 // 媒体库详情页（amcfy 式即点即播）：专辑 / 服务器歌单 → 曲目列表；艺术家 → 专辑网格
 // 替代原「点专辑弹 5 钮对话框」——看得到曲目、能单曲点播，导入/下载降级为次级动作
+import { useGridBasis } from '../components/GridBasis';
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -55,6 +56,7 @@ export function ProviderDetailScreen() {
   const acct = providers.get(p.acctId);
 
   const [loading, setLoading] = useState(true);
+  const albumGridB = useGridBasis(); // [批B 1010] 列基自适应
   const [err, setErr] = useState<string | null>(null);
   const [songs, setSongs] = useState<SongItem[]>([]);
   const [albums, setAlbums] = useState<PvAlbum[]>([]); // artist 模式
@@ -137,10 +139,10 @@ export function ProviderDetailScreen() {
           </View>
         ) : isArtist ? (
           albums.length ? (
-            <View style={st.albumGrid}>
+            <View style={st.albumGrid} onLayout={albumGridB.onLayout}>
               {albums.map(al => (
                 <T
-                  key={al.id} style={[st.albumCell, IS_WEB && st.albumCellWeb]} activeOpacity={0.85} focusStyle={focus(10)}
+                  key={al.id} style={[st.albumCell, { width: albumGridB.basis }]} activeOpacity={0.85} focusStyle={focus(10)}
                   onPress={() => nav.navigate('ProviderDetail', {
                     acctId: p.acctId, kind: 'album', id: al.id, name: al.name,
                     cover: al.cover, sub: `${al.year || ''}${al.songCount ? ` ${al.songCount}首` : ''}`.trim() || undefined,

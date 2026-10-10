@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, type ViewStyle, ScrollView, TouchableOpacity, Image, ActivityIndicator, Dimensions, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useGridBasis } from '../components/GridBasis';
 import { Icon, BrandIcon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { Platform } from 'react-native';
@@ -447,6 +448,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
   const [songs, setSongs] = useState<SegState<SongItem[]>>({ data: null, err: null, busy: false });
   const [lists, setLists] = useState<SegState<PvPlaylist[]>>({ data: null, err: null, busy: false });
   const [swSheet, setSwSheet] = useState(false);
+  const albumGridB = useGridBasis(); // [批B 1010] 第三方网格列基自适应(替 IS_WEB 15.5% 硬切)
   // [v5.6 1010] 维度 tabs 当前项(songs/albums/artists/lists;收藏/文件夹/电台=后续批能力,本批恒灰)
   const [dimTab, setDimTab] = useState<DimKey>('albums');
   // [v5.6 1010] 最新入库(Items/Latest):仅 emby/jf 引擎有此端点(能力表驱动);拉不到不渲染副卡,不造假数据
@@ -1007,9 +1009,9 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                   <View>
                     <SectionHead title="我的歌单" count={mine.length} actionLabel={expanded.tfMine ? '收起' : '全部'} onAction={() => setExpanded(e => ({ ...e, tfMine: !e.tfMine }))} />
                     {expanded.tfMine ? (
-                      <View style={st.albumGrid}>
+                      <View style={st.albumGrid} onLayout={albumGridB.onLayout}>
                         {mine.map(pl => (
-                          <T key={pl.id} style={[st.albumCell, IS_WEB && st.albumCellWeb]} activeOpacity={0.85} focusStyle={focus(10)} onPress={() => toDetail(pl)}>
+                          <T key={pl.id} style={[st.albumCell, { width: albumGridB.basis }]} activeOpacity={0.85} focusStyle={focus(10)} onPress={() => toDetail(pl)}>
                             {pl.cover ? <Image source={{ uri: pl.cover }} style={st.albumCover} />
                               : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name) as ViewStyle]}><Icon name="music" size={22} color="#ffffffb3" /></View>}
                             <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{pl.name}</Text>
@@ -1028,9 +1030,9 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                   <View>
                     <SectionHead title="推荐歌单" count={recs.length} actionLabel={expanded.tfRecs ? '收起' : '全部'} onAction={() => setExpanded(e => ({ ...e, tfRecs: !e.tfRecs }))} />
                     {expanded.tfRecs ? (
-                      <View style={st.albumGrid}>
+                      <View style={st.albumGrid} onLayout={albumGridB.onLayout}>
                         {recs.map(pl => (
-                          <T key={pl.id} style={[st.albumCell, IS_WEB && st.albumCellWeb]} activeOpacity={0.85} focusStyle={focus(10)} onPress={() => toDetail(pl)}>
+                          <T key={pl.id} style={[st.albumCell, { width: albumGridB.basis }]} activeOpacity={0.85} focusStyle={focus(10)} onPress={() => toDetail(pl)}>
                             {pl.cover ? <Image source={{ uri: pl.cover }} style={st.albumCover} />
                               : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name) as ViewStyle]}><Icon name="music" size={22} color="#ffffffb3" /></View>}
                             <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{pl.name}</Text>
@@ -1048,9 +1050,9 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                   <View>
                     <SectionHead title="排行榜" count={tops.length} actionLabel={expanded.tfTops ? '收起' : '全部'} onAction={() => setExpanded(e => ({ ...e, tfTops: !e.tfTops }))} />
                     {expanded.tfTops ? (
-                      <View style={st.albumGrid}>
+                      <View style={st.albumGrid} onLayout={albumGridB.onLayout}>
                         {tops.map(pl => (
-                          <T key={pl.id} style={[st.albumCell, IS_WEB && st.albumCellWeb]} activeOpacity={0.85} focusStyle={focus(10)} onPress={() => toDetail(pl)}>
+                          <T key={pl.id} style={[st.albumCell, { width: albumGridB.basis }]} activeOpacity={0.85} focusStyle={focus(10)} onPress={() => toDetail(pl)}>
                             {pl.cover ? <Image source={{ uri: pl.cover }} style={st.albumCover} />
                               : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name) as ViewStyle]}><Icon name="music" size={22} color="#ffffffb3" /></View>}
                             <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{pl.name}</Text>
@@ -1129,9 +1131,9 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                 <SectionHead title="专辑" count={albums.data?.length} />
                 <SegBody state={albums} onRetry={() => { setAlbums({ data: null, err: null, busy: false }); if (acct) loadAlbums(acct); }}>
                   {albums.data && albums.data.length === 0 ? <EmptyState icon="music" title="服务器上没有专辑" sub="先在媒体服务器里添加音乐库" /> : null}
-                  <View style={st.albumGrid}>
+                  <View style={st.albumGrid} onLayout={albumGridB.onLayout}>
                     {(albums.data || []).map(al => (
-                      <T key={al.id} style={[st.albumCell, IS_WEB && st.albumCellWeb]} activeOpacity={0.85} focusStyle={focus(10)}
+                      <T key={al.id} style={[st.albumCell, { width: albumGridB.basis }]} activeOpacity={0.85} focusStyle={focus(10)}
                         onLongPress={caps.radio ? () => playRadio(al.id, al.name, 'album', al.artist) : undefined}
                         onPress={() => nav.navigate('ProviderDetail', {
                           acctId: acct.id, kind: 'album', id: al.id, name: al.name, cover: al.cover,
