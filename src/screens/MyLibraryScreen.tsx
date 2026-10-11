@@ -71,8 +71,9 @@ export function DiscCard({ name, sub, cover, count, round, focusable, onPress, o
       {count !== undefined && <View style={d.cntWrap}><Text style={d.cnt}>{count} 首</Text></View>}
     </View>
   );
+  // [老板 1011 12:46] 文字区定高(JSX 内禁行注释——曾渲染成卡内可见文本,老板 15:57 DOM 实锤)
   const label = (
-    <View style={{ width: '100%', minHeight: 34 } as never}> // [老板 1011 12:46] 文字区定高:sub 有无不再高低卡
+    <View style={{ width: '100%', minHeight: 34, paddingHorizontal: SP.sm, paddingTop: 2, paddingBottom: 6 } as never}>
       <Text style={d.discName} numberOfLines={1}>{name}</Text>
       {sub ? <Text style={d.discSub} numberOfLines={1}>{sub}</Text> : null}
     </View>
@@ -81,7 +82,7 @@ export function DiscCard({ name, sub, cover, count, round, focusable, onPress, o
   if (IS_HD || focusable) {
     return (
       <View style={cellStyle as never} onLayout={measure}>
-        <HDTouch ref={elRef as never} style={{ width: '100%', gap: SP.sm } as never} onPress={onPress} onLongPress={onLongPress} focusStyle={d.discFocus} focusBg={undefined} {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}>
+        <HDTouch ref={elRef as never} style={{ width: '100%', gap: SP.sm, backgroundColor: C.surface, borderRadius: 12, overflow: 'hidden' } as never} onPress={onPress} onLongPress={onLongPress} focusStyle={d.discFocus} focusBg={undefined} {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}>
           {sleeve}{label}
         </HDTouch>
       </View>
@@ -92,7 +93,7 @@ export function DiscCard({ name, sub, cover, count, round, focusable, onPress, o
   return (
     <View style={cellStyle as never} onLayout={measure}>
       <AnimatedTouchableOpacity
-        style={[{ width: '100%', gap: SP.sm }, { transform: [{ scale: pv }] }] as never}
+        style={[{ width: '100%', gap: SP.sm, backgroundColor: C.surface, borderRadius: 12, overflow: 'hidden' }, { transform: [{ scale: pv }] }] as never}
         onPress={onPress}
         onLongPress={onLongPress}
         onPressIn={() => Animated.spring(pv, { toValue: 0.96, useNativeDriver: Platform.OS !== 'web', speed: 50, bounciness: 4 }).start()}

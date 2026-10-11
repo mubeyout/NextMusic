@@ -517,7 +517,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(async (d: unknown) => {
         const items = (Array.isArray(d) ? d : ((d as { Items?: Record<string, unknown>[] }).Items || [])) as Record<string, unknown>[];
-        const list: PvAlbum[] = items.map(it => ({
+        const list: PvAlbum[] = items.filter(it => !/\.(mp4|mkv|avi|ts|mov|flv|webm|m2ts|wmv)$/i.test(String(it.Name || ''))).map(it => ({ // [老板 1011 15:57] 视频伪专辑过滤
             id: String(it.Id), name: String(it.Name || ''),
             artist: it.AlbumArtist ? String(it.AlbumArtist)
               : (Array.isArray(it.Artists) && (it.Artists as unknown[]).length ? String((it.Artists as unknown[])[0]) : undefined),

@@ -443,7 +443,8 @@ export const providerApi = {
     }
     if (PROTOCOL[a.type] === 'emby' || PROTOCOL[a.type] === 'jellyfin') {
       const d = (await embyFetch(a, `/Users/${a.userId}/Items?IncludeItemTypes=MusicAlbum&Recursive=true&SortBy=SortName&Limit=300&Fields=PrimaryImageAspectRatio,ImageTags`)) as { Items?: Record<string, unknown>[] };
-      const list = (d.Items || []).map(it => ({
+      // [老板 1011 15:57] 视频伪专辑过滤:音乐库混扫目录时文件夹分组名=视频文件名([ANi]...mp4)冒充专辑
+      const list = (d.Items || []).filter(it => !/\.(mp4|mkv|avi|ts|mov|flv|webm|m2ts|wmv)$/i.test(String(it.Name || ''))).map(it => ({
         id: String(it.Id), name: String(it.Name || ''),
         artist: it.AlbumArtist ? String(it.AlbumArtist) : (it.Artists ? String((it.Artists as string[])[0] || '') : undefined),
         songCount: it.ChildCount ? Number(it.ChildCount) : undefined,
