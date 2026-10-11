@@ -269,6 +269,33 @@ async function subCall<T = unknown>(a: ProviderAcct, method: string, extra: Reco
 }
 
 // ---------- Emby / Jellyfin ----------
+// [老板 1011 11:35] Emby 专辑封面兜底:服务端 MusicAlbum 多无 Primary(无 folder.jpg/未刮削)但歌曲有嵌入图——
+// 一次补查全库 Audio 的 ImageTags 建 AlbumId→首曲封面 映射(5min TTL 缓存),三处专辑封面共用
+let embyArtCache: { key: string; at: number; map: Map<string, string> } | null = null;
+async function embySongArtByAlbum(a: ProviderAcct): Promise<Map<string, string>> {
+  const key = a.id;
+  if (embyArtCache && embyArtCache.key === key && Date.now() - embyArtCache.at < 5 * 60_000) return embyArtCache.map;
+  const map = new Map<string, string>();
+  try {
+    const d = (await embyFetch(a, `/Users/${a.userId}/Items?IncludeItemTypes=Audio&Recursive=true&Limit=2000&Fields=ImageTags`)) as { Items?: Record<string, unknown>[] };
+    for (const it of d.Items || []) {
+      const alb = String(it.AlbumId || '');
+      if (!alb || map.has(alb)) continue;
+      if ((it.ImageTags as Record<string, string> | undefined)?.Primary) {
+        map.set(alb, `${embyRoot(a)}/Items/${it.Id}/Images/Primary?maxWidth=300${a.token ? `&api_key=${a.token}` : ''}`);
+      }
+    }
+  } catch { /* 兜底失败=维持无封面 */ }
+  embyArtCache = { key, at: Date.now(), map };
+  return map;
+}
+/** 专辑列表缺封面时用专辑内首曲嵌入图兜底(emby/jf;三处共用:albums/artistAlbums/最近入库) */
+export async function embyAlbumArtFill(a: ProviderAcct, list: { id: string; cover?: string }[]): Promise<void> {
+  if (PROTOCOL[a.type] !== 'emby' && PROTOCOL[a.type] !== 'jellyfin') return;
+  if (!list.some(al => !al.cover)) return;
+  const map = await embySongArtByAlbum(a);
+  for (const al of list) { const c = map.get(al.id); if (c) al.cover = c; }
+}
 function embyRoot(a: ProviderAcct): string {
   if (a.root) return a.root;
   return a.type === 'emby' ? `${norm(a.base)}/emby` : norm(a.base);
@@ -416,13 +443,15 @@ export const providerApi = {
     }
     if (PROTOCOL[a.type] === 'emby' || PROTOCOL[a.type] === 'jellyfin') {
       const d = (await embyFetch(a, `/Users/${a.userId}/Items?IncludeItemTypes=MusicAlbum&Recursive=true&SortBy=SortName&Limit=300&Fields=PrimaryImageAspectRatio,ImageTags`)) as { Items?: Record<string, unknown>[] };
-      return (d.Items || []).map(it => ({
+      const list = (d.Items || []).map(it => ({
         id: String(it.Id), name: String(it.Name || ''),
         artist: it.AlbumArtist ? String(it.AlbumArtist) : (it.Artists ? String((it.Artists as string[])[0] || '') : undefined),
         songCount: it.ChildCount ? Number(it.ChildCount) : undefined,
         year: it.ProductionYear ? Number(it.ProductionYear) : undefined,
         cover: ((it.ImageTags as Record<string, string> | undefined)?.Primary) ? `${embyRoot(a)}/Items/${it.Id}/Images/Primary?maxWidth=300${a.token ? `&api_key=${a.token}` : ''}` : undefined, // 仅 Primary 存在才构造(无封面请求 404→灰块)
       }));
+      await embyAlbumArtFill(a, list); // [老板 1011 11:35] 专辑缺封面→专辑内首曲嵌入图兜底
+      return list;
     }
     return [];
   },
@@ -467,12 +496,14 @@ export const providerApi = {
     }
     if (PROTOCOL[a.type] === 'emby' || PROTOCOL[a.type] === 'jellyfin') {
       const d = (await embyFetch(a, `/Users/${a.userId}/Items?IncludeItemTypes=MusicAlbum&Recursive=true&AlbumArtistIds=${artistId}&SortBy=ProductionYear&SortOrder=Descending&Limit=100`)) as { Items?: Record<string, unknown>[] };
-      return (d.Items || []).map(it => ({
+      const list = (d.Items || []).map(it => ({
         id: String(it.Id), name: String(it.Name || ''),
         songCount: it.ChildCount ? Number(it.ChildCount) : undefined,
         year: it.ProductionYear ? Number(it.ProductionYear) : undefined,
         cover: ((it.ImageTags as Record<string, string> | undefined)?.Primary) ? `${embyRoot(a)}/Items/${it.Id}/Images/Primary?maxWidth=300${a.token ? `&api_key=${a.token}` : ''}` : undefined, // 仅 Primary 存在才构造(无封面请求 404→灰块)
       }));
+      await embyAlbumArtFill(a, list); // [老板 1011 11:35] 同款兜底
+      return list;
     }
     return [];
   },

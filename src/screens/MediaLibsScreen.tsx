@@ -27,7 +27,7 @@ import { usePlayer } from '../state/PlayerProvider';
 import { library } from '../state/library';
 import { enqueueDownload, downloads as dlStore } from '../services/downloads';
 import {
-  providers, providerApi, PROVIDER_META, PROTOCOL,
+  providers, providerApi, PROVIDER_META, PROTOCOL, embyAlbumArtFill,
   type ProviderAcct, type ProviderType, type PvArtist, type PvAlbum, type PvPlaylist,
 } from '../services/providers';
 import { localLib, checkLocalLib, type LocalLibConfig } from '../services/localLibrary';
@@ -524,10 +524,9 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
     const q = a.token ? `&api_key=${encodeURIComponent(a.token)}` : ''; // query token:web 端 <img> 带不了 header,同既有封面 URL 先例
     fetch(`${root}/Users/${a.userId}/Items/Latest?IncludeItemTypes=MusicAlbum&Limit=12${q}`)
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then((d: unknown) => {
+      .then(async (d: unknown) => {
         const items = (Array.isArray(d) ? d : ((d as { Items?: Record<string, unknown>[] }).Items || [])) as Record<string, unknown>[];
-        setLatest({
-          data: items.map(it => ({
+        const list: PvAlbum[] = items.map(it => ({
             id: String(it.Id), name: String(it.Name || ''),
             artist: it.AlbumArtist ? String(it.AlbumArtist)
               : (Array.isArray(it.Artists) && (it.Artists as unknown[]).length ? String((it.Artists as unknown[])[0]) : undefined),
@@ -535,9 +534,9 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
             year: it.ProductionYear ? Number(it.ProductionYear) : undefined,
             cover: (it.ImageTags as Record<string, string> | undefined)?.Primary
               ? `${root}/Items/${it.Id}/Images/Primary?maxWidth=300${q}` : undefined,
-          })),
-          err: null, busy: false,
-        });
+        }));
+        await embyAlbumArtFill(a, list); // [老板 1011 11:35] 缺封面→专辑内首曲嵌入图兜底
+        setLatest({ data: list, err: null, busy: false });
       })
       .catch(e => setLatest(s => (s.data ? s : { data: null, err: (e as Error).message, busy: false })));
   };
