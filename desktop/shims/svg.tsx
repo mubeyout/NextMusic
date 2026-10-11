@@ -32,5 +32,8 @@ export const Stop = tag('stop');
 export const LinearGradient = tag('linearGradient');
 export const Rect = tag('rect');
 export const G = tag('g');
+// v3.38 黑胶封面窗口所需( VinylDisc 盘心 clip+image);web 端 React 映射 SVG 原生标签
+export const ClipPath = tag('clipPath');
+export const Image = tag('image');
 
-export default { SvgXml, Svg, Circle, Path, Defs, RadialGradient, Stop, LinearGradient, Rect, G };
+export default { SvgXml, Svg, Circle, Path, Defs, RadialGradient, Stop, LinearGradient, Rect, G, ClipPath, Image };

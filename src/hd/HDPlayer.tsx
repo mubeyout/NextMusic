@@ -34,7 +34,9 @@ import { hdNav } from './hdnav';
 //   共享 vinylDiscSpec/VINYL_SPEC(单源,勿在此手写胶纹);外阴影归容器 View(见 vinylZone 内包装)
 // v3.37(老板 1011 换盘):盘心换款——黑盘身+灰过渡环+银盘心+小轴孔(参考图:黑外圈/灰中环/银心),
 //   盘心不再贴封面(浅色封面「盘面发白」根除);半径/渐变同样取 spec 单源
-function HD_VINYL_SVG(size = 300, playing?: boolean): React.ReactNode {
+// v3.38(老板 1011 二稿):盘心改「镂空窗口展示封面」——灰环做框,封面正圆裁切嵌入;无图回退银
+//   label;轴孔改银色(参考图 central silver spindle hole)
+function HD_VINYL_SVG(size = 300, playing?: boolean, img?: string): React.ReactNode {
   const h = React.createElement;
   const spec = vinylDiscSpec(size);
   const c = spec.center;
@@ -47,16 +49,18 @@ function HD_VINYL_SVG(size = 300, playing?: boolean): React.ReactNode {
   return h('svg', { width: size, height: size, viewBox: `0 0 ${size} ${size}`, className: 'nm-vinyl-spin' + (playing ? '' : ' nm-vinyl-paused'),
     // [Fix 2026-09-14] 删根元素 boxShadow:svg 根上 border-radius 不裁剪阴影(Chromium)→方形半透明阴影框随唱片旋转,浅色背景下可见(老板:半透明矩形跟着旋转)
     style: { position: 'absolute', top: 0, left: 0 } as never },
-    h('defs', null, base, sheen, silver),
+    h('defs', null, base, sheen, silver,
+      img ? h('clipPath', { key: 'winClip', id: 'vdHdWin' }, h('circle', { key: 'wc', cx: c, cy: c, r: spec.labelR })) : null),
     /* [老板 1010] 盘体回几何绘制(draft-2 单源;盘图实测不达标) */
     h('circle', { key: 'base', cx: c, cy: c, r: spec.radius, fill: 'url(#vdHdBase)' }),
     ...spec.fineGrooves.map((r, i) => h('circle', { key: 'f' + i, cx: c, cy: c, r, fill: 'none', stroke: VINYL_SPEC.fine.stroke, strokeOpacity: String(VINYL_SPEC.fine.opacity), strokeWidth: VINYL_SPEC.fine.width })),
     ...spec.wideBands.map((r, i) => h('circle', { key: 'w' + i, cx: c, cy: c, r, fill: 'none', stroke: VINYL_SPEC.wide.stroke, strokeOpacity: String(VINYL_SPEC.wide.opacity), strokeWidth: VINYL_SPEC.wide.width })),
     h('circle', { key: 'rim', cx: c, cy: c, r: spec.rimR, fill: 'none', stroke: VINYL_SPEC.rim.stroke, strokeOpacity: String(VINYL_SPEC.rim.opacity), strokeWidth: VINYL_SPEC.rim.width }),
-    /* 换款盘心(老板 1011 参考图):灰过渡环→银盘心(径向渐变抛光)→分界细描边→小轴孔;不再贴封面 */
+    /* 换款盘心(v3.38 二稿):灰过渡环做框→镂空窗口嵌封面(无图回退银 label)→银色小轴孔 */
     h('circle', { key: 'lead', cx: c, cy: c, r: spec.leadR, fill: VINYL_SPEC.leadRing.fill, stroke: VINYL_SPEC.leadRing.stroke, strokeWidth: 1 }),
-    h('circle', { key: 'lbl', cx: c, cy: c, r: spec.labelR, fill: 'url(#vdHdSilver)', stroke: VINYL_SPEC.label.stroke, strokeWidth: 1 }),
-    h('circle', { key: 'hole', cx: c, cy: c, r: spec.holeR, fill: VINYL_SPEC.hole.fill }),
+    img ? h('image', { key: 'lblImg', href: img, xlinkHref: img, x: c - spec.labelR, y: c - spec.labelR, width: spec.labelR * 2, height: spec.labelR * 2, preserveAspectRatio: 'xMidYMid slice', clipPath: 'url(#vdHdWin)' }) : h('circle', { key: 'lbl', cx: c, cy: c, r: spec.labelR, fill: 'url(#vdHdSilver)', stroke: VINYL_SPEC.label.stroke, strokeWidth: 1 }),
+    img ? h('circle', { key: 'lblRing', cx: c, cy: c, r: spec.labelR, fill: 'none', stroke: VINYL_SPEC.label.stroke, strokeWidth: 1 }) : null,
+    h('circle', { key: 'hole', cx: c, cy: c, r: spec.holeR, fill: VINYL_SPEC.hole.fill, stroke: VINYL_SPEC.hole.stroke, strokeWidth: 1 }),
     h('circle', { key: 'sheen', cx: c, cy: c, r: spec.radius, fill: 'url(#vdHdSheen)' }),
   );
 }
@@ -309,13 +313,13 @@ export function HDPlayer() {
               /* v3.36:容器层外阴影(draft-2 .vinyl:0 24px 70px 黑55%@230,按盘径等比;圆形 borderRadius
                  使阴影随盘缘正圆——旋转不变,svg 根不背锅见 Fix 2026-09-14) */
               <View style={{ position: 'absolute', top: '50%', left: '50%', width: vinylSize, height: vinylSize, marginLeft: -Math.round(vinylSize / 2), marginTop: -Math.round(vinylSize / 2), borderRadius: Math.round(vinylSize / 2), boxShadow: `0 ${Math.round(24 * vinylSize / 230)}px ${Math.round(70 * vinylSize / 230)}px rgba(0,0,0,.55)`, transform: [{ rotate: String(spinDeg) }] }}>
-                {HD_VINYL_SVG(vinylSize, playing)}
+                {HD_VINYL_SVG(vinylSize, playing, current.img ? fixCoverUrl(current.img) : undefined)}
               </View>
             ) : (
               <View style={st.vinylWrap}>
-                {/* v3.37 换款黑胶(与 web/手机同几何);react-native-svg 仅原生分支渲染,web 走 DOM 版(React#130 前科) */}
+                {/* v3.38 换款黑胶二稿:镂空窗口嵌封面(与 web/手机同几何);react-native-svg 仅原生分支渲染,web 走 DOM 版(React#130 前科) */}
                 <Animated.View style={{ width: 228, height: 228, transform: [{ rotate: spinDeg }] }}>
-                  <VinylDisc size={228} />
+                  <VinylDisc size={228} img={current.img ? fixCoverUrl(current.img) : undefined} />
                 </Animated.View>
               </View>
             )}
