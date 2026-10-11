@@ -3,7 +3,7 @@
 // 播放/下载统一走 streamUrlFor() + authHeadersFor()（听风除外：直链需异步现取，PlayerProvider 前置分支处理）
 import { createMMKV } from 'react-native-mmkv';
 import type { SongItem } from './server';
-import { tfLogin, tfCall, tfToSongItem, tfUserLib, type TfSess, type TfSongList, type TfPlaylist } from './tingfeng';
+import { tfLogin, tfCall, tfToSongItem, tfUserLib, type TfSess, type TfSongList, type TfPlaylist, tfThumbOf } from './tingfeng';
 import { V2, V2_ENGINES, isV2Type, plexManual, type StreamResult } from './providers-v2';
 
 const kv = createMMKV({ id: 'nextmusic-providers' });
@@ -557,10 +557,16 @@ export const providerApi = {
         // 用户库（听风侧 tingfeng_data，与听风 web 端同库双向）
         let lib: Awaited<ReturnType<typeof tfUserLib>> | null = null;
         try { lib = await tfUserLib(s); } catch { /* 用户库拉不到不影响公共榜单 */ }
+        // [老板 1011 16:05 统一封面规则] 列表封面解析链:首子项自带 thumbnail → songDetail 补全(tfThumbOf 内存缓存,旧数据缺图时补) → 灰底兜底不造假
+        const cOf = (arr: { id?: number | string; thumbnail?: string }[]): Promise<string | undefined> | string | undefined => {
+          const f = arr[0];
+          return f ? (f.thumbnail || tfThumbOf(s, f.id)) : undefined;
+        };
+        const [cLiked, cRecent, cDl] = lib ? await Promise.all([cOf(lib.liked), cOf(lib.recent), cOf(lib.downloaded)]) : [undefined, undefined, undefined];
         const user: PvPlaylist[] = lib ? [
-          { id: 'liked:', name: '我喜欢的音乐', songCount: lib.liked.length, cover: lib.liked[0]?.thumbnail },
-          { id: 'recent:', name: '最近播放', songCount: lib.recent.length, cover: lib.recent[0]?.thumbnail },
-          { id: 'dl:', name: 'NAS 曲库', songCount: lib.downloaded.length, cover: lib.downloaded[0]?.thumbnail }, // [老板 1011 11:27] NAS 曲库入口(听风自动落库曲)
+          { id: 'liked:', name: '我喜欢的音乐', songCount: lib.liked.length, cover: await cLiked },
+          { id: 'recent:', name: '最近播放', songCount: lib.recent.length, cover: await cRecent },
+          { id: 'dl:', name: 'NAS 曲库', songCount: lib.downloaded.length, cover: await cDl }, // [老板 1011 11:27] NAS 曲库入口(听风自动落库曲)
           ...lib.playlists.map(p => ({ id: `mine:${p.id}`, name: p.name, songCount: p.songs.length, cover: p.coverUrl || p.songs[0]?.thumbnail })),
         ] : [];
         const tops = await tfCall<TfPlaylist[]>(s, '/api/v1/netease/toplist', { timeout: 20000 });
