@@ -35,6 +35,7 @@ import {
 import { localLib, checkLocalLib, type LocalLibConfig } from '../services/localLibrary';
 import { useSlbEntries, slbRefresh } from '../services/serverLocalLibrary'; // [web]本地曲库(服务器侧目录,升级稿 §二)
 import type { SongItem } from '../services/server';
+import { useHoverCard } from '../hd/hdweb'; // [老板 1011 12:34] 卡片彩色弥散阴影+hover
 
 // 有品牌 logo 的类型用 BrandIcon，其余回退语义图标
 // v3: 媒体库 icon 一律 BrandIcon(品牌图标一一对应)
@@ -1374,20 +1375,36 @@ function PvCard({ cover, name, meta, round, onPress, onLongPress }: {
   cover?: string; name: string; meta?: string; round?: boolean; onPress: () => void; onLongPress?: () => void;
 }) {
   const size = IS_HD ? 148 : (IS_WEB ? 132 : 112);
-  return (
-    <T style={{ width: size, gap: SP.sm }} activeOpacity={0.85} onPress={onPress} onLongPress={onLongPress} focusStyle={focus(10)}>
-      {cover ? (
-        <Image source={{ uri: cover }} style={{ width: size, height: size, borderRadius: round ? size / 2 : 10, backgroundColor: C.surface2 }} />
-      ) : (
+  const { elRef, onHoverIn, onHoverOut, cardStyle } = useHoverCard(name); // [老板 1011 12:34] nm-card 同款
+  if (round) {
+    return (
+      <T style={[{ width: size, gap: 7, alignItems: 'center' }, cardStyle as never]} ref={elRef as never} activeOpacity={0.85} onPress={onPress} onLongPress={onLongPress} focusStyle={focus(10)}
+        {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}>
         <View style={[
-          { width: size, height: size, borderRadius: round ? size / 2 : 10, alignItems: 'center', justifyContent: 'center' },
-          round ? { backgroundColor: C.artTint2 } : { backgroundColor: C.surface2 }, // [老板 1011 12:27] 非圆兜底=黑灰基准(PlCard 同款);圆头像保留 artTint2+首字母
+          { width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+          { backgroundColor: C.artTint2 },
         ]}>
-          {round ? <Text style={st.artistInitial}>{name.slice(0, 1)}</Text> : <Icon name="music" size={22} color={C.text2} />}
+          <Text style={st.artistInitial}>{name.slice(0, 1)}</Text>
+        </View>
+        <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{name}</Text>
+        {meta ? <Text style={[st.albumMeta, IS_HD && bv.albumMeta]} numberOfLines={1}>{meta}</Text> : null}
+      </T>
+    );
+  }
+  return (
+    <T style={[{ width: size, backgroundColor: C.surface, borderRadius: 12, overflow: 'hidden' }, cardStyle as never]} ref={elRef as never} activeOpacity={0.85} onPress={onPress} onLongPress={onLongPress} focusStyle={focus(10)}
+      {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}>
+      {cover ? (
+        <Image source={{ uri: cover }} style={{ width: size, height: size, backgroundColor: C.surface2 }} />
+      ) : (
+        <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2 }]}>
+          <Icon name="music" size={22} color={C.text2} />
         </View>
       )}
-      <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{name}</Text>
-      {meta ? <Text style={[st.albumMeta, IS_HD && bv.albumMeta]} numberOfLines={1}>{meta}</Text> : null}
+      <View style={{ padding: 8, gap: 3 }}>
+        <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{name}</Text>
+        {meta ? <Text style={[st.albumMeta, IS_HD && bv.albumMeta]} numberOfLines={1}>{meta}</Text> : null}
+      </View>
     </T>
   );
 }

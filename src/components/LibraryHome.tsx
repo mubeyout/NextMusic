@@ -11,6 +11,8 @@ import { C } from '../theme/tokens';
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
 import { GUTTER, focus } from '../hd/hdstyle';
+import { Platform } from 'react-native';
+import { useHoverCard } from '../hd/hdweb'; // [老板 1011 12:34] 卡片彩色弥散阴影+hover
 
 export type LibKind = 'local' | 'cloud' | 'public' | 'provider';
 
@@ -237,36 +239,44 @@ export function HomeSection({ title, count, actionLabel, onAction, children }: {
 
 // 横滑卡轨(最近添加等)
 export function HomeRail({ children }: { children: React.ReactNode }) {
+  // [老板 1011 12:34] 出血 rail(为我推荐同款):取消页边距,卡横滑到屏缘
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: IS_HD ? 14 : 10 }}>
-      {children}
-    </ScrollView>
+    <View style={{ marginHorizontal: -16 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: IS_HD ? 14 : 10, paddingLeft: 16, paddingRight: 12, paddingVertical: 10 }}>
+        {children}
+      </ScrollView>
+    </View>
   );
 }
 
 // 横滑封面卡:封面或兜底+名+副行(固定宽;DiscCard 的 31% 宽度不适配横滑轨)
+// [老板 1011 12:34] 卡架构统一(为我推荐 nm-card 同款):全卡容器+彩色弥散投影+hover 上浮;弃裸封面+悬空文字
 export function RailCard({ cover, name, sub, icon, onPress }: {
   cover?: string | null; name: string; sub?: string; icon?: IconName; onPress?: () => void;
 }) {
   const size = IS_HD ? 150 : 116;
-  const inner = (
-    <>
+  const { elRef, onHoverIn, onHoverOut, cardStyle } = useHoverCard(name);
+  const WrapT = (IS_HD ? HDTouch : TouchableOpacity) as unknown as React.ComponentType<Record<string, unknown>>;
+  return (
+    <WrapT
+      ref={elRef as never}
+      style={[{ width: size, backgroundColor: C.surface, borderRadius: 12, overflow: 'hidden' }, cardStyle as never]}
+      activeOpacity={0.85} onPress={onPress}
+      {...(IS_HD ? { focusStyle: focus(10) } : {})}
+      {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}
+    >
       {cover ? (
-        <Image source={{ uri: cover }} style={{ width: size, height: size, borderRadius: 10, backgroundColor: C.surface2 }} />
+        <Image source={{ uri: cover }} style={{ width: size, height: size }} />
       ) : (
-        <View style={[lh.railFallback, { width: size, height: size }]}>
-          <Icon name={icon || 'music'} size={24} color={C.text2} /> {/* [老板 1011 12:27] 黑灰底基准 icon 色(PlCard 同款) */}
+        <View style={[lh.railFallback, { width: size, height: size, borderRadius: 0 }]}>
+          <Icon name={icon || 'music'} size={24} color={C.text2} />
         </View>
       )}
-      <Text style={[lh.railName, { maxWidth: size }]} numberOfLines={1}>{name}</Text>
-      {sub ? <Text style={[lh.railSub, { maxWidth: size }]} numberOfLines={1}>{sub}</Text> : null}
-    </>
-  );
-  if (IS_HD) return <HDTouch style={{ width: size, gap: 5 }} onPress={onPress} focusStyle={focus(12)}>{inner}</HDTouch>;
-  return (
-    <TouchableOpacity style={{ width: size, gap: 5 }} onPress={onPress} activeOpacity={0.82} disabled={!onPress}>
-      {inner}
-    </TouchableOpacity>
+      <View style={{ padding: 8, gap: 3 }}>
+        <Text style={lh.railName} numberOfLines={1}>{name}</Text>
+        {sub ? <Text style={[lh.railSub, { maxWidth: size - 16 }]} numberOfLines={1}>{sub}</Text> : null}
+      </View>
+    </WrapT>
   );
 }
 

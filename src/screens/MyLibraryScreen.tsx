@@ -20,6 +20,7 @@ import { usePlayer } from '../state/PlayerProvider';
 import { useUploadSheet } from './UploadSheet';
 import { IS_HD as APP_IS_HD } from '../services/appversion';
 import { PageHeader } from '../components/PageChrome';
+import { useHoverCard } from '../hd/hdweb'; // [老板 1011 12:34] 墙卡彩色弥散阴影
 
 const IS_HD = APP_IS_HD;
 const IS_WEB = Platform.OS === 'web';
@@ -54,6 +55,7 @@ export function DiscCard({ name, sub, cover, count, round, focusable, onPress, u
   focusable?: boolean; onPress?: () => void; unknown?: boolean; size?: number; fixedWidth?: number;
 }) {
   const [g1, g2] = gradOf(name);
+  const { elRef, onHoverIn, onHoverOut, cardStyle } = useHoverCard(name); // [老板 1011 12:34] nm-card 同款投影+hover
   const dim = unknown ? { opacity: 0.75 } : undefined;
   // [审计P0·批A 1010] 自适应列宽:首帧 31% 测出父宽→按宽分档列基(≥1500→15%六列/≥1100→18%五列/≥800→23%四列/≥560→31%三列/窄→48%两列)
   // 六屏墙+四详情头一处修——替换固定三列百分比(老板令:宽度自适应优先于形态硬切)
@@ -65,7 +67,7 @@ export function DiscCard({ name, sub, cover, count, round, focusable, onPress, u
   };
   const cellStyle = fixedWidth != null ? [{ width: fixedWidth, gap: SP.sm }] : [d.disc, basis != null && { width: basis }];
   const sleeve = (
-    <View style={[d.sleeve, round && d.sleeveRound, { aspectRatio: 1 } as never, unknown && d.sleeveUnknown]}>
+    <View style={[d.sleeve, round && d.sleeveRound, { aspectRatio: 1 } as never, unknown && d.sleeveUnknown, cardStyle as never]}>
       {cover ? (
         <Image source={{ uri: cover }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 } as never} resizeMode="cover" />
       ) : (
@@ -87,7 +89,7 @@ export function DiscCard({ name, sub, cover, count, round, focusable, onPress, u
   if (IS_HD || focusable) {
     return (
       <View style={cellStyle as never} onLayout={measure}>
-        <HDTouch style={{ width: '100%', gap: SP.sm } as never} onPress={onPress} focusStyle={d.discFocus} focusBg={undefined}>
+        <HDTouch ref={elRef as never} style={{ width: '100%', gap: SP.sm } as never} onPress={onPress} focusStyle={d.discFocus} focusBg={undefined} {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}>
           {sleeve}{label}
         </HDTouch>
       </View>

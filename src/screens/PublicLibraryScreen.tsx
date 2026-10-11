@@ -23,6 +23,7 @@ import { pubLib, pubCheck, pubToSongItem, pubSourceName, usePubEntry } from '../
 import { DiscCard } from './MyLibraryScreen';
 import { SongRow } from '../components/SongRow'; // [批次1·P1-1] 通用件直引(局部版已退役)
 import { ArtistRow } from '../components/ArtistRow'; // [批次1] 歌手行统一件(替本页自造 rowCard 行)
+import { useHoverCard } from '../hd/hdweb'; // [老板 1011 12:34] 卡片彩色弥散阴影+hover
 
 // ── 封面渐变兜底(与我的曲库 gradOf 同源族:无封面条目按名哈希取渐变,禁 emoji/死灰块) ──
 const COVER_GRADS: [string, string][] = [
@@ -386,34 +387,36 @@ function RandCard({ song, onPress }: { song: LibSong; onPress: () => void }) {
   const size = IS_HD ? 96 : 78;
   const ext = song as LibSong & { coverHttp?: string };
   const cover = ext.coverHttp || (song.hasCover ? coverUrl(song.filename, 'public') : null);
-  const [g1, g2] = gradOf(song.album || song.singer);
-  const inner = (
-    <>
-      <View style={{ width: size, height: size, borderRadius: 10, backgroundColor: C.surface2, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
+  const [g1] = gradOf(song.album || song.singer);
+  const { elRef, onHoverIn, onHoverOut, cardStyle } = useHoverCard(song.name); // [老板 1011 12:34] nm-card 同款
+  return (
+    <TouchableOpacity ref={elRef as never}
+      style={[{ width: size, backgroundColor: C.surface, borderRadius: 12, overflow: 'hidden' }, cardStyle as never]}
+      activeOpacity={0.85} onPress={onPress}
+      {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}>
+      <View style={{ width: size, height: size, backgroundColor: C.surface2, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
         {cover ? (
           <Image source={{ uri: cover }} style={ABS} resizeMode="cover" />
         ) : (
-          <>
-            <View style={[ABS, { backgroundColor: g1, opacity: 0.55 }]} />
-            <View style={[ABS, { backgroundColor: g2, opacity: 0.35 }]} />
-            <Icon name="music" size={22} color="#ffffffcc" />
-          </>
+          <View style={[ABS, { backgroundColor: g1, opacity: 0.55 }]} />
         )}
       </View>
-      <Text style={d.railNameT} numberOfLines={1}>{song.name}</Text>
-      <Text style={d.railSubT} numberOfLines={1}>{song.singer || '未知歌手'}</Text>
-    </>
+      <View style={{ padding: 6, gap: 2 }}>
+        <Text style={d.randName} numberOfLines={1}>{song.name}</Text>
+        <Text style={d.randSub} numberOfLines={1}>{song.singer}</Text>
+      </View>
+    </TouchableOpacity>
   );
-  if (IS_HD) return <HDTouch style={{ width: size, gap: SP.sm }} onPress={onPress} focusStyle={focus(12)}>{inner}</HDTouch>;
-  return <TouchableOpacity style={{ width: size, gap: SP.sm }} onPress={onPress} activeOpacity={0.82}>{inner}</TouchableOpacity>;
 }
 
 // ⑤歌手圆头像(参考 MediaLibsScreen PvCard round 用法:封面圆图,无封面 artTint2 底+首字母 artistInitial)
 // fill=true=展开格内自适应宽(100%+aspectRatio);否则 rail 固定 px
 function ArtistCircle({ a, fill, onPress }: { a: LibArtist; fill?: boolean; onPress: () => void }) {
+  const { elRef, onHoverIn, onHoverOut, cardStyle } = useHoverCard(a.name); // [老板 1011 12:34] nm-card 同款投影
   const wStyle = fill ? { width: '100%' } : { width: IS_HD ? 96 : 72 };
-  const inner = (
-    <>
+  return (
+    <TouchableOpacity ref={elRef as never} style={[wStyle, { gap: 6, alignItems: 'center' }, cardStyle as never]} activeOpacity={0.85} onPress={onPress}
+      {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}>
       <View style={[wStyle, { aspectRatio: 1, borderRadius: 999, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }, !a.coverFile && { backgroundColor: C.artTint2 }]}>
         {a.coverFile ? (
           <Image source={{ uri: coverUrl(a.coverFile, 'public') }} style={ABS} resizeMode="cover" />
@@ -421,12 +424,9 @@ function ArtistCircle({ a, fill, onPress }: { a: LibArtist; fill?: boolean; onPr
           <Text style={[d.artInit, fill && d.artInitBig]}>{a.name.slice(0, 1)}</Text>
         )}
       </View>
-      <Text style={[d.railNameT, !fill && { alignSelf: 'center' }]} numberOfLines={1}>{a.name}</Text>
-      <Text style={[d.railSubT, !fill && { alignSelf: 'center' }]} numberOfLines={1}>{a.songCount} 首</Text>
-    </>
+      <Text style={d.acName} numberOfLines={1}>{a.name}</Text>
+    </TouchableOpacity>
   );
-  if (IS_HD) return <HDTouch style={[{ gap: SP.sm }, wStyle]} onPress={onPress} focusStyle={focus(999)}>{inner}</HDTouch>;
-  return <TouchableOpacity style={[{ gap: SP.sm }, wStyle]} onPress={onPress} activeOpacity={0.82}>{inner}</TouchableOpacity>;
 }
 
 // ⑤歌手行列表(≤8 位)→ [批次1] 统一件 src/components/ArtistRow(本页局部版退役)
@@ -682,7 +682,10 @@ const d = StyleSheet.create({
   cwall: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl, paddingTop: 2, paddingBottom: 8 },
   // ⑤歌手行列表(≤8)→ [批次1] 统一件 ArtistRow(样式随局部版退役)
   rows: { gap: SP.md },
-  artInit: { color: C.brandText, fontSize: 17, fontWeight: '700' }, // 参考 MediaLibsScreen st.artistInitial
+  artInit: { color: C.brandText, fontSize: 17, fontWeight: '700' },
+  randName: { color: C.text, fontSize: 10.5, lineHeight: 14, fontWeight: '600' },
+  acName: { color: C.text, fontSize: 12, lineHeight: 16, fontWeight: '600', textAlign: 'center', maxWidth: '100%' },
+  randSub: { color: C.text3, fontSize: 9, lineHeight: 12 }, // 参考 MediaLibsScreen st.artistInitial
   artInitBig: { fontSize: 24 },
   // rail 卡文字
   railNameT: { color: C.text, fontSize: FS.body, lineHeight: 16, fontWeight: '600', maxWidth: IS_HD ? 96 : 78 },
