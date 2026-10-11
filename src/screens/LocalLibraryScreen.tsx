@@ -18,7 +18,8 @@ import { enqueueUpload } from '../state/UploadQueue';
 import { useUploadSheet } from './UploadSheet';
 import { IS_HD } from '../services/appversion';
 import { GUTTER } from '../hd/hdstyle';
-import { LibBanner, LibActions, HomeSection, HomeRail, RailCard } from '../components/LibraryHome'; // ⑤/⑦ 全库首页化骨架
+import { LibBanner, LibActions, HomeSection, RailCard } from '../components/LibraryHome';
+import { GridWall } from '../components/GridWall'; // [老板 1011 15:55] rail→网格墙 // ⑤/⑦ 全库首页化骨架
 import {
   localLib, localArtists, localAlbums, localSingerTracks, localAlbumTracks,
   localFolderView, checkLocalLib, rescanLocalLibrary,
@@ -331,12 +332,12 @@ export function LocalLibraryScreen({ route }: { route: { params: { libId: string
           ) : null}
           {rootDirs.length ? (
             <HomeSection title="按文件夹">
-              <HomeRail>
+              <GridWall>
                 {rootDirs.map(dd => (
-                  <RailCard key={dd.path} icon="folder" name={dd.name} sub={`${dd.count} 首`}
+                  <RailCard fill key={dd.path} icon="folder" name={dd.name} sub={`${dd.count} 首`}
                     onPress={() => { exitSel(); setView('folders'); setDirPath(dd.path); }} />
                 ))}
-              </HomeRail>
+              </GridWall>
             </HomeSection>
           ) : null}
         </View>

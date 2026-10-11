@@ -252,8 +252,9 @@ export function HomeRail({ children }: { children: React.ReactNode }) {
 
 // 横滑封面卡:封面或兜底+名+副行(固定宽;DiscCard 的 31% 宽度不适配横滑轨)
 // [老板 1011 12:34] 卡架构统一(为我推荐 nm-card 同款):全卡容器+彩色弥散投影+hover 上浮;弃裸封面+悬空文字
-export function RailCard({ cover, name, sub, icon, onPress }: {
+export function RailCard({ cover, name, sub, icon, onPress, fill }: {
   cover?: string | null; name: string; sub?: string; icon?: IconName; onPress?: () => void;
+  fill?: boolean; // [老板 1011 15:55] 网格墙模式:width '100%'+封面 aspectRatio 1(GridWall 列内撑满)
 }) {
   const size = IS_HD ? CARD.rail.hd : (Platform.OS === 'web' ? CARD.rail.web : CARD.rail.phone); // [老板 1011 15:39] rail 卡宽唯一源(与 PvCard 同规格)
   const { elRef, onHoverIn, onHoverOut, cardStyle } = useHoverCard(name);
@@ -261,15 +262,15 @@ export function RailCard({ cover, name, sub, icon, onPress }: {
   return (
     <WrapT
       ref={elRef as never}
-      style={[{ width: size, backgroundColor: C.surface, borderRadius: 12, overflow: 'hidden' }, cardStyle as never]}
+      style={[{ width: fill ? '100%' : size, backgroundColor: C.surface, borderRadius: 12, overflow: 'hidden' }, cardStyle as never]}
       activeOpacity={0.85} onPress={onPress}
       {...(IS_HD ? { focusStyle: focus(10) } : {})}
       {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}
     >
       {cover ? (
-        <Image source={{ uri: cover }} style={{ width: size, height: size }} />
+        <Image source={{ uri: cover }} style={fill ? { width: '100%', aspectRatio: 1 } : { width: size, height: size }} />
       ) : (
-        <View style={[lh.railFallback, { width: size, height: size, borderRadius: 0 }]}>
+        <View style={[lh.railFallback, fill ? { width: '100%', aspectRatio: 1, borderRadius: 0 } : { width: size, height: size, borderRadius: 0 }]}>
           <Icon name={icon || 'music'} size={24} color={C.text2} />
         </View>
       )}

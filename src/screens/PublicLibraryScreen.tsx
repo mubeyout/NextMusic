@@ -15,7 +15,8 @@ import { C, CARD, FS, FW, SP } from '../theme/tokens';
 import { IS_HD } from '../services/appversion';
 import { PageHeader, EmptyState } from '../components/PageChrome';
 import { toast } from '../components/Dialog';
-import { LibraryHome, HomeSection, HomeRail, RailCard } from '../components/LibraryHome'; // ①②段骨架+分区头/横滑轨
+import { LibraryHome, HomeSection, RailCard } from '../components/LibraryHome'; // [老板 1011 15:55] HomeRail→GridWall 网格化
+import { GridWall } from '../components/GridWall'; // ①②段骨架+分区头/横滑轨
 import { useGridBasis } from '../components/GridBasis'; // ⑤歌手展开圆墙列基自适应(15/18/23/31/48% 档位表)
 import { usePlayer } from '../state/PlayerProvider';
 import { coverUrl, setActiveLib, type LibSong, type LibAlbum, type LibArtist } from '../services/myLibrary';
@@ -260,23 +261,23 @@ export function PublicLibraryScreen() {
         {/* ③ 随机来点 rail(首拉失败/空库不渲染;tap=以本批为队列播放) */}
         {randSongs && randSongs.length ? (
           <HomeSection title="随机来点" actionLabel={railBusy ? '换一批…' : '换一批'} onAction={loadRandRail}>
-            <HomeRail>
+            <GridWall>
               {randSongs.map((s, i) => (
                 <RandCard key={s.id} song={s} onPress={() => play(randSongs, i)} />
               ))}
-            </HomeRail>
+            </GridWall>
           </HomeSection>
         ) : null}
 
         {/* ④ 专辑区:rail(RailCard 与为我推荐同规格);「查看全部」路由跳全墙页(老板 1011:原地展开样式突变,卡片突然变大) */}
         {albums === null ? <SkelRail /> : albums.length ? (
           <HomeSection title="专辑" count={albumsTotal || albums.length} actionLabel="查看全部" onAction={() => nav.navigate('PublicLibWall', { kind: 'albums' })}>
-            <HomeRail>
+            <GridWall>
               {albums.slice(0, albRailN).map(a => (
-                <RailCard key={a.id} cover={a.coverFile ? coverUrl(a.coverFile, 'public') : null} name={a.name}
+                <RailCard fill key={a.id} cover={a.coverFile ? coverUrl(a.coverFile, 'public') : null} name={a.name}
                   sub={`${a.artist || '未知'} · ${a.songCount} 首`} onPress={() => enterAlbum(a)} />
               ))}
-            </HomeRail>
+            </GridWall>
           </HomeSection>
         ) : null}
 
@@ -293,11 +294,11 @@ export function PublicLibraryScreen() {
             </HomeSection>
           ) : (
             <HomeSection title="歌手" count={artistsTotal || artists.length} actionLabel="查看全部" onAction={() => nav.navigate('PublicLibWall', { kind: 'artists' })}>
-              <HomeRail>
+              <GridWall>
                 {artists.slice(0, 24).map(a => (
-                  <ArtistCircle key={a.id} a={a} onPress={() => enterArtist(a)} />
+                  <ArtistCircle fill key={a.id} a={a} onPress={() => enterArtist(a)} />
                 ))}
-              </HomeRail>
+              </GridWall>
             </HomeSection>
           )
         ) : null}
@@ -375,17 +376,17 @@ export function PublicLibraryScreen() {
 
 // ③随机 rail 小卡:封面直链 coverHttp → 嵌入图 coverUrl → 渐变兜底(名哈希);tap=以本批为队列
 function RandCard({ song, onPress }: { song: LibSong; onPress: () => void }) {
-  const size = IS_HD ? 96 : 78;
+  const size = IS_HD ? 96 : 78; // 非网格场景备用;GridWall 内走 fill 结构
   const ext = song as LibSong & { coverHttp?: string };
   const cover = ext.coverHttp || (song.hasCover ? coverUrl(song.filename, 'public') : null);
   const [g1] = gradOf(song.album || song.singer);
   const { elRef, onHoverIn, onHoverOut, cardStyle } = useHoverCard(song.name); // [老板 1011 12:34] nm-card 同款
   return (
     <TouchableOpacity ref={elRef as never}
-      style={[{ width: size, backgroundColor: C.surface, borderRadius: 12, overflow: 'hidden' }, cardStyle as never]}
+      style={[{ width: '100%', backgroundColor: C.surface, borderRadius: 12, overflow: 'hidden' }, cardStyle as never]}
       activeOpacity={0.85} onPress={onPress}
       {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}>
-      <View style={{ width: size, height: size, backgroundColor: C.surface2, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ width: '100%', aspectRatio: 1, backgroundColor: C.surface2, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
         {cover ? (
           <Image source={{ uri: cover }} style={ABS} resizeMode="cover" />
         ) : (

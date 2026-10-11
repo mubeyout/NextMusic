@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
 import { C, CARD, FS, FW, SP } from '../theme/tokens';
 import { useHoverCard } from '../hd/hdweb'; // [LEO 1011 统一令] nm-card 彩色弥散影+hover
+import { DiscCard } from './MyLibraryScreen'; // [老板 1011 15:49] 专辑卡统一件
 import { PillTabs } from '../components/PillTabs';
 import { SongRow } from '../components/SongRow';
 import { ActionSheet } from '../components/ActionSheet';
@@ -317,23 +318,10 @@ function AllArtistCircle({ a, onPress }: { a: { id: string; name: string; img?: 
   );
 }
 
-// [LEO 1011 统一令] 专辑卡 nm-card 化(RailCard 同构:surface 底/r12/弥散影+hover/封面+文字区)
+// [老板 1011 15:49] 专辑卡统一件 DiscCard(全站专辑卡同构:黑胶窗口+计数徽标+渐变兜底)
 function AllAlbumCard({ al, onPress }: { al: { id: string; name: string; singer?: string; img?: string; source?: string }; onPress: () => void }) {
-  const { elRef, onHoverIn, onHoverOut, cardStyle } = useHoverCard(al.name);
-  const w = CARD.rail.phone; // [老板 1011 15:39] rail 卡宽唯一源
   return (
-    <TouchableOpacity ref={elRef as never}
-      style={[{ width: w, backgroundColor: C.surface, borderRadius: 12, overflow: 'hidden' }, cardStyle as never]}
-      activeOpacity={0.85} onPress={onPress}
-      {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}>
-      {al.img
-        ? <Image source={{ uri: al.img }} style={{ width: w, height: w, backgroundColor: C.surface2 }} />
-        : <View style={{ width: w, height: w, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2 }}><Icon name="music" size={26} color={C.text3} /></View>}
-      <View style={{ padding: SP.sm, gap: SP.xs }}>
-        <Text style={st.allCardName} numberOfLines={1}>{al.name}</Text>
-        {al.singer ? <Text style={st.allCardSub} numberOfLines={1}>{al.singer}</Text> : null}
-      </View>
-    </TouchableOpacity>
+    <DiscCard name={al.name} sub={al.singer} cover={al.img} unknown={!al.img} fixedWidth={CARD.rail.phone} onPress={onPress} />
   );
 }
 

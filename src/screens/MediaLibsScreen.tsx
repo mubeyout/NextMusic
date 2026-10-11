@@ -36,6 +36,7 @@ import { useSlbEntries, slbRefresh } from '../services/serverLocalLibrary'; // [
 import type { SongItem } from '../services/server';
 import { useHoverCard } from '../hd/hdweb';
 import { GridWall } from '../components/GridWall';
+import { DiscCard } from './MyLibraryScreen'; // [老板 1011 15:49] 专辑卡统一件
 import { gradCssOf } from '../theme/grads'; // [老板 1011 15:39] 渐变唯一源
 
 // 有品牌 logo 的类型用 BrandIcon，其余回退语义图标
@@ -1075,11 +1076,11 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                 {/* [老板 1011 11:57] 我的音乐:PvCard 标准规格(与推荐歌单 rail 同款卡同 gap;修间距大卡片小不统一) */}
                 <View>
                   <SectionHead title="我的音乐" />
-                  <Rail>
-                    {tfDl ? <PvCard name="NAS 曲库" meta={tfDl.songCount ? `${tfDl.songCount} 首 · 自动落库` : '暂无落库歌曲'} onPress={() => toDetail(tfDl)} /> : null}
-                    {tfRecent ? <PvCard name="最近播放" meta={tfRecent.songCount ? `${tfRecent.songCount} 首` : '—'} onPress={() => toDetail(tfRecent)} /> : null}
-                    {tfLiked ? <PvCard name="我喜欢的音乐" meta={tfLiked.songCount ? `${tfLiked.songCount} 首` : '—'} onPress={() => toDetail(tfLiked)} /> : null}
-                  </Rail>
+                  <GridWall>
+                    {tfDl ? <PvCard fill name="NAS 曲库" meta={tfDl.songCount ? `${tfDl.songCount} 首 · 自动落库` : '暂无落库歌曲'} onPress={() => toDetail(tfDl)} /> : null}
+                    {tfRecent ? <PvCard fill name="最近播放" meta={tfRecent.songCount ? `${tfRecent.songCount} 首` : '—'} onPress={() => toDetail(tfRecent)} /> : null}
+                    {tfLiked ? <PvCard fill name="我喜欢的音乐" meta={tfLiked.songCount ? `${tfLiked.songCount} 首` : '—'} onPress={() => toDetail(tfLiked)} /> : null}
+                  </GridWall>
                 </View>
 
                 {/* 我的歌单 */}
@@ -1098,7 +1099,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                         ))}
                       </GridWall>
                     ) : (
-                      <Rail>{mine.map(pl => <PvCard key={pl.id} cover={pl.cover} name={pl.name} meta={pl.songCount ? `${pl.songCount} 首` : ''} onPress={() => toDetail(pl)} />)}</Rail>
+                      <GridWall>{mine.map(pl => <PvCard fill key={pl.id} cover={pl.cover} name={pl.name} meta={pl.songCount ? `${pl.songCount} 首` : ''} onPress={() => toDetail(pl)} />)}</GridWall>
                     )}
                   </View>
                 ) : null}
@@ -1118,7 +1119,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                         ))}
                       </GridWall>
                     ) : (
-                      <Rail>{recs.map(pl => <PvCard key={pl.id} cover={pl.cover} name={pl.name} meta={pl.songCount ? `${pl.songCount} 首` : ''} onPress={() => toDetail(pl)} />)}</Rail>
+                      <GridWall>{recs.map(pl => <PvCard fill key={pl.id} cover={pl.cover} name={pl.name} meta={pl.songCount ? `${pl.songCount} 首` : ''} onPress={() => toDetail(pl)} />)}</GridWall>
                     )}
                   </View>
                 ) : null}
@@ -1138,7 +1139,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                         ))}
                       </GridWall>
                     ) : (
-                      <Rail>{tops.map(pl => <PvCard key={pl.id} cover={pl.cover} name={pl.name} onPress={() => toDetail(pl)} />)}</Rail>
+                      <GridWall>{tops.map(pl => <PvCard fill key={pl.id} cover={pl.cover} name={pl.name} onPress={() => toDetail(pl)} />)}</GridWall>
                     )}
                   </View>
                 ) : null}
@@ -1193,17 +1194,17 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                 {latest.data?.length ? (
                   <View style={{ marginBottom: 4 }}>
                     <SectionHead title="最近入库" count={latest.data.length} actionLabel="换一批" onAction={() => { if (acct) loadLatest(acct, true); }} />
-                    <Rail>
+                    <GridWall>
                       {latest.data.map(al => (
-                        <PvCard key={al.id} cover={al.cover} name={al.name}
-                          meta={[al.artist, al.year ? String(al.year) : null, al.songCount ? `${al.songCount} 首` : null].filter(Boolean).join(' · ')}
-                          onLongPress={caps.radio ? () => playRadio(al.id, al.name, 'album', al.artist) : undefined}
+                        <DiscCard fill key={al.id} cover={al.cover} name={al.name} count={al.songCount}
+                          sub={[al.artist, al.year ? String(al.year) : null].filter(Boolean).join(' · ') || undefined}
+                          unknown={!al.cover}
                           onPress={() => nav.navigate('ProviderDetail', {
                             acctId: acct.id, kind: 'album', id: al.id, name: al.name, cover: al.cover,
                             sub: [al.artist, al.songCount ? `${al.songCount}首` : null].filter(Boolean).join(' · ') || undefined,
                           })} />
                       ))}
-                    </Rail>
+                    </GridWall>
                   </View>
                 ) : null}
                 <SectionHead title="专辑" count={albums.data?.length} />
@@ -1236,13 +1237,13 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                   {artists.data && artists.data.length === 0 ? <EmptyState icon="music" title="没有找到艺术家" /> : null}
                   {/* [老板 1010·按源定制] media(emby/jf)艺人=圆头像墙(媒体服务器富布局);lean/generic 保持行列表(导航式精简) */}
                   {pvLayout === 'media' ? (
-                    <Rail>
+                    <GridWall>
                       {(artists.data || []).map(ar => (
-                        <PvCard key={ar.id} round cover={ar.cover} name={ar.name} meta={ar.albumCount ? `${ar.albumCount} 张专辑` : undefined}
+                        <PvCard fill key={ar.id} round cover={ar.cover} name={ar.name} meta={ar.albumCount ? `${ar.albumCount} 张专辑` : undefined}
                           onLongPress={caps.radio ? () => playRadio(ar.id, ar.name, 'artist', ar.name) : undefined}
                           onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'artist', id: ar.id, name: ar.name, sub: ar.albumCount ? `${ar.albumCount} 张专辑` : undefined })} />
                       ))}
-                    </Rail>
+                    </GridWall>
                   ) : (
                   (artists.data || []).map(ar => (
                     <ArtistRow key={ar.id} cover={ar.cover} name={ar.name}
@@ -1351,25 +1352,18 @@ function SectionHead({ title, count, actionLabel, onAction }: {
   );
 }
 
-function Rail({ children }: { children: React.ReactNode }) {
-  return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: IS_HD ? SP.xxl : SP.xl }}>
-      {children}
-    </ScrollView>
-  );
-}
 
-function PvCard({ cover, name, meta, round, onPress, onLongPress }: {
-  cover?: string; name: string; meta?: string; round?: boolean; onPress: () => void; onLongPress?: () => void;
+function PvCard({ cover, name, meta, round, fill, onPress, onLongPress }: {
+  cover?: string; name: string; meta?: string; round?: boolean; fill?: boolean; onPress: () => void; onLongPress?: () => void;
 }) {
   const size = IS_HD ? CARD.rail.hd : (IS_WEB ? CARD.rail.web : CARD.rail.phone); // [老板 1011 15:39] 卡宽唯一源
   const { elRef, onHoverIn, onHoverOut, cardStyle } = useHoverCard(name); // [老板 1011 12:34] nm-card 同款
   if (round) {
     return (
-      <T style={[{ width: size, gap: SP.sm, alignItems: 'center' }, cardStyle as never]} ref={elRef as never} activeOpacity={0.85} onPress={onPress} onLongPress={onLongPress} focusStyle={focus(10)}
+      <T style={[{ width: fill ? '100%' : size, gap: SP.sm, alignItems: 'center' }, cardStyle as never]} ref={elRef as never} activeOpacity={0.85} onPress={onPress} onLongPress={onLongPress} focusStyle={focus(10)}
         {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}>
         <View style={[
-          { width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+          { width: fill ? '100%' : size, aspectRatio: 1, borderRadius: 999, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }, // [老板 1011 15:55] fill=网格墙圆头像(宽随列自适应)
           { backgroundColor: C.artTint2 },
         ]}>
           <Text style={st.artistInitial}>{name.slice(0, 1)}</Text>
@@ -1380,12 +1374,12 @@ function PvCard({ cover, name, meta, round, onPress, onLongPress }: {
     );
   }
   return (
-    <T style={[{ width: size, backgroundColor: C.surface, borderRadius: 12, overflow: 'hidden' }, cardStyle as never]} ref={elRef as never} activeOpacity={0.85} onPress={onPress} onLongPress={onLongPress} focusStyle={focus(10)}
+    <T style={[{ width: fill ? '100%' : size, backgroundColor: C.surface, borderRadius: 12, overflow: 'hidden' }, cardStyle as never]} ref={elRef as never} activeOpacity={0.85} onPress={onPress} onLongPress={onLongPress} focusStyle={focus(10)}
       {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}>
       {cover ? (
-        <Image source={{ uri: cover }} style={{ width: size, height: size, backgroundColor: C.surface2 }} />
+        <Image source={{ uri: cover }} style={fill ? { width: '100%', aspectRatio: 1, backgroundColor: C.surface2 } : { width: size, height: size, backgroundColor: C.surface2 }} />
       ) : (
-        <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2 }]}>
+        <View style={[fill ? { width: '100%', aspectRatio: 1 } : { width: size, height: size }, { alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2 }]}>
           <Icon name="music" size={22} color={C.text2} />
         </View>
       )}

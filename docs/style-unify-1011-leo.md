@@ -96,3 +96,17 @@
 4. tsc 复跑 0 错（EXIT 0）
 
 遗留建议（需老板定夺）：text3 作为全局辅助色在浅色下对比 3:1 偏弱（与桌面版 :root 同源值）——若要整体提深需与桌面版同步改 token，本轮未动。
+
+## 六、第三轮 1011 15:50-15:55（老板令「建立统一 token 变量，跨页面零差距」）
+
+1. **渐变唯一源** `src/theme/grads.ts`：GRAD.cover（7 组沉稳深色系）+ GRAD.quick（6 组）+ gradOf/gradColorOf/gradCssOf——收掉 8 处散落重复定义；同名字任意页面取到同一组渐变（跨页视觉一致）
+2. **GRID token**（网格系统唯一源）：wallTiers 墙列基档/hdMin 128 密网格/gutterHD 22/pageHD·pagePhone·libPhone 26-20-16 页边距；GridBasis、hdstyle.GUTTER、GridWall 全接线
+3. **CARD token**（卡宽跨页对齐）：rail 112(phone)/132(web)/148(hd)、mini 80、radius 12/16；RailCard 116→112、150→148，搜索专辑卡/艺人页专辑卡 104→112，DiscCard fixedWidth 同步
+4. **FW 字重 token**：479 处收口（值不变），残留 0
+5. **design-tokens.md** 扩为完整十节体系：间距/字号/字重/字体家族/网格/卡宽/渐变/颜色/组件库/迁移
+6. tsc 0 错（EXIT 0）
+
+## 七、第三轮补充说明（验收指引）
+- 冒烟点：①任意库页/搜索页/艺人页 rail 卡宽度应完全一致（112/148）②同一首歌/专辑名在不同页面封面兜底渐变同色 ③HD/web 墙卡=探索密网格、phone 墙=三列
+- GRID.wallTiers 与 GridBasis.DEFAULT_GRID_TIERS 现为同一引用（改一处全生效）
+- FW 替换为等值替换（'700'→FW.bold='700'），零视觉变化，纯语义收口

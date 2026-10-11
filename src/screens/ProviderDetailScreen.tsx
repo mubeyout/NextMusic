@@ -20,6 +20,7 @@ import { Platform } from 'react-native';
 import { HDTouch } from '../hd/HDTouch';
 import { GUTTER, focus, pageBottom } from '../hd/hdstyle';
 import { GridWall } from '../components/GridWall'; // [老板 1011 15:40] 统一墙卡容器(探索同款)
+import { DiscCard } from './MyLibraryScreen'; // [老板 1011 15:49] 专辑卡统一件
 
 const IS_WEB = Platform.OS === 'web';
 // 触点抽象:HD 用 HDTouch(焦点环),phone 保持 TouchableOpacity——与 MediaLibsScreen 同款
@@ -140,18 +141,12 @@ export function ProviderDetailScreen() {
           albums.length ? (
             <GridWall>
               {albums.map(al => (
-                <T
-                  key={al.id} style={[st.albumCell, (IS_HD || IS_WEB) && st.albumCellFill]} activeOpacity={0.85} focusStyle={focus(10)}
+                <DiscCard fill key={al.id} name={al.name} cover={al.cover} unknown={!al.cover}
+                  sub={[al.year ? String(al.year) : '', al.songCount ? `${al.songCount}首` : ''].filter(Boolean).join(' ') || undefined}
                   onPress={() => nav.navigate('ProviderDetail', {
                     acctId: p.acctId, kind: 'album', id: al.id, name: al.name,
                     cover: al.cover, sub: `${al.year || ''}${al.songCount ? ` ${al.songCount}首` : ''}`.trim() || undefined,
-                  })}
-                >
-                  {al.cover ? <Image source={{ uri: al.cover }} style={st.albumCover} />
-                    : <View style={[st.albumCover, st.coverFallback]}><Icon name="music" size={32} color={C.text2} /></View>}
-                  <Text style={[st.albumName, IS_HD && dv.albumName]} numberOfLines={1}>{al.name}</Text>
-                  <Text style={[st.albumMeta, IS_HD && dv.albumMeta]} numberOfLines={1}>{al.year || ''}{al.songCount ? ` · ${al.songCount}首` : ''}</Text>
-                </T>
+                  })} />
               ))}
             </GridWall>
           ) : <Text style={st.empty}>该艺术家没有专辑</Text>

@@ -41,9 +41,10 @@ const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpaci
 export { setActiveLib } from '../services/myLibrary';
 
 /** 唱片卡(sleeve+黑胶圆+N首徽标;封面缺失=渐变+图标;未知=灰阶)——②本机曲库三视图复用(导出) */
-export function DiscCard({ name, sub, cover, count, round, focusable, onPress, unknown, size = 1, fixedWidth }: {
+export function DiscCard({ name, sub, cover, count, round, focusable, onPress, unknown, size = 1, fixedWidth, fill }: {
   name: string; sub?: string; cover?: string | null; count?: number; round?: boolean;
   focusable?: boolean; onPress?: () => void; unknown?: boolean; size?: number; fixedWidth?: number;
+  fill?: boolean; // [老板 1011 15:49] 网格墙模式:width '100%'(GridWall 列内撑满,跳过 basis 测量)
 }) {
   const [g1, g2] = gradOf(name);
   const { elRef, onHoverIn, onHoverOut, cardStyle } = useHoverCard(name); // [老板 1011 12:34] nm-card 同款投影+hover
@@ -52,11 +53,11 @@ export function DiscCard({ name, sub, cover, count, round, focusable, onPress, u
   // 六屏墙+四详情头一处修——替换固定三列百分比(老板令:宽度自适应优先于形态硬切)
   const [basis, setBasis] = useState<string | null>(null);
   const measure = (e: { nativeEvent: { layout: { width: number } } }) => {
-    if (basis != null || fixedWidth != null) return; // fixedWidth 头图场景不自适应(单卡头按宽分档会算出巨封——墙阈值只适用于多卡墙)
+    if (fill || basis != null || fixedWidth != null) return; // fixedWidth 头图/fill 网格墙场景不自适应
     const parent = e.nativeEvent.layout.width / 0.31;
     setBasis(parent >= 1500 ? '15%' : parent >= 1100 ? '18%' : parent >= 800 ? '23%' : '31%'); // [老板 1011 15:30] 窄屏 48%两列→31%三列:与 GridBasis 默认档/全站歌单网格同大小
   };
-  const cellStyle = fixedWidth != null ? [{ width: fixedWidth, gap: SP.sm }] : [d.disc, basis != null && { width: basis }];
+  const cellStyle = fill ? [{ width: '100%', gap: SP.sm } as never] : fixedWidth != null ? [{ width: fixedWidth, gap: SP.sm }] : [d.disc, basis != null && { width: basis }];
   const sleeve = (
     <View style={[d.sleeve, round && d.sleeveRound, { aspectRatio: 1 } as never, unknown && d.sleeveUnknown, cardStyle as never]}>
       {cover ? (
