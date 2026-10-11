@@ -6,7 +6,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Activi
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon, BrandIcon } from '../theme/Icon';
-import { C, FS, SP } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
 import { SH } from '../hd/hdtokens';
@@ -62,7 +62,7 @@ function ProBadge({ floating }: { floating?: boolean }) {
 const pbSt = StyleSheet.create({
   chip: { borderWidth: 1.2, borderColor: C.brand, backgroundColor: C.brandDim, borderRadius: 6, paddingHorizontal: 5, paddingVertical: 1 },
   floating: { position: 'absolute', top: 8, right: 8 },
-  text: { color: C.brandText, fontSize: FS.xs, fontWeight: '700', letterSpacing: 0.5 },
+  text: { color: C.brandText, fontSize: FS.xs, fontWeight: FW.bold, letterSpacing: 0.5 },
 });
 // 数学居中:onLayout 量容器与内容,translateY 平移——不依赖 flex 引擎任何脾气(vc155 教训)
 function Center({ children }: { children: React.ReactNode }) {
@@ -270,7 +270,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
             <>
             <Center>
               <View style={{ alignItems: 'center', gap: SP.sm }}>
-                <Text style={{ color: C.text, fontSize: FS.h1, fontWeight: '800' }}>接入你的音乐库</Text>
+                <Text style={{ color: C.text, fontSize: FS.h1, fontWeight: FW.heavy }}>接入你的音乐库</Text>
                 <Text style={{ color: C.text3, fontSize: FS.md }}>选择平台 · 自动测试连通后保存</Text>
               </View>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: SP.xxl, marginTop: 26, maxWidth: 400, alignSelf: 'center' }}>
@@ -279,7 +279,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                   <View style={{ width: 74, height: 74, borderRadius: 18, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.stroke }}>
                     <Icon name="folder-music" size={30} color={C.brandText} />
                   </View>
-                  <Text style={{ color: C.text2, fontSize: FS.body, fontWeight: '500' }} numberOfLines={1}>本机曲库</Text>
+                  <Text style={{ color: C.text2, fontSize: FS.body, fontWeight: FW.medium }} numberOfLines={1}>本机曲库</Text>
                 </TouchableOpacity>
                 {/* [web] 本地曲库(服务器侧目录绑定,升级稿 §二;浏览器无设备文件→服务器目录语义) */}
                 {Platform.OS === 'web' ? (
@@ -287,7 +287,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                     <View style={{ width: 74, height: 74, borderRadius: 18, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.brand + '55' }}>
                       <Icon name="server" size={28} color={C.brandText} />
                     </View>
-                    <Text style={{ color: C.text2, fontSize: FS.body, fontWeight: '500' }} numberOfLines={1}>本地曲库</Text>
+                    <Text style={{ color: C.text2, fontSize: FS.body, fontWeight: FW.medium }} numberOfLines={1}>本地曲库</Text>
                   </TouchableOpacity>
                 ) : null}
                 {TYPE_CARDS.map(c => (
@@ -298,7 +298,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                         : <Icon name={c.icon} size={30} color={C.brandText} />}
                       {gated(c.type) ? <ProBadge floating /> : null}
                     </View>
-                    <Text style={{ color: C.text2, fontSize: FS.body, fontWeight: '500' }} numberOfLines={1}>{SHORT_NAME[c.type] ?? c.title}</Text>
+                    <Text style={{ color: C.text2, fontSize: FS.body, fontWeight: FW.medium }} numberOfLines={1}>{SHORT_NAME[c.type] ?? c.title}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -312,14 +312,14 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
               <View style={{ width: '100%', maxWidth: 460, alignSelf: 'center' }}>
                 {/* ②本机曲库添加卡(LEO v2.1 §②:与 Emby/听风同卡同流程,iconpark folder-music 同形;HD/车机不渲染) */}
                 <View style={{ marginBottom: 12 }}>
-                  <Text style={{ color: C.text3, fontSize: FS.body, fontWeight: '700', letterSpacing: 0.6, marginBottom: 6, paddingLeft: 4 }}>本机</Text>
+                  <Text style={{ color: C.text3, fontSize: FS.body, fontWeight: FW.bold, letterSpacing: 0.6, marginBottom: 6, paddingLeft: 4 }}>本机</Text>
                   <TouchableOpacity onPress={() => nav.navigate('LocalLibEdit', {})} activeOpacity={0.75}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xl, backgroundColor: C.surface2, borderRadius: 13, paddingVertical: 6, paddingHorizontal: 12, borderWidth: 1, borderColor: C.stroke }}>
                     <View style={{ width: 30, height: 30, borderRadius: 7, alignItems: 'center', justifyContent: 'center' }}>
                       <Icon name="folder-music" size={24} color={C.brandText} />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={{ color: C.text, fontSize: FS.lg, fontWeight: '600' }}>本机曲库</Text>
+                      <Text style={{ color: C.text, fontSize: FS.lg, fontWeight: FW.semibold }}>本机曲库</Text>
                       <Text style={{ color: C.text3, fontSize: FS.body }} numberOfLines={1}>扫描本设备音乐目录，离线可播</Text>
                     </View>
                     <Icon name="chevronright" size={16} color={C.text3} />
@@ -332,7 +332,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                         <Icon name="server" size={22} color={C.brandText} />
                       </View>
                       <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={{ color: C.text, fontSize: FS.lg, fontWeight: '600' }}>本地曲库</Text>
+                        <Text style={{ color: C.text, fontSize: FS.lg, fontWeight: FW.semibold }}>本地曲库</Text>
                         <Text style={{ color: C.text3, fontSize: FS.body }} numberOfLines={1}>绑定服务器目录，扫描入库即可听</Text>
                       </View>
                       <Icon name="chevronright" size={16} color={C.text3} />
@@ -341,7 +341,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                 </View>
                 {TYPE_GROUPS.map(g => (
                   <View key={g.label} style={{ marginBottom: 12 }}>
-                    <Text style={{ color: C.text3, fontSize: FS.body, fontWeight: '700', letterSpacing: 0.6, marginBottom: 6, paddingLeft: 4 }}>{g.label}</Text>
+                    <Text style={{ color: C.text3, fontSize: FS.body, fontWeight: FW.bold, letterSpacing: 0.6, marginBottom: 6, paddingLeft: 4 }}>{g.label}</Text>
                     {g.items.map(c => (
                       <TouchableOpacity key={c.type} onPress={() => pickType(c.type)} activeOpacity={0.75}
                         style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xl, backgroundColor: C.surface2, borderRadius: 13, paddingVertical: 6, paddingHorizontal: 12, marginBottom: 6 }}>
@@ -350,7 +350,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                           : <Icon name={c.icon} size={24} color={C.brandText} />}
                         <View style={{ flex: 1, minWidth: 0 }}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm }}>
-                            <Text style={{ color: C.text, fontSize: FS.lg, fontWeight: '600' }}>{c.title}</Text>
+                            <Text style={{ color: C.text, fontSize: FS.lg, fontWeight: FW.semibold }}>{c.title}</Text>
                             {gated(c.type) ? <ProBadge /> : null}
                           </View>
                           <Text style={{ color: C.text3, fontSize: FS.body }} numberOfLines={1}>{c.sub}</Text>
@@ -642,7 +642,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 12 },
-  title: { color: C.text, fontSize: FS.h1, fontWeight: '700', flex: 1 }, // lx166 居左 [LEO 1011] 22 档外→h1(20)
+  title: { color: C.text, fontSize: FS.h1, fontWeight: FW.bold, flex: 1 }, // lx166 居左 [LEO 1011] 22 档外→h1(20)
   content: { paddingHorizontal: 16, paddingBottom: 40, gap: SP.lg },
   desc: { color: C.text2, fontSize: FS.sm, lineHeight: 16, textAlign: 'center' }, // v3.32b(老板):描述文字全端居中(Step1/Step2 通用)
 
@@ -651,18 +651,18 @@ const st = StyleSheet.create({
 
   // 类型选择网格（老板 09-18:整页重排版——3 列等高卡，logo 居中，单行截断）
   typeRowCard: { width: 190, height: 210, backgroundColor: C.surface2, borderRadius: 18, alignItems: 'center', justifyContent: 'center', gap: SP.lg, paddingHorizontal: 8 },
-  typeRowTitle: { color: C.text, fontSize: FS.xl, fontWeight: '600', textAlign: 'center', width: '100%' },
+  typeRowTitle: { color: C.text, fontSize: FS.xl, fontWeight: FW.semibold, textAlign: 'center', width: '100%' },
   typeRowSub: { color: C.text3, fontSize: FS.body, textAlign: 'center', width: '100%' },
   typeCardHead: { flexDirection: 'row', alignItems: 'center', gap: SP.md },
-  typeCardTitle: { color: C.text, fontSize: FS.lg, fontWeight: '500' },
+  typeCardTitle: { color: C.text, fontSize: FS.lg, fontWeight: FW.medium },
   typeCardSub: { color: C.text2, fontSize: FS.sm },
-  badge: { color: C.brandSoft, fontSize: FS.sm, fontWeight: '500' },
+  badge: { color: C.brandSoft, fontSize: FS.sm, fontWeight: FW.medium },
 
   // Tab 容器（Figma: #1C1C1C r12 p4，选中页签 #2B2B2B r9 h36）
   tabsWrap: { flexDirection: 'row', backgroundColor: C.elev, borderRadius: 12, padding: 4, gap: SP.xs, height: 44 },
   tabOn: { flex: 1, height: 36, borderRadius: 9, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   tabOff: { flex: 1, height: 36, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
-  tabTextOn: { color: C.text, fontSize: FS.body, fontWeight: '500' },
+  tabTextOn: { color: C.text, fontSize: FS.body, fontWeight: FW.medium },
   tabText: { color: C.text2, fontSize: FS.body },
 
   // 输入卡（Figma: #2B2B2B r12 p10×12）
@@ -675,15 +675,15 @@ const st = StyleSheet.create({
 
   // 测试通过信息卡
   infoCard: { backgroundColor: C.surface2, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, gap: SP.xs },
-  infoTitle: { color: C.text, fontSize: FS.lg, fontWeight: '500' },
+  infoTitle: { color: C.text, fontSize: FS.lg, fontWeight: FW.medium },
 
   // 按钮（Figma: h46 r12；测试 #2B2B2B 白字 / 保存 C.brand 深字）
   btnRow: { flexDirection: 'row', gap: SP.lg, marginTop: 4 },
   btnBusy: { opacity: 0.6 },
   btnGhost: { flex: 1, height: 46, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  btnGhostText: { color: C.text, fontSize: FS.lg, fontWeight: '500' },
+  btnGhostText: { color: C.text, fontSize: FS.lg, fontWeight: FW.medium },
   btnPrimary: { flex: 1.4, height: 46, borderRadius: 12, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
-  btnPrimaryText: { color: C.onBrand, fontSize: FS.lg, fontWeight: '500' },
+  btnPrimaryText: { color: C.onBrand, fontSize: FS.lg, fontWeight: FW.medium },
 });
 
 // HD(车机/TV)样式:一排四张竖版类型卡 + 大表单 + D-pad 可聚焦按钮
@@ -694,7 +694,7 @@ const hdSt = StyleSheet.create({
   },
   typeFocus: { borderWidth: 2.5, borderColor: C.brand, borderRadius: 24 },
   typeIcon: { width: 124, height: 124, borderRadius: 36, backgroundColor: C.brandDim, alignItems: 'center', justifyContent: 'center' },
-  typeTitle: { color: C.text, fontSize: FS.h1, fontWeight: '700', textAlign: 'center', lineHeight: 28 },
+  typeTitle: { color: C.text, fontSize: FS.h1, fontWeight: FW.bold, textAlign: 'center', lineHeight: 28 },
   typeSub: { color: C.text3, fontSize: FS.lg, textAlign: 'center', lineHeight: 20 },
   rowArrow: { width: 52, height: 76, borderRadius: 16, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   rowArrowFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 16 },
@@ -704,8 +704,8 @@ const hdSt = StyleSheet.create({
   inputValue: { color: C.text, fontSize: FS.title, paddingVertical: 6, textAlign: 'center', width: '100%' },
   btnGhost: { flex: 1, height: 58, borderRadius: 14, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   btnGhostFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 14 },
-  btnGhostText: { color: C.text, fontSize: FS.title, fontWeight: '600' },
+  btnGhostText: { color: C.text, fontSize: FS.title, fontWeight: FW.semibold },
   btnPrimary: { flex: 1.4, height: 58, borderRadius: 14, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   btnPrimaryFocus: { borderWidth: 2.5, borderColor: C.text, borderRadius: 14 },
-  btnPrimaryText: { color: C.onBrand, fontSize: FS.title, fontWeight: '700' },
+  btnPrimaryText: { color: C.onBrand, fontSize: FS.title, fontWeight: FW.bold },
 });

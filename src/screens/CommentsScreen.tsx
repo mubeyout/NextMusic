@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIn
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C, FS, SP } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { usePlayer } from '../state/PlayerProvider';
 import { api } from '../services/server';
 import { lxapi } from '../services/lxapi';
@@ -209,14 +209,14 @@ const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   header: { height: 72, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20 },
   hBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  hTitle: { flex: 1, color: C.text, fontSize: FS.title, lineHeight: 19, fontWeight: '500' }, // lx166 居左
+  hTitle: { flex: 1, color: C.text, fontSize: FS.title, lineHeight: 19, fontWeight: FW.medium }, // lx166 居左
   songRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, gap: SP.xl, marginBottom: 12 },
-  songName: { color: C.text, fontSize: FS.xl, lineHeight: 22, fontWeight: '700' },
+  songName: { color: C.text, fontSize: FS.xl, lineHeight: 22, fontWeight: FW.bold },
   commentCount: { color: C.text2, fontSize: FS.sm, lineHeight: 16 },
   sortPills: { flexDirection: 'row', gap: SP.sm },
   pill: { height: 28, borderRadius: 14, paddingHorizontal: 14, justifyContent: 'center', backgroundColor: C.inset },
   pillOn: { backgroundColor: C.brand },
-  pillText: { color: C.text2, fontSize: FS.body, lineHeight: 14, fontWeight: '500' },
+  pillText: { color: C.text2, fontSize: FS.body, lineHeight: 14, fontWeight: FW.medium },
   pillTextOn: { color: C.onBrand },
   center: { paddingVertical: 40, alignItems: 'center' },
   localLabel: { color: C.text3, fontSize: FS.sm, lineHeight: 15, marginTop: 10, marginBottom: 4 },
@@ -226,9 +226,9 @@ const st = StyleSheet.create({
   card: { flexDirection: 'row', gap: SP.xl, paddingHorizontal: 20, paddingVertical: 12 },
   avatar: { width: 36, height: 36, borderRadius: 18 },
   avatarFallback: { backgroundColor: C.inset2, alignItems: 'center', justifyContent: 'center' },
-  avatarInitial: { color: C.text2, fontSize: FS.xl, fontWeight: '700' },
+  avatarInitial: { color: C.text2, fontSize: FS.xl, fontWeight: FW.bold },
   cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  userName: { color: C.brandText, fontSize: FS.body, lineHeight: 17, fontWeight: '500' },
+  userName: { color: C.brandText, fontSize: FS.body, lineHeight: 17, fontWeight: FW.medium },
   likeRow: { flexDirection: 'row', alignItems: 'center', gap: SP.xs },
   likeCount: { color: C.text3, fontSize: FS.xs, lineHeight: 13 },
   cmText: { color: C.text, fontSize: FS.md, lineHeight: 19, marginTop: 4 },
@@ -241,5 +241,5 @@ const st = StyleSheet.create({
   input: { flex: 1, height: 40, borderRadius: 20, backgroundColor: C.surface2, paddingHorizontal: 16, justifyContent: 'center' },
   inputText: { color: C.text, fontSize: FS.md, padding: 0 },
   sendBtn: { height: 40, borderRadius: 20, backgroundColor: C.brand, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center' },
-  sendText: { color: C.onBrand, fontSize: FS.md, fontWeight: '500' },
+  sendText: { color: C.onBrand, fontSize: FS.md, fontWeight: FW.medium },
 });

@@ -6,7 +6,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { HDTouch } from '../hd/HDTouch';
 import { focus } from '../hd/hdstyle';
 import { Icon } from '../theme/Icon';
-import { C, SP, FS } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { IS_HD } from '../services/appversion';
 
 export function ArtistRow({ cover, name, sub, onPress, onLongPress, round = 48 }: {
@@ -37,8 +37,8 @@ const st = StyleSheet.create({
   row: { minHeight: 60, flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingVertical: SP.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint },
   av: { backgroundColor: C.artTint2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   img: { width: '100%', height: '100%' },
-  init: { color: C.brandText, fontSize: FS.headline, fontWeight: '700' },
+  init: { color: C.brandText, fontSize: FS.headline, fontWeight: FW.bold },
   meta: { flex: 1, minWidth: 0, gap: SP.xs },
-  name: { color: C.text, fontSize: FS.md, fontWeight: '600' },
+  name: { color: C.text, fontSize: FS.md, fontWeight: FW.semibold },
   sub: { color: C.text3, fontSize: FS.xs },
 });

@@ -6,7 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import RNBlobUtil from 'react-native-blob-util';
 import SafX from 'react-native-saf-x';
 import { Icon } from '../theme/Icon';
-import { C, FS, SP } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { SubPage } from '../components/SubPage';
 import { ToggleRow, ValueRow, ActionRow, StaticRow, NavRow, InputRow, Section, PageShell } from '../components/SettingRows';
 import { settings, useSettings, QUALITY_LABEL, type Quality } from '../services/settings';
@@ -554,8 +554,8 @@ const ts = StyleSheet.create({
   modeRow: { flexDirection: 'row', gap: SP.md, paddingVertical: 6 },
   modePill: { flex: 1, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2 },
   modeOn: { backgroundColor: C.brand },
-  modeText: { color: C.text2, fontSize: FS.md, fontWeight: '600' },
-  modeTextOn: { color: C.onBrand, fontWeight: '700' },
+  modeText: { color: C.text2, fontSize: FS.md, fontWeight: FW.semibold },
+  modeTextOn: { color: C.onBrand, fontWeight: FW.bold },
   swatchRow: { flexDirection: 'row', gap: SP.xxl, paddingHorizontal: 4, marginTop: 10 },
   swatchItem: { alignItems: 'center', gap: SP.md },
   swatch: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },

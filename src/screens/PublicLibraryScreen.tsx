@@ -11,7 +11,7 @@ import { useNavigation } from '@react-navigation/native';
 import { HDTouch } from '../hd/HDTouch';
 import { focus } from '../hd/hdstyle';
 import { Icon } from '../theme/Icon';
-import { C, SP, FS } from '../theme/tokens';
+import { C, CARD, FS, FW, SP } from '../theme/tokens';
 import { IS_HD } from '../services/appversion';
 import { PageHeader, EmptyState } from '../components/PageChrome';
 import { toast } from '../components/Dialog';
@@ -23,17 +23,8 @@ import { pubLib, pubCheck, pubToSongItem, pubSourceName, usePubEntry } from '../
 import { DiscCard } from './MyLibraryScreen';
 import { SongRow } from '../components/SongRow'; // [批次1·P1-1] 通用件直引(局部版已退役)
 import { ArtistRow } from '../components/ArtistRow'; // [批次1] 歌手行统一件(替本页自造 rowCard 行)
-import { useHoverCard } from '../hd/hdweb'; // [老板 1011 12:34] 卡片彩色弥散阴影+hover
-
-// ── 封面渐变兜底(与我的曲库 gradOf 同源族:无封面条目按名哈希取渐变,禁 emoji/死灰块) ──
-const COVER_GRADS: [string, string][] = [
-  ['#3f8766', '#265141'], ['#5d7ba3', '#3a506e'], ['#a3765d', '#6e4d3a'],
-  ['#6b5da3', '#463c6e'], ['#87663f', '#514126'], ['#3d4c5a', '#28333f'], ['#4c5a3d', '#333f28'],
-];
-function gradOf(name?: string): [string, string] {
-  let h = 0; for (let i = 0; i < (name || '').length; i++) h = (name || '').charCodeAt(i) + ((h << 5) - h);
-  return COVER_GRADS[Math.abs(h) % COVER_GRADS.length];
-}
+import { useHoverCard } from '../hd/hdweb';
+import { gradOf } from '../theme/grads'; // [老板 1011 15:39] 渐变唯一源 // [老板 1011 12:34] 卡片彩色弥散阴影+hover
 
 /** 字节数人类可读(统计行「总大小」;≤0/非数返回空串不渲染) */
 function fmtBytes(n: number): string {
@@ -582,7 +573,7 @@ export function PublicLibAlbumRoute(props: Record<string, unknown>) {
       ) : (
         <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
           <View style={d.albHead}>
-            <DiscCard name={name} cover={cover ? coverUrl(cover, 'public') : null} unknown={!cover} onPress={undefined} fixedWidth={IS_HD ? 150 : 116} />
+            <DiscCard name={name} cover={cover ? coverUrl(cover, 'public') : null} unknown={!cover} onPress={undefined} fixedWidth={IS_HD ? CARD.rail.hd : CARD.rail.phone} />
             <View style={{ flex: 1, minWidth: 0 } as never}>
               <Text style={d.albName} numberOfLines={2}>{name}</Text>
               <Text style={d.albSub} numberOfLines={1}>{album?.artist}{album?.byDir ? ' · 文件夹分组' : ''} · {songs.length} 首 · 公共曲库</Text>
@@ -625,7 +616,7 @@ export function PublicLibArtistRoute(props: Record<string, unknown>) {
       ) : (
         <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
           <View style={d.albHead}>
-            <DiscCard name={name} round cover={data.artist.coverFile ? coverUrl(data.artist.coverFile, 'public') : null} unknown={!data.artist.coverFile} onPress={undefined} fixedWidth={IS_HD ? 150 : 116} />
+            <DiscCard name={name} round cover={data.artist.coverFile ? coverUrl(data.artist.coverFile, 'public') : null} unknown={!data.artist.coverFile} onPress={undefined} fixedWidth={IS_HD ? CARD.rail.hd : CARD.rail.phone} />
             <View style={{ flex: 1, minWidth: 0 } as never}>
               <Text style={d.albName} numberOfLines={2}>{name}</Text>
               <Text style={d.albSub} numberOfLines={1}>{data.songs.length} 首 · {data.albums.length} 专辑 · 公共曲库</Text>
@@ -659,20 +650,20 @@ const d = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   head: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingVertical: 10, paddingHorizontal: 16 },
   headBtn: { width: 32, height: 32, borderRadius: 10, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  headTitle: { flex: 1, color: C.text, fontSize: FS.headline, fontWeight: '800' },
+  headTitle: { flex: 1, color: C.text, fontSize: FS.headline, fontWeight: FW.heavy },
   hdHead: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, paddingHorizontal: 20, paddingVertical: 12 },
   hdBack: { width: 36, height: 36, borderRadius: 10, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
-  hdTitle: { flex: 1, color: C.text, fontSize: FS.h1, fontWeight: '800' },
+  hdTitle: { flex: 1, color: C.text, fontSize: FS.h1, fontWeight: FW.heavy },
   focusRing: { borderWidth: 2.5, borderColor: C.brand, borderRadius: 12 },
   // 扫描中横幅
   scanBar: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, marginHorizontal: 16, marginTop: 8, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: C.surface2 },
   scanT: { color: C.text2, fontSize: FS.body },
   // 空态/错态
   emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: SP.md, paddingHorizontal: 40, paddingVertical: 60 },
-  emptyT1: { color: C.text, fontSize: FS.lg, fontWeight: '700', marginTop: 4 },
+  emptyT1: { color: C.text, fontSize: FS.lg, fontWeight: FW.bold, marginTop: 4 },
   emptyT2: { color: C.text3, fontSize: FS.body, lineHeight: 17, textAlign: 'center', maxWidth: 230 },
   retryBtn: { borderWidth: 1, borderColor: C.stroke, borderRadius: 999, paddingHorizontal: 18, paddingVertical: 7, marginTop: 8 },
-  retryText: { color: C.text2, fontSize: FS.md, fontWeight: '700' },
+  retryText: { color: C.text2, fontSize: FS.md, fontWeight: FW.bold },
   errRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SP.lg, marginHorizontal: 16, marginTop: 8, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: C.surface2 },
   errT: { flex: 1, color: C.danger, fontSize: FS.body },
   // ④专辑展开墙(在 LibraryHome wrap 内,免水平 padding;DiscCard 自带列基分档)
@@ -682,13 +673,13 @@ const d = StyleSheet.create({
   cwall: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl, paddingTop: 2, paddingBottom: 8 },
   // ⑤歌手行列表(≤8)→ [批次1] 统一件 ArtistRow(样式随局部版退役)
   rows: { gap: SP.md },
-  artInit: { color: C.brandText, fontSize: FS.headline, fontWeight: '700' },
-  randName: { color: C.text, fontSize: FS.sm, lineHeight: 14, fontWeight: '600' },
-  acName: { color: C.text, fontSize: FS.body, lineHeight: 16, fontWeight: '600', textAlign: 'center', maxWidth: '100%' },
+  artInit: { color: C.brandText, fontSize: FS.headline, fontWeight: FW.bold },
+  randName: { color: C.text, fontSize: FS.sm, lineHeight: 14, fontWeight: FW.semibold },
+  acName: { color: C.text, fontSize: FS.body, lineHeight: 16, fontWeight: FW.semibold, textAlign: 'center', maxWidth: '100%' },
   randSub: { color: C.text3, fontSize: FS.xs, lineHeight: 12 }, // 参考 MediaLibsScreen st.artistInitial
   artInitBig: { fontSize: FS.display },
   // rail 卡文字
-  railNameT: { color: C.text, fontSize: FS.body, lineHeight: 16, fontWeight: '600', maxWidth: IS_HD ? 96 : 78 },
+  railNameT: { color: C.text, fontSize: FS.body, lineHeight: 16, fontWeight: FW.semibold, maxWidth: IS_HD ? 96 : 78 },
   railSubT: { color: C.text3, fontSize: FS.xs, lineHeight: 13, maxWidth: IS_HD ? 96 : 78 },
   // ⑥搜索框(探索页 searchBox 同族)
   searchBox: { height: 44, borderRadius: 22, backgroundColor: C.searchPill, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, gap: SP.lg },
@@ -697,7 +688,7 @@ const d = StyleSheet.create({
   searchClear: { width: 28, height: 28, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   // 分页/加载
   moreBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10, marginBottom: 8, paddingVertical: 11, borderRadius: 999, borderWidth: 1, borderColor: C.stroke },
-  moreT: { color: C.text2, fontSize: FS.md, fontWeight: '700' },
+  moreT: { color: C.text2, fontSize: FS.md, fontWeight: FW.bold },
   moreWrap: { padding: 18, alignItems: 'center' },
   endT: { color: C.text3, fontSize: FS.sm, textAlign: 'center', paddingVertical: 14 },
   // 骨架
@@ -706,9 +697,9 @@ const d = StyleSheet.create({
   // 详情(路由页沿用,双区退役不影响)
   wall: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl, padding: 16, paddingBottom: 24 },
   albHead: { flexDirection: 'row', gap: SP.wide, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12, alignItems: 'center' },
-  albName: { color: C.text, fontSize: FS.headline, fontWeight: '800', lineHeight: 23 },
+  albName: { color: C.text, fontSize: FS.headline, fontWeight: FW.heavy, lineHeight: 23 },
   albSub: { color: C.text3, fontSize: FS.body, marginTop: 4 },
   grp: { color: C.text3, fontSize: FS.sm, letterSpacing: 1, marginHorizontal: 16, marginTop: 14, marginBottom: 6 },
   playAll: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.sm, backgroundColor: C.brand, borderRadius: 999, paddingVertical: 9, paddingHorizontal: 16, marginTop: 10, alignSelf: 'flex-start' as never },
-  playAllT: { color: C.onBrand, fontSize: FS.md, fontWeight: '700' },
+  playAllT: { color: C.onBrand, fontSize: FS.md, fontWeight: FW.bold },
 });

@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Platform, ActivityIndicator, Pressable, Animated } from 'react-native';
 import SafX from 'react-native-saf-x';
 import { Icon } from '../theme/Icon';
-import { C, FS, SP } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { toast, dialog } from '../components/Dialog';
 import {
   getUploadStore, subscribeUpload, enqueueUpload, retryFailed, retryItem,
@@ -195,7 +195,7 @@ const u = StyleSheet.create({
   sheet: { width: '92%' as never, maxWidth: 480, backgroundColor: '#151517', borderRadius: 18, borderWidth: 1, borderColor: C.stroke, padding: 18, paddingBottom: 14 },
   sheetHD: { width: 560, maxWidth: 560 },
   sheetHead: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  sheetT: { color: C.text, fontSize: FS.xl, fontWeight: '800', flex: 1 },
+  sheetT: { color: C.text, fontSize: FS.xl, fontWeight: FW.heavy, flex: 1 },
   sheetC: { color: C.text3, fontSize: FS.sm },
   barTrack: { height: 5, borderRadius: 5, backgroundColor: 'rgba(255,255,255,.08)', overflow: 'hidden' },
   barFill: { height: '100%', backgroundColor: C.brand, borderRadius: 5 },
@@ -207,27 +207,27 @@ const u = StyleSheet.create({
   qBarTrack: { height: 3, borderRadius: 3, backgroundColor: 'rgba(255,255,255,.08)', marginTop: 5, overflow: 'hidden' },
   qBarFill: { height: '100%', backgroundColor: C.brand },
   qSub: { color: C.text3, fontSize: FS.xs, marginTop: 2 },
-  qPct: { color: C.brand, fontSize: FS.sm, fontWeight: '700', width: 36, textAlign: 'right' },
+  qPct: { color: C.brand, fontSize: FS.sm, fontWeight: FW.bold, width: 36, textAlign: 'right' },
   qRetry: { color: C.text2, fontSize: FS.sm, borderWidth: 1, borderColor: C.stroke, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
   sheetFoot: { flexDirection: 'row', justifyContent: 'center', marginTop: 10 },
   minBtn: { borderWidth: 1, borderColor: C.stroke, borderRadius: 999, paddingHorizontal: 22, paddingVertical: 8 },
-  minBtnT: { color: C.text2, fontSize: FS.body, fontWeight: '600' },
+  minBtnT: { color: C.text2, fontSize: FS.body, fontWeight: FW.semibold },
   // 迷你浮条
   mini: { position: 'absolute', bottom: 18, left: 16, right: 16, flexDirection: 'row', alignItems: 'center', gap: SP.lg, backgroundColor: '#151517', borderWidth: 1, borderColor: C.stroke, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 11, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 12, elevation: 8 },
-  miniT: { flex: 1, color: C.text2, fontSize: FS.body, fontWeight: '600' },
+  miniT: { flex: 1, color: C.text2, fontSize: FS.body, fontWeight: FW.semibold },
   // 完成卡
   doneIcon: { width: 56, height: 56, borderRadius: 16, backgroundColor: 'rgba(30,215,96,.08)', borderWidth: 1, borderColor: 'rgba(30,215,96,.2)', alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   doneIconErr: { backgroundColor: 'rgba(232,97,140,.08)', borderColor: 'rgba(232,97,140,.25)' },
   retryAllMain: { backgroundColor: C.danger, borderWidth: 0 },
   retryAllMainT: { color: C.white },
-  doneT1: { color: C.text, fontSize: FS.xl, fontWeight: '800', textAlign: 'center' },
+  doneT1: { color: C.text, fontSize: FS.xl, fontWeight: FW.heavy, textAlign: 'center' },
   doneT2: { color: C.text3, fontSize: FS.body, lineHeight: 17, textAlign: 'center', marginTop: 6, maxWidth: 260 },
   doneStat: { color: C.text3, fontSize: FS.sm, marginTop: 10, textAlign: 'center' },
   retryAllBtn: { marginTop: 12, borderWidth: 1, borderColor: C.stroke, borderRadius: 999, paddingHorizontal: 20, paddingVertical: 8 },
-  retryAllT: { color: C.text2, fontSize: FS.body, fontWeight: '700' },
+  retryAllT: { color: C.text2, fontSize: FS.body, fontWeight: FW.bold },
   doneGo: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, marginTop: 14, alignSelf: 'center' },
-  doneGoT: { color: C.brand, fontSize: FS.md, fontWeight: '700' },
+  doneGoT: { color: C.brand, fontSize: FS.md, fontWeight: FW.bold },
   // 空态主钮
   emptyBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, backgroundColor: C.brand, borderRadius: 999, paddingHorizontal: 20, paddingVertical: 9, marginTop: 10 },
-  emptyBtnT: { color: C.onBrand, fontSize: FS.md, fontWeight: '800' },
+  emptyBtnT: { color: C.onBrand, fontSize: FS.md, fontWeight: FW.heavy },
 });

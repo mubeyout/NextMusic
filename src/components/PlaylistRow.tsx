@@ -6,18 +6,9 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { HDTouch } from '../hd/HDTouch';
 import { focus } from '../hd/hdstyle';
 import { Icon } from '../theme/Icon';
-import { C, SP, FS } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
+import { gradOf } from '../theme/grads'; // [老板 1011 15:39] 渐变唯一源
 import { IS_HD } from '../services/appversion';
-
-// 渐变兜底族(与我的曲库/公共库 COVER_GRADS 同源;无封面按名哈希取色)
-const GRADS: [string, string][] = [
-  ['#3f8766', '#265141'], ['#5d7ba3', '#3a506e'], ['#a3765d', '#6e4d3a'],
-  ['#6b5da3', '#463c6e'], ['#87663f', '#514126'], ['#3d4c5a', '#28333f'], ['#4c5a3d', '#333f28'],
-];
-function gradOf(key?: string): [string, string] {
-  let h = 0; for (let i = 0; i < (key || '').length; i++) h = (key || '').charCodeAt(i) + ((h << 5) - h);
-  return GRADS[Math.abs(h) % GRADS.length];
-}
 
 export function PlaylistRow({ cover, name, sub, gradKey, onPress, onLongPress }: {
   cover?: string | null; name: string; sub?: string; gradKey?: string; onPress?: () => void; onLongPress?: () => void;
@@ -55,6 +46,6 @@ const st = StyleSheet.create({
   grad: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
   img: { width: '100%', height: '100%' },
   meta: { flex: 1, minWidth: 0, gap: SP.xs },
-  name: { color: C.text, fontSize: FS.md, fontWeight: '600' },
+  name: { color: C.text, fontSize: FS.md, fontWeight: FW.semibold },
   sub: { color: C.text3, fontSize: FS.xs },
 });

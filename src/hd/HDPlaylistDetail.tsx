@@ -25,7 +25,7 @@ import { sync, isPlatformList } from '../services/sync';
 import { useApp } from '../state/AppState';
 import type { SongItem } from '../services/server';
 import { isArtistFav, toggleArtistFav, useArtistFavTick, type ArtistFav } from '../state/artistFavs'; // lx161
-import { FS, SP } from '../theme/tokens';
+import { FS, FW, SP } from '../theme/tokens';
 
 interface Params { title?: string; songs?: SongItem[]; meta?: string; localId?: string; plKey?: string; love?: boolean; artist?: ArtistFav; }
 
@@ -268,14 +268,14 @@ const st = StyleSheet.create({
   head: { flexDirection: 'row', gap: SP.xxl, paddingHorizontal: 22, paddingBottom: 12, alignItems: 'center' },
   backBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', alignSelf: 'center' },
   cover: { width: 128, height: 128, borderRadius: 11 },
-  kindTag: { color: C.brand, fontSize: H.font.xs, fontWeight: '700', letterSpacing: 1 },
-  title: { color: C.text, fontSize: H.font.hero, fontWeight: '800' },
+  kindTag: { color: C.brand, fontSize: H.font.xs, fontWeight: FW.bold, letterSpacing: 1 },
+  title: { color: C.text, fontSize: H.font.hero, fontWeight: FW.heavy },
   meta: { color: C.text2, fontSize: H.font.sm },
   btnPrimary: { height: 36, borderRadius: 9, backgroundColor: C.brand, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.sm, paddingHorizontal: 14 },
   more: { color: C.text3, fontSize: FS.sm, textAlign: 'center', paddingVertical: 10 },
-  btnPrimaryText: { color: C.onBrand, fontSize: H.font.sm, fontWeight: '700' },
+  btnPrimaryText: { color: C.onBrand, fontSize: H.font.sm, fontWeight: FW.bold },
   btn: { height: 36, borderRadius: 9, backgroundColor: C.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.sm, paddingHorizontal: 12 },
-  btnText: { color: C.text, fontSize: H.font.sm, fontWeight: '600' },
+  btnText: { color: C.text, fontSize: H.font.sm, fontWeight: FW.semibold },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: SP.lg },
   emptyText: { color: C.text3, fontSize: H.font.sm },
 });

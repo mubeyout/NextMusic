@@ -16,7 +16,7 @@ import type { SongItem } from '../services/server';
 import { toast } from '../components/Dialog';
 import { hdNav } from './hdnav';
 import { cacheStale, cacheSet } from './hdcache';
-import { FS, SP } from '../theme/tokens';
+import { FS, FW, SP } from '../theme/tokens';
 
 type Board = { id: string; name: string; bangid: string; image?: string };
 const SOURCES: { key: string; label: string }[] = [
@@ -153,13 +153,13 @@ function BoardCard({ b, i, src, onOpen }: { b: Board; i: number; src: string; bu
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
-  title: { color: C.text, fontSize: H.font.hero, fontWeight: '800' },
+  title: { color: C.text, fontSize: H.font.hero, fontWeight: FW.heavy },
   count: { color: C.text3, fontSize: H.font.sm },
   pill: { borderRadius: H.radius.pill, paddingHorizontal: 11, height: 26, backgroundColor: C.elev, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
   pillOn: { backgroundColor: C.brand, borderColor: C.brand },
   pillFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.pill },
   pillLabel: { color: C.text2, fontSize: H.font.sm },
-  pillLabelOn: { color: C.onBrand, fontWeight: '600' },
+  pillLabelOn: { color: C.onBrand, fontWeight: FW.semibold },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl },
   card: { borderRadius: 12, backgroundColor: C.surface, paddingBottom: 8 },
   cardCoverWrap: { borderRadius: 12 },
@@ -168,7 +168,7 @@ const st = StyleSheet.create({
   cardChip: { backgroundColor: 'rgba(0,0,0,.55)', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
   cardChipText: { color: C.white, fontSize: FS.xs },
   cardBody: { padding: 10, paddingTop: 8, gap: SP.xs, alignSelf: 'center', width: '94%' },
-  cardName: { color: C.text, fontSize: H.font.md, fontWeight: '700', lineHeight: 16 },
+  cardName: { color: C.text, fontSize: H.font.md, fontWeight: FW.bold, lineHeight: 16 },
   cardSub: { color: C.text3, fontSize: FS.xs },
   tip: { alignItems: 'center', gap: SP.lg, paddingVertical: 54 },
   tipText: { color: C.text2, fontSize: H.font.md, textAlign: 'center', paddingVertical: 30 },

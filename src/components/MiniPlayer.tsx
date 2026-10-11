@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Image, Animated, Easing, Plat
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, FW } from '../theme/tokens';
 import { usePlayer, usePlayerProgress } from '../state/PlayerProvider';
 import { ProgressBar } from './ProgressBar';
 import { CollectSheet } from './CollectSheet';
@@ -108,7 +108,7 @@ const st = StyleSheet.create({
   vinylLabel: { width: '42%', height: '42%', borderRadius: 999, overflow: 'hidden' }, // 封面嵌盘心(基准稿 mini-label 42%)
   vinylLabelFallback: { backgroundColor: '#2A6E4F' },
   meta: { flex: 1, marginLeft: 12, gap: 2, minWidth: 0 },
-  title: { color: C.text, fontSize: 14, lineHeight: 17, fontWeight: '500' },
+  title: { color: C.text, fontSize: 14, lineHeight: 17, fontWeight: FW.medium },
   sub: { color: C.text2, fontSize: 11, lineHeight: 13 },
   iconBtn: {
     width: 32, height: 32, borderRadius: 16, backgroundColor: C.inset,

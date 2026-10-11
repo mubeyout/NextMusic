@@ -10,7 +10,7 @@ import {
   View, Text, StyleSheet, ScrollView,
   type LayoutChangeEvent, type PointerEvent, type StyleProp, type ViewStyle,
 } from 'react-native';
-import { C } from '../theme/tokens';
+import { C, FW } from '../theme/tokens';
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
 import { focus } from '../hd/hdstyle';
@@ -202,21 +202,21 @@ const s = StyleSheet.create({
   // 手机:右缘贴边,竖直居中,20px 触区
   wrap: { position: 'absolute', top: 0, bottom: 0, right: 0, width: 20, justifyContent: 'center', alignItems: 'center' },
   strip: { width: 20, alignItems: 'center', borderRadius: 999 },
-  cell: { height: CELL_H, fontSize: 9, lineHeight: CELL_H, color: C.text3, fontWeight: '600', textAlign: 'center' },
-  cellOn: { color: C.text, fontWeight: '900' },
+  cell: { height: CELL_H, fontSize: 9, lineHeight: CELL_H, color: C.text3, fontWeight: FW.semibold, textAlign: 'center' },
+  cellOn: { color: C.text, fontWeight: FW.black },
   // HD:右缘大格,可聚焦
   hdWrap: { position: 'absolute', top: 0, bottom: 0, right: 8, justifyContent: 'center', alignItems: 'center' },
   hdCol: { gap: 1 },
   hdCell: { width: 26, height: CELL_H, borderRadius: 7, backgroundColor: 'rgba(255,255,255,.045)', alignItems: 'center', justifyContent: 'center' },
-  hdT: { color: C.text3, fontSize: 9.5, fontWeight: '700' },
+  hdT: { color: C.text3, fontSize: 9.5, fontWeight: FW.bold },
   cellOnBg: { backgroundColor: C.surface2 },
-  cellOnT: { color: C.text, fontWeight: '900' },
+  cellOnT: { color: C.text, fontWeight: FW.black },
   // 浮标:28px surface2 圆角(手机贴字母位,HD 居中)
   bub: {
     position: 'absolute', width: BUB, height: BUB, borderRadius: 10,
     backgroundColor: C.surface2, borderWidth: 1, borderColor: C.stroke,
     alignItems: 'center', justifyContent: 'center',
   },
-  bubT: { color: C.text, fontSize: 13, fontWeight: '800' },
+  bubT: { color: C.text, fontSize: 13, fontWeight: FW.heavy },
   bubHD: { right: 44, top: '50%', marginTop: -BUB / 2 },
 });

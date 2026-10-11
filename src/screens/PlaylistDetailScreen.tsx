@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIn
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C, FS, SP } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { SongRow } from '../components/SongRow';
 import { ActionSheet } from '../components/ActionSheet';
 import { CollectSheet } from '../components/CollectSheet';
@@ -439,16 +439,16 @@ const st = StyleSheet.create({
   headCard: { flexDirection: 'row', gap: SP.xxl, marginTop: 4 },
   cover: { width: 120, height: 120, borderRadius: 10 },
   coverFallback: { backgroundColor: C.artTint, alignItems: 'center', justifyContent: 'center' },
-  coverGlyph: { color: C.text, fontSize: 40, fontWeight: '700' }, // [LEO 1011] 档外特排:封面兜底大字,FS 封顶 hero=28 不强归
+  coverGlyph: { color: C.text, fontSize: 40, fontWeight: FW.bold }, // [LEO 1011] 档外特排:封面兜底大字,FS 封顶 hero=28 不强归
   headMeta: { flex: 1, paddingTop: 4, gap: SP.sm },
-  title: { color: C.text, fontSize: FS.h1, lineHeight: 26, fontWeight: '700' },
+  title: { color: C.text, fontSize: FS.h1, lineHeight: 26, fontWeight: FW.bold },
   stat: { color: C.text2, fontSize: FS.sm, lineHeight: 16 },
   desc: { color: C.text2, fontSize: FS.sm, lineHeight: 16, marginTop: 12 },
   playAllBtn: {
     height: 46, borderRadius: 14, backgroundColor: C.brand, flexDirection: 'row',
     alignItems: 'center', justifyContent: 'center', gap: SP.md, marginTop: 18,
   },
-  playAllText: { color: C.onBrand, fontSize: FS.lg, lineHeight: 17, fontWeight: '600' },
+  playAllText: { color: C.onBrand, fontSize: FS.lg, lineHeight: 17, fontWeight: FW.semibold },
   playAllCount: { color: C.onBrand, fontSize: FS.body },
   actionRow: { flexDirection: 'row', gap: SP.md, marginTop: 10, marginBottom: 6 },
   searchBar: { flexDirection: 'row', alignItems: 'center', gap: SP.md, height: 38, borderRadius: 10, backgroundColor: C.elev, paddingHorizontal: 12, marginTop: 12 },
@@ -457,7 +457,7 @@ const st = StyleSheet.create({
     flex: 1, height: 40, borderRadius: 12, backgroundColor: C.surface,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.sm,
   },
-  actionText: { color: C.text2, fontSize: FS.sm, lineHeight: 13, fontWeight: '500' },
+  actionText: { color: C.text2, fontSize: FS.sm, lineHeight: 13, fontWeight: FW.medium },
   progText: { color: C.brandSoft, fontSize: FS.sm, lineHeight: 14, width: 36, textAlign: 'right' },
   center: { paddingVertical: 40, alignItems: 'center' },
   empty: { color: C.text2, fontSize: FS.body, textAlign: 'center', paddingVertical: 40 },

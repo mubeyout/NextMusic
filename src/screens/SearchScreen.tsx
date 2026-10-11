@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Activi
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C, FS, SP } from '../theme/tokens';
+import { C, CARD, FS, FW, SP } from '../theme/tokens';
 import { useHoverCard } from '../hd/hdweb'; // [LEO 1011 统一令] nm-card 彩色弥散影+hover
 import { PillTabs } from '../components/PillTabs';
 import { SongRow } from '../components/SongRow';
@@ -320,7 +320,7 @@ function AllArtistCircle({ a, onPress }: { a: { id: string; name: string; img?: 
 // [LEO 1011 统一令] 专辑卡 nm-card 化(RailCard 同构:surface 底/r12/弥散影+hover/封面+文字区)
 function AllAlbumCard({ al, onPress }: { al: { id: string; name: string; singer?: string; img?: string; source?: string }; onPress: () => void }) {
   const { elRef, onHoverIn, onHoverOut, cardStyle } = useHoverCard(al.name);
-  const w = 104;
+  const w = CARD.rail.phone; // [老板 1011 15:39] rail 卡宽唯一源
   return (
     <TouchableOpacity ref={elRef as never}
       style={[{ width: w, backgroundColor: C.surface, borderRadius: 12, overflow: 'hidden' }, cardStyle as never]}
@@ -341,21 +341,21 @@ const st = StyleSheet.create({
   singerRow: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, minHeight: 60 },
   anchorBar: { flexGrow: 0, paddingVertical: 8 },
   anchorChip: { backgroundColor: C.surface2, borderRadius: 14, paddingHorizontal: 13, height: 30, justifyContent: 'center' },
-  anchorText: { color: C.text, fontSize: FS.body, fontWeight: '600' },
+  anchorText: { color: C.text, fontSize: FS.body, fontWeight: FW.semibold },
   aggBadge: { backgroundColor: C.surface2, borderRadius: 9, paddingHorizontal: 8, paddingVertical: 3 },
-  aggText: { color: C.text2, fontSize: FS.xs, fontWeight: '700' },
-  allSecTitle: { color: C.text, fontSize: FS.lg, fontWeight: '700', marginTop: 8 },
-  allArtistInit: { color: C.brandText, fontSize: FS.headline, fontWeight: '700' }, // 与公共库 ArtistCircle/PvCard round 首字母同档
-  allCardName: { color: C.text, fontSize: FS.sm, fontWeight: '600', alignSelf: 'stretch', textAlign: 'center' },
+  aggText: { color: C.text2, fontSize: FS.xs, fontWeight: FW.bold },
+  allSecTitle: { color: C.text, fontSize: FS.lg, fontWeight: FW.bold, marginTop: 8 },
+  allArtistInit: { color: C.brandText, fontSize: FS.headline, fontWeight: FW.bold }, // 与公共库 ArtistCircle/PvCard round 首字母同档
+  allCardName: { color: C.text, fontSize: FS.sm, fontWeight: FW.semibold, alignSelf: 'stretch', textAlign: 'center' },
   allCardSub: { color: C.text2, fontSize: FS.xs, alignSelf: 'stretch', textAlign: 'center' },
   allMore: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.xs, paddingVertical: 12 },
-  allMoreText: { color: C.text2, fontSize: FS.body, fontWeight: '600' },
+  allMoreText: { color: C.text2, fontSize: FS.body, fontWeight: FW.semibold },
   chip: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, backgroundColor: C.surface2, borderRadius: 14, paddingHorizontal: 13, height: 30 },
-  chipText: { color: C.text, fontSize: FS.body, fontWeight: '500', maxWidth: 160 },
-  chipIdx: { color: C.text3, fontSize: FS.sm, fontWeight: '800' },
+  chipText: { color: C.text, fontSize: FS.body, fontWeight: FW.medium, maxWidth: 160 },
+  chipIdx: { color: C.text3, fontSize: FS.sm, fontWeight: FW.heavy },
   round: { width: 44, height: 44, borderRadius: 22 },
   square: { width: 44, height: 44, borderRadius: 8 },
-  singerName: { flex: 1, color: C.text, fontSize: FS.lg, fontWeight: '600' },
+  singerName: { flex: 1, color: C.text, fontSize: FS.lg, fontWeight: FW.semibold },
   singerSrc: { color: C.text2, fontSize: FS.xs },
   screen: { flex: 1, backgroundColor: C.bg },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingHorizontal: 20, marginBottom: 12 },
@@ -366,7 +366,7 @@ const st = StyleSheet.create({
   searchInput: { flex: 1, color: C.text, fontSize: FS.md, padding: 0 },
   pillWrap: { paddingHorizontal: 20, marginBottom: 6 },
   sectionRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginVertical: 10 },
-  sectionTitle: { color: C.text, fontSize: FS.xl, lineHeight: 20, fontWeight: '600' },
+  sectionTitle: { color: C.text, fontSize: FS.xl, lineHeight: 20, fontWeight: FW.semibold },
   sectionMeta: { color: C.text3, fontSize: FS.sm },
   center: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80, gap: SP.lg },
   hintText: { color: C.text3, fontSize: FS.body },

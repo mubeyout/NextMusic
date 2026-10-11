@@ -7,7 +7,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C, FS, SP } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { PageHeader } from '../components/PageChrome';
 import { SongRow } from '../components/SongRow';
 import { dialog, toast } from '../components/Dialog';
@@ -491,55 +491,55 @@ const st = StyleSheet.create({
   homeSections: { marginBottom: 2 },
   missing: { color: C.text2, fontSize: FS.body, textAlign: 'center', paddingVertical: 40 },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 10, gap: SP.md },
-  title: { color: C.text, fontSize: FS.h1, fontWeight: '700' },
+  title: { color: C.text, fontSize: FS.h1, fontWeight: FW.bold },
   subTitle: { color: C.text3, fontSize: FS.sm, marginTop: 1 },
   playAllBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, backgroundColor: C.brand, borderRadius: 16, paddingHorizontal: 13, paddingVertical: 8 },
-  playAllText: { color: C.onBrand, fontSize: FS.body, fontWeight: '600' },
+  playAllText: { color: C.onBrand, fontSize: FS.body, fontWeight: FW.semibold },
   // 胶囊 tab
   tabs: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, paddingHorizontal: 16, paddingVertical: 8 },
   tab: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999, backgroundColor: C.surface2 },
   tabOn: { backgroundColor: C.brand },
-  tabText: { color: C.text2, fontSize: FS.body, fontWeight: '600' },
+  tabText: { color: C.text2, fontSize: FS.body, fontWeight: FW.semibold },
   tabTextOn: { color: C.onBrand },
   statsText: { flex: 1, color: C.text3, fontSize: FS.sm, textAlign: 'right' },
   // 重扫条
   rescanBar: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingHorizontal: 16, paddingVertical: 6, backgroundColor: C.surface2, marginHorizontal: 16, borderRadius: 10 },
   rescanText: { flex: 1, color: C.text2, fontSize: FS.body },
-  cancelText: { color: C.brandText, fontSize: FS.body, fontWeight: '600' },
+  cancelText: { color: C.brandText, fontSize: FS.body, fontWeight: FW.semibold },
   // 墙
   wall: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl },
   wallRound: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl },
   // 空态/失效
   emptyWrap: { alignItems: 'center', gap: SP.lg, paddingVertical: 64, paddingHorizontal: 32 },
-  emptyT1: { color: C.text, fontSize: FS.title, fontWeight: '700' },
+  emptyT1: { color: C.text, fontSize: FS.title, fontWeight: FW.bold },
   emptyT2: { color: C.text2, fontSize: FS.body, lineHeight: 17, textAlign: 'center' },
   retryBtn: { backgroundColor: C.brand, borderRadius: 18, paddingHorizontal: 20, paddingVertical: 10, marginTop: 8 },
-  retryText: { color: C.onBrand, fontSize: FS.md, fontWeight: '600' },
+  retryText: { color: C.onBrand, fontSize: FS.md, fontWeight: FW.semibold },
   emptyInline: { color: C.text2, fontSize: FS.body, textAlign: 'center', paddingVertical: 40 },
   // 文件夹视角
   crumbWrap: { flexGrow: 0, marginBottom: 10 },
   crumbItem: { color: C.text2, fontSize: FS.body, paddingVertical: 2 },
-  crumbCur: { color: C.text, fontWeight: '700' },
+  crumbCur: { color: C.text, fontWeight: FW.bold },
   uncWrap: { backgroundColor: C.surface2, borderRadius: 12, padding: 12, marginBottom: 10 },
   uncHead: { flexDirection: 'row', alignItems: 'center', gap: SP.lg },
-  uncTitle: { color: C.text, fontSize: FS.md, fontWeight: '600' },
+  uncTitle: { color: C.text, fontSize: FS.md, fontWeight: FW.semibold },
   uncSub: { color: C.text3, fontSize: FS.sm, lineHeight: 14, marginTop: 1 },
   dirRow: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, paddingVertical: 9, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint },
   dirIcon: { width: 30, height: 30, borderRadius: 9, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  dirName: { flex: 1, color: C.text, fontSize: FS.md, fontWeight: '500', minWidth: 0 },
+  dirName: { flex: 1, color: C.text, fontSize: FS.md, fontWeight: FW.medium, minWidth: 0 },
   dirCount: { color: C.text3, fontSize: FS.sm },
   fnTag: { color: C.text3, fontSize: FS.sm, backgroundColor: C.surface2, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2, overflow: 'hidden' },
   // 多选动作条(⑥6.2)
   selBar: { backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.strokeFaint, paddingHorizontal: 16, paddingVertical: 10, gap: SP.md },
   selRow1: { flexDirection: 'row', alignItems: 'center', gap: SP.section },
-  selCount: { color: C.text2, fontSize: FS.body, fontWeight: '600', marginRight: 'auto' },
-  selBtnT: { color: C.brandText, fontSize: FS.body, fontWeight: '600' },
+  selCount: { color: C.text2, fontSize: FS.body, fontWeight: FW.semibold, marginRight: 'auto' },
+  selBtnT: { color: C.brandText, fontSize: FS.body, fontWeight: FW.semibold },
   selRow2: { flexDirection: 'row', alignItems: 'center', gap: SP.md },
   selGhost: { borderWidth: 1, borderColor: C.stroke, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
-  selGhostT: { color: C.text2, fontSize: FS.body, fontWeight: '600' },
+  selGhostT: { color: C.text2, fontSize: FS.body, fontWeight: FW.semibold },
   selPri: { flex: 1, backgroundColor: C.brand, borderRadius: 999, paddingVertical: 9, alignItems: 'center', justifyContent: 'center' },
   selPriOff: { opacity: 0.45 },
-  selPriT: { color: C.onBrand, fontSize: FS.md, fontWeight: '800' },
+  selPriT: { color: C.onBrand, fontSize: FS.md, fontWeight: FW.heavy },
   selSub: { color: C.text3, fontSize: FS.sm },
   chk: { width: 20, height: 20, borderRadius: 999, borderWidth: 1.5, borderColor: C.strokeStrong, alignItems: 'center', justifyContent: 'center' },
   chkOn: { backgroundColor: C.brand, borderColor: C.brand },

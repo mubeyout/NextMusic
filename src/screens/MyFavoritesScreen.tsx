@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C, FS, SP } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { PageHeader } from '../components/PageChrome';
 import { PillTabs, PillTabsHD } from '../components/PillTabs';
 import { SongRow } from '../components/SongRow';
@@ -176,8 +176,8 @@ const st = StyleSheet.create({
   round: { width: 46, height: 46, borderRadius: 23 },
   square: { width: 46, height: 46, borderRadius: 8 },
   avaFallback: { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  glyph: { color: C.text2, fontSize: FS.h2, fontWeight: '700' },
-  name: { color: C.text, fontSize: FS.lg, fontWeight: '600' },
+  glyph: { color: C.text2, fontSize: FS.h2, fontWeight: FW.bold },
+  name: { color: C.text, fontSize: FS.lg, fontWeight: FW.semibold },
   meta: { color: C.text2, fontSize: FS.sm, marginTop: 2 },
 });
 

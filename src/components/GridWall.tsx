@@ -7,10 +7,10 @@ import { View, Platform, StyleSheet } from 'react-native';
 import { IS_HD } from '../services/appversion';
 import { HDGrid } from '../hd/HDGrid';
 import { H } from '../hd/hdtokens';
-import { SP } from '../theme/tokens';
+import { SP, GRID } from '../theme/tokens';
 
 export function GridWall({ children, phoneGap = SP.xl }: { children: React.ReactNode; phoneGap?: number }) {
-  if (IS_HD || Platform.OS === 'web') return <HDGrid min={128 * (H.font.sm / 10)}>{children}</HDGrid>;
+  if (IS_HD || Platform.OS === 'web') return <HDGrid min={GRID.hdMin * (H.font.sm / 10)}>{children}</HDGrid>;
   return <View style={wallSt.grid}>{children}</View>;
 }
 

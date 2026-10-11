@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Image, View, Text, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, ScrollView  } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { C, FS, SP } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { useApp } from '../state/AppState';
 import { api, normalizeBase } from '../services/server';
 
@@ -117,21 +117,21 @@ const st = StyleSheet.create({
   content: { gap: SP.section },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: SP.md },
   brandDot: { width: 17, height: 17, borderRadius: 9, backgroundColor: C.brand },
-  brandName: { color: C.text, fontSize: FS.xl, lineHeight: 18, fontWeight: '700' },
+  brandName: { color: C.text, fontSize: FS.xl, lineHeight: 18, fontWeight: FW.bold },
   header: { gap: SP.sm },
-  title: { color: C.text, fontSize: FS.display, lineHeight: 31, fontWeight: '700' }, // [LEO 1011] 26 档外→display(24)
+  title: { color: C.text, fontSize: FS.display, lineHeight: 31, fontWeight: FW.bold }, // [LEO 1011] 26 档外→display(24)
   subtitle: { color: C.text2, fontSize: FS.body, lineHeight: 14 },
   card: { borderRadius: 14, backgroundColor: C.surface, padding: 16, gap: SP.md },
   stepRow: { flexDirection: 'row', alignItems: 'center', gap: SP.md },
   stepBadge: { width: 18, height: 18, borderRadius: 9, backgroundColor: C.stroke, alignItems: 'center', justifyContent: 'center' },
-  stepBadgeText: { color: C.brandText, fontSize: FS.sm, lineHeight: 13, fontWeight: '700' },
-  fieldLabel: { color: C.text, fontSize: FS.body, lineHeight: 14, fontWeight: '500', flex: 1 },
-  okTag: { color: C.brandText, fontSize: FS.sm, lineHeight: 13, fontWeight: '600' },
+  stepBadgeText: { color: C.brandText, fontSize: FS.sm, lineHeight: 13, fontWeight: FW.bold },
+  fieldLabel: { color: C.text, fontSize: FS.body, lineHeight: 14, fontWeight: FW.medium, flex: 1 },
+  okTag: { color: C.brandText, fontSize: FS.sm, lineHeight: 13, fontWeight: FW.semibold },
   input: { height: 46, borderRadius: 12, backgroundColor: C.surface2, paddingHorizontal: 14, justifyContent: 'center' },
   inputText: { color: C.text, fontSize: FS.md, padding: 0 },
   btnPrimary: { height: 46, borderRadius: 12, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
-  btnPrimaryText: { color: C.onBrand, fontSize: FS.lg, lineHeight: 17, fontWeight: '500' },
+  btnPrimaryText: { color: C.onBrand, fontSize: FS.lg, lineHeight: 17, fontWeight: FW.medium },
   err: { color: C.danger, fontSize: FS.body, lineHeight: 15, textAlign: 'center' },
   backLink: { height: 44, alignItems: 'center', justifyContent: 'center' },
-  backText: { color: C.text, fontSize: FS.lg, lineHeight: 17, fontWeight: '500' },
+  backText: { color: C.text, fontSize: FS.lg, lineHeight: 17, fontWeight: FW.medium },
 });

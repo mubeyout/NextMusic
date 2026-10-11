@@ -5,7 +5,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIn
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C, FS, SP } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { SongRow } from '../components/SongRow';
 import { ActionSheet } from '../components/ActionSheet';
 import { CollectSheet } from '../components/CollectSheet';
@@ -211,28 +211,28 @@ const st = StyleSheet.create({
   cover: { width: 120, height: 120, borderRadius: 10 },
   coverFallback: { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   artistFallback: { backgroundColor: C.artTint2, alignItems: 'center', justifyContent: 'center' },
-  artistInitial: { color: C.brandText, fontSize: 44, fontWeight: '700' }, // [LEO 1011] 档外特排:头像兜底大字
-  glyph: { color: C.text2, fontSize: 32, fontWeight: '700' }, // [LEO 1011] 档外特排:封面兜底大字
+  artistInitial: { color: C.brandText, fontSize: 44, fontWeight: FW.bold }, // [LEO 1011] 档外特排:头像兜底大字
+  glyph: { color: C.text2, fontSize: 32, fontWeight: FW.bold }, // [LEO 1011] 档外特排:封面兜底大字
   headMeta: { flex: 1, justifyContent: 'center', gap: SP.sm },
-  title: { color: C.text, fontSize: FS.h2, lineHeight: 25, fontWeight: '700' },
+  title: { color: C.text, fontSize: FS.h2, lineHeight: 25, fontWeight: FW.bold },
   stat: { color: C.text2, fontSize: FS.body, lineHeight: 17 },
   center: { paddingVertical: 60, alignItems: 'center', gap: SP.xl },
   empty: { color: C.text2, fontSize: FS.body, lineHeight: 18, textAlign: 'center', paddingVertical: 40 },
   retryBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, backgroundColor: C.brand, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 18 },
-  retryText: { color: C.onBrand, fontSize: FS.md, fontWeight: '600' },
+  retryText: { color: C.onBrand, fontSize: FS.md, fontWeight: FW.semibold },
   playAllBtn: { height: 46, borderRadius: 14, backgroundColor: C.brand, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.md, marginTop: 18 },
-  playAllText: { color: C.onBrand, fontSize: FS.lg, fontWeight: '700' },
+  playAllText: { color: C.onBrand, fontSize: FS.lg, fontWeight: FW.bold },
   playAllCount: { color: C.onBrand, fontSize: FS.body, opacity: 0.8 },
   actionRow: { flexDirection: 'row', gap: SP.lg, marginTop: 12 },
   action: { flex: 1, minHeight: 56, borderRadius: 12, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', gap: SP.sm },
-  actionText: { color: C.text2, fontSize: FS.sm, fontWeight: '500' },
+  actionText: { color: C.text2, fontSize: FS.sm, fontWeight: FW.medium },
   songList: { marginTop: 14, gap: SP.md },
   prog: { color: C.brandText, fontSize: FS.sm, width: 38, textAlign: 'right' },
   albumGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl, marginTop: 18 },
   albumCell: { width: '31%', gap: SP.xs },
   albumCellFill: { width: '100%' }, // [老板 1011 15:40] HDGrid 内 cell 撑满列宽
   albumCover: { width: '100%', aspectRatio: 1, borderRadius: 10, backgroundColor: C.surface2 },
-  albumName: { color: C.text, fontSize: FS.body, lineHeight: 15, fontWeight: '600' },
+  albumName: { color: C.text, fontSize: FS.body, lineHeight: 15, fontWeight: FW.semibold },
   albumMeta: { color: C.text2, fontSize: FS.xs, lineHeight: 12 },
   albumCellWeb: { width: '15.5%' }, // v3.28:web 6 列(与浏览页网格同规格;此前 31% 在桌面=3 巨列)
 });

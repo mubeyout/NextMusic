@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSeekBar } from '../hooks/useSeekBar'; // R6 统一 seek
 import { useAudioPro } from 'react-native-audio-pro';
 import { Icon } from '../theme/Icon';
-import { C, FS, SP } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
 // 触点抽象:HD 用 HDTouch(D-pad 焦点),phone 保持 TouchableOpacity
@@ -413,7 +413,7 @@ const st = StyleSheet.create({
   headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 28, marginBottom: 4 },
   handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: C.handle },
   closeBtn: { position: 'absolute', right: 0, top: -4, width: 36, height: 36, borderRadius: 18, backgroundColor: C.stroke, alignItems: 'center', justifyContent: 'center' },
-  title: { color: C.text, fontSize: FS.h1, lineHeight: 26, fontWeight: '700' },
+  title: { color: C.text, fontSize: FS.h1, lineHeight: 26, fontWeight: FW.bold },
   subtitle: { color: C.text2, fontSize: FS.body, lineHeight: 16, marginTop: 2 },
   label: { color: C.text2, fontSize: FS.body, lineHeight: 16, marginTop: 18, marginBottom: 8 },
   deviceRow: {
@@ -422,7 +422,7 @@ const st = StyleSheet.create({
   },
   deviceRowOn: { backgroundColor: C.selTint, borderWidth: 1, borderColor: C.brand + '55' },
   iconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.inset2, alignItems: 'center', justifyContent: 'center' },
-  deviceName: { color: C.text, fontSize: FS.lg, lineHeight: 20, fontWeight: '600' },
+  deviceName: { color: C.text, fontSize: FS.lg, lineHeight: 20, fontWeight: FW.semibold },
   deviceStatus: { color: C.text2, fontSize: FS.sm, lineHeight: 15 },
   deviceStatusOn: { color: C.brandText, fontSize: FS.sm, lineHeight: 15 },
   checkBadge: {
@@ -433,7 +433,7 @@ const st = StyleSheet.create({
   rescanBtn: { alignSelf: 'center', marginTop: 10, paddingVertical: 6, paddingHorizontal: 12 },
   rescanText: { color: C.text2, fontSize: FS.sm, lineHeight: 16 },
   volumeRow: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, marginTop: 18 },
-  volBtn: { color: C.text, fontSize: FS.h2, fontWeight: '600', width: 24, textAlign: 'center' },
+  volBtn: { color: C.text, fontSize: FS.h2, fontWeight: FW.semibold, width: 24, textAlign: 'center' },
   volTrack: { flex: 1, height: 28, justifyContent: 'center' },
   volBase: { position: 'absolute', left: 0, right: 0, height: 4, borderRadius: 2, backgroundColor: C.inset2 },
   volFill: { position: 'absolute', left: 0, height: 4, borderRadius: 2, backgroundColor: C.brand },

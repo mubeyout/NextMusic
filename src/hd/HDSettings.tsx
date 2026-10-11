@@ -20,7 +20,7 @@ import { NativeModules } from 'react-native';
 import { SelectSheet } from '../components/SelectSheet';
 import { useFeatureGate, FeatureGateModal } from '../components/FeatureGate';
 import { LockGlyph } from '../components/GateSheet';
-import { FS, SP } from '../theme/tokens';
+import { FS, FW, SP } from '../theme/tokens';
 
 const Restart = NativeModules.AppRestart as { restart: () => void } | undefined;
 const ACCENTS = [
@@ -292,20 +292,20 @@ function SettingsRow({ row }: { row: RowDef }) {
 const st = StyleSheet.create({
   cacheMask: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,.55)', zIndex: 100, alignItems: 'center', justifyContent: 'center' },
   cachePanel: { width: 420, maxWidth: '90%', backgroundColor: C.elev, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, padding: 22, gap: SP.xs },
-  cacheTitle: { color: C.text, fontSize: FS.headline, fontWeight: '800' },
+  cacheTitle: { color: C.text, fontSize: FS.headline, fontWeight: FW.heavy },
   cacheInfo: { color: C.text2, fontSize: FS.body, lineHeight: 18 },
   cacheBtn: { flex: 1, height: 38, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
-  cacheBtnText: { color: C.text, fontSize: FS.md, fontWeight: '600' },
+  cacheBtnText: { color: C.text, fontSize: FS.md, fontWeight: FW.semibold },
   screen: { flex: 1, backgroundColor: C.bg },
   head: { flexDirection: 'row', alignItems: 'center', gap: SP.lg },
   backBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   focus: { borderWidth: 2, borderColor: C.brand, borderRadius: 10 },
-  title: { color: C.text, fontSize: H.font.hero, fontWeight: '800', flex: 1 },
+  title: { color: C.text, fontSize: H.font.hero, fontWeight: FW.heavy, flex: 1 },
   tabRow: { flexDirection: 'row', gap: SP.xs, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border, paddingBottom: 2 },
   tabItem: { paddingHorizontal: 13, paddingVertical: 9, borderRadius: 8, minHeight: 38, justifyContent: 'center' },
   tabFocus: { borderWidth: 1.5, borderColor: C.brand, borderRadius: 8 },
-  tabText: { color: C.text3, fontSize: H.font.md, fontWeight: '500' },
-  tabTextOn: { color: C.text, fontWeight: '700' },
+  tabText: { color: C.text3, fontSize: H.font.md, fontWeight: FW.medium },
+  tabTextOn: { color: C.text, fontWeight: FW.bold },
   tabBar: { height: 2.5, borderRadius: 2, backgroundColor: C.brand, marginTop: 4 },
   row: {
     flexDirection: 'row', alignItems: 'center', gap: SP.xxl, minHeight: 64,
@@ -313,7 +313,7 @@ const st = StyleSheet.create({
     borderColor: C.border, paddingHorizontal: 18, paddingVertical: 10,
   },
   rowIcon: { width: 30, height: 30, borderRadius: 9, backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center' },
-  rowTitle: { color: C.text, fontSize: H.font.md, fontWeight: '600' },
+  rowTitle: { color: C.text, fontSize: H.font.md, fontWeight: FW.semibold },
   rowDesc: { color: C.text3, fontSize: H.font.xs, lineHeight: 15 },
   tgl: { width: 42, height: 23, borderRadius: 12, backgroundColor: C.track, padding: 2 },
   tglOn: { backgroundColor: C.brand },

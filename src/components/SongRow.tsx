@@ -3,7 +3,8 @@ import { fixCoverUrl } from '../utils/cover'; // lxfix:kw 图床域名自愈
 import { Platform } from 'react-native';
 import { View, Text, Pressable, StyleSheet, Image } from 'react-native';
 import { Icon } from '../theme/Icon';
-import { C, SP, FS } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
+import { gradColorOf } from '../theme/grads'; // [老板 1011 15:39] 渐变唯一源
 import type { SongItem } from '../services/server';
 import { coverUrl, type LibSong } from '../services/myLibrary'; // [批次1·P1-1] LibSong 直传(我的/公共曲库封面链与 quality 副行,局部版退役)
 import { registerKbRow } from '../hd/hdkeyboard';
@@ -18,16 +19,6 @@ const SOURCE_LABELS: Record<string, string> = {
   kw: '酷我', wy: '网易云', tx: 'QQ音乐', kg: '酷狗', mg: '咪咕',
 };
 export const sourceLabel = (s?: string) => (s ? SOURCE_LABELS[s] ?? s : '');
-
-// [批次1] 渐变兜底族(LibSong 无封面时按名哈希取色,与各屏 COVER_GRADS 同源,禁死灰块)
-const COVER_GRADS: [string, string][] = [
-  ['#3f8766', '#265141'], ['#5d7ba3', '#3a506e'], ['#a3765d', '#6e4d3a'],
-  ['#6b5da3', '#463c6e'], ['#87663f', '#514126'], ['#3d4c5a', '#28333f'], ['#4c5a3d', '#333f28'],
-];
-function gradOf(name?: string): string {
-  let h = 0; for (let i = 0; i < (name || '').length; i++) h = (name || '').charCodeAt(i) + ((h << 5) - h);
-  return COVER_GRADS[Math.abs(h) % COVER_GRADS.length][0];
-}
 
 // [批次1·P1-1] 行内曲目二态:LibSong(我的/公共曲库原始对象,带 filename/hasCover/coverHttp/quality)·SongItem(第三方/云曲库)
 type RowSong = SongItem | LibSong;
@@ -70,7 +61,7 @@ export function SongRow({ song, idx, onPress, playing, extra, onMore, onLongPres
     ? `${ls.singer || '未知歌手'} · ${ls.album || (ls.subPath ? '文件夹分组' : '未知专辑')}${ls.quality && ls.quality !== '128k' ? ' · ' + ls.quality.toUpperCase() : ''}${sourceName ? ' · ' + sourceName : ''}`
     : `${isPub ? `公共${sourceName ? ` · ${sourceName}` : ''} · ` : sourceLabel(it?.source) ? `${sourceLabel(it?.source)} · ` : ''}${song.singer}${it?.albumName ? ` · ${it.albumName}` : ''}${it?._types?.flac ? ' · 无损' : ''}`;
   const dur = ls ? (ls.interval || ls.ext.toUpperCase()) : (it?.interval ?? '');
-  const g1 = gradOf(ls ? (ls.album || ls.singer) : (it?.albumName || song.singer));
+  const g1 = gradColorOf(ls ? (ls.album || ls.singer) : (it?.albumName || song.singer));
   return (
     <Pressable
       ref={kbRef as never}
@@ -136,7 +127,7 @@ const st = StyleSheet.create({
   fallback: { backgroundColor: C.surface2 },
   meta: { flex: 1, gap: 1, minWidth: 0 }, // gap:1 低于 token 档下限(标题/副行密排),保留
   titleRow: { flexDirection: 'row', alignItems: 'center' },
-  title: { color: C.text, fontSize: FS.md, lineHeight: 19, fontWeight: '500' },
+  title: { color: C.text, fontSize: FS.md, lineHeight: 19, fontWeight: FW.medium },
   sub: { color: C.text2, fontSize: FS.xs, lineHeight: 15 },
   dur: { color: C.text2, fontSize: FS.xs, lineHeight: 15 },
   more: { width: 20, height: 20, alignItems: 'center', justifyContent: 'center', marginLeft: 0 },

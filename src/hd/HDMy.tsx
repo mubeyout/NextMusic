@@ -16,13 +16,10 @@ import { sync, lxToApp, type UserListsSnapshot , subscribeSync } from '../servic
 import { providers } from '../services/providers';
 import { hdNav } from './hdnav';
 import type { SongItem } from '../services/server';
-import { FS, SP } from '../theme/tokens';
+import { FS, FW, SP } from '../theme/tokens';
+import { GRAD } from '../theme/grads';
 
 const K = H.font.sm / 10; // 界面缩放系数(设置 uiScale 联动网格列宽)
-const GRADS: [string, string][] = [
-  ['#1f6b5c', '#142647'], ['#80381f', '#381a2e'], ['#5c297a', '#1f3861'],
-  ['#146b85', '#1f2e47'], ['#1f6b5c', '#142647'], ['#80381f', '#381a2e'],
-];
 
 export function HDMy() {
   const insets = useSafeAreaInsets();
@@ -133,7 +130,7 @@ export function HDMy() {
           {playlists.map((pl, i) => (
             <HDTouch key={pl.key} style={st.plCard} zoom={1.06} onPress={() => openPl(pl)} onLongPress={() => managePl(pl)}>
               {pl.img ? <Image source={{ uri: pl.img }} style={st.plArt} />
-                : <LinearGradient colors={GRADS[i % GRADS.length]} style={st.plArt}><Icon name="music" size={28} color="#FFFFFFAA" /></LinearGradient>}
+                : <LinearGradient colors={GRAD.quick[i % GRAD.quick.length]} style={st.plArt}><Icon name="music" size={28} color="#FFFFFFAA" /></LinearGradient>}
               <View style={st.plTexts}>
                 <Text style={st.plName} numberOfLines={1}>{pl.name}</Text>
                 <Text style={st.plMeta}>{pl.count} 首</Text>
@@ -154,19 +151,19 @@ const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   acct: { height: 122, borderRadius: 18, flexDirection: 'row', alignItems: 'center', padding: 22, gap: SP.section },
   acctAvatar: { width: 66, height: 66, borderRadius: 33, backgroundColor: '#00000044', alignItems: 'center', justifyContent: 'center' },
-  acctName: { color: C.text, fontSize: FS.display, fontWeight: '800' },
+  acctName: { color: C.text, fontSize: FS.display, fontWeight: FW.heavy },
   acctSub: { color: '#FFFFFF99', fontSize: FS.lg, marginTop: 3 },
   acctBtn: { height: 52, borderRadius: 26, backgroundColor: '#00000042', paddingHorizontal: 28, alignItems: 'center', justifyContent: 'center' },
-  acctBtnText: { color: C.text, fontSize: FS.headline, fontWeight: '700' },
+  acctBtnText: { color: C.text, fontSize: FS.headline, fontWeight: FW.bold },
   fnCard: { flex: 1, height: 116, borderRadius: 16, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', gap: SP.sm, paddingHorizontal: 8 },
-  fnLabel: { color: C.text, fontSize: FS.headline, fontWeight: '700' },
+  fnLabel: { color: C.text, fontSize: FS.headline, fontWeight: FW.bold },
   fnSub: { color: C.text3, fontSize: FS.body },
-  secTitle: { color: C.text, fontSize: FS.h1, fontWeight: '800' }, // [LEO 1011] 22 档外→h1(20)区头次级档
+  secTitle: { color: C.text, fontSize: FS.h1, fontWeight: FW.heavy }, // [LEO 1011] 22 档外→h1(20)区头次级档
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.section },
   plCard: { gap: SP.sm, paddingBottom: 7, borderRadius: 12, backgroundColor: C.surface }, // lx98:去 overflow(坑133)
   plTexts: { alignSelf: 'stretch', paddingHorizontal: 8, gap: SP.xs },
   plArt: { width: '100%', aspectRatio: 1, borderTopLeftRadius: 12, borderTopRightRadius: 12, alignItems: 'center', justifyContent: 'center' },
   plNew: { width: '100%', aspectRatio: 1, borderRadius: 16, backgroundColor: C.surface, borderWidth: 1, borderStyle: 'dashed', borderColor: C.border, alignItems: 'center', justifyContent: 'center', gap: SP.md },
-  plName: { color: C.text, fontSize: FS.title, fontWeight: '600' },
+  plName: { color: C.text, fontSize: FS.title, fontWeight: FW.semibold },
   plMeta: { color: C.text2, fontSize: FS.md },
 });

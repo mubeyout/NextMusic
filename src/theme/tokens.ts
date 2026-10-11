@@ -120,6 +120,30 @@ applyBootTheme();
 export const SP = { xs: 4, sm: 6, md: 8, lg: 10, xl: 12, xxl: 14, section: 18, wide: 16, wider: 20, big: 24, screen: 20 } as const; // [12:44] section=18 为我推荐段距基准档
 /** 字号档:10-28 全整数,共 12 档(淘汰 8/9 特小档与 .5 半档——8/9→10,10.5→11,11.5→12,12.5→13;新代码禁裸写 fontSize) */
 export const FS = { xs: 10, sm: 11, body: 12, md: 13, lg: 14, xl: 15, title: 16, headline: 17, h2: 18, h1: 20, display: 24, hero: 28 } as const;
+
+// ── [老板 1011 15:39 全局统一令] 字重/网格/卡宽 token(唯一定义源;详见 docs/design-tokens.md) ──
+/** 字重档:5 主档+900 特例;新代码禁裸写 fontWeight 字符串 */
+export const FW = { normal: '400', medium: '500', semibold: '600', bold: '700', heavy: '800', black: '900' } as const;
+export type FontWeightToken = keyof typeof FW;
+
+/** 网格系统:墙列基档(phone 百分比)/HD 密网格参数/栅格与页边距(跨页面零差距唯一源) */
+export const GRID = {
+  wallTiers: [[1500, '15%'], [1100, '18%'], [800, '23%'], [0, '31%']] as [number, string][], // phone 墙列基(GridBasis/DiscCard 同源)
+  hdMin: 128,     // HD/web 密网格最小卡宽 dp(×uiScale;探索同款)
+  hdGap: 12, hdMaxCols: 9, hdMinCols: 3,
+  gutterHD: 22,   // HD 内页水平栅格(hdstyle.GUTTER 同源)
+  pageHD: 26,     // HD 页边距(为我推荐基准)
+  pagePhone: 20,  // phone 内容页边距(Home/Explore 基准)
+  libPhone: 16,   // 库族页边距(LibraryHome 基准)
+} as const;
+
+/** 卡宽档:同层级卡跨页面同大小(rail 封面卡=PvCard 基准;迷你卡=最近播放层) */
+export const CARD = {
+  rail: { phone: 112, web: 132, hd: 148 }, // rail 封面卡宽(RailCard/PvCard/DiscCard/搜索专辑/艺人专辑卡全对齐)
+  mini: 80,                                 // 迷你卡(最近播放 rail)
+  radius: 12,                               // nm-card 标准圆角
+  radiusHero: 16,                           // 英雄卡圆角
+} as const;
 export type SpaceToken = keyof typeof SP;
 export type FontToken = keyof typeof FS;
 // 旧键别名(零使用点,保险兼容)

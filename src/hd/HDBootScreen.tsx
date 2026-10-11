@@ -9,7 +9,7 @@ import { C, SH } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { useApp } from '../state/AppState';
 import { hdNav } from './hdnav';
-import { FS, SP } from '../theme/tokens';
+import { FS, FW, SP } from '../theme/tokens';
 
 export function HDBootScreen() {
   const insets = useSafeAreaInsets();
@@ -85,7 +85,7 @@ const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg, alignItems: 'center' },
   brand: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, marginTop: 14, marginBottom: 14 },
   brandMark: { width: 30, height: 32 },
-  brandName: { color: C.text, fontSize: FS.display, fontWeight: '800' }, // [LEO 1011] 22 档外→display(24)品牌大字
+  brandName: { color: C.text, fontSize: FS.display, fontWeight: FW.heavy }, // [LEO 1011] 22 档外→display(24)品牌大字
   brandSlogan: { color: C.text3, fontSize: FS.body },
   cardRow: { flexDirection: 'row', gap: SP.section, alignSelf: 'center', maxWidth: 780, width: '100%', maxHeight: 330, minHeight: 250 },
   card: {
@@ -96,17 +96,17 @@ const st = StyleSheet.create({
   cardIcon: { width: 52, height: 52, borderRadius: 17, backgroundColor: C.brandDim, alignItems: 'center', justifyContent: 'center' },
   cardIconPrimary: { backgroundColor: C.brand },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: SP.lg },
-  cardTitle: { color: C.text, fontSize: FS.headline, fontWeight: '800' },
+  cardTitle: { color: C.text, fontSize: FS.headline, fontWeight: FW.heavy },
   cardTag: { backgroundColor: C.brandDim, borderRadius: 7, paddingHorizontal: 8, paddingVertical: 2 },
   cardTagPrimary: { backgroundColor: C.brandDim },
-  cardTagText: { color: C.brand, fontSize: FS.sm, fontWeight: '700' },
+  cardTagText: { color: C.brand, fontSize: FS.sm, fontWeight: FW.bold },
   cardTagTextPrimary: { color: C.brand },
   cardDesc: { color: C.text2, fontSize: FS.body, lineHeight: 17, textAlign: 'center' },
   cardBtn: {
     marginTop: 4, height: 42, borderRadius: 13, borderWidth: 1.5, borderColor: C.strokeStrong,
     paddingHorizontal: 24, alignItems: 'center', justifyContent: 'center' },
   cardBtnPrimary: { backgroundColor: C.brand, borderColor: C.brand },
-  cardBtnText: { color: C.text, fontSize: FS.md, fontWeight: '700' },
+  cardBtnText: { color: C.text, fontSize: FS.md, fontWeight: FW.bold },
   cardBtnTextPrimary: { color: C.onBrand },
   footHint: { color: C.text3, fontSize: FS.sm, textAlign: 'center', marginTop: 14 },
 });

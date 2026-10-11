@@ -5,7 +5,7 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { C } from '../theme/tokens';
+import { C, FW } from '../theme/tokens';
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
 import { SH } from '../hd/hdtokens';
@@ -158,35 +158,35 @@ const st = StyleSheet.create({
     paddingHorizontal: 22, paddingTop: 18, paddingBottom: 18,
   },
   cardCenter: { borderRadius: 22, borderTopLeftRadius: 22, borderTopRightRadius: 22 },
-  title: { color: C.text, fontWeight: '700', lineHeight: 26 },
+  title: { color: C.text, fontWeight: FW.bold, lineHeight: 26 },
   desc: { color: C.text2, fontSize: 13, lineHeight: 19, marginTop: 8 },
   brandCard: { backgroundColor: C.surface2, borderRadius: 14, padding: 14, marginTop: 12, gap: 3 },
   brandCardHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
-  brandCardTitle: { color: C.text, fontSize: 14, fontWeight: '600', flex: 1 },
+  brandCardTitle: { color: C.text, fontSize: 14, fontWeight: FW.semibold, flex: 1 },
   proChip: {
     borderWidth: 1.2, borderColor: C.brand, borderRadius: 6,
     paddingHorizontal: 6, paddingVertical: 1, backgroundColor: C.brandDim,
   },
-  proChipText: { color: C.brandText, fontSize: 10.5, fontWeight: '700', letterSpacing: 0.5 },
+  proChipText: { color: C.brandText, fontSize: 10.5, fontWeight: FW.bold, letterSpacing: 0.5 },
   brandCardLine: { color: C.text2, fontSize: 13.5, lineHeight: 20 },
   goldBtn: {
     height: 48, borderRadius: 13, backgroundColor: C.brand,
     alignItems: 'center', justifyContent: 'center', marginTop: 16,
   },
   goldBtnFocus: { borderWidth: 2.5, borderColor: C.text, borderRadius: 13 },
-  goldBtnText: { color: C.onBrand, fontSize: 15, fontWeight: '700' },
+  goldBtnText: { color: C.onBrand, fontSize: 15, fontWeight: FW.bold },
   familyRow: {
     borderRadius: 12, backgroundColor: C.surface2, paddingVertical: 10, paddingHorizontal: 12,
     marginTop: 10, borderWidth: 1, borderColor: 'transparent',
   },
   familyRowGold: { backgroundColor: C.brandDim, borderColor: C.brand },
   familyText: { color: C.text2, fontSize: 12.5, lineHeight: 18, textAlign: 'center' },
-  familyTextGold: { color: C.brandText, fontWeight: '600' },
+  familyTextGold: { color: C.brandText, fontWeight: FW.semibold },
   trialLink: { color: C.text2, fontSize: 13, textAlign: 'center', textDecorationLine: 'underline' },
   ghostBtn: {
     height: 44, borderRadius: 13, backgroundColor: C.surface2,
     alignItems: 'center', justifyContent: 'center', marginTop: 6,
   },
   ghostFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 13 },
-  ghostText: { color: C.text, fontSize: 14, fontWeight: '500' },
+  ghostText: { color: C.text, fontSize: 14, fontWeight: FW.medium },
 });

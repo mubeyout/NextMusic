@@ -7,7 +7,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon, type IconName } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, CARD, FW } from '../theme/tokens';
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
 import { GUTTER, focus } from '../hd/hdstyle';
@@ -175,16 +175,16 @@ const hv = StyleSheet.create({
   heroGrad: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   glow: { position: 'absolute', right: -30, top: -40, width: 180, height: 180, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.10)' },
   heroBody: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 20, paddingHorizontal: 20 },
-  big: { color: '#FFFFFF', fontSize: 19, lineHeight: 24, fontWeight: '800', textShadowColor: 'rgba(0,0,0,0.25)', textShadowRadius: 6, textShadowOffset: { width: 0, height: 1 } },
-  st: { color: 'rgba(255,255,255,0.92)', fontSize: 12.5, lineHeight: 18, marginTop: 6, fontWeight: '500' },
+  big: { color: '#FFFFFF', fontSize: 19, lineHeight: 24, fontWeight: FW.heavy, textShadowColor: 'rgba(0,0,0,0.25)', textShadowRadius: 6, textShadowOffset: { width: 0, height: 1 } },
+  st: { color: 'rgba(255,255,255,0.92)', fontSize: 12.5, lineHeight: 18, marginTop: 6, fontWeight: FW.medium },
   mini: { color: 'rgba(255,255,255,0.75)', fontSize: 10.5, lineHeight: 15, marginTop: 4 },
   playBtn: { width: 46, height: 46, borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.42)', alignItems: 'center', justifyContent: 'center' },
   playBtnHD: { width: 54, height: 54 },
   duo: { flexDirection: 'row', gap: 10, marginTop: 12, marginBottom: 2 },
   duoBtn: { height: 36, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, flex: 1, borderRadius: 10, borderWidth: 1, borderColor: C.stroke, backgroundColor: C.surface },
   duoPri: { backgroundColor: C.brand, borderColor: C.brand },
-  duoPriT: { color: '#062B15', fontSize: 12.5, fontWeight: '700' },
-  duoGhoT: { color: C.text2, fontSize: 12.5, fontWeight: '600' },
+  duoPriT: { color: '#062B15', fontSize: 12.5, fontWeight: FW.bold },
+  duoGhoT: { color: C.text2, fontSize: 12.5, fontWeight: FW.semibold },
 });
 
 // ── 第三段 · 筛选 chips(共享件;视图切换=各页既有 tabs/胶囊,插槽式接入) ──
@@ -255,7 +255,7 @@ export function HomeRail({ children }: { children: React.ReactNode }) {
 export function RailCard({ cover, name, sub, icon, onPress }: {
   cover?: string | null; name: string; sub?: string; icon?: IconName; onPress?: () => void;
 }) {
-  const size = IS_HD ? 150 : 116;
+  const size = IS_HD ? CARD.rail.hd : (Platform.OS === 'web' ? CARD.rail.web : CARD.rail.phone); // [老板 1011 15:39] rail 卡宽唯一源(与 PvCard 同规格)
   const { elRef, onHoverIn, onHoverOut, cardStyle } = useHoverCard(name);
   const WrapT = (IS_HD ? HDTouch : TouchableOpacity) as unknown as React.ComponentType<Record<string, unknown>>;
   return (
@@ -325,7 +325,7 @@ const lh = StyleSheet.create({
   brandWrap: { width: 42, height: 42, borderRadius: 13, backgroundColor: 'rgba(255,255,255,.10)', alignItems: 'center', justifyContent: 'center' },
   brandWrapHD: { width: 52, height: 52, borderRadius: 16 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  name: { color: '#F2F7F4', fontSize: 20, lineHeight: 26, fontWeight: '700', flexShrink: 1 },
+  name: { color: '#F2F7F4', fontSize: 20, lineHeight: 26, fontWeight: FW.bold, flexShrink: 1 },
   nameHD: { fontSize: 23, lineHeight: 30 },
   stats: { color: 'rgba(255,255,255,.85)', fontSize: 12, lineHeight: 17, marginTop: 2 },
   subAddr: { color: 'rgba(255,255,255,.6)', fontSize: 10.5, lineHeight: 15, marginTop: 1 },
@@ -335,27 +335,27 @@ const lh = StyleSheet.create({
   actBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.surface2, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9 },
   actBtnPrimary: { backgroundColor: C.brand },
   actBtnOff: { opacity: 0.45 },
-  actT: { color: C.text2, fontSize: 11.5, fontWeight: '600' },
-  actTPrimary: { color: C.onBrand, fontWeight: '700' },
+  actT: { color: C.text2, fontSize: 11.5, fontWeight: FW.semibold },
+  actTPrimary: { color: C.onBrand, fontWeight: FW.bold },
   // chips
   chipsRow: { gap: 6, paddingVertical: 2 },
   chip: { borderRadius: 999, borderWidth: 1, borderColor: C.stroke, paddingHorizontal: 13, paddingVertical: 6 },
   chipOn: { backgroundColor: C.brand, borderColor: C.brand },
   chipT: { color: C.text2, fontSize: 12 },
-  chipTOn: { color: C.onBrand, fontWeight: '700' },
+  chipTOn: { color: C.onBrand, fontWeight: FW.bold },
   // 内容分区
   section: { gap: 9 },
   secHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  secTitle: { color: C.text, fontSize: 15, lineHeight: 21, fontWeight: '700' },
+  secTitle: { color: C.text, fontSize: 15, lineHeight: 21, fontWeight: FW.bold },
   secTitleHD: { fontSize: 17, lineHeight: 24 },
   secCount: { color: C.text3, fontSize: 11 },
   secMore: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 2 },
-  secMoreT: { color: C.text2, fontSize: 12, fontWeight: '500' },
+  secMoreT: { color: C.text2, fontSize: 12, fontWeight: FW.medium },
   // 横滑卡
   railFallback: { borderRadius: 10, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }, // [老板 1011 12:27] 黑灰基准(PlCard 同款);弃浅绿灰 artTint2
-  railName: { color: C.text, fontSize: 12, lineHeight: 16, fontWeight: '600' },
+  railName: { color: C.text, fontSize: 12, lineHeight: 16, fontWeight: FW.semibold },
   railSub: { color: C.text2, fontSize: 10, lineHeight: 13 },
   // NEW 标(⑤-B6)
   newBadge: { backgroundColor: C.brand, borderRadius: 999, paddingHorizontal: 4, paddingVertical: 1, flexShrink: 0, marginLeft: 4 },
-  newBadgeT: { color: C.onBrand, fontSize: 9, lineHeight: 12, fontWeight: '700', letterSpacing: 0.5 },
+  newBadgeT: { color: C.onBrand, fontSize: 9, lineHeight: 12, fontWeight: FW.bold, letterSpacing: 0.5 },
 });

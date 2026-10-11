@@ -2,7 +2,7 @@ import React from 'react';
 import { Image, View, Text, TouchableOpacity, StyleSheet, ScrollView  } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { C, FS, SP } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { useApp } from '../state/AppState';
 
 // Figma NM-AUTH-001: server-ready card + 3 actions + binding note
@@ -57,18 +57,18 @@ const st = StyleSheet.create({
   content: { gap: SP.section },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: SP.md },
   brandDot: { width: 17, height: 17, borderRadius: 9, backgroundColor: C.brand },
-  brandName: { color: C.text, fontSize: FS.xl, lineHeight: 18, fontWeight: '700' },
+  brandName: { color: C.text, fontSize: FS.xl, lineHeight: 18, fontWeight: FW.bold },
   header: { gap: SP.sm },
-  title: { color: C.text, fontSize: FS.display, lineHeight: 31, fontWeight: '700' }, // [LEO 1011] 26 档外→display(24)与全 app 大标题族一致
+  title: { color: C.text, fontSize: FS.display, lineHeight: 31, fontWeight: FW.bold }, // [LEO 1011] 26 档外→display(24)与全 app 大标题族一致
   subtitle: { color: C.text2, fontSize: FS.body, lineHeight: 14 },
   readyCard: { borderRadius: 14, backgroundColor: C.surface, padding: 16, gap: SP.md },
-  readyTitle: { color: C.brandText, fontSize: FS.md, lineHeight: 16, fontWeight: '500' },
+  readyTitle: { color: C.brandText, fontSize: FS.md, lineHeight: 16, fontWeight: FW.medium },
   readySub: { color: C.text2, fontSize: FS.xs, lineHeight: 12 },
   btnPrimary: { height: 46, borderRadius: 12, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
-  btnPrimaryText: { color: C.onBrand, fontSize: FS.lg, lineHeight: 17, fontWeight: '500' },
+  btnPrimaryText: { color: C.onBrand, fontSize: FS.lg, lineHeight: 17, fontWeight: FW.medium },
   btnGhost: { height: 46, borderRadius: 12, borderWidth: 1, borderColor: C.strokeStrong, alignItems: 'center', justifyContent: 'center' },
-  btnGhostText: { color: C.text, fontSize: FS.lg, lineHeight: 17, fontWeight: '500' },
+  btnGhostText: { color: C.text, fontSize: FS.lg, lineHeight: 17, fontWeight: FW.medium },
   note: { borderRadius: 14, backgroundColor: C.surface, padding: 16, gap: SP.sm },
-  noteTitle: { color: C.text, fontSize: FS.body, lineHeight: 14, fontWeight: '500' },
+  noteTitle: { color: C.text, fontSize: FS.body, lineHeight: 14, fontWeight: FW.medium },
   noteBody: { color: C.text2, fontSize: FS.xs, lineHeight: 12 },
 });

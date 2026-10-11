@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
 import { PageHeader } from './PageChrome';
-import { C } from '../theme/tokens';
+import { C, FW } from '../theme/tokens';
 
 // Shared settings sub-page scaffold (Figma 21/22/23 pattern)
 export function SubPage({
@@ -55,9 +55,9 @@ export function SubPage({
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   header: { height: 40, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 10 },
-  title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700', textAlign: 'center' },
+  title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: FW.bold, textAlign: 'center' },
   section: { borderRadius: 14, backgroundColor: C.surface, padding: 16, marginBottom: 14 },
-  secTitle: { color: C.text, fontSize: 13, lineHeight: 16, fontWeight: '500', marginBottom: 8 },
+  secTitle: { color: C.text, fontSize: 13, lineHeight: 16, fontWeight: FW.medium, marginBottom: 8 },
   row: { minHeight: 44, flexDirection: 'row', alignItems: 'center' },
   rowDivide: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.strokeFaint, paddingTop: 8, marginTop: 8 },
   rowLabel: { flex: 1, color: C.text, fontSize: 14, lineHeight: 20 },

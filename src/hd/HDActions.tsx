@@ -6,7 +6,7 @@ import { View, Text, StyleSheet, TextInput, Pressable, BackHandler, Dimensions, 
 import { C } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { Icon } from '../theme/Icon';
-import { FS, SP } from '../theme/tokens';
+import { FS, FW, SP } from '../theme/tokens';
 
 export interface HDActionItem { label: string; danger?: boolean; onPress?: () => void; icon?: string; }
 export interface HDActionReq {
@@ -90,13 +90,13 @@ const st = StyleSheet.create({
   scrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, elevation: 999 }, // lx150:捕捉器 focusable——光标脱离面板即关
   panel: { position: 'absolute', left: (Dimensions.get('window').width - 380) / 2, top: 180, width: 380, maxHeight: 560, borderRadius: 18, backgroundColor: C.elev, borderWidth: 1, borderColor: C.border, padding: 14, gap: SP.md, elevation: 12 }, // lx130(老板):屏幕中间
   head: { flexDirection: 'row', alignItems: 'center', gap: SP.md, paddingHorizontal: 2 },
-  title: { color: C.text, fontSize: FS.lg, fontWeight: '700', flex: 1 },
+  title: { color: C.text, fontSize: FS.lg, fontWeight: FW.bold, flex: 1 },
   x: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: C.inset },
   inputRow: { flexDirection: 'row', gap: SP.md, alignItems: 'center' },
   input: { flex: 1, height: 42, borderRadius: 10, backgroundColor: C.inset, borderWidth: 1, borderColor: C.border, paddingHorizontal: 12, color: C.text, fontSize: FS.md },
   okBtn: { height: 42, borderRadius: 10, backgroundColor: C.brand, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
-  okText: { color: C.onBrand, fontSize: FS.body, fontWeight: '800' },
+  okText: { color: C.onBrand, fontSize: FS.body, fontWeight: FW.heavy },
   // lx159(老板):icon+文字左右排布(原默认 column 上下堆叠不合理);左对齐菜单范式
   row: { height: 44, borderRadius: 11, backgroundColor: C.inset, flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingHorizontal: 14 },
-  rowText: { color: C.text, fontSize: FS.md, fontWeight: '600' },
+  rowText: { color: C.text, fontSize: FS.md, fontWeight: FW.semibold },
 });

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C, FS, SP } from '../theme/tokens';
+import { C, CARD, FS, FW, SP } from '../theme/tokens';
 import { PageHeader } from '../components/PageChrome';
 import { SongRow } from '../components/SongRow';
 import { HDTouch } from '../hd/HDTouch';
@@ -101,14 +101,14 @@ const st = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: SP.xxl, paddingVertical: 12 },
   avatar: { width: 72, height: 72, borderRadius: 36 },
   avaFallback: { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  avaGlyph: { color: C.text2, fontSize: FS.display, fontWeight: '800' }, // [LEO 1011] 26 档外→display(24)
-  name: { color: C.text, fontSize: FS.h1, fontWeight: '800' },
+  avaGlyph: { color: C.text2, fontSize: FS.display, fontWeight: FW.heavy }, // [LEO 1011] 26 档外→display(24)
+  name: { color: C.text, fontSize: FS.h1, fontWeight: FW.heavy },
   meta: { color: C.text2, fontSize: FS.body, marginTop: 3 },
-  sec: { color: C.text, fontSize: FS.xl, fontWeight: '700', marginTop: 18, marginBottom: 8 },
+  sec: { color: C.text, fontSize: FS.xl, fontWeight: FW.bold, marginTop: 18, marginBottom: 8 },
   empty: { color: C.text2, fontSize: FS.body, textAlign: 'center', paddingVertical: 20 },
   albumGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl },
-  albumCard: { width: 104, gap: SP.sm },
+  albumCard: { width: CARD.rail.phone, gap: SP.sm }, // [老板 1011 15:39] rail 卡宽唯一源
   albumArt: { width: 104, height: 104, borderRadius: 10 },
-  albumName: { color: C.text, fontSize: FS.body, fontWeight: '600' },
+  albumName: { color: C.text, fontSize: FS.body, fontWeight: FW.semibold },
   albumYear: { color: C.text2, fontSize: FS.xs },
 });

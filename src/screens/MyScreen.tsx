@@ -4,7 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon, BrandIcon } from '../theme/Icon';
-import { C, FS, SP, softGrad } from '../theme/tokens';
+import { C, FS, FW, SP, softGrad } from '../theme/tokens';
+import { GRAD } from '../theme/grads';
 import { PillTabs } from '../components/PillTabs';
 import { EmptyState } from '../components/PageChrome';
 import { ActionSheet } from '../components/ActionSheet';
@@ -29,14 +30,6 @@ import type { SongItem } from '../services/server';
 // Library Summary banner(#145938→#1f2e52 r14 h72, 我的收藏 + counts + ＋新建 C.brand r18) +
 // Quick row 3 cards (#2b2b2b r12 110x66: 最近播放/我喜欢的/本地音乐) +
 // 自建歌单 2-col grid (169x104 gradient covers + ♫ + 13px w700 + 9px meta)
-const COVER_GRADS: [string, string][] = [
-  ['#1f6b5c', '#142647'],
-  ['#80381f', '#381a2e'],
-  ['#5c297a', '#1f3861'],
-  ['#146b85', '#1f2e47'],
-  ['#1f6b5c', '#142647'],
-  ['#80381f', '#381a2e'],
-];
 
 export function MyScreen({ visible = true }: { visible?: boolean }) {
   const insets = useSafeAreaInsets();
@@ -241,7 +234,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
                   {g.img ? (
                     <Image source={{ uri: g.img }} style={st.plCover} />
                   ) : (
-                    <LinearGradient colors={COVER_GRADS[i % COVER_GRADS.length]} style={st.plCover}>
+                    <LinearGradient colors={GRAD.quick[i % GRAD.quick.length]} style={st.plCover}>
                       <Icon name="music" size={26} color={C.white} />
                     </LinearGradient>
                   )}
@@ -390,41 +383,41 @@ const COL = (Dimensions.get('window').width - 40 - 24) / 3; // 3 列自适应填
 const st = StyleSheet.create({
   content: { paddingHorizontal: 20 },
   headerRow: { height: 44, flexDirection: 'row', alignItems: 'center', gap: SP.xl },
-  title: { flex: 1, color: C.text, fontSize: FS.hero, lineHeight: 34, fontWeight: '700' },
+  title: { flex: 1, color: C.text, fontSize: FS.hero, lineHeight: 34, fontWeight: FW.bold },
   settingsBtn: { width: 44, height: 44, borderRadius: 999, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   body: { gap: SP.md, paddingTop: 14 },
   banner: {
     height: 72, borderRadius: 14, marginTop: 12, flexDirection: 'row',
     alignItems: 'center', paddingHorizontal: 16, gap: SP.xl,
   },
-  bannerTitle: { color: C.text, fontSize: FS.xl, lineHeight: 18, fontWeight: '700' },
+  bannerTitle: { color: C.text, fontSize: FS.xl, lineHeight: 18, fontWeight: FW.bold },
   bannerMeta: { color: C.text2, fontSize: FS.sm, lineHeight: 13, marginTop: 6 },
   newBtn: { height: 36, borderRadius: 18, backgroundColor: C.brand, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
-  newBtnText: { color: C.white, fontSize: FS.body, lineHeight: 14, fontWeight: '500' },
+  newBtnText: { color: C.white, fontSize: FS.body, lineHeight: 14, fontWeight: FW.medium },
   quickRow: { flexDirection: 'row', gap: SP.lg, marginTop: 12 },
   quickCard: { flex: 1, height: 66, borderRadius: 12, backgroundColor: C.surface2, padding: 12, justifyContent: 'center', gap: SP.sm },
   pvCard: { width: 138, minHeight: 64, borderRadius: 12, backgroundColor: C.surface2, padding: 12, justifyContent: 'center', gap: SP.sm },
-  pvName: { color: C.text, fontSize: FS.body, lineHeight: 15, fontWeight: '600' },
+  pvName: { color: C.text, fontSize: FS.body, lineHeight: 15, fontWeight: FW.semibold },
   pvMeta: { color: C.text2, fontSize: FS.xs, lineHeight: 12 },
   pvAddRow: { minHeight: 48, borderRadius: 12, backgroundColor: C.surface2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.sm },
   pvAddText: { color: C.text2, fontSize: FS.sm, lineHeight: 15 },
-  quickTitle: { color: C.text, fontSize: FS.body, lineHeight: 14, fontWeight: '500' },
+  quickTitle: { color: C.text, fontSize: FS.body, lineHeight: 14, fontWeight: FW.medium },
   quickMeta: { color: C.text2, fontSize: FS.xs, lineHeight: 12 },
   sectionRow: { flexDirection: 'row', alignItems: 'center', height: 26, marginTop: 12 },
-  sectionTitle: { flex: 1, color: C.text, fontSize: FS.h2, lineHeight: 22, fontWeight: '700' },
+  sectionTitle: { flex: 1, color: C.text, fontSize: FS.h2, lineHeight: 22, fontWeight: FW.bold },
   sectionMeta: { color: C.brandSoft, fontSize: FS.xs, lineHeight: 12 },
   plGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl, marginTop: 4 },
   plCell: { width: '31%', gap: SP.xs },
   plCover: { width: '100%', aspectRatio: 1, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  plGlyph: { color: C.white, fontSize: FS.display, fontWeight: '700' }, // [LEO 1011] 26 档外→display(24)
-  plName: { color: C.text, fontSize: FS.md, lineHeight: 16, fontWeight: '700' },
+  plGlyph: { color: C.white, fontSize: FS.display, fontWeight: FW.bold }, // [LEO 1011] 26 档外→display(24)
+  plName: { color: C.text, fontSize: FS.md, lineHeight: 16, fontWeight: FW.bold },
   plMeta: { color: C.text2, fontSize: FS.xs, lineHeight: 11 },
   row: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, paddingVertical: 8 },
   art: { width: 50, height: 50, borderRadius: 8, backgroundColor: C.surface2 },
   roundArt: { width: 50, height: 50, borderRadius: 25, backgroundColor: C.surface2 },
   artFallback: { alignItems: 'center', justifyContent: 'center' },
-  rowGlyph: { color: C.text2, fontSize: FS.h1, fontWeight: '700' },
-  rowName: { color: C.text, fontSize: FS.lg, lineHeight: 19, fontWeight: '500' },
+  rowGlyph: { color: C.text2, fontSize: FS.h1, fontWeight: FW.bold },
+  rowName: { color: C.text, fontSize: FS.lg, lineHeight: 19, fontWeight: FW.medium },
   rowMeta: { color: C.text2, fontSize: FS.sm, lineHeight: 15 },
   empty: { color: C.text2, fontSize: FS.body, lineHeight: 17, textAlign: 'center', paddingTop: 18, paddingBottom: 6 },
   center: { paddingVertical: 24 },

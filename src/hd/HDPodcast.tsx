@@ -20,7 +20,7 @@ import { lxapi } from '../services/lxapi';
 import { hdNav } from './hdnav';
 import { cacheStale, cacheSet } from './hdcache';
 import type { SongItem } from '../services/server';
-import { SP } from '../theme/tokens';
+import { FW, SP } from '../theme/tokens';
 
 interface PodChannel { id: string; name: string; query: string; sub: string; source: 'kw' | 'kg' | 'wy'; }
 
@@ -175,7 +175,7 @@ function PodCard({ ch, ci, count, firstName, onOpen, onPlay }: { ch: { id: strin
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   head: { gap: SP.xs },
-  title: { color: C.text, fontSize: H.font.hero, fontWeight: '800' },
+  title: { color: C.text, fontSize: H.font.hero, fontWeight: FW.heavy },
   sub: { color: C.text3, fontSize: H.font.sm },
   card: { gap: SP.sm, borderRadius: 12, backgroundColor: C.surface, overflow: 'hidden' },
   cardCover: { width: '100%', aspectRatio: 1.35, padding: 12, flexDirection: 'row', alignItems: 'flex-start' },
@@ -185,9 +185,9 @@ const st = StyleSheet.create({
   cardPlayWeb: { position: 'absolute', right: 12, bottom: 12, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,.24)', alignItems: 'center', justifyContent: 'center' },
   cardBody: { paddingHorizontal: 8, paddingBottom: 8, paddingTop: 0, gap: SP.xs },
   cardPlay: { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,.22)', alignItems: 'center', justifyContent: 'center' },
-  cardName: { color: C.text, fontSize: H.font.sm, fontWeight: '700' },
+  cardName: { color: C.text, fontSize: H.font.sm, fontWeight: FW.bold },
   cardSub: { color: C.text3, fontSize: H.font.xs },
-  secTitle: { color: C.text, fontSize: H.font.xl, fontWeight: '700' },
+  secTitle: { color: C.text, fontSize: H.font.xl, fontWeight: FW.bold },
   secHint: { color: C.text3, fontSize: H.font.xs },
   loading: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingVertical: 18 },
   loadingText: { color: C.text3, fontSize: H.font.sm },

@@ -3,7 +3,7 @@
 // 本组件只在 Platform.OS === 'web' 时注册渲染;下拉锚定触发元素,支持点击外部关闭/Esc 关闭/键盘导航。
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Platform, Pressable, Text, View, Modal } from 'react-native';
-import { C } from '../theme/tokens';
+import { C, FW } from '../theme/tokens';
 
 export type MenuAnchor = { x: number; y: number; w: number; h: number };
 
@@ -80,7 +80,7 @@ export function DropdownHost() {
                 opacity: 1,
               })) as never}
             >
-              <Text style={{ color: it.danger ? '#ff6b6b' : (C.text ?? '#fff'), fontSize: 13, fontWeight: '500' }}>{it.label}</Text>
+              <Text style={{ color: it.danger ? '#ff6b6b' : (C.text ?? '#fff'), fontSize: 13, fontWeight: FW.medium }}>{it.label}</Text>
             </Pressable>
           ))}
         </View>

@@ -6,7 +6,7 @@ import { VinylDisc } from '../components/VinylDisc'; // 唱片样式 draft-2:共
 import { Icon } from '../theme/Icon';
 import { fixCoverUrl } from '../utils/cover'; // lxfix:kw 图床域名自愈
 import { sourceLabel } from '../components/SongRow';
-import { C, FS, SP } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { usePlayer, usePlayerProgress } from '../state/PlayerProvider';
 import { useSeekBar } from '../hooks/useSeekBar'; // R6 统一 seek
 import { api } from '../services/server';
@@ -322,7 +322,7 @@ const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bgDeep },
   header: { height: 72, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20 },
   hBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center' },
-  hTitle: { flex: 1, color: C.text, fontSize: FS.title, lineHeight: 19, fontWeight: '500' }, // lx166 居左(播放页返回头行)
+  hTitle: { flex: 1, color: C.text, fontSize: FS.title, lineHeight: 19, fontWeight: FW.medium }, // lx166 居左(播放页返回头行)
   // draft-2 容器层外阴影:0 24px 70px 黑55%@230 设计稿,按 270/230 等比;
   // backgroundColor=盘缘同色,给 Android elevation 提供圆形 outline(盘体 SVG 全覆盖,衬底不可见)
   vinylWrap: {
@@ -332,10 +332,10 @@ const st = StyleSheet.create({
   vinylSpin: { width: 270, height: 270 },
   modeRow: { flexDirection: 'row', alignItems: 'center', gap: SP.md, paddingLeft: 20, marginTop: 8 },
   modeMarker: { width: 3, height: 38, borderRadius: 2, backgroundColor: C.brand },
-  modeTitle: { color: C.text, fontSize: FS.xl, lineHeight: 18, fontWeight: '500' },
+  modeTitle: { color: C.text, fontSize: FS.xl, lineHeight: 18, fontWeight: FW.medium },
   modeCaption: { color: C.text2, fontSize: FS.sm, lineHeight: 13 },
   lyrics: { paddingHorizontal: 30, paddingTop: 10, gap: SP.sm, minHeight: 158 },
-  lActive: { color: C.brandSoft, fontSize: FS.display, lineHeight: 29, fontWeight: '700' }, // [LEO 1011] 26 档外→display(24)
+  lActive: { color: C.brandSoft, fontSize: FS.display, lineHeight: 29, fontWeight: FW.bold }, // [LEO 1011] 26 档外→display(24)
   lTrans: { color: C.text2, fontSize: FS.lg, lineHeight: 18, marginTop: 2 },
   lLead: { color: C.text, fontSize: FS.h2, lineHeight: 22, opacity: 0.86 },
   lFar: { color: C.text2, fontSize: FS.lg, lineHeight: 17, opacity: 0.55 },
@@ -344,7 +344,7 @@ const st = StyleSheet.create({
     flex: 1, height: 44, borderRadius: 14, backgroundColor: C.inputBar,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.sm,
   },
-  toolLabel: { color: C.text2, fontSize: FS.sm, lineHeight: 13, fontWeight: '500' },
+  toolLabel: { color: C.text2, fontSize: FS.sm, lineHeight: 13, fontWeight: FW.medium },
   panel: {
     borderRadius: 24, borderTopLeftRadius: 24, borderTopRightRadius: 24,
     backgroundColor: C.elev, paddingTop: 18, paddingHorizontal: 20, gap: SP.sm,
@@ -353,9 +353,9 @@ const st = StyleSheet.create({
   pActions: { flexDirection: 'row', alignItems: 'center', gap: SP.lg },
   pArt: { width: 52, height: 52, borderRadius: 10 },
   pMeta: { flex: 1, marginLeft: 13, gap: SP.xs },
-  pTitle: { color: C.text, fontSize: FS.h2, lineHeight: 22, fontWeight: '700' },
+  pTitle: { color: C.text, fontSize: FS.h2, lineHeight: 22, fontWeight: FW.bold },
   pSub: { color: C.text2, fontSize: FS.body, lineHeight: 14 },
-  pProg: { color: C.brandSoft, fontSize: FS.xs, lineHeight: 14, fontWeight: '600' },
+  pProg: { color: C.brandSoft, fontSize: FS.xs, lineHeight: 14, fontWeight: FW.semibold },
   pIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' },
   seekHit: { height: 28, justifyContent: 'center' },
   bar: { height: 4, flexDirection: 'row', backgroundColor: C.surface2 },
@@ -373,5 +373,5 @@ const st = StyleSheet.create({
     backgroundColor: C.brand,
     alignItems: 'center', justifyContent: 'center',
   },
-  repeatOne: { position: 'absolute', right: 6, top: 6, color: C.brandText, fontSize: FS.xs, fontWeight: '700' },
+  repeatOne: { position: 'absolute', right: 6, top: 6, color: C.brandText, fontSize: FS.xs, fontWeight: FW.bold },
 });

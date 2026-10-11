@@ -3,9 +3,10 @@
 // 播放条让位 paddingBottom 硬编码 100/116/32 各屏各写——全部收口到这里
 // 规则:HD/桌面内页水平栅格一律 GUTTER;焦点环一律 focus(容器圆角);底部一律 pageBottom()
 import { C, H } from './hdtokens';
+import { GRID } from '../theme/tokens'; // [老板 1011 15:39] 网格唯一源
 
 /** 页面水平栅格(HDPlaylistDetail 基准;手机屏不引,保持各自紧凑值) */
-export const GUTTER = 22;
+export const GUTTER = GRID.gutterHD; // [老板 1011 15:39] 唯一源 GRID
 
 /** D-pad/遥控焦点环——半径传容器自身圆角(行 8 / 卡 11 / 胶囊 999) */
 export const focus = (radius: number) => ({ borderWidth: 2, borderColor: C.brand, borderRadius: radius });

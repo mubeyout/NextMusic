@@ -8,7 +8,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 
 import { Icon } from '../theme/Icon';
 import { PageHeader } from './PageChrome';
 import { LockGlyph } from './GateSheet';
-import { C } from '../theme/tokens';
+import { C, FW } from '../theme/tokens';
 import { ActionSheet } from './ActionSheet';
 
 export function ToggleRow({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
@@ -116,9 +116,9 @@ export function PageShell({ title, onBack, children }: { title: string; onBack: 
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   header: { height: 40, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 10 },
-  title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700', textAlign: 'center' },
+  title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: FW.bold, textAlign: 'center' },
   section: { borderRadius: 14, backgroundColor: C.surface, padding: 16, marginBottom: 14 },
-  secTitle: { color: C.text2, fontSize: 12, lineHeight: 16, fontWeight: '800', marginBottom: 12 }, // v3.30(LEO P1):分组标题退层级(text2+800)间距 8→12
+  secTitle: { color: C.text2, fontSize: 12, lineHeight: 16, fontWeight: FW.heavy, marginBottom: 12 }, // v3.30(LEO P1):分组标题退层级(text2+800)间距 8→12
   row: { minHeight: 44, flexDirection: 'row', alignItems: 'center' },
   rowDivide: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.strokeFaint, paddingTop: 10, marginTop: 10 },
   rowLabel: { flex: 1, color: C.text, fontSize: 14, lineHeight: 20 },

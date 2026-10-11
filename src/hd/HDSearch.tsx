@@ -16,7 +16,7 @@ import { createMMKV } from 'react-native-mmkv';
 import type { SongItem } from '../services/server';
 import { api } from '../services/server';
 import { hdNav } from './hdnav';
-import { FS, SP } from '../theme/tokens';
+import { FS, FW, SP } from '../theme/tokens';
 
 const SOURCES: { id: SearchSrc; label: string }[] = [
   { id: 'kw', label: '酷我' },
@@ -266,7 +266,7 @@ export function HDSearch() {
             {(singers || []).map(a => (
               <HDTouch key={a.id} style={st.resRow} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }}
                 onPress={() => hdNav()?.navigate('ArtistDetail', { artist: { id: a.id, name: a.name, img: a.img, source: a.source || 'wy' } })}>
-                {a.img ? <Image source={{ uri: a.img }} style={st.resRound} /> : <View style={[st.resRound, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Text style={{ color: C.text2, fontSize: FS.lg, fontWeight: '700' }}>{a.name[0]}</Text></View>}
+                {a.img ? <Image source={{ uri: a.img }} style={st.resRound} /> : <View style={[st.resRound, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Text style={{ color: C.text2, fontSize: FS.lg, fontWeight: FW.bold }}>{a.name[0]}</Text></View>}
                 <Text style={st.resName} numberOfLines={1}>{a.name}</Text>
                 <Text style={st.srcTag}>{(a.source || 'wy').toUpperCase()}</Text>
               </HDTouch>
@@ -325,7 +325,7 @@ const st = StyleSheet.create({
   pillOn: { backgroundColor: C.brand, borderColor: C.brand },
   pillFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.pill },
   pillLabel: { color: C.text2, fontSize: H.font.sm },
-  pillLabelOn: { color: C.onBrand, fontWeight: '600' },
+  pillLabelOn: { color: C.onBrand, fontWeight: FW.semibold },
   searchRow: {
     height: 40, borderRadius: 10, backgroundColor: C.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border,
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: 13, gap: SP.lg,
@@ -333,11 +333,11 @@ const st = StyleSheet.create({
   searchRowOn: { borderColor: C.brand, backgroundColor: C.surface2, borderWidth: 1 }, // #035b:focus 整框品牌描边(替代行级诡异选中态)
   input: { flex: 1, color: C.text, fontSize: H.font.md, padding: 0 },
   clearBtn: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  secTitle: { color: C.text, fontSize: H.font.xl, fontWeight: '700' },
+  secTitle: { color: C.text, fontSize: H.font.xl, fontWeight: FW.bold },
   secHint: { color: C.text3, fontSize: H.font.xs },
   idx: { width: 18, textAlign: 'right', color: C.text3, fontSize: H.font.sm, fontVariant: ['tabular-nums'] },
   art: { width: 34, height: 34, borderRadius: 5 },
-  title: { color: C.text, fontSize: H.font.md, fontWeight: '500' },
+  title: { color: C.text, fontSize: H.font.md, fontWeight: FW.medium },
   hiRes: { color: C.brand, fontSize: FS.xs, borderWidth: 1, borderColor: 'rgba(30,215,96,.4)', borderRadius: 3, paddingHorizontal: 3 },
   sub: { color: C.text2, fontSize: H.font.sm },
   srcTag: { color: C.text3, fontSize: FS.xs, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, borderRadius: 3, paddingHorizontal: 4 },
@@ -347,19 +347,19 @@ const st = StyleSheet.create({
   tipText: { color: C.text3, fontSize: H.font.md },
   themeCard: { width: 168, height: 96, borderRadius: 14, overflow: 'hidden' }, // lx164:热门主题渐变大卡
   themeGrad: { flex: 1, padding: 14, justifyContent: 'flex-end', gap: SP.xs },
-  themeZh: { color: C.white, fontSize: FS.h1, fontWeight: '800' },
-  themeEn: { color: '#FFFFFF99', fontSize: FS.xs, letterSpacing: 2, fontWeight: '700' },
+  themeZh: { color: C.white, fontSize: FS.h1, fontWeight: FW.heavy },
+  themeEn: { color: '#FFFFFF99', fontSize: FS.xs, letterSpacing: 2, fontWeight: FW.bold },
   artistCard: { width: 90, height: 114, borderRadius: 14, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', gap: SP.md }, // lx143:恢复圆角底卡——无背景时 elevation 轮廓异常+投影乱
   artistAvatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' }, // lx139:真照片(Image 圆形)
-  artistGlyph: { color: C.white, fontSize: FS.display, fontWeight: '800' }, // [LEO 1011] 22 档外→display(24)头像兜底
-  artistName: { color: C.text, fontSize: FS.sm, fontWeight: '600' },
+  artistGlyph: { color: C.white, fontSize: FS.display, fontWeight: FW.heavy }, // [LEO 1011] 22 档外→display(24)头像兜底
+  artistName: { color: C.text, fontSize: FS.sm, fontWeight: FW.semibold },
   genrePill: { paddingHorizontal: 16, height: 32, borderRadius: 16, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
-  genreText: { color: C.text2, fontSize: FS.body, fontWeight: '600' },
+  genreText: { color: C.text2, fontSize: FS.body, fontWeight: FW.semibold },
   hotPill: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, paddingHorizontal: 13, height: 34, borderRadius: 12, backgroundColor: C.surface },
-  hotIdx: { color: C.text3, fontSize: FS.sm, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  hotText: { color: C.text, fontSize: FS.body, fontWeight: '500' },
+  hotIdx: { color: C.text3, fontSize: FS.sm, fontWeight: FW.heavy, fontVariant: ['tabular-nums'] },
+  hotText: { color: C.text, fontSize: FS.body, fontWeight: FW.medium },
   resRow: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, minHeight: 54, paddingHorizontal: 8, borderRadius: 10 },
   resRound: { width: 42, height: 42, borderRadius: 21 },
   resSquare: { width: 42, height: 42, borderRadius: 7 },
-  resName: { flex: 1, color: C.text, fontSize: H.font.md, fontWeight: '600' },
+  resName: { flex: 1, color: C.text, fontSize: H.font.md, fontWeight: FW.semibold },
 });

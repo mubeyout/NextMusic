@@ -23,14 +23,14 @@ function T(props: { style?: unknown; onPress?: () => void; disabled?: boolean; c
 function StepBtn({ d, onPress }: { d: -1 | 1; onPress: () => void }) {
   return (
     <HDTouch onPress={onPress} style={{ width: 30, height: 34, borderRadius: 8, backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ color: C.text, fontSize: FS.xl, fontWeight: '800', lineHeight: 18 }}>{d < 0 ? '−' : '+'}</Text>
+      <Text style={{ color: C.text, fontSize: FS.xl, fontWeight: FW.heavy, lineHeight: 18 }}>{d < 0 ? '−' : '+'}</Text>
     </HDTouch>
   );
 }
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C, FS, SP } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { toast } from '../components/Dialog';
 import { ActionSheet } from '../components/ActionSheet';
 import { useFeatureGate, FeatureGateModal } from '../components/FeatureGate';
@@ -82,7 +82,7 @@ const fxrowSt = StyleSheet.create({
   halfA: { height: 8, backgroundColor: C.brand, borderTopLeftRadius: 4, borderBottomLeftRadius: 4 },
   halfB: { height: 8, backgroundColor: C.inset },
   bar: { width: 2, height: 14, borderRadius: 1, backgroundColor: C.text },
-  val: { color: C.text, fontSize: FS.lg, fontWeight: '600', width: 64, textAlign: 'right', fontVariant: ['tabular-nums'] },
+  val: { color: C.text, fontSize: FS.lg, fontWeight: FW.semibold, width: 64, textAlign: 'right', fontVariant: ['tabular-nums'] },
 });
 
 function HSlider({ value, min, max, step, onChange, disabled, style }: {
@@ -477,7 +477,7 @@ export function FxScreen() {
             {AUTOEQ_MODELS.filter(m => !aeqQuery || m.toLowerCase().includes(aeqQuery.toLowerCase())).slice(0, 60).map(m => (
               <T key={m} activeOpacity={0.7} onPress={() => setViper({ autoeqName: m, autoeqOn: true })}>
                 <View style={[st.aeqRow, settings.viper.autoeqName === m && st.aeqRowOn]}>
-                  <Text style={[st.aeqRowText, settings.viper.autoeqName === m && { color: C.brand, fontWeight: '700' }]} numberOfLines={1}>{m}</Text>
+                  <Text style={[st.aeqRowText, settings.viper.autoeqName === m && { color: C.brand, fontWeight: FW.bold }]} numberOfLines={1}>{m}</Text>
                   {settings.viper.autoeqName === m ? (
                     <Text style={st.aeqMeta}>{autoeqProfile(m)?.f.length ?? 0} 段滤波</Text>
                   ) : null}
@@ -618,11 +618,11 @@ export function FxScreen() {
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 12 },
-  title: { color: C.text, fontSize: FS.h1, fontWeight: '800', flex: 1 }, // lx166 居左
+  title: { color: C.text, fontSize: FS.h1, fontWeight: FW.heavy, flex: 1 }, // lx166 居左
   syncBadge: { flexDirection: 'row', alignItems: 'center', gap: SP.xs, width: 26 + 46, justifyContent: 'flex-end' },
   syncDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.text3 },
   syncDotOn: { backgroundColor: C.brand },
-  syncText: { color: C.text2, fontSize: FS.xs, fontWeight: '600' },
+  syncText: { color: C.text2, fontSize: FS.xs, fontWeight: FW.semibold },
 
   content: { paddingHorizontal: 24, paddingBottom: 40, paddingTop: 8 },
 
@@ -631,20 +631,20 @@ const st = StyleSheet.create({
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.md, marginBottom: 10, paddingHorizontal: 4 },
   chip: { paddingHorizontal: 14, height: 32, borderRadius: 16, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', marginVertical: 2, borderWidth: 2, borderColor: 'transparent' }, // lx130:透明边框占位——选中描边不再裁切文字
   chipOn: { backgroundColor: C.brand },
-  chipText: { color: C.text2, fontSize: FS.body, fontWeight: '600' },
-  chipTextOn: { color: C.onBrand, fontWeight: '800' },
+  chipText: { color: C.text2, fontSize: FS.body, fontWeight: FW.semibold },
+  chipTextOn: { color: C.onBrand, fontWeight: FW.heavy },
   chipAdd: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', borderColor: C.strokeStrong, alignItems: 'center', justifyContent: 'center' },
   chipAddLock: { width: 48, flexDirection: 'row', gap: SP.xs }, // D2 锁态：锁标+＋并排（免费可发现）
-  chipAddText: { color: C.text3, fontSize: FS.xl, fontWeight: '800', lineHeight: 17 },
+  chipAddText: { color: C.text3, fontSize: FS.xl, fontWeight: FW.heavy, lineHeight: 17 },
   modeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.sm, marginBottom: 14, paddingHorizontal: 2 },
   modeCell: { width: '31%', flexGrow: 0, flexShrink: 0 },
   modeCard: { borderRadius: 12, backgroundColor: C.surface2, paddingHorizontal: 8, paddingVertical: 10, alignItems: 'center', minHeight: 62, justifyContent: 'center', borderWidth: 2, borderColor: 'transparent', margin: 2 }, // lx138:边距+透明描边占位,选中不裁切
   modeCardOn: { backgroundColor: C.brand, borderColor: C.brandSoft },
-  modeName: { color: C.text, fontSize: FS.lg, fontWeight: '700' },
+  modeName: { color: C.text, fontSize: FS.lg, fontWeight: FW.bold },
   modeNameOn: { color: C.onBrand },
   modeDesc: { color: C.text3, fontSize: FS.xs, marginTop: 2, textAlign: 'center' },
   advToggle: { flexDirection: 'row', alignItems: 'center', gap: SP.md, paddingVertical: 12, marginBottom: 4 },
-  advToggleText: { color: C.text2, fontSize: FS.lg, fontWeight: '600' },
+  advToggleText: { color: C.text2, fontSize: FS.lg, fontWeight: FW.semibold },
   advHint: { color: C.text3, fontSize: FS.sm },
   aeqInput: { height: 38, borderRadius: 10, backgroundColor: C.inset, color: C.text, fontSize: FS.md, paddingHorizontal: 12, marginBottom: 8 },
   aeqList: { maxHeight: 220, borderRadius: 12 },
@@ -656,20 +656,20 @@ const st = StyleSheet.create({
   // 卡片
   card: { backgroundColor: C.surface, borderRadius: 12, padding: 14, marginBottom: 12 },
   cardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, gap: SP.md },
-  cardTitleAuto: { flex: 1, color: C.text, fontSize: FS.lg, fontWeight: '700' },
-  cardTitle: { color: C.text, fontSize: FS.lg, fontWeight: '700' },
-  cardMeta: { color: C.brandText, fontSize: FS.sm, fontWeight: '700', maxWidth: 120 },
-  cardHint: { color: C.text3, fontSize: FS.sm, fontWeight: '500' },
-  linkBtn: { color: C.brandText, fontSize: FS.sm, fontWeight: '800' },
-  presetNameOn: { color: C.text2, fontSize: FS.sm, fontWeight: '600' },
+  cardTitleAuto: { flex: 1, color: C.text, fontSize: FS.lg, fontWeight: FW.bold },
+  cardTitle: { color: C.text, fontSize: FS.lg, fontWeight: FW.bold },
+  cardMeta: { color: C.brandText, fontSize: FS.sm, fontWeight: FW.bold, maxWidth: 120 },
+  cardHint: { color: C.text3, fontSize: FS.sm, fontWeight: FW.medium },
+  linkBtn: { color: C.brandText, fontSize: FS.sm, fontWeight: FW.heavy },
+  presetNameOn: { color: C.text2, fontSize: FS.sm, fontWeight: FW.semibold },
 
   // EQ 垂直网格
   eqGrid: { flexDirection: 'row', justifyContent: 'space-between' },
   eqCol: { width: '9%', alignItems: 'center', gap: SP.sm },
-  eqDb: { color: C.text3, fontSize: FS.xs, fontWeight: '800', height: 12 },
+  eqDb: { color: C.text3, fontSize: FS.xs, fontWeight: FW.heavy, height: 12 },
   eqDbHot: { color: C.brandText },
   eqDbLow: { color: C.brandSoft },
-  eqFreq: { color: C.text2, fontSize: FS.xs, fontWeight: '600' },
+  eqFreq: { color: C.text2, fontSize: FS.xs, fontWeight: FW.semibold },
 
   // 混响胶囊网格（4 列）
   revGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.md },
@@ -679,8 +679,8 @@ const st = StyleSheet.create({
   srow: { backgroundColor: C.surface2, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
   srowDisabled: { opacity: 0.4 },
   srowHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  srowLabel: { color: C.text2, fontSize: FS.body, fontWeight: '600' },
-  srowValue: { color: C.text, fontSize: FS.body, fontWeight: '800' },
+  srowLabel: { color: C.text2, fontSize: FS.body, fontWeight: FW.semibold },
+  srowValue: { color: C.text, fontSize: FS.body, fontWeight: FW.heavy },
 
   // 3D 开关
   switch: { width: 44, height: 26, borderRadius: 13, backgroundColor: C.inset2, padding: 3 },
@@ -694,5 +694,5 @@ const st = StyleSheet.create({
   sheetInputRow: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingVertical: 12 },
   sheetInput: { flex: 1, backgroundColor: C.inset, borderRadius: 12, paddingHorizontal: 14, height: 44, color: C.text, fontSize: FS.xl },
   sheetInputOk: { backgroundColor: C.brand, borderRadius: 12, paddingHorizontal: 18, height: 44, alignItems: 'center', justifyContent: 'center' },
-  sheetInputOkText: { color: C.onBrand, fontSize: FS.lg, fontWeight: '800' },
+  sheetInputOkText: { color: C.onBrand, fontSize: FS.lg, fontWeight: FW.heavy },
 });

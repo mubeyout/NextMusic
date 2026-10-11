@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { C } from '../theme/tokens';
+import { C, FW } from '../theme/tokens';
 import { Icon, type IconName } from '../theme/Icon'; // [审计 1010] icon 通道:字符 glyph→真矢量(空态图标位)
 
 interface StateOverlayCardProps {
@@ -50,17 +50,17 @@ const s = StyleSheet.create({
   },
   glyph: {
     color: C.brandText,
-    fontWeight: '700',
+    fontWeight: FW.bold,
   },
   title: {
     color: C.text,
-    fontWeight: '700',
+    fontWeight: FW.bold,
   },
   body: {
     color: C.text2,
     fontSize: 11,
     lineHeight: 16,
-    fontWeight: '400',
+    fontWeight: FW.normal,
     textAlign: 'center',
   },
   primaryBtn: {
@@ -74,7 +74,7 @@ const s = StyleSheet.create({
   primaryText: {
     color: C.onBrand,
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: FW.medium,
   },
   secondaryBtn: {
     width: '100%',
@@ -87,6 +87,6 @@ const s = StyleSheet.create({
   secondaryText: {
     color: C.text,
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: FW.medium,
   },
 });

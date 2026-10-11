@@ -15,7 +15,7 @@ import { pullCloudSettingsOnLogin } from '../services/settingsSync';
 import { IS_HD } from '../services/appversion';
 const IS_WEB = Platform.OS === 'web'; // v3.28:去重复 import(顶部已有)
 import { toast } from '../components/Dialog';
-import { FS, SP } from '../theme/tokens';
+import { FS, FW, SP } from '../theme/tokens';
 
 const recentKv = createMMKV({ id: 'nextmusic-server-history' });
 
@@ -278,12 +278,12 @@ const st = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 26, paddingBottom: 10, gap: SP.lg },
   backBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   focus: { borderWidth: 2, borderColor: C.brand, borderRadius: 10 },
-  title: { color: C.text, fontSize: FS.xl, fontWeight: '700' },
+  title: { color: C.text, fontSize: FS.xl, fontWeight: FW.bold },
   // 双栏(HD 密度): 左 240 品牌面板 + 右 400 表单;窄屏(web<720 简化为仅表单由 hero 隐藏逻辑处理)
   cols: { flexDirection: 'row', gap: 40, alignItems: 'stretch', justifyContent: 'center', width: '100%', maxWidth: 760, flexWrap: 'wrap' }, // [LEO 1011] 档外特排:HD 登录双列表单大列距
   heroPane: { width: 240, paddingTop: 18, gap: SP.lg },
   heroMark: { width: 44, height: 48 },
-  heroTitle: { color: C.text, fontSize: FS.h1, fontWeight: '800', lineHeight: 26 },
+  heroTitle: { color: C.text, fontSize: FS.h1, fontWeight: FW.heavy, lineHeight: 26 },
   heroSub: { color: C.text2, fontSize: FS.body, marginTop: 6 },
   featRow: { flexDirection: 'row', alignItems: 'center', gap: SP.md },
   featText: { color: C.text2, fontSize: FS.body, lineHeight: 20 },
@@ -292,12 +292,12 @@ const st = StyleSheet.create({
   tab: { flex: 1, height: 34, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   tabOn: { backgroundColor: C.bg },
   tabFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 8 },
-  tabText: { color: C.text3, fontSize: FS.md, fontWeight: '500' },
-  tabTextOn: { color: C.text, fontWeight: '700' },
+  tabText: { color: C.text3, fontSize: FS.md, fontWeight: FW.medium },
+  tabTextOn: { color: C.text, fontWeight: FW.bold },
   inputCard: { backgroundColor: C.elev, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, gap: SP.xs },
   labelRow: { flexDirection: 'row', alignItems: 'center', gap: SP.md },
   inputLabel: { color: C.text2, fontSize: FS.body, flex: 1 },
-  okTag: { color: C.brand, fontSize: FS.body, fontWeight: '600' },
+  okTag: { color: C.brand, fontSize: FS.body, fontWeight: FW.semibold },
   inputValue: { color: C.text, fontSize: FS.lg, paddingVertical: 4 },
   inputHint: { color: C.text3, fontSize: FS.xs },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: SP.sm },
@@ -308,13 +308,13 @@ const st = StyleSheet.create({
   btnPrimary: { flex: 1.4, height: 42, borderRadius: 11, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   btnFocusGhost: { borderWidth: 2, borderColor: C.brand, borderRadius: 11 },
   btnFocusPrimary: { borderWidth: 2, borderColor: C.text, borderRadius: 11 },
-  btnGhostText: { color: C.text, fontSize: FS.md, fontWeight: '600' },
-  btnPrimaryText: { color: C.onBrand, fontSize: FS.md, fontWeight: '700' },
+  btnGhostText: { color: C.text, fontSize: FS.md, fontWeight: FW.semibold },
+  btnPrimaryText: { color: C.onBrand, fontSize: FS.md, fontWeight: FW.bold },
   histWrap: { width: 400, maxWidth: '100%', marginTop: 14, gap: SP.sm },
   histTitle: { color: C.text3, fontSize: FS.sm, marginBottom: 2 },
   histRow: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, height: 38, borderRadius: 10, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, paddingHorizontal: 13 },
   histText: { color: C.text2, fontSize: FS.md, flex: 1 },
   localBtn: { marginTop: 16, height: 40, borderRadius: 11, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 22 },
-  localText: { color: C.text2, fontSize: FS.md, fontWeight: '500' },
+  localText: { color: C.text2, fontSize: FS.md, fontWeight: FW.medium },
 });
 

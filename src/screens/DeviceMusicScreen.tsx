@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C, FS, SP } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { SongRow } from '../components/SongRow';
 import { PageHeader, EmptyState } from '../components/PageChrome';
 import { usePlayer } from '../state/PlayerProvider';
@@ -175,14 +175,14 @@ export function DeviceMusicScreen() {
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   header: { height: 64, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 6 },
-  title: { flex: 1, color: C.text, fontSize: FS.display, lineHeight: 35, fontWeight: '700' }, // lx166 居左
+  title: { flex: 1, color: C.text, fontSize: FS.display, lineHeight: 35, fontWeight: FW.bold }, // lx166 居左
   scanCard: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, backgroundColor: C.surface, borderRadius: 14, padding: 16 },
-  scanTitle: { color: C.text, fontSize: FS.lg, lineHeight: 20, fontWeight: '600' },
+  scanTitle: { color: C.text, fontSize: FS.lg, lineHeight: 20, fontWeight: FW.semibold },
   scanSub: { color: C.text2, fontSize: FS.sm, lineHeight: 15, marginTop: 4 },
   scanBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, backgroundColor: C.brand, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 9 },
-  scanBtnText: { color: C.onBrand, fontSize: FS.body, fontWeight: '600' },
+  scanBtnText: { color: C.onBrand, fontSize: FS.body, fontWeight: FW.semibold },
   addAll: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.sm, height: 38, borderRadius: 12, backgroundColor: C.surface, marginTop: 12 },
-  addAllText: { color: C.brandSoft, fontSize: FS.body, fontWeight: '500' },
+  addAllText: { color: C.brandSoft, fontSize: FS.body, fontWeight: FW.medium },
   empty: { color: C.text2, fontSize: FS.body, lineHeight: 18, textAlign: 'center', paddingVertical: 40 },
   miniDock: { position: 'absolute', left: 0, right: 0, bottom: 0 },
 });

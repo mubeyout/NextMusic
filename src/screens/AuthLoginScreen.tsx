@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Image, View, Text, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, ScrollView  } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { C, FS, SP } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { useApp } from '../state/AppState';
 import { api, normalizeBase } from '../services/server';
 import { pullCloudSettingsOnLogin } from '../services/settingsSync';
@@ -94,21 +94,21 @@ const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg, paddingHorizontal: 20, alignSelf: 'center', width: '100%', maxWidth: 470 }, // lx167:列宽上限
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: SP.md },
   brandDot: { width: 17, height: 17, borderRadius: 9, backgroundColor: C.brand },
-  brandName: { color: C.text, fontSize: FS.xl, lineHeight: 18, fontWeight: '700' },
+  brandName: { color: C.text, fontSize: FS.xl, lineHeight: 18, fontWeight: FW.bold },
   header: { gap: SP.sm },
-  title: { color: C.text, fontSize: FS.h1, lineHeight: 26, fontWeight: '700' }, // lx167:稍小精致
+  title: { color: C.text, fontSize: FS.h1, lineHeight: 26, fontWeight: FW.bold }, // lx167:稍小精致
   subtitle: { color: C.text2, fontSize: FS.body, lineHeight: 14 },
   card: { borderRadius: 12, backgroundColor: C.surface, padding: 14, gap: SP.md }, // lx167:紧凑
   stepRow: { flexDirection: 'row', alignItems: 'center', gap: SP.md },
   stepBadge: { width: 18, height: 18, borderRadius: 9, backgroundColor: C.stroke, alignItems: 'center', justifyContent: 'center' },
-  stepBadgeText: { color: C.brandText, fontSize: FS.sm, lineHeight: 13, fontWeight: '700' },
-  fieldLabel: { color: C.text, fontSize: FS.body, lineHeight: 14, fontWeight: '500', flex: 1 },
-  okTag: { color: C.brandText, fontSize: FS.sm, lineHeight: 13, fontWeight: '600' },
+  stepBadgeText: { color: C.brandText, fontSize: FS.sm, lineHeight: 13, fontWeight: FW.bold },
+  fieldLabel: { color: C.text, fontSize: FS.body, lineHeight: 14, fontWeight: FW.medium, flex: 1 },
+  okTag: { color: C.brandText, fontSize: FS.sm, lineHeight: 13, fontWeight: FW.semibold },
   input: { height: 42, borderRadius: 11, backgroundColor: C.surface2, paddingHorizontal: 13, justifyContent: 'center' },
   inputText: { color: C.text, fontSize: FS.md, padding: 0 },
   btnPrimary: { height: 42, borderRadius: 11, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
-  btnPrimaryText: { color: C.onBrand, fontSize: FS.lg, lineHeight: 17, fontWeight: '500' },
+  btnPrimaryText: { color: C.onBrand, fontSize: FS.lg, lineHeight: 17, fontWeight: FW.medium },
   err: { color: C.danger, fontSize: FS.body, lineHeight: 15, textAlign: 'center' },
   backLink: { height: 44, alignItems: 'center', justifyContent: 'center' },
-  backText: { color: C.text, fontSize: FS.lg, lineHeight: 17, fontWeight: '500' },
+  backText: { color: C.text, fontSize: FS.lg, lineHeight: 17, fontWeight: FW.medium },
 });

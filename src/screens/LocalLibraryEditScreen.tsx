@@ -8,7 +8,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Activi
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C, FS, SP } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { dialog, toast } from '../components/Dialog';
 import {
   localLib, pickDirectory, bindFsapiHandle, scanLocalLibrary, rescanLocalLibrary,
@@ -287,7 +287,7 @@ const tg = StyleSheet.create({
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 12 },
-  title: { color: C.text, fontSize: FS.h1, fontWeight: '700', flex: 1 }, // [LEO 1011] 22 档外→h1(20)编辑页标题档
+  title: { color: C.text, fontSize: FS.h1, fontWeight: FW.bold, flex: 1 }, // [LEO 1011] 22 档外→h1(20)编辑页标题档
   inputCard: { backgroundColor: C.surface2, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, gap: SP.xs, alignItems: 'center' },
   inputLabel: { color: C.text2, fontSize: FS.sm },
   inputValue: { color: C.text, fontSize: FS.lg, paddingVertical: 4, textAlign: 'center', width: '100%' },
@@ -297,38 +297,38 @@ const st = StyleSheet.create({
   guideSkip: { color: C.text3, fontSize: FS.sm },
   // Web/iOS 选目录卡
   pickCard: { backgroundColor: C.surface2, borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', gap: SP.xl },
-  pickTitle: { color: C.text, fontSize: FS.lg, fontWeight: '600' },
+  pickTitle: { color: C.text, fontSize: FS.lg, fontWeight: FW.semibold },
   pickSub: { color: C.text3, fontSize: FS.sm, lineHeight: 15, marginTop: 3 },
   // 已选目录展示行
   rootRow: { backgroundColor: C.surface2, borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: SP.lg },
   rootPath: { flex: 1, color: C.text2, fontSize: FS.md, minWidth: 0 },
-  repick: { color: C.brandText, fontSize: FS.body, fontWeight: '600' },
+  repick: { color: C.brandText, fontSize: FS.body, fontWeight: FW.semibold },
   // 扫描选项
   optsHead: { flexDirection: 'row', alignItems: 'center', gap: SP.md, paddingVertical: 8, paddingHorizontal: 4 },
-  optsTitle: { color: C.text, fontSize: FS.md, fontWeight: '600' },
+  optsTitle: { color: C.text, fontSize: FS.md, fontWeight: FW.semibold },
   optsHint: { flex: 1, color: C.text3, fontSize: FS.sm, textAlign: 'right' },
   optsCard: { backgroundColor: C.surface2, borderRadius: 14, padding: 14, gap: SP.xxl },
   optsLabel: { color: C.text2, fontSize: FS.sm },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.md },
   chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: C.inset2, borderWidth: 1, borderColor: 'transparent' },
   chipOn: { borderColor: C.brand, backgroundColor: 'transparent' },
-  chipText: { color: C.text3, fontSize: FS.body, fontWeight: '600' },
+  chipText: { color: C.text3, fontSize: FS.body, fontWeight: FW.semibold },
   chipTextOn: { color: C.brandText },
   optRow: { flexDirection: 'row', alignItems: 'center', gap: SP.xl },
-  optTitle: { color: C.text, fontSize: FS.md, fontWeight: '500' },
+  optTitle: { color: C.text, fontSize: FS.md, fontWeight: FW.medium },
   optSub: { color: C.text3, fontSize: FS.sm, lineHeight: 15, marginTop: 2 },
   // 按钮
   primaryBtn: { flexDirection: 'row', height: 46, borderRadius: 12, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', gap: SP.sm, marginTop: 8 },
-  primaryBtnText: { color: C.onBrand, fontSize: FS.lg, fontWeight: '600' },
+  primaryBtnText: { color: C.onBrand, fontSize: FS.lg, fontWeight: FW.semibold },
   ghostBtn: { flex: 1, height: 46, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
-  ghostBtnText: { color: C.text, fontSize: FS.lg, fontWeight: '500' },
+  ghostBtnText: { color: C.text, fontSize: FS.lg, fontWeight: FW.medium },
   btnOff: { opacity: 0.4 },
   // 进度卡(v3 A2)
   progCard: { backgroundColor: C.surface2, borderRadius: 14, padding: 16, gap: SP.xl, marginTop: 6 },
   progRow: { flexDirection: 'row', alignItems: 'center' },
   progText: { flex: 1, color: C.text2, fontSize: FS.md },
-  progNum: { color: C.text, fontSize: FS.lg, fontWeight: '700' },
-  cancelText: { color: C.brandText, fontSize: FS.md, fontWeight: '600' },
+  progNum: { color: C.text, fontSize: FS.lg, fontWeight: FW.bold },
+  cancelText: { color: C.brandText, fontSize: FS.md, fontWeight: FW.semibold },
   progTrack: { height: 4, borderRadius: 2, backgroundColor: C.inset2, overflow: 'hidden' },
   progFill: { height: 4, borderRadius: 2, backgroundColor: C.brand },
   summaryText: { color: C.text3, fontSize: FS.sm, lineHeight: 15, textAlign: 'center', marginTop: 4 },

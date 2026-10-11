@@ -4,7 +4,7 @@ import { Platform, View, Text, StyleSheet, ScrollView, TouchableOpacity, } from 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C, FS, SP } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { SongRow } from '../components/SongRow';
 import { PageHeader, EmptyState } from '../components/PageChrome';
 import { usePlayer } from '../state/PlayerProvider';
@@ -101,7 +101,7 @@ export function DownloadsScreen() {
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   header: { height: 64, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 6 },
-  title: { flex: 1, color: C.text, fontSize: FS.display, lineHeight: 35, fontWeight: '700' }, // lx166 居左
+  title: { flex: 1, color: C.text, fontSize: FS.display, lineHeight: 35, fontWeight: FW.bold }, // lx166 居左
   stat: { color: C.text2, fontSize: FS.sm, lineHeight: 15, marginBottom: 12 },
   failCard: { flexDirection: 'row', alignItems: 'center', gap: SP.md, backgroundColor: C.failTint, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 10 },
   failTitle: { flex: 1, color: C.danger, fontSize: FS.sm, lineHeight: 15 }, // [LEO 1011] #FF9B9B→C.danger 错误色族统一

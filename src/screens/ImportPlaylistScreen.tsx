@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Activi
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon, BrandIcon, type BrandIconName } from '../theme/Icon';
-import { C, FS, SP } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { api, type SongItem } from '../services/server';
 import { lxapi } from '../services/lxapi';
 import { activeSources } from '../services/customSource';
@@ -225,34 +225,34 @@ export function ImportPlaylistScreen() {
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   header: { height: 40, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 10 },
-  title: { flex: 1, color: C.text, fontSize: FS.display, lineHeight: 35, fontWeight: '700' }, // lx166 居左
+  title: { flex: 1, color: C.text, fontSize: FS.display, lineHeight: 35, fontWeight: FW.bold }, // lx166 居左
   stepsRow: { flexDirection: 'row', gap: SP.sm },
   stepPill: { flex: 1, height: 26, borderRadius: 13, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   stepPillOn: { backgroundColor: C.selTint },
   stepText: { color: C.text3, fontSize: FS.xs },
   stepTextOn: { color: C.brandText },
-  sectionTitle: { color: C.text, fontSize: FS.headline, lineHeight: 25, fontWeight: '700' },
+  sectionTitle: { color: C.text, fontSize: FS.headline, lineHeight: 25, fontWeight: FW.bold },
   platformRow: { minHeight: 60, borderRadius: 14, backgroundColor: C.surface, flexDirection: 'row', alignItems: 'center', gap: SP.xl, paddingHorizontal: 14 },
   platformIcon: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   platformIconBare: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
-  platformIconText: { fontSize: FS.xl, fontWeight: '700' },
-  platformName: { color: C.text, fontSize: FS.lg, lineHeight: 20, fontWeight: '500' },
+  platformIconText: { fontSize: FS.xl, fontWeight: FW.bold },
+  platformName: { color: C.text, fontSize: FS.lg, lineHeight: 20, fontWeight: FW.medium },
   platformSub: { color: C.text2, fontSize: FS.sm, lineHeight: 15 },
   skipBtn: { height: 44, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
-  skipText: { color: C.text2, fontSize: FS.lg, fontWeight: '500' },
+  skipText: { color: C.text2, fontSize: FS.lg, fontWeight: FW.medium },
   card: { borderRadius: 14, backgroundColor: C.surface, padding: 16, gap: SP.md },
-  fieldLabel: { color: C.text, fontSize: FS.body, lineHeight: 14, fontWeight: '500' },
+  fieldLabel: { color: C.text, fontSize: FS.body, lineHeight: 14, fontWeight: FW.medium },
   input: { height: 46, borderRadius: 12, backgroundColor: C.surface2, paddingHorizontal: 14, justifyContent: 'center' },
   inputText: { color: C.text, fontSize: FS.md, padding: 0 },
   err: { color: C.danger, fontSize: FS.body, lineHeight: 15 },
   hint: { color: C.text2, fontSize: FS.xs, lineHeight: 12 },
   primaryBtn: { height: 46, borderRadius: 12, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
-  primaryText: { color: C.onBrand, fontSize: FS.lg, fontWeight: '600' },
+  primaryText: { color: C.onBrand, fontSize: FS.lg, fontWeight: FW.semibold },
   previewCard: { borderRadius: 14, backgroundColor: C.surface, padding: 16, gap: SP.sm },
-  previewName: { color: C.text, fontSize: FS.title, lineHeight: 22, fontWeight: '700' },
+  previewName: { color: C.text, fontSize: FS.title, lineHeight: 22, fontWeight: FW.bold },
   previewMeta: { color: C.text2, fontSize: FS.sm, lineHeight: 15 },
   songLine: { minHeight: 40, justifyContent: 'center', gap: SP.xs },
-  songName: { color: C.text, fontSize: FS.md, lineHeight: 18, fontWeight: '500' },
+  songName: { color: C.text, fontSize: FS.md, lineHeight: 18, fontWeight: FW.medium },
   songArtist: { color: C.text2, fontSize: FS.xs, lineHeight: 13 },
   moreHint: { color: C.text3, fontSize: FS.sm, textAlign: 'center', paddingVertical: 8 },
 });
@@ -266,12 +266,12 @@ const hdSt = StyleSheet.create({
   },
   pfFocus: { borderWidth: 2.5, borderColor: C.brand, borderRadius: 18 },
   pfIcon: { width: 78, height: 78, borderRadius: 39, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-  pfName: { color: C.text, fontSize: FS.headline, fontWeight: '700' },
+  pfName: { color: C.text, fontSize: FS.headline, fontWeight: FW.bold },
   pfSub: { color: C.text3, fontSize: FS.body },
   primaryBtn: { height: 58, borderRadius: 14, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   primaryFocus: { borderWidth: 2.5, borderColor: C.text, borderRadius: 14 },
-  primaryText: { color: C.onBrand, fontSize: FS.headline, fontWeight: '700' },
+  primaryText: { color: C.onBrand, fontSize: FS.headline, fontWeight: FW.bold },
   ghostBtn: { height: 52, borderRadius: 14, borderWidth: 1.5, borderColor: C.strokeStrong, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   ghostFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 14 },
-  ghostText: { color: C.text2, fontSize: FS.xl, fontWeight: '600' },
+  ghostText: { color: C.text2, fontSize: FS.xl, fontWeight: FW.semibold },
 });

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C, FS, SP } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
 import { useApp } from '../state/AppState';
@@ -365,7 +365,7 @@ export function AccountScreen() {
 
 const st = StyleSheet.create({
   section: { borderRadius: 14, backgroundColor: C.surface, padding: 16, marginBottom: 14 },
-  secTitle: { color: C.text3, fontSize: FS.body, fontWeight: '600', letterSpacing: 0.5, marginBottom: 8 },
+  secTitle: { color: C.text3, fontSize: FS.body, fontWeight: FW.semibold, letterSpacing: 0.5, marginBottom: 8 },
   hint: { color: C.text3, fontSize: FS.body, lineHeight: 17, marginBottom: 4 },
   // 0922:服务器源空态/错误态显式化(老板实锤:静默空=「看不到后台配置的音源」)
   hintRow: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8, backgroundColor: 'rgba(255,82,82,0.08)', borderWidth: 1, borderColor: 'rgba(255,82,82,0.35)', marginBottom: 6 },
@@ -377,9 +377,9 @@ const st = StyleSheet.create({
   srcRow: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint },
   srcIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: C.inset2, alignItems: 'center', justifyContent: 'center' },
   srcMeta: { flex: 1, minWidth: 0, gap: SP.xs },
-  srcName: { color: C.text, fontSize: FS.lg, fontWeight: '600' },
-  srcVer: { color: C.text3, fontSize: FS.sm, fontWeight: '400' },
-  srcTag: { color: C.brandText, fontSize: FS.xs, fontWeight: '700' },
+  srcName: { color: C.text, fontSize: FS.lg, fontWeight: FW.semibold },
+  srcVer: { color: C.text3, fontSize: FS.sm, fontWeight: FW.normal },
+  srcTag: { color: C.brandText, fontSize: FS.xs, fontWeight: FW.bold },
   srcSub: { color: C.text3, fontSize: FS.sm },
   /* v3.27:服务器音源本机启停 toggle 开关 */
   csSw: { width: 42, height: 24, borderRadius: 12, backgroundColor: C.inset2, borderWidth: 1, borderColor: C.strokeFaint, alignItems: 'center', flexDirection: 'row', justifyContent: 'flex-start', paddingHorizontal: 2 },
@@ -398,53 +398,53 @@ const st = StyleSheet.create({
   // 按钮组(ghost 双钮并排)
   btnRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.lg, marginTop: 12 }, // lx206:窄屏自动换行(390px 下三按钮各~103px 放不下图标+文字)
   ghostBtn: { flex: 1, minWidth: 142, height: 40, borderRadius: 12, borderWidth: 1, borderColor: C.strokeStrong, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.sm }, // lx206:minWidth 保证图标+文字完整,放不下就换行(HD 宽屏单行不受影响)
-  ghostText: { color: C.text, fontSize: FS.md, fontWeight: '500' },
+  ghostText: { color: C.text, fontSize: FS.md, fontWeight: FW.medium },
   // 播放权限
   permRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 },
   permLabel: { color: C.text, fontSize: FS.lg },
   badge: { color: C.text3, fontSize: FS.sm, borderWidth: 1, borderColor: C.strokeStrong, borderRadius: 7, paddingHorizontal: 8, paddingVertical: 3, overflow: 'hidden' },
   badgeOn: { color: C.brandText, borderColor: C.brandDim, backgroundColor: C.selTint },
-  ghostBtnText: { color: C.text2, fontSize: FS.body, fontWeight: '600' },
+  ghostBtnText: { color: C.text2, fontSize: FS.body, fontWeight: FW.semibold },
   screen: { flex: 1, backgroundColor: C.bg },
   header: { height: 40, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 10 },
-  title: { flex: 1, color: C.text, fontSize: FS.display, lineHeight: 35, fontWeight: '700' }, // lx166 居左
+  title: { flex: 1, color: C.text, fontSize: FS.display, lineHeight: 35, fontWeight: FW.bold }, // lx166 居左
   row: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: SP.xl },
   rowDivide: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.strokeFaint, marginTop: 8, paddingTop: 8 },
-  rowLabel: { color: C.text, fontSize: FS.lg, lineHeight: 20, fontWeight: '500' },
+  rowLabel: { color: C.text, fontSize: FS.lg, lineHeight: 20, fontWeight: FW.medium },
   rowMeta: { color: C.text2, fontSize: FS.sm, lineHeight: 15 },
   rowUrl: { color: C.text2, fontSize: FS.xs, lineHeight: 13, marginTop: 2 },
-  testBtn: { color: C.brandText, fontSize: FS.body, fontWeight: '500', paddingHorizontal: 4 },
+  testBtn: { color: C.brandText, fontSize: FS.body, fontWeight: FW.medium, paddingHorizontal: 4 },
   healthText: { fontSize: FS.xs, lineHeight: 14, marginTop: 3, color: C.text2 },
   healthOk: { color: C.brandText },
   healthFail: { color: C.danger },
-  ver: { color: C.text2, fontSize: FS.sm, fontWeight: '400' },
+  ver: { color: C.text2, fontSize: FS.sm, fontWeight: FW.normal },
   del: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
   addAction: {
     height: 42, borderRadius: 12, borderWidth: 1, borderColor: C.strokeStrong,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.sm, marginTop: 10,
   },
-  addActionText: { color: C.text, fontSize: FS.md, fontWeight: '500' },
+  addActionText: { color: C.text, fontSize: FS.md, fontWeight: FW.medium },
   linkBtn: { height: 46, borderRadius: 12, borderWidth: 1, borderColor: C.strokeStrong, alignItems: 'center', justifyContent: 'center' },
-  linkText: { color: C.text, fontSize: FS.lg, fontWeight: '500' },
+  linkText: { color: C.text, fontSize: FS.lg, fontWeight: FW.medium },
   danger: { borderColor: '#FF6B6B33' },
-  dangerText: { color: C.danger, fontSize: FS.lg, fontWeight: '500' },
+  dangerText: { color: C.danger, fontSize: FS.lg, fontWeight: FW.medium },
   modalMask: { flex: 1, backgroundColor: C.scrim, alignItems: 'center', justifyContent: 'center', padding: 28 },
   modalCard: { width: '100%', borderRadius: 16, backgroundColor: C.surface, padding: 18, gap: SP.xl },
-  modalTitle: { color: C.text, fontSize: FS.title, fontWeight: '700' },
+  modalTitle: { color: C.text, fontSize: FS.title, fontWeight: FW.bold },
   input: { height: 44, borderRadius: 10, backgroundColor: C.inset, paddingHorizontal: 12, color: C.text, fontSize: FS.md },
   modalHint: { color: C.text2, fontSize: FS.sm, lineHeight: 15 },
   modalBtns: { flexDirection: 'row', gap: SP.lg, marginTop: 2 },
   modalBtnGhost: { flex: 1, height: 42, borderRadius: 10, borderWidth: 1, borderColor: C.strokeStrong, alignItems: 'center', justifyContent: 'center' },
   modalBtnMain: { flex: 1, height: 42, borderRadius: 10, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
-  modalGhostText: { color: C.text, fontSize: FS.md, fontWeight: '500' },
-  modalMainText: { color: C.onBrand, fontSize: FS.md, fontWeight: '600' },
+  modalGhostText: { color: C.text, fontSize: FS.md, fontWeight: FW.medium },
+  modalMainText: { color: C.onBrand, fontSize: FS.md, fontWeight: FW.semibold },
 });
 
 // HD(车机/TV)覆盖样式:限宽居中 + 大字号/大触点(老板:音源管理需遥控光标+大屏排版)
 const hd = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingHorizontal: 20, marginBottom: 10 },
   backBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, color: C.text, fontSize: FS.h1, fontWeight: '800' }, // lx166 居左
+  title: { flex: 1, color: C.text, fontSize: FS.h1, fontWeight: FW.heavy }, // lx166 居左
   hint: { fontSize: FS.md, lineHeight: 19 },
   hintRow: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, paddingVertical: 10, paddingHorizontal: 12 },
   hintErr: { fontSize: FS.lg, lineHeight: 20 },

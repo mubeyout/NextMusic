@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, FlatList } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C, FS, SP } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { PageHeader } from '../components/PageChrome';
 import { HDTouch } from '../hd/HDTouch';
 import { IS_HD } from '../services/appversion';
@@ -65,7 +65,7 @@ const st = StyleSheet.create({
   empty: { color: C.text3, textAlign: 'center', lineHeight: 22 },
   row: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, padding: 10, borderRadius: 10, backgroundColor: C.surface },
   art: { width: 52, height: 52, borderRadius: 8 },
-  name: { color: C.text, fontSize: FS.xl, fontWeight: '600' },
+  name: { color: C.text, fontSize: FS.xl, fontWeight: FW.semibold },
   sub: { color: C.text3, fontSize: FS.body },
   favBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
 });

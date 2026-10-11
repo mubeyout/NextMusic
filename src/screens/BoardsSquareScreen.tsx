@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
-import { C, FS, SP, softGrad } from '../theme/tokens';
+import { C, FS, FW, SP, softGrad } from '../theme/tokens';
 import { PageHeader } from '../components/PageChrome';
 import { lxapi } from '../services/lxapi';
 import type { SongItem } from '../services/server';
@@ -98,7 +98,7 @@ const st = StyleSheet.create({
   srcRow: { flexDirection: 'row', alignItems: 'center', gap: SP.md, paddingHorizontal: 20, paddingBottom: 12 },
   srcPill: { height: 32, borderRadius: 16, paddingHorizontal: 16, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   srcPillOn: { backgroundColor: C.brand },
-  srcLabel: { color: C.text2, fontSize: FS.body, lineHeight: 14, fontWeight: '600' },
+  srcLabel: { color: C.text2, fontSize: FS.body, lineHeight: 14, fontWeight: FW.semibold },
   srcLabelOn: { color: C.onBrand },
   count: { color: C.text2, fontSize: FS.sm, lineHeight: 14 },
   content: { paddingHorizontal: 20, paddingBottom: 32 },
@@ -108,7 +108,7 @@ const st = StyleSheet.create({
   cardArt: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 },
   cardShade: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, backgroundColor: '#00000088' },
   cardTextWrap: { gap: SP.xs },
-  name: { color: C.text, fontSize: FS.md, lineHeight: 16, fontWeight: '700' },
+  name: { color: C.text, fontSize: FS.md, lineHeight: 16, fontWeight: FW.bold },
   sub: { color: C.text2, fontSize: FS.xs, lineHeight: 11 },
   center: { paddingVertical: 48, alignItems: 'center' },
   empty: { color: C.text2, fontSize: FS.body, lineHeight: 18, textAlign: 'center', paddingVertical: 40 },

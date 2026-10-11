@@ -3,10 +3,11 @@
 // [老板 1011 15:30] 窄屏最低档 48%两列→31%三列:墙卡(emby 专辑墙等)与全站歌单网格(Home/Explore/Search 31%)同大小;桌面/HD 档不变
 // 阈值默认档:≥1500→15%(6列)/≥1100→18%(5列)/≥800→23%(4列)/其余→31%(3列)
 import { useState, useCallback } from 'react';
+import { GRID } from '../theme/tokens'; // [老板 1011 15:39] 网格唯一源
 
 export type BasisTier = [minWidth: number, basis: string];
 
-export const DEFAULT_GRID_TIERS: BasisTier[] = [[1500, '15%'], [1100, '18%'], [800, '23%'], [0, '31%']];
+export const DEFAULT_GRID_TIERS: BasisTier[] = GRID.wallTiers as BasisTier[]; // [老板 1011 15:39] 档位表唯一源=GRID.wallTiers
 
 export function useGridBasis(tiers: BasisTier[] = DEFAULT_GRID_TIERS) {
   const [basis, setBasis] = useState('31%'); // 首帧测量前的缺省(窄中窗即正确值)

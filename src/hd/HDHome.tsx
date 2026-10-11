@@ -22,7 +22,7 @@ import { toast } from '../components/Dialog';
 import { hdNav } from './hdnav';
 import { cacheStale, cacheSet } from './hdcache';
 import type { SongItem } from '../services/server';
-import { FS, SP } from '../theme/tokens';
+import { FS, FW, SP } from '../theme/tokens';
 
 export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
   const insets = useSafeAreaInsets();
@@ -262,23 +262,23 @@ const st = StyleSheet.create({
   retryBtn: { marginTop: 10, borderRadius: 999, paddingHorizontal: 20, height: 30, backgroundColor: C.elev, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
   retryText: { color: C.text2, fontSize: H.font.sm },
   screen: { flex: 1, backgroundColor: C.bg },
-  greet: { color: C.text, fontSize: H.font.hero, fontWeight: '800' },
+  greet: { color: C.text, fontSize: H.font.hero, fontWeight: FW.heavy },
   bigBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: H.radius.card },
   // v1.2.6:web 圆角真修——react-native-linear-gradient 在 RNW 不吃 borderRadius(实测卡角方形),
   // 卡根 overflow hidden 直接裁(老板:每日推荐/私人雷达圆角没有了);TV 不动(原生正常)
   bigCardWeb: { overflow: 'hidden' as const, borderRadius: 12 },
   big: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 14, gap: SP.xxl, borderRadius: H.radius.card },
-  bigBadge: { color: '#ffffffcc', fontSize: FS.sm, fontWeight: '700', opacity: 0.9 }, // 数字退层级(原 18px 压过标题)
-  bigTitle: { color: C.white, fontSize: H.font.xl, fontWeight: '800', letterSpacing: -.3 },
+  bigBadge: { color: '#ffffffcc', fontSize: FS.sm, fontWeight: FW.bold, opacity: 0.9 }, // 数字退层级(原 18px 压过标题)
+  bigTitle: { color: C.white, fontSize: H.font.xl, fontWeight: FW.heavy, letterSpacing: -.3 },
   bigSub: { color: '#ffffffa8', fontSize: H.font.sm, marginTop: 2 },
   bigPlay: { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,.22)', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(0,0,0,.35)' },
-  secTitle: { color: C.text, fontSize: H.font.xl, fontWeight: '700' },
+  secTitle: { color: C.text, fontSize: H.font.xl, fontWeight: FW.bold },
   secHint: { color: C.text3, fontSize: H.font.xs },
   secMore: { color: C.brand, fontSize: H.font.sm },
   // v6(老板反馈):环必须贴附卡片几何——环宽=封面宽(去水平 padding),环圆角=封面圆角+2(描边外扩 2px,圆角同步外放才不显小)
   recCard: { width: 92, gap: SP.xs, paddingBottom: 4, borderRadius: 9, backgroundColor: C.surface }, // lx98:去 overflow(米电视丢重绘=内容消失);圆角由封面自带
   recArt: { width: '100%', aspectRatio: 1, borderRadius: 9 },
-  recName: { color: C.text, fontSize: H.font.xs, fontWeight: '500' },
+  recName: { color: C.text, fontSize: H.font.xs, fontWeight: FW.medium },
   recSub: { color: C.text3, fontSize: FS.xs },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl },
   // 卡片内文字离边留气口(老板反馈:文字太贴边,左右和底部缺 padding)
@@ -290,11 +290,11 @@ const st = StyleSheet.create({
   plCount: { position: 'absolute', bottom: 5, right: 5, backgroundColor: 'rgba(0,0,0,.6)', borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1, height: 16, justifyContent: 'center' }, // 显式高度防 absolute 拉伸(zoom 下胶囊曾撑满封面高)
   plCountText: { color: C.white, fontSize: FS.xs },
   plCountWeb: { top: 6, right: 6, bottom: undefined, borderRadius: 999, paddingHorizontal: 6, backgroundColor: 'rgba(0,0,0,.58)', height: 18, justifyContent: 'center' },
-  plName: { color: C.text, fontSize: H.font.sm, fontWeight: '600' },
+  plName: { color: C.text, fontSize: H.font.sm, fontWeight: FW.semibold },
   plArtFull: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   plVeil: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 9 },
   plTextsOverlay: { position: 'absolute', left: 8, right: 8, bottom: 7 },
-  plNameOnArt: { color: C.white, fontSize: H.font.sm, fontWeight: '700' },
+  plNameOnArt: { color: C.white, fontSize: H.font.sm, fontWeight: FW.bold },
   recSubOnArt: { color: '#FFFFFFCC', fontSize: FS.xs },
   plTexts: { alignSelf: 'stretch', paddingHorizontal: 8, gap: SP.xs },
   empty: { height: 64, borderRadius: H.radius.card, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', gap: SP.md, flexDirection: 'row', paddingHorizontal: 14 },

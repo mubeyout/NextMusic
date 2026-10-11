@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Linking, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PageHeader } from '../components/PageChrome';
-import { C, FS, SP } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { IS_HD } from '../services/appversion';
 import { useLicense, license } from '../services/license';
 import { LICENSE_PAGE, BUY_LINKS } from '../services/benefits';
@@ -111,30 +111,30 @@ const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   statusCard: { borderRadius: 16, backgroundColor: C.surface, padding: 18, gap: SP.sm },
   statusHead: { flexDirection: 'row', alignItems: 'center', gap: SP.lg },
-  tierLabel: { color: C.text, fontSize: IS_HD ? 22 : 19, fontWeight: '800' },
+  tierLabel: { color: C.text, fontSize: IS_HD ? 22 : 19, fontWeight: FW.heavy },
   betaChip: { backgroundColor: C.badgeOn, borderRadius: 7, paddingHorizontal: 8, paddingVertical: 3 },
-  betaChipText: { color: C.brandSoft, fontSize: FS.sm, fontWeight: '600' },
+  betaChipText: { color: C.brandSoft, fontSize: FS.sm, fontWeight: FW.semibold },
   tierDesc: { color: C.text2, fontSize: FS.md, lineHeight: 18 },
-  trialLeft: { color: C.brandText, fontSize: FS.md, fontWeight: '600', marginTop: 2 },
+  trialLeft: { color: C.brandText, fontSize: FS.md, fontWeight: FW.semibold, marginTop: 2 },
   seats: { color: C.text3, fontSize: FS.body, marginTop: 2 },
   card: { borderRadius: 16, backgroundColor: C.surface, padding: 18, gap: SP.lg },
-  cardTitle: { color: C.text, fontSize: FS.lg, fontWeight: '600' },
+  cardTitle: { color: C.text, fontSize: FS.lg, fontWeight: FW.semibold },
   redeemRow: { flexDirection: 'row', gap: SP.lg, alignItems: 'flex-start' },
   redeemInput: {
     flex: 1, minHeight: 46, borderRadius: 12, backgroundColor: C.surface2,
     color: C.text, fontSize: FS.md, paddingHorizontal: 12, paddingVertical: 10,
   },
   redeemBtn: { height: 46, borderRadius: 12, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
-  redeemBtnText: { color: C.onBrand, fontSize: FS.lg, fontWeight: '700' },
+  redeemBtnText: { color: C.onBrand, fontSize: FS.lg, fontWeight: FW.bold },
   cardBtn: {
     height: 50, borderRadius: 13, backgroundColor: C.surface, borderWidth: 1.2, borderColor: C.brand,
     alignItems: 'center', justifyContent: 'center',
   },
-  cardBtnText: { color: C.brandText, fontSize: FS.lg, fontWeight: '600' },
+  cardBtnText: { color: C.brandText, fontSize: FS.lg, fontWeight: FW.semibold },
   familyCard: {
     flexDirection: 'row', alignItems: 'center', borderRadius: 16,
     backgroundColor: C.brandDim, borderWidth: 1.2, borderColor: C.brand, padding: 16,
   },
-  familyTitle: { color: C.brandText, fontSize: FS.xl, fontWeight: '700' },
+  familyTitle: { color: C.brandText, fontSize: FS.xl, fontWeight: FW.bold },
   familySub: { color: C.text2, fontSize: FS.body, lineHeight: 17, marginTop: 3 },
 });

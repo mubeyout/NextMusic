@@ -2,7 +2,7 @@ import React, { useEffect, useReducer, useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, FW } from '../theme/tokens';
 import { useApp } from '../state/AppState';
 import { library } from '../state/library';
 import { isFav, setFav, addToPlaylist, songKey } from '../state/favorites';
@@ -142,14 +142,14 @@ const s = StyleSheet.create({
     paddingHorizontal: 20, paddingTop: 8,
   },
   handle: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: C.handle, marginBottom: 10 },
-  title: { color: C.text, fontSize: 18, lineHeight: 24, fontWeight: '700', marginBottom: 6 },
+  title: { color: C.text, fontSize: 18, lineHeight: 24, fontWeight: FW.bold, marginBottom: 6 },
   loveRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint, marginBottom: 4 },
   loveIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.inset2, alignItems: 'center', justifyContent: 'center' },
-  loveTitle: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '600' },
+  loveTitle: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: FW.semibold },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 54 },
   rowIcon: { width: 40, height: 40, borderRadius: 8, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   rowGlyph: { color: C.text2, fontSize: 16 },
-  rowTitle: { flex: 1, color: C.text, fontSize: 14, lineHeight: 19, fontWeight: '500' },
+  rowTitle: { flex: 1, color: C.text, fontSize: 14, lineHeight: 19, fontWeight: FW.medium },
   sub: { color: C.text2, fontSize: 11, lineHeight: 15 },
   empty: { color: C.text2, fontSize: 12, lineHeight: 17, textAlign: 'center', paddingVertical: 20 },
 });

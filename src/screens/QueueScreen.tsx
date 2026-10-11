@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'rea
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
-import { C, FS, SP } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { IS_HD } from '../services/appversion';
 import { Platform } from 'react-native';
 const IS_WEB = Platform.OS === 'web'; // v3.33:队列行菜单定位弹出(web)分支
@@ -208,23 +208,23 @@ const st = StyleSheet.create({
   nowArtWrap: { width: 60, height: 60, borderRadius: 7, overflow: 'hidden' },
   nowArt: { width: 60, height: 60 },
   nowMeta: { flex: 1, gap: SP.xs },
-  nowTitle: { color: C.text, fontSize: FS.lg, lineHeight: 20, fontWeight: '700' },
+  nowTitle: { color: C.text, fontSize: FS.lg, lineHeight: 20, fontWeight: FW.bold },
   nowArtist: { color: C.text2, fontSize: FS.sm, lineHeight: 16 },
   nowBar: { height: 4, borderRadius: 2, backgroundColor: C.inset, marginTop: 8, overflow: 'hidden' },
   nowBarValue: { height: 4, borderRadius: 2, backgroundColor: C.brand },
   sectionRow: { height: 26, flexDirection: 'row', alignItems: 'center', gap: SP.md, marginTop: 16, marginBottom: 8 },
-  sectionTitle: { flex: 1, color: C.text, fontSize: FS.headline, lineHeight: 25, fontWeight: '700' },
+  sectionTitle: { flex: 1, color: C.text, fontSize: FS.headline, lineHeight: 25, fontWeight: FW.bold },
   sectionMeta: { color: C.text2, fontSize: FS.sm, lineHeight: 16 },
   list: { gap: SP.md },
   // v3.33:批量操作工具栏
   batchBar: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, backgroundColor: C.surface, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginTop: 10 },
-  batchCount: { color: C.text, fontSize: FS.md, fontWeight: '700' },
+  batchCount: { color: C.text, fontSize: FS.md, fontWeight: FW.bold },
   batchBtn: { height: 32, paddingHorizontal: 14, borderRadius: 16, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   batchBtnPri: { backgroundColor: C.brand },
-  batchBtnText: { color: C.text, fontSize: FS.body, fontWeight: '600' },
-  batchBtnPriText: { color: C.white, fontSize: FS.body, fontWeight: '600' },
+  batchBtnText: { color: C.text, fontSize: FS.body, fontWeight: FW.semibold },
+  batchBtnPriText: { color: C.white, fontSize: FS.body, fontWeight: FW.semibold },
   chk: { width: 46, height: 46, borderRadius: 8, borderWidth: 2, borderColor: C.stroke, alignItems: 'center', justifyContent: 'center' },
   chkOn: { backgroundColor: C.brand, borderColor: C.brand },
   doneBtn: { height: 30, paddingHorizontal: 14, borderRadius: 15, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
-  doneText: { color: C.white, fontSize: FS.body, fontWeight: '700' },
+  doneText: { color: C.white, fontSize: FS.body, fontWeight: FW.bold },
 });
