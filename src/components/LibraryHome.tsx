@@ -141,7 +141,8 @@ export function HeroPair({ heroes, duo }: {
   const list = heroes.slice(0, 2);
   if (!list.length) return null;
   return (
-    <View onLayout={e => setW(e.nativeEvent.layout.width)}>
+    <View onLayout={e => setW(e.nativeEvent.layout.width)} style={{ gap: 12 }}>
+      {/* [老板 1011 12:44] 外层 gap:英雄卡↔duo 按钮行间距(曾零间隙挤在一起) */}
       <View style={[hv.row, w > 0 && w < 640 && hv.rowPhone]}>
         {list.map(h => IS_HD ? (
           <HDTouch key={h.big} style={hv.cell} focusStyle={focus(16)} onPress={h.onPress} disabled={h.disabled}>
@@ -219,7 +220,7 @@ export function HomeSection({ title, count, actionLabel, onAction, children }: {
         <Text style={[lh.secTitle, IS_HD && lh.secTitleHD]}>{title}</Text>
         {typeof count === 'number' && count > 0 ? <Text style={lh.secCount}>{count}</Text> : null}
         {actionLabel && onAction ? (
-          IS_HD ? (
+          IS_HD && Platform.OS !== 'web' ? ( // [老板 1011 12:45] web 端改 TouchableOpacity(为我推荐可点版同款);TV 保 HDTouch
             <HDTouch style={lh.secMore} onPress={onAction} focusStyle={focus(999)}>
               <Text style={lh.secMoreT}>{actionLabel}</Text>
               <Icon name="chevronright" size={12} color={C.text2} />
@@ -272,7 +273,7 @@ export function RailCard({ cover, name, sub, icon, onPress }: {
           <Icon name={icon || 'music'} size={24} color={C.text2} />
         </View>
       )}
-      <View style={{ padding: 8, gap: 3 }}>
+      <View style={{ padding: 8, gap: 3, minHeight: 46 }}>
         <Text style={lh.railName} numberOfLines={1}>{name}</Text>
         {sub ? <Text style={[lh.railSub, { maxWidth: size - 16 }]} numberOfLines={1}>{sub}</Text> : null}
       </View>
@@ -312,7 +313,7 @@ export function LibraryHome({ kind, name, stats, sub, status, brand, bannerExtra
 }
 
 const lh = StyleSheet.create({
-  wrap: { marginHorizontal: 16, gap: 12 },
+  wrap: { marginHorizontal: 16, gap: 18 }, // [老板 1011 12:44] section 间距统一 18(为我推荐基准)
   wrapHD: { marginHorizontal: GUTTER },
   // 库头横幅
   banner: { height: 96, borderRadius: 16, overflow: 'hidden', justifyContent: 'center' },

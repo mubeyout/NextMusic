@@ -80,7 +80,7 @@ export function DiscCard({ name, sub, cover, count, round, focusable, onPress, u
     </View>
   );
   const label = (
-    <View style={{ width: '100%' } as never}>
+    <View style={{ width: '100%', minHeight: 34 } as never}> // [老板 1011 12:46] 文字区定高:sub 有无不再高低卡
       <Text style={d.discName} numberOfLines={1}>{name}</Text>
       {sub ? <Text style={d.discSub} numberOfLines={1}>{sub}</Text> : null}
     </View>

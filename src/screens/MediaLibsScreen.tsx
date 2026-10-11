@@ -937,7 +937,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
       ) : (
         /* ---------- 综合浏览页：分区纵排（2026-09-17 老板：一个综合页面，不做 tab） ---------- */
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingBottom: IS_HD ? pageBottom(32) : (current ? 116 : 32), gap: IS_HD ? SP.big : SP.wide }}
+          contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingBottom: IS_HD ? pageBottom(32) : (current ? 116 : 32), gap: SP.section }} // [老板 1011 12:44] 段距统一 18(为我推荐基准;原 HD24/phone20)
         >
           {/* [v5.6 1010·LEO 基准稿] phead:品牌标+源名+账号@地址 sub+连接状态点(辉光)+右上 刷新/连接设置 */}
           <View style={pv.phead}>
@@ -1401,7 +1401,7 @@ function PvCard({ cover, name, meta, round, onPress, onLongPress }: {
           <Icon name="music" size={22} color={C.text2} />
         </View>
       )}
-      <View style={{ padding: 8, gap: 3 }}>
+      <View style={{ padding: 8, gap: 3, minHeight: 46 }}>
         <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{name}</Text>
         {meta ? <Text style={[st.albumMeta, IS_HD && bv.albumMeta]} numberOfLines={1}>{meta}</Text> : null}
       </View>

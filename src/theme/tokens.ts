@@ -116,7 +116,7 @@ applyBootTheme();
 
 // ─── [老板 1011 12:04] 全局设计 token:间距/字号收敛规范(详见 docs/design-tokens.md;旧 SP.screen/FS.title28 体系零使用点已并入) ───
 /** 间距档:全偶数 4-24,共 9 档(淘汰 2/3/5/7/9/11 碎片档——就近归并;新代码禁裸写数字 gap) */
-export const SP = { xs: 4, sm: 6, md: 8, lg: 10, xl: 12, xxl: 14, wide: 16, wider: 20, big: 24, screen: 20 } as const;
+export const SP = { xs: 4, sm: 6, md: 8, lg: 10, xl: 12, xxl: 14, section: 18, wide: 16, wider: 20, big: 24, screen: 20 } as const; // [12:44] section=18 为我推荐段距基准档
 /** 字号档:10-28 全整数,共 12 档(淘汰 8/9 特小档与 .5 半档——8/9→10,10.5→11,11.5→12,12.5→13;新代码禁裸写 fontSize) */
 export const FS = { xs: 10, sm: 11, body: 12, md: 13, lg: 14, xl: 15, title: 16, headline: 17, h2: 18, h1: 20, display: 24, hero: 28 } as const;
 export type SpaceToken = keyof typeof SP;

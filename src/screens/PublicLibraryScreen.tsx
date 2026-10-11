@@ -497,7 +497,27 @@ function ErrBack({ err }: { err: string }) {
 
 // ── 专辑详情 ──
 // [老板 1011 11:20] 全墙路由页:「查看全部」与其他页同模式(路由跳转)——原第④⑤段原地展开 rail 小卡突变墙大卡=「样式突变卡片变大」根因;排版与其他页对齐
+// [老板 1011 12:45] 墙页错误边界:渲染崩溃可见化(错误卡+重试)——静态三验全绿但老板实测点不动的死导航,让崩溃显形
+class WallErrBoundary extends React.Component<{ children: React.ReactNode }, { err: string | null }> {
+  state = { err: null as string | null };
+  static getDerivedStateFromError(e: unknown) { return { err: (e as Error)?.message || String(e) }; }
+  render() {
+    if (this.state.err) return (
+      <View style={d.screen}>
+        <PageHeader title="全墙" />
+        <View style={{ padding: 24, gap: 10 }}>
+          <Text style={{ color: '#E8618C', fontSize: 12 }}>页面渲染出错：{this.state.err}</Text>
+          <TouchableOpacity style={d.retryBtn} onPress={() => this.setState({ err: null })}><Text style={d.retryText}>重试</Text></TouchableOpacity>
+        </View>
+      </View>
+    );
+    return this.props.children;
+  }
+}
 export function PublicLibWallRoute(props: Record<string, unknown>) {
+  return <WallErrBoundary><PublicLibWallInner {...props} /></WallErrBoundary>;
+}
+function PublicLibWallInner(props: Record<string, unknown>) {
   const route = (props as { route: { params: { kind: 'albums' | 'artists' } } }).route;
   const kind = route.params.kind === 'artists' ? 'artists' : 'albums';
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string, p?: object) => void };
