@@ -6,8 +6,8 @@ import { VinylDisc } from '../components/VinylDisc'; // 唱片样式 draft-2:共
 import { Icon } from '../theme/Icon';
 import { fixCoverUrl } from '../utils/cover'; // lxfix:kw 图床域名自愈
 import { sourceLabel } from '../components/SongRow';
-import { C } from '../theme/tokens';
-import { usePlayer } from '../state/PlayerProvider';
+import { C, FS, SP } from '../theme/tokens';
+import { usePlayer, usePlayerProgress } from '../state/PlayerProvider';
 import { useSeekBar } from '../hooks/useSeekBar'; // R6 统一 seek
 import { api } from '../services/server';
 import { settings } from '../services/settings';
@@ -29,7 +29,8 @@ import { dialog, toast } from '../components/Dialog';
 export function PlayerScreen() {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string) => void };
-  const { current, playing, position, duration, toggle, skipNext, skipPrev, seekTo, shuffle, repeat, setShuffle, cycleRepeat } = usePlayer();
+  const { current, playing, toggle, skipNext, skipPrev, seekTo, shuffle, repeat, setShuffle, cycleRepeat } = usePlayer();
+  const { position, duration } = usePlayerProgress(); // [1011 15:16] 进度独立订阅
   const { connected, token } = useApp();
   const [lyrics, setLyrics] = useState<LyricLine[] | null>(null);
   const { faved, toggle: toggleFav } = useFav(current); // lx157:收藏状态三源实时联动(isFav+歌单+服务器快照,取订刷新)
@@ -128,7 +129,7 @@ export function PlayerScreen() {
   if (!current) {
     return (
       <View style={[st.screen, { paddingTop: insets.top + 60, alignItems: 'center' }]}>
-        <Text style={{ color: C.text2, fontSize: 13 }}>没有正在播放的歌曲</Text>
+        <Text style={{ color: C.text2, fontSize: FS.md }}>没有正在播放的歌曲</Text>
       </View>
     );
   }
@@ -321,7 +322,7 @@ const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bgDeep },
   header: { height: 72, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20 },
   hBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center' },
-  hTitle: { flex: 1, color: C.text, fontSize: 16, lineHeight: 19, fontWeight: '500' }, // lx166 居左(播放页返回头行)
+  hTitle: { flex: 1, color: C.text, fontSize: FS.title, lineHeight: 19, fontWeight: '500' }, // lx166 居左(播放页返回头行)
   // draft-2 容器层外阴影:0 24px 70px 黑55%@230 设计稿,按 270/230 等比;
   // backgroundColor=盘缘同色,给 Android elevation 提供圆形 outline(盘体 SVG 全覆盖,衬底不可见)
   vinylWrap: {
@@ -329,32 +330,32 @@ const st = StyleSheet.create({
     shadowColor: '#000000', shadowOpacity: 0.55, shadowOffset: { width: 0, height: 28 }, shadowRadius: 82, elevation: 28,
   },
   vinylSpin: { width: 270, height: 270 },
-  modeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 20, marginTop: 8 },
+  modeRow: { flexDirection: 'row', alignItems: 'center', gap: SP.md, paddingLeft: 20, marginTop: 8 },
   modeMarker: { width: 3, height: 38, borderRadius: 2, backgroundColor: C.brand },
-  modeTitle: { color: C.text, fontSize: 15, lineHeight: 18, fontWeight: '500' },
-  modeCaption: { color: C.text2, fontSize: 11, lineHeight: 13 },
-  lyrics: { paddingHorizontal: 30, paddingTop: 10, gap: 7, minHeight: 158 },
-  lActive: { color: C.brandSoft, fontSize: 26, lineHeight: 31, fontWeight: '700' },
-  lTrans: { color: C.text2, fontSize: 14, lineHeight: 18, marginTop: 2 },
-  lLead: { color: C.text, fontSize: 18, lineHeight: 22, opacity: 0.86 },
-  lFar: { color: C.text2, fontSize: 14, lineHeight: 17, opacity: 0.55 },
-  tools: { flexDirection: 'row', gap: 6, paddingHorizontal: 20, marginTop: 8 },
+  modeTitle: { color: C.text, fontSize: FS.xl, lineHeight: 18, fontWeight: '500' },
+  modeCaption: { color: C.text2, fontSize: FS.sm, lineHeight: 13 },
+  lyrics: { paddingHorizontal: 30, paddingTop: 10, gap: SP.sm, minHeight: 158 },
+  lActive: { color: C.brandSoft, fontSize: FS.display, lineHeight: 29, fontWeight: '700' }, // [LEO 1011] 26 档外→display(24)
+  lTrans: { color: C.text2, fontSize: FS.lg, lineHeight: 18, marginTop: 2 },
+  lLead: { color: C.text, fontSize: FS.h2, lineHeight: 22, opacity: 0.86 },
+  lFar: { color: C.text2, fontSize: FS.lg, lineHeight: 17, opacity: 0.55 },
+  tools: { flexDirection: 'row', gap: SP.sm, paddingHorizontal: 20, marginTop: 8 },
   tool: {
     flex: 1, height: 44, borderRadius: 14, backgroundColor: C.inputBar,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.sm,
   },
-  toolLabel: { color: C.text2, fontSize: 11, lineHeight: 13, fontWeight: '500' },
+  toolLabel: { color: C.text2, fontSize: FS.sm, lineHeight: 13, fontWeight: '500' },
   panel: {
     borderRadius: 24, borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    backgroundColor: C.elev, paddingTop: 18, paddingHorizontal: 20, gap: 7,
+    backgroundColor: C.elev, paddingTop: 18, paddingHorizontal: 20, gap: SP.sm,
   },
   pTrackRow: { flexDirection: 'row', alignItems: 'center', height: 56 },
-  pActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  pActions: { flexDirection: 'row', alignItems: 'center', gap: SP.lg },
   pArt: { width: 52, height: 52, borderRadius: 10 },
-  pMeta: { flex: 1, marginLeft: 13, gap: 2 },
-  pTitle: { color: C.text, fontSize: 18, lineHeight: 22, fontWeight: '700' },
-  pSub: { color: C.text2, fontSize: 12, lineHeight: 14 },
-  pProg: { color: C.brandSoft, fontSize: 10, lineHeight: 14, fontWeight: '600' },
+  pMeta: { flex: 1, marginLeft: 13, gap: SP.xs },
+  pTitle: { color: C.text, fontSize: FS.h2, lineHeight: 22, fontWeight: '700' },
+  pSub: { color: C.text2, fontSize: FS.body, lineHeight: 14 },
+  pProg: { color: C.brandSoft, fontSize: FS.xs, lineHeight: 14, fontWeight: '600' },
   pIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' },
   seekHit: { height: 28, justifyContent: 'center' },
   bar: { height: 4, flexDirection: 'row', backgroundColor: C.surface2 },
@@ -364,7 +365,7 @@ const st = StyleSheet.create({
     backgroundColor: C.text, marginLeft: -7,
   },
   timeRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  time: { color: C.text2, fontSize: 10, lineHeight: 12 },
+  time: { color: C.text2, fontSize: FS.xs, lineHeight: 12 },
   controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 68 },
   cBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   cMain: {
@@ -372,5 +373,5 @@ const st = StyleSheet.create({
     backgroundColor: C.brand,
     alignItems: 'center', justifyContent: 'center',
   },
-  repeatOne: { position: 'absolute', right: 6, top: 6, color: C.brandText, fontSize: 9, fontWeight: '700' },
+  repeatOne: { position: 'absolute', right: 6, top: 6, color: C.brandText, fontSize: FS.xs, fontWeight: '700' },
 });

@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
-import { usePlayer } from '../state/PlayerProvider';
+import { usePlayer, usePlayerProgress } from '../state/PlayerProvider';
 import { ProgressBar } from './ProgressBar';
 import { CollectSheet } from './CollectSheet';
 import { useFav } from '../state/useFav'; // lx157:收藏状态统一三源联动
@@ -15,7 +15,8 @@ import LinearGradient from 'react-native-linear-gradient'; // [老板 1010] 小�
 // Figma Player/Mini: 350x72 r=8, art 52x52 r=6, meta center-left, right icons
 // standalone=true:内页独立挂载(底部自补安全区 inset);主 tab 内由 TabBar 吃掉 inset 不传
 export function MiniPlayer({ standalone }: { standalone?: boolean } = {}) {
-  const { current, playing, position, duration, toggle, cast } = usePlayer();
+  const { current, playing, toggle, cast } = usePlayer();
+  const { position, duration } = usePlayerProgress(); // [1011 15:16] 进度独立订阅
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { navigate: (s: string) => void };
   const [collect, setCollect] = useState(false);

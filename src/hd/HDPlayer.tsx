@@ -16,7 +16,7 @@ import { toast } from '../components/Dialog';
 import { C, T, fmtSec } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { useSeekBar } from '../hooks/useSeekBar'; // R6 统一 seek
-import { usePlayer } from '../state/PlayerProvider';
+import { usePlayer, usePlayerProgress } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
 import { api } from '../services/server';
 import { lxapi } from '../services/lxapi';
@@ -25,6 +25,7 @@ import { useFav } from '../state/useFav';
 import { startSpectrum } from '../services/visualizer';
 import { HDCollect } from './HDCollect';
 import { hdNav } from './hdnav';
+import { FS, SP } from '../theme/tokens';
 
 
 // 唱片 web 直出 DOM 版(react-native-svg 与 RNW 混用有 React#130 前科,位图时代仍直出 DOM)
@@ -107,7 +108,8 @@ export function HDPlayer() {
 
   const insets = useSafeAreaInsets();
   const nav = { goBack: () => hdNav()?.goBack(), navigate: (s: string) => hdNav()?.navigate(s) };
-  const { current, playing, position, duration, toggle, skipNext, skipPrev, seekTo, shuffle, repeat, setShuffle, cycleRepeat, queue, speed, setSpeed, sleepRemain, enableSleep } = usePlayer();
+  const { current, playing, toggle, skipNext, skipPrev, seekTo, shuffle, repeat, setShuffle, cycleRepeat, queue, speed, setSpeed, sleepRemain, enableSleep } = usePlayer();
+  const { position, duration } = usePlayerProgress(); // [1011 15:16] 进度独立订阅
   const { connected, token } = useApp();
   const [lyrics, setLyrics] = useState<LyricLine[] | null>(null);
   const { faved } = useFav(current); // lx101:收藏统一 hook(faved 态;操作走选歌单面板,与 TV 同源)
@@ -245,7 +247,7 @@ export function HDPlayer() {
   if (!current) {
     return (
       <View style={[st.screen, { alignItems: 'center', justifyContent: 'center', backgroundColor: settings.get().light ? '#F6F7F9' : C.bg }]}>
-        <Text style={{ color: C.text2, fontSize: 15 }}>没有正在播放的歌曲</Text>
+        <Text style={{ color: C.text2, fontSize: FS.xl }}>没有正在播放的歌曲</Text>
       </View>
     );
   }
@@ -461,101 +463,101 @@ export function HDPlayer() {
 // v3.32c(老板:播放页浅色适配):此前 web 复用 TV 版硬编码深色(stW 为未接线死代码)——双盘化:
 // 原生 TV/车机深色默认不变;light=true 时全端走浅盘;渲染期读 settings 防 StyleSheet 模块加载期固化(循环 import 时序坑)
 const stDark: Record<string, ViewStyle | TextStyle> = {
-  cToolText: { color: '#ffffff99', fontSize: 11, fontWeight: '700' }, // 工具组降为次级灰
+  cToolText: { color: '#ffffff99', fontSize: FS.sm, fontWeight: '700' }, // 工具组降为次级灰
   // v3.9 面板交互: 悬浮深色卡(玻璃拟态,从按钮上方浮出+入场动画,锚定居中)——替代裸 pill 排
-  panelRow: { position: 'absolute', bottom: '100%', left: '50%', transform: [{ translateX: -210 }], flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center', marginBottom: 12, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 18, backgroundColor: 'rgba(24,26,24,.92)', boxShadow: '0 18px 48px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.08)' },
+  panelRow: { position: 'absolute', bottom: '100%', left: '50%', transform: [{ translateX: -210 }], flexDirection: 'row', gap: SP.md, justifyContent: 'center', alignItems: 'center', marginBottom: 12, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 18, backgroundColor: 'rgba(24,26,24,.92)', boxShadow: '0 18px 48px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.08)' },
   // v3.15:web 面板真居中(translateX -50% 自适应宽度,不再硬编码 -210)+ zIndex 20(原 0 被 header 盖住吞点击)
   panelRowWeb: { transform: [{ translateX: '-50%' }], zIndex: 20 },
   // v3.15:web 点击面板外关闭——透明遮罩覆盖按钮行以上全部区域(不盖按钮行本身,切换面板仍直达)
   panelScrim: { position: 'absolute', top: -1200, left: -300, right: -300, bottom: '100%', zIndex: 19 },
   panelPill: { borderRadius: 999, paddingHorizontal: 14, height: 30, backgroundColor: '#ffffff14', alignItems: 'center', justifyContent: 'center' },
   panelPillOn: { backgroundColor: C.brand, borderColor: C.brand, shadowColor: '#1ED760', shadowOpacity: .4, shadowRadius: 10, shadowOffset: { width: 0, height: 2 } }, // 选中态绿辉
-  panelPillText: { color: '#ffffffcc', fontSize: 12, fontWeight: '600' },
+  panelPillText: { color: '#ffffffcc', fontSize: FS.body, fontWeight: '600' },
   screen: { flex: 1, backgroundColor: '#0a0c0b' },
   bgArt: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.5 },
   bgVeil: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(6,8,7,.62)' },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 26, zIndex: 5 },
   focus: { borderWidth: 2, borderColor: C.brand, borderRadius: 26 }, // web 分支控件环
-  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, borderRadius: 17, paddingHorizontal: 14, backgroundColor: '#ffffff14' },
-  backLabel: { color: '#ffffffcc', fontSize: 13, fontWeight: '600' },
+  backBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, height: 34, borderRadius: 17, paddingHorizontal: 14, backgroundColor: '#ffffff14' },
+  backLabel: { color: '#ffffffcc', fontSize: FS.md, fontWeight: '600' },
     webArtCard: { borderRadius: 14, overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.05)', backgroundColor: C.inset },
   webArtImg: { width: '100%', height: '100%' },
 // web vinyl 尺寸
   vinylWrap: { width: 228, height: 228, borderRadius: 114, backgroundColor: '#0d100e', borderWidth: 5, borderColor: '#161a17', alignItems: 'center', justifyContent: 'center', boxShadow: '0 18px 44px rgba(0,0,0,.55), 0 0 36px rgba(30,215,96,.14)' },
   vinylZone: { width: RING_ZONE, height: RING_ZONE, alignItems: 'center', justifyContent: 'center' },
-  srcPill: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 24, borderRadius: 12, paddingHorizontal: 12, marginTop: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,.16)', backgroundColor: 'rgba(255,255,255,.06)' },
+  srcPill: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, height: 24, borderRadius: 12, paddingHorizontal: 12, marginTop: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,.16)', backgroundColor: 'rgba(255,255,255,.06)' },
   srcDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.brand },
-  srcTag: { color: '#ffffffaa', fontSize: 10, letterSpacing: 2, fontWeight: '600' },
-  main: { flex: 1, flexDirection: 'column', paddingHorizontal: 52, paddingTop: 4, gap: 18, justifyContent: 'flex-end' }, // v1.2.15(老板 09-14"排版乱"):TV 原误为 row——rowWrap/进度/控件横排成一条;改 column 贴底与 web 同构
-  mainWeb: { flexDirection: 'column', paddingHorizontal: '5%', gap: 20, justifyContent: 'flex-end' }, // v3.5:行2(进度+控件)紧贴页面底部
+  srcTag: { color: '#ffffffaa', fontSize: FS.xs, letterSpacing: 2, fontWeight: '600' },
+  main: { flex: 1, flexDirection: 'column', paddingHorizontal: 52, paddingTop: 4, gap: SP.section, justifyContent: 'flex-end' }, // v1.2.15(老板 09-14"排版乱"):TV 原误为 row——rowWrap/进度/控件横排成一条;改 column 贴底与 web 同构
+  mainWeb: { flexDirection: 'column', paddingHorizontal: '5%', gap: SP.wider, justifyContent: 'flex-end' }, // v3.5:行2(进度+控件)紧贴页面底部
   rowWrap: { flex: 1, flexDirection: 'row', gap: '10%', alignItems: 'center', minWidth: 0 }, // 行1:黑胶(左半靠右)|10%|标题歌词(右半靠左)
   artCol: { width: 344, alignItems: 'center', justifyContent: 'center' }, // TV 基准;web 见行内 45% 覆写
-  infoCol: { flex: 1, gap: 6, paddingTop: 22 },
-  infoColWeb: { paddingTop: 0, gap: 10, flex: 1, alignItems: 'flex-start' }, // 行1 右半区·左对齐 // lx94:标题/歌词整体下移(老板:太高)
-  title: { color: '#ffffff', fontSize: 25, fontWeight: '800' },
-  titleWeb: { fontSize: 30, letterSpacing: -.5 },
-  subWeb: { fontSize: 15, marginTop: 4 },
-  sub: { color: '#ffffffb3', fontSize: 14 },
-  lyricsBox: { flex: 1, gap: 8, justifyContent: 'center', alignItems: 'flex-start' }, // 设计稿:歌词左对齐
+  infoCol: { flex: 1, gap: SP.sm, paddingTop: 22 },
+  infoColWeb: { paddingTop: 0, gap: SP.lg, flex: 1, alignItems: 'flex-start' }, // 行1 右半区·左对齐 // lx94:标题/歌词整体下移(老板:太高)
+  title: { color: C.white, fontSize: FS.display, fontWeight: '800' }, // [LEO 1011] 25 档外→display(24)
+  titleWeb: { fontSize: FS.hero, letterSpacing: -.5 }, // [LEO 1011] 30 档外→hero(28)
+  subWeb: { fontSize: FS.xl, marginTop: 4 },
+  sub: { color: '#ffffffb3', fontSize: FS.lg },
+  lyricsBox: { flex: 1, gap: SP.md, justifyContent: 'center', alignItems: 'flex-start' }, // 设计稿:歌词左对齐
   // 歌词窗 web 限高: 运行时算(50vh), // lx93:垂直居中(顶贴→太靠上),窗口 7 行填满空隙
-  lyric: { color: '#ffffff7d', fontSize: 17, lineHeight: 24, fontWeight: '500' },
-  lyricOn: { color: '#ffffff', fontSize: 22, lineHeight: 31, fontWeight: '800', textShadowColor: 'rgba(255,255,255,.3)', textShadowRadius: 12, textShadowOffset: { width: 0, height: 0 } },
-  lyricTr: { color: '#FFFFFF55', fontSize: 12, lineHeight: 17, marginTop: 2 },
+  lyric: { color: '#ffffff7d', fontSize: FS.headline, lineHeight: 24, fontWeight: '500' },
+  lyricOn: { color: C.white, fontSize: FS.display, lineHeight: 31, fontWeight: '800', textShadowColor: 'rgba(255,255,255,.3)', textShadowRadius: 12, textShadowOffset: { width: 0, height: 0 } }, // [LEO 1011] 22 档外→display(24)(KAI 修复:注释吞闭括号)
+  lyricTr: { color: '#FFFFFF55', fontSize: FS.body, lineHeight: 17, marginTop: 2 },
   lyricTrOn: { color: '#FFFFFF99' },
-  noLyric: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
-  noLyricText: { color: '#ffffff80', fontSize: 13 },
-  progRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
+  noLyric: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: SP.lg },
+  noLyricText: { color: '#ffffff80', fontSize: FS.md },
+  progRow: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, marginBottom: 4 },
   progRowDock: { flex: 1, marginBottom: 0 }, // v1.2.15:TV 单行 dock 内进度占满剩余宽
-  dockRow: { flexDirection: 'row', alignItems: 'center', gap: 28 }, // v1.2.15(老板:进度条和按钮组挤在一排、页面底部)
+  dockRow: { flexDirection: 'row', alignItems: 'center', gap: 28 }, // v1.2.15(老板:进度条和按钮组挤在一排、页面底部) [LEO 1011] 档外特排:播放器控制区大间距
   dockColWeb: { flexDirection: 'column', width: '100%' }, // web 保持两行堆叠(mainWeb flex-end)
   progRowWeb: { width: '100%', marginBottom: 10 }, // v3.6:全宽(参照 playbar)
-  time: { color: '#ffffffb3', fontSize: 12, fontVariant: ['tabular-nums'], width: 42, textAlign: 'center' },
+  time: { color: '#ffffffb3', fontSize: FS.body, fontVariant: ['tabular-nums'], width: 42, textAlign: 'center' },
   trackWrap: { flex: 1, height: 5, flexDirection: 'row', borderRadius: 3 },
   trackFill: { backgroundColor: C.brand, borderRadius: 3 },
   trackRest: { backgroundColor: '#ffffff2e', borderRadius: 3 },
   playhead: { position: 'absolute', top: -4, width: 13, height: 13, borderRadius: 7, backgroundColor: C.brand, borderWidth: 2.5, borderColor: '#ffffff', marginLeft: -7, boxShadow: '0 0 12px rgba(30,215,96,.75)' },
-  ctrlRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  ctrlRowWeb: { justifyContent: 'center', gap: 10, columnGap: 20, marginTop: 0, flexWrap: 'wrap', rowGap: 10 }, // v3.31(老板:窄窗工具按钮被裁):自适应换行保全控件可达;宽屏富余时仍单行
+  ctrlRow: { flexDirection: 'row', alignItems: 'center', gap: SP.xl },
+  ctrlRowWeb: { justifyContent: 'center', gap: SP.lg, columnGap: 20, marginTop: 0, flexWrap: 'wrap', rowGap: 10 }, // v3.31(老板:窄窗工具按钮被裁):自适应换行保全控件可达;宽屏富余时仍单行
   cMainWeb: { width: 60, height: 60, borderRadius: 30, boxShadow: '0 8px 30px rgba(30,215,96,.4)' }, // Spotify 大播放键
   ctrlDividerWeb: { opacity: .7 },
   cMode: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' }, // v3.7:去黑底
   cMain: { width: 66, height: 66, borderRadius: 33, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   cMainFocus: { borderWidth: 3, borderColor: '#FFFFFF', borderRadius: 33 },
-  repOne: { position: 'absolute', right: 8, top: 8, color: C.brand, fontSize: 9, fontWeight: '700' }, // 手机端同款角标位
+  repOne: { position: 'absolute', right: 8, top: 8, color: C.brand, fontSize: FS.xs, fontWeight: '700' }, // 手机端同款角标位
   ctrlDivider: { width: 1, height: 26, backgroundColor: 'rgba(255,255,255,.14)', marginHorizontal: 2 },
   cTool: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }, // v3.7:去黑底·紧凑
   qBadge: { position: 'absolute', top: -5, right: -7, minWidth: 17, height: 17, borderRadius: 9, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: '#0e1310' }, // lx95:队列数量优雅悬浮胶囊
-  qBadgeText: { color: '#0b0f0d', fontSize: 9, fontWeight: '800' },
+  qBadgeText: { color: C.onBrand, fontSize: FS.xs, fontWeight: '800' },
 };
 
 // 浅色盘:仅覆写深色硬编码项,布局/尺寸/品牌色项继承 stDark(stLight=stDark 展开)
 const stLight = {
   ...stDark,
-  cToolText: { color: 'rgba(38,40,44,.6)', fontSize: 11, fontWeight: '700' },
+  cToolText: { color: 'rgba(38,40,44,.6)', fontSize: FS.sm, fontWeight: '700' },
   panelRow: { ...stDark.panelRow, backgroundColor: 'rgba(255,255,255,.94)', boxShadow: '0 18px 48px rgba(31,35,41,.14), 0 0 0 1px rgba(31,35,41,.06)' },
   panelPill: { ...stDark.panelPill, backgroundColor: 'rgba(31,35,41,.05)' },
-  panelPillText: { color: 'rgba(38,40,44,.85)', fontSize: 12, fontWeight: '600' },
+  panelPillText: { color: 'rgba(38,40,44,.85)', fontSize: FS.body, fontWeight: '600' },
   screen: { ...stDark.screen, backgroundColor: '#F6F7F9' },
   bgVeil: { ...stDark.bgVeil, backgroundColor: 'rgba(246,247,249,.82)' },
   backBtn: { ...stDark.backBtn, backgroundColor: 'rgba(31,35,41,.05)' },
-  backLabel: { color: 'rgba(38,40,44,.85)', fontSize: 13, fontWeight: '600' },
+  backLabel: { color: 'rgba(38,40,44,.85)', fontSize: FS.md, fontWeight: '600' },
   webArtCard: { ...stDark.webArtCard, boxShadow: '0 24px 64px rgba(31,35,41,.18), 0 0 0 1px rgba(31,35,41,.05)' },
   vinylWrap: { ...stDark.vinylWrap, boxShadow: '0 18px 44px rgba(31,35,41,.2), 0 0 36px rgba(30,215,96,.1)' },
   srcPill: { ...stDark.srcPill, borderColor: 'rgba(31,35,41,.08)', backgroundColor: 'rgba(31,35,41,.04)' },
-  srcTag: { color: 'rgba(38,40,44,.6)', fontSize: 10, letterSpacing: 2, fontWeight: '600' },
-  title: { color: '#26282C', fontSize: 25, fontWeight: '800' },
-  sub: { color: 'rgba(38,40,44,.7)', fontSize: 14 },
-  lyric: { color: 'rgba(38,40,44,.55)', fontSize: 17, lineHeight: 24, fontWeight: '500' },
-  lyricOn: { color: '#26282C', fontSize: 22, lineHeight: 31, fontWeight: '800', textShadowColor: 'transparent', textShadowRadius: 0, textShadowOffset: { width: 0, height: 0 } },
-  lyricTr: { color: 'rgba(38,40,44,.35)', fontSize: 12, lineHeight: 17, marginTop: 2 },
+  srcTag: { color: 'rgba(38,40,44,.6)', fontSize: FS.xs, letterSpacing: 2, fontWeight: '600' },
+  title: { color: '#26282C', fontSize: FS.display, fontWeight: '800' }, // 浅色覆写值(启动期 StyleSheet 求值特性,保留写死);[LEO 1011] 25→FS.display 与深色版同档
+  sub: { color: 'rgba(38,40,44,.7)', fontSize: FS.lg },
+  lyric: { color: 'rgba(38,40,44,.55)', fontSize: FS.headline, lineHeight: 24, fontWeight: '500' },
+  lyricOn: { color: '#26282C', fontSize: FS.display, lineHeight: 31, fontWeight: '800', textShadowColor: 'transparent', textShadowRadius: 0, textShadowOffset: { width: 0, height: 0 } }, // [LEO 1011] 22 档外→display(24)(KAI 修复:注释吞闭括号)
+  lyricTr: { color: 'rgba(38,40,44,.35)', fontSize: FS.body, lineHeight: 17, marginTop: 2 },
   lyricTrOn: { color: 'rgba(38,40,44,.6)' },
-  noLyricText: { color: 'rgba(38,40,44,.5)', fontSize: 13 },
-  time: { color: 'rgba(38,40,44,.7)', fontSize: 12, fontVariant: ['tabular-nums'], width: 42, textAlign: 'center' },
+  noLyricText: { color: 'rgba(38,40,44,.5)', fontSize: FS.md },
+  time: { color: 'rgba(38,40,44,.7)', fontSize: FS.body, fontVariant: ['tabular-nums'], width: 42, textAlign: 'center' },
   trackRest: { ...stDark.trackRest, backgroundColor: 'rgba(31,35,41,.14)' },
   playhead: { ...stDark.playhead, borderColor: '#FFFFFF', boxShadow: '0 0 12px rgba(30,215,96,.45)' },
   ctrlDivider: { ...stDark.ctrlDivider, backgroundColor: 'rgba(31,35,41,.12)' },
   qBadge: { ...stDark.qBadge, borderColor: '#F6F7F9' },
-  qBadgeText: { color: '#0B3D1F', fontSize: 9, fontWeight: '800' },
+  qBadgeText: { color: '#0B3D1F', fontSize: FS.xs, fontWeight: '800' },
 };
 type PlayerStyles = Record<string, ViewStyle | TextStyle>;
 // 直接样式对象(不经 StyleSheet.create):双盘在渲染层已定型,create 泛型对联合盘推断崩——RN style prop 原生接受普通样式对象
@@ -586,43 +588,43 @@ const stW = StyleSheet.create({
   bgArt: { position: 'absolute', top: -60, left: -60, right: -60, bottom: -60, width: '120%', height: '120%', opacity: T.light ? 0.35 : 0.5 },
   bgVeil: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: T.light ? 'rgba(246,247,249,.86)' : 'rgba(7,9,8,.74)' },
   top: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10, height: 52, zIndex: 5 },
-  back: { flexDirection: 'row', alignItems: 'center', gap: 7, height: 34, borderRadius: 17, paddingHorizontal: 14, backgroundColor: C.hover },
-  backLabel: { color: C.text2, fontSize: 13, fontWeight: '600' },
-  body: { flex: 1, flexDirection: 'row', paddingHorizontal: 64, gap: 56, alignItems: 'stretch' },
+  back: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, height: 34, borderRadius: 17, paddingHorizontal: 14, backgroundColor: C.hover },
+  backLabel: { color: C.text2, fontSize: FS.md, fontWeight: '600' },
+  body: { flex: 1, flexDirection: 'row', paddingHorizontal: 64, gap: 56, alignItems: 'stretch' }, // [LEO 1011] 档外特排:播放器左右分栏大留白
   artCol: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   artColWeb: { flex: 1, alignItems: 'flex-end', paddingRight: '5%' }, // 行1 左半区·靠右
   vinylArea: { flex: 1, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center' },
-  srcPill: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 24, borderRadius: 12, marginTop: 16, paddingHorizontal: 12, borderWidth: 1, borderColor: C.border, backgroundColor: C.input },
+  srcPill: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, height: 24, borderRadius: 12, marginTop: 16, paddingHorizontal: 12, borderWidth: 1, borderColor: C.border, backgroundColor: C.input },
   srcDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.brand },
-  srcTag: { color: C.text2, fontSize: 10, letterSpacing: 2, fontWeight: '600' },
-  infoCol: { flex: 1, alignSelf: 'stretch', justifyContent: 'center', gap: 8 },
-  title: { color: C.text, fontSize: 28, fontWeight: '800' },
-  sub: { color: C.text2, fontSize: 14, marginBottom: 12 },
-  lyrics: { minHeight: 300, gap: 12, justifyContent: 'center' },
-  lyric: { color: T.light ? '#26282C99' : '#FFFFFF73', fontSize: 16, lineHeight: 24, fontWeight: '500' },
-  lyricOn: { color: C.text, fontSize: 21, lineHeight: 31, fontWeight: '800' },
-  lyricTr: { color: T.light ? '#26282C55' : '#FFFFFF45', fontSize: 12, lineHeight: 17, marginTop: 1 },
+  srcTag: { color: C.text2, fontSize: FS.xs, letterSpacing: 2, fontWeight: '600' },
+  infoCol: { flex: 1, alignSelf: 'stretch', justifyContent: 'center', gap: SP.md },
+  title: { color: C.text, fontSize: FS.hero, fontWeight: '800' },
+  sub: { color: C.text2, fontSize: FS.lg, marginBottom: 12 },
+  lyrics: { minHeight: 300, gap: SP.xl, justifyContent: 'center' },
+  lyric: { color: T.light ? '#26282C99' : '#FFFFFF73', fontSize: FS.title, lineHeight: 24, fontWeight: '500' },
+  lyricOn: { color: C.text, fontSize: FS.h1, lineHeight: 31, fontWeight: '800' },
+  lyricTr: { color: T.light ? '#26282C55' : '#FFFFFF45', fontSize: FS.body, lineHeight: 17, marginTop: 1 },
   lyricTrOn: { color: T.light ? '#26282C99' : '#FFFFFF8C' },
   maskTop: { position: 'absolute', top: -8, left: -16, right: -16, height: 44, zIndex: 2 },
   maskBottom: { position: 'absolute', bottom: -8, left: -16, right: -16, height: 44, zIndex: 2 },
-  noLyric: { alignItems: 'center', gap: 10, marginTop: 30 },
-  noLyricText: { color: T.light ? '#8B9199' : '#ffffff55', fontSize: 13 },
-  dock: { paddingHorizontal: 48, paddingBottom: 22, gap: 12 },
-  progRow: { alignSelf: 'center', width: '100%', maxWidth: 640, flexDirection: 'row', alignItems: 'center', gap: 14 },
-  time: { color: C.text2, fontSize: 12, fontVariant: ['tabular-nums'], width: 44, textAlign: 'center' },
+  noLyric: { alignItems: 'center', gap: SP.lg, marginTop: 30 },
+  noLyricText: { color: T.light ? '#8B9199' : '#ffffff55', fontSize: FS.md },
+  dock: { paddingHorizontal: 48, paddingBottom: 22, gap: SP.xl },
+  progRow: { alignSelf: 'center', width: '100%', maxWidth: 640, flexDirection: 'row', alignItems: 'center', gap: SP.xxl },
+  time: { color: C.text2, fontSize: FS.body, fontVariant: ['tabular-nums'], width: 44, textAlign: 'center' },
   track: { flex: 1, height: 6, flexDirection: 'row', borderRadius: 3 },
   trackFill: { backgroundColor: C.brand, borderRadius: 3 },
   trackRest: { backgroundColor: C.track, borderRadius: 3 },
   playhead: { position: 'absolute', top: -4, width: 13, height: 13, borderRadius: 7, backgroundColor: C.brand, borderWidth: 2.5, borderColor: '#ffffff', marginLeft: -7, shadowColor: C.brand, shadowOpacity: 0.75, shadowRadius: 12, shadowOffset: { width: 0, height: 0 } },
   ctrlRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
   sideSpacer: { flex: 1 },
-  ctrlCluster: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  ctrlCluster: { flexDirection: 'row', alignItems: 'center', gap: SP.xxl },
   cBtn: { width: 46, height: 46, borderRadius: 23, backgroundColor: C.hover, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
   cMain: { width: 64, height: 64, borderRadius: 32, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', shadowColor: C.brand, shadowOpacity: 0.38, shadowRadius: 18, shadowOffset: { width: 0, height: 6 } },
   cMainFocus: { borderWidth: 3, borderColor: T.light ? '#FFFFFF' : '#ffffffaa', borderRadius: 32 },
-  toolCluster: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  toolCluster: { flexDirection: 'row', alignItems: 'center', gap: SP.sm },
   tBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.hover, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
-  badge: { color: C.text2, fontSize: 10, marginLeft: 3 },
+  badge: { color: C.text2, fontSize: FS.xs, marginLeft: 3 },
 });
 
 // lx100:水波环容器(vinylZone 内满铺)
@@ -639,12 +641,12 @@ class PlayerBoundary extends React.Component<{ children: React.ReactNode }, { er
   render() {
     if (!this.state.err) return this.props.children;
     return (
-      <View style={{ flex: 1, backgroundColor: '#0e1310', alignItems: 'center', justifyContent: 'center', gap: 14, padding: 60 }}>
+      <View style={{ flex: 1, backgroundColor: '#0e1310', alignItems: 'center', justifyContent: 'center', gap: SP.xxl, padding: 60 }}>
         <Icon name="music" size={34} color="#ffffff55" />
-        <Text style={{ color: '#ffffffdd', fontSize: 18, fontWeight: '700' }}>播放页出现了一个错误</Text>
-        <Text style={{ color: '#ffffff66', fontSize: 13, textAlign: 'center' }}>{String(this.state.err?.message || this.state.err).slice(0, 200)}</Text>
+        <Text style={{ color: '#ffffffdd', fontSize: FS.h2, fontWeight: '700' }}>播放页出现了一个错误</Text>
+        <Text style={{ color: '#ffffff66', fontSize: FS.md, textAlign: 'center' }}>{String(this.state.err?.message || this.state.err).slice(0, 200)}</Text>
         <HDTouch style={{ marginTop: 10, height: 40, borderRadius: 20, paddingHorizontal: 26, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }} onPress={() => hdNav()?.goBack()}>
-          <Text style={{ color: C.onBrand, fontSize: 14, fontWeight: '700' }}>返回</Text>
+          <Text style={{ color: C.onBrand, fontSize: FS.lg, fontWeight: '700' }}>返回</Text>
         </HDTouch>
       </View>
     );

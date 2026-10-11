@@ -9,7 +9,7 @@ import { Icon, BrandIcon } from '../theme/Icon';
 import { C, H, SH, fmtSec } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { useSeekBar } from '../hooks/useSeekBar'; // R6 全 app 统一 seek
-import { usePlayer } from '../state/PlayerProvider';
+import { usePlayer, usePlayerProgress } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
 import { providers } from '../services/providers';
 import { library } from '../state/library';
@@ -519,7 +519,8 @@ function PlItem({ name, count, add, active, onPress, onLongPress }: { name: stri
 
 // 桌面式播放条:左(封面+曲目+收藏) 中(控件+进度) 右(队列/音效/详情)——投屏入口已删(老板 09-14)
 function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server').SongItem) => void }) {
-  const { current, playing, position, duration, toggle, skipNext, skipPrev, queue, shuffle, repeat, setShuffle, cycleRepeat, seekTo } = usePlayer();
+  const { current, playing, toggle, skipNext, skipPrev, queue, shuffle, repeat, setShuffle, cycleRepeat, seekTo } = usePlayer();
+  const { position, duration } = usePlayerProgress(); // [1011 15:16] 进度独立订阅
   const { faved } = useFav(current); // lx103:收藏态展示(操作走选歌单面板)
   const pct = duration > 0 ? Math.min(1, position / duration) : 0;
   // R6 根治:HDPlayBar 底部条是全 app 第 4 处独立 seek 实现(R3 自加坐标层三病:左边距恒0/宽度量错元素/直写 audio 绕过通道)

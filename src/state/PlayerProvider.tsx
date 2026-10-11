@@ -44,8 +44,6 @@ interface PlayerCtx {
   queue: QueueTrack[];
   current: QueueTrack | null;
   playing: boolean;
-  position: number; // seconds
-  duration: number; // seconds
   shuffle: boolean;
   repeat: 'off' | 'all' | 'one';
   setShuffle: (on: boolean) => void;
@@ -77,6 +75,10 @@ interface PlayerCtx {
 }
 
 const Ctx = createContext<PlayerCtx>(null as unknown as PlayerCtx);
+
+// [老板 1011 15:16 播放条性能] 进度独立 context——position 每 500ms tick,主 context 值含它=全 app 36 消费者每秒重渲染 2 次(点击卡顿/拖动被覆盖根因);拆分后仅进度条组件订阅
+const PCtx = createContext<{ position: number; duration: number }>({ position: 0, duration: 0 });
+export function usePlayerProgress() { return useContext(PCtx); }
 
 let seq = 0;
 // 取链失败熔断: 连续 failCount 次失败后不再弹窗/自动跳,需用户主动重试(防队列循环弹窗轰炸)
@@ -1119,8 +1121,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       },
     };
   }, [toggle, skipNext, skipPrev, seekTo]);
-  return (    <Ctx.Provider value={{ queue, current, playing, position, duration, shuffle, repeat, setShuffle, cycleRepeat, playSong, toggle, skipNext, skipPrev, seekTo, clearQueue, cast, startCast, stopCast, rebuildAudio, appendQueue, playNextUp, reorderQueue, speed, setSpeed, sleepRemain, enableSleep }}>
-      {children}
+  // [老板 1011 15:16] 主值 memo 化(不含 position/duration)——provider 仅在曲目/播放态/队列等实质变化时重渲染;进度走 PCtx
+  const mainValue = React.useMemo(() => ({ queue, current, playing, shuffle, repeat, setShuffle, cycleRepeat, playSong, toggle, skipNext, skipPrev, seekTo, clearQueue, cast, startCast, stopCast, rebuildAudio, appendQueue, playNextUp, reorderQueue, speed, setSpeed, sleepRemain, enableSleep }), [queue, current, playing, shuffle, repeat, setShuffle, cycleRepeat, playSong, toggle, skipNext, skipPrev, seekTo, clearQueue, cast, startCast, stopCast, rebuildAudio, appendQueue, playNextUp, reorderQueue, speed, setSpeed, sleepRemain, enableSleep]);
+  const progressValue = React.useMemo(() => ({ position, duration }), [position, duration]);
+  return (
+    <Ctx.Provider value={mainValue}>
+      <PCtx.Provider value={progressValue}>
+        {children}
+      </PCtx.Provider>
     </Ctx.Provider>
   );
 }
