@@ -11,6 +11,7 @@ export interface LibSong {
   id: string; songmid: string; name: string; singer: string; album: string;
   interval: string; quality: string; filename: string; subPath: string;
   ext: string; hasCover: boolean; hasLyric: boolean; mtime: number; size: number;
+  coverHttp?: string; // [识别补全 1010] 在线识别封面直链(服务端 songOut 投影透传;SongRow 优先于嵌入图)
 }
 export interface LibStats { songs: number; artists: number; albums: number; totalBytes: number }
 

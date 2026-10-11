@@ -8,9 +8,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { HDTouch } from '../hd/HDTouch';
 import { Icon } from '../theme/Icon';
-import { C, T } from '../theme/tokens';
+import { C, T, SP, FS } from '../theme/tokens';
 import { dialog, toast } from '../components/Dialog';
-import { NewBadge } from '../components/LibraryHome'; // ⑤-B6 NEW 标(7 天内入库,brand 底 9px 小标)
+import { SongRow } from '../components/SongRow'; // [批次1·P1-1] 局部 SongRow 退役,改用通用件(显示/props 已对齐)
 import { store as httpStore, req } from '../services/server';
 import type { SongItem } from '../services/server';
 import { deviceLibraryAgg, deviceSongs } from '../services/deviceLibraryAgg';
@@ -63,7 +63,7 @@ export function DiscCard({ name, sub, cover, count, round, focusable, onPress, u
     const parent = e.nativeEvent.layout.width / 0.31;
     setBasis(parent >= 1500 ? '15%' : parent >= 1100 ? '18%' : parent >= 800 ? '23%' : parent >= 560 ? '31%' : '48%');
   };
-  const cellStyle = fixedWidth != null ? [{ width: fixedWidth, gap: 7 }] : [d.disc, basis != null && { width: basis }];
+  const cellStyle = fixedWidth != null ? [{ width: fixedWidth, gap: SP.sm }] : [d.disc, basis != null && { width: basis }];
   const sleeve = (
     <View style={[d.sleeve, round && d.sleeveRound, { aspectRatio: 1 } as never, unknown && d.sleeveUnknown]}>
       {cover ? (
@@ -87,7 +87,7 @@ export function DiscCard({ name, sub, cover, count, round, focusable, onPress, u
   if (IS_HD || focusable) {
     return (
       <View style={cellStyle as never} onLayout={measure}>
-        <HDTouch style={{ width: '100%', gap: 7 } as never} onPress={onPress} focusStyle={d.discFocus} focusBg={undefined}>
+        <HDTouch style={{ width: '100%', gap: SP.sm } as never} onPress={onPress} focusStyle={d.discFocus} focusBg={undefined}>
           {sleeve}{label}
         </HDTouch>
       </View>
@@ -98,7 +98,7 @@ export function DiscCard({ name, sub, cover, count, round, focusable, onPress, u
   return (
     <View style={cellStyle as never} onLayout={measure}>
       <AnimatedTouchableOpacity
-        style={[{ width: '100%', gap: 7 }, { transform: [{ scale: pv }] }] as never}
+        style={[{ width: '100%', gap: SP.sm }, { transform: [{ scale: pv }] }] as never}
         onPress={onPress}
         onPressIn={() => Animated.spring(pv, { toValue: 0.96, useNativeDriver: Platform.OS !== 'web', speed: 50, bounciness: 4 }).start()}
         onPressOut={() => Animated.spring(pv, { toValue: 1, useNativeDriver: Platform.OS !== 'web', speed: 50, bounciness: 4 }).start()}
@@ -108,41 +108,7 @@ export function DiscCard({ name, sub, cover, count, round, focusable, onPress, u
   );
 }
 
-/** 歌曲行(最近添加/随机30/详情列表;④公共曲库复用:lib=封面 URL 域,sourceName=副行标源(多源)) */
-export function SongRow({ song, idx, onPress, lib, sourceName, isNew }: { song: LibSong; idx?: number; onPress?: () => void; lib?: string; sourceName?: string; isNew?: boolean }) { // ⑤:isNew=7 天内入库 NEW 标
-  const [g1] = gradOf(song.album || song.singer);
-  const sub = `${song.singer || '未知歌手'} · ${song.album || (song.subPath ? '文件夹分组' : '未知专辑')}${song.quality && song.quality !== '128k' ? ' · ' + song.quality.toUpperCase() : ''}${sourceName ? ' · ' + sourceName : ''}`;
-  const sv = useRef(new Animated.Value(1)).current;
-  return (
-    <AnimatedTouchableOpacity
-      style={[d.sg, { transform: [{ scale: sv }] }] as never}
-      onPress={onPress}
-      onPressIn={() => Animated.spring(sv, { toValue: 0.98, useNativeDriver: Platform.OS !== 'web', speed: 60, bounciness: 2 }).start()}
-      onPressOut={() => Animated.spring(sv, { toValue: 1, useNativeDriver: Platform.OS !== 'web', speed: 60, bounciness: 2 }).start()}
-      activeOpacity={1}
-    >
-      {idx !== undefined && <Text style={d.sgIdx}>{idx + 1}</Text>}
-      <View style={[d.cvs, { backgroundColor: (song as LibSong & { coverHttp?: string }).coverHttp || song.hasCover ? undefined : g1 }]}>
-        {(song as LibSong & { coverHttp?: string }).coverHttp ? (
-          <Image source={{ uri: (song as LibSong & { coverHttp?: string }).coverHttp! }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 } as never} resizeMode="cover" /> // [识别补全 1010] 在线封面直链(优先于嵌入图)
-        ) : song.hasCover ? (
-          <Image source={{ uri: coverUrl(song.filename, lib) }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 } as never} resizeMode="cover" />
-        ) : (
-          <Icon name="music" size={15} color="#fff" />
-        )}
-      </View>
-      <View style={d.sgMid}>
-        <View style={d.sgTitleRow}>
-          <Text style={d.sgA} numberOfLines={1}>{song.name}</Text>
-          {isNew ? <NewBadge /> : null}
-        </View>
-        <Text style={d.sgB} numberOfLines={1}>{sub}</Text>
-      </View>
-      <Text style={d.dur}>{song.interval || song.ext.toUpperCase()}</Text>
-    </AnimatedTouchableOpacity>
-  );
-}
-
+/** [批次1·P1-1] 局部 SongRow 已退役——统一走 src/components/SongRow.tsx(idx/lib/LibSong 封面链/quality 副行能力已并入通用件) */
 function timeGroup(ts: number): string {
   const d0 = Date.now() - ts;
   if (d0 < 864e5) return '今天';
@@ -465,7 +431,7 @@ export function MyLibraryScreen() {
   // 形态:桌面≥900=左竖 tab+右内容;其余=顶部胶囊
   const tabBarTop = (
     <View style={[d.tabs, IS_HD && d.tabsHD]}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingHorizontal: IS_HD ? 30 : 16, paddingVertical: 4 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: SP.sm, paddingHorizontal: IS_HD ? 30 : 16, paddingVertical: 4 }}>
         {TABS.map(t => <TabBtn key={t.key} t={t} />)}
       </ScrollView>
     </View>
@@ -496,7 +462,7 @@ export function MyLibraryScreen() {
       )}
       {/* v1.2 spec⑪D 库行三形态:手机=胶囊横排/TV=第一行可聚焦胶囊(tab 降二行)/桌面并入左竖 tab 顶部库组 */}
       {!davWide && (
-        <View style={{ flexDirection: 'row', gap: 6, paddingHorizontal: IS_HD ? 30 : 16, paddingVertical: 6, flexWrap: 'wrap' }}>
+        <View style={{ flexDirection: 'row', gap: SP.sm, paddingHorizontal: IS_HD ? 30 : 16, paddingVertical: 6, flexWrap: 'wrap' }}>
           <ScopeChip label="我的" on={scope.kind === 'mine'} onPress={() => setScope({ kind: 'mine' })} tv={IS_TV} />
           <ScopeChip label="本机" on={scope.kind === 'device'} onPress={() => setScope({ kind: 'device' })} tv={IS_TV} />
           {/* ④浏览页库胶囊「公共」(未授权/开关关→不渲染;点击进公共曲库页) */}
@@ -591,7 +557,7 @@ function SkelGrid({ round }: { round?: boolean }) {
   }, [op]);
   return (
     <ScrollView>
-      <View style={[d.wall, round && { gap: 14 }]}>
+      <View style={[d.wall, round && { gap: SP.xxl }]}>
         {[0, 1, 2, 3, 4, 5].map(i => (
           <View key={i} style={{ width: '31%' } as never}>
             <Animated.View style={[d.skel, round && { borderRadius: 999 }, { opacity: op }]} />
@@ -637,7 +603,7 @@ export function MyLibAlbumRoute(props: Record<string, unknown>) {
               {songs.length ? <TouchableOpacity style={d.playAll} onPress={() => play(0)}><Icon name="play" size={12} color="#04120a" /><Text style={d.playAllT}>播放全部</Text></TouchableOpacity> : null}
             </View>
           </View>
-          {songs.map((s, i) => <SongRow key={s.id} song={s} idx={i + 1} onPress={() => play(i)} />)}
+          {songs.map((s, i) => <SongRow key={s.id} song={s} idx={i} onPress={() => play(i)} />)}
         </ScrollView>
       )}
       <UploadSheet.View />
@@ -693,7 +659,7 @@ export function MyLibArtistRoute(props: Record<string, unknown>) {
             </>
           )}
           <Text style={d.grp}>歌曲</Text>
-          {data.songs.map((s, i) => <SongRow key={s.id} song={s} idx={i + 1} onPress={() => play(i)} />)}
+          {data.songs.map((s, i) => <SongRow key={s.id} song={s} idx={i} onPress={() => play(i)} />)}
         </ScrollView>
       )}
       <UploadSheet.View />
@@ -704,37 +670,37 @@ export function MyLibArtistRoute(props: Record<string, unknown>) {
 // ── 样式(spec v1 token) ──
 const d = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
-  head: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 16 },
+  head: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingVertical: 10, paddingHorizontal: 16 },
   headBtn: { width: 32, height: 32, borderRadius: 10, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  headTitle: { color: C.text, fontSize: 17, fontWeight: '800' },
-  headStats: { flex: 1, color: C.text3, fontSize: 10.5, textAlign: 'right', marginRight: 2 },
-  hdHead: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 12 },
+  headTitle: { color: C.text, fontSize: FS.headline, fontWeight: '800' },
+  headStats: { flex: 1, color: C.text3, fontSize: FS.sm, textAlign: 'right', marginRight: 2 },
+  hdHead: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, paddingHorizontal: 20, paddingVertical: 12 },
   hdBack: { width: 36, height: 36, borderRadius: 10, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
-  hdTitle: { flex: 1, color: C.text, fontSize: 20, fontWeight: '800' },
+  hdTitle: { flex: 1, color: C.text, fontSize: FS.h1, fontWeight: '800' },
   focusRing: { borderWidth: 2.5, borderColor: C.brand, borderRadius: 12 },
   tabs: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint },
   tabsHD: {},
   tab: { borderRadius: 999, borderWidth: 1, borderColor: C.stroke, paddingHorizontal: 14, paddingVertical: 6, backgroundColor: 'transparent' },
   tabOn: { backgroundColor: C.brand, borderColor: C.brand },
-  tabText: { color: C.text2, fontSize: 12 },
+  tabText: { color: C.text2, fontSize: FS.body },
   tabTextOn: { color: '#04120a', fontWeight: '700' },
   tabFocus: { borderColor: C.brand, borderWidth: 2 },
   bodyWrap: { flex: 1 },
   // 桌面双区
   wideCols: { flex: 1, flexDirection: 'row' },
   wideSide: { width: 198, borderRightWidth: 1, borderRightColor: C.strokeFaint, padding: 16, gap: 2 },
-  wtab: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10 },
+  wtab: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10 },
   wtabOn: { backgroundColor: 'rgba(30,215,96,.11)' },
-  wtabT: { color: C.text2, fontSize: 13 },
+  wtabT: { color: C.text2, fontSize: FS.md },
   wtabTOn: { color: C.text, fontWeight: '700' },
-  wsideStats: { color: C.text3, fontSize: 10.5, lineHeight: 16 },
+  wsideStats: { color: C.text3, fontSize: FS.sm, lineHeight: 16 },
   wideMain: { flex: 1, padding: 20 },
   // 专辑墙
-  wall: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, padding: 16, paddingBottom: 130 },
-  wallHD: { gap: 18, padding: 30, paddingBottom: 150 },
-  wall4: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, padding: 16, paddingBottom: 130 },
-  wall4HD: { gap: 20, padding: 30, paddingBottom: 150 },
-  disc: { width: '31%' as never, gap: 7 },
+  wall: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl, padding: 16, paddingBottom: 130 },
+  wallHD: { gap: SP.wide, padding: 30, paddingBottom: 150 },
+  wall4: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xxl, padding: 16, paddingBottom: 130 },
+  wall4HD: { gap: SP.wider, padding: 30, paddingBottom: 150 },
+  disc: { width: '31%' as never, gap: SP.sm },
   discFocus: { borderWidth: 2.5, borderColor: C.brand, borderRadius: 14, transform: [{ scale: 1.05 }] },
   sleeve: { borderRadius: 12, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2, shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
   sleeveRound: { borderRadius: 999 },
@@ -746,46 +712,38 @@ const d = StyleSheet.create({
   vinInner: { width: '45%', aspectRatio: 1, borderRadius: 999, backgroundColor: '#242424' },
   vinRound: { borderRadius: 999, width: '38%', right: '-12%', bottom: '-12%' }, // V2:歌手圆头像右下小黑胶
   cntWrap: { position: 'absolute', left: 8, top: 8, backgroundColor: 'rgba(0,0,0,.66)', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
-  cnt: { color: '#ffffffcc', fontSize: 9.5 },
-  discName: { color: C.text, fontSize: 11.5, fontWeight: '600' },
-  discSub: { color: C.text3, fontSize: 10, marginTop: 1 },
-  // 歌曲行
-  sg: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 8, paddingHorizontal: 16 },
-  sgIdx: { width: 22, textAlign: 'center', color: C.text3, fontSize: 11.5 },
-  cvs: { width: 38, height: 38, borderRadius: 8, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  sgMid: { flex: 1, minWidth: 0 },
-  sgTitleRow: { flexDirection: 'row', alignItems: 'center' },
-  sgA: { color: C.text, fontSize: 13 },
-  sgB: { color: C.text3, fontSize: 10.5, marginTop: 2 },
-  dur: { color: C.text3, fontSize: 10.5 },
-  grp: { color: C.text3, fontSize: 11, letterSpacing: 1, marginHorizontal: 16, marginTop: 14, marginBottom: 6 },
+  cnt: { color: '#ffffffcc', fontSize: FS.xs },
+  discName: { color: C.text, fontSize: FS.body, fontWeight: '600' },
+  discSub: { color: C.text3, fontSize: FS.xs, marginTop: 1 },
+  // [批次1·P1-1] 歌曲行样式随局部 SongRow 退役(通用件自带)
+  grp: { color: C.text3, fontSize: FS.sm, letterSpacing: 1, marginHorizontal: 16, marginTop: 14, marginBottom: 6 },
   // 空态/错态/骨架
-  emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 40, paddingVertical: 60 },
-  emptyT1: { color: C.text, fontSize: 14, fontWeight: '700', marginTop: 4 },
-  emptyT2: { color: C.text3, fontSize: 11.5, lineHeight: 17, textAlign: 'center', maxWidth: 230 },
-  emptyHint: { color: C.text3, fontSize: 10, marginTop: 8 },
+  emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: SP.md, paddingHorizontal: 40, paddingVertical: 60 },
+  emptyT1: { color: C.text, fontSize: FS.lg, fontWeight: '700', marginTop: 4 },
+  emptyT2: { color: C.text3, fontSize: FS.body, lineHeight: 17, textAlign: 'center', maxWidth: 230 },
+  emptyHint: { color: C.text3, fontSize: FS.xs, marginTop: 8 },
   retryBtn: { borderWidth: 1, borderColor: C.stroke, borderRadius: 999, paddingHorizontal: 18, paddingVertical: 7, marginTop: 8 },
-  retryText: { color: C.text2, fontSize: 12.5, fontWeight: '700' },
+  retryText: { color: C.text2, fontSize: FS.md, fontWeight: '700' },
   skel: { aspectRatio: 1, borderRadius: 12, backgroundColor: 'rgba(255,255,255,.055)' },
   // 主动作
-  playAll: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: C.brand, borderRadius: 999, paddingVertical: 12, marginHorizontal: 16, marginTop: 8, alignSelf: 'stretch' as never },
-  playAllT: { color: '#04120a', fontSize: 13, fontWeight: '700' },
-  shuffleBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.brand, borderRadius: 14, paddingHorizontal: 18, paddingVertical: 14, marginHorizontal: 16, marginTop: 6 },
-  shuffleBtnT: { color: '#04120a', fontSize: 13.5, fontWeight: '800' },
-  shuffleBtnSub: { flex: 1, color: '#04120a', fontSize: 11, fontWeight: '600', opacity: 0.75, textAlign: 'right' },
+  playAll: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.sm, backgroundColor: C.brand, borderRadius: 999, paddingVertical: 12, marginHorizontal: 16, marginTop: 8, alignSelf: 'stretch' as never },
+  playAllT: { color: '#04120a', fontSize: FS.md, fontWeight: '700' },
+  shuffleBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.md, backgroundColor: C.brand, borderRadius: 14, paddingHorizontal: 18, paddingVertical: 14, marginHorizontal: 16, marginTop: 6 },
+  shuffleBtnT: { color: '#04120a', fontSize: FS.lg, fontWeight: '800' },
+  shuffleBtnSub: { flex: 1, color: '#04120a', fontSize: FS.sm, fontWeight: '600', opacity: 0.75, textAlign: 'right' },
   // 入口卡
   libCard: { borderRadius: 16, borderWidth: 1, borderColor: T.light ? 'rgba(13,155,69,.22)' : 'rgba(30,215,96,.15)', backgroundColor: T.light ? '#D2E4D8' : '#0c1612', paddingVertical: 18, paddingHorizontal: 20, marginBottom: 14, overflow: 'hidden' }, // V11 浅色 token
   vinBig: { position: 'absolute', right: -36, bottom: -70, width: 140, height: 140, borderRadius: 999, backgroundColor: '#1A1A1A', borderWidth: 2, borderColor: '#000', opacity: 0.78, alignItems: 'center', justifyContent: 'center' },
   // V11:浅色下入口卡边框/黑胶减轻(墨绿浅底不吃重描边)
-  libRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  libTitle: { color: C.text, fontSize: 17, fontWeight: '800' },
-  libStat: { color: C.text2, fontSize: 12, marginTop: 8 },
+  libRow: { flexDirection: 'row', alignItems: 'center', gap: SP.lg },
+  libTitle: { color: C.text, fontSize: FS.headline, fontWeight: '800' },
+  libStat: { color: C.text2, fontSize: FS.body, marginTop: 8 },
   libStatB: { color: C.text, fontWeight: '700' },
-  libGoRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 12 },
-  libGo: { color: C.brand, fontSize: 13, fontWeight: '700' },
+  libGoRow: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, marginTop: 12 },
+  libGo: { color: C.brand, fontSize: FS.md, fontWeight: '700' },
   // 详情
-  albHead: { flexDirection: 'row', gap: 16, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12, alignItems: 'center' },
-  albName: { color: C.text, fontSize: 17, fontWeight: '800', lineHeight: 23 },
-  albSub: { color: C.text3, fontSize: 11.5, marginTop: 4 },
-  errText: { color: '#E8618C', fontSize: 12.5, padding: 20, textAlign: 'center' },
+  albHead: { flexDirection: 'row', gap: SP.wide, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12, alignItems: 'center' },
+  albName: { color: C.text, fontSize: FS.headline, fontWeight: '800', lineHeight: 23 },
+  albSub: { color: C.text3, fontSize: FS.body, marginTop: 4 },
+  errText: { color: '#E8618C', fontSize: FS.md, padding: 20, textAlign: 'center' },
 });

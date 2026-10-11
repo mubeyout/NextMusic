@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useGridBasis } from '../components/GridBasis';
 import { Icon, BrandIcon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, SP, FS } from '../theme/tokens';
 import { Platform } from 'react-native';
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
@@ -18,6 +18,8 @@ import { pubCheck, usePubEntry } from '../services/publicLibrary'; // ④公共�
 import { ActionSheet } from '../components/ActionSheet';
 import { CollectSheet } from '../components/CollectSheet';
 import { SongRow } from '../components/SongRow';
+import { ArtistRow } from '../components/ArtistRow'; // [批次1] 歌手行统一件(替 st.artistRow/bv.row 自造行)
+import { PlaylistRow } from '../components/PlaylistRow'; // [批次1] 歌单行统一件(替 st.plRow 自造行)
 import { toast, dialog } from '../components/Dialog';
 import { dropdownMenu, isDropdownPlatform, type MenuAnchor } from '../components/DropdownMenu';
 import { PageHeader, EmptyState } from '../components/PageChrome';
@@ -778,7 +780,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
         /* ---------- WebDAV 目录浏览 v3.31 行式 + 0922 三端适配：TV 焦点放大行 / 桌面≥900 双区（左列表+右操作栏）/ 窄窗单列 ---------- */
         <ScrollView contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : (IS_WEB ? Math.min(Math.max(winW * 0.02, 16), 40) : 20), paddingTop: 4, paddingBottom: ((current ? 100 : 0) + insets.bottom + 24) + (IS_HD ? 24 : 0) }}>
           {/* ⑦.3-v2 壳统一:品牌 logo 横幅+连接状态点+快捷动作(内容=目录型 B 层能力:文件夹为主,不硬造热门/流派) */}
-          <View style={{ gap: 12, marginBottom: 8 }}>
+          <View style={{ gap: SP.xl, marginBottom: 8 }}>
             <LibBanner kind="provider" name={acct.name || 'WebDAV'} sub={acct.base}
               status={davErr ? 'bad' : davBusy ? 'warn' : 'ok'}
               stats={davBusy ? '读取中' : davErr ? '连接失败' : `${davDirs.length} 个文件夹 · ${davSongs.length} 首`}
@@ -805,7 +807,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
             <>
               {/* 顶栏：左面包屑目录层级(flex:1 可横向滚动) + 右侧页面右端常驻动作组(不折叠不收纳，不入滚动区) */}
               <View style={dv.topRow}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[dv.crumbWrap, { flex: 1, minWidth: 0 }]} contentContainerStyle={{ gap: IS_HD ? 6 : 4, alignItems: 'center' }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[dv.crumbWrap, { flex: 1, minWidth: 0 }]} contentContainerStyle={{ gap: IS_HD ? SP.sm : SP.xs, alignItems: 'center' }}>
                 {(() => {
                   const segs = davDir.split('/').filter(Boolean);
                   const crumbs = [{ label: '根目录', path: '/' }];
@@ -934,7 +936,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
       ) : (
         /* ---------- 综合浏览页：分区纵排（2026-09-17 老板：一个综合页面，不做 tab） ---------- */
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingBottom: IS_HD ? pageBottom(32) : (current ? 116 : 32), gap: IS_HD ? 22 : 16 }}
+          contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingBottom: IS_HD ? pageBottom(32) : (current ? 116 : 32), gap: IS_HD ? SP.big : SP.wide }}
         >
           {/* [v5.6 1010·LEO 基准稿] phead:品牌标+源名+账号@地址 sub+连接状态点(辉光)+右上 刷新/连接设置 */}
           <View style={pv.phead}>
@@ -1254,17 +1256,10 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                     </Rail>
                   ) : (
                   (artists.data || []).map(ar => (
-                    <T key={ar.id} style={[st.artistRow, IS_HD && bv.row]} activeOpacity={0.75} focusStyle={focus(12)}
+                    <ArtistRow key={ar.id} cover={ar.cover} name={ar.name}
+                      sub={ar.albumCount ? `${ar.albumCount} 张专辑` : PROVIDER_META[acct.type].label}
                       onLongPress={caps.radio ? () => playRadio(ar.id, ar.name, 'artist', ar.name) : undefined}
-                      onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'artist', id: ar.id, name: ar.name, sub: ar.albumCount ? `${ar.albumCount} 张专辑` : undefined })}>
-                      {ar.cover ? <Image source={{ uri: ar.cover }} style={[st.artistArt, IS_HD && bv.art]} />
-                        : <View style={[st.artistArt, IS_HD && bv.art, st.artistFallback]}><Text style={st.artistInitial}>{ar.name.slice(0, 1)}</Text></View>}
-                      <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={[st.artistName, IS_HD && bv.rowTitle]} numberOfLines={1}>{ar.name}</Text>
-                        <Text style={[st.artistMeta, IS_HD && bv.rowSub]} numberOfLines={1}>{ar.albumCount ? `${ar.albumCount} 张专辑` : PROVIDER_META[acct.type].label}</Text>
-                      </View>
-                      <Icon name="chevronright" size={18} color={C.text3} />
-                    </T>
+                      onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'artist', id: ar.id, name: ar.name, sub: ar.albumCount ? `${ar.albumCount} 张专辑` : undefined })} />
                   ))
                   )}
                 </SegBody>
@@ -1278,16 +1273,9 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                 <SegBody state={lists} onRetry={() => { setLists({ data: null, err: null, busy: false }); if (acct) loadLists(acct); }}>
                   {lists.data && lists.data.length === 0 ? <EmptyState icon="music" title="服务器上没有歌单" sub="在媒体服务器或 amcfy 等客户端里创建" /> : null}
                   {(lists.data || []).map(pl => (
-                    <T key={pl.id} style={[st.plRow, IS_HD && bv.row]} activeOpacity={0.75} focusStyle={focus(12)}
-                      onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'playlist', id: pl.id, name: pl.name, cover: pl.cover, sub: pl.songCount ? `${pl.songCount} 首` : undefined })}>
-                      {pl.cover ? <Image source={{ uri: pl.cover }} style={[st.artistArt, IS_HD && bv.art]} />
-                        : <View style={[st.artistArt, IS_HD && bv.art, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name) as ViewStyle]}><Icon name="music" size={22} color="#ffffffb3" /></View>}
-                      <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={[st.artistName, IS_HD && bv.rowTitle]} numberOfLines={1}>{pl.name}</Text>
-                        <Text style={[st.artistMeta, IS_HD && bv.rowSub]} numberOfLines={1}>{pl.songCount ? `${pl.songCount} 首` : ''}</Text>
-                      </View>
-                      <Icon name="chevronright" size={18} color={C.text3} />
-                    </T>
+                    <PlaylistRow key={pl.id} cover={pl.cover} name={pl.name} gradKey={pl.name}
+                      sub={pl.songCount ? `${pl.songCount} 首` : undefined}
+                      onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'playlist', id: pl.id, name: pl.name, cover: pl.cover, sub: pl.songCount ? `${pl.songCount} 首` : undefined })} />
                   ))}
                 </SegBody>
               </View>
@@ -1376,7 +1364,7 @@ function SectionHead({ title, count, actionLabel, onAction }: {
 
 function Rail({ children }: { children: React.ReactNode }) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: IS_HD ? 14 : 12 }}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: IS_HD ? SP.xxl : SP.xl }}>
       {children}
     </ScrollView>
   );
@@ -1387,7 +1375,7 @@ function PvCard({ cover, name, meta, round, onPress, onLongPress }: {
 }) {
   const size = IS_HD ? 148 : (IS_WEB ? 132 : 112);
   return (
-    <T style={{ width: size, gap: 5 }} activeOpacity={0.85} onPress={onPress} onLongPress={onLongPress} focusStyle={focus(10)}>
+    <T style={{ width: size, gap: SP.sm }} activeOpacity={0.85} onPress={onPress} onLongPress={onLongPress} focusStyle={focus(10)}>
       {cover ? (
         <Image source={{ uri: cover }} style={{ width: size, height: size, borderRadius: round ? size / 2 : 10, backgroundColor: C.surface2 }} />
       ) : (
@@ -1406,66 +1394,60 @@ function PvCard({ cover, name, meta, round, onPress, onLongPress }: {
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
-  intro: { color: C.text2, fontSize: 12, lineHeight: 18, marginBottom: 14 },
-  empty: { color: C.text2, fontSize: 12, lineHeight: 18, textAlign: 'center', paddingVertical: 40 },
-  center: { paddingVertical: 60, alignItems: 'center', gap: 12 },
-  retryBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.brand, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 18 },
-  retryText: { color: C.onBrand, fontSize: 13, fontWeight: '600' },
-  tip: { color: C.text3, fontSize: 11, lineHeight: 15, textAlign: 'center', marginTop: 16 },
+  intro: { color: C.text2, fontSize: FS.body, lineHeight: 18, marginBottom: 14 },
+  empty: { color: C.text2, fontSize: FS.body, lineHeight: 18, textAlign: 'center', paddingVertical: 40 },
+  center: { paddingVertical: 60, alignItems: 'center', gap: SP.xl },
+  retryBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, backgroundColor: C.brand, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 18 },
+  retryText: { color: C.onBrand, fontSize: FS.md, fontWeight: '600' },
+  tip: { color: C.text3, fontSize: FS.sm, lineHeight: 15, textAlign: 'center', marginTop: 16 },
   // 浏览页头部
   hWrap: { minHeight: 64, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 6 },
   hSide: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
-  acctBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginHorizontal: 4 },
-  acctName: { color: C.text, fontSize: 18, lineHeight: 25, fontWeight: '700', maxWidth: 200 },
+  acctBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.md, marginHorizontal: 4 },
+  acctName: { color: C.text, fontSize: FS.h2, lineHeight: 25, fontWeight: '700', maxWidth: 200 },
   acctCaret: { transform: [{ rotate: '90deg' }], marginTop: 2 },
   // 专辑网格
-  albumGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  albumCell: { width: '31%', gap: 4 },
+  albumGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl },
+  albumCell: { width: '31%', gap: SP.xs },
   albumCellWeb: { width: '15.5%' }, // web 6 列(0.75 zoom 下 31%=2列过大,加密 4 倍)
   albumCover: { width: '100%', aspectRatio: 1, borderRadius: 10, backgroundColor: C.surface2 },
   albumFallback: { alignItems: 'center', justifyContent: 'center' },
   albumGlyph: { color: C.text2, fontSize: 24, fontWeight: '700' },
-  albumName: { color: C.text, fontSize: 12, lineHeight: 15, fontWeight: '600' },
-  albumMeta: { color: C.text2, fontSize: 9, lineHeight: 12 },
-  // 艺术家/歌单行
-  artistRow: { minHeight: 60, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint },
-  plRow: { minHeight: 60, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint },
-  artistArt: { width: 44, height: 44, borderRadius: 22 },
-  artistFallback: { borderRadius: 22, backgroundColor: C.artTint2, alignItems: 'center', justifyContent: 'center' },
-  artistInitial: { color: C.brandText, fontSize: 17, fontWeight: '700' },
-  artistName: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '500' },
-  artistMeta: { color: C.text2, fontSize: 11, lineHeight: 15 },
+  albumName: { color: C.text, fontSize: FS.body, lineHeight: 15, fontWeight: '600' },
+  albumMeta: { color: C.text2, fontSize: FS.xs, lineHeight: 12 },
+  // [批次1] 艺术家/歌单自造行(artistRow/plRow/artistArt/artistFallback/artistName/artistMeta)退役→统一件 ArtistRow/PlaylistRow(artistInitial 留给 PvCard 圆卡兑底)
+  artistInitial: { color: C.brandText, fontSize: FS.headline, fontWeight: '700' },
   // 随机歌曲段
   songsBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, marginBottom: 4 },
-  songsHint: { color: C.text2, fontSize: 12 },
-  shuffleBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.brand, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16 },
-  shuffleBtnText: { color: C.onBrand, fontSize: 12, fontWeight: '600' },
+  songsHint: { color: C.text2, fontSize: FS.body },
+  shuffleBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, backgroundColor: C.brand, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16 },
+  shuffleBtnText: { color: C.onBrand, fontSize: FS.body, fontWeight: '600' },
   checkBox: { width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: C.inset2, alignItems: 'center', justifyContent: 'center' },
   checkBoxOn: { borderColor: C.brand, backgroundColor: C.brand },
 });
 
 // v3.31 列表页重设计样式（老板 0921：克制卡——深色底/细描边/微投影/品牌 icon 左置/类型徽标）
 const ml = StyleSheet.create({
-  group: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 }, // [老板拍板 10-09] hub 网格卡片风:flexWrap 换行,卡宽 flexBasis 48%=两列
-  sectionHead: { color: C.text3, fontSize: 12, fontWeight: '700', letterSpacing: 1.2, marginTop: 26, marginBottom: 10 },
-  sectionHeadHD: { fontSize: 14, letterSpacing: 1.6, marginTop: 30 },
+  group: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.lg }, // [老板拍板 10-09] hub 网格卡片风:flexWrap 换行,卡宽 flexBasis 48%=两列
+  sectionHead: { color: C.text3, fontSize: FS.body, fontWeight: '700', letterSpacing: 1.2, marginTop: 26, marginBottom: 10 },
+  sectionHeadHD: { fontSize: FS.lg, letterSpacing: 1.6, marginTop: 30 },
   groupWeb: { width: '100%' }, // [老板 1010] 占满整屏(去 maxWidth 860/1160)——定宽卡 375px 自然铺排;列表区 dv.listWrapWeb 维持 860 可读性不动
-  card: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, paddingHorizontal: 14, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke, elevation: 1, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, flexBasis: '48%' }, // [老板反馈] 删flexGrow——单卡不拉伸,保持48%宽居左对齐
+  card: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: SP.xl, paddingVertical: 14, paddingHorizontal: 14, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke, elevation: 1, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, flexBasis: '48%' }, // [老板反馈] 删flexGrow——单卡不拉伸,保持48%宽居左对齐
   cardHD: { minHeight: 86, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16, flexBasis: 375 }, // [老板 1010] HD/web 定宽卡 375px+自然换行——卡不随卡数缩水,孤卡同宽不拉伸;phone 维持 48% 两列
   cardHover: { borderColor: C.strokeStrong, backgroundColor: C.surface2 }, // hover 细描边提亮,克制不加投影
   iconWrap: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }, // [库族重设计v1 B4] 46→44 对齐 LibBanner kindIcon 现值(规格统一表)
   iconWrapHD: { width: 52, height: 52, borderRadius: 14 }, // [B4] 56→52 同源对齐
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  title: { color: C.text, fontSize: 14.5, lineHeight: 20, fontWeight: '600', flexShrink: 1 },
-  titleHD: { fontSize: 16.5, lineHeight: 23 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: SP.sm },
+  title: { color: C.text, fontSize: FS.xl, lineHeight: 20, fontWeight: '600', flexShrink: 1 },
+  titleHD: { fontSize: FS.headline, lineHeight: 23 },
   typeChip: { backgroundColor: C.inset2, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1.5, flexShrink: 0 },
-  typeChipText: { color: C.text2, fontSize: 9.5, fontWeight: '600', letterSpacing: 0.5 },
-  sub: { color: C.text3, fontSize: 11, lineHeight: 15, marginTop: 2 },
-  subHD: { fontSize: 12.5, lineHeight: 17 },
+  typeChipText: { color: C.text2, fontSize: FS.xs, fontWeight: '600', letterSpacing: 0.5 },
+  sub: { color: C.text3, fontSize: FS.sm, lineHeight: 15, marginTop: 2 },
+  subHD: { fontSize: FS.md, lineHeight: 17 },
   menuBtn: { width: 32, height: 32, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   menuBtnHD: { width: 40, height: 40 },
   repickBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 1, borderColor: C.stroke },
-  repickText: { color: C.brandText, fontSize: 11.5, fontWeight: '600' },
+  repickText: { color: C.brandText, fontSize: FS.body, fontWeight: '600' },
   spin: { marginRight: 2 },
 });
 
@@ -1473,138 +1455,131 @@ const ml = StyleSheet.create({
 const dv = StyleSheet.create({
   crumbWrap: { flexGrow: 0, marginBottom: 10 },
   crumbItem: { paddingVertical: 3, paddingHorizontal: 6, borderRadius: 8 },
-  crumbItemText: { color: C.text2, fontSize: 12 },
+  crumbItemText: { color: C.text2, fontSize: FS.body },
   crumbCur: { backgroundColor: C.brand, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 4 },
-  crumbCurText: { color: C.onBrand, fontSize: 11.5, fontWeight: '700' },
+  crumbCurText: { color: C.onBrand, fontSize: FS.body, fontWeight: '700' },
   crumbRefresh: { width: 26, height: 26, borderRadius: 999, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', marginLeft: 4 },
   listWrap: { borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke, paddingHorizontal: 6, paddingVertical: 4 },
   listWrapWeb: { alignSelf: 'flex-start', width: '100%', maxWidth: 860 }, // 信息密度优先:限宽 860 行式列表
-  headBar: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint },
-  stats: { flex: 1, color: C.text3, fontSize: 11.5 },
-  actBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 28, paddingHorizontal: 12, borderRadius: 999, backgroundColor: C.surface2 },
+  headBar: { flexDirection: 'row', alignItems: 'center', gap: SP.md, paddingHorizontal: 10, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint },
+  stats: { flex: 1, color: C.text3, fontSize: FS.body },
+  actBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.xs, height: 28, paddingHorizontal: 12, borderRadius: 999, backgroundColor: C.surface2 },
   actBtnMain: { backgroundColor: C.brand },
   // 顶栏:左面包屑(flex:1)+右端常驻动作组(固定可见,不入滚动区)
-  topRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
-  actRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 },
-  actBtnText: { color: C.text2, fontSize: 11.5, fontWeight: '600' },
+  topRow: { flexDirection: 'row', alignItems: 'center', gap: SP.md, marginBottom: 10 },
+  actRow: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, flexShrink: 0 },
+  actBtnText: { color: C.text2, fontSize: FS.body, fontWeight: '600' },
   actBtnTextMain: { color: C.onBrand },
   rowSkel: { height: 52, borderRadius: 10, backgroundColor: 'rgba(255,255,255,.05)', marginVertical: 5 },
   rowSkelHD: { height: 78 },
   rowHover: { backgroundColor: C.surface2 },
   // 0922 TV 行焦点：清晰 2.5px 环 + 轻微放大（行高无需 1.05 级，7b 行内禁大 zoom），双保险高亮背景由 focusBg 提供
   rowFocusTv: { borderWidth: 2.5, borderColor: C.brand, borderRadius: 10, transform: [{ scale: 1.02 }] } as ViewStyle,
-  folderRow: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10 },
-  folderRowHD: { minHeight: 76, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12, gap: 14 },
+  folderRow: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: SP.xl, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10 },
+  folderRowHD: { minHeight: 76, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12, gap: SP.xxl },
   folderIcon: { width: 30, height: 30, borderRadius: 9, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   folderIconHD: { width: 42, height: 42, borderRadius: 12 },
-  folderName: { flex: 1, color: C.text, fontSize: 13.5, lineHeight: 19, fontWeight: '500' },
-  textHD: { fontSize: 16.5, lineHeight: 23 }, // TV 10ft 观看：主文字 16.5
-  songRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10 },
-  songRowHD: { minHeight: 80, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12, gap: 14 },
+  folderName: { flex: 1, color: C.text, fontSize: FS.lg, lineHeight: 19, fontWeight: '500' },
+  textHD: { fontSize: FS.headline, lineHeight: 23 }, // TV 10ft 观看：主文字 16.5→FS.headline(17)
+  songRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: SP.xl, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10 },
+  songRowHD: { minHeight: 80, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12, gap: SP.xxl },
   songRowOn: { backgroundColor: C.selTint },
   rowDivide: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.strokeFaint, borderRadius: 0 },
-  idx: { width: 26, textAlign: 'center', color: C.text3, fontSize: 11.5, fontVariant: ['tabular-nums'] },
-  idxHD: { width: 34, fontSize: 13 },
-  title: { color: C.text, fontSize: 13.5, lineHeight: 19, fontWeight: '500' },
-  sub: { color: C.text2, fontSize: 10.5, lineHeight: 14, marginTop: 1 },
-  subHD: { fontSize: 12.5, lineHeight: 17 },
-  dur: { color: C.text3, fontSize: 11, fontVariant: ['tabular-nums'] },
-  statsHD: { fontSize: 13 },
+  idx: { width: 26, textAlign: 'center', color: C.text3, fontSize: FS.body, fontVariant: ['tabular-nums'] },
+  idxHD: { width: 34, fontSize: FS.md },
+  title: { color: C.text, fontSize: FS.lg, lineHeight: 19, fontWeight: '500' },
+  sub: { color: C.text2, fontSize: FS.sm, lineHeight: 14, marginTop: 1 },
+  subHD: { fontSize: FS.md, lineHeight: 17 },
+  dur: { color: C.text3, fontSize: FS.sm, fontVariant: ['tabular-nums'] },
+  statsHD: { fontSize: FS.md },
   crumbItemHD: { paddingVertical: 5, paddingHorizontal: 8 },
-  crumbItemTextHD: { fontSize: 14 },
+  crumbItemTextHD: { fontSize: FS.lg },
   crumbCurHD: { paddingVertical: 6, paddingHorizontal: 13 },
-  crumbCurTextHD: { fontSize: 13.5 },
+  crumbCurTextHD: { fontSize: FS.lg },
   crumbRefreshHD: { width: 34, height: 34 },
   // 桌面≥900 双区容器：左列表 flex1 + 右操作栏 260 固定（对齐 860 列表右缘）
   davCols: { flexDirection: 'row', alignItems: 'flex-start', gap: 24, maxWidth: 1140, alignSelf: 'stretch' },
   sidePanel: { width: 260, flexShrink: 0, gap: 8, position: 'relative', top: 40, padding: 14, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke },
-  sideBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 38, paddingHorizontal: 12, borderRadius: 10, backgroundColor: C.surface2 },
-  sideBtnMain: { color: C.onBrand, fontSize: 12.5, fontWeight: '700' },
-  sideBtnText: { color: C.text2, fontSize: 12.5, fontWeight: '600' },
-  sideHint: { color: C.text3, fontSize: 10.5, lineHeight: 14, marginTop: 4 },
+  sideBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.md, height: 38, paddingHorizontal: 12, borderRadius: 10, backgroundColor: C.surface2 },
+  sideBtnMain: { color: C.onBrand, fontSize: FS.md, fontWeight: '700' },
+  sideBtnText: { color: C.text2, fontSize: FS.md, fontWeight: '600' },
+  sideHint: { color: C.text3, fontSize: FS.sm, lineHeight: 14, marginTop: 4 },
   eq: { width: 26, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: 2, height: 12 },
   eqBar: { width: 3, borderRadius: 1.5, backgroundColor: C.brand },
 });
 
 // HD(车机/TV)覆盖样式:限宽居中 + 大触点/大字号(老板:媒体库列表需遥控光标+大屏排版)
 const hd = StyleSheet.create({
-  head: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, marginBottom: 10 },
+  head: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingHorizontal: 20, marginBottom: 10 },
   backBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   addBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, color: C.text, fontSize: 20, fontWeight: '800' }, // lx166 居左
-  intro: { fontSize: 13, lineHeight: 19 },
+  title: { flex: 1, color: C.text, fontSize: FS.h1, fontWeight: '800' }, // lx166 居左
+  intro: { fontSize: FS.md, lineHeight: 19 },
 });
 
 // v3.28(老板:第三方媒体库统一风格):浏览页 HD 尺寸——行高/封面/字号与我的收藏·歌单详情同档
 const bv = StyleSheet.create({
-  row: { minHeight: 68 },
-  rowTitle: { fontSize: 15 },
-  rowSub: { fontSize: 12 },
-  art: { width: 52, height: 52, borderRadius: 26 },
-  albumName: { fontSize: 13, lineHeight: 17 },
-  albumMeta: { fontSize: 10.5, lineHeight: 14 },
-  acctPill: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 38, marginHorizontal: 4 },
-  acctName: { color: C.text, fontSize: 17, fontWeight: '800', maxWidth: 320 },
+  // [批次1] 行覆盖(row/rowTitle/rowSub/art)随自造行退役→统一件内建 HD 规格
+  albumName: { fontSize: FS.md, lineHeight: 17 },
+  albumMeta: { fontSize: FS.sm, lineHeight: 14 },
+  acctPill: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.md, height: 38, marginHorizontal: 4 },
+  acctName: { color: C.text, fontSize: FS.headline, fontWeight: '800', maxWidth: 320 },
 });
 
 // 综合页分区样式（2026-09-17：一个综合页面）
 const sec = StyleSheet.create({
-  head: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
-  title: { color: C.text, fontSize: 16, lineHeight: 22, fontWeight: '700' },
-  titleHD: { fontSize: 18, lineHeight: 25 },
-  count: { color: C.text3, fontSize: 12 },
+  head: { flexDirection: 'row', alignItems: 'center', gap: SP.md, marginBottom: 10 },
+  title: { color: C.text, fontSize: FS.title, lineHeight: 22, fontWeight: '700' },
+  titleHD: { fontSize: FS.h2, lineHeight: 25 },
+  count: { color: C.text3, fontSize: FS.body },
   moreBtn: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: 8, paddingVertical: 4 },
-  moreText: { color: C.text2, fontSize: 12, fontWeight: '500' },
-  moreRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 10 },
-  previewHint: { color: C.text3, fontSize: 11, marginLeft: 'auto' },
-  songsBar: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 },
-  dualRow: { gap: 10 },
-  dualCard: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, backgroundColor: C.surface, borderRadius: 14, padding: 12 },
-  dualCover: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  dualTitle: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '600' },
-  dualMeta: { color: C.text2, fontSize: 11, lineHeight: 15, marginTop: 2 },
+  moreText: { color: C.text2, fontSize: FS.body, fontWeight: '500' },
+  moreRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.xs, paddingVertical: 10 },
+  previewHint: { color: C.text3, fontSize: FS.sm, marginLeft: 'auto' },
+  songsBar: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, marginBottom: 4 },
+  // [批次1] dualRow/dualCard 族死样式随 HeroPair 统一退役(v5.6 后无使用点)
 });
 
 // [v5.6 1010·LEO 基准稿] 第三方页 v5 样式:phead(品牌标+状态点辉光)/能力芯片/维度 tabs/英雄卡 st 内嵌粗体
 const pv = StyleSheet.create({
-  phead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  phead: { flexDirection: 'row', alignItems: 'center', gap: SP.lg },
   pheadLogo: { width: 44, height: 44, borderRadius: 13, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   pheadLogoHD: { width: 52, height: 52, borderRadius: 16 },
-  pheadNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  pheadNameRow: { flexDirection: 'row', alignItems: 'center', gap: SP.md },
   pheadName: { color: C.text, fontSize: 19, lineHeight: 25, fontWeight: '800', flexShrink: 1 },
   pheadNameHD: { fontSize: 22, lineHeight: 29 },
-  pheadSub: { color: C.text3, fontSize: 11.5, lineHeight: 16, marginTop: 2 },
+  pheadSub: { color: C.text3, fontSize: FS.body, lineHeight: 16, marginTop: 2 },
   dot: { width: 9, height: 9, borderRadius: 5, flexShrink: 0, shadowOpacity: 0.8, shadowRadius: 6, shadowOffset: { width: 0, height: 0 }, elevation: 2 }, // 状态点+辉光(shadowColor 随状态内联)
   pheadBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke, alignItems: 'center', justifyContent: 'center' },
   pheadBtnHD: { width: 42, height: 42, borderRadius: 12 },
   heroStB: { fontWeight: '800', color: '#FFFFFF' }, // 英雄卡 st 行内粗体(统计数,基准稿 <b> 同形)
-  caps: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  cap: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 26, paddingHorizontal: 10, borderRadius: 999, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke },
+  caps: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.sm },
+  cap: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, height: 26, paddingHorizontal: 10, borderRadius: 999, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke },
   capDim: { opacity: 0.45 },
   capDot: { width: 5, height: 5, borderRadius: 3 },
-  capT: { color: C.text2, fontSize: 11, fontWeight: '600' },
+  capT: { color: C.text2, fontSize: FS.sm, fontWeight: '600' },
   capTOn: { color: C.text },
   // [老板 1010·听风重规划] 源内搜索框(netease 布局专属)
   // [老板 1011 11:49] 搜索框统一(探索页/公共库 searchBox 同款 pill:44 高/22 圆角/searchPill 底,HD 灰底)
-  tfSearchBar: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.searchPill, borderRadius: 22, paddingHorizontal: 12, height: 44, marginTop: 14 },
+  tfSearchBar: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, backgroundColor: C.searchPill, borderRadius: 22, paddingHorizontal: 12, height: 44, marginTop: 14 },
   tfSearchBarHD: { backgroundColor: C.surface2 },
-  tfSearchInput: { flex: 1, color: C.text, fontSize: 13, paddingVertical: 0, minWidth: 0 },
-  dimtabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  dimtab: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 32, paddingHorizontal: 13, borderRadius: 10, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke },
+  tfSearchInput: { flex: 1, color: C.text, fontSize: FS.md, paddingVertical: 0, minWidth: 0 },
+  dimtabs: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.md },
+  dimtab: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, height: 32, paddingHorizontal: 13, borderRadius: 10, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke },
   dimtabHD: { height: 40, paddingHorizontal: 16 },
   dimtabOn: { backgroundColor: C.brand, borderColor: C.brand },
-  dimtabT: { color: C.text2, fontSize: 12.5, fontWeight: '600' },
+  dimtabT: { color: C.text2, fontSize: FS.md, fontWeight: '600' },
   dimtabTOn: { color: C.onBrand, fontWeight: '700' },
-  dimtabCnt: { color: C.text3, fontSize: 10.5, fontVariant: ['tabular-nums'] },
+  dimtabCnt: { color: C.text3, fontSize: FS.sm, fontVariant: ['tabular-nums'] },
   dimtabCntOn: { color: C.onBrand },
   dimtabOff: { opacity: 0.4 },
-  dimtabTOff: { color: C.text3, fontSize: 12.5, fontWeight: '600' },
+  dimtabTOff: { color: C.text3, fontSize: FS.md, fontWeight: '600' },
   // [批5a] 音质档 qrow(仅转码能力源):当前档品牌底高亮,选档持久化 ProviderAcct.quality 由引擎取链时读取
-  qrow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
-  qLabel: { color: C.text3, fontSize: 11, fontWeight: '600', marginRight: 2 },
+  qrow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: SP.sm },
+  qLabel: { color: C.text3, fontSize: FS.sm, fontWeight: '600', marginRight: 2 },
   qBtn: { height: 26, paddingHorizontal: 11, borderRadius: 8, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke, alignItems: 'center', justifyContent: 'center' },
   qBtnOn: { backgroundColor: C.brand, borderColor: C.brand },
-  qBtnT: { color: C.text2, fontSize: 11, fontWeight: '600' },
+  qBtnT: { color: C.text2, fontSize: FS.sm, fontWeight: '600' },
   qBtnTOn: { color: C.onBrand, fontWeight: '700' },
 });
 
