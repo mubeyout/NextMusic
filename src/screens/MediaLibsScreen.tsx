@@ -1023,10 +1023,11 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
             ))}
           </View> : null}
           {isTf ? (() => {
-            // 听风：providers.playlists 返回五类（liked:/recent:/mine:/pl:/top: 前缀），拆成分区
+            // 听风：providers.playlists 返回六类（liked:/recent:/dl:/mine:/pl:/top: 前缀），拆成分区
             const all = lists.data || [];
             const tfLiked = all.find(x => x.id === 'liked:');
             const tfRecent = all.find(x => x.id === 'recent:');
+            const tfDl = all.find(x => x.id === 'dl:'); // [老板 1011 11:27] NAS 曲库(听风自动落库曲)
             const mine = all.filter(x => x.id.startsWith('mine:'));
             const recs = all.filter(x => x.id.startsWith('pl:'));
             const tops = all.filter(x => x.id.startsWith('top:'));
@@ -1078,6 +1079,21 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                       </T>
                     ))}
                   </View>
+                  {/* [老板 1011 11:27] NAS 曲库入口(档案 downloadedSongs;自动落库四触发:整曲播完/播超60s/点赞/入歌单);空也显入口,诚实标注暂无 */}
+                  {tfDl ? (
+                    <View style={sec.dualRow}>
+                      <T style={sec.dualCard} activeOpacity={0.85} focusStyle={focus(14)} onPress={() => toDetail(tfDl)}>
+                        <View style={[sec.dualCover, coverGrad(tfDl.name) as ViewStyle]}>
+                          <Icon name="music" size={20} color="#ffffffcc" />
+                        </View>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={sec.dualTitle} numberOfLines={1}>NAS 曲库</Text>
+                          <Text style={sec.dualMeta} numberOfLines={1}>{tfDl.songCount ? `${tfDl.songCount} 首 · 自动落库` : '暂无落库歌曲'}</Text>
+                        </View>
+                        <Icon name="chevronright" size={16} color={C.text3} />
+                      </T>
+                    </View>
+                  ) : null}
                 </View>
 
                 {/* 我的歌单 */}

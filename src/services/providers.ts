@@ -513,7 +513,7 @@ export const providerApi = {
     throw new Error('该源暂未接入源内搜索');
   },
 
-  /** 服务器端歌单列表（浏览页「歌单」段；听风=我喜欢的音乐+最近播放+我的歌单+推荐歌单+排行榜，id 前缀 liked:/recent:/mine:/pl:/top: 区分） */
+  /** 服务器端歌单列表（浏览页「歌单」段；听风=我喜欢的+最近播放+NAS曲库+我的歌单+推荐歌单+排行榜，id 前缀 liked:/recent:/dl:/mine:/pl:/top: 区分） */
   async playlists(a: ProviderAcct): Promise<PvPlaylist[]> {
     if (a.type === 'tingfeng') {
       return tfRun(a, async s => {
@@ -523,6 +523,7 @@ export const providerApi = {
         const user: PvPlaylist[] = lib ? [
           { id: 'liked:', name: '我喜欢的音乐', songCount: lib.liked.length, cover: lib.liked[0]?.thumbnail },
           { id: 'recent:', name: '最近播放', songCount: lib.recent.length, cover: lib.recent[0]?.thumbnail },
+          { id: 'dl:', name: 'NAS 曲库', songCount: lib.downloaded.length, cover: lib.downloaded[0]?.thumbnail }, // [老板 1011 11:27] NAS 曲库入口(听风自动落库曲)
           ...lib.playlists.map(p => ({ id: `mine:${p.id}`, name: p.name, songCount: p.songs.length, cover: p.coverUrl || p.songs[0]?.thumbnail })),
         ] : [];
         const tops = await tfCall<TfPlaylist[]>(s, '/api/v1/netease/toplist', { timeout: 20000 });
@@ -557,15 +558,15 @@ export const providerApi = {
     return [];
   },
 
-  /** 服务器歌单曲目（听风：liked:/recent:/mine: 走用户库；top: 前缀走榜单接口，其余走歌单接口） */
+  /** 服务器歌单曲目（听风：liked:/recent:/dl: 走用户库；top: 前缀走榜单接口，其余走歌单接口） */
   async playlistSongs(a: ProviderAcct, playlistId: string): Promise<SongItem[]> {
     const pid = a.id;
     if (a.type === 'tingfeng') {
       return tfRun(a, async s => {
         // 用户库歌单（听风侧数据直接映射）
-        if (playlistId === 'liked:' || playlistId === 'recent:') {
+        if (playlistId === 'liked:' || playlistId === 'recent:' || playlistId === 'dl:') {
           const lib = await tfUserLib(s);
-          const arr = playlistId === 'liked:' ? lib.liked : lib.recent;
+          const arr = playlistId === 'liked:' ? lib.liked : playlistId === 'dl:' ? lib.downloaded : lib.recent;
           return arr.map(x => tfToSongItem(x as never, pid));
         }
         if (playlistId.startsWith('mine:')) {

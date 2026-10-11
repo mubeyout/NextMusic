@@ -321,7 +321,7 @@ export interface TfUserPlaylist {
   id: string; name: string; songs: TfListSong[];
   coverUrl?: string; createdAt?: number; updatedAt?: number;
 }
-export interface TfUserLib { liked: TfListSong[]; recent: TfListSong[]; playlists: TfUserPlaylist[] }
+export interface TfUserLib { liked: TfListSong[]; recent: TfListSong[]; playlists: TfUserPlaylist[]; downloaded: TfListSong[] } // [老板 1011 11:27] downloaded=NAS 曲库(听风侧自动落库曲,档案 downloadedSongs 字段)
 
 function parseJsonArr(v: unknown): unknown[] {
   try { const a = typeof v === 'string' ? JSON.parse(v) : v; return Array.isArray(a) ? a : []; } catch { return []; }
@@ -334,6 +334,7 @@ export async function tfUserLib(sess: TfSess): Promise<TfUserLib> {
     liked: parseJsonArr(d.likedSongs) as TfListSong[],
     recent: parseJsonArr(d.recentSongs) as TfListSong[],
     playlists: parseJsonArr(d.playlists) as TfUserPlaylist[],
+    downloaded: parseJsonArr(d.downloadedSongs) as TfListSong[], // [NAS 曲库] 自动落库四触发:整曲播完/播超60s/点赞/入歌单
   };
 }
 
