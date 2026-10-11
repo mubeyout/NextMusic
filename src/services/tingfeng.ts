@@ -226,7 +226,7 @@ export async function tfThumbOf(sess: TfSess, id: number | string | undefined): 
   const key = String(id);
   if (tfThumbCache.has(key)) { const v = tfThumbCache.get(key); return v || undefined; }
   try {
-    const d = await tingfengApi.songDetail(sess, id);
+    const d = await tfApi.songDetail(sess, id);
     const t = d.thumbnail || '';
     tfThumbCache.set(key, t);
     return t || undefined;
