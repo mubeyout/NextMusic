@@ -360,7 +360,7 @@ export function HDPlayer() {
           {/* lx89:控件单行(全屏 960dp 富余)——传输组+分隔+工具组,icon 純净排 */}
           <View style={[st.ctrlRow, IS_WEB && st.ctrlRowWeb]}>
             <HDTouch style={st.cMode} onPress={() => setShuffle(!shuffle)}>
-              <Icon name="shuffle" size={20} active={shuffle} color={shuffle ? C.brand : IC} /> // [老板 1011 16:05 浅色] 白→IC 主题感知
+              <Icon name="shuffle" size={20} active={shuffle} color={shuffle ? C.brand : IC} />
             </HDTouch>
             <HDTouch style={st.cMode} onPress={skipPrev}>
               <Icon name="previous" size={26} color={ICM} />
@@ -373,13 +373,13 @@ export function HDPlayer() {
             </HDTouch>
             {/* lx151:循环三态(手机端同款角标) */}
             <HDTouch style={st.cMode} onPress={cycleRepeat}>
-              <Icon name="repeat" size={20} active={repeat !== 'off'} color={repeat !== 'off' ? C.brand : IC} /> // [老板 1011 16:05 浅色] 白→IC 主题感知
+              <Icon name="repeat" size={20} active={repeat !== 'off'} color={repeat !== 'off' ? C.brand : IC} />
               {repeat === 'one' ? <Text style={st.repOne}>1</Text> : null}
             </HDTouch>
             <View style={st.ctrlDivider} />
             {/* v3.8 工具序(老板): 收藏·下载·队列·评论·设备·音效·卡片·音质·倍速·定时 */}
             <HDTouch style={st.cTool} onPress={() => setCollectOpen(true)} title="收藏">
-              <Icon name="heart" size={17} color={faved ? C.heart : IC} /> // [老板 1011 16:05 浅色] 白→IC;收藏色统一 C.heart
+              <Icon name="heart" size={17} color={faved ? C.heart : IC} />
             </HDTouch>
             <HDTouch style={st.cTool} onPress={dlCurrent} title="下载">
               <Icon name="download" size={17} color={IC} />
