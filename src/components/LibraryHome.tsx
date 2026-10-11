@@ -7,7 +7,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon, type IconName } from '../theme/Icon';
-import { C, CARD, FW } from '../theme/tokens';
+import { C, CARD, FW, SP } from '../theme/tokens';
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
 import { GUTTER, focus } from '../hd/hdstyle';
@@ -274,7 +274,7 @@ export function RailCard({ cover, name, sub, icon, onPress, fill }: {
           <Icon name={icon || 'music'} size={24} color={C.text2} />
         </View>
       )}
-      <View style={{ padding: 8, gap: 3, minHeight: 46 }}>
+      <View style={{ padding: SP.md, gap: SP.xs, minHeight: 46 }}> // [老板 1011 15:59] 文字区统一档
         <Text style={lh.railName} numberOfLines={1}>{name}</Text>
         {sub ? <Text style={[lh.railSub, { maxWidth: size - 16 }]} numberOfLines={1}>{sub}</Text> : null}
       </View>

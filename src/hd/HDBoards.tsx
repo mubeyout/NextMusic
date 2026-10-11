@@ -167,7 +167,7 @@ const st = StyleSheet.create({
   cardChipWrapper: { position: 'absolute', right: 8, bottom: 80 },
   cardChip: { backgroundColor: 'rgba(0,0,0,.55)', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
   cardChipText: { color: C.white, fontSize: FS.xs },
-  cardBody: { padding: 10, paddingTop: 8, gap: SP.xs, alignSelf: 'center', width: '94%' },
+  cardBody: { padding: SP.md, gap: SP.xs }, // [老板 1011 15:59] 文字区统一档(去 94% 特殊宽;与全站卡同构)
   cardName: { color: C.text, fontSize: H.font.md, fontWeight: FW.bold, lineHeight: 16 },
   cardSub: { color: C.text3, fontSize: FS.xs },
   tip: { alignItems: 'center', gap: SP.lg, paddingVertical: 54 },

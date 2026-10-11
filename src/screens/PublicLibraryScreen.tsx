@@ -407,16 +407,20 @@ function ArtistCircle({ a, fill, onPress }: { a: LibArtist; fill?: boolean; onPr
   const { elRef, onHoverIn, onHoverOut, cardStyle } = useHoverCard(a.name); // [老板 1011 12:34] nm-card 同款投影
   const wStyle = fill ? { width: '100%' } : { width: IS_HD ? 96 : 76 }; // [LEO 1011 统一令] 72→76 与搜索页歌手圆卡同规格
   return (
-    <TouchableOpacity ref={elRef as never} style={[wStyle, { gap: SP.sm, alignItems: 'center' }, cardStyle as never]} activeOpacity={0.85} onPress={onPress}
+    <TouchableOpacity ref={elRef as never} style={[wStyle, { backgroundColor: C.surface, borderRadius: 12, overflow: 'hidden' }, cardStyle as never]} activeOpacity={0.85} onPress={onPress}
       {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}>
-      <View style={[wStyle, { aspectRatio: 1, borderRadius: 999, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }, !a.coverFile && { backgroundColor: C.artTint2 }]}>
-        {a.coverFile ? (
-          <Image source={{ uri: coverUrl(a.coverFile, 'public') }} style={ABS} resizeMode="cover" />
-        ) : (
-          <Text style={[d.artInit, fill && d.artInitBig]}>{a.name.slice(0, 1)}</Text>
-        )}
+      <View style={{ padding: SP.sm }}>
+        <View style={[fill ? { width: '100%' } : { width: (IS_HD ? 96 : 76) - SP.sm * 2 }, { aspectRatio: 1, borderRadius: 999, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }, !a.coverFile && { backgroundColor: C.artTint2 }]}>
+          {a.coverFile ? (
+            <Image source={{ uri: coverUrl(a.coverFile, 'public') }} style={ABS} resizeMode="cover" />
+          ) : (
+            <Text style={[d.artInit, fill && d.artInitBig]}>{a.name.slice(0, 1)}</Text>
+          )}
+        </View>
       </View>
-      <Text style={d.acName} numberOfLines={1}>{a.name}</Text>
+      <View style={{ paddingHorizontal: SP.md, paddingBottom: SP.md, alignItems: 'center' }}>
+        <Text style={d.acName} numberOfLines={1}>{a.name}</Text>
+      </View>
     </TouchableOpacity>
   );
 }

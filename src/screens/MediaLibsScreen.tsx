@@ -1342,16 +1342,20 @@ function PvCard({ cover, name, meta, round, fill, onPress, onLongPress }: {
   const { elRef, onHoverIn, onHoverOut, cardStyle } = useHoverCard(name); // [老板 1011 12:34] nm-card 同款
   if (round) {
     return (
-      <T style={[{ width: fill ? '100%' : size, gap: SP.sm, alignItems: 'center' }, cardStyle as never]} ref={elRef as never} activeOpacity={0.85} onPress={onPress} onLongPress={onLongPress} focusStyle={focus(10)}
+      <T style={[{ width: fill ? '100%' : size, backgroundColor: C.surface, borderRadius: 12, overflow: 'hidden' }, cardStyle as never]} ref={elRef as never} activeOpacity={0.85} onPress={onPress} onLongPress={onLongPress} focusStyle={focus(10)}
         {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}>
-        <View style={[
-          { width: fill ? '100%' : size, aspectRatio: 1, borderRadius: 999, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }, // [老板 1011 15:55] fill=网格墙圆头像(宽随列自适应)
-          { backgroundColor: C.artTint2 },
-        ]}>
-          <Text style={st.artistInitial}>{name.slice(0, 1)}</Text>
+        <View style={{ padding: SP.sm }}>
+          <View style={[
+            { width: fill ? '100%' : size - SP.sm * 2, aspectRatio: 1, borderRadius: 999, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+            { backgroundColor: C.artTint2 },
+          ]}>
+            <Text style={st.artistInitial}>{name.slice(0, 1)}</Text>
+          </View>
         </View>
-        <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{name}</Text>
-        {meta ? <Text style={[st.albumMeta, IS_HD && bv.albumMeta]} numberOfLines={1}>{meta}</Text> : null}
+        <View style={{ paddingHorizontal: SP.md, paddingBottom: SP.md, gap: SP.xs, alignItems: 'center' }}>
+          <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{name}</Text>
+          {meta ? <Text style={[st.albumMeta, IS_HD && bv.albumMeta]} numberOfLines={1}>{meta}</Text> : null}
+        </View>
       </T>
     );
   }

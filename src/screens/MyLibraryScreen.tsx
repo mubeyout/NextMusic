@@ -59,7 +59,7 @@ export function DiscCard({ name, sub, cover, count, round, focusable, onPress, o
   };
   const cellStyle = fill ? [{ width: '100%', gap: SP.sm } as never] : fixedWidth != null ? [{ width: fixedWidth, gap: SP.sm }] : [d.disc, basis != null && { width: basis }];
   const sleeve = (
-    <View style={[d.sleeve, round && d.sleeveRound, { aspectRatio: 1 } as never, unknown && d.sleeveUnknown, cardStyle as never]}>
+    <View style={[d.sleeve, round && d.sleeveRound, { aspectRatio: 1 } as never, unknown && d.sleeveUnknown]}>
       {cover ? (
         <Image source={{ uri: cover }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 } as never} resizeMode="cover" />
       ) : (
@@ -702,7 +702,7 @@ const d = StyleSheet.create({
   wall4HD: { gap: SP.wider, padding: 30, paddingBottom: 150 },
   disc: { width: '31%' as never, gap: SP.sm },
   discFocus: { borderWidth: 2.5, borderColor: C.brand, borderRadius: 14, transform: [{ scale: 1.05 }] },
-  sleeve: { borderRadius: 12, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2, shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  sleeve: { overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2 }, // [老板 1011 15:59] nm-card 化:圆角/影归卡容器,封面顶格
   sleeveRound: { borderRadius: 999 },
   sleeveUnknown: { opacity: 0.75 },
   gradFill: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, opacity: 0.55 },

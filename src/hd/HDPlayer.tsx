@@ -360,7 +360,7 @@ export function HDPlayer() {
           {/* lx89:控件单行(全屏 960dp 富余)——传输组+分隔+工具组,icon 純净排 */}
           <View style={[st.ctrlRow, IS_WEB && st.ctrlRowWeb]}>
             <HDTouch style={st.cMode} onPress={() => setShuffle(!shuffle)}>
-              <Icon name="shuffle" size={20} active={shuffle} color={shuffle ? C.brand : '#ffffff99'} />
+              <Icon name="shuffle" size={20} active={shuffle} color={shuffle ? C.brand : IC} /> // [老板 1011 16:05 浅色] 白→IC 主题感知
             </HDTouch>
             <HDTouch style={st.cMode} onPress={skipPrev}>
               <Icon name="previous" size={26} color={ICM} />
@@ -373,13 +373,13 @@ export function HDPlayer() {
             </HDTouch>
             {/* lx151:循环三态(手机端同款角标) */}
             <HDTouch style={st.cMode} onPress={cycleRepeat}>
-              <Icon name="repeat" size={20} active={repeat !== 'off'} color={repeat !== 'off' ? C.brand : '#ffffff99'} />
+              <Icon name="repeat" size={20} active={repeat !== 'off'} color={repeat !== 'off' ? C.brand : IC} /> // [老板 1011 16:05 浅色] 白→IC 主题感知
               {repeat === 'one' ? <Text style={st.repOne}>1</Text> : null}
             </HDTouch>
             <View style={st.ctrlDivider} />
             {/* v3.8 工具序(老板): 收藏·下载·队列·评论·设备·音效·卡片·音质·倍速·定时 */}
             <HDTouch style={st.cTool} onPress={() => setCollectOpen(true)} title="收藏">
-              <Icon name="heart" size={17} color={faved ? C.brand : '#ffffff99'} />
+              <Icon name="heart" size={17} color={faved ? C.heart : IC} /> // [老板 1011 16:05 浅色] 白→IC;收藏色统一 C.heart
             </HDTouch>
             <HDTouch style={st.cTool} onPress={dlCurrent} title="下载">
               <Icon name="download" size={17} color={IC} />
@@ -554,7 +554,7 @@ const stLight = {
   noLyricText: { color: 'rgba(38,40,44,.5)', fontSize: FS.md },
   time: { color: 'rgba(38,40,44,.7)', fontSize: FS.body, fontVariant: ['tabular-nums'], width: 42, textAlign: 'center' },
   trackRest: { ...stDark.trackRest, backgroundColor: 'rgba(31,35,41,.14)' },
-  playhead: { ...stDark.playhead, borderColor: '#FFFFFF', boxShadow: '0 0 12px rgba(30,215,96,.45)' },
+  playhead: { ...stDark.playhead, borderColor: 'rgba(31,35,41,.22)', boxShadow: '0 0 12px rgba(30,215,96,.45)' }, // [老板 1011 16:05 浅色] 白边→深边(白底可见)
   ctrlDivider: { ...stDark.ctrlDivider, backgroundColor: 'rgba(31,35,41,.12)' },
   qBadge: { ...stDark.qBadge, borderColor: '#F6F7F9' },
   qBadgeText: { color: '#0B3D1F', fontSize: FS.xs, fontWeight: FW.heavy },

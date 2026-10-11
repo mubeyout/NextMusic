@@ -305,15 +305,19 @@ function AllArtistCircle({ a, onPress }: { a: { id: string; name: string; img?: 
   const w = 76;
   return (
     <TouchableOpacity ref={elRef as never}
-      style={[{ width: w, gap: SP.sm, alignItems: 'center' }, cardStyle as never]}
+      style={[{ width: w, backgroundColor: C.surface, borderRadius: 12, overflow: 'hidden' }, cardStyle as never]}
       activeOpacity={0.85} onPress={onPress}
       {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}>
-      <View style={{ width: w, height: w, borderRadius: 999, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: C.artTint2 }}>
-        {a.img
-          ? <Image source={{ uri: a.img }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }} resizeMode="cover" />
-          : <Text style={st.allArtistInit}>{a.name.slice(0, 1)}</Text>}
+      <View style={{ padding: SP.sm }}>
+        <View style={{ width: w - SP.sm * 2, aspectRatio: 1, borderRadius: 999, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: C.artTint2 }}>
+          {a.img
+            ? <Image source={{ uri: a.img }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }} resizeMode="cover" />
+            : <Text style={st.allArtistInit}>{a.name.slice(0, 1)}</Text>}
+        </View>
       </View>
-      <Text style={st.allCardName} numberOfLines={1}>{a.name}</Text>
+      <View style={{ paddingHorizontal: SP.md, paddingBottom: SP.md, alignItems: 'center' }}>
+        <Text style={st.allCardName} numberOfLines={1}>{a.name}</Text>
+      </View>
     </TouchableOpacity>
   );
 }
