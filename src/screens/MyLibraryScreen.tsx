@@ -41,9 +41,9 @@ const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpaci
 export { setActiveLib } from '../services/myLibrary';
 
 /** 唱片卡(sleeve+黑胶圆+N首徽标;封面缺失=渐变+图标;未知=灰阶)——②本机曲库三视图复用(导出) */
-export function DiscCard({ name, sub, cover, count, round, focusable, onPress, unknown, size = 1, fixedWidth, fill }: {
+export function DiscCard({ name, sub, cover, count, round, focusable, onPress, onLongPress, unknown, size = 1, fixedWidth, fill }: {
   name: string; sub?: string; cover?: string | null; count?: number; round?: boolean;
-  focusable?: boolean; onPress?: () => void; unknown?: boolean; size?: number; fixedWidth?: number;
+  focusable?: boolean; onPress?: () => void; onLongPress?: () => void; unknown?: boolean; size?: number; fixedWidth?: number;
   fill?: boolean; // [老板 1011 15:49] 网格墙模式:width '100%'(GridWall 列内撑满,跳过 basis 测量)
 }) {
   const [g1, g2] = gradOf(name);
@@ -81,7 +81,7 @@ export function DiscCard({ name, sub, cover, count, round, focusable, onPress, u
   if (IS_HD || focusable) {
     return (
       <View style={cellStyle as never} onLayout={measure}>
-        <HDTouch ref={elRef as never} style={{ width: '100%', gap: SP.sm } as never} onPress={onPress} focusStyle={d.discFocus} focusBg={undefined} {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}>
+        <HDTouch ref={elRef as never} style={{ width: '100%', gap: SP.sm } as never} onPress={onPress} onLongPress={onLongPress} focusStyle={d.discFocus} focusBg={undefined} {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}>
           {sleeve}{label}
         </HDTouch>
       </View>
@@ -94,6 +94,7 @@ export function DiscCard({ name, sub, cover, count, round, focusable, onPress, u
       <AnimatedTouchableOpacity
         style={[{ width: '100%', gap: SP.sm }, { transform: [{ scale: pv }] }] as never}
         onPress={onPress}
+        onLongPress={onLongPress}
         onPressIn={() => Animated.spring(pv, { toValue: 0.96, useNativeDriver: Platform.OS !== 'web', speed: 50, bounciness: 4 }).start()}
         onPressOut={() => Animated.spring(pv, { toValue: 1, useNativeDriver: Platform.OS !== 'web', speed: 50, bounciness: 4 }).start()}
         activeOpacity={1}

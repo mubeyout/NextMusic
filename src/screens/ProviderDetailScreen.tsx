@@ -223,13 +223,6 @@ const st = StyleSheet.create({
   actionText: { color: C.text2, fontSize: FS.sm, fontWeight: FW.medium },
   songList: { marginTop: 14, gap: SP.md },
   prog: { color: C.brandText, fontSize: FS.sm, width: 38, textAlign: 'right' },
-  albumGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl, marginTop: 18 },
-  albumCell: { width: '31%', gap: SP.xs },
-  albumCellFill: { width: '100%' }, // [老板 1011 15:40] HDGrid 内 cell 撑满列宽
-  albumCover: { width: '100%', aspectRatio: 1, borderRadius: 10, backgroundColor: C.surface2 },
-  albumName: { color: C.text, fontSize: FS.body, lineHeight: 15, fontWeight: FW.semibold },
-  albumMeta: { color: C.text2, fontSize: FS.xs, lineHeight: 12 },
-  albumCellWeb: { width: '15.5%' }, // v3.28:web 6 列(与浏览页网格同规格;此前 31% 在桌面=3 巨列)
 });
 
 // v3.28(老板:统一风格):HD/桌面尺寸——头部卡/按钮/网格字号与全站同档
@@ -239,6 +232,4 @@ const dv = StyleSheet.create({
   stat: { fontSize: FS.md, lineHeight: 18 },
   playAllBtn: { height: 48, borderRadius: 12 },
   action: { minHeight: 60, borderRadius: 12 },
-  albumName: { fontSize: FS.md, lineHeight: 17 },
-  albumMeta: { fontSize: FS.sm, lineHeight: 14 },
 });

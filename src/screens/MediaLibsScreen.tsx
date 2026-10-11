@@ -37,7 +37,6 @@ import type { SongItem } from '../services/server';
 import { useHoverCard } from '../hd/hdweb';
 import { GridWall } from '../components/GridWall';
 import { DiscCard } from './MyLibraryScreen'; // [老板 1011 15:49] 专辑卡统一件
-import { gradCssOf } from '../theme/grads'; // [老板 1011 15:39] 渐变唯一源
 
 // 有品牌 logo 的类型用 BrandIcon，其余回退语义图标
 // v3: 媒体库 icon 一律 BrandIcon(品牌图标一一对应)
@@ -1090,13 +1089,8 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                     {expanded.tfMine ? (
                       <GridWall>
                         {mine.map(pl => (
-                          <T key={pl.id} style={[st.albumCell, (IS_HD || IS_WEB) && st.albumCellFill]} activeOpacity={0.85} focusStyle={focus(10)} onPress={() => toDetail(pl)}>
-                            {pl.cover ? <Image source={{ uri: pl.cover }} style={st.albumCover} />
-                              : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, gradCssOf(pl.name) as ViewStyle]}><Icon name="music" size={22} color="#ffffffb3" /></View>}
-                            <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{pl.name}</Text>
-                            <Text style={[st.albumMeta, IS_HD && bv.albumMeta]} numberOfLines={1}>{pl.songCount ? `${pl.songCount}首` : ''}</Text>
-                          </T>
-                        ))}
+  <PvCard fill key={pl.id} cover={pl.cover} name={pl.name} meta={pl.songCount ? `${pl.songCount} 首` : ''} onPress={() => toDetail(pl)} />
+))}
                       </GridWall>
                     ) : (
                       <GridWall>{mine.map(pl => <PvCard fill key={pl.id} cover={pl.cover} name={pl.name} meta={pl.songCount ? `${pl.songCount} 首` : ''} onPress={() => toDetail(pl)} />)}</GridWall>
@@ -1111,12 +1105,8 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                     {expanded.tfRecs ? (
                       <GridWall>
                         {recs.map(pl => (
-                          <T key={pl.id} style={[st.albumCell, (IS_HD || IS_WEB) && st.albumCellFill]} activeOpacity={0.85} focusStyle={focus(10)} onPress={() => toDetail(pl)}>
-                            {pl.cover ? <Image source={{ uri: pl.cover }} style={st.albumCover} />
-                              : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, gradCssOf(pl.name) as ViewStyle]}><Icon name="music" size={22} color="#ffffffb3" /></View>}
-                            <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{pl.name}</Text>
-                          </T>
-                        ))}
+  <PvCard fill key={pl.id} cover={pl.cover} name={pl.name} meta={pl.songCount ? `${pl.songCount} 首` : ''} onPress={() => toDetail(pl)} />
+))}
                       </GridWall>
                     ) : (
                       <GridWall>{recs.map(pl => <PvCard fill key={pl.id} cover={pl.cover} name={pl.name} meta={pl.songCount ? `${pl.songCount} 首` : ''} onPress={() => toDetail(pl)} />)}</GridWall>
@@ -1131,12 +1121,8 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                     {expanded.tfTops ? (
                       <GridWall>
                         {tops.map(pl => (
-                          <T key={pl.id} style={[st.albumCell, (IS_HD || IS_WEB) && st.albumCellFill]} activeOpacity={0.85} focusStyle={focus(10)} onPress={() => toDetail(pl)}>
-                            {pl.cover ? <Image source={{ uri: pl.cover }} style={st.albumCover} />
-                              : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, gradCssOf(pl.name) as ViewStyle]}><Icon name="music" size={22} color="#ffffffb3" /></View>}
-                            <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{pl.name}</Text>
-                          </T>
-                        ))}
+  <PvCard fill key={pl.id} cover={pl.cover} name={pl.name} onPress={() => toDetail(pl)} />
+))}
                       </GridWall>
                     ) : (
                       <GridWall>{tops.map(pl => <PvCard fill key={pl.id} cover={pl.cover} name={pl.name} onPress={() => toDetail(pl)} />)}</GridWall>
@@ -1212,17 +1198,13 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                   {albums.data && albums.data.length === 0 ? <EmptyState icon="music" title="服务器上没有专辑" sub="先在媒体服务器里添加音乐库" /> : null}
                   <GridWall>
                     {(albums.data || []).map(al => (
-                      <T key={al.id} style={[st.albumCell, (IS_HD || IS_WEB) && st.albumCellFill]} activeOpacity={0.85} focusStyle={focus(10)}
+                      <DiscCard fill key={al.id} cover={al.cover} name={al.name} count={al.songCount}
+                        sub={al.artist || undefined} unknown={!al.cover}
                         onLongPress={caps.radio ? () => playRadio(al.id, al.name, 'album', al.artist) : undefined}
                         onPress={() => nav.navigate('ProviderDetail', {
                           acctId: acct.id, kind: 'album', id: al.id, name: al.name, cover: al.cover,
                           sub: [al.artist, al.songCount ? `${al.songCount}首` : null].filter(Boolean).join(' · ') || undefined,
-                        })}>
-                        {al.cover ? <Image source={{ uri: al.cover }} style={st.albumCover} />
-                          : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, gradCssOf(al.name) as ViewStyle]}><Icon name="music" size={22} color="#ffffffb3" /></View>}
-                        <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{al.name}</Text>
-                        <Text style={[st.albumMeta, IS_HD && bv.albumMeta]} numberOfLines={1}>{al.artist || ''}{al.songCount ? ` · ${al.songCount}首` : ''}</Text>
-                      </T>
+                        })} />
                     ))}
                   </GridWall>
                 </SegBody>
@@ -1407,10 +1389,7 @@ const st = StyleSheet.create({
   acctCaret: { transform: [{ rotate: '90deg' }], marginTop: 2 },
   // 专辑网格
   albumGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl }, // phone 三列(HD/web 走 GridWall→HDGrid)
-  albumCell: { width: '31%', gap: SP.xs },
-  albumCellFill: { width: '100%' }, // [老板 1011 15:40] HDGrid 内 cell 撑满列宽
   albumCellWeb: { width: '15.5%' }, // web 6 列(0.75 zoom 下 31%=2列过大,加密 4 倍)
-  albumCover: { width: '100%', aspectRatio: 1, borderRadius: 10, backgroundColor: C.surface2 },
   albumFallback: { alignItems: 'center', justifyContent: 'center' },
   albumGlyph: { color: C.text2, fontSize: FS.display, fontWeight: FW.bold },
   albumName: { color: C.text, fontSize: FS.body, lineHeight: 15, fontWeight: FW.semibold },
