@@ -66,7 +66,7 @@ export function PublicLibraryScreen() {
   const summary = entry.summary;
   const scan = summary?.scan;
   const PAGE = IS_HD ? 100 : 50; // ④分页 50/100
-  const artGridB = useGridBasis(); // ⑤歌手展开圆墙列基(默认档 15/18/23/31/48%)
+  // ⑤歌手展开圆墙已移入 PublicLibWallRoute(老板 1011:查看全部改路由跳转)
 
   // 进页即强校验(缓存过期→404 即时退场);播放域切 public(流/封面 lib=public)
   useEffect(() => {
@@ -96,10 +96,8 @@ export function PublicLibraryScreen() {
   const [randSongs, setRandSongs] = useState<LibSong[] | null>(null);
   const [railBusy, setRailBusy] = useState(false);
   const [randBusy, setRandBusy] = useState(false); // 动作行「随机来点」
-  const [albExpanded, setAlbExpanded] = useState(false);
-  const [artExpanded, setArtExpanded] = useState(false);
   const [q, setQ] = useState('');
-  const [songShown, setSongShown] = useState(50); // ⑥首屏渲染上限 50,「显示更多」逐档 +50(禁止 200 首全量一次渲染)
+  const [songShown, setSongShown] = useState(30); // ⑥首屏渲染上限 30(老板 1011:拥挤),「显示更多」逐档 +30(禁止 200 首全量一次渲染)
 
   // 分页追加去重(offset 窗口在数据变动时可能交叠)
   function dedup<T extends { id: string }>(prev: T[] | null, add: T[], reset: boolean): T[] {
@@ -276,34 +274,19 @@ export function PublicLibraryScreen() {
           </HomeSection>
         ) : null}
 
-        {/* ④ 专辑区:默认 rail 12 张 → 「查看全部」展开 DiscCard 墙(卡内自适应列基,同 DEFAULT_GRID_TIERS 档位)+分页 */}
+        {/* ④ 专辑区:rail(RailCard 与为我推荐同规格);「查看全部」路由跳全墙页(老板 1011:原地展开样式突变,卡片突然变大) */}
         {albums === null ? <SkelRail /> : albums.length ? (
-          albExpanded ? (
-            <HomeSection title="专辑" count={albumsTotal || albums.length} actionLabel="收起" onAction={() => setAlbExpanded(false)}>
-              <View style={[d.wallSec, IS_HD && d.wallSecHD]}>
-                {albums.map(a => (
-                  <DiscCard key={a.id} name={a.name} count={a.songCount}
-                    sub={`${a.artist}${a.byDir ? ' · 文件夹分组' : ''}`}
-                    cover={a.coverFile ? coverUrl(a.coverFile, 'public') : null}
-                    unknown={!a.coverFile}
-                    onPress={() => enterAlbum(a)} />
-                ))}
-              </View>
-              <LoadMore busy={albumsBusy} shown={albums.length} total={albumsTotal} onMore={() => loadAlbums()} unit="张专辑" />
-            </HomeSection>
-          ) : (
-            <HomeSection title="专辑" count={albumsTotal || albums.length} actionLabel="查看全部" onAction={() => setAlbExpanded(true)}>
-              <HomeRail>
-                {albums.slice(0, albRailN).map(a => (
-                  <RailCard key={a.id} cover={a.coverFile ? coverUrl(a.coverFile, 'public') : null} name={a.name}
-                    sub={`${a.artist || '未知'} · ${a.songCount} 首`} onPress={() => enterAlbum(a)} />
-                ))}
-              </HomeRail>
-            </HomeSection>
-          )
+          <HomeSection title="专辑" count={albumsTotal || albums.length} actionLabel="查看全部" onAction={() => nav.navigate('PublicLibWall', { kind: 'albums' })}>
+            <HomeRail>
+              {albums.slice(0, albRailN).map(a => (
+                <RailCard key={a.id} cover={a.coverFile ? coverUrl(a.coverFile, 'public') : null} name={a.name}
+                  sub={`${a.artist || '未知'} · ${a.songCount} 首`} onPress={() => enterAlbum(a)} />
+              ))}
+            </HomeRail>
+          </HomeSection>
         ) : null}
 
-        {/* ⑤ 歌手区:≤8 行列表;多则圆头像 rail → 「查看全部」展开 useGridBasis 圆墙+分页 */}
+        {/* ⑤ 歌手区:≤8 行列表;多则圆头像 rail;「查看全部」路由跳全墙页 */}
         {artists === null ? <SkelRail round /> : artists.length ? (
           artFew ? (
             <HomeSection title="歌手" count={artistsTotal || artists.length}>
@@ -313,19 +296,8 @@ export function PublicLibraryScreen() {
                 ))}
               </View>
             </HomeSection>
-          ) : artExpanded ? (
-            <HomeSection title="歌手" count={artistsTotal || artists.length} actionLabel="收起" onAction={() => setArtExpanded(false)}>
-              <View style={d.cwall} onLayout={artGridB.onLayout}>
-                {artists.map(a => (
-                  <View key={a.id} style={{ width: artGridB.basis }}>
-                    <ArtistCircle a={a} fill onPress={() => enterArtist(a)} />
-                  </View>
-                ))}
-              </View>
-              <LoadMore busy={artistsBusy} shown={artists.length} total={artistsTotal} onMore={() => loadArtists()} unit="位歌手" />
-            </HomeSection>
           ) : (
-            <HomeSection title="歌手" count={artistsTotal || artists.length} actionLabel="查看全部" onAction={() => setArtExpanded(true)}>
+            <HomeSection title="歌手" count={artistsTotal || artists.length} actionLabel="查看全部" onAction={() => nav.navigate('PublicLibWall', { kind: 'artists' })}>
               <HomeRail>
                 {artists.slice(0, 24).map(a => (
                   <ArtistCircle key={a.id} a={a} onPress={() => enterArtist(a)} />
@@ -361,7 +333,7 @@ export function PublicLibraryScreen() {
             {songsBusy ? (
               <View style={d.moreWrap}><ActivityIndicator color={C.brand} /></View>
             ) : filtered.length > songShown ? (
-              <TouchableOpacity style={d.moreBtn} activeOpacity={0.8} onPress={() => setSongShown(n => n + 50)}>
+              <TouchableOpacity style={d.moreBtn} activeOpacity={0.8} onPress={() => setSongShown(n => n + 30)}>
                 <Text style={d.moreT}>显示更多 · {songShown}/{filtered.length}</Text>
               </TouchableOpacity>
             ) : songs.length >= songSize && songSize < 200 ? (
@@ -542,6 +514,63 @@ function ErrBack({ err }: { err: string }) {
 }
 
 // ── 专辑详情 ──
+// [老板 1011 11:20] 全墙路由页:「查看全部」与其他页同模式(路由跳转)——原第④⑤段原地展开 rail 小卡突变墙大卡=「样式突变卡片变大」根因;排版与其他页对齐
+export function PublicLibWallRoute(props: Record<string, unknown>) {
+  const route = (props as { route: { params: { kind: 'albums' | 'artists' } } }).route;
+  const kind = route.params.kind === 'artists' ? 'artists' : 'albums';
+  const nav = useNavigation() as { goBack: () => void; navigate: (s: string, p?: object) => void };
+  const gridB = useGridBasis();
+  const [items, setItems] = useState<(LibAlbum | LibArtist)[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { setActiveLib('public'); return () => setActiveLib(undefined); }, []);
+  const PAGE_W = IS_HD ? 100 : 50; // 与主页同档分页
+  const load = (reset = false) => {
+    if (busy) return;
+    const offset = reset ? 0 : items?.length || 0;
+    setBusy(true);
+    const req = kind === 'albums'
+      ? pubLib.albums('newest', PAGE_W, offset).then(r => ({ list: r.albums as (LibAlbum | LibArtist)[], total: r.total }))
+      : pubLib.artists(offset, PAGE_W).then(r => ({ list: r.artists as (LibAlbum | LibArtist)[], total: r.total }));
+    req.then(({ list, total }) => {
+      setItems(p => offset === 0 ? list : [...(p || []), ...list.filter(x => !(p || []).some(y => y.id === x.id))]);
+      setTotal(total);
+    }).finally(() => setBusy(false));
+  };
+  useEffect(() => { load(); /* mount 首载 */ }, []);
+  const enterAlbumW = (a: LibAlbum) => nav.navigate('PublicLibAlbum', { id: a.id, name: a.name, cover: a.coverFile });
+  const enterArtistW = (a: LibArtist) => nav.navigate('PublicLibArtist', { id: a.id, name: a.name });
+  return (
+    <View style={d.screen}>
+      <PageHeader title={kind === 'albums' ? '全部专辑' : '全部歌手'} />
+      {items === null && busy ? (
+        <View style={{ padding: 24 }}><ActivityIndicator color={C.brand} /></View>
+      ) : (
+        <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
+          {kind === 'albums' ? (
+            <View style={[d.wallSec, IS_HD && d.wallSecHD, { marginHorizontal: 16 }]}>
+              {(items as LibAlbum[]).map(a => (
+                <DiscCard key={a.id} name={a.name} count={a.songCount}
+                  sub={a.artist} cover={a.coverFile ? coverUrl(a.coverFile, 'public') : null}
+                  unknown={!a.coverFile} onPress={() => enterAlbumW(a)} />
+              ))}
+            </View>
+          ) : (
+            <View style={[d.cwall, { marginHorizontal: 16 }]} onLayout={gridB.onLayout}>
+              {(items as LibArtist[]).map(a => (
+                <View key={a.id} style={{ width: gridB.basis }}>
+                  <ArtistCircle a={a} fill onPress={() => enterArtistW(a)} />
+                </View>
+              ))}
+            </View>
+          )}
+          <LoadMore busy={busy} shown={items?.length || 0} total={total} onMore={() => load()} unit={kind === 'albums' ? '张专辑' : '位歌手'} />
+        </ScrollView>
+      )}
+    </View>
+  );
+}
+
 export function PublicLibAlbumRoute(props: Record<string, unknown>) {
   const route = (props as { route: { params: { id: string; name: string; cover?: string | null } } }).route;
   const { id, name, cover } = route.params;
