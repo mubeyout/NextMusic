@@ -2,7 +2,7 @@
 // v1 教训:固定尺寸溢出;v2 教训:深色底 panel 突兀(老板:粗糙,直接取消)
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, Animated, Easing, ScrollView, ActivityIndicator, type ImageStyle, type ViewStyle, type TextStyle } from 'react-native';
-import { VinylDisc, VINYL_SPEC, vinylDiscSpec } from '../components/VinylDisc'; // 唱片:draft-2 几何单源(盘图实测质量不达标回退几何绘制,老板 1010);v3.37 TV 原生分支直接用组件
+import { VinylDisc } from '../components/VinylDisc'; // 唱片:v3.39 位图盘体(clover.png,老板 1011 三稿);TV 原生分支用组件
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
 import { fixCoverUrl } from '../utils/cover'; // lxfix:kw 图床域名自愈
@@ -27,41 +27,23 @@ import { HDCollect } from './HDCollect';
 import { hdNav } from './hdnav';
 
 
-// 唱片 SVG 纯 DOM 版(react-native-svg 的 web shim forwardRef 与 RNW 混用会 React#130,直出 DOM 稳)
-// v1.2.5:size 参数化 + nm-vinyl-spin CSS 旋转接入(此前 web 唱片根本不转——nm-vinyl-css 注入了却没人用)
-// v3.36(唱片样式 draft-2):盘体换 landing draft-2 .disc 规格——radial 盘底+程序化细胶纹(白5% 0.9px/3.1px)
-//   +宽纹带(黑22% 1.2px/36px)+盘缘内描边(白6% 1px)+偏心 sheen(白4%,旋转可见);几何与 phone 端
-//   共享 vinylDiscSpec/VINYL_SPEC(单源,勿在此手写胶纹);外阴影归容器 View(见 vinylZone 内包装)
-// v3.37(老板 1011 换盘):盘心换款——黑盘身+灰过渡环+银盘心+小轴孔(参考图:黑外圈/灰中环/银心),
-//   盘心不再贴封面(浅色封面「盘面发白」根除);半径/渐变同样取 spec 单源
-// v3.38(老板 1011 二稿):盘心改「镂空窗口展示封面」——灰环做框,封面正圆裁切嵌入;无图回退银
-//   label;轴孔改银色(参考图 central silver spindle hole)
-function HD_VINYL_SVG(size = 300, playing?: boolean, img?: string): React.ReactNode {
+// 唱片 web 直出 DOM 版(react-native-svg 与 RNW 混用有 React#130 前科,位图时代仍直出 DOM)
+// v3.36~v3.38 几何绘制/SVG 历史见 git(vinylDiscSpec 单源);v3.39(老板 1011 三稿)起盘体=brand 位图:
+// clover.png(1024²,中心 625² 圆形透明窗,老板设计/测量勿复验)——封面垫底穿窗,无图回退深色圆;
+// CSS nm-vinyl-spin 旋转;外阴影归容器 View(见 vinylZone 内包装)
+const CLOVER_SRC = require('../assets/disc/clover.png') as { uri: string }; // web=polyfill {uri};原生分支不走此路径
+function HD_VINYL_DISC(size: number, playing: boolean | undefined, img?: string): React.ReactNode {
   const h = React.createElement;
-  const spec = vinylDiscSpec(size);
-  const c = spec.center;
-  const base = h('radialGradient', { id: 'vdHdBase', cx: '50%', cy: '50%', r: '50%' },
-    VINYL_SPEC.baseStops.map((st, i) => h('stop', { key: i, offset: st.offset, stopColor: st.color })));
-  const sheen = h('radialGradient', { id: 'vdHdSheen', cx: VINYL_SPEC.sheen.cx, cy: VINYL_SPEC.sheen.cy, r: VINYL_SPEC.sheen.r },
-    VINYL_SPEC.sheen.stops.map((st, i) => h('stop', { key: i, offset: st.offset, stopColor: '#FFFFFF', stopOpacity: String(st.opacity) })));
-  const silver = h('radialGradient', { id: 'vdHdSilver', cx: '50%', cy: '42%', r: '62%' },
-    VINYL_SPEC.label.silverStops.map((st, i) => h('stop', { key: i, offset: st.offset, stopColor: st.color })));
-  return h('svg', { width: size, height: size, viewBox: `0 0 ${size} ${size}`, className: 'nm-vinyl-spin' + (playing ? '' : ' nm-vinyl-paused'),
-    // [Fix 2026-09-14] 删根元素 boxShadow:svg 根上 border-radius 不裁剪阴影(Chromium)→方形半透明阴影框随唱片旋转,浅色背景下可见(老板:半透明矩形跟着旋转)
-    style: { position: 'absolute', top: 0, left: 0 } as never },
-    h('defs', null, base, sheen, silver,
-      img ? h('clipPath', { key: 'winClip', id: 'vdHdWin' }, h('circle', { key: 'wc', cx: c, cy: c, r: spec.labelR })) : null),
-    /* [老板 1010] 盘体回几何绘制(draft-2 单源;盘图实测不达标) */
-    h('circle', { key: 'base', cx: c, cy: c, r: spec.radius, fill: 'url(#vdHdBase)' }),
-    ...spec.fineGrooves.map((r, i) => h('circle', { key: 'f' + i, cx: c, cy: c, r, fill: 'none', stroke: VINYL_SPEC.fine.stroke, strokeOpacity: String(VINYL_SPEC.fine.opacity), strokeWidth: VINYL_SPEC.fine.width })),
-    ...spec.wideBands.map((r, i) => h('circle', { key: 'w' + i, cx: c, cy: c, r, fill: 'none', stroke: VINYL_SPEC.wide.stroke, strokeOpacity: String(VINYL_SPEC.wide.opacity), strokeWidth: VINYL_SPEC.wide.width })),
-    h('circle', { key: 'rim', cx: c, cy: c, r: spec.rimR, fill: 'none', stroke: VINYL_SPEC.rim.stroke, strokeOpacity: String(VINYL_SPEC.rim.opacity), strokeWidth: VINYL_SPEC.rim.width }),
-    /* 换款盘心(v3.38 二稿):灰过渡环做框→镂空窗口嵌封面(无图回退银 label)→银色小轴孔 */
-    h('circle', { key: 'lead', cx: c, cy: c, r: spec.leadR, fill: VINYL_SPEC.leadRing.fill, stroke: VINYL_SPEC.leadRing.stroke, strokeWidth: 1 }),
-    img ? h('image', { key: 'lblImg', href: img, xlinkHref: img, x: c - spec.labelR, y: c - spec.labelR, width: spec.labelR * 2, height: spec.labelR * 2, preserveAspectRatio: 'xMidYMid slice', clipPath: 'url(#vdHdWin)' }) : h('circle', { key: 'lbl', cx: c, cy: c, r: spec.labelR, fill: 'url(#vdHdSilver)', stroke: VINYL_SPEC.label.stroke, strokeWidth: 1 }),
-    img ? h('circle', { key: 'lblRing', cx: c, cy: c, r: spec.labelR, fill: 'none', stroke: VINYL_SPEC.label.stroke, strokeWidth: 1 }) : null,
-    h('circle', { key: 'hole', cx: c, cy: c, r: spec.holeR, fill: VINYL_SPEC.hole.fill, stroke: VINYL_SPEC.hole.stroke, strokeWidth: 1 }),
-    h('circle', { key: 'sheen', cx: c, cy: c, r: spec.radius, fill: 'url(#vdHdSheen)' }),
+  const win = (100 * 625) / 1024, off = (100 - win) / 2;
+  const winStyle = { position: 'absolute', left: `${off}%`, top: `${off}%`, width: `${win}%`, height: `${win}%`, borderRadius: '50%' };
+  return h('div', {
+    className: 'nm-vinyl-spin' + (playing ? '' : ' nm-vinyl-paused'),
+    style: { position: 'absolute', top: 0, left: 0, width: size, height: size, borderRadius: '50%', overflow: 'hidden' },
+  },
+    img
+      ? h('div', { style: { ...winStyle, backgroundImage: `url("${img}")`, backgroundSize: 'cover', backgroundPosition: 'center' } })
+      : h('div', { style: { ...winStyle, backgroundColor: '#141414' } }),
+    h('div', { style: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backgroundImage: `url(${CLOVER_SRC.uri})`, backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat' } }),
   );
 }
 
@@ -309,11 +291,11 @@ export function HDPlayer() {
               <ParticleRing bins={specBins} rot={ringRot} />
             )}
             {IS_WEB ? (
-              /* v3.3(老板:黑胶没质感):web 换 HD_VINYL_SVG——draft-2 盘体+盘心正圆 label,真黑胶质感 */
+              /* v3.39(老板 1011 三稿):web 盘体=brand 位图 clover.png,封面穿透明窗 */
               /* v3.36:容器层外阴影(draft-2 .vinyl:0 24px 70px 黑55%@230,按盘径等比;圆形 borderRadius
                  使阴影随盘缘正圆——旋转不变,svg 根不背锅见 Fix 2026-09-14) */
               <View style={{ position: 'absolute', top: '50%', left: '50%', width: vinylSize, height: vinylSize, marginLeft: -Math.round(vinylSize / 2), marginTop: -Math.round(vinylSize / 2), borderRadius: Math.round(vinylSize / 2), boxShadow: `0 ${Math.round(24 * vinylSize / 230)}px ${Math.round(70 * vinylSize / 230)}px rgba(0,0,0,.55)`, transform: [{ rotate: String(spinDeg) }] }}>
-                {HD_VINYL_SVG(vinylSize, playing, current.img ? fixCoverUrl(current.img) : undefined)}
+                {HD_VINYL_DISC(vinylSize, playing, current.img ? fixCoverUrl(current.img) : undefined)}
               </View>
             ) : (
               <View style={st.vinylWrap}>
