@@ -960,12 +960,12 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
           <HeroPair heroes={heroes} duo={{ playAll: playProviderAll, shuffle: playProviderShuffle, disabled: !songs.data?.length }} />
 
           {/* [老板 1010·听风重规划] 源内搜索框(netease 布局专属·真端点 netease/search):网易云风顶部搜索位,回车搜/×清空收起 */}
-          {pvLayout === 'netease' ? (
-            <View style={pv.tfSearchBar}>
-              <Icon name="search" size={16} color={C.text3} />
+          {pvLayout === 'netease' || pvLayout === 'media' ? (
+            <View style={[pv.tfSearchBar, IS_HD && pv.tfSearchBarHD]}>
+              <Icon name="search" size={20} color={C.text2} />
               <TextInput
                 style={pv.tfSearchInput}
-                placeholder="搜索听风：歌名 / 歌手"
+                placeholder={pvLayout === 'netease' ? '搜索听风：歌名 / 歌手' : '搜索曲库：歌名 / 歌手'}
                 placeholderTextColor={C.text3}
                 value={tfKw}
                 onChangeText={setTfKw}
@@ -1009,7 +1009,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
           ) : null}
 
           {/* 维度 tabs(按源能力;灰=该源无此维度) [老板 1010] netease(听风)不渲染——网易云风分区纵排 */}
-          {pvLayout !== 'netease' ? <View style={pv.dimtabs}>
+          {pvLayout !== 'netease' && !tfLastKw ? <View style={pv.dimtabs}>
             {dimDefs.map(t => t.on ? (
               <T key={t.key} style={[pv.dimtab, IS_HD && pv.dimtabHD, dim === t.key && pv.dimtabOn]} focusStyle={focus(999)} onPress={() => setDimTab(t.key)}>
                 <Text style={[pv.dimtabT, dim === t.key && pv.dimtabTOn]}>{t.label}</Text>
@@ -1021,7 +1021,27 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
               </View>
             ))}
           </View> : null}
-          {isTf ? (() => {
+          {/* [老板 1011 11:49] media(emby/jf)搜索结果态:与 netease 同款,替换维度内容 */}
+          {pvLayout === 'media' && tfLastKw ? (
+            <View>
+              <SectionHead title={`搜索「${tfLastKw}」`} actionLabel="清除返回" onAction={clearTfSearch} />
+              <SegBody state={tfRes} onRetry={runTfSearch}>
+                <View style={sec.songsBar}>
+                  {tfRes.data?.length ? (<>
+                    <Text style={sec.previewHint}>共 {tfRes.data.length} 首</Text>
+                    <T style={st.shuffleBtn} activeOpacity={0.7} focusStyle={focus(16)}
+                      onPress={() => { if (tfRes.data?.length) playSong(tfRes.data[0], tfRes.data); }}>
+                      <Icon name="play" size={14} color={C.onBrand} />
+                      <Text style={st.shuffleBtnText}>播放全部</Text>
+                    </T>
+                  </>) : null}
+                </View>
+                {(tfRes.data || []).map((s, i) => (
+                  <SongRow key={`pvs-${s.songmid}-${i}`} song={s} playing={current?.songmid === s.songmid} onPress={() => playSong(s, tfRes.data || [])} onMore={() => setActSong(s)} />
+                ))}
+              </SegBody>
+            </View>
+          ) : isTf ? (() => {
             // 听风：providers.playlists 返回六类（liked:/recent:/dl:/mine:/pl:/top: 前缀），拆成分区
             const all = lists.data || [];
             const tfLiked = all.find(x => x.id === 'liked:');
@@ -1061,38 +1081,32 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
               <>
                 {/* [v5.6] 歌单维度 tab:我的音乐/我的歌单/推荐/排行(原分区纵排收进 tab);[老板 1010] netease 布局恒显(网易云风纵排无 tabs) */}
                 {(pvLayout === 'netease' || dim === 'lists') ? (<>
-                {/* 我的音乐：继续收听 / 我喜欢的 双入口卡 */}
+                {/* [老板 1011 11:49] 我的音乐:卡片横向排布——三竖卡横滑(NAS 曲库/最近播放/我喜欢的),修挤在一起无 gap */}
                 <View>
                   <SectionHead title="我的音乐" />
-                  <View style={sec.dualRow}>
-                    {[tfRecent, tfLiked].filter(Boolean as unknown as (v: PvPlaylist | undefined) => v is PvPlaylist).map(pl => (
-                      <T key={pl.id} style={sec.dualCard} activeOpacity={0.85} focusStyle={focus(14)} onPress={() => toDetail(pl)}>
-                        <View style={[sec.dualCover, coverGrad(pl.name) as ViewStyle]}>
-                          <Icon name={pl.id === 'liked:' ? 'heart' : 'play'} size={20} color="#ffffffcc" />
-                        </View>
-                        <View style={{ flex: 1, minWidth: 0 }}>
-                          <Text style={sec.dualTitle} numberOfLines={1}>{pl.name}</Text>
-                          <Text style={sec.dualMeta} numberOfLines={1}>{pl.songCount ? `${pl.songCount} 首` : '—'}</Text>
-                        </View>
-                        <Icon name="chevronright" size={16} color={C.text3} />
+                  <Rail>
+                    {tfDl ? (
+                      <T style={sec.myCard} activeOpacity={0.85} focusStyle={focus(14)} onPress={() => toDetail(tfDl)}>
+                        <View style={[sec.myCardIcon, coverGrad('NAS 曲库') as ViewStyle]}><Icon name="music" size={22} color="#ffffffcc" /></View>
+                        <Text style={sec.myCardName} numberOfLines={1}>NAS 曲库</Text>
+                        <Text style={sec.myCardMeta} numberOfLines={1}>{tfDl.songCount ? `${tfDl.songCount} 首 · 自动落库` : '暂无落库歌曲'}</Text>
                       </T>
-                    ))}
-                  </View>
-                  {/* [老板 1011 11:27] NAS 曲库入口(档案 downloadedSongs;自动落库四触发:整曲播完/播超60s/点赞/入歌单);空也显入口,诚实标注暂无 */}
-                  {tfDl ? (
-                    <View style={sec.dualRow}>
-                      <T style={sec.dualCard} activeOpacity={0.85} focusStyle={focus(14)} onPress={() => toDetail(tfDl)}>
-                        <View style={[sec.dualCover, coverGrad(tfDl.name) as ViewStyle]}>
-                          <Icon name="music" size={20} color="#ffffffcc" />
-                        </View>
-                        <View style={{ flex: 1, minWidth: 0 }}>
-                          <Text style={sec.dualTitle} numberOfLines={1}>NAS 曲库</Text>
-                          <Text style={sec.dualMeta} numberOfLines={1}>{tfDl.songCount ? `${tfDl.songCount} 首 · 自动落库` : '暂无落库歌曲'}</Text>
-                        </View>
-                        <Icon name="chevronright" size={16} color={C.text3} />
+                    ) : null}
+                    {tfRecent ? (
+                      <T style={sec.myCard} activeOpacity={0.85} focusStyle={focus(14)} onPress={() => toDetail(tfRecent)}>
+                        <View style={[sec.myCardIcon, coverGrad('最近播放') as ViewStyle]}><Icon name="play" size={22} color="#ffffffcc" /></View>
+                        <Text style={sec.myCardName} numberOfLines={1}>最近播放</Text>
+                        <Text style={sec.myCardMeta} numberOfLines={1}>{tfRecent.songCount ? `${tfRecent.songCount} 首` : '—'}</Text>
                       </T>
-                    </View>
-                  ) : null}
+                    ) : null}
+                    {tfLiked ? (
+                      <T style={sec.myCard} activeOpacity={0.85} focusStyle={focus(14)} onPress={() => toDetail(tfLiked)}>
+                        <View style={[sec.myCardIcon, coverGrad('我喜欢的音乐') as ViewStyle]}><Icon name="heart" size={22} color="#ffffffcc" /></View>
+                        <Text style={sec.myCardName} numberOfLines={1}>我喜欢的音乐</Text>
+                        <Text style={sec.myCardMeta} numberOfLines={1}>{tfLiked.songCount ? `${tfLiked.songCount} 首` : '—'}</Text>
+                      </T>
+                    ) : null}
+                  </Rail>
                 </View>
 
                 {/* 我的歌单 */}
@@ -1564,6 +1578,11 @@ const sec = StyleSheet.create({
   songsBar: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 },
   dualRow: { gap: 10 },
   dualCard: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, backgroundColor: C.surface, borderRadius: 14, padding: 12 },
+  // [老板 1011 11:49] 我的音乐三入口竖卡(横排)
+  myCard: { width: IS_HD ? 120 : 104, gap: 7 },
+  myCardIcon: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  myCardName: { color: C.text, fontSize: 12, fontWeight: '600' },
+  myCardMeta: { color: C.text3, fontSize: 10 },
   dualCover: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   dualTitle: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '600' },
   dualMeta: { color: C.text2, fontSize: 11, lineHeight: 15, marginTop: 2 },
@@ -1589,8 +1608,10 @@ const pv = StyleSheet.create({
   capT: { color: C.text2, fontSize: 11, fontWeight: '600' },
   capTOn: { color: C.text },
   // [老板 1010·听风重规划] 源内搜索框(netease 布局专属)
-  tfSearchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.card, borderRadius: 12, paddingHorizontal: 14, height: 42, marginTop: 14 },
-  tfSearchInput: { flex: 1, color: C.text, fontSize: 14, paddingVertical: 0, minWidth: 0 },
+  // [老板 1011 11:49] 搜索框统一(探索页/公共库 searchBox 同款 pill:44 高/22 圆角/searchPill 底,HD 灰底)
+  tfSearchBar: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.searchPill, borderRadius: 22, paddingHorizontal: 12, height: 44, marginTop: 14 },
+  tfSearchBarHD: { backgroundColor: C.surface2 },
+  tfSearchInput: { flex: 1, color: C.text, fontSize: 13, paddingVertical: 0, minWidth: 0 },
   dimtabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   dimtab: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 32, paddingHorizontal: 13, borderRadius: 10, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke },
   dimtabHD: { height: 40, paddingHorizontal: 16 },

@@ -541,6 +541,11 @@ export const providerApi = {
         return d.songs.map(x => tfToSongItem(x, a.id));
       });
     }
+    // [老板 1011 11:49] emby/jf 源内搜索:真端点 SearchTerm(IncludeItemTypes=Audio)
+    if (PROTOCOL[a.type] === 'emby' || PROTOCOL[a.type] === 'jellyfin') {
+      const d = (await embyFetch(a, `/Users/${a.userId}/Items?SearchTerm=${encodeURIComponent(kw)}&IncludeItemTypes=Audio&Recursive=true&Limit=50&Fields=Container`)) as { Items?: Record<string, unknown>[] };
+      return (d.Items || []).map(it => mapEmbySong(a, a.id, it));
+    }
     throw new Error('该源暂未接入源内搜索');
   },
 

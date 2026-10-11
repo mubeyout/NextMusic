@@ -18,6 +18,7 @@ const histKv = createMMKV({ id: 'nextmusic-search-history' });
 // lx163b:热搜词(空闲态,与 HD 端同源精选)
 const HOT_WORDS = ['周杰伦', '林俊杰', '邓紫棋', 'Taylor Swift', 'Beyond', '陈奕迅', '孙燕姿', '伍佰'];
 import { lxapi } from '../services/lxapi';
+import { providers, providerApi, PROVIDER_META, PROTOCOL } from '../services/providers'; // [老板 1011 11:49] 第三方媒体检索
 import type { SongItem } from '../services/server';
 
 // 独立搜索页：点击探索页搜索框进入（替代页内内联搜索）
@@ -43,6 +44,7 @@ export function SearchScreen() {
   const [allFailed, setAllFailed] = useState(false);
   const [singers, setSingers] = useState<{ id: string; name: string; img?: string; source?: string }[] | null>(null);
   const [albums, setAlbums] = useState<{ id: string; name: string; singer?: string; img?: string; source?: string }[] | null>(null);
+  const [pvHits, setPvHits] = useState<{ name: string; label: string; songs: SongItem[] }[]>([]); // [老板 1011 11:49] 第三方媒体命中(按账号分区)
   const [history, setHistory] = useState<string[]>(() => { try { return JSON.parse(histKv.getString('h') || '[]'); } catch { return []; } });
   const [fadeA] = useState(new Animated.Value(1)); // lx168:结果区淡入
   useEffect(() => { if (busy) fadeA.setValue(0.35); else Animated.timing(fadeA, { toValue: 1, duration: 200, useNativeDriver: Platform.OS !== 'web' }).start(); }, [busy]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -64,11 +66,16 @@ export function SearchScreen() {
     setBusy(true); setErr(null); setAllFailed(false); setShowAllSongs(false);
     try {
       // lx163e:聚合搜索——五源并行取歌曲,交错合并去重(同名同歌手取先到);歌手/专辑服务器智能选源
-      const [lists, ar, al] = await Promise.all([
+      // [老板 1011 11:49] 第三方媒体并行检索(听风/emby/jf 有源内搜索端点;失败静默不阻塞在线结果)
+      const pvAccounts = providers.all().filter(p => p.type === 'tingfeng' || PROTOCOL[p.type] === 'emby' || PROTOCOL[p.type] === 'jellyfin');
+      const [lists, ar, al, pvSettled] = await Promise.all([
         Promise.all(SOURCES.map(s => lxapi.search(query, s.id).catch(() => [] as SongItem[]))),
         api.searchSingers(query, 'kw').catch(() => [] as never),
         api.searchAlbums(query, 'kw').catch(() => [] as never),
+        Promise.allSettled(pvAccounts.map(p => providerApi.search(p, query).then(songs => ({ name: p.name, label: PROVIDER_META[p.type].label, songs: songs.slice(0, 20) })))),
       ]);
+      const pv = pvSettled.filter(r => r.status === 'fulfilled' && (r as PromiseFulfilledResult<{ songs: SongItem[] }>).value.songs.length).map(r => (r as PromiseFulfilledResult<{ name: string; label: string; songs: SongItem[] }>).value);
+      setPvHits(pv);
       if (my !== seqRef.current) return; // 过期响应:用户已改词,丢弃(否则旧结果盖新词→「搜的和输入的没关系」)
       // 搜索历史(去重置顶,留 10 条)——只在结果被采纳时写入,半截词不进历史
       const h = [query, ...history.filter(x => x !== query)].slice(0, 10);
@@ -80,7 +87,7 @@ export function SearchScreen() {
         if (seen.has(k)) continue; seen.add(k); sg.push(s);
       }
       setResults(sg); setSingers(ar); setAlbums(al);
-      if (!sg.length && !ar.length && !al.length) setAllFailed(true);
+      if (!sg.length && !ar.length && !al.length && !pv.length) setAllFailed(true);
     } catch {
       if (my !== seqRef.current) return;
       setErr('搜索失败：无法连接音源');
@@ -91,7 +98,7 @@ export function SearchScreen() {
   // debounce 自动搜索（与原探索页一致）；清空输入回空闲态（三路结果一并清，综合流默认态也能回 chips）
   useEffect(() => {
     const t = setTimeout(() => {
-      if (!kw.trim()) { setResults(null); setSingers(null); setAlbums(null); setAllFailed(false); return; }
+      if (!kw.trim()) { setResults(null); setSingers(null); setAlbums(null); setPvHits([]); setAllFailed(false); return; }
       if (kw.trim().length >= 2) search(kw);
     }, 600);
     return () => clearTimeout(t);
@@ -247,8 +254,19 @@ export function SearchScreen() {
                 </ScrollView>
               </View>
             ) : null}
+            {(pvHits || []).map(secPv => (
+              <View key={secPv.name} style={{ marginTop: 6 }}>
+                <Text style={st.allSecTitle}>第三方 · {secPv.name}（{secPv.label}）</Text>
+                {secPv.songs.map((s, i) => (
+                  <SongRow key={`pv-${secPv.name}-${s.songmid}-${i}`} song={s}
+                    playing={current?.songmid === s.songmid}
+                    onPress={() => playSong(s, secPv.songs)}
+                    onMore={() => setActSong(s)} />
+                ))}
+              </View>
+            ))}
             {results === null && singers === null && albums === null ? idlePane
-              : !(results || []).length && !(singers || []).length && !(albums || []).length ? (
+              : !(results || []).length && !(singers || []).length && !(albums || []).length && !(pvHits || []).length ? (
                 <Text style={st.errText}>没有找到相关内容，换个关键词试试</Text>
               ) : null}
           </View>
