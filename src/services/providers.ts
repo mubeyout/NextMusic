@@ -500,6 +500,19 @@ export const providerApi = {
     return [];
   },
 
+  /** 源内搜索（[老板 1010·听风重规划] 真端点 netease/search=50 条；其余源引擎未接线→明示报错，前端不渲染搜索位不造假） */
+  async search(a: ProviderAcct, keyword: string): Promise<SongItem[]> {
+    const kw = keyword.trim();
+    if (!kw) return [];
+    if (a.type === 'tingfeng') {
+      return tfRun(a, async s => {
+        const d = await tfCall<TfSongList>(s, `/api/v1/netease/search?keyword=${encodeURIComponent(kw)}&limit=50&offset=0`, { timeout: 25000 });
+        return d.songs.map(x => tfToSongItem(x, a.id));
+      });
+    }
+    throw new Error('该源暂未接入源内搜索');
+  },
+
   /** 服务器端歌单列表（浏览页「歌单」段；听风=我喜欢的音乐+最近播放+我的歌单+推荐歌单+排行榜，id 前缀 liked:/recent:/mine:/pl:/top: 区分） */
   async playlists(a: ProviderAcct): Promise<PvPlaylist[]> {
     if (a.type === 'tingfeng') {

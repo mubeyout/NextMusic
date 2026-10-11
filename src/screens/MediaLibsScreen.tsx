@@ -1,8 +1,9 @@
 // 第三方媒体库：Emby / Jellyfin / Subsonic(Navidrome·道理鱼) / WebDAV / 听风
-// 管理页：账号卡片列表（v3.31 重设计：克制卡+行尾 ⋯ 菜单，去长按暗门）；浏览页（2026-09-17 老板指令·参考 Amcfy 主页）：
-// 连接后是【一个综合页面】——分区纵排（随机来点/专辑/艺术家/歌单 或 听风 我的/推荐/排行/新歌），不再 tab 切换
+// 管理页：账号卡片列表（v3.31 重设计：克制卡+行尾 ⋯ 菜单，去长按暗门）；浏览页：连接后是【一个综合页面】——
+// [老板 1010·按源定制] 拒绝同一个模板：emby/jf=媒体服务器富布局(英雄卡+最新入库+专辑墙/艺人圆墙)·
+// subsonic 系=导航式精简(专辑墙/歌曲前置+3 真实能力芯片)·听风=网易云风(搜索+推荐歌单横滑墙+新歌速递+排行榜入口行)；WebDAV 目录浏览不变
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, type ViewStyle, ScrollView, TouchableOpacity, Image, ActivityIndicator, Dimensions, Animated } from 'react-native';
+import { View, Text, StyleSheet, type ViewStyle, ScrollView, TouchableOpacity, Image, ActivityIndicator, Dimensions, Animated, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useGridBasis } from '../components/GridBasis';
@@ -26,7 +27,7 @@ import { usePlayer } from '../state/PlayerProvider';
 import { library } from '../state/library';
 import { enqueueDownload, downloads as dlStore } from '../services/downloads';
 import {
-  providers, providerApi, PROVIDER_META,
+  providers, providerApi, PROVIDER_META, PROTOCOL,
   type ProviderAcct, type ProviderType, type PvArtist, type PvAlbum, type PvPlaylist,
 } from '../services/providers';
 import { localLib, checkLocalLib, type LocalLibConfig } from '../services/localLibrary';
@@ -373,7 +374,17 @@ interface PvCaps {
   latest: boolean;    // 最新入库端点(Items/Latest)
   albums: boolean; artists: boolean; // 维度 tabs 显隐
 }
-type DimKey = 'songs' | 'albums' | 'artists' | 'lists' | 'favs' | 'folders' | 'radio';
+type DimKey = 'songs' | 'albums' | 'artists' | 'lists'; // [老板 1010] 只留真实维度键;收藏/文件夹/电台无端点恒死,死键直接删
+// [老板 1010·按源定制] 分源布局:PROTOCOL 映射分流,不改路由结构——
+// media=emby/jf 媒体服务器富布局 · lean=subsonic 系导航式精简 · netease=听风网易云风 · generic=v2 族保持通用维度 tabs(daoliyu/plex 等后续批)
+type PvLayout = 'media' | 'lean' | 'netease' | 'generic';
+function pvLayoutOf(t: ProviderType): PvLayout {
+  const p = PROTOCOL[t];
+  if (p === 'emby' || p === 'jellyfin') return 'media';
+  if (p === 'subsonic') return 'lean';
+  if (p === 'tingfeng') return 'netease';
+  return 'generic';
+}
 const PV_CAPS: Record<ProviderType, PvCaps> = {
   // 六已接源(增量批1)
   emby:     { link: true, transcode: true,  radio: true,  star: true,  scrobble: true,  playlist: true,  progress: false, latest: true,  albums: true,  artists: true },
@@ -391,15 +402,16 @@ const PV_CAPS: Record<ProviderType, PvCaps> = {
   feiniu:         { link: true, transcode: false, radio: false, star: false, scrobble: false, playlist: true, progress: false, latest: false, albums: true, artists: true },
   daoliyu:        { link: true, transcode: false, radio: false, star: false, scrobble: true,  playlist: true, progress: false, latest: false, albums: true, artists: true },
 };
-// 能力芯片展示序列(基准稿 caps 行;dim=该源引擎未接)
-const CAP_DEFS: { key: 'link' | 'transcode' | 'radio' | 'star' | 'scrobble' | 'playlist' | 'progress'; label: string }[] = [
+// [老板 1010·按源定制] 能力芯片键序(渲染按布局分流,见组件内 chips):
+// lean 只留真实接线位(相似电台/收藏打星/转码限码率,删不 dim)·media 全量但转码 dim(直流用户无感)+进度芯片删(ABS 专属)·
+// netease 不渲染芯片条(网易云风无能力条)·generic 只渲染已接芯片(死芯片不显示)
+const CAP_KEYS: { key: 'link' | 'transcode' | 'radio' | 'star' | 'scrobble' | 'playlist'; label: string }[] = [
   { key: 'link', label: '万能取链' },
   { key: 'transcode', label: '服务端转码' },
   { key: 'radio', label: '相似电台' },
   { key: 'star', label: '收藏打星' },
   { key: 'scrobble', label: '播放上报' },
   { key: 'playlist', label: '歌单同步' },
-  { key: 'progress', label: '进度同步' },
 ];
 // [批5a] 音质档按钮组(基准稿 qrow):v=kbps 传引擎限码率(subsonic maxBitRate / emby·jf audioBitRate);末档=无损(原始流直出)
 // 仅服务端转码能力源(caps.transcode:emby/jf/subsonic系)渲染——WebDAV/听风/v2 族无端点不显,不亮不造假
@@ -455,6 +467,10 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
   const [latest, setLatest] = useState<SegState<PvAlbum[]>>({ data: null, err: null, busy: false });
   // [批5a] 账号级音质档重渲染钟摆(档位真身存 ProviderAcct.quality,qrow 点选落盘后 setQSel 触发重读 acct)
   const [, setQSel] = useState<number | undefined>(undefined);
+  // [老板 1010·听风重规划] 源内搜索(netease 布局专属·真端点 netease/search):关键词/结果/最近一次搜索词
+  const [tfKw, setTfKw] = useState('');
+  const [tfLastKw, setTfLastKw] = useState('');
+  const [tfRes, setTfRes] = useState<SegState<SongItem[]>>({ data: null, err: null, busy: false });
 
   // webdav 状态（沿用目录浏览）
   const [davDir, setDavDir] = useState('/');
@@ -472,6 +488,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
     setSongs({ data: null, err: null, busy: false });
     setLists({ data: null, err: null, busy: false });
     setLatest({ data: null, err: null, busy: false });
+    setTfKw(''); setTfLastKw(''); setTfRes({ data: null, err: null, busy: false });
   };
 
   // 分段数据加载器（懒加载与重试共用；不能只重置 state 依赖 effect 重跑——deps 不含 state）
@@ -558,6 +575,18 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
   };
 
   const refreshSongs = () => { if (acct) loadSongs(acct); };
+
+  // [老板 1010·听风重规划] 源内搜索:真端点 netease/search(只跟听风引擎);清空即收起结果
+  const runTfSearch = () => {
+    const kw = tfKw.trim();
+    if (!kw || !acct) return;
+    setTfLastKw(kw);
+    setTfRes({ data: null, err: null, busy: true });
+    providerApi.search(acct, kw)
+      .then(d => setTfRes({ data: d, err: null, busy: false }))
+      .catch(e => setTfRes({ data: null, err: (e as Error).message, busy: false }));
+  };
+  const clearTfSearch = () => { setTfKw(''); setTfLastKw(''); setTfRes({ data: null, err: null, busy: false }); };
 
   // ⑦.3-v2:整库刷新(重置分区缓存后重拉)+源健康状态点(全部分区失败=断连/部分失败=延迟/正常)
   const refreshAll = () => {
@@ -695,15 +724,19 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
     });
   }
 
-  // 维度 tabs(按源能力;count=SegState 真值;收藏/文件夹/电台=后续批能力,本批六源全灰)
-  const dimDefs: { key: DimKey; label: string; on: boolean; count?: string }[] = [
+  const pvLayout = pvLayoutOf(acct.type); // [老板 1010·按源定制] 布局分流:media/lean/netease/generic
+  // 维度 tabs(按源能力;count=SegState 真值) [老板 1010] 死键(收藏/文件夹/电台=恒灰)删除不渲染;
+  // lean(subsonic 系)导航式精简=高频前置(专辑墙/歌曲在先);netease(听风)不渲染 tabs——网易云风分区纵排
+  const dimDefs: { key: DimKey; label: string; on: boolean; count?: string }[] = pvLayout === 'lean' ? [
+    { key: 'albums', label: '专辑', on: caps.albums, count: albums.data ? fmtCap(albums.data.length, listCap) : undefined },
+    { key: 'songs', label: '歌曲', on: true, count: songs.data ? String(songs.data.length) : undefined },
+    { key: 'artists', label: '艺人', on: caps.artists, count: artists.data ? fmtCap(artists.data.length, listCap) : undefined },
+    { key: 'lists', label: '歌单', on: caps.playlist, count: lists.data ? String(lists.data.length) : undefined },
+  ] : [
     { key: 'songs', label: isTf ? '新歌' : '歌曲', on: true, count: songs.data ? String(songs.data.length) : undefined },
     { key: 'albums', label: '专辑', on: caps.albums, count: albums.data ? fmtCap(albums.data.length, listCap) : undefined },
     { key: 'artists', label: '艺人', on: caps.artists, count: artists.data ? fmtCap(artists.data.length, listCap) : undefined },
     { key: 'lists', label: '歌单', on: caps.playlist, count: lists.data ? String(lists.data.length) : undefined },
-    { key: 'favs', label: '收藏', on: false },
-    { key: 'folders', label: '文件夹', on: false },
-    { key: 'radio', label: '电台', on: false },
   ];
   const dimOk = (k: DimKey) => (k === 'songs' ? true : k === 'albums' ? caps.albums : k === 'artists' ? caps.artists : k === 'lists' ? caps.playlist : false);
   const dim = dimOk(dimTab) ? dimTab : (caps.albums ? 'albums' : 'lists'); // 切账号后当前维度不可用时回退默认
@@ -927,18 +960,38 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
           {/* 英雄卡对(仅第三方页保留 duo 入口行——英雄卡=源身份卡非动作卡):主卡=品牌渐变身份卡(真实统计+连接 mini+播放钮);副卡=violet 最新入库(有 Latest 数据才渲染) */}
           <HeroPair heroes={heroes} duo={{ playAll: playProviderAll, shuffle: playProviderShuffle, disabled: !songs.data?.length }} />
 
-          {/* 能力芯片 caps:按源引擎实际接线显隐(dim=不支持)——万能取链/服务端转码/相似电台/收藏打星/播放上报/歌单同步/进度同步 */}
-          <View style={pv.caps}>
-            {CAP_DEFS.map(cd => {
-              const on = caps[cd.key];
-              return (
-                <View key={cd.key} style={[pv.cap, !on && pv.capDim]}>
-                  <View style={[pv.capDot, { backgroundColor: on ? C.brand : C.text3 }]} />
-                  <Text style={[pv.capT, on && pv.capTOn]}>{cd.label}</Text>
+          {/* [老板 1010·听风重规划] 源内搜索框(netease 布局专属·真端点 netease/search):网易云风顶部搜索位,回车搜/×清空收起 */}
+          {pvLayout === 'netease' ? (
+            <View style={pv.tfSearchBar}>
+              <Icon name="search" size={16} color={C.text3} />
+              <TextInput
+                style={pv.tfSearchInput}
+                placeholder="搜索听风：歌名 / 歌手"
+                placeholderTextColor={C.text3}
+                value={tfKw}
+                onChangeText={setTfKw}
+                onSubmitEditing={runTfSearch}
+                returnKeyType="search"
+              />
+              {tfKw ? (
+                <T focusStyle={focus(10)} onPress={clearTfSearch} hitSlop={6}>
+                  <Icon name="close" size={14} color={C.text3} />
+                </T>
+              ) : null}
+            </View>
+          ) : null}
+
+          {/* 能力芯片 caps [老板 1010·按源定制]:netease(听风)不渲染能力条;lean(subsonic系)只留真实接线位(相似电台/收藏打星/服务端转码);media/generic 只亮已接芯片(死芯片不显示·拒绝造假) */}
+          {pvLayout !== 'netease' ? (
+            <View style={pv.caps}>
+              {CAP_KEYS.filter(cd => (pvLayout === 'lean' ? ['radio', 'star', 'transcode'].includes(cd.key) : true) && caps[cd.key]).map(cd => (
+                <View key={cd.key} style={pv.cap}>
+                  <View style={[pv.capDot, { backgroundColor: C.brand }]} />
+                  <Text style={[pv.capT, pv.capTOn]}>{cd.label}</Text>
                 </View>
-              );
-            })}
-          </View>
+              ))}
+            </View>
+          ) : null}
 
           {/* [批5a] 音质档 qrow(基准稿):仅服务端转码能力源显(emby/jf/subsonic系)——128/192/256/320/无损;当前档高亮,点选持久化到账号(ProviderAcct.quality),取链时引擎读取 */}
           {caps.transcode ? (
@@ -956,8 +1009,8 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
             </View>
           ) : null}
 
-          {/* 维度 tabs(按源能力;灰=该源无此维度) */}
-          <View style={pv.dimtabs}>
+          {/* 维度 tabs(按源能力;灰=该源无此维度) [老板 1010] netease(听风)不渲染——网易云风分区纵排 */}
+          {pvLayout !== 'netease' ? <View style={pv.dimtabs}>
             {dimDefs.map(t => t.on ? (
               <T key={t.key} style={[pv.dimtab, IS_HD && pv.dimtabHD, dim === t.key && pv.dimtabOn]} focusStyle={focus(999)} onPress={() => setDimTab(t.key)}>
                 <Text style={[pv.dimtabT, dim === t.key && pv.dimtabTOn]}>{t.label}</Text>
@@ -968,7 +1021,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                 <Text style={pv.dimtabTOff}>{t.label}</Text>
               </View>
             ))}
-          </View>
+          </View> : null}
           {isTf ? (() => {
             // 听风：providers.playlists 返回五类（liked:/recent:/mine:/pl:/top: 前缀），拆成分区
             const all = lists.data || [];
@@ -981,10 +1034,33 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
               acctId: acct.id, kind: 'playlist', id: pl.id, name: pl.name, cover: pl.cover,
               sub: pl.songCount ? `${pl.songCount} 首` : undefined,
             });
+            // [老板 1010·听风重规划] 搜索结果态:tfLastKw 非空时整页切结果区(清空返回正常分区)
+            if (tfLastKw) {
+              return (
+                <View>
+                  <SectionHead title={`搜索「${tfLastKw}」`} actionLabel="清除返回" onAction={clearTfSearch} />
+                  <SegBody state={tfRes} onRetry={runTfSearch}>
+                    <View style={sec.songsBar}>
+                      {tfRes.data?.length ? (<>
+                        <Text style={sec.previewHint}>共 {tfRes.data.length} 首</Text>
+                        <T style={st.shuffleBtn} activeOpacity={0.7} focusStyle={focus(16)}
+                          onPress={() => { if (tfRes.data?.length) playSong(tfRes.data[0], tfRes.data); }}>
+                          <Icon name="play" size={14} color={C.onBrand} />
+                          <Text style={st.shuffleBtnText}>播放全部</Text>
+                        </T>
+                      </>) : null}
+                    </View>
+                    {(tfRes.data || []).map((s, i) => (
+                      <SongRow key={`tfs-${s.songmid}-${i}`} song={s} playing={current?.songmid === s.songmid} onPress={() => playSong(s, tfRes.data || [])} onMore={() => setActSong(s)} />
+                    ))}
+                  </SegBody>
+                </View>
+              );
+            }
             return (
               <>
-                {/* [v5.6] 歌单维度 tab:我的音乐/我的歌单/推荐/排行(原分区纵排收进 tab) */}
-                {dim === 'lists' ? (<>
+                {/* [v5.6] 歌单维度 tab:我的音乐/我的歌单/推荐/排行(原分区纵排收进 tab);[老板 1010] netease 布局恒显(网易云风纵排无 tabs) */}
+                {(pvLayout === 'netease' || dim === 'lists') ? (<>
                 {/* 我的音乐：继续收听 / 我喜欢的 双入口卡 */}
                 <View>
                   <SectionHead title="我的音乐" />
@@ -1066,8 +1142,8 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                 ) : null}
                 </>) : null}
 
-                {/* 新歌速递([v5.6] 歌曲维度 tab) */}
-                {dim === 'songs' ? (
+                {/* 新歌速递([v5.6] 歌曲维度 tab);[老板 1010] netease 布局恒显 */}
+                {(pvLayout === 'netease' || dim === 'songs') ? (
                 <View>
                   <SectionHead title="新歌速递" actionLabel="换一批" onAction={refreshSongs} />
                   <SegBody state={songs} onRetry={refreshSongs}>
@@ -1156,7 +1232,17 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                 <SectionHead title="艺术家" count={artists.data?.length} />
                 <SegBody state={artists} onRetry={() => { setArtists({ data: null, err: null, busy: false }); if (acct) loadArtists(acct); }}>
                   {artists.data && artists.data.length === 0 ? <EmptyState icon="music" title="没有找到艺术家" /> : null}
-                  {(artists.data || []).map(ar => (
+                  {/* [老板 1010·按源定制] media(emby/jf)艺人=圆头像墙(媒体服务器富布局);lean/generic 保持行列表(导航式精简) */}
+                  {pvLayout === 'media' ? (
+                    <Rail>
+                      {(artists.data || []).map(ar => (
+                        <PvCard key={ar.id} round cover={ar.cover} name={ar.name} meta={ar.albumCount ? `${ar.albumCount} 张专辑` : undefined}
+                          onLongPress={caps.radio ? () => playRadio(ar.id, ar.name, 'artist', ar.name) : undefined}
+                          onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'artist', id: ar.id, name: ar.name, sub: ar.albumCount ? `${ar.albumCount} 张专辑` : undefined })} />
+                      ))}
+                    </Rail>
+                  ) : (
+                  (artists.data || []).map(ar => (
                     <T key={ar.id} style={[st.artistRow, IS_HD && bv.row]} activeOpacity={0.75} focusStyle={focus(12)}
                       onLongPress={caps.radio ? () => playRadio(ar.id, ar.name, 'artist', ar.name) : undefined}
                       onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'artist', id: ar.id, name: ar.name, sub: ar.albumCount ? `${ar.albumCount} 张专辑` : undefined })}>
@@ -1168,7 +1254,8 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                       </View>
                       <Icon name="chevronright" size={18} color={C.text3} />
                     </T>
-                  ))}
+                  ))
+                  )}
                 </SegBody>
               </View>
               ) : null}
@@ -1486,6 +1573,9 @@ const pv = StyleSheet.create({
   capDot: { width: 5, height: 5, borderRadius: 3 },
   capT: { color: C.text2, fontSize: 11, fontWeight: '600' },
   capTOn: { color: C.text },
+  // [老板 1010·听风重规划] 源内搜索框(netease 布局专属)
+  tfSearchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.card, borderRadius: 12, paddingHorizontal: 14, height: 42, marginTop: 14 },
+  tfSearchInput: { flex: 1, color: C.text, fontSize: 14, paddingVertical: 0, minWidth: 0 },
   dimtabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   dimtab: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 32, paddingHorizontal: 13, borderRadius: 10, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke },
   dimtabHD: { height: 40, paddingHorizontal: 16 },
