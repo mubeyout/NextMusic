@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon, type IconName } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, FS, SP } from '../theme/tokens';
 import { useApp } from '../state/AppState';
 import { PageHeader } from '../components/PageChrome';
 import { activeSources } from '../services/customSource';
@@ -93,18 +93,18 @@ export function SettingsScreen() {
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   header: { height: 40, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 8 },
-  title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700', textAlign: 'center' },
+  title: { flex: 1, color: C.text, fontSize: FS.display, lineHeight: 35, fontWeight: '700', textAlign: 'center' },
   brandCard: {
     height: 64, borderRadius: 14, backgroundColor: C.surface,
-    flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16,
+    flexDirection: 'row', alignItems: 'center', gap: SP.xl, paddingHorizontal: 16,
   },
   brandDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: C.brand },
-  brandTitle: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '600' },
-  brandSub: { color: C.text2, fontSize: 11, lineHeight: 15 },
+  brandTitle: { color: C.text, fontSize: FS.lg, lineHeight: 20, fontWeight: '600' },
+  brandSub: { color: C.text2, fontSize: FS.sm, lineHeight: 15 },
   group: { borderRadius: 14, backgroundColor: C.surface, marginTop: 14, paddingHorizontal: 16 },
-  row: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
+  row: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: SP.xl, paddingVertical: 8 },
   rowDivide: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.strokeFaint },
   rowIconWrap: { width: 36, height: 36, borderRadius: 10, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  rowTitle: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '500' },
-  rowSub: { color: C.text2, fontSize: 11, lineHeight: 15 },
+  rowTitle: { color: C.text, fontSize: FS.lg, lineHeight: 20, fontWeight: '500' },
+  rowSub: { color: C.text2, fontSize: FS.sm, lineHeight: 15 },
 });

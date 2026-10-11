@@ -401,7 +401,7 @@ function RandCard({ song, onPress }: { song: LibSong; onPress: () => void }) {
           <View style={[ABS, { backgroundColor: g1, opacity: 0.55 }]} />
         )}
       </View>
-      <View style={{ padding: 6, gap: 2 }}>
+      <View style={{ padding: 6, gap: SP.xs }}>
         <Text style={d.randName} numberOfLines={1}>{song.name}</Text>
         <Text style={d.randSub} numberOfLines={1}>{song.singer}</Text>
       </View>
@@ -413,9 +413,9 @@ function RandCard({ song, onPress }: { song: LibSong; onPress: () => void }) {
 // fill=true=展开格内自适应宽(100%+aspectRatio);否则 rail 固定 px
 function ArtistCircle({ a, fill, onPress }: { a: LibArtist; fill?: boolean; onPress: () => void }) {
   const { elRef, onHoverIn, onHoverOut, cardStyle } = useHoverCard(a.name); // [老板 1011 12:34] nm-card 同款投影
-  const wStyle = fill ? { width: '100%' } : { width: IS_HD ? 96 : 72 };
+  const wStyle = fill ? { width: '100%' } : { width: IS_HD ? 96 : 76 }; // [LEO 1011 统一令] 72→76 与搜索页歌手圆卡同规格
   return (
-    <TouchableOpacity ref={elRef as never} style={[wStyle, { gap: 6, alignItems: 'center' }, cardStyle as never]} activeOpacity={0.85} onPress={onPress}
+    <TouchableOpacity ref={elRef as never} style={[wStyle, { gap: SP.sm, alignItems: 'center' }, cardStyle as never]} activeOpacity={0.85} onPress={onPress}
       {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}>
       <View style={[wStyle, { aspectRatio: 1, borderRadius: 999, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }, !a.coverFile && { backgroundColor: C.artTint2 }]}>
         {a.coverFile ? (
@@ -674,7 +674,7 @@ const d = StyleSheet.create({
   retryBtn: { borderWidth: 1, borderColor: C.stroke, borderRadius: 999, paddingHorizontal: 18, paddingVertical: 7, marginTop: 8 },
   retryText: { color: C.text2, fontSize: FS.md, fontWeight: '700' },
   errRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SP.lg, marginHorizontal: 16, marginTop: 8, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: C.surface2 },
-  errT: { flex: 1, color: '#E8618C', fontSize: FS.body },
+  errT: { flex: 1, color: C.danger, fontSize: FS.body },
   // ④专辑展开墙(在 LibraryHome wrap 内,免水平 padding;DiscCard 自带列基分档)
   wallSec: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl, paddingTop: 2, paddingBottom: 8 },
   wallSecHD: { gap: SP.wide },
@@ -682,11 +682,11 @@ const d = StyleSheet.create({
   cwall: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl, paddingTop: 2, paddingBottom: 8 },
   // ⑤歌手行列表(≤8)→ [批次1] 统一件 ArtistRow(样式随局部版退役)
   rows: { gap: SP.md },
-  artInit: { color: C.brandText, fontSize: 17, fontWeight: '700' },
-  randName: { color: C.text, fontSize: 10.5, lineHeight: 14, fontWeight: '600' },
-  acName: { color: C.text, fontSize: 12, lineHeight: 16, fontWeight: '600', textAlign: 'center', maxWidth: '100%' },
-  randSub: { color: C.text3, fontSize: 9, lineHeight: 12 }, // 参考 MediaLibsScreen st.artistInitial
-  artInitBig: { fontSize: 24 },
+  artInit: { color: C.brandText, fontSize: FS.headline, fontWeight: '700' },
+  randName: { color: C.text, fontSize: FS.sm, lineHeight: 14, fontWeight: '600' },
+  acName: { color: C.text, fontSize: FS.body, lineHeight: 16, fontWeight: '600', textAlign: 'center', maxWidth: '100%' },
+  randSub: { color: C.text3, fontSize: FS.xs, lineHeight: 12 }, // 参考 MediaLibsScreen st.artistInitial
+  artInitBig: { fontSize: FS.display },
   // rail 卡文字
   railNameT: { color: C.text, fontSize: FS.body, lineHeight: 16, fontWeight: '600', maxWidth: IS_HD ? 96 : 78 },
   railSubT: { color: C.text3, fontSize: FS.xs, lineHeight: 13, maxWidth: IS_HD ? 96 : 78 },
@@ -710,5 +710,5 @@ const d = StyleSheet.create({
   albSub: { color: C.text3, fontSize: FS.body, marginTop: 4 },
   grp: { color: C.text3, fontSize: FS.sm, letterSpacing: 1, marginHorizontal: 16, marginTop: 14, marginBottom: 6 },
   playAll: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.sm, backgroundColor: C.brand, borderRadius: 999, paddingVertical: 9, paddingHorizontal: 16, marginTop: 10, alignSelf: 'flex-start' as never },
-  playAllT: { color: '#04120a', fontSize: FS.md, fontWeight: '700' },
+  playAllT: { color: C.onBrand, fontSize: FS.md, fontWeight: '700' },
 });

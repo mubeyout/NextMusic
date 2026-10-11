@@ -20,6 +20,7 @@ import { NativeModules } from 'react-native';
 import { SelectSheet } from '../components/SelectSheet';
 import { useFeatureGate, FeatureGateModal } from '../components/FeatureGate';
 import { LockGlyph } from '../components/GateSheet';
+import { FS, SP } from '../theme/tokens';
 
 const Restart = NativeModules.AppRestart as { restart: () => void } | undefined;
 const ACCENTS = [
@@ -167,7 +168,7 @@ export function HDSettingsScreen() {
             <View style={{ marginTop: 8, maxHeight: 220 }}>
               <ScrollView showsVerticalScrollIndicator>
                 {cacheFiles.slice(0, 50).map(f => (
-                  <Text key={f.name} numberOfLines={1} style={{ color: C.text2, fontSize: 11.5, lineHeight: 20 }}>
+                  <Text key={f.name} numberOfLines={1} style={{ color: C.text2, fontSize: FS.body, lineHeight: 20 }}>
                     · {f.name} <Text style={{ color: C.text3 }}>{fmtBytes(f.size)}</Text>
                   </Text>
                 ))}
@@ -176,7 +177,7 @@ export function HDSettingsScreen() {
           ) : (
             <Text style={[st.cacheInfo, { color: C.text3, marginTop: 4 }]}>缓存为空</Text>
           )}
-          <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
+          <View style={{ flexDirection: 'row', gap: SP.lg, marginTop: 18 }}>
             <HDTouch style={st.cacheBtn} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }} onPress={() => { loadCacheStats(); setCacheFiles(undefined); toast('已刷新'); }}>
               <Text style={st.cacheBtnText}>刷新统计</Text>
             </HDTouch>
@@ -200,7 +201,7 @@ export function HDSettingsScreen() {
     ) : null}
     <ScrollView
       style={st.screen}
-      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 30, paddingBottom: IS_WEB ? 30 + 64 + 20 : 30, gap: 14, ...(IS_WEB ? { width: '100%', alignSelf: 'stretch' } : {}) }} // #036:web playbar 绝对定位悬浮,底部让位 64+20(原 30 末行被遮)
+      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 30, paddingBottom: IS_WEB ? 30 + 64 + 20 : 30, gap: SP.xxl, ...(IS_WEB ? { width: '100%', alignSelf: 'stretch' } : {}) }} // #036:web playbar 绝对定位悬浮,底部让位 64+20(原 30 末行被遮)
       showsVerticalScrollIndicator={false}
     >
       <View style={st.head}>
@@ -222,7 +223,7 @@ export function HDSettingsScreen() {
       </View>
 
       {/* 行式设置卡 */}
-      <View style={{ gap: 8 }}>
+      <View style={{ gap: SP.md }}>
         {carRows.map((r, i) => <SettingsRow key={`car_${i}`} row={r} />)}
         {rows[tab].map((r, i) => <SettingsRow key={`${r.title}_${i}`} row={r} />)}
       </View>
@@ -258,8 +259,8 @@ function SettingsRow({ row }: { row: RowDef }) {
       {row.icon ? (
         <View style={st.rowIcon}><Icon name={row.icon} size={14} color={C.text3} /></View>
       ) : null}
-      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+      <View style={{ flex: 1, minWidth: 0, gap: SP.xs }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm }}>
           {row.kind === 'toggle' && row.locked ? <LockGlyph size={11} color="#595959" /> : null}
           <Text style={st.rowTitle}>{row.title}</Text>
         </View>
@@ -290,24 +291,24 @@ function SettingsRow({ row }: { row: RowDef }) {
 
 const st = StyleSheet.create({
   cacheMask: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,.55)', zIndex: 100, alignItems: 'center', justifyContent: 'center' },
-  cachePanel: { width: 420, maxWidth: '90%', backgroundColor: C.elev, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, padding: 22, gap: 4 },
-  cacheTitle: { color: C.text, fontSize: 17, fontWeight: '800' },
-  cacheInfo: { color: C.text2, fontSize: 12, lineHeight: 18 },
+  cachePanel: { width: 420, maxWidth: '90%', backgroundColor: C.elev, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, padding: 22, gap: SP.xs },
+  cacheTitle: { color: C.text, fontSize: FS.headline, fontWeight: '800' },
+  cacheInfo: { color: C.text2, fontSize: FS.body, lineHeight: 18 },
   cacheBtn: { flex: 1, height: 38, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
-  cacheBtnText: { color: C.text, fontSize: 12.5, fontWeight: '600' },
+  cacheBtnText: { color: C.text, fontSize: FS.md, fontWeight: '600' },
   screen: { flex: 1, backgroundColor: C.bg },
-  head: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  head: { flexDirection: 'row', alignItems: 'center', gap: SP.lg },
   backBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   focus: { borderWidth: 2, borderColor: C.brand, borderRadius: 10 },
   title: { color: C.text, fontSize: H.font.hero, fontWeight: '800', flex: 1 },
-  tabRow: { flexDirection: 'row', gap: 2, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border, paddingBottom: 2 },
+  tabRow: { flexDirection: 'row', gap: SP.xs, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border, paddingBottom: 2 },
   tabItem: { paddingHorizontal: 13, paddingVertical: 9, borderRadius: 8, minHeight: 38, justifyContent: 'center' },
   tabFocus: { borderWidth: 1.5, borderColor: C.brand, borderRadius: 8 },
   tabText: { color: C.text3, fontSize: H.font.md, fontWeight: '500' },
   tabTextOn: { color: C.text, fontWeight: '700' },
   tabBar: { height: 2.5, borderRadius: 2, backgroundColor: C.brand, marginTop: 4 },
   row: {
-    flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 64,
+    flexDirection: 'row', alignItems: 'center', gap: SP.xxl, minHeight: 64,
     backgroundColor: C.surface, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth,
     borderColor: C.border, paddingHorizontal: 18, paddingVertical: 10,
   },
@@ -316,8 +317,8 @@ const st = StyleSheet.create({
   rowDesc: { color: C.text3, fontSize: H.font.xs, lineHeight: 15 },
   tgl: { width: 42, height: 23, borderRadius: 12, backgroundColor: C.track, padding: 2 },
   tglOn: { backgroundColor: C.brand },
-  tglDot: { width: 19, height: 19, borderRadius: 10, backgroundColor: '#8A8F98' },
+  tglDot: { width: 19, height: 19, borderRadius: 10, backgroundColor: C.text3 },
   tglDotOn: { alignSelf: 'flex-end', backgroundColor: C.onBrand },
-  sel: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.elev, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+  sel: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, backgroundColor: C.elev, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
   selText: { color: C.text2, fontSize: H.font.sm },
 });

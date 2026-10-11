@@ -3,7 +3,7 @@ import { Image, View, Text, TouchableOpacity, TextInput, StyleSheet, ScrollView,
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { createMMKV } from 'react-native-mmkv';
-import { C } from '../theme/tokens';
+import { C, FS, SP } from '../theme/tokens';
 import { useApp } from '../state/AppState';
 
 // Figma NM-SERVER-001: server address card + connect button + capabilities + back
@@ -98,26 +98,26 @@ export function ServerScreen() {
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg, paddingHorizontal: 20, alignSelf: 'center', width: '100%', maxWidth: 470 }, // lx167:列宽上限
-  content: { gap: 17 },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  content: { gap: SP.section },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: SP.md },
   brandDot: { width: 17, height: 17, borderRadius: 9, backgroundColor: C.brand },
-  brandName: { color: C.text, fontSize: 15, lineHeight: 18, fontWeight: '700' },
-  header: { gap: 5 },
-  title: { color: C.text, fontSize: 21, lineHeight: 26, fontWeight: '700' }, // lx167:稍小精致
-  subtitle: { color: C.text2, fontSize: 12, lineHeight: 14 },
-  card: { borderRadius: 12, backgroundColor: C.surface, padding: 14, gap: 11 }, // lx167:紧凑
-  fieldLabel: { color: C.text, fontSize: 12, lineHeight: 14, fontWeight: '500' },
+  brandName: { color: C.text, fontSize: FS.xl, lineHeight: 18, fontWeight: '700' },
+  header: { gap: SP.sm },
+  title: { color: C.text, fontSize: FS.h1, lineHeight: 26, fontWeight: '700' }, // lx167:稍小精致
+  subtitle: { color: C.text2, fontSize: FS.body, lineHeight: 14 },
+  card: { borderRadius: 12, backgroundColor: C.surface, padding: 14, gap: SP.xl }, // lx167:紧凑
+  fieldLabel: { color: C.text, fontSize: FS.body, lineHeight: 14, fontWeight: '500' },
   input: { height: 42, borderRadius: 11, backgroundColor: C.surface2, paddingHorizontal: 13, justifyContent: 'center' },
-  inputText: { color: C.text, fontSize: 13, padding: 0 },
-  fieldHint: { color: C.text2, fontSize: 10, lineHeight: 12 },
+  inputText: { color: C.text, fontSize: FS.md, padding: 0 },
+  fieldHint: { color: C.text2, fontSize: FS.xs, lineHeight: 12 },
   quickAction: { height: 40, borderRadius: 12, borderWidth: 1, borderColor: C.strokeStrong, alignItems: 'center', justifyContent: 'center' },
-  quickText: { color: C.text, fontSize: 14, lineHeight: 17, fontWeight: '500' },
+  quickText: { color: C.text, fontSize: FS.lg, lineHeight: 17, fontWeight: '500' },
   btnPrimary: { height: 42, borderRadius: 11, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
-  btnPrimaryText: { color: C.onBrand, fontSize: 14, lineHeight: 17, fontWeight: '500' },
-  err: { color: '#FF6B6B', fontSize: 12, lineHeight: 15, textAlign: 'center' },
-  capCard: { borderRadius: 14, backgroundColor: C.surface, padding: 16, gap: 6 },
-  capTitle: { color: C.text, fontSize: 13, lineHeight: 16, fontWeight: '500' },
-  capBody: { color: C.text2, fontSize: 10, lineHeight: 12 },
+  btnPrimaryText: { color: C.onBrand, fontSize: FS.lg, lineHeight: 17, fontWeight: '500' },
+  err: { color: C.danger, fontSize: FS.body, lineHeight: 15, textAlign: 'center' },
+  capCard: { borderRadius: 14, backgroundColor: C.surface, padding: 16, gap: SP.sm },
+  capTitle: { color: C.text, fontSize: FS.md, lineHeight: 16, fontWeight: '500' },
+  capBody: { color: C.text2, fontSize: FS.xs, lineHeight: 12 },
   backLink: { height: 44, alignItems: 'center', justifyContent: 'center' },
-  backText: { color: C.text, fontSize: 14, lineHeight: 17, fontWeight: '500' },
+  backText: { color: C.text, fontSize: FS.lg, lineHeight: 17, fontWeight: '500' },
 });

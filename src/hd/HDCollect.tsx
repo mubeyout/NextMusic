@@ -12,6 +12,7 @@ import { sync, subscribeSync } from '../services/sync';
 import { useApp } from '../state/AppState';
 import { toast } from '../components/Dialog';
 import type { SongItem } from '../services/server';
+import { FS, SP } from '../theme/tokens';
 
 export function HDCollect({ song, onClose }: { song: SongItem; onClose: () => void }) {
   const { connected, token } = useApp();
@@ -63,7 +64,7 @@ export function HDCollect({ song, onClose }: { song: SongItem; onClose: () => vo
               <Icon name="close" size={13} color={C.text2} />
             </HDTouch>
           </View>
-          <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingVertical: 2 }}>
+          <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: SP.sm, paddingVertical: 2 }}>
             <HDTouch style={st.row} onPress={toggleLove} hasTVPreferredFocus>
               <Icon name="heart" size={15} active={loved} color={loved ? C.brand : C.text2} />
               <Text style={[st.rowText, loved && { color: C.brand }]} numberOfLines={1}>我喜欢的{loved ? ' · 已收藏' : ''}</Text>
@@ -106,10 +107,10 @@ export function HDCollect({ song, onClose }: { song: SongItem; onClose: () => vo
 
 const st = StyleSheet.create({
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, elevation: 999 },
-  panel: { position: 'absolute', left: (Dimensions.get('window').width - 380) / 2, top: 180, width: 380, maxHeight: 560, borderRadius: 18, backgroundColor: C.elev, borderWidth: 1, borderColor: C.border, padding: 14, gap: 8, elevation: 12 }, // lx148:与 HDActions 完全同位同宽 // lx147:与 HDActions 同位同主题
-  head: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 2 },
-  title: { color: C.text, fontSize: 14, fontWeight: '700', flex: 1 },
+  panel: { position: 'absolute', left: (Dimensions.get('window').width - 380) / 2, top: 180, width: 380, maxHeight: 560, borderRadius: 18, backgroundColor: C.elev, borderWidth: 1, borderColor: C.border, padding: 14, gap: SP.md, elevation: 12 }, // lx148:与 HDActions 完全同位同宽 // lx147:与 HDActions 同位同主题
+  head: { flexDirection: 'row', alignItems: 'center', gap: SP.md, paddingHorizontal: 2 },
+  title: { color: C.text, fontSize: FS.lg, fontWeight: '700', flex: 1 },
   x: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: C.inset },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 9, height: 44, borderRadius: 11, backgroundColor: C.inset, paddingHorizontal: 12 },
-  rowText: { color: C.text, fontSize: 13, fontWeight: '500', flex: 1 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, height: 44, borderRadius: 11, backgroundColor: C.inset, paddingHorizontal: 12 },
+  rowText: { color: C.text, fontSize: FS.md, fontWeight: '500', flex: 1 },
 });

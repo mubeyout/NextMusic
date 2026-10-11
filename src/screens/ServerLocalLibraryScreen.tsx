@@ -9,7 +9,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Activi
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, FS, SP } from '../theme/tokens';
 import { IS_HD } from '../services/appversion';
 import { GUTTER, focus } from '../hd/hdstyle';
 import { HDTouch } from '../hd/HDTouch';
@@ -146,7 +146,7 @@ function ManageView({ autoFocusBind }: { autoFocusBind?: boolean }) {
       ) : (
         <PageHeader title="本地曲库" />
       )}
-      <ScrollView contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingTop: IS_HD ? 8 : 4, paddingBottom: insets.bottom + 32, gap: 14 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingTop: IS_HD ? 8 : 4, paddingBottom: insets.bottom + 32, gap: SP.xxl }}>
         {/* T1 卡点消除:绑定≠上传——文件保留在原位,NextMusic 只读取 */}
         <View style={st.noteCard}>
           <Icon name="folder-music" size={18} color={C.brandText} />
@@ -536,47 +536,47 @@ function BrowseView({ libId }: { libId: string }) {
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
-  hdHead: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: GUTTER, height: 52, gap: 10 },
+  hdHead: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: GUTTER, height: 52, gap: SP.lg },
   hdBack: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2 },
-  hdTitle: { flex: 1, minWidth: 0, textAlign: 'center', color: C.text, fontSize: 16, fontWeight: '700' },
-  noteCard: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', backgroundColor: C.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: C.line },
-  noteText: { flex: 1, color: C.text2, fontSize: 12.5, lineHeight: 18 },
+  hdTitle: { flex: 1, minWidth: 0, textAlign: 'center', color: C.text, fontSize: FS.title, fontWeight: '700' },
+  noteCard: { flexDirection: 'row', gap: SP.lg, alignItems: 'flex-start', backgroundColor: C.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: C.line },
+  noteText: { flex: 1, color: C.text2, fontSize: FS.md, lineHeight: 18 },
   noteStrong: { color: C.text, fontWeight: '600' },
-  card: { backgroundColor: C.surface, borderRadius: 14, padding: 16, gap: 10, borderWidth: 1, borderColor: C.line },
-  cardTitle: { color: C.text, fontSize: 16, fontWeight: '700' },
-  cardSub: { color: C.text2, fontSize: 12.5, lineHeight: 18 },
-  guideRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 2 },
-  guideStep: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  guideN: { width: 18, height: 18, borderRadius: 9, backgroundColor: C.brand, color: C.onBrand, fontSize: 11, fontWeight: '700', textAlign: 'center', lineHeight: 18, overflow: 'hidden' },
-  guideT: { color: C.text2, fontSize: 12.5 },
-  fieldLabel: { color: C.text3, fontSize: 12, marginTop: 2 },
-  inputRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  input: { flex: 1, backgroundColor: C.surface2, borderRadius: 10, height: 42, paddingHorizontal: 12, color: C.text, fontSize: 14 },
-  inputFull: { backgroundColor: C.surface2, borderRadius: 10, height: 42, paddingHorizontal: 12, color: C.text, fontSize: 14 },
-  checkLine: { fontSize: 12.5, lineHeight: 17 },
-  btnGhost: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, height: 40, paddingHorizontal: 14, borderRadius: 10, backgroundColor: C.surface2, minWidth: 64 },
-  btnGhostT: { color: C.brandText, fontSize: 13, fontWeight: '600' },
-  btnPrimary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 44, borderRadius: 12, backgroundColor: C.brand, marginTop: 2 },
-  btnPrimaryT: { color: C.onBrand, fontSize: 14, fontWeight: '700' },
-  secHead: { color: C.text2, fontSize: 13, fontWeight: '700', marginBottom: 6 },
-  libRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: C.line, marginBottom: 8 },
-  libName: { color: C.text, fontSize: 14.5, fontWeight: '600' },
-  libSub: { color: C.text3, fontSize: 12, marginTop: 2 },
+  card: { backgroundColor: C.surface, borderRadius: 14, padding: 16, gap: SP.lg, borderWidth: 1, borderColor: C.line },
+  cardTitle: { color: C.text, fontSize: FS.title, fontWeight: '700' },
+  cardSub: { color: C.text2, fontSize: FS.md, lineHeight: 18 },
+  guideRow: { flexDirection: 'row', alignItems: 'center', gap: SP.md, paddingVertical: 2 },
+  guideStep: { flexDirection: 'row', alignItems: 'center', gap: SP.sm },
+  guideN: { width: 18, height: 18, borderRadius: 9, backgroundColor: C.brand, color: C.onBrand, fontSize: FS.sm, fontWeight: '700', textAlign: 'center', lineHeight: 18, overflow: 'hidden' },
+  guideT: { color: C.text2, fontSize: FS.md },
+  fieldLabel: { color: C.text3, fontSize: FS.body, marginTop: 2 },
+  inputRow: { flexDirection: 'row', gap: SP.md, alignItems: 'center' },
+  input: { flex: 1, backgroundColor: C.surface2, borderRadius: 10, height: 42, paddingHorizontal: 12, color: C.text, fontSize: FS.lg },
+  inputFull: { backgroundColor: C.surface2, borderRadius: 10, height: 42, paddingHorizontal: 12, color: C.text, fontSize: FS.lg },
+  checkLine: { fontSize: FS.md, lineHeight: 17 },
+  btnGhost: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.sm, height: 40, paddingHorizontal: 14, borderRadius: 10, backgroundColor: C.surface2, minWidth: 64 },
+  btnGhostT: { color: C.brandText, fontSize: FS.md, fontWeight: '600' },
+  btnPrimary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.sm, height: 44, borderRadius: 12, backgroundColor: C.brand, marginTop: 2 },
+  btnPrimaryT: { color: C.onBrand, fontSize: FS.lg, fontWeight: '700' },
+  secHead: { color: C.text2, fontSize: FS.md, fontWeight: '700', marginBottom: 6 },
+  libRow: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, backgroundColor: C.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: C.line, marginBottom: 8 },
+  libName: { color: C.text, fontSize: FS.lg, fontWeight: '600' },
+  libSub: { color: C.text3, fontSize: FS.body, marginTop: 2 },
   miniBtn: { width: 32, height: 32, borderRadius: 9, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   miniChipWrap: { backgroundColor: C.surface2, borderRadius: 999, paddingHorizontal: 8, height: 22, alignItems: 'center', justifyContent: 'center' },
-  miniChip: { color: C.text2, fontSize: 11 },
+  miniChip: { color: C.text2, fontSize: FS.sm },
   // T2 扫描卡
-  scanCard: { backgroundColor: C.surface, borderRadius: 14, padding: 16, gap: 10, borderWidth: 1, borderColor: C.line },
-  scanHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  scanT: { color: C.text, fontSize: 15, fontWeight: '700' },
-  scanMeta: { color: C.text2, fontSize: 12.5, lineHeight: 18, flex: 1 },
-  scanRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  scanCard: { backgroundColor: C.surface, borderRadius: 14, padding: 16, gap: SP.lg, borderWidth: 1, borderColor: C.line },
+  scanHead: { flexDirection: 'row', alignItems: 'center', gap: SP.md },
+  scanT: { color: C.text, fontSize: FS.xl, fontWeight: '700' },
+  scanMeta: { color: C.text2, fontSize: FS.md, lineHeight: 18, flex: 1 },
+  scanRow: { flexDirection: 'row', alignItems: 'center', gap: SP.lg },
   barTrack: { height: 6, borderRadius: 3, backgroundColor: C.surface2, overflow: 'hidden' },
   barFill: { height: 6, borderRadius: 3, backgroundColor: C.brand },
   // 浏览
-  center: { alignItems: 'center', gap: 10, paddingVertical: 30 },
-  emptyT2: { color: C.text2, fontSize: 13, textAlign: 'center' },
+  center: { alignItems: 'center', gap: SP.lg, paddingVertical: 30 },
+  emptyT2: { color: C.text2, fontSize: FS.md, textAlign: 'center' },
   skelRow: { height: 58, borderRadius: 12, backgroundColor: C.surface2, marginBottom: 8, opacity: 0.7 },
-  letterHead: { color: C.text3, fontSize: 12, fontWeight: '800', paddingVertical: 8 },
+  letterHead: { color: C.text3, fontSize: FS.body, fontWeight: '800', paddingVertical: 8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: IS_HD ? 16 : 12 },
 });

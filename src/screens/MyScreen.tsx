@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon, BrandIcon } from '../theme/Icon';
-import { C, softGrad } from '../theme/tokens';
+import { C, FS, SP, softGrad } from '../theme/tokens';
 import { PillTabs } from '../components/PillTabs';
 import { EmptyState } from '../components/PageChrome';
 import { ActionSheet } from '../components/ActionSheet';
@@ -138,7 +138,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
           <Icon name="settings" size={20} />
         </TouchableOpacity>
       </View>
-      {offline && <Text style={{ color: C.brand, fontSize: 12, marginBottom: 10 }}>离线模式 · 数据来自缓存，联网后自动同步</Text>}
+      {offline && <Text style={{ color: C.brand, fontSize: FS.body, marginBottom: 10 }}>离线模式 · 数据来自缓存，联网后自动同步</Text>}
 
       <PillTabs tabs={['歌单', '歌手', '专辑', '已下载']} active={tab} onChange={setTab} />
 
@@ -192,7 +192,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
               </TouchableOpacity>
             );
             return (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 4 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: SP.lg, paddingBottom: 4 }}>
                 {pv.map((a: ProviderAcct) => {
                   // v3.4(老板 07:45):媒体库入口 icon 一律 BrandIcon(旧白名单漏了 tingfeng/plex/飞牛/道理鱼等→落通用音符)
                   return (
@@ -311,7 +311,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
             </TouchableOpacity>
           </View>
           {dlList.length ? (
-            <View style={{ gap: 4 }} key={dlTick}>
+            <View style={{ gap: SP.xs }} key={dlTick}>
               {dlList.slice(0, 100).map(r => (
                 <SongRow
                   key={r.key}
@@ -389,43 +389,43 @@ const COL = (Dimensions.get('window').width - 40 - 24) / 3; // 3 列自适应填
 
 const st = StyleSheet.create({
   content: { paddingHorizontal: 20 },
-  headerRow: { height: 44, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  title: { flex: 1, color: C.text, fontSize: 28, lineHeight: 34, fontWeight: '700' },
+  headerRow: { height: 44, flexDirection: 'row', alignItems: 'center', gap: SP.xl },
+  title: { flex: 1, color: C.text, fontSize: FS.hero, lineHeight: 34, fontWeight: '700' },
   settingsBtn: { width: 44, height: 44, borderRadius: 999, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  body: { gap: 8, paddingTop: 14 },
+  body: { gap: SP.md, paddingTop: 14 },
   banner: {
     height: 72, borderRadius: 14, marginTop: 12, flexDirection: 'row',
-    alignItems: 'center', paddingHorizontal: 16, gap: 12,
+    alignItems: 'center', paddingHorizontal: 16, gap: SP.xl,
   },
-  bannerTitle: { color: C.text, fontSize: 15, lineHeight: 18, fontWeight: '700' },
-  bannerMeta: { color: C.text2, fontSize: 11, lineHeight: 13, marginTop: 6 },
+  bannerTitle: { color: C.text, fontSize: FS.xl, lineHeight: 18, fontWeight: '700' },
+  bannerMeta: { color: C.text2, fontSize: FS.sm, lineHeight: 13, marginTop: 6 },
   newBtn: { height: 36, borderRadius: 18, backgroundColor: C.brand, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
-  newBtnText: { color: C.white, fontSize: 12, lineHeight: 14, fontWeight: '500' },
-  quickRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  quickCard: { flex: 1, height: 66, borderRadius: 12, backgroundColor: C.surface2, padding: 12, justifyContent: 'center', gap: 6 },
-  pvCard: { width: 138, minHeight: 64, borderRadius: 12, backgroundColor: C.surface2, padding: 12, justifyContent: 'center', gap: 5 },
-  pvName: { color: C.text, fontSize: 12, lineHeight: 15, fontWeight: '600' },
-  pvMeta: { color: C.text2, fontSize: 9, lineHeight: 12 },
-  pvAddRow: { minHeight: 48, borderRadius: 12, backgroundColor: C.surface2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  pvAddText: { color: C.text2, fontSize: 11, lineHeight: 15 },
-  quickTitle: { color: C.text, fontSize: 12, lineHeight: 14, fontWeight: '500' },
-  quickMeta: { color: C.text2, fontSize: 10, lineHeight: 12 },
+  newBtnText: { color: C.white, fontSize: FS.body, lineHeight: 14, fontWeight: '500' },
+  quickRow: { flexDirection: 'row', gap: SP.lg, marginTop: 12 },
+  quickCard: { flex: 1, height: 66, borderRadius: 12, backgroundColor: C.surface2, padding: 12, justifyContent: 'center', gap: SP.sm },
+  pvCard: { width: 138, minHeight: 64, borderRadius: 12, backgroundColor: C.surface2, padding: 12, justifyContent: 'center', gap: SP.sm },
+  pvName: { color: C.text, fontSize: FS.body, lineHeight: 15, fontWeight: '600' },
+  pvMeta: { color: C.text2, fontSize: FS.xs, lineHeight: 12 },
+  pvAddRow: { minHeight: 48, borderRadius: 12, backgroundColor: C.surface2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.sm },
+  pvAddText: { color: C.text2, fontSize: FS.sm, lineHeight: 15 },
+  quickTitle: { color: C.text, fontSize: FS.body, lineHeight: 14, fontWeight: '500' },
+  quickMeta: { color: C.text2, fontSize: FS.xs, lineHeight: 12 },
   sectionRow: { flexDirection: 'row', alignItems: 'center', height: 26, marginTop: 12 },
-  sectionTitle: { flex: 1, color: C.text, fontSize: 18, lineHeight: 22, fontWeight: '700' },
-  sectionMeta: { color: C.brandSoft, fontSize: 10, lineHeight: 12 },
-  plGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 4 },
-  plCell: { width: '31%', gap: 4 },
+  sectionTitle: { flex: 1, color: C.text, fontSize: FS.h2, lineHeight: 22, fontWeight: '700' },
+  sectionMeta: { color: C.brandSoft, fontSize: FS.xs, lineHeight: 12 },
+  plGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl, marginTop: 4 },
+  plCell: { width: '31%', gap: SP.xs },
   plCover: { width: '100%', aspectRatio: 1, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  plGlyph: { color: C.white, fontSize: 26, fontWeight: '700' },
-  plName: { color: C.text, fontSize: 13, lineHeight: 16, fontWeight: '700' },
-  plMeta: { color: C.text2, fontSize: 9, lineHeight: 11 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
+  plGlyph: { color: C.white, fontSize: FS.display, fontWeight: '700' }, // [LEO 1011] 26 档外→display(24)
+  plName: { color: C.text, fontSize: FS.md, lineHeight: 16, fontWeight: '700' },
+  plMeta: { color: C.text2, fontSize: FS.xs, lineHeight: 11 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, paddingVertical: 8 },
   art: { width: 50, height: 50, borderRadius: 8, backgroundColor: C.surface2 },
   roundArt: { width: 50, height: 50, borderRadius: 25, backgroundColor: C.surface2 },
   artFallback: { alignItems: 'center', justifyContent: 'center' },
-  rowGlyph: { color: C.text2, fontSize: 20, fontWeight: '700' },
-  rowName: { color: C.text, fontSize: 14, lineHeight: 19, fontWeight: '500' },
-  rowMeta: { color: C.text2, fontSize: 11, lineHeight: 15 },
-  empty: { color: C.text2, fontSize: 12, lineHeight: 17, textAlign: 'center', paddingTop: 18, paddingBottom: 6 },
+  rowGlyph: { color: C.text2, fontSize: FS.h1, fontWeight: '700' },
+  rowName: { color: C.text, fontSize: FS.lg, lineHeight: 19, fontWeight: '500' },
+  rowMeta: { color: C.text2, fontSize: FS.sm, lineHeight: 15 },
+  empty: { color: C.text2, fontSize: FS.body, lineHeight: 17, textAlign: 'center', paddingTop: 18, paddingBottom: 6 },
   center: { paddingVertical: 24 },
 });

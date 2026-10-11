@@ -2,7 +2,7 @@ import React from 'react';
 import { Image, View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { C } from '../theme/tokens';
+import { C, FS, SP } from '../theme/tokens';
 import { useApp } from '../state/AppState';
 
 // Figma NM-BOOT-001: brand row, title 28, two mode cards (r=18, 162h), hint card
@@ -75,23 +75,23 @@ export function BootScreen() {
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg, paddingHorizontal: 20 },
-  content: { gap: 18 },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 24 },
+  content: { gap: SP.section },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, height: 24 },
   brandDot: { width: 18, height: 18, borderRadius: 9, backgroundColor: C.brand },
-  brandName: { color: C.text, fontSize: 16, lineHeight: 19, fontWeight: '700' },
-  header: { gap: 6 },
-  title: { color: C.text, fontSize: 28, lineHeight: 34, fontWeight: '700' },
-  subtitle: { color: C.text2, fontSize: 13, lineHeight: 16 },
-  card: { borderRadius: 18, backgroundColor: C.surface, padding: 16, gap: 12 },
-  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 28 },
+  brandName: { color: C.text, fontSize: FS.title, lineHeight: 19, fontWeight: '700' },
+  header: { gap: SP.sm },
+  title: { color: C.text, fontSize: FS.hero, lineHeight: 34, fontWeight: '700' },
+  subtitle: { color: C.text2, fontSize: FS.md, lineHeight: 16 },
+  card: { borderRadius: 18, backgroundColor: C.surface, padding: 16, gap: SP.xl },
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, height: 28 },
   cardDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: C.brand },
-  cardTitle: { color: C.text, fontSize: 18, lineHeight: 22, fontWeight: '700' },
-  cardDesc: { color: C.text2, fontSize: 13, lineHeight: 16 },
+  cardTitle: { color: C.text, fontSize: FS.h2, lineHeight: 22, fontWeight: '700' },
+  cardDesc: { color: C.text2, fontSize: FS.md, lineHeight: 16 },
   btnPrimary: { height: 46, borderRadius: 14, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
-  btnPrimaryText: { color: C.onBrand, fontSize: 14, lineHeight: 17, fontWeight: '500' },
+  btnPrimaryText: { color: C.onBrand, fontSize: FS.lg, lineHeight: 17, fontWeight: '500' },
   btnGhost: { height: 46, borderRadius: 14, borderWidth: 1, borderColor: '#595959', alignItems: 'center', justifyContent: 'center' },
-  btnGhostText: { color: C.text, fontSize: 14, lineHeight: 17, fontWeight: '500' },
-  hint: { borderRadius: 14, backgroundColor: C.surface, padding: 14, gap: 4 },
-  hintTitle: { color: C.text, fontSize: 13, lineHeight: 16, fontWeight: '500' },
-  hintBody: { color: C.text2, fontSize: 11, lineHeight: 13 },
+  btnGhostText: { color: C.text, fontSize: FS.lg, lineHeight: 17, fontWeight: '500' },
+  hint: { borderRadius: 14, backgroundColor: C.surface, padding: 14, gap: SP.xs },
+  hintTitle: { color: C.text, fontSize: FS.md, lineHeight: 16, fontWeight: '500' },
+  hintBody: { color: C.text2, fontSize: FS.sm, lineHeight: 13 },
 });

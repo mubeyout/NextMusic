@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Linking, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PageHeader } from '../components/PageChrome';
-import { C } from '../theme/tokens';
+import { C, FS, SP } from '../theme/tokens';
 import { IS_HD } from '../services/appversion';
 import { useLicense, license } from '../services/license';
 import { LICENSE_PAGE, BUY_LINKS } from '../services/benefits';
@@ -49,7 +49,7 @@ export function LicenseScreen() {
     <View style={st.screen}>
       <PageHeader title={LICENSE_PAGE.title} />
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 24, maxWidth: 860, alignSelf: 'center', width: '100%', gap: 14 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 24, maxWidth: 860, alignSelf: 'center', width: '100%', gap: SP.xxl }}
         showsVerticalScrollIndicator={false}
       >
         {/* ── 状态卡 ── */}
@@ -109,32 +109,32 @@ export function LicenseScreen() {
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
-  statusCard: { borderRadius: 16, backgroundColor: C.surface, padding: 18, gap: 6 },
-  statusHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  statusCard: { borderRadius: 16, backgroundColor: C.surface, padding: 18, gap: SP.sm },
+  statusHead: { flexDirection: 'row', alignItems: 'center', gap: SP.lg },
   tierLabel: { color: C.text, fontSize: IS_HD ? 22 : 19, fontWeight: '800' },
   betaChip: { backgroundColor: C.badgeOn, borderRadius: 7, paddingHorizontal: 8, paddingVertical: 3 },
-  betaChipText: { color: C.brandSoft, fontSize: 11, fontWeight: '600' },
-  tierDesc: { color: C.text2, fontSize: 13, lineHeight: 18 },
-  trialLeft: { color: C.brandText, fontSize: 13, fontWeight: '600', marginTop: 2 },
-  seats: { color: C.text3, fontSize: 12, marginTop: 2 },
-  card: { borderRadius: 16, backgroundColor: C.surface, padding: 18, gap: 10 },
-  cardTitle: { color: C.text, fontSize: 14, fontWeight: '600' },
-  redeemRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+  betaChipText: { color: C.brandSoft, fontSize: FS.sm, fontWeight: '600' },
+  tierDesc: { color: C.text2, fontSize: FS.md, lineHeight: 18 },
+  trialLeft: { color: C.brandText, fontSize: FS.md, fontWeight: '600', marginTop: 2 },
+  seats: { color: C.text3, fontSize: FS.body, marginTop: 2 },
+  card: { borderRadius: 16, backgroundColor: C.surface, padding: 18, gap: SP.lg },
+  cardTitle: { color: C.text, fontSize: FS.lg, fontWeight: '600' },
+  redeemRow: { flexDirection: 'row', gap: SP.lg, alignItems: 'flex-start' },
   redeemInput: {
     flex: 1, minHeight: 46, borderRadius: 12, backgroundColor: C.surface2,
-    color: C.text, fontSize: 13, paddingHorizontal: 12, paddingVertical: 10,
+    color: C.text, fontSize: FS.md, paddingHorizontal: 12, paddingVertical: 10,
   },
   redeemBtn: { height: 46, borderRadius: 12, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
-  redeemBtnText: { color: C.onBrand, fontSize: 14, fontWeight: '700' },
+  redeemBtnText: { color: C.onBrand, fontSize: FS.lg, fontWeight: '700' },
   cardBtn: {
     height: 50, borderRadius: 13, backgroundColor: C.surface, borderWidth: 1.2, borderColor: C.brand,
     alignItems: 'center', justifyContent: 'center',
   },
-  cardBtnText: { color: C.brandText, fontSize: 14.5, fontWeight: '600' },
+  cardBtnText: { color: C.brandText, fontSize: FS.lg, fontWeight: '600' },
   familyCard: {
     flexDirection: 'row', alignItems: 'center', borderRadius: 16,
     backgroundColor: C.brandDim, borderWidth: 1.2, borderColor: C.brand, padding: 16,
   },
-  familyTitle: { color: C.brandText, fontSize: 15, fontWeight: '700' },
-  familySub: { color: C.text2, fontSize: 12, lineHeight: 17, marginTop: 3 },
+  familyTitle: { color: C.brandText, fontSize: FS.xl, fontWeight: '700' },
+  familySub: { color: C.text2, fontSize: FS.body, lineHeight: 17, marginTop: 3 },
 });

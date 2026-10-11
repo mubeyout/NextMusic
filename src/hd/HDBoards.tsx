@@ -16,6 +16,7 @@ import type { SongItem } from '../services/server';
 import { toast } from '../components/Dialog';
 import { hdNav } from './hdnav';
 import { cacheStale, cacheSet } from './hdcache';
+import { FS, SP } from '../theme/tokens';
 
 type Board = { id: string; name: string; bangid: string; image?: string };
 const SOURCES: { key: string; label: string }[] = [
@@ -62,17 +63,17 @@ export function HDBoards() {
   return (
     <ScrollView
       style={st.screen}
-      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 26, paddingBottom: 28, gap: 12 }}
+      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 26, paddingBottom: 28, gap: SP.xl }}
       showsVerticalScrollIndicator={false}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.md }}>
         <Text style={st.title}>榜单广场</Text>
         <View style={{ flex: 1 }} />
         {busy ? <ActivityIndicator color={C.brand} size="small" /> : null}
         {boards ? <Text style={st.count}>{boards.length} 个榜单</Text> : null}
       </View>
 
-      <View style={{ flexDirection: 'row', gap: 8 }}>
+      <View style={{ flexDirection: 'row', gap: SP.md }}>
         {SOURCES.map(s => (
           <HDTouch key={s.key} style={[st.pill, src === s.key && st.pillOn]}
             focusStyle={src === s.key ? { borderWidth: 2, borderColor: C.brandSoft } : st.pillFocus}
@@ -159,16 +160,16 @@ const st = StyleSheet.create({
   pillFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.pill },
   pillLabel: { color: C.text2, fontSize: H.font.sm },
   pillLabelOn: { color: C.onBrand, fontWeight: '600' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl },
   card: { borderRadius: 12, backgroundColor: C.surface, paddingBottom: 8 },
   cardCoverWrap: { borderRadius: 12 },
   cardCover: { width: '100%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderTopLeftRadius: 12, borderTopRightRadius: 12 },
   cardChipWrapper: { position: 'absolute', right: 8, bottom: 80 },
   cardChip: { backgroundColor: 'rgba(0,0,0,.55)', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
-  cardChipText: { color: '#fff', fontSize: 9 },
-  cardBody: { padding: 10, paddingTop: 8, gap: 3, alignSelf: 'center', width: '94%' },
+  cardChipText: { color: C.white, fontSize: FS.xs },
+  cardBody: { padding: 10, paddingTop: 8, gap: SP.xs, alignSelf: 'center', width: '94%' },
   cardName: { color: C.text, fontSize: H.font.md, fontWeight: '700', lineHeight: 16 },
-  cardSub: { color: C.text3, fontSize: 9 },
-  tip: { alignItems: 'center', gap: 10, paddingVertical: 54 },
+  cardSub: { color: C.text3, fontSize: FS.xs },
+  tip: { alignItems: 'center', gap: SP.lg, paddingVertical: 54 },
   tipText: { color: C.text2, fontSize: H.font.md, textAlign: 'center', paddingVertical: 30 },
 });

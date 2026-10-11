@@ -34,7 +34,7 @@ import { getUploadStore, subscribeUpload } from '../state/UploadQueue';
 import { deviceTracks } from '../services/devicelibrary';
 
 const WARN_YELLOW = '#E8B34B'; // spec③ 用量条 ≥80% 警示黄
-const DANGER_RED = '#E8618C';  // 100% 红 / 强警示(全站错误品红同源)
+const DANGER_RED = C.danger;  // 100% 红 / 强警示(全站错误品红同源)
 const WEEK_MS = 7 * 24 * 3600 * 1000; // ⑤-B6 NEW 标窗口(7 天内入库)
 
 // ── 分级删除确认(LEO 裁决①) ─────────────────────────────────
@@ -733,7 +733,7 @@ export function CloudLibCard({ onEnter }: { onEnter: () => void }) {
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={[c.entryTitle, IS_HD && c.entryTitleHD]}>云曲库</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm }}>
-          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#3FBF7F' }} />
+          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.brand }} />
           <Text style={[c.entrySub, IS_HD && c.entrySubHD]} numberOfLines={1}>
             {info ? `${info.n} 首 · ${info.used}${info.pct >= 0 ? ` · 配额 ${info.pct}%` : ''}` : '个人云端空间 · 用量 / 上传 / 文件管理'}
           </Text>
@@ -782,7 +782,7 @@ const c = StyleSheet.create({
   emptyT1: { color: C.text, fontSize: FS.lg, fontWeight: '700', marginTop: 4 },
   emptyT2: { color: C.text3, fontSize: FS.body, lineHeight: 17, textAlign: 'center', maxWidth: 240 },
   emptyBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, backgroundColor: C.brand, borderRadius: 999, paddingHorizontal: 20, paddingVertical: 9, marginTop: 10 },
-  emptyBtnT: { color: '#04120a', fontSize: FS.md, fontWeight: '800' },
+  emptyBtnT: { color: C.onBrand, fontSize: FS.md, fontWeight: '800' },
   // 多选动作条
   selBar: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.strokeFaint },
   selCount: { color: C.text2, fontSize: FS.body, fontWeight: '600', marginRight: 'auto', flexShrink: 1 },
@@ -790,7 +790,7 @@ const c = StyleSheet.create({
   selBtnT: { color: C.text2, fontSize: FS.body, fontWeight: '600' },
   selDel: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, backgroundColor: DANGER_RED, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 8 },
   selDelOff: { backgroundColor: C.surface2 },
-  selDelT: { color: '#fff', fontSize: FS.body, fontWeight: '700' },
+  selDelT: { color: C.white, fontSize: FS.body, fontWeight: '700' },
   // ⑥ 批量下载钮/chips/行内进度/明细入口
   selDl: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, borderWidth: 1, borderColor: C.brand, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 7 },
   selDlOff: { borderColor: C.stroke, opacity: 0.55 },
@@ -799,7 +799,7 @@ const c = StyleSheet.create({
   chipsWrapHD: { marginHorizontal: GUTTER },
   dlTrack: { width: 46, height: 4, borderRadius: 4, backgroundColor: 'rgba(255,255,255,.08)', overflow: 'hidden' },
   dlFill: { height: '100%', borderRadius: 4, backgroundColor: C.brand },
-  quotaMore: { flexDirection: 'row', alignItems: 'center', gap: 2, justifyContent: 'flex-end', marginTop: 8 },
+  quotaMore: { flexDirection: 'row', alignItems: 'center', gap: SP.xs, justifyContent: 'flex-end', marginTop: 8 },
   quotaMoreT: { color: C.text3, fontSize: FS.sm },
   // 删除确认
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,.55)', justifyContent: 'center', alignItems: 'center' },
@@ -814,16 +814,16 @@ const c = StyleSheet.create({
   delCancelT: { color: C.text2, fontSize: FS.md, fontWeight: '600' },
   delOk: { flex: 1, backgroundColor: C.brand, borderRadius: 999, paddingVertical: 10, alignItems: 'center' },
   delOkLock: { opacity: 0.45 },
-  delOkT: { color: '#04120a', fontSize: FS.md, fontWeight: '800' },
+  delOkT: { color: C.onBrand, fontSize: FS.md, fontWeight: '800' },
   // 入口卡
   entryCard: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.strokeFaint, padding: 14, flexBasis: '48%', minHeight: 72 }, // [老板反馈] 删flexGrow同ml.card——单卡不拉伸居左
   entryCardHD: { minHeight: 86, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16, flexBasis: 375 }, // [1010 统一] 与 ml.cardHD 同值(定宽卡+自然换行)
   entryIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }, // [hub 网格] 40→44 对齐 ml.iconWrap 统一值,cloud 品牌色改通用底
   entryIconHD: { width: 52, height: 52, borderRadius: 14 }, // [1010 统一] 与 ml.iconWrapHD 同值
   entryTitle: { color: C.text, fontSize: FS.xl, lineHeight: 20, fontWeight: '600' }, // [1010 统一] 14/700→14.5/600 与 ml.title 同值([批次1]→FS.xl 归档)
-  heroStB: { color: '#FFFFFF', fontWeight: '800' }, // [v5.5] 英雄卡统计行加粗段
+  heroStB: { color: C.white, fontWeight: '800' }, // [v5.5] 英雄卡统计行加粗段
   // [两段式·LEO 1010] 云页专辑分组(行头/占位封面/展开钮)
-  albGrp: { gap: 2 },
+  albGrp: { gap: SP.xs },
   albHead: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingVertical: 8 },
   albArt: { width: 44, height: 44, borderRadius: 10, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   albArtImg: { width: '100%', height: '100%' }, // [批5b] 专辑代表封面(组内首曲内嵌图,cover 端点链;无图回落矢量)

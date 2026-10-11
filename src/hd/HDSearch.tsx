@@ -16,6 +16,7 @@ import { createMMKV } from 'react-native-mmkv';
 import type { SongItem } from '../services/server';
 import { api } from '../services/server';
 import { hdNav } from './hdnav';
+import { FS, SP } from '../theme/tokens';
 
 const SOURCES: { id: SearchSrc; label: string }[] = [
   { id: 'kw', label: '酷我' },
@@ -129,12 +130,12 @@ export function HDSearch() {
     <View style={st.screen}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 22, paddingBottom: 26, gap: 12 }}
+        contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 22, paddingBottom: 26, gap: SP.xl }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         {/* lx163:类型 pill 歌曲/歌手/专辑 */}
-        <View style={{ flexDirection: 'row', gap: 8 }}>
+        <View style={{ flexDirection: 'row', gap: SP.md }}>
           {([['song', '歌曲'], ['singer', '歌手'], ['album', '专辑']] as const).map(([m, label]) => (
             <HDTouch
               key={m}
@@ -169,10 +170,10 @@ export function HDSearch() {
 
         {/* lx134:空闲态内容(老板:探索页太空)——热门歌手卡 + 风格分类 + 热搜词 */}
         {results == null && !kw.trim() ? (
-          <View style={{ gap: 18, marginTop: 6 }}>
-            <View style={{ gap: 9 }}>
+          <View style={{ gap: SP.section, marginTop: 6 }}>
+            <View style={{ gap: SP.lg }}>
               <Text style={st.secTitle}>热门歌手</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: 12, paddingLeft: 28, paddingRight: 12, paddingTop: 6, paddingBottom: 16 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: SP.xl, paddingLeft: 28, paddingRight: 12, paddingTop: 6, paddingBottom: 16 }}>
                 {HOT_ARTISTS.map(a => (
                   <HDTouch key={a.n} style={[st.artistCard, shadowStyleOf(a.n)]} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }} onPress={() => { setKw(a.n); search(a.n); }}>
                     {artistImgs[a.n]
@@ -184,9 +185,9 @@ export function HDSearch() {
               </ScrollView>
             </View>
             {/* lx164:热门主题大卡(渐变,对齐手机探索页)——替原分类发现 pills */}
-            <View style={{ gap: 9 }}>
+            <View style={{ gap: SP.lg }}>
               <Text style={st.secTitle}>热门主题</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: 12, paddingLeft: 28, paddingRight: 12, paddingTop: 6, paddingBottom: 16 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: SP.xl, paddingLeft: 28, paddingRight: 12, paddingTop: 6, paddingBottom: 16 }}>
                 {THEME_CARDS.map(g => (
                   <HDTouch key={g.zh} style={[st.themeCard, shadowStyleOf(g.zh)]} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }} onPress={() => { setKw(g.zh); search(g.zh); }}>
                     <LinearGradient colors={[g.from, g.to]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.themeGrad}>
@@ -198,9 +199,9 @@ export function HDSearch() {
               </ScrollView>
             </View>
             {/* lx164:按场景 */}
-            <View style={{ gap: 9 }}>
+            <View style={{ gap: SP.lg }}>
               <Text style={st.secTitle}>按场景</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.md }}>
                 {SCENES.map(g => (
                   <HDTouch key={g} style={st.genrePill} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 15 }} onPress={() => { setKw(g); search(g); }}>
                     <Text style={st.genreText}>{g}</Text>
@@ -209,9 +210,9 @@ export function HDSearch() {
               </View>
             </View>
             {/* lx164:按语言 */}
-            <View style={{ gap: 9 }}>
+            <View style={{ gap: SP.lg }}>
               <Text style={st.secTitle}>按语言</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.md }}>
                 {LANGS.map(g => (
                   <HDTouch key={g} style={st.genrePill} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 15 }} onPress={() => { setKw(g); search(g); }}>
                     <Text style={st.genreText}>{g}</Text>
@@ -221,8 +222,8 @@ export function HDSearch() {
             </View>
             {/* lx164:本周精选(TOP500 前 8,与手机探索页同源) */}
             {weekly.length ? (
-              <View style={{ gap: 2 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 7 }}>
+              <View style={{ gap: SP.xs }}>
+                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: SP.sm }}>
                   <Text style={st.secTitle}>本周精选</Text>
                   <Text style={st.secHint}>{weekly.length} 首</Text>
                 </View>
@@ -234,9 +235,9 @@ export function HDSearch() {
                 ))}
               </View>
             ) : null}
-            <View style={{ gap: 9 }}>
+            <View style={{ gap: SP.lg }}>
               <Text style={st.secTitle}>分类发现</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.md }}>
                 {GENRES.map(g => (
                   <HDTouch key={g} style={st.genrePill} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 15 }} onPress={() => { setKw(g); search(g); }}>
                     <Text style={st.genreText}>{g}</Text>
@@ -244,9 +245,9 @@ export function HDSearch() {
                 ))}
               </View>
             </View>
-            <View style={{ gap: 9 }}>
+            <View style={{ gap: SP.lg }}>
               <Text style={st.secTitle}>大家都在搜</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.md }}>
                 {HOT_WORDS.map((w, i) => (
                   <HDTouch key={w} style={st.hotPill} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12 }} onPress={() => { setKw(w); search(w); }}>
                     <Text style={[st.hotIdx, i < 3 && { color: C.brand }]}>{i + 1}</Text>
@@ -260,12 +261,12 @@ export function HDSearch() {
 
         {/* lx163:歌手结果 */}
         {mode === 'singer' && singers != null ? (
-          <View style={{ gap: 2 }}>
+          <View style={{ gap: SP.xs }}>
             <Text style={st.secTitle}>{`「${kw}」的歌手`}</Text>
             {(singers || []).map(a => (
               <HDTouch key={a.id} style={st.resRow} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }}
                 onPress={() => hdNav()?.navigate('ArtistDetail', { artist: { id: a.id, name: a.name, img: a.img, source: a.source || 'wy' } })}>
-                {a.img ? <Image source={{ uri: a.img }} style={st.resRound} /> : <View style={[st.resRound, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Text style={{ color: C.text2, fontSize: 14, fontWeight: '700' }}>{a.name[0]}</Text></View>}
+                {a.img ? <Image source={{ uri: a.img }} style={st.resRound} /> : <View style={[st.resRound, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Text style={{ color: C.text2, fontSize: FS.lg, fontWeight: '700' }}>{a.name[0]}</Text></View>}
                 <Text style={st.resName} numberOfLines={1}>{a.name}</Text>
                 <Text style={st.srcTag}>{(a.source || 'wy').toUpperCase()}</Text>
               </HDTouch>
@@ -275,7 +276,7 @@ export function HDSearch() {
         ) : null}
         {/* lx163:专辑结果 */}
         {mode === 'album' && albums != null ? (
-          <View style={{ gap: 2 }}>
+          <View style={{ gap: SP.xs }}>
             <Text style={st.secTitle}>{`「${kw}」的专辑`}</Text>
             {(albums || []).map(al => (
               <HDTouch key={al.id} style={st.resRow} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }}
@@ -292,8 +293,8 @@ export function HDSearch() {
         ) : null}
         {/* 结果 */}
         {mode === 'song' && results != null ? (
-          <View style={{ gap: 2 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 7, marginBottom: 6 }}>
+          <View style={{ gap: SP.xs }}>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: SP.sm, marginBottom: 6 }}>
               <Text style={st.secTitle}>{err ? '搜索失败' : `「${kw}」的结果`}</Text>
               <Text style={st.secHint}>{err ? '' : `${results.length} 条 · 五源聚合`}</Text>
             </View>
@@ -327,7 +328,7 @@ const st = StyleSheet.create({
   pillLabelOn: { color: C.onBrand, fontWeight: '600' },
   searchRow: {
     height: 40, borderRadius: 10, backgroundColor: C.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border,
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 13, gap: 9,
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 13, gap: SP.lg,
   },
   searchRowOn: { borderColor: C.brand, backgroundColor: C.surface2, borderWidth: 1 }, // #035b:focus 整框品牌描边(替代行级诡异选中态)
   input: { flex: 1, color: C.text, fontSize: H.font.md, padding: 0 },
@@ -337,27 +338,27 @@ const st = StyleSheet.create({
   idx: { width: 18, textAlign: 'right', color: C.text3, fontSize: H.font.sm, fontVariant: ['tabular-nums'] },
   art: { width: 34, height: 34, borderRadius: 5 },
   title: { color: C.text, fontSize: H.font.md, fontWeight: '500' },
-  hiRes: { color: C.brand, fontSize: 8, borderWidth: 1, borderColor: 'rgba(30,215,96,.4)', borderRadius: 3, paddingHorizontal: 3 },
+  hiRes: { color: C.brand, fontSize: FS.xs, borderWidth: 1, borderColor: 'rgba(30,215,96,.4)', borderRadius: 3, paddingHorizontal: 3 },
   sub: { color: C.text2, fontSize: H.font.sm },
-  srcTag: { color: C.text3, fontSize: 8, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, borderRadius: 3, paddingHorizontal: 4 },
+  srcTag: { color: C.text3, fontSize: FS.xs, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, borderRadius: 3, paddingHorizontal: 4 },
   dur: { color: C.text3, fontSize: H.font.sm, width: 36, textAlign: 'right', fontVariant: ['tabular-nums'] },
   empty: { color: C.text3, fontSize: H.font.md, paddingVertical: 24, textAlign: 'center' },
-  tip: { alignItems: 'center', gap: 10, paddingVertical: 60 },
+  tip: { alignItems: 'center', gap: SP.lg, paddingVertical: 60 },
   tipText: { color: C.text3, fontSize: H.font.md },
   themeCard: { width: 168, height: 96, borderRadius: 14, overflow: 'hidden' }, // lx164:热门主题渐变大卡
-  themeGrad: { flex: 1, padding: 14, justifyContent: 'flex-end', gap: 2 },
-  themeZh: { color: '#FFFFFF', fontSize: 20, fontWeight: '800' },
-  themeEn: { color: '#FFFFFF99', fontSize: 9, letterSpacing: 2, fontWeight: '700' },
-  artistCard: { width: 90, height: 114, borderRadius: 14, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', gap: 8 }, // lx143:恢复圆角底卡——无背景时 elevation 轮廓异常+投影乱
+  themeGrad: { flex: 1, padding: 14, justifyContent: 'flex-end', gap: SP.xs },
+  themeZh: { color: C.white, fontSize: FS.h1, fontWeight: '800' },
+  themeEn: { color: '#FFFFFF99', fontSize: FS.xs, letterSpacing: 2, fontWeight: '700' },
+  artistCard: { width: 90, height: 114, borderRadius: 14, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', gap: SP.md }, // lx143:恢复圆角底卡——无背景时 elevation 轮廓异常+投影乱
   artistAvatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' }, // lx139:真照片(Image 圆形)
-  artistGlyph: { color: '#FFFFFF', fontSize: 22, fontWeight: '800' },
-  artistName: { color: C.text, fontSize: 11, fontWeight: '600' },
+  artistGlyph: { color: C.white, fontSize: FS.display, fontWeight: '800' }, // [LEO 1011] 22 档外→display(24)头像兜底
+  artistName: { color: C.text, fontSize: FS.sm, fontWeight: '600' },
   genrePill: { paddingHorizontal: 16, height: 32, borderRadius: 16, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
-  genreText: { color: C.text2, fontSize: 12, fontWeight: '600' },
-  hotPill: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 13, height: 34, borderRadius: 12, backgroundColor: C.surface },
-  hotIdx: { color: C.text3, fontSize: 11, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  hotText: { color: C.text, fontSize: 12, fontWeight: '500' },
-  resRow: { flexDirection: 'row', alignItems: 'center', gap: 11, minHeight: 54, paddingHorizontal: 8, borderRadius: 10 },
+  genreText: { color: C.text2, fontSize: FS.body, fontWeight: '600' },
+  hotPill: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, paddingHorizontal: 13, height: 34, borderRadius: 12, backgroundColor: C.surface },
+  hotIdx: { color: C.text3, fontSize: FS.sm, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  hotText: { color: C.text, fontSize: FS.body, fontWeight: '500' },
+  resRow: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, minHeight: 54, paddingHorizontal: 8, borderRadius: 10 },
   resRound: { width: 42, height: 42, borderRadius: 21 },
   resSquare: { width: 42, height: 42, borderRadius: 7 },
   resName: { flex: 1, color: C.text, fontSize: H.font.md, fontWeight: '600' },

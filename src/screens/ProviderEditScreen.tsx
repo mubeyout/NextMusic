@@ -6,7 +6,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Activi
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon, BrandIcon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, FS, SP } from '../theme/tokens';
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
 import { SH } from '../hd/hdtokens';
@@ -62,7 +62,7 @@ function ProBadge({ floating }: { floating?: boolean }) {
 const pbSt = StyleSheet.create({
   chip: { borderWidth: 1.2, borderColor: C.brand, backgroundColor: C.brandDim, borderRadius: 6, paddingHorizontal: 5, paddingVertical: 1 },
   floating: { position: 'absolute', top: 8, right: 8 },
-  text: { color: C.brandText, fontSize: 9.5, fontWeight: '700', letterSpacing: 0.5 },
+  text: { color: C.brandText, fontSize: FS.xs, fontWeight: '700', letterSpacing: 0.5 },
 });
 // 数学居中:onLayout 量容器与内容,translateY 平移——不依赖 flex 引擎任何脾气(vc155 教训)
 function Center({ children }: { children: React.ReactNode }) {
@@ -269,36 +269,36 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
             /* A: 图标矩阵——4 列 logo 瓦片,11 平台一屏全见,零横滑;onLayout 数学居中(不赌 flex 引擎) */
             <>
             <Center>
-              <View style={{ alignItems: 'center', gap: 6 }}>
-                <Text style={{ color: C.text, fontSize: 19, fontWeight: '800' }}>接入你的音乐库</Text>
-                <Text style={{ color: C.text3, fontSize: 12.5 }}>选择平台 · 自动测试连通后保存</Text>
+              <View style={{ alignItems: 'center', gap: SP.sm }}>
+                <Text style={{ color: C.text, fontSize: FS.h1, fontWeight: '800' }}>接入你的音乐库</Text>
+                <Text style={{ color: C.text3, fontSize: FS.md }}>选择平台 · 自动测试连通后保存</Text>
               </View>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 14, marginTop: 26, maxWidth: 400, alignSelf: 'center' }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: SP.xxl, marginTop: 26, maxWidth: 400, alignSelf: 'center' }}>
                 {/* ②本机曲库(A 原型矩阵同位:首格) */}
-                <TouchableOpacity onPress={() => nav.navigate('LocalLibEdit', {})} activeOpacity={0.7} style={{ width: 80, alignItems: 'center', gap: 7 }}>
+                <TouchableOpacity onPress={() => nav.navigate('LocalLibEdit', {})} activeOpacity={0.7} style={{ width: 80, alignItems: 'center', gap: SP.sm }}>
                   <View style={{ width: 74, height: 74, borderRadius: 18, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.stroke }}>
                     <Icon name="folder-music" size={30} color={C.brandText} />
                   </View>
-                  <Text style={{ color: C.text2, fontSize: 11.5, fontWeight: '500' }} numberOfLines={1}>本机曲库</Text>
+                  <Text style={{ color: C.text2, fontSize: FS.body, fontWeight: '500' }} numberOfLines={1}>本机曲库</Text>
                 </TouchableOpacity>
                 {/* [web] 本地曲库(服务器侧目录绑定,升级稿 §二;浏览器无设备文件→服务器目录语义) */}
                 {Platform.OS === 'web' ? (
-                  <TouchableOpacity onPress={() => nav.navigate('ServerLocalLib', {})} activeOpacity={0.7} style={{ width: 80, alignItems: 'center', gap: 7 }}>
+                  <TouchableOpacity onPress={() => nav.navigate('ServerLocalLib', {})} activeOpacity={0.7} style={{ width: 80, alignItems: 'center', gap: SP.sm }}>
                     <View style={{ width: 74, height: 74, borderRadius: 18, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.brand + '55' }}>
                       <Icon name="server" size={28} color={C.brandText} />
                     </View>
-                    <Text style={{ color: C.text2, fontSize: 11.5, fontWeight: '500' }} numberOfLines={1}>本地曲库</Text>
+                    <Text style={{ color: C.text2, fontSize: FS.body, fontWeight: '500' }} numberOfLines={1}>本地曲库</Text>
                   </TouchableOpacity>
                 ) : null}
                 {TYPE_CARDS.map(c => (
-                  <TouchableOpacity key={c.type} onPress={() => pickType(c.type)} activeOpacity={0.7} style={{ width: 80, alignItems: 'center', gap: 7 }}>
+                  <TouchableOpacity key={c.type} onPress={() => pickType(c.type)} activeOpacity={0.7} style={{ width: 80, alignItems: 'center', gap: SP.sm }}>
                     <View style={{ width: 74, height: 74, borderRadius: 18, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }}>
                       {c.logo
                         ? <Image source={c.logo} style={{ width: 46, height: 46, borderRadius: 11 }} resizeMode="contain" />
                         : <Icon name={c.icon} size={30} color={C.brandText} />}
                       {gated(c.type) ? <ProBadge floating /> : null}
                     </View>
-                    <Text style={{ color: C.text2, fontSize: 11.5, fontWeight: '500' }} numberOfLines={1}>{SHORT_NAME[c.type] ?? c.title}</Text>
+                    <Text style={{ color: C.text2, fontSize: FS.body, fontWeight: '500' }} numberOfLines={1}>{SHORT_NAME[c.type] ?? c.title}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -312,28 +312,28 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
               <View style={{ width: '100%', maxWidth: 460, alignSelf: 'center' }}>
                 {/* ②本机曲库添加卡(LEO v2.1 §②:与 Emby/听风同卡同流程,iconpark folder-music 同形;HD/车机不渲染) */}
                 <View style={{ marginBottom: 12 }}>
-                  <Text style={{ color: C.text3, fontSize: 11.5, fontWeight: '700', letterSpacing: 0.6, marginBottom: 6, paddingLeft: 4 }}>本机</Text>
+                  <Text style={{ color: C.text3, fontSize: FS.body, fontWeight: '700', letterSpacing: 0.6, marginBottom: 6, paddingLeft: 4 }}>本机</Text>
                   <TouchableOpacity onPress={() => nav.navigate('LocalLibEdit', {})} activeOpacity={0.75}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.surface2, borderRadius: 13, paddingVertical: 6, paddingHorizontal: 12, borderWidth: 1, borderColor: C.stroke }}>
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xl, backgroundColor: C.surface2, borderRadius: 13, paddingVertical: 6, paddingHorizontal: 12, borderWidth: 1, borderColor: C.stroke }}>
                     <View style={{ width: 30, height: 30, borderRadius: 7, alignItems: 'center', justifyContent: 'center' }}>
                       <Icon name="folder-music" size={24} color={C.brandText} />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={{ color: C.text, fontSize: 14, fontWeight: '600' }}>本机曲库</Text>
-                      <Text style={{ color: C.text3, fontSize: 11.5 }} numberOfLines={1}>扫描本设备音乐目录，离线可播</Text>
+                      <Text style={{ color: C.text, fontSize: FS.lg, fontWeight: '600' }}>本机曲库</Text>
+                      <Text style={{ color: C.text3, fontSize: FS.body }} numberOfLines={1}>扫描本设备音乐目录，离线可播</Text>
                     </View>
                     <Icon name="chevronright" size={16} color={C.text3} />
                   </TouchableOpacity>
                   {/* [web] 本地曲库行(服务器侧目录;升级稿 §二) */}
                   {Platform.OS === 'web' ? (
                     <TouchableOpacity onPress={() => nav.navigate('ServerLocalLib', {})} activeOpacity={0.75}
-                      style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.surface2, borderRadius: 13, paddingVertical: 6, paddingHorizontal: 12, borderWidth: 1, borderColor: C.brand + '55', marginTop: 8 }}>
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xl, backgroundColor: C.surface2, borderRadius: 13, paddingVertical: 6, paddingHorizontal: 12, borderWidth: 1, borderColor: C.brand + '55', marginTop: 8 }}>
                       <View style={{ width: 30, height: 30, borderRadius: 7, alignItems: 'center', justifyContent: 'center' }}>
                         <Icon name="server" size={22} color={C.brandText} />
                       </View>
                       <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={{ color: C.text, fontSize: 14, fontWeight: '600' }}>本地曲库</Text>
-                        <Text style={{ color: C.text3, fontSize: 11.5 }} numberOfLines={1}>绑定服务器目录，扫描入库即可听</Text>
+                        <Text style={{ color: C.text, fontSize: FS.lg, fontWeight: '600' }}>本地曲库</Text>
+                        <Text style={{ color: C.text3, fontSize: FS.body }} numberOfLines={1}>绑定服务器目录，扫描入库即可听</Text>
                       </View>
                       <Icon name="chevronright" size={16} color={C.text3} />
                     </TouchableOpacity>
@@ -341,19 +341,19 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                 </View>
                 {TYPE_GROUPS.map(g => (
                   <View key={g.label} style={{ marginBottom: 12 }}>
-                    <Text style={{ color: C.text3, fontSize: 11.5, fontWeight: '700', letterSpacing: 0.6, marginBottom: 6, paddingLeft: 4 }}>{g.label}</Text>
+                    <Text style={{ color: C.text3, fontSize: FS.body, fontWeight: '700', letterSpacing: 0.6, marginBottom: 6, paddingLeft: 4 }}>{g.label}</Text>
                     {g.items.map(c => (
                       <TouchableOpacity key={c.type} onPress={() => pickType(c.type)} activeOpacity={0.75}
-                        style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.surface2, borderRadius: 13, paddingVertical: 6, paddingHorizontal: 12, marginBottom: 6 }}>
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xl, backgroundColor: C.surface2, borderRadius: 13, paddingVertical: 6, paddingHorizontal: 12, marginBottom: 6 }}>
                         {c.logo
                           ? <Image source={c.logo} style={{ width: 30, height: 30, borderRadius: 7 }} resizeMode="contain" />
                           : <Icon name={c.icon} size={24} color={C.brandText} />}
                         <View style={{ flex: 1, minWidth: 0 }}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                            <Text style={{ color: C.text, fontSize: 14, fontWeight: '600' }}>{c.title}</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm }}>
+                            <Text style={{ color: C.text, fontSize: FS.lg, fontWeight: '600' }}>{c.title}</Text>
                             {gated(c.type) ? <ProBadge /> : null}
                           </View>
-                          <Text style={{ color: C.text3, fontSize: 11.5 }} numberOfLines={1}>{c.sub}</Text>
+                          <Text style={{ color: C.text3, fontSize: FS.body }} numberOfLines={1}>{c.sub}</Text>
                         </View>
                         <Icon name="chevronright" size={16} color={C.text3} />
                       </TouchableOpacity>
@@ -368,7 +368,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
             /* C: 大卡横滑 v3——更大卡+分页吸附+页点+计数(横滑概念终极版) */
             <>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }} pagingEnabled snapToInterval={218} decelerationRate="fast"
-              contentContainerStyle={{ gap: 12, paddingHorizontal: 10, alignItems: 'center' }}
+              contentContainerStyle={{ gap: SP.xl, paddingHorizontal: 10, alignItems: 'center' }}
               onScroll={e => setProtoPage(Math.round(e.nativeEvent.contentOffset.x / 218))} scrollEventThrottle={64}>
               {/* ②本机曲库(C 原型大卡首位) */}
               <TouchableOpacity style={[st.typeRowCard, { width: 206, height: 240 }]} activeOpacity={0.7} onPress={() => nav.navigate('LocalLibEdit', {})}>
@@ -387,7 +387,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                 </TouchableOpacity>
               ))}
             </ScrollView>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingBottom: 10 + insets.bottom }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.sm, paddingBottom: 10 + insets.bottom }}>
               {[0, 1, 2, 3, 4, 5].map(d => (
                 <View key={d} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: Math.floor(Math.min(protoPage, 10) / 2) === d ? C.brand : C.surface2 }} />
               ))}
@@ -399,16 +399,16 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
           /* HD: ScrollView 让位 + 一行横滑卡带居中 + 箭头钮(四改:卡放大、箭头/滚轮/拖拽可滑、整组屏幕居中) */
           <ScrollView
             style={{ flex: 1 }}
-            contentContainerStyle={[st.content, { flexGrow: 1, justifyContent: 'center', gap: 14, paddingHorizontal: 40, paddingBottom: 30, paddingTop: 10 }]}
+            contentContainerStyle={[st.content, { flexGrow: 1, justifyContent: 'center', gap: SP.xxl, paddingHorizontal: 40, paddingBottom: 30, paddingTop: 10 }]}
             showsVerticalScrollIndicator={false}
           >
             <Text style={[st.desc, hdSt.desc, { textAlign: 'center' }]}>选择服务器类型。NextMusic 会先测试能力，再保存凭证。</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: '100%', justifyContent: 'center' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.lg, width: '100%', justifyContent: 'center' }}>
               <HDTouch style={hdSt.rowArrow} focusStyle={hdSt.rowArrowFocus} focusBg={C.surface} glow={SH.brand} onPress={() => scrollRowBy(-1)}>
                 <Icon name="back" size={22} color={C.text2} />
               </HDTouch>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} nativeID="nm-type-row"
-                style={{ flexGrow: 0 }} contentContainerStyle={{ flexDirection: 'row', gap: 16, paddingVertical: 6 }}>
+                style={{ flexGrow: 0 }} contentContainerStyle={{ flexDirection: 'row', gap: SP.wide, paddingVertical: 6 }}>
                 {TYPE_CARDS.map(c => (
                   <HDTouch
                     key={c.type}
@@ -485,7 +485,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
         ) : <View style={{ width: 26 }} />}
       </View>
       <ScrollView
-        contentContainerStyle={[st.content, IS_HD && { maxWidth: 860, alignSelf: 'center', width: '100%', gap: 14 }]}
+        contentContainerStyle={[st.content, IS_HD && { maxWidth: 860, alignSelf: 'center', width: '100%', gap: SP.xxl }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
@@ -495,9 +495,9 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
         {(() => {
           const hist = providers.all().filter(p => p.id !== a.id && p.type === picked && p.base);
           return hist.length ? (
-            <View style={{ width: '100%', gap: 6 }}>
+            <View style={{ width: '100%', gap: SP.sm }}>
               <Text style={[st.inputLabel, { textAlign: 'center' }]}>从历史连接中选择</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.md, justifyContent: 'center' }}>
                 {hist.map(p => (
                   <TouchableOpacity key={p.id} style={st.histChip} activeOpacity={0.7}
                     onPress={() => { setA(prev => ({ ...prev, name: p.name, base: p.base, user: p.user, pass: p.pass })); setTested(false); toast('已填充历史连接，可直接测试或保存'); }}>
@@ -642,70 +642,70 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 12 },
-  title: { color: C.text, fontSize: 22, fontWeight: '700', flex: 1 }, // lx166 居左
-  content: { paddingHorizontal: 16, paddingBottom: 40, gap: 10 },
-  desc: { color: C.text2, fontSize: 11, lineHeight: 16, textAlign: 'center' }, // v3.32b(老板):描述文字全端居中(Step1/Step2 通用)
+  title: { color: C.text, fontSize: FS.h1, fontWeight: '700', flex: 1 }, // lx166 居左 [LEO 1011] 22 档外→h1(20)
+  content: { paddingHorizontal: 16, paddingBottom: 40, gap: SP.lg },
+  desc: { color: C.text2, fontSize: FS.sm, lineHeight: 16, textAlign: 'center' }, // v3.32b(老板):描述文字全端居中(Step1/Step2 通用)
 
   // 类型卡（Figma: #2B2B2B r12 p12×14 h64）
-  typeCard: { backgroundColor: C.surface2, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, gap: 4, alignItems: 'center', textAlign: 'center' },
+  typeCard: { backgroundColor: C.surface2, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, gap: SP.xs, alignItems: 'center', textAlign: 'center' },
 
   // 类型选择网格（老板 09-18:整页重排版——3 列等高卡，logo 居中，单行截断）
-  typeRowCard: { width: 190, height: 210, backgroundColor: C.surface2, borderRadius: 18, alignItems: 'center', justifyContent: 'center', gap: 9, paddingHorizontal: 8 },
-  typeRowTitle: { color: C.text, fontSize: 15.5, fontWeight: '600', textAlign: 'center', width: '100%' },
-  typeRowSub: { color: C.text3, fontSize: 12, textAlign: 'center', width: '100%' },
-  typeCardHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  typeCardTitle: { color: C.text, fontSize: 14, fontWeight: '500' },
-  typeCardSub: { color: C.text2, fontSize: 11 },
-  badge: { color: C.brandSoft, fontSize: 11, fontWeight: '500' },
+  typeRowCard: { width: 190, height: 210, backgroundColor: C.surface2, borderRadius: 18, alignItems: 'center', justifyContent: 'center', gap: SP.lg, paddingHorizontal: 8 },
+  typeRowTitle: { color: C.text, fontSize: FS.xl, fontWeight: '600', textAlign: 'center', width: '100%' },
+  typeRowSub: { color: C.text3, fontSize: FS.body, textAlign: 'center', width: '100%' },
+  typeCardHead: { flexDirection: 'row', alignItems: 'center', gap: SP.md },
+  typeCardTitle: { color: C.text, fontSize: FS.lg, fontWeight: '500' },
+  typeCardSub: { color: C.text2, fontSize: FS.sm },
+  badge: { color: C.brandSoft, fontSize: FS.sm, fontWeight: '500' },
 
   // Tab 容器（Figma: #1C1C1C r12 p4，选中页签 #2B2B2B r9 h36）
-  tabsWrap: { flexDirection: 'row', backgroundColor: C.elev, borderRadius: 12, padding: 4, gap: 4, height: 44 },
+  tabsWrap: { flexDirection: 'row', backgroundColor: C.elev, borderRadius: 12, padding: 4, gap: SP.xs, height: 44 },
   tabOn: { flex: 1, height: 36, borderRadius: 9, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   tabOff: { flex: 1, height: 36, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
-  tabTextOn: { color: C.text, fontSize: 12, fontWeight: '500' },
-  tabText: { color: C.text2, fontSize: 12 },
+  tabTextOn: { color: C.text, fontSize: FS.body, fontWeight: '500' },
+  tabText: { color: C.text2, fontSize: FS.body },
 
   // 输入卡（Figma: #2B2B2B r12 p10×12）
-  inputCard: { backgroundColor: C.surface2, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, gap: 4, alignItems: 'center' }, // v3.32(老板):表单居中对齐
-  inputLabel: { color: C.text2, fontSize: 11, textAlign: 'center' },
-  inputValue: { color: C.text, fontSize: 14, paddingVertical: 4, textAlign: 'center', width: '100%' },
+  inputCard: { backgroundColor: C.surface2, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, gap: SP.xs, alignItems: 'center' }, // v3.32(老板):表单居中对齐
+  inputLabel: { color: C.text2, fontSize: FS.sm, textAlign: 'center' },
+  inputValue: { color: C.text, fontSize: FS.lg, paddingVertical: 4, textAlign: 'center', width: '100%' },
   histChip: { backgroundColor: C.surface2, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: C.border }, // v3.32:历史连接胶囊
-  histChipText: { color: C.text2, fontSize: 12 },
-  inputHint: { color: C.text2, fontSize: 10 },
+  histChipText: { color: C.text2, fontSize: FS.body },
+  inputHint: { color: C.text2, fontSize: FS.xs },
 
   // 测试通过信息卡
-  infoCard: { backgroundColor: C.surface2, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, gap: 4 },
-  infoTitle: { color: C.text, fontSize: 14, fontWeight: '500' },
+  infoCard: { backgroundColor: C.surface2, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, gap: SP.xs },
+  infoTitle: { color: C.text, fontSize: FS.lg, fontWeight: '500' },
 
   // 按钮（Figma: h46 r12；测试 #2B2B2B 白字 / 保存 C.brand 深字）
-  btnRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  btnRow: { flexDirection: 'row', gap: SP.lg, marginTop: 4 },
   btnBusy: { opacity: 0.6 },
   btnGhost: { flex: 1, height: 46, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  btnGhostText: { color: C.text, fontSize: 14, fontWeight: '500' },
+  btnGhostText: { color: C.text, fontSize: FS.lg, fontWeight: '500' },
   btnPrimary: { flex: 1.4, height: 46, borderRadius: 12, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
-  btnPrimaryText: { color: C.onBrand, fontSize: 14, fontWeight: '500' },
+  btnPrimaryText: { color: C.onBrand, fontSize: FS.lg, fontWeight: '500' },
 });
 
 // HD(车机/TV)样式:一排四张竖版类型卡 + 大表单 + D-pad 可聚焦按钮
 const hdSt = StyleSheet.create({
   typeCard: {
     width: 300, height: 312, borderRadius: 24, backgroundColor: C.surface,
-    alignItems: 'center', justifyContent: 'center', gap: 14, padding: 16,
+    alignItems: 'center', justifyContent: 'center', gap: SP.xxl, padding: 16,
   },
   typeFocus: { borderWidth: 2.5, borderColor: C.brand, borderRadius: 24 },
   typeIcon: { width: 124, height: 124, borderRadius: 36, backgroundColor: C.brandDim, alignItems: 'center', justifyContent: 'center' },
-  typeTitle: { color: C.text, fontSize: 20, fontWeight: '700', textAlign: 'center', lineHeight: 28 },
-  typeSub: { color: C.text3, fontSize: 14.5, textAlign: 'center', lineHeight: 20 },
+  typeTitle: { color: C.text, fontSize: FS.h1, fontWeight: '700', textAlign: 'center', lineHeight: 28 },
+  typeSub: { color: C.text3, fontSize: FS.lg, textAlign: 'center', lineHeight: 20 },
   rowArrow: { width: 52, height: 76, borderRadius: 16, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   rowArrowFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 16 },
-  desc: { color: C.text2, fontSize: 13, lineHeight: 18, textAlign: 'center' },
-  inputCard: { backgroundColor: C.surface, borderRadius: 16, paddingHorizontal: 20, paddingVertical: 14, gap: 6, alignItems: 'center' }, // v3.32(老板):表单居中对齐
-  inputLabel: { color: C.text2, fontSize: 13, textAlign: 'center' },
-  inputValue: { color: C.text, fontSize: 16, paddingVertical: 6, textAlign: 'center', width: '100%' },
+  desc: { color: C.text2, fontSize: FS.md, lineHeight: 18, textAlign: 'center' },
+  inputCard: { backgroundColor: C.surface, borderRadius: 16, paddingHorizontal: 20, paddingVertical: 14, gap: SP.sm, alignItems: 'center' }, // v3.32(老板):表单居中对齐
+  inputLabel: { color: C.text2, fontSize: FS.md, textAlign: 'center' },
+  inputValue: { color: C.text, fontSize: FS.title, paddingVertical: 6, textAlign: 'center', width: '100%' },
   btnGhost: { flex: 1, height: 58, borderRadius: 14, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   btnGhostFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 14 },
-  btnGhostText: { color: C.text, fontSize: 16, fontWeight: '600' },
+  btnGhostText: { color: C.text, fontSize: FS.title, fontWeight: '600' },
   btnPrimary: { flex: 1.4, height: 58, borderRadius: 14, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   btnPrimaryFocus: { borderWidth: 2.5, borderColor: C.text, borderRadius: 14 },
-  btnPrimaryText: { color: C.onBrand, fontSize: 16, fontWeight: '700' },
+  btnPrimaryText: { color: C.onBrand, fontSize: FS.title, fontWeight: '700' },
 });

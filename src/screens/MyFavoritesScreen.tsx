@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, FS, SP } from '../theme/tokens';
 import { PageHeader } from '../components/PageChrome';
 import { PillTabs, PillTabsHD } from '../components/PillTabs';
 import { SongRow } from '../components/SongRow';
@@ -171,22 +171,22 @@ export function MyFavoritesScreen() {
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  empty: { color: C.text2, fontSize: 13, lineHeight: 20, textAlign: 'center', paddingVertical: 40 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 62, paddingHorizontal: 12, borderRadius: 12 },
+  empty: { color: C.text2, fontSize: FS.md, lineHeight: 20, textAlign: 'center', paddingVertical: 40 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, minHeight: 62, paddingHorizontal: 12, borderRadius: 12 },
   round: { width: 46, height: 46, borderRadius: 23 },
   square: { width: 46, height: 46, borderRadius: 8 },
   avaFallback: { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  glyph: { color: C.text2, fontSize: 18, fontWeight: '700' },
-  name: { color: C.text, fontSize: 14, fontWeight: '600' },
-  meta: { color: C.text2, fontSize: 11, marginTop: 2 },
+  glyph: { color: C.text2, fontSize: FS.h2, fontWeight: '700' },
+  name: { color: C.text, fontSize: FS.lg, fontWeight: '600' },
+  meta: { color: C.text2, fontSize: FS.sm, marginTop: 2 },
 });
 
 // v3.28(老板:统一风格):HD/桌面行尺寸——与媒体库/歌单详情同档(行高 68/封面 52/字号 15·12)
 const fv = StyleSheet.create({
-  row: { minHeight: 68, gap: 14 },
+  row: { minHeight: 68, gap: SP.xxl },
   round: { width: 52, height: 52, borderRadius: 26 },
   square: { width: 52, height: 52, borderRadius: 10 },
-  glyph: { fontSize: 20 },
-  name: { fontSize: 15 },
-  meta: { fontSize: 12, marginTop: 3 },
+  glyph: { fontSize: FS.h1 },
+  name: { fontSize: FS.xl },
+  meta: { fontSize: FS.body, marginTop: 3 },
 });

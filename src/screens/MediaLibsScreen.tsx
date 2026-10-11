@@ -178,8 +178,8 @@ export function MediaLibsScreen() {
                       <Text style={[ml.title, IS_HD && ml.titleHD]} numberOfLines={1}>{l.name}</Text>
                       <View style={ml.typeChip}><Text style={ml.typeChipText}>本机</Text></View>
                     </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: bad ? '#8A8F98' : '#3FBF7F' }} />
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm }}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: bad ? C.text3 : C.brand }} />
                       <Text style={[ml.sub, IS_HD && ml.subHD]} numberOfLines={1}>
                         {bad ? '目录不可用（SD 卡拔出/目录被移除）' : `正常 · ${l.rootLabel || '本机目录'}${l.trackCount ? ` · ${l.trackCount} 首` : ' · 未扫描'}`}
                       </Text>
@@ -212,8 +212,8 @@ export function MediaLibsScreen() {
                     <Text style={[ml.title, IS_HD && ml.titleHD]} numberOfLines={1}>{l.name}</Text>
                     <View style={ml.typeChip}><Text style={ml.typeChipText}>服务器</Text></View>
                   </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: l.trackCount ? '#3FBF7F' : '#8A8F98' }} />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm }}>
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: l.trackCount ? C.brand : C.text3 }} />
                     <Text style={[ml.sub, IS_HD && ml.subHD]} numberOfLines={1}>
                       {l.trackCount ? `就绪 · ${l.trackCount.toLocaleString()} 首 · 服务器目录` : '未扫描 · 服务器目录'}
                     </Text>
@@ -256,7 +256,7 @@ export function MediaLibsScreen() {
             <View style={{ flex: 1, minWidth: 0 }}>
               <View style={ml.titleRow}>
                 <Text style={[ml.title, IS_HD && ml.titleHD]} numberOfLines={1}>{pub.summary?.name || '公共曲库'}</Text>
-                <View style={[ml.typeChip, { flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
+                <View style={[ml.typeChip, { flexDirection: 'row', alignItems: 'center', gap: SP.xs }]}>
                   <Icon name="shield" size={9} color={C.brandText} />
                   <Text style={ml.typeChipText}>官方</Text>
                 </View>
@@ -294,8 +294,8 @@ export function MediaLibsScreen() {
                       <Text style={[ml.title, IS_HD && ml.titleHD]} numberOfLines={1}>{a.name || label}</Text>
                       <View style={ml.typeChip}><Text style={ml.typeChipText}>{label}</Text></View>
                     </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#3FBF7F' }} />
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm }}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.brand }} />
                       <Text style={[ml.sub, IS_HD && ml.subHD]} numberOfLines={1}>已连接 · {a.base}</Text>
                     </View>
                   </View>
@@ -1378,7 +1378,7 @@ function PvCard({ cover, name, meta, round, onPress, onLongPress }: {
   const { elRef, onHoverIn, onHoverOut, cardStyle } = useHoverCard(name); // [老板 1011 12:34] nm-card 同款
   if (round) {
     return (
-      <T style={[{ width: size, gap: 7, alignItems: 'center' }, cardStyle as never]} ref={elRef as never} activeOpacity={0.85} onPress={onPress} onLongPress={onLongPress} focusStyle={focus(10)}
+      <T style={[{ width: size, gap: SP.sm, alignItems: 'center' }, cardStyle as never]} ref={elRef as never} activeOpacity={0.85} onPress={onPress} onLongPress={onLongPress} focusStyle={focus(10)}
         {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}>
         <View style={[
           { width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
@@ -1401,7 +1401,7 @@ function PvCard({ cover, name, meta, round, onPress, onLongPress }: {
           <Icon name="music" size={22} color={C.text2} />
         </View>
       )}
-      <View style={{ padding: 8, gap: 3, minHeight: 46 }}>
+      <View style={{ padding: 8, gap: SP.xs, minHeight: 46 }}>
         <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{name}</Text>
         {meta ? <Text style={[st.albumMeta, IS_HD && bv.albumMeta]} numberOfLines={1}>{meta}</Text> : null}
       </View>
@@ -1429,7 +1429,7 @@ const st = StyleSheet.create({
   albumCellWeb: { width: '15.5%' }, // web 6 列(0.75 zoom 下 31%=2列过大,加密 4 倍)
   albumCover: { width: '100%', aspectRatio: 1, borderRadius: 10, backgroundColor: C.surface2 },
   albumFallback: { alignItems: 'center', justifyContent: 'center' },
-  albumGlyph: { color: C.text2, fontSize: 24, fontWeight: '700' },
+  albumGlyph: { color: C.text2, fontSize: FS.display, fontWeight: '700' },
   albumName: { color: C.text, fontSize: FS.body, lineHeight: 15, fontWeight: '600' },
   albumMeta: { color: C.text2, fontSize: FS.xs, lineHeight: 12 },
   // [批次1] 艺术家/歌单自造行(artistRow/plRow/artistArt/artistFallback/artistName/artistMeta)退役→统一件 ArtistRow/PlaylistRow(artistInitial 留给 PvCard 圆卡兑底)
@@ -1515,13 +1515,13 @@ const dv = StyleSheet.create({
   crumbCurTextHD: { fontSize: FS.lg },
   crumbRefreshHD: { width: 34, height: 34 },
   // 桌面≥900 双区容器：左列表 flex1 + 右操作栏 260 固定（对齐 860 列表右缘）
-  davCols: { flexDirection: 'row', alignItems: 'flex-start', gap: 24, maxWidth: 1140, alignSelf: 'stretch' },
-  sidePanel: { width: 260, flexShrink: 0, gap: 8, position: 'relative', top: 40, padding: 14, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke },
+  davCols: { flexDirection: 'row', alignItems: 'flex-start', gap: SP.big, maxWidth: 1140, alignSelf: 'stretch' },
+  sidePanel: { width: 260, flexShrink: 0, gap: SP.md, position: 'relative', top: 40, padding: 14, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke },
   sideBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.md, height: 38, paddingHorizontal: 12, borderRadius: 10, backgroundColor: C.surface2 },
   sideBtnMain: { color: C.onBrand, fontSize: FS.md, fontWeight: '700' },
   sideBtnText: { color: C.text2, fontSize: FS.md, fontWeight: '600' },
   sideHint: { color: C.text3, fontSize: FS.sm, lineHeight: 14, marginTop: 4 },
-  eq: { width: 26, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: 2, height: 12 },
+  eq: { width: 26, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: SP.xs, height: 12 },
   eqBar: { width: 3, borderRadius: 1.5, backgroundColor: C.brand },
 });
 
@@ -1549,7 +1549,7 @@ const sec = StyleSheet.create({
   title: { color: C.text, fontSize: FS.title, lineHeight: 22, fontWeight: '700' },
   titleHD: { fontSize: FS.h2, lineHeight: 25 },
   count: { color: C.text3, fontSize: FS.body },
-  moreBtn: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: 8, paddingVertical: 4 },
+  moreBtn: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: SP.xs, paddingHorizontal: 8, paddingVertical: 4 },
   moreText: { color: C.text2, fontSize: FS.body, fontWeight: '500' },
   moreRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.xs, paddingVertical: 10 },
   previewHint: { color: C.text3, fontSize: FS.sm, marginLeft: 'auto' },
@@ -1563,13 +1563,13 @@ const pv = StyleSheet.create({
   pheadLogo: { width: 44, height: 44, borderRadius: 13, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   pheadLogoHD: { width: 52, height: 52, borderRadius: 16 },
   pheadNameRow: { flexDirection: 'row', alignItems: 'center', gap: SP.md },
-  pheadName: { color: C.text, fontSize: 19, lineHeight: 25, fontWeight: '800', flexShrink: 1 },
-  pheadNameHD: { fontSize: 22, lineHeight: 29 },
+  pheadName: { color: C.text, fontSize: FS.h1, lineHeight: 25, fontWeight: '800', flexShrink: 1 },
+  pheadNameHD: { fontSize: FS.h1, lineHeight: 26 }, // [LEO 1011] 22 档外→h1(20)
   pheadSub: { color: C.text3, fontSize: FS.body, lineHeight: 16, marginTop: 2 },
   dot: { width: 9, height: 9, borderRadius: 5, flexShrink: 0, shadowOpacity: 0.8, shadowRadius: 6, shadowOffset: { width: 0, height: 0 }, elevation: 2 }, // 状态点+辉光(shadowColor 随状态内联)
   pheadBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke, alignItems: 'center', justifyContent: 'center' },
   pheadBtnHD: { width: 42, height: 42, borderRadius: 12 },
-  heroStB: { fontWeight: '800', color: '#FFFFFF' }, // 英雄卡 st 行内粗体(统计数,基准稿 <b> 同形)
+  heroStB: { fontWeight: '800', color: C.white }, // 英雄卡 st 行内粗体(统计数,基准稿 <b> 同形)
   caps: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.sm },
   cap: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, height: 26, paddingHorizontal: 10, borderRadius: 999, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke },
   capDim: { opacity: 0.45 },

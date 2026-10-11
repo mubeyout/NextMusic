@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSeekBar } from '../hooks/useSeekBar'; // R6 统一 seek
 import { useAudioPro } from 'react-native-audio-pro';
 import { Icon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, FS, SP } from '../theme/tokens';
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
 // 触点抽象:HD 用 HDTouch(D-pad 焦点),phone 保持 TouchableOpacity
@@ -413,27 +413,27 @@ const st = StyleSheet.create({
   headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 28, marginBottom: 4 },
   handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: C.handle },
   closeBtn: { position: 'absolute', right: 0, top: -4, width: 36, height: 36, borderRadius: 18, backgroundColor: C.stroke, alignItems: 'center', justifyContent: 'center' },
-  title: { color: C.text, fontSize: 20, lineHeight: 26, fontWeight: '700' },
-  subtitle: { color: C.text2, fontSize: 12, lineHeight: 16, marginTop: 2 },
-  label: { color: C.text2, fontSize: 12, lineHeight: 16, marginTop: 18, marginBottom: 8 },
+  title: { color: C.text, fontSize: FS.h1, lineHeight: 26, fontWeight: '700' },
+  subtitle: { color: C.text2, fontSize: FS.body, lineHeight: 16, marginTop: 2 },
+  label: { color: C.text2, fontSize: FS.body, lineHeight: 16, marginTop: 18, marginBottom: 8 },
   deviceRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64,
+    flexDirection: 'row', alignItems: 'center', gap: SP.xl, minHeight: 64,
     backgroundColor: C.surface2, borderRadius: 12, paddingHorizontal: 12, marginTop: 6,
   },
   deviceRowOn: { backgroundColor: C.selTint, borderWidth: 1, borderColor: C.brand + '55' },
   iconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.inset2, alignItems: 'center', justifyContent: 'center' },
-  deviceName: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '600' },
-  deviceStatus: { color: C.text2, fontSize: 11, lineHeight: 15 },
-  deviceStatusOn: { color: C.brandText, fontSize: 11, lineHeight: 15 },
+  deviceName: { color: C.text, fontSize: FS.lg, lineHeight: 20, fontWeight: '600' },
+  deviceStatus: { color: C.text2, fontSize: FS.sm, lineHeight: 15 },
+  deviceStatusOn: { color: C.brandText, fontSize: FS.sm, lineHeight: 15 },
   checkBadge: {
     width: 24, height: 24, borderRadius: 12, backgroundColor: C.brand,
     alignItems: 'center', justifyContent: 'center',
   },
-  scanHint: { color: C.text3, fontSize: 11, lineHeight: 16, marginTop: 10, textAlign: 'center' },
+  scanHint: { color: C.text3, fontSize: FS.sm, lineHeight: 16, marginTop: 10, textAlign: 'center' },
   rescanBtn: { alignSelf: 'center', marginTop: 10, paddingVertical: 6, paddingHorizontal: 12 },
-  rescanText: { color: C.text2, fontSize: 11, lineHeight: 16 },
-  volumeRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 18 },
-  volBtn: { color: C.text, fontSize: 18, fontWeight: '600', width: 24, textAlign: 'center' },
+  rescanText: { color: C.text2, fontSize: FS.sm, lineHeight: 16 },
+  volumeRow: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, marginTop: 18 },
+  volBtn: { color: C.text, fontSize: FS.h2, fontWeight: '600', width: 24, textAlign: 'center' },
   volTrack: { flex: 1, height: 28, justifyContent: 'center' },
   volBase: { position: 'absolute', left: 0, right: 0, height: 4, borderRadius: 2, backgroundColor: C.inset2 },
   volFill: { position: 'absolute', left: 0, height: 4, borderRadius: 2, backgroundColor: C.brand },
@@ -441,6 +441,6 @@ const st = StyleSheet.create({
     position: 'absolute', top: 6, width: 16, height: 16, borderRadius: 8,
     backgroundColor: C.text, marginLeft: -8,
   },
-  volumePct: { color: C.text2, fontSize: 12, width: 36, textAlign: 'right' },
-  footer: { color: C.text3, fontSize: 10, lineHeight: 14, marginTop: 10, textAlign: 'center' },
+  volumePct: { color: C.text2, fontSize: FS.body, width: 36, textAlign: 'right' },
+  footer: { color: C.text3, fontSize: FS.xs, lineHeight: 14, marginTop: 10, textAlign: 'center' },
 });

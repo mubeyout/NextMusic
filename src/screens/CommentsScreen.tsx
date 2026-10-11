@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIn
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, FS, SP } from '../theme/tokens';
 import { usePlayer } from '../state/PlayerProvider';
 import { api } from '../services/server';
 import { lxapi } from '../services/lxapi';
@@ -91,7 +91,7 @@ export function CommentsScreen() {
   if (!current) {
     return (
       <View style={[st.screen, { paddingTop: insets.top + 60, alignItems: 'center' }]}>
-        <Text style={{ color: C.text2, fontSize: 13 }}>没有正在播放的歌曲</Text>
+        <Text style={{ color: C.text2, fontSize: FS.md }}>没有正在播放的歌曲</Text>
       </View>
     );
   }
@@ -209,37 +209,37 @@ const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   header: { height: 72, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20 },
   hBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  hTitle: { flex: 1, color: C.text, fontSize: 16, lineHeight: 19, fontWeight: '500' }, // lx166 居左
-  songRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, gap: 12, marginBottom: 12 },
-  songName: { color: C.text, fontSize: 15, lineHeight: 22, fontWeight: '700' },
-  commentCount: { color: C.text2, fontSize: 11, lineHeight: 16 },
-  sortPills: { flexDirection: 'row', gap: 6 },
+  hTitle: { flex: 1, color: C.text, fontSize: FS.title, lineHeight: 19, fontWeight: '500' }, // lx166 居左
+  songRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, gap: SP.xl, marginBottom: 12 },
+  songName: { color: C.text, fontSize: FS.xl, lineHeight: 22, fontWeight: '700' },
+  commentCount: { color: C.text2, fontSize: FS.sm, lineHeight: 16 },
+  sortPills: { flexDirection: 'row', gap: SP.sm },
   pill: { height: 28, borderRadius: 14, paddingHorizontal: 14, justifyContent: 'center', backgroundColor: C.inset },
   pillOn: { backgroundColor: C.brand },
-  pillText: { color: C.text2, fontSize: 12, lineHeight: 14, fontWeight: '500' },
+  pillText: { color: C.text2, fontSize: FS.body, lineHeight: 14, fontWeight: '500' },
   pillTextOn: { color: C.onBrand },
   center: { paddingVertical: 40, alignItems: 'center' },
-  localLabel: { color: C.text3, fontSize: 11, lineHeight: 15, marginTop: 10, marginBottom: 4 },
+  localLabel: { color: C.text3, fontSize: FS.sm, lineHeight: 15, marginTop: 10, marginBottom: 4 },
   cardMine: { borderColor: C.brandDim, borderWidth: StyleSheet.hairlineWidth },
-  delText: { color: C.text3, fontSize: 11 },
-  empty: { color: C.text2, fontSize: 12, textAlign: 'center', paddingVertical: 40 },
-  card: { flexDirection: 'row', gap: 12, paddingHorizontal: 20, paddingVertical: 12 },
+  delText: { color: C.text3, fontSize: FS.sm },
+  empty: { color: C.text2, fontSize: FS.body, textAlign: 'center', paddingVertical: 40 },
+  card: { flexDirection: 'row', gap: SP.xl, paddingHorizontal: 20, paddingVertical: 12 },
   avatar: { width: 36, height: 36, borderRadius: 18 },
   avatarFallback: { backgroundColor: C.inset2, alignItems: 'center', justifyContent: 'center' },
-  avatarInitial: { color: C.text2, fontSize: 15, fontWeight: '700' },
+  avatarInitial: { color: C.text2, fontSize: FS.xl, fontWeight: '700' },
   cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  userName: { color: C.brandText, fontSize: 12, lineHeight: 17, fontWeight: '500' },
-  likeRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  likeCount: { color: C.text3, fontSize: 10, lineHeight: 13 },
-  cmText: { color: C.text, fontSize: 13, lineHeight: 19, marginTop: 4 },
-  cmTime: { color: C.text3, fontSize: 10, lineHeight: 13, marginTop: 6 },
+  userName: { color: C.brandText, fontSize: FS.body, lineHeight: 17, fontWeight: '500' },
+  likeRow: { flexDirection: 'row', alignItems: 'center', gap: SP.xs },
+  likeCount: { color: C.text3, fontSize: FS.xs, lineHeight: 13 },
+  cmText: { color: C.text, fontSize: FS.md, lineHeight: 19, marginTop: 4 },
+  cmTime: { color: C.text3, fontSize: FS.xs, lineHeight: 13, marginTop: 6 },
   inputBar: {
     position: 'absolute', left: 0, right: 0, bottom: 0,
-    flexDirection: 'row', gap: 10, paddingHorizontal: 20, paddingTop: 10,
+    flexDirection: 'row', gap: SP.lg, paddingHorizontal: 20, paddingTop: 10,
     backgroundColor: C.inputBar, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.strokeFaint,
   },
   input: { flex: 1, height: 40, borderRadius: 20, backgroundColor: C.surface2, paddingHorizontal: 16, justifyContent: 'center' },
-  inputText: { color: C.text, fontSize: 13, padding: 0 },
+  inputText: { color: C.text, fontSize: FS.md, padding: 0 },
   sendBtn: { height: 40, borderRadius: 20, backgroundColor: C.brand, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center' },
-  sendText: { color: C.onBrand, fontSize: 13, fontWeight: '500' },
+  sendText: { color: C.onBrand, fontSize: FS.md, fontWeight: '500' },
 });

@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { C } from '../theme/tokens';
+import { C, FS, SP } from '../theme/tokens';
 import { PageShell } from '../components/SettingRows';
 
 function Doc({ blocks, title }: { title: string; blocks: { h?: string; p?: string; li?: string[] }[] }) {
@@ -135,9 +135,9 @@ export function FaqScreen() { return <Doc title="常见问题" blocks={FAQ} />; 
 
 const s = StyleSheet.create({
   block: { marginBottom: 22 },
-  h: { color: C.text, fontSize: 16, fontWeight: '700', marginBottom: 8 },
-  p: { color: C.text2, fontSize: 13, lineHeight: 21 },
-  liRow: { flexDirection: 'row', gap: 8, marginBottom: 6 },
-  dot: { color: C.brandText, fontSize: 13, lineHeight: 21 },
-  li: { color: C.text2, fontSize: 13, lineHeight: 21, flex: 1 },
+  h: { color: C.text, fontSize: FS.title, fontWeight: '700', marginBottom: 8 },
+  p: { color: C.text2, fontSize: FS.md, lineHeight: 21 },
+  liRow: { flexDirection: 'row', gap: SP.md, marginBottom: 6 },
+  dot: { color: C.brandText, fontSize: FS.md, lineHeight: 21 },
+  li: { color: C.text2, fontSize: FS.md, lineHeight: 21, flex: 1 },
 });

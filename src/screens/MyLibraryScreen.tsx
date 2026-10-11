@@ -7,7 +7,7 @@ import LinearGradient from 'react-native-linear-gradient'; // A1 渐变(质感�
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { HDTouch } from '../hd/HDTouch';
-import { Icon } from '../theme/Icon';
+import { Icon, type IconName } from '../theme/Icon';
 import { C, T, SP, FS } from '../theme/tokens';
 import { dialog, toast } from '../components/Dialog';
 import { SongRow } from '../components/SongRow'; // [批次1·P1-1] 局部 SongRow 退役,改用通用件(显示/props 已对齐)
@@ -470,7 +470,7 @@ export function MyLibraryScreen() {
           {/* ④浏览页库胶囊「公共」(未授权/开关关→不渲染;点击进公共曲库页) */}
           {pubVisible ? <ScopeChip label="公共" on={false} onPress={() => nav.navigate('PublicLibrary', {})} tv={IS_TV} /> : null}
           {sharedLibs.map(l => (
-            <ScopeChip key={l.id} label={`${l.locked ? '🔒 ' : ''}${l.name}`} on={scope.kind === 'shared' && scope.id === l.id}
+            <ScopeChip key={l.id} label={l.name} icon={l.locked ? 'shield' : undefined} on={scope.kind === 'shared' && scope.id === l.id}
               onPress={() => setScope({ kind: 'shared', id: l.id, name: l.name, locked: l.locked })} tv={IS_TV} />
           ))}
         </View>
@@ -528,19 +528,23 @@ export function MyLibraryScreen() {
   );
 }
 
-function ScopeChip({ label, on, onPress, tv }: { label: string; on: boolean; onPress: () => void; tv?: boolean }) {
+function ScopeChip({ label, icon, on, onPress, tv }: { label: string; icon?: IconName; on: boolean; onPress: () => void; tv?: boolean }) {
+  // [LEO 1011 统一令] 🔒 emoji→真矢量 icon(Icon 禁 emoji 令);chip 内 row 对齐
+  const glyph = icon ? <Icon name={icon} size={12} color={on ? C.onBrand : C.text2} /> : null;
   if (tv) {
     return (
-      <HDTouch style={[d.tab, on && d.tabOn, { paddingVertical: 5, paddingHorizontal: 12 }]} focusStyle={d.tabFocus} onPress={onPress}>
+      <HDTouch style={[d.tab, on && d.tabOn, { paddingVertical: 5, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: SP.xs }]} focusStyle={d.tabFocus} onPress={onPress}>
+        {glyph}
         <Text style={[d.tabText, on && d.tabTextOn]}>{label}</Text>
       </HDTouch>
     );
   }
   return (
     <TouchableOpacity
-      style={[d.tab, on && d.tabOn, { paddingVertical: 4, paddingHorizontal: 10 }]}
+      style={[d.tab, on && d.tabOn, { paddingVertical: 4, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: SP.xs }]}
       onPress={onPress} activeOpacity={0.75}
     >
+      {glyph}
       <Text style={[d.tabText, on && d.tabTextOn]}>{label}</Text>
     </TouchableOpacity>
   );
@@ -685,12 +689,12 @@ const d = StyleSheet.create({
   tab: { borderRadius: 999, borderWidth: 1, borderColor: C.stroke, paddingHorizontal: 14, paddingVertical: 6, backgroundColor: 'transparent' },
   tabOn: { backgroundColor: C.brand, borderColor: C.brand },
   tabText: { color: C.text2, fontSize: FS.body },
-  tabTextOn: { color: '#04120a', fontWeight: '700' },
+  tabTextOn: { color: C.onBrand, fontWeight: '700' },
   tabFocus: { borderColor: C.brand, borderWidth: 2 },
   bodyWrap: { flex: 1 },
   // 桌面双区
   wideCols: { flex: 1, flexDirection: 'row' },
-  wideSide: { width: 198, borderRightWidth: 1, borderRightColor: C.strokeFaint, padding: 16, gap: 2 },
+  wideSide: { width: 198, borderRightWidth: 1, borderRightColor: C.strokeFaint, padding: 16, gap: SP.xs },
   wtab: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10 },
   wtabOn: { backgroundColor: 'rgba(30,215,96,.11)' },
   wtabT: { color: C.text2, fontSize: FS.md },
@@ -729,10 +733,10 @@ const d = StyleSheet.create({
   skel: { aspectRatio: 1, borderRadius: 12, backgroundColor: 'rgba(255,255,255,.055)' },
   // 主动作
   playAll: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.sm, backgroundColor: C.brand, borderRadius: 999, paddingVertical: 12, marginHorizontal: 16, marginTop: 8, alignSelf: 'stretch' as never },
-  playAllT: { color: '#04120a', fontSize: FS.md, fontWeight: '700' },
+  playAllT: { color: C.onBrand, fontSize: FS.md, fontWeight: '700' },
   shuffleBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.md, backgroundColor: C.brand, borderRadius: 14, paddingHorizontal: 18, paddingVertical: 14, marginHorizontal: 16, marginTop: 6 },
-  shuffleBtnT: { color: '#04120a', fontSize: FS.lg, fontWeight: '800' },
-  shuffleBtnSub: { flex: 1, color: '#04120a', fontSize: FS.sm, fontWeight: '600', opacity: 0.75, textAlign: 'right' },
+  shuffleBtnT: { color: C.onBrand, fontSize: FS.lg, fontWeight: '800' },
+  shuffleBtnSub: { flex: 1, color: C.onBrand, fontSize: FS.sm, fontWeight: '600', opacity: 0.75, textAlign: 'right' },
   // 入口卡
   libCard: { borderRadius: 16, borderWidth: 1, borderColor: T.light ? 'rgba(13,155,69,.22)' : 'rgba(30,215,96,.15)', backgroundColor: T.light ? '#D2E4D8' : '#0c1612', paddingVertical: 18, paddingHorizontal: 20, marginBottom: 14, overflow: 'hidden' }, // V11 浅色 token
   vinBig: { position: 'absolute', right: -36, bottom: -70, width: 140, height: 140, borderRadius: 999, backgroundColor: '#1A1A1A', borderWidth: 2, borderColor: '#000', opacity: 0.78, alignItems: 'center', justifyContent: 'center' },
@@ -747,5 +751,5 @@ const d = StyleSheet.create({
   albHead: { flexDirection: 'row', gap: SP.wide, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12, alignItems: 'center' },
   albName: { color: C.text, fontSize: FS.headline, fontWeight: '800', lineHeight: 23 },
   albSub: { color: C.text3, fontSize: FS.body, marginTop: 4 },
-  errText: { color: '#E8618C', fontSize: FS.md, padding: 20, textAlign: 'center' },
+  errText: { color: C.danger, fontSize: FS.md, padding: 20, textAlign: 'center' },
 });

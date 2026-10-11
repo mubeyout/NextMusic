@@ -18,6 +18,7 @@ import {
 } from '../services/soundfx';
 import { useFeatureGate, FeatureGateModal } from '../components/FeatureGate';
 import { LockGlyph } from '../components/GateSheet';
+import { FS, SP } from '../theme/tokens';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -86,7 +87,7 @@ function Seg({ options, value, onChange }: { options: { key: string; label: stri
     <View style={st.segRow}>
       {options.map(o => (
         <HDTouch key={o.key} style={[st.segItem, value === o.key && st.segItemOn]} hoverBg="#ffffff1a" onPress={() => onChange(o.key)}>
-          <Text style={[st.segText, value === o.key && { color: '#0b0f0d', fontWeight: '700' }]}>{o.label}</Text>
+          <Text style={[st.segText, value === o.key && { color: C.onBrand, fontWeight: '700' }]}>{o.label}</Text>
         </HDTouch>
       ))}
     </View>
@@ -161,7 +162,7 @@ export function HDFxScreen() {
         </HDTouch>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 26, paddingTop: 10, paddingBottom: 40 + H.playbar, gap: 20, width: '100%' }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 26, paddingTop: 10, paddingBottom: 40 + H.playbar, gap: SP.wider, width: '100%' }} showsVerticalScrollIndicator={false}>
 
         {/* ===== 听感模式 ===== */}
         <SectionTitle icon="wave" title="听感模式" desc="一键组合,手动改高级项自动回落自定义" />
@@ -171,7 +172,7 @@ export function HDFxScreen() {
             { id: 'night', name: '夜听' }, { id: 'scene', name: '现场感' }, { id: 'custom', name: '自定义' },
           ] as { id: SoundMode; name: string }[]).map(m => (
             <HDTouch key={m.id} style={[st.chip, mode === m.id && st.chipOn]} hoverBg="#ffffff1a" onPress={() => { applySoundMode(m.id); force(); }}>
-              <Text style={[st.chipText, mode === m.id && { color: '#0b0f0d', fontWeight: '700' }]}>{m.name}</Text>
+              <Text style={[st.chipText, mode === m.id && { color: C.onBrand, fontWeight: '700' }]}>{m.name}</Text>
             </HDTouch>
           ))}
         </View>
@@ -190,7 +191,7 @@ export function HDFxScreen() {
                   else if (renameCustomPreset(p.name, nn)) toast('预设已重命名');
                   force();
                 } : undefined}>
-                <Text style={[st.chipText, snap.activePresetName === p.name && { color: '#0b0f0d', fontWeight: '700' }]}>{p.name}</Text>
+                <Text style={[st.chipText, snap.activePresetName === p.name && { color: C.onBrand, fontWeight: '700' }]}>{p.name}</Text>
               </HDTouch>
             ))}
             {/* D2 eq_custom：存为预设=入口（免费锁标替换加号+三命拦截） */}
@@ -218,7 +219,7 @@ export function HDFxScreen() {
           <View style={st.chipWrap}>
             {FX_REVERB_OPTIONS.map(r => (
               <HDTouch key={r.id} style={[st.chip, s.reverb.id === r.id && st.chipOn]} hoverBg="#ffffff1a" onPress={() => { setReverb(r.id); force(); }}>
-                <Text style={[st.chipText, s.reverb.id === r.id && { color: '#0b0f0d', fontWeight: '700' }]}>{r.name}</Text>
+                <Text style={[st.chipText, s.reverb.id === r.id && { color: C.onBrand, fontWeight: '700' }]}>{r.name}</Text>
               </HDTouch>
             ))}
           </View>
@@ -231,7 +232,7 @@ export function HDFxScreen() {
           <SectionTitle icon="headphones" title="3D 立体环绕" />
           <Toggle on={s.panner.enable} label="启用环绕" onChange={v => { setPanner({ enable: v }); force(); }} />
           {s.panner.enable ? (
-            <View style={{ gap: 8 }}>
+            <View style={{ gap: SP.md }}>
               <HSlider label="速度" value={s.panner.speed} min={1} max={50} step={1} onChange={v => { setPanner({ speed: v }); force(); }} />
               <HSlider label="距离" value={s.panner.distance} min={1} max={30} step={1} onChange={v => { setPanner({ distance: v }); force(); }} />
             </View>
@@ -253,7 +254,7 @@ export function HDFxScreen() {
         </View>
 
         {/* ===== ViPER ===== */}
-        <View style={{ gap: 10 }}>
+        <View style={{ gap: SP.lg }}>
           <SectionTitle icon="speaker" title="ViPER 音效" desc="低音/细节/矫正/限幅/响度" />
           <Seg
             options={[{ key: '0', label: '关闭' }, { key: '1', label: '自然低音' }, { key: '2', label: '纯净低音' }, { key: '3', label: '清澈人声' }]}
@@ -304,7 +305,7 @@ function AutoeqPicker({ onClose, cur, onPick }: { onClose: () => void; cur: stri
           <HDTouch style={st.pickClose} hoverBg="#ffffff1a" onPress={onClose}><Icon name="close" size={15} color={C.text2} /></HDTouch>
         </View>
         <TextInput style={st.pickInput} placeholder="搜索型号…" placeholderTextColor={C.text3} value={q} onChangeText={setQ} />
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, gap: 4 }}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, gap: SP.xs }}>
           <HDTouch style={[st.pickRow, !cur && st.pickRowOn]} hoverBg={C.hover} onPress={() => onPick('')}>
             <Text style={[st.pickRowText, !cur && { color: C.brand, fontWeight: '700' }]}>不使用</Text>
           </HDTouch>
@@ -321,43 +322,43 @@ function AutoeqPicker({ onClose, cur, onPick }: { onClose: () => void; cur: stri
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 22, paddingBottom: 10 },
-  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 32, borderRadius: 9, paddingHorizontal: 10, backgroundColor: C.surface },
+  header: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, paddingHorizontal: 22, paddingBottom: 10 },
+  backBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, height: 32, borderRadius: 9, paddingHorizontal: 10, backgroundColor: C.surface },
   backLabel: { color: '#ffffffcc', fontSize: H.font.sm },
-  headerTitle: { flex: 1, color: C.text, fontSize: 17, fontWeight: '800' },
-  syncBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 30, borderRadius: 15, paddingHorizontal: 12, backgroundColor: C.surface },
+  headerTitle: { flex: 1, color: C.text, fontSize: FS.headline, fontWeight: '800' },
+  syncBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, height: 30, borderRadius: 15, paddingHorizontal: 12, backgroundColor: C.surface },
   syncText: { color: C.text2, fontSize: H.font.xs },
-  secHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  secHead: { flexDirection: 'row', alignItems: 'center', gap: SP.md },
   secTitle: { color: C.text, fontSize: H.font.md, fontWeight: '800' },
   secDesc: { color: C.text3, fontSize: H.font.xs, flex: 1, textAlign: 'right' },
-  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 8 },
-  chip: { height: 30, borderRadius: 15, paddingHorizontal: 13, borderWidth: 1, borderColor: '#ffffff26', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 5 },
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.sm, marginTop: 8 },
+  chip: { height: 30, borderRadius: 15, paddingHorizontal: 13, borderWidth: 1, borderColor: '#ffffff26', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: SP.sm },
   chipOn: { backgroundColor: C.brand, borderColor: C.brand },
   chipGhost: { borderStyle: 'dashed' as const },
   chipWide: { flex: 1, justifyContent: 'flex-start' },
   chipText: { color: '#ffffffcc', fontSize: H.font.sm },
   eqRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 14, paddingHorizontal: 2 },
   eqLabels: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 2, marginTop: 6 },
-  eqLabel: { color: C.text3, fontSize: 8, fontWeight: '600', width: 26, textAlign: 'center' },
+  eqLabel: { color: C.text3, fontSize: FS.xs, fontWeight: '600', width: 26, textAlign: 'center' },
   linkBtn: { alignSelf: 'flex-start', height: 28, borderRadius: 14, paddingHorizontal: 12, borderWidth: 1, borderColor: '#ffffff26', alignItems: 'center', justifyContent: 'center', marginTop: 10 },
   linkText: { color: C.text2, fontSize: H.font.xs },
   muted: { color: C.text3, fontSize: H.font.xs, lineHeight: 16 },
-  stepperRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
+  stepperRow: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, marginTop: 8 },
   stepBtn: { width: 34, height: 30, borderRadius: 9, backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center' },
-  stepText: { color: C.text, fontSize: 15, fontWeight: '700' },
+  stepText: { color: C.text, fontSize: FS.xl, fontWeight: '700' },
   stepVal: { color: C.text, fontSize: H.font.md, fontVariant: ['tabular-nums'], minWidth: 52, textAlign: 'center', fontWeight: '700' },
   tgRow: { flexDirection: 'row', alignItems: 'center', height: 40, borderRadius: 10, paddingHorizontal: 12, backgroundColor: C.surface, marginTop: 6 },
   tgLabel: { flex: 1, color: C.text, fontSize: H.font.sm, fontWeight: '600' },
   tgTrack: { width: 40, height: 22, borderRadius: 11, backgroundColor: T.light ? '#1F232922' : '#ffffff22', borderWidth: 1, borderColor: T.light ? '#1F232930' : '#ffffff30', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 2 }, // v3.34:标准开关轨道
   tgTrackOn: { backgroundColor: C.brand, borderColor: C.brand },
-  tgKnob: { width: 16, height: 16, borderRadius: 8, backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 2 },
+  tgKnob: { width: 16, height: 16, borderRadius: 8, backgroundColor: C.knob, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 2 },
   tgKnobOn: { transform: [{ translateX: 20 }] }, // 40-16-2-2=20
   aeSwitchHit: { height: 34, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
-  segRow: { flexDirection: 'row', gap: 7, flexWrap: 'wrap' },
+  segRow: { flexDirection: 'row', gap: SP.sm, flexWrap: 'wrap' },
   segItem: { height: 30, borderRadius: 15, paddingHorizontal: 14, borderWidth: 1, borderColor: '#ffffff26', alignItems: 'center', justifyContent: 'center' },
   segItemOn: { backgroundColor: C.brand, borderColor: C.brand },
   segText: { color: '#ffffffcc', fontSize: H.font.sm },
-  aeRow: { flexDirection: 'row', gap: 7, marginTop: 8, alignItems: 'center' },
+  aeRow: { flexDirection: 'row', gap: SP.sm, marginTop: 8, alignItems: 'center' },
   pickRoot: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, backgroundColor: '#000000CC', alignItems: 'center', justifyContent: 'center' }, // v3.28:absoluteFillObject 已从 RN 类型移除,内联
   pickPanel: { width: '84%', maxWidth: 560, height: '76%', backgroundColor: '#17191E', borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, overflow: 'hidden' },
   pickHead: { flexDirection: 'row', alignItems: 'center', padding: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
@@ -371,15 +372,15 @@ const st = StyleSheet.create({
 
 // VSlider 内部样式(绝对定位百分比:fill 自零线向值延伸,knob 跟值,零线常驻)
 const vs = StyleSheet.create({
-  wrap: { alignItems: 'center', gap: 5 },
-  val: { color: C.text2, fontSize: 8, fontVariant: ['tabular-nums'], minWidth: 26, textAlign: 'center' },
+  wrap: { alignItems: 'center', gap: SP.sm },
+  val: { color: C.text2, fontSize: FS.xs, fontVariant: ['tabular-nums'], minWidth: 26, textAlign: 'center' },
   track: { width: 22, borderRadius: 11, backgroundColor: '#ffffff0f', overflow: 'hidden' },
   fill: { position: 'absolute', left: 3, right: 3, backgroundColor: C.brand, borderRadius: 3 },
   zero: { position: 'absolute', left: 3, right: 3, height: 1, backgroundColor: '#ffffff30' },
   knob: { position: 'absolute', left: 3, right: 3, height: 5, borderRadius: 3, backgroundColor: '#ffffffee' },
 });
 const hs = StyleSheet.create({
-  wrap: { flexDirection: 'row', alignItems: 'center', gap: 12, height: 34 },
+  wrap: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, height: 34 },
   label: { color: C.text2, fontSize: H.font.sm, width: 64 },
   track: { flex: 1, height: 22, borderRadius: 11, backgroundColor: '#ffffff0f', padding: 3, flexDirection: 'row', overflow: 'hidden' },
   fill: { backgroundColor: C.brand, borderRadius: 8 },

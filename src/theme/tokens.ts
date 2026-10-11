@@ -38,6 +38,7 @@ export const C: Record<string, string> = {
   sheet: '#161618F5',      // 半透明抽屉面（浅色下乳白）
   brandText: '#1ED760',    // 绿色文字（浅色下换深绿，避免绿字贴白底看不清）
   heart: '#FF5A76',        // 收藏心形(spotify pink;v3.28 全局 token 化,散落硬编码收口)
+  danger: '#FF6B6B',       // 错误/危险色(与 HD hdtokens 同值;[LEO 1011 统一令] 散落 #FF6B6B/#E8618C 收口)
 };
 
 // 启动期主题覆写（模块加载时同步执行；后续所有 StyleSheet.create 拿到的就是用户主题）

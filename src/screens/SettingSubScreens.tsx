@@ -6,7 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import RNBlobUtil from 'react-native-blob-util';
 import SafX from 'react-native-saf-x';
 import { Icon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, FS, SP } from '../theme/tokens';
 import { SubPage } from '../components/SubPage';
 import { ToggleRow, ValueRow, ActionRow, StaticRow, NavRow, InputRow, Section, PageShell } from '../components/SettingRows';
 import { settings, useSettings, QUALITY_LABEL, type Quality } from '../services/settings';
@@ -551,18 +551,18 @@ export function BackupSettingsScreen() {
 // ---------- 可视化 / 代理：lx34 移除（无真实实现，避免“死设置”；后续做播放页频谱时随功能回归） ----------
 
 const ts = StyleSheet.create({
-  modeRow: { flexDirection: 'row', gap: 8, paddingVertical: 6 },
+  modeRow: { flexDirection: 'row', gap: SP.md, paddingVertical: 6 },
   modePill: { flex: 1, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2 },
   modeOn: { backgroundColor: C.brand },
-  modeText: { color: C.text2, fontSize: 13, fontWeight: '600' },
+  modeText: { color: C.text2, fontSize: FS.md, fontWeight: '600' },
   modeTextOn: { color: C.onBrand, fontWeight: '700' },
-  swatchRow: { flexDirection: 'row', gap: 14, paddingHorizontal: 4, marginTop: 10 },
-  swatchItem: { alignItems: 'center', gap: 8 },
+  swatchRow: { flexDirection: 'row', gap: SP.xxl, paddingHorizontal: 4, marginTop: 10 },
+  swatchItem: { alignItems: 'center', gap: SP.md },
   swatch: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   swatchOn: { borderWidth: 2, borderColor: C.text },
-  swatchName: { color: C.text2, fontSize: 11 },
-  note: { color: C.text3, fontSize: 11, lineHeight: 15, marginTop: 12, paddingHorizontal: 4 },
-  footer: { color: C.text3, fontSize: 11, textAlign: 'center', marginTop: 16, marginBottom: 8, lineHeight: 16 },
+  swatchName: { color: C.text2, fontSize: FS.sm },
+  note: { color: C.text3, fontSize: FS.sm, lineHeight: 15, marginTop: 12, paddingHorizontal: 4 },
+  footer: { color: C.text3, fontSize: FS.sm, textAlign: 'center', marginTop: 16, marginBottom: 8, lineHeight: 16 },
 });
 
 // 保留 SubPage 引用避免未使用告警（部分页面共用样式）

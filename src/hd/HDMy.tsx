@@ -16,6 +16,7 @@ import { sync, lxToApp, type UserListsSnapshot , subscribeSync } from '../servic
 import { providers } from '../services/providers';
 import { hdNav } from './hdnav';
 import type { SongItem } from '../services/server';
+import { FS, SP } from '../theme/tokens';
 
 const K = H.font.sm / 10; // 界面缩放系数(设置 uiScale 联动网格列宽)
 const GRADS: [string, string][] = [
@@ -90,7 +91,7 @@ export function HDMy() {
   return (
     <ScrollView
       style={st.screen}
-      contentContainerStyle={{ paddingTop: Math.max(insets.top, 22), paddingBottom: 30, gap: 22 }}
+      contentContainerStyle={{ paddingTop: Math.max(insets.top, 22), paddingBottom: 30, gap: SP.big }}
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={syncing} onRefresh={refresh} tintColor={C.brand} />}
     >
@@ -109,7 +110,7 @@ export function HDMy() {
       </View>
 
       {/* 功能入口 */}
-      <View style={{ flexDirection: 'row', paddingHorizontal: 34, gap: 16 }}>
+      <View style={{ flexDirection: 'row', paddingHorizontal: 34, gap: SP.wide }}>
         {[
           { icon: 'music' as const, label: '媒体库', sub: `${providerCount} 个连接`, to: 'MediaLibs' },
           { icon: 'user' as const, label: '收藏歌手', sub: '多端同步', to: 'ArtistFavs' }, // lx161:服务器歌手收藏入口
@@ -126,7 +127,7 @@ export function HDMy() {
       </View>
 
       {/* 歌单网格 */}
-      <View style={{ paddingHorizontal: 34, gap: 14 }}>
+      <View style={{ paddingHorizontal: 34, gap: SP.xxl }}>
         <Text style={st.secTitle}>{`歌单 · ${playlists.length}`}</Text>
         <HDGrid min={168 * K} gap={18} minCols={3}>
           {playlists.map((pl, i) => (
@@ -151,21 +152,21 @@ export function HDMy() {
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
-  acct: { height: 122, borderRadius: 18, flexDirection: 'row', alignItems: 'center', padding: 22, gap: 18 },
+  acct: { height: 122, borderRadius: 18, flexDirection: 'row', alignItems: 'center', padding: 22, gap: SP.section },
   acctAvatar: { width: 66, height: 66, borderRadius: 33, backgroundColor: '#00000044', alignItems: 'center', justifyContent: 'center' },
-  acctName: { color: C.text, fontSize: 24, fontWeight: '800' },
-  acctSub: { color: '#FFFFFF99', fontSize: 14, marginTop: 3 },
+  acctName: { color: C.text, fontSize: FS.display, fontWeight: '800' },
+  acctSub: { color: '#FFFFFF99', fontSize: FS.lg, marginTop: 3 },
   acctBtn: { height: 52, borderRadius: 26, backgroundColor: '#00000042', paddingHorizontal: 28, alignItems: 'center', justifyContent: 'center' },
-  acctBtnText: { color: C.text, fontSize: 17, fontWeight: '700' },
-  fnCard: { flex: 1, height: 116, borderRadius: 16, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 8 },
-  fnLabel: { color: C.text, fontSize: 17, fontWeight: '700' },
-  fnSub: { color: C.text3, fontSize: 12 },
-  secTitle: { color: C.text, fontSize: 22, fontWeight: '800' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 18 },
-  plCard: { gap: 5, paddingBottom: 7, borderRadius: 12, backgroundColor: C.surface }, // lx98:去 overflow(坑133)
-  plTexts: { alignSelf: 'stretch', paddingHorizontal: 8, gap: 3 },
+  acctBtnText: { color: C.text, fontSize: FS.headline, fontWeight: '700' },
+  fnCard: { flex: 1, height: 116, borderRadius: 16, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', gap: SP.sm, paddingHorizontal: 8 },
+  fnLabel: { color: C.text, fontSize: FS.headline, fontWeight: '700' },
+  fnSub: { color: C.text3, fontSize: FS.body },
+  secTitle: { color: C.text, fontSize: FS.h1, fontWeight: '800' }, // [LEO 1011] 22 档外→h1(20)区头次级档
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.section },
+  plCard: { gap: SP.sm, paddingBottom: 7, borderRadius: 12, backgroundColor: C.surface }, // lx98:去 overflow(坑133)
+  plTexts: { alignSelf: 'stretch', paddingHorizontal: 8, gap: SP.xs },
   plArt: { width: '100%', aspectRatio: 1, borderTopLeftRadius: 12, borderTopRightRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  plNew: { width: '100%', aspectRatio: 1, borderRadius: 16, backgroundColor: C.surface, borderWidth: 1, borderStyle: 'dashed', borderColor: C.border, alignItems: 'center', justifyContent: 'center', gap: 8 },
-  plName: { color: C.text, fontSize: 16, fontWeight: '600' },
-  plMeta: { color: C.text2, fontSize: 13 },
+  plNew: { width: '100%', aspectRatio: 1, borderRadius: 16, backgroundColor: C.surface, borderWidth: 1, borderStyle: 'dashed', borderColor: C.border, alignItems: 'center', justifyContent: 'center', gap: SP.md },
+  plName: { color: C.text, fontSize: FS.title, fontWeight: '600' },
+  plMeta: { color: C.text2, fontSize: FS.md },
 });

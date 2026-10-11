@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, FS, SP } from '../theme/tokens';
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
 import { useApp } from '../state/AppState';
@@ -182,7 +182,8 @@ export function SourcesScreen() {
         <Text style={[st.hint, IS_HD && hd.hint]}>服务器端启用的共享音源 · 点击图标选择本机是否使用 · 管理(添加/删除)在服务器后台</Text>
         {csErr ? (
           <T style={[st.hintRow, IS_HD && hd.hintRow]} focusStyle={st.hintFocus} onPress={() => { setCsErr(null); loadServerSources(); }}>
-            <Text style={[st.hintErr, IS_HD && hd.hintErr]}>⚠ 服务器音源拉取失败：{csErr}（点击重试；若持续 403 请重新登录）</Text>
+            <Icon name="shield" size={14} color={C.danger} />
+            <Text style={[st.hintErr, IS_HD && hd.hintErr]}>服务器音源拉取失败：{csErr}（点击重试；若持续 403 请重新登录）</Text>
           </T>
         ) : null}
         {!serverSources.length && !csErr ? (
@@ -303,7 +304,7 @@ export function AccountScreen() {
         <Text style={st.title}>使用方式与账号</Text>
         <View style={{ width: 22 }} />
       </View>
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 24, gap: 14 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 24, gap: SP.xxl }}>
         <View style={st.section}>
           <Text style={st.secTitle}>当前方式</Text>
           <View style={st.row}>
@@ -364,27 +365,27 @@ export function AccountScreen() {
 
 const st = StyleSheet.create({
   section: { borderRadius: 14, backgroundColor: C.surface, padding: 16, marginBottom: 14 },
-  secTitle: { color: C.text3, fontSize: 12, fontWeight: '600', letterSpacing: 0.5, marginBottom: 8 },
-  hint: { color: C.text3, fontSize: 12, lineHeight: 17, marginBottom: 4 },
+  secTitle: { color: C.text3, fontSize: FS.body, fontWeight: '600', letterSpacing: 0.5, marginBottom: 8 },
+  hint: { color: C.text3, fontSize: FS.body, lineHeight: 17, marginBottom: 4 },
   // 0922:服务器源空态/错误态显式化(老板实锤:静默空=「看不到后台配置的音源」)
-  hintRow: { paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8, backgroundColor: 'rgba(255,82,82,0.08)', borderWidth: 1, borderColor: 'rgba(255,82,82,0.35)', marginBottom: 6 },
+  hintRow: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8, backgroundColor: 'rgba(255,82,82,0.08)', borderWidth: 1, borderColor: 'rgba(255,82,82,0.35)', marginBottom: 6 },
   hintFocus: { borderColor: '#FF5252' },
-  hintErr: { color: '#FF8A80', fontSize: 12, lineHeight: 17 },
-  hintSub: { color: C.text3, fontSize: 12, lineHeight: 17, marginBottom: 6 },
-  empty: { color: C.text3, fontSize: 13, paddingVertical: 10 },
+  hintErr: { flex: 1, color: C.danger, fontSize: FS.body, lineHeight: 17 }, // [LEO 1011] #FF8A80→C.danger 错误色族统一
+  hintSub: { color: C.text3, fontSize: FS.body, lineHeight: 17, marginBottom: 6 },
+  empty: { color: C.text3, fontSize: FS.md, paddingVertical: 10 },
   // 源行(对齐设置页行式语言)
-  srcRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint },
+  srcRow: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint },
   srcIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: C.inset2, alignItems: 'center', justifyContent: 'center' },
-  srcMeta: { flex: 1, minWidth: 0, gap: 2 },
-  srcName: { color: C.text, fontSize: 14, fontWeight: '600' },
-  srcVer: { color: C.text3, fontSize: 11, fontWeight: '400' },
-  srcTag: { color: C.brandText, fontSize: 10, fontWeight: '700' },
-  srcSub: { color: C.text3, fontSize: 11 },
+  srcMeta: { flex: 1, minWidth: 0, gap: SP.xs },
+  srcName: { color: C.text, fontSize: FS.lg, fontWeight: '600' },
+  srcVer: { color: C.text3, fontSize: FS.sm, fontWeight: '400' },
+  srcTag: { color: C.brandText, fontSize: FS.xs, fontWeight: '700' },
+  srcSub: { color: C.text3, fontSize: FS.sm },
   /* v3.27:服务器音源本机启停 toggle 开关 */
   csSw: { width: 42, height: 24, borderRadius: 12, backgroundColor: C.inset2, borderWidth: 1, borderColor: C.strokeFaint, alignItems: 'center', flexDirection: 'row', justifyContent: 'flex-start', paddingHorizontal: 2 },
   csSwOn: { backgroundColor: C.brand, borderColor: 'transparent' },
   csSwFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 12 },
-  csSwKnob: { width: 18, height: 18, borderRadius: 9, backgroundColor: '#fff' },
+  csSwKnob: { width: 18, height: 18, borderRadius: 9, backgroundColor: C.knob },
   csSwKnobOn: { marginLeft: 18 },
   srcDel: { padding: 6 },
   // lx178(老板 0923 08:49):开关重做——轨道滑动式,与服务器音源 csSw 同一交互语言;
@@ -393,68 +394,68 @@ const st = StyleSheet.create({
   switch: { width: 42, height: 24, borderRadius: 12, backgroundColor: C.inset2, borderWidth: 1, borderColor: C.strokeFaint, alignItems: 'center', flexDirection: 'row', justifyContent: 'flex-start', paddingHorizontal: 2 }, // lx179b:与 csSw 同构
   switchOn: { backgroundColor: C.brand, borderColor: 'transparent' },
   knob: { width: 18, height: 18, borderRadius: 9, backgroundColor: '#8F969E' },
-  knobOn: { backgroundColor: '#FFFFFF', marginLeft: 18 },
+  knobOn: { backgroundColor: C.knob, marginLeft: 18 },
   // 按钮组(ghost 双钮并排)
-  btnRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 12 }, // lx206:窄屏自动换行(390px 下三按钮各~103px 放不下图标+文字)
-  ghostBtn: { flex: 1, minWidth: 142, height: 40, borderRadius: 12, borderWidth: 1, borderColor: C.strokeStrong, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }, // lx206:minWidth 保证图标+文字完整,放不下就换行(HD 宽屏单行不受影响)
-  ghostText: { color: C.text, fontSize: 13, fontWeight: '500' },
+  btnRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.lg, marginTop: 12 }, // lx206:窄屏自动换行(390px 下三按钮各~103px 放不下图标+文字)
+  ghostBtn: { flex: 1, minWidth: 142, height: 40, borderRadius: 12, borderWidth: 1, borderColor: C.strokeStrong, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.sm }, // lx206:minWidth 保证图标+文字完整,放不下就换行(HD 宽屏单行不受影响)
+  ghostText: { color: C.text, fontSize: FS.md, fontWeight: '500' },
   // 播放权限
   permRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 },
-  permLabel: { color: C.text, fontSize: 14 },
-  badge: { color: C.text3, fontSize: 11, borderWidth: 1, borderColor: C.strokeStrong, borderRadius: 7, paddingHorizontal: 8, paddingVertical: 3, overflow: 'hidden' },
+  permLabel: { color: C.text, fontSize: FS.lg },
+  badge: { color: C.text3, fontSize: FS.sm, borderWidth: 1, borderColor: C.strokeStrong, borderRadius: 7, paddingHorizontal: 8, paddingVertical: 3, overflow: 'hidden' },
   badgeOn: { color: C.brandText, borderColor: C.brandDim, backgroundColor: C.selTint },
-  ghostBtnText: { color: C.text2, fontSize: 12, fontWeight: '600' },
+  ghostBtnText: { color: C.text2, fontSize: FS.body, fontWeight: '600' },
   screen: { flex: 1, backgroundColor: C.bg },
   header: { height: 40, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 10 },
-  title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700' }, // lx166 居左
-  row: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  title: { flex: 1, color: C.text, fontSize: FS.display, lineHeight: 35, fontWeight: '700' }, // lx166 居左
+  row: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: SP.xl },
   rowDivide: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.strokeFaint, marginTop: 8, paddingTop: 8 },
-  rowLabel: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '500' },
-  rowMeta: { color: C.text2, fontSize: 11, lineHeight: 15 },
-  rowUrl: { color: C.text2, fontSize: 10, lineHeight: 13, marginTop: 2 },
-  testBtn: { color: C.brandText, fontSize: 12, fontWeight: '500', paddingHorizontal: 4 },
-  healthText: { fontSize: 10, lineHeight: 14, marginTop: 3, color: C.text2 },
+  rowLabel: { color: C.text, fontSize: FS.lg, lineHeight: 20, fontWeight: '500' },
+  rowMeta: { color: C.text2, fontSize: FS.sm, lineHeight: 15 },
+  rowUrl: { color: C.text2, fontSize: FS.xs, lineHeight: 13, marginTop: 2 },
+  testBtn: { color: C.brandText, fontSize: FS.body, fontWeight: '500', paddingHorizontal: 4 },
+  healthText: { fontSize: FS.xs, lineHeight: 14, marginTop: 3, color: C.text2 },
   healthOk: { color: C.brandText },
-  healthFail: { color: '#FF6B6B' },
-  ver: { color: C.text2, fontSize: 11, fontWeight: '400' },
+  healthFail: { color: C.danger },
+  ver: { color: C.text2, fontSize: FS.sm, fontWeight: '400' },
   del: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
   addAction: {
     height: 42, borderRadius: 12, borderWidth: 1, borderColor: C.strokeStrong,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.sm, marginTop: 10,
   },
-  addActionText: { color: C.text, fontSize: 13, fontWeight: '500' },
+  addActionText: { color: C.text, fontSize: FS.md, fontWeight: '500' },
   linkBtn: { height: 46, borderRadius: 12, borderWidth: 1, borderColor: C.strokeStrong, alignItems: 'center', justifyContent: 'center' },
-  linkText: { color: C.text, fontSize: 14, fontWeight: '500' },
+  linkText: { color: C.text, fontSize: FS.lg, fontWeight: '500' },
   danger: { borderColor: '#FF6B6B33' },
-  dangerText: { color: '#FF6B6B', fontSize: 14, fontWeight: '500' },
+  dangerText: { color: C.danger, fontSize: FS.lg, fontWeight: '500' },
   modalMask: { flex: 1, backgroundColor: C.scrim, alignItems: 'center', justifyContent: 'center', padding: 28 },
-  modalCard: { width: '100%', borderRadius: 16, backgroundColor: C.surface, padding: 18, gap: 12 },
-  modalTitle: { color: C.text, fontSize: 16, fontWeight: '700' },
-  input: { height: 44, borderRadius: 10, backgroundColor: C.inset, paddingHorizontal: 12, color: C.text, fontSize: 13 },
-  modalHint: { color: C.text2, fontSize: 11, lineHeight: 15 },
-  modalBtns: { flexDirection: 'row', gap: 10, marginTop: 2 },
+  modalCard: { width: '100%', borderRadius: 16, backgroundColor: C.surface, padding: 18, gap: SP.xl },
+  modalTitle: { color: C.text, fontSize: FS.title, fontWeight: '700' },
+  input: { height: 44, borderRadius: 10, backgroundColor: C.inset, paddingHorizontal: 12, color: C.text, fontSize: FS.md },
+  modalHint: { color: C.text2, fontSize: FS.sm, lineHeight: 15 },
+  modalBtns: { flexDirection: 'row', gap: SP.lg, marginTop: 2 },
   modalBtnGhost: { flex: 1, height: 42, borderRadius: 10, borderWidth: 1, borderColor: C.strokeStrong, alignItems: 'center', justifyContent: 'center' },
   modalBtnMain: { flex: 1, height: 42, borderRadius: 10, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
-  modalGhostText: { color: C.text, fontSize: 13, fontWeight: '500' },
-  modalMainText: { color: C.onBrand, fontSize: 13, fontWeight: '600' },
+  modalGhostText: { color: C.text, fontSize: FS.md, fontWeight: '500' },
+  modalMainText: { color: C.onBrand, fontSize: FS.md, fontWeight: '600' },
 });
 
 // HD(车机/TV)覆盖样式:限宽居中 + 大字号/大触点(老板:音源管理需遥控光标+大屏排版)
 const hd = StyleSheet.create({
-  head: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, marginBottom: 10 },
+  head: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingHorizontal: 20, marginBottom: 10 },
   backBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, color: C.text, fontSize: 20, fontWeight: '800' }, // lx166 居左
-  hint: { fontSize: 13, lineHeight: 19 },
-  hintRow: { paddingVertical: 10, paddingHorizontal: 12 },
-  hintErr: { fontSize: 14, lineHeight: 20 },
-  hintSub: { fontSize: 14, lineHeight: 20 },
-  srcRow: { paddingVertical: 14, gap: 14 },
+  title: { flex: 1, color: C.text, fontSize: FS.h1, fontWeight: '800' }, // lx166 居左
+  hint: { fontSize: FS.md, lineHeight: 19 },
+  hintRow: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, paddingVertical: 10, paddingHorizontal: 12 },
+  hintErr: { fontSize: FS.lg, lineHeight: 20 },
+  hintSub: { fontSize: FS.lg, lineHeight: 20 },
+  srcRow: { paddingVertical: 14, gap: SP.xxl },
   srcIcon: { width: 46, height: 46, borderRadius: 13 },
-  srcName: { fontSize: 16 },
-  srcSub: { fontSize: 13 },
+  srcName: { fontSize: FS.title },
+  srcSub: { fontSize: FS.md },
   switch: { width: 42, height: 24, borderRadius: 12 }, // lx179b:与服务器音源 csSw 完全同尺寸(web 带字号放大时不另放,统一 42×24)
   knob: { width: 18, height: 18, borderRadius: 9 },
   knobOn: { marginLeft: 18 },
   ghostBtn: { height: 54, borderRadius: 14 },
-  ghostText: { fontSize: 15 },
+  ghostText: { fontSize: FS.xl },
 });

@@ -7,7 +7,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, FS, SP } from '../theme/tokens';
 import { PageHeader } from '../components/PageChrome';
 import { SongRow } from '../components/SongRow';
 import { dialog, toast } from '../components/Dialog';
@@ -420,7 +420,7 @@ function FolderPane({ libId, dirPath, onDir, onPlay, currentHash, selMode, sel, 
   return (
     <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 140 }}>
       {/* 面包屑 */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.crumbWrap} contentContainerStyle={{ gap: 4, alignItems: 'center' }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.crumbWrap} contentContainerStyle={{ gap: SP.xs, alignItems: 'center' }}>
         <TouchableOpacity hitSlop={4} onPress={() => onDir('')}>
           <Text style={[st.crumbItem, !dirPath && st.crumbCur]}>根目录</Text>
         </TouchableOpacity>
@@ -486,61 +486,61 @@ function FolderPane({ libId, dirPath, onDir, onPlay, currentHash, selMode, sel, 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   // ⑤/⑦ 首页化骨架容器
-  homeWrap: { marginHorizontal: 16, gap: 12, marginTop: 2 },
+  homeWrap: { marginHorizontal: 16, gap: SP.xl, marginTop: 2 },
   homeWrapHD: { marginHorizontal: GUTTER },
   homeSections: { marginBottom: 2 },
-  missing: { color: C.text2, fontSize: 12, textAlign: 'center', paddingVertical: 40 },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 10, gap: 8 },
-  title: { color: C.text, fontSize: 20, fontWeight: '700' },
-  subTitle: { color: C.text3, fontSize: 11, marginTop: 1 },
-  playAllBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.brand, borderRadius: 16, paddingHorizontal: 13, paddingVertical: 8 },
-  playAllText: { color: C.onBrand, fontSize: 12, fontWeight: '600' },
+  missing: { color: C.text2, fontSize: FS.body, textAlign: 'center', paddingVertical: 40 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 10, gap: SP.md },
+  title: { color: C.text, fontSize: FS.h1, fontWeight: '700' },
+  subTitle: { color: C.text3, fontSize: FS.sm, marginTop: 1 },
+  playAllBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, backgroundColor: C.brand, borderRadius: 16, paddingHorizontal: 13, paddingVertical: 8 },
+  playAllText: { color: C.onBrand, fontSize: FS.body, fontWeight: '600' },
   // 胶囊 tab
-  tabs: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8 },
+  tabs: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, paddingHorizontal: 16, paddingVertical: 8 },
   tab: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999, backgroundColor: C.surface2 },
   tabOn: { backgroundColor: C.brand },
-  tabText: { color: C.text2, fontSize: 12, fontWeight: '600' },
+  tabText: { color: C.text2, fontSize: FS.body, fontWeight: '600' },
   tabTextOn: { color: C.onBrand },
-  statsText: { flex: 1, color: C.text3, fontSize: 11, textAlign: 'right' },
+  statsText: { flex: 1, color: C.text3, fontSize: FS.sm, textAlign: 'right' },
   // 重扫条
-  rescanBar: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 6, backgroundColor: C.surface2, marginHorizontal: 16, borderRadius: 10 },
-  rescanText: { flex: 1, color: C.text2, fontSize: 11.5 },
-  cancelText: { color: C.brandText, fontSize: 12, fontWeight: '600' },
+  rescanBar: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingHorizontal: 16, paddingVertical: 6, backgroundColor: C.surface2, marginHorizontal: 16, borderRadius: 10 },
+  rescanText: { flex: 1, color: C.text2, fontSize: FS.body },
+  cancelText: { color: C.brandText, fontSize: FS.body, fontWeight: '600' },
   // 墙
-  wall: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  wallRound: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  wall: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl },
+  wallRound: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl },
   // 空态/失效
-  emptyWrap: { alignItems: 'center', gap: 10, paddingVertical: 64, paddingHorizontal: 32 },
-  emptyT1: { color: C.text, fontSize: 16, fontWeight: '700' },
-  emptyT2: { color: C.text2, fontSize: 12, lineHeight: 17, textAlign: 'center' },
+  emptyWrap: { alignItems: 'center', gap: SP.lg, paddingVertical: 64, paddingHorizontal: 32 },
+  emptyT1: { color: C.text, fontSize: FS.title, fontWeight: '700' },
+  emptyT2: { color: C.text2, fontSize: FS.body, lineHeight: 17, textAlign: 'center' },
   retryBtn: { backgroundColor: C.brand, borderRadius: 18, paddingHorizontal: 20, paddingVertical: 10, marginTop: 8 },
-  retryText: { color: C.onBrand, fontSize: 13, fontWeight: '600' },
-  emptyInline: { color: C.text2, fontSize: 12, textAlign: 'center', paddingVertical: 40 },
+  retryText: { color: C.onBrand, fontSize: FS.md, fontWeight: '600' },
+  emptyInline: { color: C.text2, fontSize: FS.body, textAlign: 'center', paddingVertical: 40 },
   // 文件夹视角
   crumbWrap: { flexGrow: 0, marginBottom: 10 },
-  crumbItem: { color: C.text2, fontSize: 12, paddingVertical: 2 },
+  crumbItem: { color: C.text2, fontSize: FS.body, paddingVertical: 2 },
   crumbCur: { color: C.text, fontWeight: '700' },
   uncWrap: { backgroundColor: C.surface2, borderRadius: 12, padding: 12, marginBottom: 10 },
-  uncHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  uncTitle: { color: C.text, fontSize: 13.5, fontWeight: '600' },
-  uncSub: { color: C.text3, fontSize: 10.5, lineHeight: 14, marginTop: 1 },
-  dirRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 9, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint },
+  uncHead: { flexDirection: 'row', alignItems: 'center', gap: SP.lg },
+  uncTitle: { color: C.text, fontSize: FS.md, fontWeight: '600' },
+  uncSub: { color: C.text3, fontSize: FS.sm, lineHeight: 14, marginTop: 1 },
+  dirRow: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, paddingVertical: 9, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint },
   dirIcon: { width: 30, height: 30, borderRadius: 9, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  dirName: { flex: 1, color: C.text, fontSize: 13.5, fontWeight: '500', minWidth: 0 },
-  dirCount: { color: C.text3, fontSize: 11 },
-  fnTag: { color: C.text3, fontSize: 11, backgroundColor: C.surface2, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2, overflow: 'hidden' },
+  dirName: { flex: 1, color: C.text, fontSize: FS.md, fontWeight: '500', minWidth: 0 },
+  dirCount: { color: C.text3, fontSize: FS.sm },
+  fnTag: { color: C.text3, fontSize: FS.sm, backgroundColor: C.surface2, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2, overflow: 'hidden' },
   // 多选动作条(⑥6.2)
-  selBar: { backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.strokeFaint, paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
-  selRow1: { flexDirection: 'row', alignItems: 'center', gap: 18 },
-  selCount: { color: C.text2, fontSize: 12, fontWeight: '600', marginRight: 'auto' },
-  selBtnT: { color: C.brandText, fontSize: 12, fontWeight: '600' },
-  selRow2: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  selBar: { backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.strokeFaint, paddingHorizontal: 16, paddingVertical: 10, gap: SP.md },
+  selRow1: { flexDirection: 'row', alignItems: 'center', gap: SP.section },
+  selCount: { color: C.text2, fontSize: FS.body, fontWeight: '600', marginRight: 'auto' },
+  selBtnT: { color: C.brandText, fontSize: FS.body, fontWeight: '600' },
+  selRow2: { flexDirection: 'row', alignItems: 'center', gap: SP.md },
   selGhost: { borderWidth: 1, borderColor: C.stroke, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
-  selGhostT: { color: C.text2, fontSize: 12, fontWeight: '600' },
+  selGhostT: { color: C.text2, fontSize: FS.body, fontWeight: '600' },
   selPri: { flex: 1, backgroundColor: C.brand, borderRadius: 999, paddingVertical: 9, alignItems: 'center', justifyContent: 'center' },
   selPriOff: { opacity: 0.45 },
-  selPriT: { color: C.onBrand, fontSize: 12.5, fontWeight: '800' },
-  selSub: { color: C.text3, fontSize: 10.5 },
+  selPriT: { color: C.onBrand, fontSize: FS.md, fontWeight: '800' },
+  selSub: { color: C.text3, fontSize: FS.sm },
   chk: { width: 20, height: 20, borderRadius: 999, borderWidth: 1.5, borderColor: C.strokeStrong, alignItems: 'center', justifyContent: 'center' },
   chkOn: { backgroundColor: C.brand, borderColor: C.brand },
 });

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIn
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, FS, SP } from '../theme/tokens';
 import { SongRow } from '../components/SongRow';
 import { ActionSheet } from '../components/ActionSheet';
 import { CollectSheet } from '../components/CollectSheet';
@@ -123,7 +123,7 @@ export function PlaylistDetailScreen() {
           title=""
           onBack={() => nav.goBack()}
           right={(
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xxl }}>
               {/* lx116:搜索图标(老板:三个点换搜索) */}
               <TouchableOpacity hitSlop={6} onPress={() => setSearching(true)}>
                 <Icon name="search" size={21} />
@@ -228,7 +228,7 @@ export function PlaylistDetailScreen() {
                 extra={renderSongAction(s)}
               />
             ))}
-            {pdLimit < shown.length ? <Text style={{ color: '#999', fontSize: 11, textAlign: 'center', paddingVertical: 8 }}>滚动加载更多({pdLimit}/{shown.length})</Text> : null}
+            {pdLimit < shown.length ? <Text style={{ color: C.text2, fontSize: FS.sm, textAlign: 'center', paddingVertical: 8 }}>滚动加载更多({pdLimit}/{shown.length})</Text> : null}
           </View>
         )}
         {busy ? <View style={st.center}><ActivityIndicator color={C.brand} /></View> : null}
@@ -436,30 +436,30 @@ const st = StyleSheet.create({
   miniDock: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   header: { height: 44, flexDirection: 'row', alignItems: 'center' },
   hBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  headCard: { flexDirection: 'row', gap: 14, marginTop: 4 },
+  headCard: { flexDirection: 'row', gap: SP.xxl, marginTop: 4 },
   cover: { width: 120, height: 120, borderRadius: 10 },
   coverFallback: { backgroundColor: C.artTint, alignItems: 'center', justifyContent: 'center' },
-  coverGlyph: { color: C.text, fontSize: 40, fontWeight: '700' },
-  headMeta: { flex: 1, paddingTop: 4, gap: 6 },
-  title: { color: C.text, fontSize: 20, lineHeight: 26, fontWeight: '700' },
-  stat: { color: C.text2, fontSize: 11, lineHeight: 16 },
-  desc: { color: C.text2, fontSize: 11, lineHeight: 16, marginTop: 12 },
+  coverGlyph: { color: C.text, fontSize: 40, fontWeight: '700' }, // [LEO 1011] 档外特排:封面兜底大字,FS 封顶 hero=28 不强归
+  headMeta: { flex: 1, paddingTop: 4, gap: SP.sm },
+  title: { color: C.text, fontSize: FS.h1, lineHeight: 26, fontWeight: '700' },
+  stat: { color: C.text2, fontSize: FS.sm, lineHeight: 16 },
+  desc: { color: C.text2, fontSize: FS.sm, lineHeight: 16, marginTop: 12 },
   playAllBtn: {
     height: 46, borderRadius: 14, backgroundColor: C.brand, flexDirection: 'row',
-    alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 18,
+    alignItems: 'center', justifyContent: 'center', gap: SP.md, marginTop: 18,
   },
-  playAllText: { color: C.onBrand, fontSize: 14, lineHeight: 17, fontWeight: '600' },
-  playAllCount: { color: C.onBrand, fontSize: 12 },
-  actionRow: { flexDirection: 'row', gap: 8, marginTop: 10, marginBottom: 6 },
-  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 38, borderRadius: 10, backgroundColor: C.elev, paddingHorizontal: 12, marginTop: 12 },
-  searchInput: { flex: 1, color: C.text, fontSize: 13, paddingVertical: 0 },
+  playAllText: { color: C.onBrand, fontSize: FS.lg, lineHeight: 17, fontWeight: '600' },
+  playAllCount: { color: C.onBrand, fontSize: FS.body },
+  actionRow: { flexDirection: 'row', gap: SP.md, marginTop: 10, marginBottom: 6 },
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: SP.md, height: 38, borderRadius: 10, backgroundColor: C.elev, paddingHorizontal: 12, marginTop: 12 },
+  searchInput: { flex: 1, color: C.text, fontSize: FS.md, paddingVertical: 0 },
   action: {
     flex: 1, height: 40, borderRadius: 12, backgroundColor: C.surface,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.sm,
   },
-  actionText: { color: C.text2, fontSize: 11, lineHeight: 13, fontWeight: '500' },
-  progText: { color: C.brandSoft, fontSize: 11, lineHeight: 14, width: 36, textAlign: 'right' },
+  actionText: { color: C.text2, fontSize: FS.sm, lineHeight: 13, fontWeight: '500' },
+  progText: { color: C.brandSoft, fontSize: FS.sm, lineHeight: 14, width: 36, textAlign: 'right' },
   center: { paddingVertical: 40, alignItems: 'center' },
-  empty: { color: C.text2, fontSize: 12, textAlign: 'center', paddingVertical: 40 },
-  songList: { gap: 8, marginTop: 4 },
+  empty: { color: C.text2, fontSize: FS.body, textAlign: 'center', paddingVertical: 40 },
+  songList: { gap: SP.md, marginTop: 4 },
 });

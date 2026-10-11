@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Activi
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, FS, SP } from '../theme/tokens';
+import { useHoverCard } from '../hd/hdweb'; // [LEO 1011 统一令] nm-card 彩色弥散影+hover
 import { PillTabs } from '../components/PillTabs';
 import { SongRow } from '../components/SongRow';
 import { ActionSheet } from '../components/ActionSheet';
@@ -115,9 +116,9 @@ export function SearchScreen() {
 
   // lx163b:空闲态（搜索历史 + 热搜词）——四态共用：未搜索过/输入已清空时展示
   const idlePane = (
-    <View style={{ gap: 14, paddingTop: 8 }}>
+    <View style={{ gap: SP.xxl, paddingTop: 8 }}>
       {history.length ? (
-        <View style={{ gap: 8 }}>
+        <View style={{ gap: SP.md }}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Text style={st.allSecTitle}>搜索历史</Text>
             <View style={{ flex: 1 }} />
@@ -125,7 +126,7 @@ export function SearchScreen() {
               <Icon name="close" size={14} color={C.text3} />
             </TouchableOpacity>
           </View>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.md }}>
             {history.map(w => (
               <TouchableOpacity key={w} style={st.chip} onPress={() => { setKw(w); search(w); }}>
                 <Text style={st.chipText} numberOfLines={1}>{w}</Text>
@@ -134,9 +135,9 @@ export function SearchScreen() {
           </View>
         </View>
       ) : null}
-      <View style={{ gap: 8 }}>
+      <View style={{ gap: SP.md }}>
         <Text style={st.allSecTitle}>大家都在搜</Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.md }}>
           {HOT_WORDS.map((w, i) => (
             <TouchableOpacity key={w} style={st.chip} onPress={() => { setKw(w); search(w); }}>
               <Text style={[st.chipIdx, i < 3 && { color: C.brand }]}>{i + 1}</Text>
@@ -177,7 +178,7 @@ export function SearchScreen() {
 
       {/* lx163c:锚点导航(替代模式 tab)——带计数徽标,点击滚动到分区;一次搜索全量在本页 */}
       {results != null || singers != null || albums != null ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.anchorBar} contentContainerStyle={{ gap: 8, paddingHorizontal: 20 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.anchorBar} contentContainerStyle={{ gap: SP.md, paddingHorizontal: 20 }}>
           {([
             ['song', `歌曲 ${results?.length ?? 0}`],
             ['singer', `歌手 ${(singers || []).length}`],
@@ -200,10 +201,10 @@ export function SearchScreen() {
           <Text style={st.errText}>{err}</Text>
         ) : (
           /* lx163c:统一分区流——歌曲(源内聚头部)→歌手横滑→专辑横滑;tab 已被锚点条替代 */
-          <View style={{ gap: 4 }}>
+          <View style={{ gap: SP.xs }}>
             {results && results.length ? (
               <View onLayout={e => { secY.current.song = e.nativeEvent.layout.y; }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.md }}>
                   <Text style={st.allSecTitle}>歌曲 · {results.length} 首</Text>
                   <View style={st.aggBadge}><Text style={st.aggText}>五源聚合</Text></View>
                 </View>
@@ -224,15 +225,10 @@ export function SearchScreen() {
             {(singers || []).length ? (
               <View onLayout={e => { secY.current.singer = e.nativeEvent.layout.y; }}>
                 <Text style={st.allSecTitle}>歌手 · {(singers || []).length}</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingVertical: 4 }}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: SP.xxl, paddingVertical: 4 }}>
                   {(singers || []).map(a => (
-                    <TouchableOpacity key={a.id} style={st.allArtistCard} activeOpacity={0.85}
-                      onPress={() => navTo.navigate('ArtistDetail', { artist: { id: a.id, name: a.name, img: a.img, source: a.source || 'wy' } })}>
-                      {a.img
-                        ? <Image source={{ uri: a.img }} style={st.allRound} />
-                        : <View style={[st.allRound, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Text style={{ color: C.text2, fontSize: 18, fontWeight: '700' }}>{a.name.slice(0, 1)}</Text></View>}
-                      <Text style={st.allCardName} numberOfLines={1}>{a.name}</Text>
-                    </TouchableOpacity>
+                    <AllArtistCircle key={a.id} a={a}
+                      onPress={() => navTo.navigate('ArtistDetail', { artist: { id: a.id, name: a.name, img: a.img, source: a.source || 'wy' } })} />
                   ))}
                 </ScrollView>
               </View>
@@ -240,16 +236,10 @@ export function SearchScreen() {
             {(albums || []).length ? (
               <View onLayout={e => { secY.current.album = e.nativeEvent.layout.y; }}>
                 <Text style={st.allSecTitle}>专辑 · {(albums || []).length}</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingVertical: 4 }}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: SP.xxl, paddingVertical: 4 }}>
                   {(albums || []).map(al => (
-                    <TouchableOpacity key={al.id} style={st.allAlbumCard} activeOpacity={0.85}
-                      onPress={() => navTo.navigate('AlbumDetail', { album: { id: al.id, name: al.name, singer: al.singer, img: al.img, source: al.source || 'wy' } })}>
-                      {al.img
-                        ? <Image source={{ uri: al.img }} style={st.allSquare} />
-                        : <View style={[st.allSquare, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={26} color={C.text3} /></View>}
-                      <Text style={st.allCardName} numberOfLines={1}>{al.name}</Text>
-                      {al.singer ? <Text style={st.allCardSub} numberOfLines={1}>{al.singer}</Text> : null}
-                    </TouchableOpacity>
+                    <AllAlbumCard key={al.id} al={al}
+                      onPress={() => navTo.navigate('AlbumDetail', { album: { id: al.id, name: al.name, singer: al.singer, img: al.img, source: al.source || 'wy' } })} />
                   ))}
                 </ScrollView>
               </View>
@@ -308,43 +298,79 @@ export function SearchScreen() {
   );
 }
 
+// [LEO 1011 统一令] 歌手圆卡:与公共库 ArtistCircle 同规格(76 圆/artTint2 兜底+brandText 首字母/nm-card 弥散影+hover)
+function AllArtistCircle({ a, onPress }: { a: { id: string; name: string; img?: string; source?: string }; onPress: () => void }) {
+  const { elRef, onHoverIn, onHoverOut, cardStyle } = useHoverCard(a.name);
+  const w = 76;
+  return (
+    <TouchableOpacity ref={elRef as never}
+      style={[{ width: w, gap: SP.sm, alignItems: 'center' }, cardStyle as never]}
+      activeOpacity={0.85} onPress={onPress}
+      {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}>
+      <View style={{ width: w, height: w, borderRadius: 999, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: C.artTint2 }}>
+        {a.img
+          ? <Image source={{ uri: a.img }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }} resizeMode="cover" />
+          : <Text style={st.allArtistInit}>{a.name.slice(0, 1)}</Text>}
+      </View>
+      <Text style={st.allCardName} numberOfLines={1}>{a.name}</Text>
+    </TouchableOpacity>
+  );
+}
+
+// [LEO 1011 统一令] 专辑卡 nm-card 化(RailCard 同构:surface 底/r12/弥散影+hover/封面+文字区)
+function AllAlbumCard({ al, onPress }: { al: { id: string; name: string; singer?: string; img?: string; source?: string }; onPress: () => void }) {
+  const { elRef, onHoverIn, onHoverOut, cardStyle } = useHoverCard(al.name);
+  const w = 104;
+  return (
+    <TouchableOpacity ref={elRef as never}
+      style={[{ width: w, backgroundColor: C.surface, borderRadius: 12, overflow: 'hidden' }, cardStyle as never]}
+      activeOpacity={0.85} onPress={onPress}
+      {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}>
+      {al.img
+        ? <Image source={{ uri: al.img }} style={{ width: w, height: w, backgroundColor: C.surface2 }} />
+        : <View style={{ width: w, height: w, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2 }}><Icon name="music" size={26} color={C.text3} /></View>}
+      <View style={{ padding: SP.sm, gap: SP.xs }}>
+        <Text style={st.allCardName} numberOfLines={1}>{al.name}</Text>
+        {al.singer ? <Text style={st.allCardSub} numberOfLines={1}>{al.singer}</Text> : null}
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 const st = StyleSheet.create({
-  singerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60 },
+  singerRow: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, minHeight: 60 },
   anchorBar: { flexGrow: 0, paddingVertical: 8 },
   anchorChip: { backgroundColor: C.surface2, borderRadius: 14, paddingHorizontal: 13, height: 30, justifyContent: 'center' },
-  anchorText: { color: C.text, fontSize: 12, fontWeight: '600' },
+  anchorText: { color: C.text, fontSize: FS.body, fontWeight: '600' },
   aggBadge: { backgroundColor: C.surface2, borderRadius: 9, paddingHorizontal: 8, paddingVertical: 3 },
-  aggText: { color: C.text2, fontSize: 10, fontWeight: '700' },
-  allSecTitle: { color: C.text, fontSize: 14, fontWeight: '700', marginTop: 8 },
-  allArtistCard: { width: 76, alignItems: 'center', gap: 6 },
-  allRound: { width: 64, height: 64, borderRadius: 32 },
-  allAlbumCard: { width: 104, gap: 5 },
-  allSquare: { width: 104, height: 104, borderRadius: 10 },
-  allCardName: { color: C.text, fontSize: 11, fontWeight: '600', alignSelf: 'stretch', textAlign: 'center' },
-  allCardSub: { color: C.text2, fontSize: 10, alignSelf: 'stretch', textAlign: 'center' },
-  allMore: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 12 },
-  allMoreText: { color: C.text2, fontSize: 12, fontWeight: '600' },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.surface2, borderRadius: 14, paddingHorizontal: 13, height: 30 },
-  chipText: { color: C.text, fontSize: 12, fontWeight: '500', maxWidth: 160 },
-  chipIdx: { color: C.text3, fontSize: 11, fontWeight: '800' },
+  aggText: { color: C.text2, fontSize: FS.xs, fontWeight: '700' },
+  allSecTitle: { color: C.text, fontSize: FS.lg, fontWeight: '700', marginTop: 8 },
+  allArtistInit: { color: C.brandText, fontSize: FS.headline, fontWeight: '700' }, // 与公共库 ArtistCircle/PvCard round 首字母同档
+  allCardName: { color: C.text, fontSize: FS.sm, fontWeight: '600', alignSelf: 'stretch', textAlign: 'center' },
+  allCardSub: { color: C.text2, fontSize: FS.xs, alignSelf: 'stretch', textAlign: 'center' },
+  allMore: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.xs, paddingVertical: 12 },
+  allMoreText: { color: C.text2, fontSize: FS.body, fontWeight: '600' },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, backgroundColor: C.surface2, borderRadius: 14, paddingHorizontal: 13, height: 30 },
+  chipText: { color: C.text, fontSize: FS.body, fontWeight: '500', maxWidth: 160 },
+  chipIdx: { color: C.text3, fontSize: FS.sm, fontWeight: '800' },
   round: { width: 44, height: 44, borderRadius: 22 },
   square: { width: 44, height: 44, borderRadius: 8 },
-  singerName: { flex: 1, color: C.text, fontSize: 14, fontWeight: '600' },
-  singerSrc: { color: C.text2, fontSize: 10 },
+  singerName: { flex: 1, color: C.text, fontSize: FS.lg, fontWeight: '600' },
+  singerSrc: { color: C.text2, fontSize: FS.xs },
   screen: { flex: 1, backgroundColor: C.bg },
-  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, marginBottom: 12 },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingHorizontal: 20, marginBottom: 12 },
   searchBox: {
     flex: 1, height: 44, borderRadius: 22, backgroundColor: C.elev,
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 8,
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: SP.md,
   },
-  searchInput: { flex: 1, color: C.text, fontSize: 13, padding: 0 },
+  searchInput: { flex: 1, color: C.text, fontSize: FS.md, padding: 0 },
   pillWrap: { paddingHorizontal: 20, marginBottom: 6 },
   sectionRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginVertical: 10 },
-  sectionTitle: { color: C.text, fontSize: 15, lineHeight: 20, fontWeight: '600' },
-  sectionMeta: { color: C.text3, fontSize: 11 },
-  center: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80, gap: 10 },
-  hintText: { color: C.text3, fontSize: 12 },
-  errText: { color: C.text2, fontSize: 12, lineHeight: 17, textAlign: 'center', paddingVertical: 40 },
+  sectionTitle: { color: C.text, fontSize: FS.xl, lineHeight: 20, fontWeight: '600' },
+  sectionMeta: { color: C.text3, fontSize: FS.sm },
+  center: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80, gap: SP.lg },
+  hintText: { color: C.text3, fontSize: FS.body },
+  errText: { color: C.text2, fontSize: FS.body, lineHeight: 17, textAlign: 'center', paddingVertical: 40 },
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: C.scrim, justifyContent: 'center', alignItems: 'center', padding: 28 },
   overlayCard: { width: '100%', maxWidth: 420 },
 });
