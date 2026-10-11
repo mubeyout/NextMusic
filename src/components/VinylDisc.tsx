@@ -7,6 +7,8 @@
 //   外阴影(0 24px 70px 黑 55%)属容器层,由调用方 View 施加
 // 裁量点(给 LEO 验收裁):保留一道低幅偏心 sheen(白 4%→0)随盘旋转——
 //   纯对称纹理(胶纹圈)旋转无感知,去掉 sheen 后转动不可见
+// v3.37(老板 1011 换盘):盘心换款——黑盘身+灰过渡环+银盘心+小轴孔(参考图:黑外圈/灰中环/银心),
+//   盘心不再贴封面(浅色封面「盘面发白」问题根除);几何仍单源,勿在调用方手写
 // 双端几何单一真源:phone 端经本组件(react-native-svg);
 //   HD/web 端因 RNW+svg shim React#130 历史坑直出 DOM(HDPlayer 内),
 //   但半径序列/渐变规格一律取 vinylDiscSpec/VINYL_SPEC,勿在调用方手写胶纹
@@ -25,6 +27,18 @@ export const VINYL_SPEC = {
   fine: { stroke: '#FFFFFF', opacity: 0.05, width: 0.9, pitch: 3.1 }, // 细胶纹(白5% 0.9px/3.1px)
   wide: { stroke: '#000000', opacity: 0.22, width: 1.2, pitch: 36 }, // 宽纹带(黑22% 1.2px/36px)
   rim: { stroke: '#FFFFFF', opacity: 0.06, width: 1, inset: 1 }, // 盘缘内描边(inset 1px 环)
+  /** 换款盘心(老板 1011 参考图):黑外圈+灰中环+银盘心+小轴孔 */
+  leadRing: { fill: '#8E9297', rr: 68 / 150, stroke: '#00000055' }, // 灰过渡环(外径=盘径 45%)
+  label: {
+    silverStops: [
+      { offset: '0', color: '#EDEFF2' },
+      { offset: '0.72', color: '#C9CDD2' },
+      { offset: '1', color: '#AEB3B9' },
+    ],
+    rr: 54 / 150, // 银盘心半径比(盘径 36%,经典黑胶 label 比例邻域)
+    stroke: '#00000040',
+  },
+  hole: { rr: 6 / 150, fill: '#0A0A0D' }, // 小轴孔
   sheen: {
     // 偏心低幅 sheen:白 4%→0;cx/cy/r 用百分比(RN-SVG 与 DOM 语义一致)
     cx: '36%', cy: '30%', r: '95%',
@@ -54,6 +68,12 @@ export interface VinylDiscSpec {
   wideBands: number[];
   /** 盘缘内描边环半径 */
   rimR: number;
+  /** 灰过渡环半径(换款盘心外圈) */
+  leadR: number;
+  /** 银盘心半径 */
+  labelR: number;
+  /** 小轴孔半径 */
+  holeR: number;
 }
 
 /** 按 size 生成盘体几何(双端同源:phone 组件与 HD/web DOM 版都吃这份) */
@@ -66,6 +86,9 @@ export function vinylDiscSpec(size: number): VinylDiscSpec {
     fineGrooves: ringRadii(radius, VINYL_SPEC.fine.width, VINYL_SPEC.fine.pitch),
     wideBands: ringRadii(radius, VINYL_SPEC.wide.width, VINYL_SPEC.wide.pitch),
     rimR: radius - VINYL_SPEC.rim.inset + VINYL_SPEC.rim.width / 2,
+    leadR: radius * VINYL_SPEC.leadRing.rr,
+    labelR: radius * VINYL_SPEC.label.rr,
+    holeR: radius * VINYL_SPEC.hole.rr,
   };
 }
 
@@ -85,6 +108,7 @@ export function VinylDisc({ size, children, gradientId = 'vd', sheen = true }: {
   const { center: c, radius: R } = spec;
   const baseId = `${gradientId}Base`;
   const sheenId = `${gradientId}Sheen`;
+  const silverId = `${gradientId}Silver`;
   return (
     <View style={{ width: size, height: size }}>
       <Svg width={size} height={size}>
@@ -101,6 +125,12 @@ export function VinylDisc({ size, children, gradientId = 'vd', sheen = true }: {
               ))}
             </RadialGradient>
           ) : null}
+          {/* 换款银盘心渐变(老板 1011 参考图;抛光质感) */}
+          <RadialGradient id={silverId} cx="50%" cy="42%" r="62%">
+            {VINYL_SPEC.label.silverStops.map((s, i) => (
+              <Stop key={i} offset={s.offset} stopColor={s.color} />
+            ))}
+          </RadialGradient>
         </Defs>
         {/* 盘底 */}
         <Circle cx={c} cy={c} r={R} fill={`url(#${baseId})`} />
@@ -117,6 +147,12 @@ export function VinylDisc({ size, children, gradientId = 'vd', sheen = true }: {
         {/* 盘缘内描边 */}
         <Circle cx={c} cy={c} r={spec.rimR} fill="none"
           stroke={VINYL_SPEC.rim.stroke} strokeOpacity={VINYL_SPEC.rim.opacity} strokeWidth={VINYL_SPEC.rim.width} />
+        {/* 换款盘心:灰过渡环→银盘心(径向渐变抛光)→分界细描边→小轴孔;不再贴封面 */}
+        <Circle cx={c} cy={c} r={spec.leadR} fill={VINYL_SPEC.leadRing.fill}
+          stroke={VINYL_SPEC.leadRing.stroke} strokeWidth={1} />
+        <Circle cx={c} cy={c} r={spec.labelR} fill={`url(#${silverId})`}
+          stroke={VINYL_SPEC.label.stroke} strokeWidth={1} />
+        <Circle cx={c} cy={c} r={spec.holeR} fill={VINYL_SPEC.hole.fill} />
         {/* 偏心 sheen(裁量保留,让旋转可见) */}
         {sheen ? <Circle cx={c} cy={c} r={R} fill={`url(#${sheenId})`} /> : null}
       </Svg>

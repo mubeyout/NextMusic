@@ -154,21 +154,10 @@ export function PlayerScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
-        {/* Vinyl hero(draft-2 盘体:整体旋转,胶纹+偏心 sheen 让旋转可见;外阴影属容器层;封面/主轴保留) */}
+        {/* v3.37(老板 1011 换盘):黑外圈+灰中环+银盘心+小轴孔(盘体单源 VinylDisc);盘心不再贴封面,旋转由外层 Animated 驱动 */}
         <View style={st.vinylWrap}>
           <Animated.View style={[st.vinylSpin, { transform: [{ rotate: spinDeg }] }]}>
-            <VinylDisc size={270}>
-              {/* 盘心封面槽(draft-2 label 处理:暗环过渡+正圆封面+内描边+主轴环) */}
-              <View style={st.vinylLabelRing} />
-              <View style={st.vinylLabelBase} />
-              {current.img ? (
-                <Image source={{ uri: fixCoverUrl(current.img) }} style={st.vinylLabel} />
-              ) : (
-                <View style={[st.vinylLabel, { backgroundColor: '#2A2A2A' }]} />
-              )}
-              <View style={st.spindleRing} />
-              <View style={st.spindle} />
-            </VinylDisc>
+            <VinylDisc size={270} />
           </Animated.View>
         </View>
         <View style={st.modeRow}>
@@ -340,14 +329,6 @@ const st = StyleSheet.create({
     shadowColor: '#000000', shadowOpacity: 0.55, shadowOffset: { width: 0, height: 28 }, shadowRadius: 82, elevation: 28,
   },
   vinylSpin: { width: 270, height: 270 },
-  vinylLabelRing: { position: 'absolute', left: 52, top: 52, width: 166, height: 166, borderRadius: 83, backgroundColor: 'rgba(4,4,4,0.72)' },
-  vinylLabelBase: { position: 'absolute', left: 56, top: 56, width: 158, height: 158, borderRadius: 79, backgroundColor: C.brand },
-  vinylLabel: {
-    position: 'absolute', left: 61, top: 61, width: 148, height: 148, borderRadius: 74,
-    overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)',
-  },
-  spindleRing: { position: 'absolute', left: 127, top: 127, width: 16, height: 16, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.05)' },
-  spindle: { position: 'absolute', left: 130, top: 130, width: 10, height: 10, borderRadius: 5, backgroundColor: '#0D0D0D' },
   modeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 20, marginTop: 8 },
   modeMarker: { width: 3, height: 38, borderRadius: 2, backgroundColor: C.brand },
   modeTitle: { color: C.text, fontSize: 15, lineHeight: 18, fontWeight: '500' },

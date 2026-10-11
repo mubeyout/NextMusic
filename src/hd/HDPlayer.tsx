@@ -2,7 +2,7 @@
 // v1 教训:固定尺寸溢出;v2 教训:深色底 panel 突兀(老板:粗糙,直接取消)
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, Animated, Easing, ScrollView, ActivityIndicator, type ImageStyle, type ViewStyle, type TextStyle } from 'react-native';
-import { VINYL_SPEC, vinylDiscSpec } from '../components/VinylDisc'; // 唱片:draft-2 几何单源(盘图实测质量不达标回退几何绘制,老板 1010)
+import { VinylDisc, VINYL_SPEC, vinylDiscSpec } from '../components/VinylDisc'; // 唱片:draft-2 几何单源(盘图实测质量不达标回退几何绘制,老板 1010);v3.37 TV 原生分支直接用组件
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
 import { fixCoverUrl } from '../utils/cover'; // lxfix:kw 图床域名自愈
@@ -29,38 +29,35 @@ import { hdNav } from './hdnav';
 
 // 唱片 SVG 纯 DOM 版(react-native-svg 的 web shim forwardRef 与 RNW 混用会 React#130,直出 DOM 稳)
 // v1.2.5:size 参数化 + nm-vinyl-spin CSS 旋转接入(此前 web 唱片根本不转——nm-vinyl-css 注入了却没人用)
-// v3.13(老板:你知道唱片长什么样吗):盘心恢复真 vinyl label——封面正圆裁切(SVG clipPath,不再靠 borderRadius 的方图贴纸)
-//   + label 描边环 + 轴孔;无图时回退深色纸 label
 // v3.36(唱片样式 draft-2):盘体换 landing draft-2 .disc 规格——radial 盘底+程序化细胶纹(白5% 0.9px/3.1px)
 //   +宽纹带(黑22% 1.2px/36px)+盘缘内描边(白6% 1px)+偏心 sheen(白4%,旋转可见);几何与 phone 端
 //   共享 vinylDiscSpec/VINYL_SPEC(单源,勿在此手写胶纹);外阴影归容器 View(见 vinylZone 内包装)
-function HD_VINYL_SVG(img?: string, size = 300, playing?: boolean): React.ReactNode {
+// v3.37(老板 1011 换盘):盘心换款——黑盘身+灰过渡环+银盘心+小轴孔(参考图:黑外圈/灰中环/银心),
+//   盘心不再贴封面(浅色封面「盘面发白」根除);半径/渐变同样取 spec 单源
+function HD_VINYL_SVG(size = 300, playing?: boolean): React.ReactNode {
   const h = React.createElement;
   const spec = vinylDiscSpec(size);
   const c = spec.center;
-  const s = size / 300; // label 区沿用 300 基准比例(盘心 38% 经典黑胶)
   const base = h('radialGradient', { id: 'vdHdBase', cx: '50%', cy: '50%', r: '50%' },
     VINYL_SPEC.baseStops.map((st, i) => h('stop', { key: i, offset: st.offset, stopColor: st.color })));
   const sheen = h('radialGradient', { id: 'vdHdSheen', cx: VINYL_SPEC.sheen.cx, cy: VINYL_SPEC.sheen.cy, r: VINYL_SPEC.sheen.r },
     VINYL_SPEC.sheen.stops.map((st, i) => h('stop', { key: i, offset: st.offset, stopColor: '#FFFFFF', stopOpacity: String(st.opacity) })));
+  const silver = h('radialGradient', { id: 'vdHdSilver', cx: '50%', cy: '42%', r: '62%' },
+    VINYL_SPEC.label.silverStops.map((st, i) => h('stop', { key: i, offset: st.offset, stopColor: st.color })));
   return h('svg', { width: size, height: size, viewBox: `0 0 ${size} ${size}`, className: 'nm-vinyl-spin' + (playing ? '' : ' nm-vinyl-paused'),
     // [Fix 2026-09-14] 删根元素 boxShadow:svg 根上 border-radius 不裁剪阴影(Chromium)→方形半透明阴影框随唱片旋转,浅色背景下可见(老板:半透明矩形跟着旋转)
     style: { position: 'absolute', top: 0, left: 0 } as never },
-    h('defs', null, base, sheen,
-      h('clipPath', { id: 'hdLblClip', key: 'lc' }, h('circle', { key: 'c', cx: c, cy: c, r: 56 * s }))),
+    h('defs', null, base, sheen, silver),
     /* [老板 1010] 盘体回几何绘制(draft-2 单源;盘图实测不达标) */
     h('circle', { key: 'base', cx: c, cy: c, r: spec.radius, fill: 'url(#vdHdBase)' }),
     ...spec.fineGrooves.map((r, i) => h('circle', { key: 'f' + i, cx: c, cy: c, r, fill: 'none', stroke: VINYL_SPEC.fine.stroke, strokeOpacity: String(VINYL_SPEC.fine.opacity), strokeWidth: VINYL_SPEC.fine.width })),
     ...spec.wideBands.map((r, i) => h('circle', { key: 'w' + i, cx: c, cy: c, r, fill: 'none', stroke: VINYL_SPEC.wide.stroke, strokeOpacity: String(VINYL_SPEC.wide.opacity), strokeWidth: VINYL_SPEC.wide.width })),
     h('circle', { key: 'rim', cx: c, cy: c, r: spec.rimR, fill: 'none', stroke: VINYL_SPEC.rim.stroke, strokeOpacity: String(VINYL_SPEC.rim.opacity), strokeWidth: VINYL_SPEC.rim.width }),
+    /* 换款盘心(老板 1011 参考图):灰过渡环→银盘心(径向渐变抛光)→分界细描边→小轴孔;不再贴封面 */
+    h('circle', { key: 'lead', cx: c, cy: c, r: spec.leadR, fill: VINYL_SPEC.leadRing.fill, stroke: VINYL_SPEC.leadRing.stroke, strokeWidth: 1 }),
+    h('circle', { key: 'lbl', cx: c, cy: c, r: spec.labelR, fill: 'url(#vdHdSilver)', stroke: VINYL_SPEC.label.stroke, strokeWidth: 1 }),
+    h('circle', { key: 'hole', cx: c, cy: c, r: spec.holeR, fill: VINYL_SPEC.hole.fill }),
     h('circle', { key: 'sheen', cx: c, cy: c, r: spec.radius, fill: 'url(#vdHdSheen)' }),
-    /* 盘心 label:暗分离环(draft-2 4px 暗环,封面嵌进盘里不浮贴)→深色纸底→正圆裁切封面→label 描边环→轴孔环+轴孔 */
-    h('circle', { key: 'lblDark', cx: c, cy: c, r: 62 * s, fill: 'rgba(4,4,4,0.72)' }),
-    h('circle', { key: 'lblBase', cx: c, cy: c, r: 58 * s, fill: '#101312' }),
-    img ? h('image', { key: 'lblImg', href: img, xlinkHref: img, x: c - 56 * s, y: c - 56 * s, width: 112 * s, height: 112 * s, preserveAspectRatio: 'xMidYMid slice', clipPath: 'url(#hdLblClip)' }) : null, // v3.35:href 双写兼容(xlink 老内核)
-    h('circle', { key: 'lblRing', cx: c, cy: c, r: 58 * s, fill: 'none', stroke: '#FFFFFF12', strokeWidth: 1 }),
-    h('circle', { key: 'spindleRing', cx: c, cy: c, r: 8.5 * s, fill: 'rgba(255,255,255,0.05)' }),
-    h('circle', { key: 'spindle', cx: c, cy: c, r: 6 * s, fill: '#000' }),
   );
 }
 
@@ -312,17 +309,14 @@ export function HDPlayer() {
               /* v3.36:容器层外阴影(draft-2 .vinyl:0 24px 70px 黑55%@230,按盘径等比;圆形 borderRadius
                  使阴影随盘缘正圆——旋转不变,svg 根不背锅见 Fix 2026-09-14) */
               <View style={{ position: 'absolute', top: '50%', left: '50%', width: vinylSize, height: vinylSize, marginLeft: -Math.round(vinylSize / 2), marginTop: -Math.round(vinylSize / 2), borderRadius: Math.round(vinylSize / 2), boxShadow: `0 ${Math.round(24 * vinylSize / 230)}px ${Math.round(70 * vinylSize / 230)}px rgba(0,0,0,.55)`, transform: [{ rotate: String(spinDeg) }] }}>
-                {HD_VINYL_SVG(fixCoverUrl(current.img), vinylSize, playing)}
+                {HD_VINYL_SVG(vinylSize, playing)}
               </View>
             ) : (
               <View style={st.vinylWrap}>
-                <Animated.Image
-                  source={current.img ? { uri: fixCoverUrl(current.img) } : undefined}
-                  style={[st.vinylArt as ImageStyle, { transform: [{ rotate: spinDeg }] }]}
-                  resizeMode="cover"
-                />
-                {!current.img ? <View style={[st.vinylArt, st.artFallback]}><Icon name="music" size={52} color={C.text3} /></View> : null}
-                <View style={st.vinylHole} />
+                {/* v3.37 换款黑胶(与 web/手机同几何);react-native-svg 仅原生分支渲染,web 走 DOM 版(React#130 前科) */}
+                <Animated.View style={{ width: 228, height: 228, transform: [{ rotate: spinDeg }] }}>
+                  <VinylDisc size={228} />
+                </Animated.View>
               </View>
             )}
           </View>)}
@@ -503,8 +497,6 @@ const stDark: Record<string, ViewStyle | TextStyle> = {
 // web vinyl 尺寸
   vinylWrap: { width: 228, height: 228, borderRadius: 114, backgroundColor: '#0d100e', borderWidth: 5, borderColor: '#161a17', alignItems: 'center', justifyContent: 'center', boxShadow: '0 18px 44px rgba(0,0,0,.55), 0 0 36px rgba(30,215,96,.14)' },
   vinylZone: { width: RING_ZONE, height: RING_ZONE, alignItems: 'center', justifyContent: 'center' },
-  vinylArt: { width: 150, height: 150, borderRadius: 75 },
-  vinylHole: { position: 'absolute', width: 12, height: 12, borderRadius: 6, backgroundColor: '#0a0c0b', borderWidth: 3, borderColor: '#222823' },
   srcPill: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 24, borderRadius: 12, paddingHorizontal: 12, marginTop: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,.16)', backgroundColor: 'rgba(255,255,255,.06)' },
   srcDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.brand },
   srcTag: { color: '#ffffffaa', fontSize: 10, letterSpacing: 2, fontWeight: '600' },
@@ -512,7 +504,6 @@ const stDark: Record<string, ViewStyle | TextStyle> = {
   mainWeb: { flexDirection: 'column', paddingHorizontal: '5%', gap: 20, justifyContent: 'flex-end' }, // v3.5:行2(进度+控件)紧贴页面底部
   rowWrap: { flex: 1, flexDirection: 'row', gap: '10%', alignItems: 'center', minWidth: 0 }, // 行1:黑胶(左半靠右)|10%|标题歌词(右半靠左)
   artCol: { width: 344, alignItems: 'center', justifyContent: 'center' }, // TV 基准;web 见行内 45% 覆写
-  artFallback: { backgroundColor: '#1E2722', alignItems: 'center', justifyContent: 'center' },
   infoCol: { flex: 1, gap: 6, paddingTop: 22 },
   infoColWeb: { paddingTop: 0, gap: 10, flex: 1, alignItems: 'flex-start' }, // 行1 右半区·左对齐 // lx94:标题/歌词整体下移(老板:太高)
   title: { color: '#ffffff', fontSize: 25, fontWeight: '800' },
@@ -563,11 +554,9 @@ const stLight = {
   backBtn: { ...stDark.backBtn, backgroundColor: 'rgba(31,35,41,.05)' },
   backLabel: { color: 'rgba(38,40,44,.85)', fontSize: 13, fontWeight: '600' },
   webArtCard: { ...stDark.webArtCard, boxShadow: '0 24px 64px rgba(31,35,41,.18), 0 0 0 1px rgba(31,35,41,.05)' },
-  vinylWrap: { ...stDark.vinylWrap, backgroundColor: '#E4E7EA', borderColor: '#D5D9DD', boxShadow: '0 18px 44px rgba(31,35,41,.2), 0 0 36px rgba(30,215,96,.1)' },
-  vinylHole: { ...stDark.vinylHole, backgroundColor: '#F6F7F9', borderColor: '#D5D9DD' },
+  vinylWrap: { ...stDark.vinylWrap, boxShadow: '0 18px 44px rgba(31,35,41,.2), 0 0 36px rgba(30,215,96,.1)' },
   srcPill: { ...stDark.srcPill, borderColor: 'rgba(31,35,41,.08)', backgroundColor: 'rgba(31,35,41,.04)' },
   srcTag: { color: 'rgba(38,40,44,.6)', fontSize: 10, letterSpacing: 2, fontWeight: '600' },
-  artFallback: { ...stDark.artFallback, backgroundColor: '#E9EBEE' },
   title: { color: '#26282C', fontSize: 25, fontWeight: '800' },
   sub: { color: 'rgba(38,40,44,.7)', fontSize: 14 },
   lyric: { color: 'rgba(38,40,44,.55)', fontSize: 17, lineHeight: 24, fontWeight: '500' },
