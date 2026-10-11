@@ -37,6 +37,7 @@ import type { SongItem } from '../services/server';
 import { useHoverCard } from '../hd/hdweb';
 import { GridWall } from '../components/GridWall';
 import { DiscCard } from './MyLibraryScreen'; // [老板 1011 15:49] 专辑卡统一件
+import { PvCard } from '../components/PvCard'; // [老板 1011 16:15] 歌单卡统一件(共享化)
 
 // 有品牌 logo 的类型用 BrandIcon，其余回退语义图标
 // v3: 媒体库 icon 一律 BrandIcon(品牌图标一一对应)
@@ -1335,47 +1336,6 @@ function SectionHead({ title, count, actionLabel, onAction }: {
 }
 
 
-function PvCard({ cover, name, meta, round, fill, onPress, onLongPress }: {
-  cover?: string; name: string; meta?: string; round?: boolean; fill?: boolean; onPress: () => void; onLongPress?: () => void;
-}) {
-  const size = IS_HD ? CARD.rail.hd : (IS_WEB ? CARD.rail.web : CARD.rail.phone); // [老板 1011 15:39] 卡宽唯一源
-  const { elRef, onHoverIn, onHoverOut, cardStyle } = useHoverCard(name); // [老板 1011 12:34] nm-card 同款
-  if (round) {
-    return (
-      <T style={[{ width: fill ? '100%' : size, backgroundColor: C.surface, borderRadius: 12, overflow: 'hidden' }, cardStyle as never]} ref={elRef as never} activeOpacity={0.85} onPress={onPress} onLongPress={onLongPress} focusStyle={focus(10)}
-        {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}>
-        <View style={{ padding: SP.sm }}>
-          <View style={[
-            { width: fill ? '100%' : size - SP.sm * 2, aspectRatio: 1, borderRadius: 999, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-            { backgroundColor: C.artTint2 },
-          ]}>
-            <Text style={st.artistInitial}>{name.slice(0, 1)}</Text>
-          </View>
-        </View>
-        <View style={{ paddingHorizontal: SP.md, paddingBottom: SP.md, gap: SP.xs, alignItems: 'center' }}>
-          <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{name}</Text>
-          {meta ? <Text style={[st.albumMeta, IS_HD && bv.albumMeta]} numberOfLines={1}>{meta}</Text> : null}
-        </View>
-      </T>
-    );
-  }
-  return (
-    <T style={[{ width: fill ? '100%' : size, backgroundColor: C.surface, borderRadius: 12, overflow: 'hidden' }, cardStyle as never]} ref={elRef as never} activeOpacity={0.85} onPress={onPress} onLongPress={onLongPress} focusStyle={focus(10)}
-      {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}>
-      {cover ? (
-        <Image source={{ uri: cover }} style={fill ? { width: '100%', aspectRatio: 1, backgroundColor: C.surface2 } : { width: size, height: size, backgroundColor: C.surface2 }} />
-      ) : (
-        <View style={[fill ? { width: '100%', aspectRatio: 1 } : { width: size, height: size }, { alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2 }]}>
-          <Icon name="music" size={22} color={C.text2} />
-        </View>
-      )}
-      <View style={{ padding: 8, gap: SP.xs, minHeight: 46 }}>
-        <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{name}</Text>
-        {meta ? <Text style={[st.albumMeta, IS_HD && bv.albumMeta]} numberOfLines={1}>{meta}</Text> : null}
-      </View>
-    </T>
-  );
-}
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },

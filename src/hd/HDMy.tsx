@@ -16,8 +16,9 @@ import { sync, lxToApp, type UserListsSnapshot , subscribeSync } from '../servic
 import { providers } from '../services/providers';
 import { hdNav } from './hdnav';
 import type { SongItem } from '../services/server';
-import { FS, FW, SP } from '../theme/tokens';
+import { FS, FW, SP, GRID } from '../theme/tokens';
 import { GRAD } from '../theme/grads';
+import { PvCard } from '../components/PvCard'; // [老板 1011 16:15] 歌单卡统一件
 
 const K = H.font.sm / 10; // 界面缩放系数(设置 uiScale 联动网格列宽)
 
@@ -126,16 +127,10 @@ export function HDMy() {
       {/* 歌单网格 */}
       <View style={{ paddingHorizontal: 34, gap: SP.xxl }}>
         <Text style={st.secTitle}>{`歌单 · ${playlists.length}`}</Text>
-        <HDGrid min={168 * K} gap={18} minCols={3}>
-          {playlists.map((pl, i) => (
-            <HDTouch key={pl.key} style={st.plCard} zoom={1.06} onPress={() => openPl(pl)} onLongPress={() => managePl(pl)}>
-              {pl.img ? <Image source={{ uri: pl.img }} style={st.plArt} />
-                : <LinearGradient colors={GRAD.quick[i % GRAD.quick.length]} style={st.plArt}><Icon name="music" size={28} color="#FFFFFFAA" /></LinearGradient>}
-              <View style={st.plTexts}>
-                <Text style={st.plName} numberOfLines={1}>{pl.name}</Text>
-                <Text style={st.plMeta}>{pl.count} 首</Text>
-              </View>
-            </HDTouch>
+        <HDGrid min={GRID.hdMin * K} gap={GRID.hdGap} minCols={GRID.hdMinCols}>
+          {playlists.map(pl => (
+            <PvCard fill key={pl.key} cover={pl.img} name={pl.name} meta={`${pl.count} 首`}
+              onPress={() => openPl(pl)} onLongPress={() => managePl(pl)} />
           ))}
           <HDTouch style={st.plNew} onPress={() => hdNav()?.navigate('ImportPlaylist')}>
             <Icon name="add" size={34} color={C.text2} />

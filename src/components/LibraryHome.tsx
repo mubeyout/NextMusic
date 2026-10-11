@@ -274,7 +274,8 @@ export function RailCard({ cover, name, sub, icon, onPress, fill }: {
           <Icon name={icon || 'music'} size={24} color={C.text2} />
         </View>
       )}
-      <View style={{ padding: SP.md, gap: SP.xs, minHeight: 46 }}> // [老板 1011 15:59] 文字区统一档
+      {/* [老板 1011 15:59] 文字区统一档(KAI 修:行注释曾泄漏为可见文本) */}
+      <View style={{ padding: SP.md, gap: SP.xs, minHeight: 46 }}>
         <Text style={lh.railName} numberOfLines={1}>{name}</Text>
         {sub ? <Text style={[lh.railSub, { maxWidth: size - 16 }]} numberOfLines={1}>{sub}</Text> : null}
       </View>

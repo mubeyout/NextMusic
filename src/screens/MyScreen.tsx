@@ -6,6 +6,8 @@ import LinearGradient from 'react-native-linear-gradient';
 import { Icon, BrandIcon } from '../theme/Icon';
 import { C, FS, FW, SP, softGrad } from '../theme/tokens';
 import { GRAD } from '../theme/grads';
+import { PvCard } from '../components/PvCard'; // [老板 1011 16:15] 歌单卡统一件(自建歌单大卡并入)
+import { GridWall } from '../components/GridWall';
 import { PillTabs } from '../components/PillTabs';
 import { EmptyState } from '../components/PageChrome';
 import { ActionSheet } from '../components/ActionSheet';
@@ -212,12 +214,9 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
             </TouchableOpacity>
           </View>
           {gridItems.length ? (
-            <View style={st.plGrid}>
-              {gridItems.slice(0, 12).map((g, i) => (
-                <TouchableOpacity
-                  key={g.key}
-                  style={st.plCell}
-                  activeOpacity={0.85}
+            <GridWall>
+              {gridItems.slice(0, 12).map(g => (
+                <PvCard fill key={g.key} cover={g.img} name={g.name} meta={`${g.count} 首`}
                   onPress={() => g.localId
                     ? nav.navigate('PlaylistDetail', { localId: g.localId, title: g.name, songs: g.songs, cover: g.img })
                     : openSongs(g.name, g.songs, g.img, g.localId ? undefined : { plKey: g.key })}
@@ -229,20 +228,9 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
                       // lx101:同步歌单也可管理(服务器 userList 重命名/删除)
                       setActSyncPl({ id: g.key, name: g.name, count: g.count });
                     }
-                  }}
-                >                  {/* lx163(老板):真实封面优先(首曲专辑图),无图兑底渐变抽象封面 */}
-                  {g.img ? (
-                    <Image source={{ uri: g.img }} style={st.plCover} />
-                  ) : (
-                    <LinearGradient colors={GRAD.quick[i % GRAD.quick.length]} style={st.plCover}>
-                      <Icon name="music" size={26} color={C.white} />
-                    </LinearGradient>
-                  )}
-                  <Text style={st.plName} numberOfLines={1}>{g.name}</Text>
-                  <Text style={st.plMeta} numberOfLines={1}>{g.count} 首</Text>
-                </TouchableOpacity>
+                  }} />
               ))}
-            </View>
+            </GridWall>
           ) : (
             <Text style={st.empty}>{loggedIn ? '还没有歌单，点右上导入' : '登录后同步服务器歌单'}</Text>
           )}
