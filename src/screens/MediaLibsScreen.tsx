@@ -1076,9 +1076,9 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                 <View>
                   <SectionHead title="我的音乐" />
                   <GridWall>
-                    {tfDl ? <PvCard fill name="NAS 曲库" meta={tfDl.songCount ? `${tfDl.songCount} 首 · 自动落库` : '暂无落库歌曲'} onPress={() => toDetail(tfDl)} /> : null}
-                    {tfRecent ? <PvCard fill name="最近播放" meta={tfRecent.songCount ? `${tfRecent.songCount} 首` : '—'} onPress={() => toDetail(tfRecent)} /> : null}
-                    {tfLiked ? <PvCard fill name="我喜欢的音乐" meta={tfLiked.songCount ? `${tfLiked.songCount} 首` : '—'} onPress={() => toDetail(tfLiked)} /> : null}
+                    {tfDl ? <PvCard fill name="NAS 曲库" cover={tfDl.cover} meta={tfDl.songCount ? `${tfDl.songCount} 首 · 自动落库` : '暂无落库歌曲'} onPress={() => toDetail(tfDl)} /> : null}
+                    {tfRecent ? <PvCard fill name="最近播放" cover={tfRecent.cover} meta={tfRecent.songCount ? `${tfRecent.songCount} 首` : '—'} onPress={() => toDetail(tfRecent)} /> : null}
+                    {tfLiked ? <PvCard fill name="我喜欢的音乐" cover={tfLiked.cover} meta={tfLiked.songCount ? `${tfLiked.songCount} 首` : '—'} onPress={() => toDetail(tfLiked)} /> : null}
                   </GridWall>
                 </View>
 
