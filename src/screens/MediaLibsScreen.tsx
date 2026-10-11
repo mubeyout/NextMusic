@@ -1081,31 +1081,13 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
               <>
                 {/* [v5.6] 歌单维度 tab:我的音乐/我的歌单/推荐/排行(原分区纵排收进 tab);[老板 1010] netease 布局恒显(网易云风纵排无 tabs) */}
                 {(pvLayout === 'netease' || dim === 'lists') ? (<>
-                {/* [老板 1011 11:49] 我的音乐:卡片横向排布——三竖卡横滑(NAS 曲库/最近播放/我喜欢的),修挤在一起无 gap */}
+                {/* [老板 1011 11:57] 我的音乐:PvCard 标准规格(与推荐歌单 rail 同款卡同 gap;修间距大卡片小不统一) */}
                 <View>
                   <SectionHead title="我的音乐" />
                   <Rail>
-                    {tfDl ? (
-                      <T style={sec.myCard} activeOpacity={0.85} focusStyle={focus(14)} onPress={() => toDetail(tfDl)}>
-                        <View style={[sec.myCardIcon, coverGrad('NAS 曲库') as ViewStyle]}><Icon name="music" size={22} color="#ffffffcc" /></View>
-                        <Text style={sec.myCardName} numberOfLines={1}>NAS 曲库</Text>
-                        <Text style={sec.myCardMeta} numberOfLines={1}>{tfDl.songCount ? `${tfDl.songCount} 首 · 自动落库` : '暂无落库歌曲'}</Text>
-                      </T>
-                    ) : null}
-                    {tfRecent ? (
-                      <T style={sec.myCard} activeOpacity={0.85} focusStyle={focus(14)} onPress={() => toDetail(tfRecent)}>
-                        <View style={[sec.myCardIcon, coverGrad('最近播放') as ViewStyle]}><Icon name="play" size={22} color="#ffffffcc" /></View>
-                        <Text style={sec.myCardName} numberOfLines={1}>最近播放</Text>
-                        <Text style={sec.myCardMeta} numberOfLines={1}>{tfRecent.songCount ? `${tfRecent.songCount} 首` : '—'}</Text>
-                      </T>
-                    ) : null}
-                    {tfLiked ? (
-                      <T style={sec.myCard} activeOpacity={0.85} focusStyle={focus(14)} onPress={() => toDetail(tfLiked)}>
-                        <View style={[sec.myCardIcon, coverGrad('我喜欢的音乐') as ViewStyle]}><Icon name="heart" size={22} color="#ffffffcc" /></View>
-                        <Text style={sec.myCardName} numberOfLines={1}>我喜欢的音乐</Text>
-                        <Text style={sec.myCardMeta} numberOfLines={1}>{tfLiked.songCount ? `${tfLiked.songCount} 首` : '—'}</Text>
-                      </T>
-                    ) : null}
+                    {tfDl ? <PvCard name="NAS 曲库" meta={tfDl.songCount ? `${tfDl.songCount} 首 · 自动落库` : '暂无落库歌曲'} onPress={() => toDetail(tfDl)} /> : null}
+                    {tfRecent ? <PvCard name="最近播放" meta={tfRecent.songCount ? `${tfRecent.songCount} 首` : '—'} onPress={() => toDetail(tfRecent)} /> : null}
+                    {tfLiked ? <PvCard name="我喜欢的音乐" meta={tfLiked.songCount ? `${tfLiked.songCount} 首` : '—'} onPress={() => toDetail(tfLiked)} /> : null}
                   </Rail>
                 </View>
 
@@ -1578,11 +1560,6 @@ const sec = StyleSheet.create({
   songsBar: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 },
   dualRow: { gap: 10 },
   dualCard: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, backgroundColor: C.surface, borderRadius: 14, padding: 12 },
-  // [老板 1011 11:49] 我的音乐三入口竖卡(横排)
-  myCard: { width: IS_HD ? 120 : 104, gap: 7 },
-  myCardIcon: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  myCardName: { color: C.text, fontSize: 12, fontWeight: '600' },
-  myCardMeta: { color: C.text3, fontSize: 10 },
   dualCover: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   dualTitle: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '600' },
   dualMeta: { color: C.text2, fontSize: 11, lineHeight: 15, marginTop: 2 },

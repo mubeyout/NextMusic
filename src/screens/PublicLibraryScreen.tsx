@@ -523,10 +523,12 @@ export function PublicLibWallRoute(props: Record<string, unknown>) {
   const [items, setItems] = useState<(LibAlbum | LibArtist)[] | null>(null);
   const [total, setTotal] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [werr, setWerr] = useState<string | null>(null); // [老板 1011 11:57] 首帧 null 崩溃修复配套:加载失败显错误不空白
   useEffect(() => { setActiveLib('public'); return () => setActiveLib(undefined); }, []);
   const PAGE_W = IS_HD ? 100 : 50; // 与主页同档分页
   const load = (reset = false) => {
     if (busy) return;
+    setWerr(null);
     const offset = reset ? 0 : items?.length || 0;
     setBusy(true);
     const req = kind === 'albums'
@@ -535,7 +537,7 @@ export function PublicLibWallRoute(props: Record<string, unknown>) {
     req.then(({ list, total }) => {
       setItems(p => offset === 0 ? list : [...(p || []), ...list.filter(x => !(p || []).some(y => y.id === x.id))]);
       setTotal(total);
-    }).finally(() => setBusy(false));
+    }).catch(e => setWerr((e as Error).message || '加载失败')).finally(() => setBusy(false));
   };
   useEffect(() => { load(); /* mount 首载 */ }, []);
   const enterAlbumW = (a: LibAlbum) => nav.navigate('PublicLibAlbum', { id: a.id, name: a.name, cover: a.coverFile });
@@ -543,8 +545,9 @@ export function PublicLibWallRoute(props: Record<string, unknown>) {
   return (
     <View style={d.screen}>
       <PageHeader title={kind === 'albums' ? '全部专辑' : '全部歌手'} />
-      {items === null && busy ? (
-        <View style={{ padding: 24 }}><ActivityIndicator color={C.brand} /></View>
+      {/* [老板 1011 11:57] 首帧守卫:items==null 一律 spinner/错误(原 null&&busy 首帧走内容分支→null.map 崩溃→导航被吞=「点击无反应」根因) */}
+      {items == null ? (
+        werr ? <ErrBack err={werr} /> : <View style={{ padding: 24 }}><ActivityIndicator color={C.brand} /></View>
       ) : (
         <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
           {kind === 'albums' ? (

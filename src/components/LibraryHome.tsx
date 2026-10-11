@@ -22,6 +22,9 @@ export const LIB_KINDS: Record<LibKind, { icon: IconName; grad: [string, string]
   provider: { icon: 'server', grad: ['#3E2E4A', '#261B2E'], label: '第三方媒体库' },
 };
 
+// [老板 1011 11:57] 三库页头部统一:库页 banner=HeroPair 单英雄卡(与第三方曲库顶部同构);kind→英雄卡渐变映射
+const KIND_HERO_GRAD: Record<LibKind, HeroGrad> = { local: 'green', cloud: 'blue', public: 'teal', provider: 'violet' };
+
 // 7.3 P0.5-3 源健康状态点:正常 brand / 延迟(读取中) warn / 断连 danger
 export type LibStatus = 'ok' | 'warn' | 'bad';
 const STATUS_COLOR: Record<LibStatus, string> = { ok: C.brand, warn: '#E8B33D', bad: '#D94D45' };
@@ -149,37 +152,12 @@ export function HeroPair({ heroes, duo }: {
         ))}
       </View>
       {duo ? (
-        <View style={hv.duo}>
-          {IS_HD ? (
-            <>
-              <HDTouch style={[hv.duoBtn, hv.duoPri]} focusStyle={focus(12)} onPress={duo.playAll} disabled={duo.disabled}>
-                <Icon name="play" size={17} color="#062B15" /><Text style={hv.duoPriT}>{duo.playLabel || '播放全部'}·整库</Text>
-              </HDTouch>
-              <HDTouch style={hv.duoBtn} focusStyle={focus(12)} onPress={duo.shuffle} disabled={duo.disabled}>
-                <Icon name="shuffle" size={16} color={C.text2} /><Text style={hv.duoGhoT}>{duo.shuffleLabel || '随机播放'}·不重复</Text>
-              </HDTouch>
-              {duo.more ? (
-                <HDTouch style={[hv.duoBtn, { flex: 0, paddingHorizontal: 14 }]} focusStyle={focus(12)} onPress={duo.more.onPress} disabled={duo.more.disabled}>
-                  <Icon name={duo.more.icon} size={15} color={C.text2} /><Text style={hv.duoGhoT}>{duo.more.label}</Text>
-                </HDTouch>
-              ) : null}
-            </>
-          ) : (
-            <>
-              <TouchableOpacity style={[hv.duoBtn, hv.duoPri]} activeOpacity={0.8} onPress={duo.playAll} disabled={duo.disabled}>
-                <Icon name="play" size={15} color="#062B15" /><Text style={hv.duoPriT}>{duo.playLabel || '播放全部'}·整库</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={hv.duoBtn} activeOpacity={0.8} onPress={duo.shuffle} disabled={duo.disabled}>
-                <Icon name="shuffle" size={14} color={C.text2} /><Text style={hv.duoGhoT}>{duo.shuffleLabel || '随机播放'}·不重复</Text>
-              </TouchableOpacity>
-              {duo.more ? (
-                <TouchableOpacity style={[hv.duoBtn, { flex: 0, paddingHorizontal: 12 }]} activeOpacity={0.8} onPress={duo.more.onPress} disabled={duo.more.disabled}>
-                  <Icon name={duo.more.icon} size={13} color={C.text2} /><Text style={hv.duoGhoT}>{duo.more.label}</Text>
-                </TouchableOpacity>
-              ) : null}
-            </>
-          )}
-        </View>
+        // [老板 1011 11:57] duo 入口行统一:与公共曲库 LibActions 同款(自适应 IS_HD/触摸/禁用;弃自造 duoBtn)——「播放全部/随机播放」与库页动作行一致
+        <LibActions actions={[
+          { icon: 'play', label: duo.playLabel || '播放全部', primary: true, onPress: duo.playAll, disabled: duo.disabled },
+          { icon: 'shuffle', label: duo.shuffleLabel || '随机播放', onPress: duo.shuffle, disabled: duo.disabled },
+          ...(duo.more ? [{ icon: duo.more.icon, label: duo.more.label, onPress: duo.more.onPress, disabled: duo.more.disabled }] : []),
+        ]} />
       ) : null}
     </View>
   );
@@ -308,7 +286,12 @@ export function LibraryHome({ kind, name, stats, sub, status, brand, bannerExtra
         <HeroPair heroes={heroes} duo={duo} />
       ) : (
         <>
-          <LibBanner kind={kind} name={name} stats={stats} sub={sub} status={status} brand={brand} extra={bannerExtra} />
+          {/* [老板 1011 11:57] 头部统一:无 brand=HeroPair 单英雄卡(与第三方顶部同构,状态收 mini);带 brand 保留旧横幅 */}
+          {brand != null ? (
+            <LibBanner kind={kind} name={name} stats={stats} sub={sub} status={status} brand={brand} extra={bannerExtra} />
+          ) : (
+            <HeroPair heroes={[{ grad: KIND_HERO_GRAD[kind], big: name, st: stats || LIB_KINDS[kind].label, mini: ((sub || '') + (status === 'bad' ? ' · 断连' : status === 'warn' ? ' · 读取中' : '')) || undefined, icon: LIB_KINDS[kind].icon, disabled: true }]} />
+          )}
           <LibActions actions={actions || []} />
         </>
       )}
