@@ -1,6 +1,5 @@
 // 媒体库详情页（amcfy 式即点即播）：专辑 / 服务器歌单 → 曲目列表；艺术家 → 专辑网格
 // 替代原「点专辑弹 5 钮对话框」——看得到曲目、能单曲点播，导入/下载降级为次级动作
-import { useGridBasis } from '../components/GridBasis';
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,7 +18,8 @@ import { providers, providerApi, type PvAlbum } from '../services/providers';
 import { IS_HD } from '../services/appversion';
 import { Platform } from 'react-native';
 import { HDTouch } from '../hd/HDTouch';
-import { GUTTER, focus, pageBottom } from '../hd/hdstyle'; // v3.28:统一栅格/焦点环/播放条让位
+import { GUTTER, focus, pageBottom } from '../hd/hdstyle';
+import { GridWall } from '../components/GridWall'; // [老板 1011 15:40] 统一墙卡容器(探索同款)
 
 const IS_WEB = Platform.OS === 'web';
 // 触点抽象:HD 用 HDTouch(焦点环),phone 保持 TouchableOpacity——与 MediaLibsScreen 同款
@@ -56,7 +56,6 @@ export function ProviderDetailScreen() {
   const acct = providers.get(p.acctId);
 
   const [loading, setLoading] = useState(true);
-  const albumGridB = useGridBasis(); // [批B 1010] 列基自适应
   const [err, setErr] = useState<string | null>(null);
   const [songs, setSongs] = useState<SongItem[]>([]);
   const [albums, setAlbums] = useState<PvAlbum[]>([]); // artist 模式
@@ -139,10 +138,10 @@ export function ProviderDetailScreen() {
           </View>
         ) : isArtist ? (
           albums.length ? (
-            <View style={st.albumGrid} onLayout={albumGridB.onLayout}>
+            <GridWall>
               {albums.map(al => (
                 <T
-                  key={al.id} style={[st.albumCell, { width: albumGridB.basis }]} activeOpacity={0.85} focusStyle={focus(10)}
+                  key={al.id} style={[st.albumCell, (IS_HD || IS_WEB) && st.albumCellFill]} activeOpacity={0.85} focusStyle={focus(10)}
                   onPress={() => nav.navigate('ProviderDetail', {
                     acctId: p.acctId, kind: 'album', id: al.id, name: al.name,
                     cover: al.cover, sub: `${al.year || ''}${al.songCount ? ` ${al.songCount}首` : ''}`.trim() || undefined,
@@ -154,7 +153,7 @@ export function ProviderDetailScreen() {
                   <Text style={[st.albumMeta, IS_HD && dv.albumMeta]} numberOfLines={1}>{al.year || ''}{al.songCount ? ` · ${al.songCount}首` : ''}</Text>
                 </T>
               ))}
-            </View>
+            </GridWall>
           ) : <Text style={st.empty}>该艺术家没有专辑</Text>
         ) : (
           <>
@@ -205,6 +204,7 @@ export function ProviderDetailScreen() {
   );
 }
 
+
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   headCard: { flexDirection: 'row', gap: SP.xxl, marginTop: 4 },
@@ -230,6 +230,7 @@ const st = StyleSheet.create({
   prog: { color: C.brandText, fontSize: FS.sm, width: 38, textAlign: 'right' },
   albumGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl, marginTop: 18 },
   albumCell: { width: '31%', gap: SP.xs },
+  albumCellFill: { width: '100%' }, // [老板 1011 15:40] HDGrid 内 cell 撑满列宽
   albumCover: { width: '100%', aspectRatio: 1, borderRadius: 10, backgroundColor: C.surface2 },
   albumName: { color: C.text, fontSize: FS.body, lineHeight: 15, fontWeight: '600' },
   albumMeta: { color: C.text2, fontSize: FS.xs, lineHeight: 12 },

@@ -84,3 +84,15 @@
 1. KAI 宿主 docker 复跑 tsc（我这边无 docker，本地 tsc 6.0.3 两轮 0 错）
 2. 视觉冒烟重点：搜索页歌手/专辑 rail（新卡影）、公共库歌手 rail（+4px）、Auth/编辑页标题（26→24、22→20）、播放页歌词行（26→24）
 3. 碎片归并的 ±0.5-1px 变化属规范既定行为；档外特排共 9 处均有行内注释可 grep `[LEO 1011]` 复核
+
+## 五、追加轮 1011 15:30-15:45（老板实测反馈修复）
+
+1. **专辑墙对齐探索（老板令「全部按照探索的来」）**
+   - 新建共享组件 `src/components/GridWall.tsx`：HD/web=HDGrid 自适应密网格（探索 HDDiscover 同款 min=128×缩放，等宽整行）；phone=百分比三列（与 Home/Explore 歌单网格同大小）
+   - MediaLibsScreen 4 处墙（综合页 mine/recs/tops + 专辑 tab 墙）、ProviderDetailScreen 艺人页专辑墙 → 全部接入 GridWall；cell 规约 phone '31%' / HD '100%'（albumCellFill）
+   - GridBasis 默认档最低档 48%两列→31%三列；DiscCard 内联档位同步
+2. **浅色模式白图标**：全库扫描 Icon 白色硬编码（props 白色/样式白/C.white/白透明系）+ 逐一核对容器底色——仅 HDFxScreen 返回钮是真 bug（surface 可变底+白图标白字）→ C.text2；其余白图标均在恒深底（渐变/brand/danger/错误兜底页）安全保留
+3. **浅色侧边导航字色太浅（HDMain 样式区，未碰路由）**：navLabel/plName text2→text（层级靠字重 500/700+brandDim 底）；group/pbTime text3→text2；NavItem 未激活图标与工具钮图标 text2→text
+4. tsc 复跑 0 错（EXIT 0）
+
+遗留建议（需老板定夺）：text3 作为全局辅助色在浅色下对比 3:1 偏弱（与桌面版 :root 同源值）——若要整体提深需与桌面版同步改 token，本轮未动。

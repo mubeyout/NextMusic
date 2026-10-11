@@ -152,7 +152,7 @@ export function HDFxScreen() {
       {/* 页头:返回+标题居左(SKILL 约定) */}
       <View style={[st.header, { paddingTop: Math.max(insets.top, 12) }]}>
         <HDTouch style={st.backBtn} hoverBg={C.hover} onPress={() => hdNav()?.goBack()}>
-          <Icon name="back" size={16} color="#ffffffcc" />
+          <Icon name="back" size={16} color={C.text2} />
           <Text style={st.backLabel}>返回</Text>
         </HDTouch>
         <Text style={st.headerTitle}>均衡器与音效</Text>
@@ -324,7 +324,7 @@ const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   header: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, paddingHorizontal: 22, paddingBottom: 10 },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, height: 32, borderRadius: 9, paddingHorizontal: 10, backgroundColor: C.surface },
-  backLabel: { color: '#ffffffcc', fontSize: H.font.sm },
+  backLabel: { color: C.text2, fontSize: H.font.sm }, // [老板 1011 15:35 浅色] 白字在 surface 底浅色下不可见→text2
   headerTitle: { flex: 1, color: C.text, fontSize: FS.headline, fontWeight: '800' },
   syncBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, height: 30, borderRadius: 15, paddingHorizontal: 12, backgroundColor: C.surface },
   syncText: { color: C.text2, fontSize: H.font.xs },

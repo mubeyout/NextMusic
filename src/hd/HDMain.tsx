@@ -499,7 +499,7 @@ function NavItem({ icon, label, active, first, child, onPress }: { icon: string;
   return (
     <HDTouch style={[st.navItem, child && st.navItemChild, active && st.navItemOn]} focusStyle={st.navFocus} hoverBg={IS_WEB && !active ? C.hover : false} hasTVPreferredFocus={first}
       onPress={onPress}>
-      <Icon name={icon as never} size={16} color={active ? C.text : C.text2} />
+      <Icon name={icon as never} size={16} color={C.text} />
       <Text style={[st.navLabel, active && { fontWeight: '700', color: C.text }]} numberOfLines={1}>{label}</Text>
     </HDTouch>
   );
@@ -599,10 +599,10 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
           <Icon name="comments" size={14} color={C.text2} />
         </HDTouch>
         <HDTouch style={st.tool} focusStyle={st.toolFocus} hoverBg={IS_WEB ? C.hover : false} onPress={() => hdNav()?.navigate('Fx')}>
-          <Icon name="sliders" size={14} color={C.text2} />
+          <Icon name="sliders" size={14} color={C.text} />
         </HDTouch>
         <HDTouch style={st.tool} focusStyle={st.toolFocus} hoverBg={IS_WEB ? C.hover : false} onPress={() => hdNav()?.navigate('Player')}>
-          <Icon name="fullscreen" size={14} color={C.text2} />
+          <Icon name="fullscreen" size={14} color={C.text} />
         </HDTouch>
       </View>
     </View>
@@ -627,15 +627,15 @@ const st = StyleSheet.create({
   logoMarkMac: { width: 18, height: 19.75 }, // mac 轨道区稍大,仍对齐 nav 槽
   brandNameWeb: { color: C.text, fontSize: 13.5, fontWeight: '800', letterSpacing: 0.2 },
   settingsDock: { paddingHorizontal: 0, paddingVertical: 6 },
-  group: { fontSize: 9, color: C.text3, paddingHorizontal: 12, paddingTop: 5, paddingBottom: 3, letterSpacing: 1, fontWeight: '600' },
+  group: { fontSize: 9, color: C.text2, paddingHorizontal: 12, paddingTop: 5, paddingBottom: 3, letterSpacing: 1, fontWeight: '600' }, // [老板 1011 15:35 浅色] text3→text2:浅色下分组小标太浅
   navItem: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 8, paddingHorizontal: 10, height: 35, borderRadius: 9 },
   navItemOn: { backgroundColor: C.brandDim },
   navFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 9 },
-  navLabel: { color: C.text2, fontSize: H.font.md, fontWeight: '500', flex: 1 },
+  navLabel: { color: C.text, fontSize: H.font.md, fontWeight: '500', flex: 1 }, // [老板 1011 15:35 浅色] text2→text:浅色下侧栏标签太浅;层级靠字重500/700+brandDim底
   plItem: { flexDirection: 'row', alignItems: 'center', gap: 9, marginHorizontal: 8, paddingHorizontal: 10, height: 35, borderRadius: 9 },
   plChip: { width: 20, height: 20, borderRadius: 6, backgroundColor: C.grad1, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
   plAddChip: { width: 20, height: 20, borderRadius: 6, borderWidth: 1, borderStyle: 'dashed', borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
-  plName: { color: C.text2, fontSize: H.font.sm, flex: 1 },
+  plName: { color: C.text, fontSize: H.font.sm, flex: 1 }, // [老板 1011 15:35 浅色] text2→text:与 navLabel 同步
   body: { flex: 1 },
   tabStack: { flex: 1 },
   tabHost: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
@@ -659,7 +659,7 @@ const st = StyleSheet.create({
   toolRepOne: { position: 'absolute', right: -1, top: -1, color: C.brand, fontSize: 8, fontWeight: '800' },
   playBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   playBtnFocus: { borderWidth: 2, borderColor: '#FFFFFF', borderRadius: 16 },
-  pbTime: { color: C.text3, fontSize: 8, fontVariant: ['tabular-nums'], minWidth: 26 },
+  pbTime: { color: C.text2, fontSize: 8, fontVariant: ['tabular-nums'], minWidth: 26 }, // [老板 1011 15:35 浅色] text3→text2
   pbTrack: { flex: 1, height: 3, borderRadius: 2, flexDirection: 'row' },
   pbRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   badge: { position: 'absolute', right: -3, bottom: -3, minWidth: 12, height: 12, borderRadius: 6, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 2 },
