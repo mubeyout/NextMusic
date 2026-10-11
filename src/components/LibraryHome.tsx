@@ -255,7 +255,7 @@ export function RailCard({ cover, name, sub, icon, onPress }: {
         <Image source={{ uri: cover }} style={{ width: size, height: size, borderRadius: 10, backgroundColor: C.surface2 }} />
       ) : (
         <View style={[lh.railFallback, { width: size, height: size }]}>
-          <Icon name={icon || 'music'} size={24} color="#ffffff8c" />
+          <Icon name={icon || 'music'} size={24} color={C.text2} /> {/* [老板 1011 12:27] 黑灰底基准 icon 色(PlCard 同款) */}
         </View>
       )}
       <Text style={[lh.railName, { maxWidth: size }]} numberOfLines={1}>{name}</Text>
@@ -341,7 +341,7 @@ const lh = StyleSheet.create({
   secMore: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 2 },
   secMoreT: { color: C.text2, fontSize: 12, fontWeight: '500' },
   // 横滑卡
-  railFallback: { borderRadius: 10, backgroundColor: C.artTint2, alignItems: 'center', justifyContent: 'center' },
+  railFallback: { borderRadius: 10, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }, // [老板 1011 12:27] 黑灰基准(PlCard 同款);弃浅绿灰 artTint2
   railName: { color: C.text, fontSize: 12, lineHeight: 16, fontWeight: '600' },
   railSub: { color: C.text2, fontSize: 10, lineHeight: 13 },
   // NEW 标(⑤-B6)

@@ -64,9 +64,9 @@ const IS_WEB = Platform.OS === 'web';
 
 
 // 封面渐变库(无封面 fallback,App 端同款 6 组): 按名字 hash 选色
-const COVER_GRADS: [string, string][] = [
-  ['#1F8061', '#6B2973'], ['#6B2980', '#1F578A'], ['#8C401F', '#217A5C'],
-  ['#2B4F9E', '#6B2973'], ['#1F578A', '#1F8061'], ['#217A5C', '#8C401F'],
+const COVER_GRADS: [string, string][] = [ // [老板 1011 12:27] 艳色对撞板弃用——统一为 MyLibrary gradOf 同源沉稳深色系(榜单 BOARD_ACCENTS 气质)
+  ['#3f8766', '#265141'], ['#5d7ba3', '#3a506e'], ['#a3765d', '#6e4d3a'],
+  ['#6b5da3', '#463c6e'], ['#87663f', '#514126'], ['#3d4c5a', '#28333f'], ['#4c5a3d', '#333f28'],
 ];
 function coverGrad(name?: string) {
   let h = 0; for (let i = 0; i < (name || '').length; i++) h = (name || '').charCodeAt(i) + ((h << 5) - h);
@@ -1381,9 +1381,9 @@ function PvCard({ cover, name, meta, round, onPress, onLongPress }: {
       ) : (
         <View style={[
           { width: size, height: size, borderRadius: round ? size / 2 : 10, alignItems: 'center', justifyContent: 'center' },
-          round ? { backgroundColor: C.artTint2 } : coverGrad(name) as ViewStyle,
+          round ? { backgroundColor: C.artTint2 } : { backgroundColor: C.surface2 }, // [老板 1011 12:27] 非圆兜底=黑灰基准(PlCard 同款);圆头像保留 artTint2+首字母
         ]}>
-          {round ? <Text style={st.artistInitial}>{name.slice(0, 1)}</Text> : <Icon name="music" size={22} color="#ffffffb3" />}
+          {round ? <Text style={st.artistInitial}>{name.slice(0, 1)}</Text> : <Icon name="music" size={22} color={C.text2} />}
         </View>
       )}
       <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{name}</Text>
