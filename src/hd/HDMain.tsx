@@ -44,7 +44,7 @@ import { HDFxScreen } from './HDFxScreen'; // v3.20(老板):web/pc 重构版均�
 import { MediaLibsScreen, ProviderBrowseRoute } from '../screens/MediaLibsScreen';
 import { CloudLibraryScreen } from '../screens/CloudLibraryScreen'; // [KAI 20261008 老板 02:28] 云曲库轨道入口存在但屏幕从未注册=railNav 静默无操作=留发现页
 import { MyLibraryScreen, MyLibAlbumRoute, MyLibArtistRoute } from '../screens/MyLibraryScreen';
-import { PublicLibraryScreen, PublicLibAlbumRoute, PublicLibArtistRoute } from '../screens/PublicLibraryScreen'; // ④公共曲库(LEO v2.2 规格④)
+import { PublicLibraryScreen, PublicLibAlbumRoute, PublicLibArtistRoute, PublicLibWallRoute } from '../screens/PublicLibraryScreen'; // ④公共曲库(LEO v2.2 规格④)+全墙页
 import { pubCheck, usePubEntry } from '../services/publicLibrary'; // ④侧栏固定行授权态
 import { localLib } from '../services/localLibrary'; // 细则1:侧栏本机曲库行
 import { ServerLocalLibraryScreen } from '../screens/ServerLocalLibraryScreen'; // [web]本地曲库(服务器侧目录,升级稿 §二)
@@ -411,6 +411,8 @@ export function HDMain() {
             <InnerStack.Screen name="PublicLibrary" component={withPhoneScale(PublicLibraryScreen)} />
             <InnerStack.Screen name="ServerLocalLib" component={withPhoneScale(ServerLocalLibraryScreen)} />
             <InnerStack.Screen name="PublicLibAlbum" component={withPhoneScale(PublicLibAlbumRoute)} />
+            {/* [老板 1011 13:01 破案] HD 壳独立导航器缺全墙注册=查看全部静默死根因(注释独占一行——行内注释会变 navigator 子节点炸,lx168 红线) */}
+            <InnerStack.Screen name="PublicLibWall" component={withPhoneScale(PublicLibWallRoute)} />
             <InnerStack.Screen name="PublicLibArtist" component={withPhoneScale(PublicLibArtistRoute)} />
             <InnerStack.Screen name="ArtistFavs" component={withPhoneScale(ArtistFavScreen)} />
             <InnerStack.Screen name="AlbumFavs" component={withPhoneScale(AlbumFavScreen)} />
