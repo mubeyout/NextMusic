@@ -63,7 +63,7 @@ export function DiscCard({ name, sub, cover, count, round, focusable, onPress, u
   const measure = (e: { nativeEvent: { layout: { width: number } } }) => {
     if (basis != null || fixedWidth != null) return; // fixedWidth 头图场景不自适应(单卡头按宽分档会算出巨封——墙阈值只适用于多卡墙)
     const parent = e.nativeEvent.layout.width / 0.31;
-    setBasis(parent >= 1500 ? '15%' : parent >= 1100 ? '18%' : parent >= 800 ? '23%' : parent >= 560 ? '31%' : '48%');
+    setBasis(parent >= 1500 ? '15%' : parent >= 1100 ? '18%' : parent >= 800 ? '23%' : '31%'); // [老板 1011 15:30] 窄屏 48%两列→31%三列:与 GridBasis 默认档/全站歌单网格同大小
   };
   const cellStyle = fixedWidth != null ? [{ width: fixedWidth, gap: SP.sm }] : [d.disc, basis != null && { width: basis }];
   const sleeve = (
