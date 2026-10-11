@@ -154,10 +154,10 @@ export function PlayerScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
-        {/* v3.37(老板 1011 换盘):黑外圈+灰中环+银盘心+小轴孔(盘体单源 VinylDisc);盘心不再贴封面,旋转由外层 Animated 驱动 */}
+        {/* v3.38(老板 1011 二稿):黑盘身+灰环做框+镂空窗口嵌封面+银轴孔;旋转由外层 Animated 驱动 */}
         <View style={st.vinylWrap}>
           <Animated.View style={[st.vinylSpin, { transform: [{ rotate: spinDeg }] }]}>
-            <VinylDisc size={270} />
+            <VinylDisc size={270} img={current.img ? fixCoverUrl(current.img) : undefined} />
           </Animated.View>
         </View>
         <View style={st.modeRow}>

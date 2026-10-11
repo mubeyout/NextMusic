@@ -9,12 +9,14 @@
 //   纯对称纹理(胶纹圈)旋转无感知,去掉 sheen 后转动不可见
 // v3.37(老板 1011 换盘):盘心换款——黑盘身+灰过渡环+银盘心+小轴孔(参考图:黑外圈/灰中环/银心),
 //   盘心不再贴封面(浅色封面「盘面发白」问题根除);几何仍单源,勿在调用方手写
+// v3.38(老板 1011 二稿):盘心改「镂空窗口展示封面」——灰环做框,封面正圆裁切嵌入窗口;
+//   无封面时回退银 label;轴孔改银色(参考图:central silver spindle hole)
 // 双端几何单一真源:phone 端经本组件(react-native-svg);
 //   HD/web 端因 RNW+svg shim React#130 历史坑直出 DOM(HDPlayer 内),
 //   但半径序列/渐变规格一律取 vinylDiscSpec/VINYL_SPEC,勿在调用方手写胶纹
 import React from 'react';
 import { View } from 'react-native';
-import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, ClipPath, Defs, Image as SvgImage, RadialGradient, Stop } from 'react-native-svg';
 
 /** draft-2 .disc 三层渐变的参数化(两端共用,单源) */
 export const VINYL_SPEC = {
@@ -38,7 +40,7 @@ export const VINYL_SPEC = {
     rr: 54 / 150, // 银盘心半径比(盘径 36%,经典黑胶 label 比例邻域)
     stroke: '#00000040',
   },
-  hole: { rr: 6 / 150, fill: '#0A0A0D' }, // 小轴孔
+  hole: { rr: 6 / 150, fill: '#C9CDD2', stroke: '#00000066' }, // 小轴孔(v3.38 银色,参考图 central silver spindle hole)
   sheen: {
     // 偏心低幅 sheen:白 4%→0;cx/cy/r 用百分比(RN-SVG 与 DOM 语义一致)
     cx: '36%', cy: '30%', r: '95%',
@@ -96,8 +98,10 @@ export function vinylDiscSpec(size: number): VinylDiscSpec {
  * draft-2 唱片盘体。children = 盘心封面槽(位置/裁切由调用方传入,本组件只管盘体)。
  * 旋转机制也归调用方:phone=外层 Animated rotate,HD/web=nm-vinyl-spin CSS。
  */
-export function VinylDisc({ size, children, gradientId = 'vd', sheen = true }: {
+export function VinylDisc({ size, img, children, gradientId = 'vd', sheen = true }: {
   size: number;
+  /** 盘心封面(v3.38 镂空窗口):传入则正圆裁切嵌进灰环窗口;缺省回退银 label */
+  img?: string;
   children?: React.ReactNode;
   /** 同屏多实例时的渐变 id 前缀(默认单实例够用) */
   gradientId?: string;
@@ -125,12 +129,17 @@ export function VinylDisc({ size, children, gradientId = 'vd', sheen = true }: {
               ))}
             </RadialGradient>
           ) : null}
-          {/* 换款银盘心渐变(老板 1011 参考图;抛光质感) */}
+          {/* 换款银盘心渐变(v3.37;v3.38 起为无封面回退态) */}
           <RadialGradient id={silverId} cx="50%" cy="42%" r="62%">
             {VINYL_SPEC.label.silverStops.map((s, i) => (
               <Stop key={i} offset={s.offset} stopColor={s.color} />
             ))}
           </RadialGradient>
+          {img ? (
+            <ClipPath id={`${gradientId}Win`}>
+              <Circle cx={c} cy={c} r={VINYL_SPEC.label.rr * size / 2} />
+            </ClipPath>
+          ) : null}
         </Defs>
         {/* 盘底 */}
         <Circle cx={c} cy={c} r={R} fill={`url(#${baseId})`} />
@@ -147,12 +156,21 @@ export function VinylDisc({ size, children, gradientId = 'vd', sheen = true }: {
         {/* 盘缘内描边 */}
         <Circle cx={c} cy={c} r={spec.rimR} fill="none"
           stroke={VINYL_SPEC.rim.stroke} strokeOpacity={VINYL_SPEC.rim.opacity} strokeWidth={VINYL_SPEC.rim.width} />
-        {/* 换款盘心:灰过渡环→银盘心(径向渐变抛光)→分界细描边→小轴孔;不再贴封面 */}
+        {/* 换款盘心(v3.38 二稿):灰过渡环做框→镂空窗口嵌封面(无图回退银 label)→银色小轴孔 */}
         <Circle cx={c} cy={c} r={spec.leadR} fill={VINYL_SPEC.leadRing.fill}
           stroke={VINYL_SPEC.leadRing.stroke} strokeWidth={1} />
-        <Circle cx={c} cy={c} r={spec.labelR} fill={`url(#${silverId})`}
-          stroke={VINYL_SPEC.label.stroke} strokeWidth={1} />
-        <Circle cx={c} cy={c} r={spec.holeR} fill={VINYL_SPEC.hole.fill} />
+        {img ? (
+          <SvgImage href={img} x={c - spec.labelR} y={c - spec.labelR}
+            width={spec.labelR * 2} height={spec.labelR * 2}
+            preserveAspectRatio="xMidYMid slice" clipPath={`url(#${gradientId}Win)`} />
+        ) : (
+          <Circle cx={c} cy={c} r={spec.labelR} fill={`url(#${silverId})`}
+            stroke={VINYL_SPEC.label.stroke} strokeWidth={1} />
+        )}
+        {img ? <Circle cx={c} cy={c} r={spec.labelR} fill="none"
+          stroke={VINYL_SPEC.label.stroke} strokeWidth={1} /> : null}
+        <Circle cx={c} cy={c} r={spec.holeR} fill={VINYL_SPEC.hole.fill}
+          stroke={VINYL_SPEC.hole.stroke} strokeWidth={1} />
         {/* 偏心 sheen(裁量保留,让旋转可见) */}
         {sheen ? <Circle cx={c} cy={c} r={R} fill={`url(#${sheenId})`} /> : null}
       </Svg>
