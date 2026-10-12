@@ -6,6 +6,7 @@ import { C } from '../theme/tokens';
 import { SP, FS } from '../theme/tokens';
 import { ProTag } from './ProTag';
 import { req } from '../services/server';
+import { IS_HD } from '../services/appversion'; // [1012] 弹框居中判定
 import { license, getInstallId } from '../services/license'; // [D1 WP2] 服务端激活落地
 
 // [D1 WP2 · 授权闭环] License 激活页——全端输码入口
@@ -117,10 +118,11 @@ export function LicenseActivate({ visible, onClose, onActivated }: LicenseActiva
 
 const st = StyleSheet.create({
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000, justifyContent: 'flex-end', alignItems: 'center' },
+  overlayCenter: { justifyContent: 'center' }, // [1012] HD/web 居中模态(老板 ①)
   scrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' },
   sheet: {
     width: '100%', maxWidth: 480, backgroundColor: C.card || '#1A1D1B',
-    borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    borderRadius: 20,
     padding: SP.xl, paddingBottom: SP.wider + 20,
     gap: SP.md,
   },

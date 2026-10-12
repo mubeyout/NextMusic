@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { LicenseActivate } from '../components/LicenseActivate';
 import { LicenseDevices } from '../components/LicenseDevices'; // [D1 WP2] 设备管理(MOMO 1012 追加①)
+import { BUY_LINKS } from '../services/benefits'; // [1012] 购买直跳
 import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 const IS_WEB = Platform.OS === 'web';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -119,6 +120,7 @@ export function HDSettingsScreen() {
           : { kind: 'nav', title: '连接服务器', desc: '登录账号,同步歌单/收藏/音效', icon: 'server', to: 'AuthLogin' },
       { kind: 'nav', title: '音源管理', desc: 'LX 音源脚本,决定本地取链能力', icon: 'wave', to: 'Sources' },
       // [D1 WP2] PRO 授权闭环(老板 15:14 五缺;MOMO 1012 追加①设备管理)
+      { kind: 'nav', title: '购买 Pro ¥19.9 · 终身', desc: '官方店铺直跳,付款后自动发码', icon: 'heart' as IconName, action: () => { if (typeof window !== 'undefined') window.open(BUY_LINKS.pro, '_blank', 'noopener'); } }, // [1012 老板④]
       { kind: 'nav', title: '激活授权码', desc: '输入购买得到的 NM 激活码,解锁 Pro', icon: 'heart' as IconName, action: () => setLicAct(true) },
       { kind: 'nav', title: '我的授权 · 设备管理', desc: '查看授权/设备列表,解绑旧设备腾名额(上限 5 台)', icon: 'server' as IconName, action: () => setLicDev(true) },
       { kind: 'nav', title: '媒体库', desc: 'Emby / Jellyfin / Navidrome / WebDAV', icon: 'music', to: 'MediaLibs' },

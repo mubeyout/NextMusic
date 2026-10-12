@@ -1,11 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
 import { SP, FS } from '../theme/tokens';
 import { ProTag } from './ProTag';
 import { req } from '../services/server';
+import { IS_HD } from '../services/appversion'; // [1012] 弹框居中判定
 
 // [D1 WP2 · MOMO 1012 追加①] 设备管理页——「我的授权→设备列表+解绑」
 // 服务端:GET /api/license/devices(byAccount 归属过滤) + DELETE /api/license/devices/<key>/<installId>(归属校验)
@@ -54,7 +55,7 @@ export function LicenseDevices({ visible, onClose }: LicenseDevicesProps) {
   const totalDevices = (lics || []).reduce((n, l) => n + (l.devices?.length || 0), 0);
 
   return (
-    <View style={[st.overlay]}>
+    <View style={[st.overlay, (IS_HD || Platform.OS === 'web') && st.overlayCenter]}>
       <TouchableOpacity style={st.scrim} activeOpacity={1} onPress={onClose} />
       <View style={[st.sheet, { paddingBottom: insets.bottom + SP.lg }]}>
         <View style={st.header}>
@@ -120,10 +121,11 @@ export function LicenseDevices({ visible, onClose }: LicenseDevicesProps) {
 
 const st = StyleSheet.create({
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000, justifyContent: 'flex-end', alignItems: 'center' },
+  overlayCenter: { justifyContent: 'center' }, // [1012] HD/web 居中模态(老板 ①)
   scrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' },
   sheet: {
     width: '100%', maxWidth: 520, backgroundColor: C.card || '#1A1D1B',
-    borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    borderRadius: 20,
     padding: SP.xl, gap: SP.md,
   },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

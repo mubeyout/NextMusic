@@ -11,6 +11,7 @@ import { SubPage } from '../components/SubPage';
 import { ToggleRow, ValueRow, ActionRow, StaticRow, NavRow, InputRow, Section, PageShell } from '../components/SettingRows';
 import { LicenseActivate } from '../components/LicenseActivate';
 import { LicenseDevices } from '../components/LicenseDevices'; // [D1 WP2] 设备管理(MOMO 1012 追加①)
+import { BUY_LINKS } from '../services/benefits'; // [1012] 购买直跳(老板④:入口藏太深)
 import { settings, useSettings, QUALITY_LABEL, type Quality } from '../services/settings';
 import { providerApi, providers, type ProviderAcct } from '../services/providers';
 import { loadSources, saveSources, type CustomSource } from '../services/customSource';
@@ -94,6 +95,10 @@ export function BasicSettingsScreen() {
       ) : null}
       {/* [D1 WP2] PRO 授权闭环:输码入口+设备管理(老板 15:14 五缺之二/四;MOMO 1012 追加①) */}
       <Section title="PRO 授权">
+        <ActionRow label="购买 Pro ¥19.9 · 终身" value="官方店铺" onPress={() => {
+          const url = BUY_LINKS.pro;
+          if (typeof window !== 'undefined') window.open(url, '_blank', 'noopener');
+        }} /> {/* [1012 老板④] 购买入口直跳店铺——藏在激活流程里太深 */}
         <ActionRow label="激活授权码" value="NM-…" onPress={() => setLicAct(true)} />
         <ActionRow label="我的授权 · 设备管理" value="5 台上限" onPress={() => setLicDev(true)} />
       </Section>
