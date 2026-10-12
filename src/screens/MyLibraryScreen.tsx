@@ -67,7 +67,7 @@ export function DiscCard({ name, sub, cover, count, round, focusable, onPress, o
       )}
       {!cover && !unknown && <View style={[d.gradFill2, { backgroundColor: g2 }]} />}
       {!cover && <Icon name="music" size={26 * size} color={unknown ? '#ffffffaa' : '#fff'} />}
-      <View style={[d.vin, round && d.vinRound]}><View style={d.vinInner} /></View>
+      {/* [老板 1012 02:09] 唱片装饰退役——卡片右下角黑胶去掉(视觉统一令) */}
       {count !== undefined && <View style={d.cntWrap}><Text style={d.cnt}>{count} 首</Text></View>}
     </View>
   );
