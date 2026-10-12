@@ -21,7 +21,6 @@ import { hdNav } from './hdnav';
 import { NativeModules } from 'react-native';
 import { SelectSheet } from '../components/SelectSheet';
 import { useFeatureGate, FeatureGateModal } from '../components/FeatureGate';
-import { ProTag } from '../components/ProTag'; // [D1 WP2]
 import { FS, FW, SP } from '../theme/tokens';
 
 const Restart = NativeModules.AppRestart as { restart: () => void } | undefined;
@@ -270,10 +269,8 @@ function SettingsRow({ row }: { row: RowDef }) {
         <View style={st.rowIcon}><Icon name={row.icon} size={14} color={C.text3} /></View>
       ) : null}
       <View style={{ flex: 1, minWidth: 0, gap: SP.xs }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm }}>
-          {<ProTag size="compact" />}
-          <Text style={st.rowTitle}>{row.title}</Text>
-        </View>
+        {/* [1012 收敛令] 设置子项零 Pro 痕迹——四 gate 位只在 Fx chips/备份 ActionRow/品牌卡 */}
+        <Text style={st.rowTitle}>{row.title}</Text>
         {row.desc ? <Text style={st.rowDesc} numberOfLines={2}>{row.desc}</Text> : null}
       </View>
       {row.kind === 'toggle' ? (

@@ -7,7 +7,7 @@ import { H } from '../hd/hdtokens'; // v3.30:设置族页面进统一栅格
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import { Icon } from '../theme/Icon';
 import { PageHeader } from './PageChrome';
-import { LockGlyph } from './GateSheet';
+import { ProTag } from './ProTag'; // [1012 收敛令] 备份 ActionRow=webdav_backup gate 位,锁标→ProTag
 import { C, FW } from '../theme/tokens';
 import { ActionSheet } from './ActionSheet';
 
@@ -51,7 +51,7 @@ export function ActionRow({ label, value, destructive, locked, onPress }: { labe
   return (
     <TouchableOpacity style={[s.row, s.rowDivide]} activeOpacity={0.7} onPress={onPress}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        {locked ? <LockGlyph size={13} color="#595959" /> : null}
+        {locked ? <ProTag size="compact" /> : null} // [1012 收敛] gate 位保留,owned 态 locked=false 自动静默
         <Text style={[s.rowLabel, destructive && { color: '#FF6B6B' }]}>{label}</Text>
       </View>
       <View style={s.rowRight}>
