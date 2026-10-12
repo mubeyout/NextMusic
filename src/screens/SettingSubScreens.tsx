@@ -24,9 +24,9 @@ import { pubCheck, pubSetShowEntry, usePubEntry } from '../services/publicLibrar
 import { useFeatureGate, FeatureGateModal } from '../components/FeatureGate';
 
 // ---------- 基本设置 ----------
-  const [licAct, setLicAct] = React.useState(false);
+export function BasicSettingsScreen() {
+  const [licAct, setLicAct] = React.useState(false); // [D1 WP2] 授权弹层(P0 修正:state 移入函数体——原 regex 插桩落模块顶层=非法 hook 白屏)
   const [licDev, setLicDev] = React.useState(false);
-  export function BasicSettingsScreen() {
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string) => void };
   const s = useSettings();
   const [cacheSize, setCacheSize] = useState('计算中…');

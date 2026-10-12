@@ -402,7 +402,8 @@ export function HDMain() {
             <InnerStack.Screen name="ImportPlaylist" component={withPhoneScale(ImportPlaylistScreen)} />
             {/* v3.20:web 全宽 HD 版 Fx(注释放 Navigator 内会炸——lx168 红线,注释放表达式内) */}
             <InnerStack.Screen name="Fx" component={IS_WEB ? HDFxScreen : withPhoneScale(FxScreen)} />
-            <InnerStack.Screen name="License" component={withPhoneScale(LicenseScreen)} /> {/* [D1 WP2] HD 侧授权页——FeatureSheet 升级 CTA 落点 */}
+            {/* [D1 WP2] HD 侧授权页——FeatureSheet 升级 CTA 落点(注释独占一行:行尾注释留空格=JSX 字符串子节点,navigator 拒收) */}
+            <InnerStack.Screen name="License" component={withPhoneScale(LicenseScreen)} />
             <InnerStack.Screen name="MediaLibs" component={withPhoneScale(MediaLibsScreen)} />
             {/* [KAI 20261008] 云曲库注册补齐(lx168 红线:注释放 Navigator 内会炸,同独占一行才安全) */}
             <InnerStack.Screen name="CloudLibrary" component={withPhoneScale(CloudLibraryScreen)} />
