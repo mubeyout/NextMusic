@@ -5,6 +5,8 @@ import { settings } from '../services/settings';
 
 export const C: Record<string, string> = {
   brand: '#1ED760',       // Next Green
+  proGold: '#F0C75E',      // Pro Gold [D1 WP2 spec §一]
+  proGoldDark: '#8A6914',   // Pro Gold 亮色降饱和
   brandDim: '#1ed76047',
   brandSoft: '#6BE88F',   // lyrics active green
   bg: '#121212',          // Night
@@ -107,6 +109,7 @@ export function applyBootTheme() {
     C.badgeOn = acc ? mixHex(acc, '#FFFFFF', 0.88) : '#D9F4E5';
     C.artTint = acc ? mixHex(acc, '#FFFFFF', 0.90) : '#E7F1EB';
     C.artTint2 = acc ? mixHex(acc, '#FFFFFF', 0.90) : '#E7F1EB';
+    C.proGold = '#8A6914'; // 亮色主题降饱和 [D1 WP2]
     C.knobOn = '#FFFFFF';
     C.knob = '#8F969E';
     C.failTint = '#FDEEEE';

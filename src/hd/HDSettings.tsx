@@ -1,6 +1,8 @@
 // HD 设置页 —— 对齐桌面版 SettingsScreen:顶部 tab + 行式设置卡
 // 行 = 标题/描述 + 右侧控件;TV 交互:整行可聚焦,CENTER 切换开关/循环选项/进入子页
 import React, { useState } from 'react';
+import { LicenseActivate } from '../components/LicenseActivate';
+import { LicenseDevices } from '../components/LicenseDevices'; // [D1 WP2] 设备管理(MOMO 1012 追加①)
 import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 const IS_WEB = Platform.OS === 'web';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,7 +21,7 @@ import { hdNav } from './hdnav';
 import { NativeModules } from 'react-native';
 import { SelectSheet } from '../components/SelectSheet';
 import { useFeatureGate, FeatureGateModal } from '../components/FeatureGate';
-import { LockGlyph } from '../components/GateSheet';
+import { ProTag } from '../components/ProTag'; // [D1 WP2]
 import { FS, FW, SP } from '../theme/tokens';
 
 const Restart = NativeModules.AppRestart as { restart: () => void } | undefined;
@@ -67,6 +69,8 @@ export function HDSettingsScreen() {
 
   // v2 功能对齐:服务器缓存管理面板
   const [cacheOpen, setCacheOpen] = useState(false);
+  const [licAct, setLicAct] = useState(false);
+  const [licDev, setLicDev] = useState(false); // [D1 WP2] 授权弹层
   const [cacheStats, setCacheStats] = useState<{ totalSize: number; fileCount: number } | null>(null);
   // lx179(B):缓存列表状态 undefined=未加载 null=失败 数组=列表
   const [cacheFiles, setCacheFiles] = useState<{ name: string; size: number }[] | null | undefined>(undefined);
@@ -115,6 +119,9 @@ export function HDSettingsScreen() {
           ? { kind: 'nav', title: '登录服务器', desc: `${base} 可达 · 登录后同步歌单/收藏/音效`, icon: 'server', to: 'AuthLogin' }
           : { kind: 'nav', title: '连接服务器', desc: '登录账号,同步歌单/收藏/音效', icon: 'server', to: 'AuthLogin' },
       { kind: 'nav', title: '音源管理', desc: 'LX 音源脚本,决定本地取链能力', icon: 'wave', to: 'Sources' },
+      // [D1 WP2] PRO 授权闭环(老板 15:14 五缺;MOMO 1012 追加①设备管理)
+      { kind: 'nav', title: '激活授权码', desc: '输入购买得到的 NM 激活码,解锁 Pro', icon: 'heart' as IconName, action: () => setLicAct(true) },
+      { kind: 'nav', title: '我的授权 · 设备管理', desc: '查看授权/设备列表,解绑旧设备腾名额(上限 5 台)', icon: 'server' as IconName, action: () => setLicDev(true) },
       { kind: 'nav', title: '媒体库', desc: 'Emby / Jellyfin / Navidrome / WebDAV', icon: 'music', to: 'MediaLibs' },
       ...(connected ? [
         ...(token ? [{ kind: 'nav' as const, title: '退出登录', desc: '保留服务器地址,清除登录态', icon: 'close' as IconName, action: () => { setAuth(null as never, null as never); toast('已退出登录'); } }] : []),
@@ -230,6 +237,9 @@ export function HDSettingsScreen() {
     </ScrollView>
     {/* D2 lyrics_deep 门弹层（翻译/罗马音开启拦截；三命首弹在此记频） */}
     <FeatureGateModal fg={lyrGate} />
+    {/* [D1 WP2] 授权闭环弹层:激活+设备管理(老板 15:14 五缺;MOMO 1012 追加①) */}
+    <LicenseActivate visible={licAct} onClose={() => setLicAct(false)} />
+    <LicenseDevices visible={licDev} onClose={() => setLicDev(false)} />
     </>
   );
 }
@@ -261,7 +271,7 @@ function SettingsRow({ row }: { row: RowDef }) {
       ) : null}
       <View style={{ flex: 1, minWidth: 0, gap: SP.xs }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm }}>
-          {row.kind === 'toggle' && row.locked ? <LockGlyph size={11} color="#595959" /> : null}
+          {<ProTag size="compact" />}
           <Text style={st.rowTitle}>{row.title}</Text>
         </View>
         {row.desc ? <Text style={st.rowDesc} numberOfLines={2}>{row.desc}</Text> : null}

@@ -9,6 +9,8 @@ import { Icon } from '../theme/Icon';
 import { C, FS, FW, SP } from '../theme/tokens';
 import { SubPage } from '../components/SubPage';
 import { ToggleRow, ValueRow, ActionRow, StaticRow, NavRow, InputRow, Section, PageShell } from '../components/SettingRows';
+import { LicenseActivate } from '../components/LicenseActivate';
+import { LicenseDevices } from '../components/LicenseDevices'; // [D1 WP2] 设备管理(MOMO 1012 追加①)
 import { settings, useSettings, QUALITY_LABEL, type Quality } from '../services/settings';
 import { providerApi, providers, type ProviderAcct } from '../services/providers';
 import { loadSources, saveSources, type CustomSource } from '../services/customSource';
@@ -22,7 +24,9 @@ import { pubCheck, pubSetShowEntry, usePubEntry } from '../services/publicLibrar
 import { useFeatureGate, FeatureGateModal } from '../components/FeatureGate';
 
 // ---------- 基本设置 ----------
-export function BasicSettingsScreen() {
+  const [licAct, setLicAct] = React.useState(false);
+  const [licDev, setLicDev] = React.useState(false);
+  export function BasicSettingsScreen() {
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string) => void };
   const s = useSettings();
   const [cacheSize, setCacheSize] = useState('计算中…');
@@ -88,12 +92,19 @@ export function BasicSettingsScreen() {
           }} />
         </Section>
       ) : null}
+      {/* [D1 WP2] PRO 授权闭环:输码入口+设备管理(老板 15:14 五缺之二/四;MOMO 1012 追加①) */}
+      <Section title="PRO 授权">
+        <ActionRow label="激活授权码" value="NM-…" onPress={() => setLicAct(true)} />
+        <ActionRow label="我的授权 · 设备管理" value="5 台上限" onPress={() => setLicDev(true)} />
+      </Section>
       <Section title="缓存">
         <StaticRow label="图片与网络缓存" value={cacheSize} />
         <ActionRow label="清除缓存" value="" onPress={clearCache} />
         <StaticRow label="已下载占用" value={fmtBytes(dlStore.totalBytes())} />
         <NavRow label="下载管理" value={`${dlStore.all().length} 首`} onPress={() => nav.navigate('Downloads')} />
       </Section>
+      <LicenseActivate visible={licAct} onClose={() => setLicAct(false)} />
+      <LicenseDevices visible={licDev} onClose={() => setLicDev(false)} />
     </PageShell>
   );
 }

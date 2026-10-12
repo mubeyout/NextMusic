@@ -34,7 +34,7 @@ import { C, FS, FW, SP } from '../theme/tokens';
 import { toast } from '../components/Dialog';
 import { ActionSheet } from '../components/ActionSheet';
 import { useFeatureGate, FeatureGateModal } from '../components/FeatureGate';
-import { LockGlyph } from '../components/GateSheet';
+import { ProTag } from '../components/ProTag'; // [D1 WP2] 去锁化——ProTag 替代 LockGlyph
 import {
   FX_DEFAULT_PRESETS, FX_FREQ_LABELS, FX_REVERB_OPTIONS,
   subscribeFx, fxSnapshot, fxSyncState, fetchFxFromServer,
@@ -338,8 +338,8 @@ export function FxScreen() {
             );
           })}
           {/* D2 eq_custom：＋chip=自定义预设入口（免费锁标+三命拦截） */}
-          <T style={[st.chipAdd, eqGate.locked && st.chipAddLock]} activeOpacity={0.7} onPress={() => eqGate.guard(openAddPreset)}>
-            {eqGate.locked ? <LockGlyph size={11} color="#595959" /> : null}
+          <T style={st.chipAdd} activeOpacity={0.7} onPress={() => eqGate.guard(openAddPreset)}>
+            {eqGate.locked ? <ProTag size="compact" /> : null}
             <Text style={st.chipAddText}>＋</Text>
           </T>
         </ScrollView>
@@ -634,7 +634,7 @@ const st = StyleSheet.create({
   chipText: { color: C.text2, fontSize: FS.body, fontWeight: FW.semibold },
   chipTextOn: { color: C.onBrand, fontWeight: FW.heavy },
   chipAdd: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', borderColor: C.strokeStrong, alignItems: 'center', justifyContent: 'center' },
-  chipAddLock: { width: 48, flexDirection: 'row', gap: SP.xs }, // D2 锁态：锁标+＋并排（免费可发现）
+  chipAddLock: { width: 48, flexDirection: 'row', gap: SP.xs }, // [D1 WP2 已退役] ProTag 替代锁标
   chipAddText: { color: C.text3, fontSize: FS.xl, fontWeight: FW.heavy, lineHeight: 17 },
   modeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.sm, marginBottom: 14, paddingHorizontal: 2 },
   modeCell: { width: '31%', flexGrow: 0, flexShrink: 0 },

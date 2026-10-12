@@ -17,7 +17,7 @@ import {
   AUTOEQ_MODELS, fxSyncState, fetchFxFromServer, type SoundMode, type FxSettings,
 } from '../services/soundfx';
 import { useFeatureGate, FeatureGateModal } from '../components/FeatureGate';
-import { LockGlyph } from '../components/GateSheet';
+import { ProTag } from '../components/ProTag'; // [D1 WP2]
 import { FS, FW, SP } from '../theme/tokens';
 
 const IS_WEB = Platform.OS === 'web';
@@ -196,7 +196,7 @@ export function HDFxScreen() {
             ))}
             {/* D2 eq_custom：存为预设=入口（免费锁标替换加号+三命拦截） */}
             <HDTouch style={[st.chip, st.chipGhost]} hoverBg="#ffffff1a" onPress={() => eqGate.guard(savePreset)}>
-              {eqGate.locked ? <LockGlyph size={11} color="#595959" /> : <Icon name="add" size={12} color={C.text2} />}
+              {eqGate.locked ? <ProTag size="compact" /> : <Icon name="add" size={11} color={C.text2} />}
               <Text style={st.chipText}>存为预设</Text>
             </HDTouch>
           </View>
