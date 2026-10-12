@@ -1,6 +1,7 @@
 // LicenseScreen.tsx —— 设置 · 授权与升级（D2 任务 C）
 // 状态卡（free/pro/family/trial/beta + 试用倒计时）＋兑换码输入（GateSheet onUpgrade 落点）
-// ＋试用启动链＋Pro 持有者「升级家庭 ¥68」入口（外链字段占位：BUY_LINKS，面包多后续配置）。
+// ＋试用启动链＋Pro 持有者「升级家庭 ¥68」入口（BUY_LINKS 已配独角数卡店铺）。
+// [D1 WP2] redeem 服务端优先激活（绑账号+登记设备），网络故障退离线紧凑码——双径详情见 redeem 函数。
 // 文案全部走 benefits.LICENSE_PAGE；零 emoji。
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Linking, Platform } from 'react-native';
