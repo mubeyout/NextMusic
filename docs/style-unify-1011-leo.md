@@ -110,3 +110,52 @@
 - 冒烟点：①任意库页/搜索页/艺人页 rail 卡宽度应完全一致（112/148）②同一首歌/专辑名在不同页面封面兜底渐变同色 ③HD/web 墙卡=探索密网格、phone 墙=三列
 - GRID.wallTiers 与 GridBasis.DEFAULT_GRID_TIERS 现为同一引用（改一处全生效）
 - FW 替换为等值替换（'700'→FW.bold='700'），零视觉变化，纯语义收口
+
+## 八、第四轮 1011 15:55-16:05（老板令「不但歌手卡，其他的也需要」：库族 rail 全面探索网格化）
+
+- **共享件扩展**：RailCard 加 fill prop（width '100%'+封面 aspectRatio 1）；PvCard 加 fill（方卡 r12/圆卡 r999）
+- **MediaLibs（第三方库）7 处 rail → GridWall**：功能三卡（NAS 曲库/最近播放/我喜欢的）、我的歌单、推荐、置顶、最近入库、**艺人圆头像墙**（PvCard round fill）
+- **PublicLibrary（公共库）3 处**：随机来点（RandCard fill 化）、专辑 rail（RailCard fill）、歌手 rail（ArtistCircle fill）
+- **LocalLibrary（本机库）1 处**：按文件夹（RailCard fill）
+- Rail 局部组件退役；首页/搜索保持 rail 形态（「为我推荐」定稿基准形态，信息检索场景横滑合理）
+- tsc 0 错（EXIT 0）
+
+## 九、第五轮 1011 16:15（老板令「歌曲列表/专辑/歌单卡片统一」：卡族三统一）
+
+- **专辑卡全站归一 DiscCard**（统一件加 fill 网格模式）：MediaLibs 专辑墙+最近入库墙、搜索页专辑卡（AllAlbumCard 退役）、ProviderDetail 艺人页专辑墙——全站专辑卡同构（黑胶窗口+计数徽标+gradOf 渐变兜底+按压缩放+hover 影）
+- **歌单卡归一 PvCard**、**歌曲行 SongRow**（已有）
+- **卡族矩阵定稿**：SongRow=歌曲行 / PlaylistRow=歌单行 / PvCard=歌单卡 / DiscCard=专辑卡 / ArtistRow+圆卡=歌手 / RailCard=目录与入口卡 / GridWall=唯一墙容器
+- 边界决定：「我的」页自建歌单大卡（Figma 定稿横版渐变、个人创作入口）保持特色未并入，待老板裁定
+- tsc 0 错（EXIT 0）
+
+## 十、第五轮补齐 1011 16:20（netease 布局分支同步统一 + 死码清理）
+
+- netease 布局三分区（我的歌单/推荐/置顶）展开态自造 cell → PvCard fill（与收起态同构，消除展开变样）
+- netease 布局专辑墙自造 cell → DiscCard fill（onLongPress 电台能力保留：DiscCard 扩 onLongPress prop）
+- ProviderDetail/MediaLibs 自造 cell 死样式清理（albumCell/albumCover/albumCellWeb 族退役）
+- tsc 0 错（EXIT 0）
+
+## 十一、第六轮 1011 16:05-16:10（老板令「卡背景/内距统一」+「浅色播放页白图标」）
+
+**卡规格统一（nm-card 完全体）**：
+- DiscCard nm-card 化：surface 底+r12+overflow 包裹（封面顶格+文字区入卡）；文字区统一档 `padding SP.md / gap SP.xs / minHeight 46`（与 RailCard/PvCard 同构）；sleeve 老黑影清理（影统一归 hover 弥散）
+- 艺人圆卡族（PvCard round / AllArtistCircle / ArtistCircle）nm-card 化：surface 卡+padding 头像区+卡内文字区
+- RailCard 文字区 gap 3→SP.xs；HDDiscover/HDBoards cardBody 统一 SP.md（去 94% 特殊宽）
+
+**浅色播放页白图标**：
+- HDPlayer shuffle/repeat/heart 未激活态硬编码 '#ffffff99' → IC（lt ? 深灰 : 白，主题感知）
+- heart 收藏态 C.brand→C.heart（收藏语义色统一）；stLight 进度钮白边→深边
+- tsc 0 错（EXIT 0）
+
+## 十二、第七轮 1011 16:15-16:25（老板令「继续」：自建歌单卡并入统一）
+
+- **PvCard 升共享件** `src/components/PvCard.tsx`（卡族矩阵歌单卡定位）：nm-card 完全体 + **gradOf 同名渐变兜底**（无封面时与 DiscCard 兜底同族，同名同色）+ round 圆卡 + fill 网格模式
+- MediaLibs 本地 PvCard 退役 → 共享版
+- **MyScreen 自建歌单**（最后的边界遗留）：裸封面渐变大卡 → GridWall + PvCard fill（管理长按/同步歌单逻辑原样保留）
+- **HDMy 歌单卡**：自造 surface 卡 → HDGrid(GRID.hdMin 128) + PvCard fill（min 168→128 与探索同密度）
+- 死样式清理（plGrid/plCell/plCover/plCard/plArt/artistInitial/albumName 族退役）
+- tsc 0 错（EXIT 0）
+
+**第七轮终态确认**：tsc 0 错（FINAL EXIT=0），5 文件 +59/-72，KAI 验收队列已通知。
+
+**第七轮状态**：改动 5 文件 +61/-72，tsc 终验 0 错（EXIT=0），KAI 验收队列已通知（runId 52411794）。
