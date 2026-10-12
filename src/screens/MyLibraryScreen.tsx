@@ -712,7 +712,7 @@ const d = StyleSheet.create({
   vinInner: { width: '45%', aspectRatio: 1, borderRadius: 999, backgroundColor: '#242424' },
   vinRound: { borderRadius: 999, width: '38%', right: '-12%', bottom: '-12%' }, // V2:歌手圆头像右下小黑胶
   cntWrap: { position: 'absolute', left: 8, top: 8, backgroundColor: 'rgba(0,0,0,.66)', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
-  cnt: { color: '#ffffffcc', fontSize: FS.xs },
+  cnt: { color: C.text2, fontSize: FS.xs }, // [浅色修]
   discName: { color: C.text, fontSize: FS.body, fontWeight: FW.semibold },
   discSub: { color: C.text3, fontSize: FS.xs, marginTop: 1 },
   // [批次1·P1-1] 歌曲行样式随局部 SongRow 退役(通用件自带)

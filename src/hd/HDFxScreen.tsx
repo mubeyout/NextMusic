@@ -86,7 +86,7 @@ function Seg({ options, value, onChange }: { options: { key: string; label: stri
   return (
     <View style={st.segRow}>
       {options.map(o => (
-        <HDTouch key={o.key} style={[st.segItem, value === o.key && st.segItemOn]} hoverBg="#ffffff1a" onPress={() => onChange(o.key)}>
+        <HDTouch key={o.key} style={[st.segItem, value === o.key && st.segItemOn]} hoverBg={T.light ? "#1F232914" : "#ffffff1a"} onPress={() => onChange(o.key)}>
           <Text style={[st.segText, value === o.key && { color: C.onBrand, fontWeight: FW.bold }]}>{o.label}</Text>
         </HDTouch>
       ))}
@@ -171,7 +171,7 @@ export function HDFxScreen() {
             { id: 'off', name: '原声' }, { id: 'bass', name: '重低音' }, { id: 'vocal', name: '人声' },
             { id: 'night', name: '夜听' }, { id: 'scene', name: '现场感' }, { id: 'custom', name: '自定义' },
           ] as { id: SoundMode; name: string }[]).map(m => (
-            <HDTouch key={m.id} style={[st.chip, mode === m.id && st.chipOn]} hoverBg="#ffffff1a" onPress={() => { applySoundMode(m.id); force(); }}>
+            <HDTouch key={m.id} style={[st.chip, mode === m.id && st.chipOn]} hoverBg={T.light ? "#1F232914" : "#ffffff1a"} onPress={() => { applySoundMode(m.id); force(); }}>
               <Text style={[st.chipText, mode === m.id && { color: C.onBrand, fontWeight: FW.bold }]}>{m.name}</Text>
             </HDTouch>
           ))}
@@ -182,7 +182,7 @@ export function HDFxScreen() {
           <SectionTitle icon="sliders" title="均衡器" desc="10 段 · ±12dB" />
           <View style={st.chipWrap}>
             {presets.map(p => (
-              <HDTouch key={p.name} style={[st.chip, snap.activePresetName === p.name && st.chipOn]} hoverBg="#ffffff1a"
+              <HDTouch key={p.name} style={[st.chip, snap.activePresetName === p.name && st.chipOn]} hoverBg={T.light ? "#1F232914" : "#ffffff1a"}
                 onPress={() => { applyFxPreset(p.name); force(); }}
                 onLongPress={IS_WEB && snap.customPresets.some(c => c.name === p.name) ? () => {
                   const nn = window.prompt('重命名预设(清空=删除)', p.name);
@@ -195,7 +195,7 @@ export function HDFxScreen() {
               </HDTouch>
             ))}
             {/* D2 eq_custom：存为预设=入口（免费锁标替换加号+三命拦截） */}
-            <HDTouch style={[st.chip, st.chipGhost]} hoverBg="#ffffff1a" onPress={() => eqGate.guard(savePreset)}>
+            <HDTouch style={[st.chip, st.chipGhost]} hoverBg={T.light ? "#1F232914" : "#ffffff1a"} onPress={() => eqGate.guard(savePreset)}>
               {eqGate.locked ? <ProTag size="compact" /> : <Icon name="add" size={11} color={C.text2} />}
               <Text style={st.chipText}>存为预设</Text>
             </HDTouch>
@@ -218,7 +218,7 @@ export function HDFxScreen() {
           <SectionTitle icon="podcast" title="环境混响" desc="19 种空间感" />
           <View style={st.chipWrap}>
             {FX_REVERB_OPTIONS.map(r => (
-              <HDTouch key={r.id} style={[st.chip, s.reverb.id === r.id && st.chipOn]} hoverBg="#ffffff1a" onPress={() => { setReverb(r.id); force(); }}>
+              <HDTouch key={r.id} style={[st.chip, s.reverb.id === r.id && st.chipOn]} hoverBg={T.light ? "#1F232914" : "#ffffff1a"} onPress={() => { setReverb(r.id); force(); }}>
                 <Text style={[st.chipText, s.reverb.id === r.id && { color: C.onBrand, fontWeight: FW.bold }]}>{r.name}</Text>
               </HDTouch>
             ))}
@@ -274,7 +274,7 @@ export function HDFxScreen() {
         <View>
           <SectionTitle icon="headphones" title="AutoEQ 耳机校正" desc="57 型号实测参数" />
           <View style={st.aeRow}>
-            <HDTouch style={[st.chip, st.chipWide]} hoverBg="#ffffff1a" onPress={() => setEqPickOpen(true)}>
+            <HDTouch style={[st.chip, st.chipWide]} hoverBg={T.light ? "#1F232914" : "#ffffff1a"} onPress={() => setEqPickOpen(true)}>
               <Icon name="headphones" size={12} color={C.text2} />
               <Text style={st.chipText}>{s.viper.autoeqName || '选择耳机型号'}</Text>
             </HDTouch>
@@ -302,7 +302,7 @@ function AutoeqPicker({ onClose, cur, onPick }: { onClose: () => void; cur: stri
       <View style={st.pickPanel}>
         <View style={st.pickHead}>
           <Text style={st.pickTitle}>AutoEQ 耳机型号</Text>
-          <HDTouch style={st.pickClose} hoverBg="#ffffff1a" onPress={onClose}><Icon name="close" size={15} color={C.text2} /></HDTouch>
+          <HDTouch style={st.pickClose} hoverBg={T.light ? "#1F232914" : "#ffffff1a"} onPress={onClose}><Icon name="close" size={15} color={C.text2} /></HDTouch>
         </View>
         <TextInput style={st.pickInput} placeholder="搜索型号…" placeholderTextColor={C.text3} value={q} onChangeText={setQ} />
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, gap: SP.xs }}>
@@ -332,15 +332,15 @@ const st = StyleSheet.create({
   secTitle: { color: C.text, fontSize: H.font.md, fontWeight: FW.heavy },
   secDesc: { color: C.text3, fontSize: H.font.xs, flex: 1, textAlign: 'right' },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.sm, marginTop: 8 },
-  chip: { height: 30, borderRadius: 15, paddingHorizontal: 13, borderWidth: 1, borderColor: '#ffffff26', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: SP.sm },
+  chip: { height: 30, borderRadius: 15, paddingHorizontal: 13, borderWidth: 1, borderColor: T.light ? '#1F232924' : '#ffffff26', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: SP.sm },
   chipOn: { backgroundColor: C.brand, borderColor: C.brand },
   chipGhost: { borderStyle: 'dashed' as const },
   chipWide: { flex: 1, justifyContent: 'flex-start' },
-  chipText: { color: '#ffffffcc', fontSize: H.font.sm },
+  chipText: { color: T.light ? '#3A3F46' : '#ffffffcc', fontSize: H.font.sm },
   eqRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 14, paddingHorizontal: 2 },
   eqLabels: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 2, marginTop: 6 },
   eqLabel: { color: C.text3, fontSize: FS.xs, fontWeight: FW.semibold, width: 26, textAlign: 'center' },
-  linkBtn: { alignSelf: 'flex-start', height: 28, borderRadius: 14, paddingHorizontal: 12, borderWidth: 1, borderColor: '#ffffff26', alignItems: 'center', justifyContent: 'center', marginTop: 10 },
+  linkBtn: { alignSelf: 'flex-start', height: 28, borderRadius: 14, paddingHorizontal: 12, borderWidth: 1, borderColor: T.light ? '#1F232924' : '#ffffff26', alignItems: 'center', justifyContent: 'center', marginTop: 10 },
   linkText: { color: C.text2, fontSize: H.font.xs },
   muted: { color: C.text3, fontSize: H.font.xs, lineHeight: 16 },
   stepperRow: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, marginTop: 8 },
@@ -355,34 +355,34 @@ const st = StyleSheet.create({
   tgKnobOn: { transform: [{ translateX: 20 }] }, // 40-16-2-2=20
   aeSwitchHit: { height: 34, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
   segRow: { flexDirection: 'row', gap: SP.sm, flexWrap: 'wrap' },
-  segItem: { height: 30, borderRadius: 15, paddingHorizontal: 14, borderWidth: 1, borderColor: '#ffffff26', alignItems: 'center', justifyContent: 'center' },
+  segItem: { height: 30, borderRadius: 15, paddingHorizontal: 14, borderWidth: 1, borderColor: T.light ? '#1F232924' : '#ffffff26', alignItems: 'center', justifyContent: 'center' },
   segItemOn: { backgroundColor: C.brand, borderColor: C.brand },
-  segText: { color: '#ffffffcc', fontSize: H.font.sm },
+  segText: { color: T.light ? '#3A3F46' : '#ffffffcc', fontSize: H.font.sm },
   aeRow: { flexDirection: 'row', gap: SP.sm, marginTop: 8, alignItems: 'center' },
   pickRoot: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, backgroundColor: '#000000CC', alignItems: 'center', justifyContent: 'center' }, // v3.28:absoluteFillObject 已从 RN 类型移除,内联
   pickPanel: { width: '84%', maxWidth: 560, height: '76%', backgroundColor: '#17191E', borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, overflow: 'hidden' },
   pickHead: { flexDirection: 'row', alignItems: 'center', padding: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
   pickTitle: { flex: 1, color: C.text, fontSize: H.font.md, fontWeight: FW.heavy },
   pickClose: { width: 30, height: 30, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
-  pickInput: { margin: 12, height: 34, borderRadius: 9, backgroundColor: '#ffffff0d', paddingHorizontal: 12, color: C.text, fontSize: H.font.sm },
-  pickRow: { height: 36, borderRadius: 9, paddingHorizontal: 12, justifyContent: 'center', backgroundColor: '#ffffff08' },
+  pickInput: { margin: 12, height: 34, borderRadius: 9, backgroundColor: T.light ? '#F0F1F4' : '#ffffff0d', paddingHorizontal: 12, color: C.text, fontSize: H.font.sm },
+  pickRow: { height: 36, borderRadius: 9, paddingHorizontal: 12, justifyContent: 'center', backgroundColor: T.light ? '#F6F7F9' : '#ffffff08' },
   pickRowOn: { backgroundColor: C.hover },
-  pickRowText: { color: '#ffffffcc', fontSize: H.font.sm },
+  pickRowText: { color: T.light ? '#3A3F46' : '#ffffffcc', fontSize: H.font.sm },
 });
 
 // VSlider 内部样式(绝对定位百分比:fill 自零线向值延伸,knob 跟值,零线常驻)
 const vs = StyleSheet.create({
   wrap: { alignItems: 'center', gap: SP.sm },
   val: { color: C.text2, fontSize: FS.xs, fontVariant: ['tabular-nums'], minWidth: 26, textAlign: 'center' },
-  track: { width: 22, borderRadius: 11, backgroundColor: '#ffffff0f', overflow: 'hidden' },
+  track: { width: 22, borderRadius: 11, backgroundColor: T.light ? '#E4E7EC' : '#ffffff0f', overflow: 'hidden' },
   fill: { position: 'absolute', left: 3, right: 3, backgroundColor: C.brand, borderRadius: 3 },
-  zero: { position: 'absolute', left: 3, right: 3, height: 1, backgroundColor: '#ffffff30' },
-  knob: { position: 'absolute', left: 3, right: 3, height: 5, borderRadius: 3, backgroundColor: '#ffffffee' },
+  zero: { position: 'absolute', left: 3, right: 3, height: 1, backgroundColor: T.light ? '#1F232930' : '#ffffff30' },
+  knob: { position: 'absolute', left: 3, right: 3, height: 5, borderRadius: 3, backgroundColor: T.light ? '#3A3F46' : '#ffffffee' },
 });
 const hs = StyleSheet.create({
   wrap: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, height: 34 },
   label: { color: C.text2, fontSize: H.font.sm, width: 64 },
-  track: { flex: 1, height: 22, borderRadius: 11, backgroundColor: '#ffffff0f', padding: 3, flexDirection: 'row', overflow: 'hidden' },
+  track: { flex: 1, height: 22, borderRadius: 11, backgroundColor: T.light ? '#E4E7EC' : '#ffffff0f', padding: 3, flexDirection: 'row', overflow: 'hidden' },
   fill: { backgroundColor: C.brand, borderRadius: 8 },
   val: { color: C.text, fontSize: H.font.sm, fontVariant: ['tabular-nums'], width: 36, textAlign: 'right' },
 });
