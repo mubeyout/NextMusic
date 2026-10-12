@@ -38,6 +38,16 @@ function emit() { listeners.forEach(fn => fn()); }
 
 export type RedeemResult = { ok: true; tier: LicenseTier } | { ok: false; reason: string };
 
+/** [D1 WP2] 设备指纹：nm_install_id 持久化——同设备重激活同 id（服务端 installId 去重，幂等） */
+export function getInstallId(): string {
+  try {
+    const k = 'nm_install_id';
+    let id = kv.getString(k);
+    if (!id) { id = `dev-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`; kv.set(k, id); }
+    return id;
+  } catch { return `dev-${Date.now().toString(36)}`; }
+}
+
 export const license = {
   /** 当前存储记录（原始；状态视图用 view()） */
   get(): LicenseRecord | null { return current; },
@@ -51,6 +61,16 @@ export const license = {
     const v = validatePayload(payload, Date.now());
     if (!v.ok) return { ok: false, reason: v.reason };
     current = toRecord(payload, 'redeem');
+    kv.set('license', JSON.stringify(current));
+    emit();
+    return { ok: true, tier: current.tier };
+  },
+  /** [D1 WP2] 服务端激活落地：activate 返回的 ent{payload,sig} 直接入册（服务端已验归属+登记设备） */
+  applyServerEnt(ent: { payload: LicensePayload; sig?: string; serverPubkey?: string }): RedeemResult {
+    if (!ent || !ent.payload) return { ok: false, reason: '激活返回无效' };
+    const v = validatePayload(ent.payload, Date.now());
+    if (!v.ok) return { ok: false, reason: v.reason };
+    current = toRecord(ent.payload, 'redeem'); // source=redeem（服务端已验签+绑定；本地复用同态入册）
     kv.set('license', JSON.stringify(current));
     emit();
     return { ok: true, tier: current.tier };

@@ -8,7 +8,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PageHeader } from '../components/PageChrome';
 import { C, FS, FW, SP } from '../theme/tokens';
 import { IS_HD } from '../services/appversion';
-import { useLicense, license } from '../services/license';
+import { useLicense, license, getInstallId } from '../services/license';
+import { req } from '../services/server'; // [D1 WP2] 服务端激活链
 import { LICENSE_PAGE, BUY_LINKS } from '../services/benefits';
 import { toast } from '../components/Dialog';
 
@@ -21,14 +22,38 @@ export function LicenseScreen() {
   const tier = view.tier as string; // 'free'|'pro'|'family'|'m1_beta'|'trial'
   const meta = LICENSE_PAGE.tiers[tier] || LICENSE_PAGE.tiers.free;
 
-  const redeem = () => {
+  const redeem = async () => {
     if (!code.trim() || busy) return;
     setBusy(true);
     try {
+      // [D1 WP2] 服务端激活优先：绑账号+登记设备（5 台上限/设备管理解绑）——独角数卡码池只在此径生效
+      try {
+        const installId = getInstallId();
+        const deviceName = `${Platform.OS === 'web' ? '网页端' : Platform.OS === 'android' ? 'Android' : '桌面'}·${installId.slice(-4)}`;
+        const data = await req('/api/license/activate', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ key: code.trim(), installId, deviceName }),
+        }) as { ok?: boolean; reason?: string; ent?: { payload: unknown } };
+        if (data && data.ok) {
+          const r = license.applyServerEnt(data.ent as never);
+          if (r.ok) { toast(LICENSE_PAGE.redeemOk(r.tier)); setCode(''); }
+          else toast(r.reason);
+          return;
+        }
+        if (data && data.reason) { toast(data.reason); return; } // 服务端明确拒绝（码无效/已绑他账号/设备满）——不落本地
+      } catch { /* 服务端不可达→离线紧凑码兜底 */ }
       const r = license.redeemCode(code);
       if (r.ok) { toast(LICENSE_PAGE.redeemOk(r.tier)); setCode(''); }
       else toast(r.reason);
     } finally { setBusy(false); }
+  };
+
+  const openShop = () => { // [D1 WP2] 店铺购买渠道（BUY_LINKS.pro——独角数卡）
+    if (BUY_LINKS.pro) {
+      if (Platform.OS === 'web') window.open(BUY_LINKS.pro, '_blank', 'noopener');
+      else Linking.openURL(BUY_LINKS.pro);
+    }
   };
 
   const startTrial = () => {
@@ -86,6 +111,13 @@ export function LicenseScreen() {
           </View>
         </View>
 
+        {/* ── 店铺购买渠道（免费态·绿 CTA 收行动） ── */}
+        {!view.licensed ? (
+          <TouchableOpacity style={st.shopBtn} activeOpacity={0.85} onPress={openShop}>
+            <Text style={st.shopBtnText}>去店铺购买 Pro ¥19.9 · 终身</Text>
+          </TouchableOpacity>
+        ) : null}
+
         {/* ── 试用启动链（免费态） ── */}
         {!view.licensed ? (
           <TouchableOpacity style={st.cardBtn} activeOpacity={0.75} onPress={startTrial}>
@@ -126,6 +158,8 @@ const st = StyleSheet.create({
   },
   redeemBtn: { height: 46, borderRadius: 12, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
   redeemBtnText: { color: C.onBrand, fontSize: FS.lg, fontWeight: FW.bold },
+  shopBtn: { height: 50, borderRadius: 13, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
+  shopBtnText: { color: C.onBrand, fontSize: FS.lg, fontWeight: FW.bold },
   cardBtn: {
     height: 50, borderRadius: 13, backgroundColor: C.surface, borderWidth: 1.2, borderColor: C.brand,
     alignItems: 'center', justifyContent: 'center',

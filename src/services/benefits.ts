@@ -5,7 +5,7 @@ import { PRO_TYPE_ALTS, type BrandGateType, type GateType } from './licenseCore'
 
 // ── 价格/动作行（benefits.cta / links） ──
 export const CTA = {
-  main: '升级 Pro ¥19.9',
+  main: '升级 Pro ¥19.9 · 终身',
   trial: '先免费试用 7 天',
   dismiss: '稍后再说',
 } as const;
@@ -38,22 +38,22 @@ export function brandAltLines(brand: BrandGateType): [string, string, string] {
 export interface GateCopy { title: string; desc: string; bullets: [string, string, string] }
 export const GATE_COPY: Record<GateType, GateCopy> = {
   eq_custom: {
-    title: 'Pro 功能',
+    title: '自定义均衡器 · PRO',
     desc: '免费已有基础 EQ 面板 → Pro 增加 10 段自定义 + 空间音效',
     bullets: ['10 段自定义 EQ', '空间音效', '一次买断 ¥19.9 · 终身无订阅'],
   },
   lyrics_deep: {
-    title: 'Pro 功能',
+    title: '歌词进阶 · PRO',
     desc: '免费已有歌词显示 → Pro 增加逐字 · 双语 · 桌面悬浮',
     bullets: ['逐字歌词', '双语对照', '桌面悬浮歌词'],
   },
   webdav_backup: {
-    title: 'Pro 功能',
+    title: '云备份 · PRO',
     desc: 'WebDAV 云备份——歌单、设置、预设一处备份，多处还原',
     bullets: ['全量备份（歌单/设置/预设）', '换机多端一键还原', '一次买断 ¥19.9 · 终身'],
   },
   library_brand: {
-    title: 'Pro 功能',
+    title: '品牌媒体库 · PRO',
     desc: '', // 品牌门说明区=类型卡形态（brandAltLines），不走通用说明句
     bullets: ['', '', ''],
   },
@@ -87,6 +87,6 @@ export const LICENSE_PAGE = {
 
 // ── 外链占位（面包多商品链接后续配置；空串=入口降级 toast） ──
 export const BUY_LINKS = {
-  pro: '',   // 生产：面包多 Pro ¥19.9 商品链接
-  family: '',// 生产：面包多 家庭版 ¥88 / 补差 ¥68 商品链接
+  pro: 'https://nextmusic.mubey.top:8300',   // [1012] 独角数卡店铺(Pro ¥19.9 上架)
+  family: 'https://nextmusic.mubey.top:8300',// [1012] 家庭版 ¥88/补差 ¥68 同店铺
 } as const;

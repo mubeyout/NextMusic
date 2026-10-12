@@ -6,19 +6,11 @@ import { C } from '../theme/tokens';
 import { SP, FS } from '../theme/tokens';
 import { ProTag } from './ProTag';
 import { req } from '../services/server';
+import { license, getInstallId } from '../services/license'; // [D1 WP2] 服务端激活落地
 
 // [D1 WP2 · 授权闭环] License 激活页——全端输码入口
 // 服务端 POST /api/license/activate {key, installId, deviceName} → {ok, ent} (licenseCore.activate 已在)
 // 设计:LEO spec §二 FeatureSheet 家族——居中模态(HD/web)/底部抽屉(phone)
-// 设备指纹:nm_install_id 持久化——同设备重激活同 id(服务端 installId 去重,幂等)
-function getInstallId(): string {
-  try {
-    const k = 'nm_install_id';
-    let id = localStorage.getItem(k);
-    if (!id) { id = `dev-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`; localStorage.setItem(k, id); }
-    return id;
-  } catch { return `dev-${Date.now().toString(36)}`; }
-}
 
 interface LicenseActivateProps {
   visible: boolean;
@@ -48,9 +40,11 @@ export function LicenseActivate({ visible, onClose, onActivated }: LicenseActiva
         body: JSON.stringify({ key, installId, deviceName }),
       }) as { ok?: boolean; reason?: string; ent?: { tier?: string } };
       if (data && data.ok) {
-        setOk(true);
-        setMsg(`激活成功！${(data.ent && data.ent.tier) || 'pro'} 权益已生效`);
-        onActivated?.((data.ent && data.ent.tier) || 'pro');
+        const r = license.applyServerEnt(data.ent as never); // 入册+广播（gate 态即时翻绿）
+        setOk(r.ok);
+        setMsg(r.ok ? `激活成功！${r.tier === 'family' ? '家庭版' : 'Pro'} 权益已生效` : (r.reason || '激活码无效'));
+        if (r.ok) onActivated?.(r.tier);
+        else return;
         setTimeout(() => { onClose(); setCode(''); setMsg(null); setOk(false); }, 1800);
       } else {
         setMsg((data && data.reason) || '激活码无效');

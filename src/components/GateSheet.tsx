@@ -12,6 +12,7 @@ import { SH } from '../hd/hdtokens';
 import { gating } from '../services/gating';
 import { isBrandGateType, type GateType, type BrandGateType } from '../services/licenseCore';
 import { CTA, FAMILY, GATE_COPY, BRAND_LABELS, BRAND_BADGE, BRAND_ECO_SUFFIX, brandAltLines } from '../services/benefits';
+import { ProTag } from './ProTag'; // [D1 WP2] 品牌卡锁标→ProTag(去锁化)
 
 export interface GateSheetProps {
   gate: GateType;
@@ -84,7 +85,7 @@ export function GateSheet({ gate, brandType, onUpgrade, onTrial, onDismiss, scen
       {brand && altLines ? (
         <View style={st.brandCard}>
           <View style={st.brandCardHead}>
-            <LockGlyph size={16} color={C.text2} />
+            <ProTag size="standard" />
             <Text style={st.brandCardTitle}>{BRAND_LABELS[brand]} · {BRAND_ECO_SUFFIX}</Text>
             <View style={st.proChip}><Text style={st.proChipText}>{BRAND_BADGE}</Text></View>
           </View>
@@ -173,7 +174,7 @@ const st = StyleSheet.create({
     height: 48, borderRadius: 13, backgroundColor: C.brand,
     alignItems: 'center', justifyContent: 'center', marginTop: 16,
   },
-  goldBtnFocus: { borderWidth: 2.5, borderColor: C.text, borderRadius: 13 },
+  goldBtnFocus: { borderWidth: 2, borderColor: C.proGold || '#F0C75E', borderRadius: 13 }, // [D1 WP2] 金焦点环(spec §二)
   goldBtnText: { color: C.onBrand, fontSize: 15, fontWeight: FW.bold },
   familyRow: {
     borderRadius: 12, backgroundColor: C.surface2, paddingVertical: 10, paddingHorizontal: 12,

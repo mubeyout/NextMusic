@@ -41,6 +41,7 @@ import { PlayerSettingsScreen } from '../screens/PlayerSettingsScreen';
 import { ImportPlaylistScreen } from '../screens/ImportPlaylistScreen';
 import { FxScreen } from '../screens/FxScreen';
 import { HDFxScreen } from './HDFxScreen'; // v3.20(老板):web/pc 重构版均衡器与音效页
+import { LicenseScreen } from '../screens/LicenseScreen'; // [D1 WP2] 授权与升级(双侧注册铁律)
 import { MediaLibsScreen, ProviderBrowseRoute } from '../screens/MediaLibsScreen';
 import { CloudLibraryScreen } from '../screens/CloudLibraryScreen'; // [KAI 20261008 老板 02:28] 云曲库轨道入口存在但屏幕从未注册=railNav 静默无操作=留发现页
 import { MyLibraryScreen, MyLibAlbumRoute, MyLibArtistRoute } from '../screens/MyLibraryScreen';
@@ -401,6 +402,7 @@ export function HDMain() {
             <InnerStack.Screen name="ImportPlaylist" component={withPhoneScale(ImportPlaylistScreen)} />
             {/* v3.20:web 全宽 HD 版 Fx(注释放 Navigator 内会炸——lx168 红线,注释放表达式内) */}
             <InnerStack.Screen name="Fx" component={IS_WEB ? HDFxScreen : withPhoneScale(FxScreen)} />
+            <InnerStack.Screen name="License" component={withPhoneScale(LicenseScreen)} /> {/* [D1 WP2] HD 侧授权页——FeatureSheet 升级 CTA 落点 */}
             <InnerStack.Screen name="MediaLibs" component={withPhoneScale(MediaLibsScreen)} />
             {/* [KAI 20261008] 云曲库注册补齐(lx168 红线:注释放 Navigator 内会炸,同独占一行才安全) */}
             <InnerStack.Screen name="CloudLibrary" component={withPhoneScale(CloudLibraryScreen)} />
