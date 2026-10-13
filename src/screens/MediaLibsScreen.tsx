@@ -1403,7 +1403,7 @@ const dv = StyleSheet.create({
   crumbCurText: { color: C.onBrand, fontSize: FS.body, fontWeight: FW.bold },
   crumbRefresh: { width: 26, height: 26, borderRadius: 999, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', marginLeft: 4 },
   listWrap: { borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke, paddingHorizontal: 6, paddingVertical: 4 },
-  listWrapWeb: { alignSelf: 'flex-start', width: '100%', maxWidth: 860 }, // 信息密度优先:限宽 860 行式列表
+  listWrapWeb: { width: '100%' }, // [1013 老板令] 撑满一屏——拆 860 限宽
   headBar: { flexDirection: 'row', alignItems: 'center', gap: SP.md, paddingHorizontal: 10, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint },
   stats: { flex: 1, color: C.text3, fontSize: FS.body },
   actBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.xs, height: 28, paddingHorizontal: 12, borderRadius: 999, backgroundColor: C.surface2 },

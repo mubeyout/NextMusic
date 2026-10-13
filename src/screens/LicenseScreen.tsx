@@ -75,7 +75,7 @@ export function LicenseScreen() {
     <View style={st.screen}>
       <PageHeader title={LICENSE_PAGE.title} />
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 24, maxWidth: 860, alignSelf: 'center', width: '100%', gap: SP.xxl }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 24, width: '100%', gap: SP.xxl }}
         showsVerticalScrollIndicator={false}
       >
         {/* ── 状态卡 ── */}

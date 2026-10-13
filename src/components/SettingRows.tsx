@@ -109,7 +109,8 @@ export function PageShell({ title, onBack, children }: { title: string; onBack: 
   return (
     <View style={s.screen}>
       <PageHeader title={title} onBack={onBack} />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingBottom: 48 + (IS_HD ? H.playbar : 0), maxWidth: 860, alignSelf: 'center' /* [1012 老板⑤] 大屏居中——原 flex-start 靠左不满屏 */, width: '100%' }}>{children}</ScrollView>
+      {/* [1013 老板令] 自动撑满一屏——拆 860 限宽/对齐,全宽自适应只留边距 */}
+      <ScrollView contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingBottom: 48 + (IS_HD ? H.playbar : 0), width: '100%' }}>{children}</ScrollView>
     </View>
   );
 }

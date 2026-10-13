@@ -485,7 +485,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
         ) : <View style={{ width: 26 }} />}
       </View>
       <ScrollView
-        contentContainerStyle={[st.content, IS_HD && { maxWidth: 860, alignSelf: 'center', width: '100%', gap: SP.xxl }]}
+        contentContainerStyle={[st.content, IS_HD && { width: '100%', gap: SP.xxl }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
