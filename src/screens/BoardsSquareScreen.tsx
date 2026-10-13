@@ -108,8 +108,8 @@ const st = StyleSheet.create({
   cardArt: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 },
   cardShade: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, backgroundColor: '#00000088' },
   cardTextWrap: { gap: SP.xs },
-  name: { color: C.text, fontSize: FS.md, lineHeight: 16, fontWeight: FW.bold },
-  sub: { color: C.text2, fontSize: FS.xs, lineHeight: 11 },
+  name: { color: '#FFFFFF', fontSize: FS.md, lineHeight: 16, fontWeight: FW.bold }, // [1013 老板令] cardShade 固定黑遮罩=自含深色面,白字恒对(黑遮罩不随主题切+主题字=浅色黑底黑字)
+  sub: { color: '#ffffffcc', fontSize: FS.xs, lineHeight: 11 }, // [1013 老板令] 同上
   center: { paddingVertical: 48, alignItems: 'center' },
   empty: { color: C.text2, fontSize: FS.body, lineHeight: 18, textAlign: 'center', paddingVertical: 40 },
   busyWrap: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: '#00000055' },
