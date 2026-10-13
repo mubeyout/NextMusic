@@ -134,7 +134,7 @@ const FAQ = [
 export function FaqScreen() { return <Doc title="常见问题" blocks={FAQ} />; }
 
 const s = StyleSheet.create({
-  block: { marginBottom: 22 },
+  block: { marginBottom: 22, width: '100%' }, // [1012 老板⑤③] 条目全屏保障——alignSelf flex-start 收缩环境下块会缩到内禀宽
   h: { color: C.text, fontSize: FS.title, fontWeight: FW.bold, marginBottom: 8 },
   p: { color: C.text2, fontSize: FS.md, lineHeight: 21 },
   liRow: { flexDirection: 'row', gap: SP.md, marginBottom: 6 },

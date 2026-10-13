@@ -51,7 +51,8 @@ export function ActionRow({ label, value, destructive, locked, onPress }: { labe
   return (
     <TouchableOpacity style={[s.row, s.rowDivide]} activeOpacity={0.7} onPress={onPress}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        {locked ? <ProTag size="compact" /> : null} // [1012 收敛] gate 位保留,owned 态 locked=false 自动静默
+        {/* [1012 收敛] gate 位保留,owned 态 locked=false 自动静默(原行注释曾泄漏成可见文本) */}
+        {locked ? <ProTag size="compact" /> : null}
         <Text style={[s.rowLabel, destructive && { color: '#FF6B6B' }]}>{label}</Text>
       </View>
       <View style={s.rowRight}>
@@ -108,7 +109,7 @@ export function PageShell({ title, onBack, children }: { title: string; onBack: 
   return (
     <View style={s.screen}>
       <PageHeader title={title} onBack={onBack} />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingBottom: 48 + (IS_HD ? H.playbar : 0), maxWidth: 860, alignSelf: 'flex-start', width: '100%' }}>{children}</ScrollView>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingBottom: 48 + (IS_HD ? H.playbar : 0), maxWidth: 860, alignSelf: 'center' /* [1012 老板⑤] 大屏居中——原 flex-start 靠左不满屏 */, width: '100%' }}>{children}</ScrollView>
     </View>
   );
 }
