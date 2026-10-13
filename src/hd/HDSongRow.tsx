@@ -18,7 +18,7 @@ import { registerKbRow } from './hdkeyboard';
 import { locationsOf, usePresenceVersion } from '../services/cloudPresence'; // spec③:角标三态全端统一;v3.0 细则2 locations 契约
 import { NewBadge } from '../components/LibraryHome'; // ⑤-B6 NEW 标(7 天内入库,brand 底 9px 小标)
 import { IS_HD, isCarUi } from '../services/appversion'; // 细则6:HD 角标 16px/车机不显角标
-import { FW, SP } from '../theme/tokens';
+import { FW, SP , T} from '../theme/tokens';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -194,7 +194,7 @@ const st = StyleSheet.create({
   sub: { color: C.text3, fontSize: H.font.xs },
   hiRes: { color: C.brand, fontSize: 7, fontWeight: FW.bold }, // [LEO 1011] 档外特排:Hi-Res 徽标角标微字(FS 最小 xs=10 会溢出徽标)
   srcTag: { backgroundColor: C.elev, borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
-  srcTagText: { color: C.text3, fontSize: 7, fontWeight: FW.semibold, letterSpacing: 0.5 }, // [LEO 1011] 档外特排:源徽标角标微字
+  srcTagText: { color: T.light ? '#62676E' : '#ffffffcc', fontSize: 7, fontWeight: FW.semibold, letterSpacing: 0.5 }, // [1013 老板令] 深色白字/亮态灰(原 C.text3 深色下黑灰字于黑药丸)
   dur: { color: C.text3, fontSize: H.font.sm, fontVariant: ['tabular-nums'], minWidth: 34, textAlign: 'right' },
   // v3.20 挤出模式:hoverZone 流内占位,hover 34→96(三钮)/已收藏 34→64(♡),标题列被挤压而非覆盖
   hoverZone: { minWidth: 34, alignItems: 'flex-end', overflow: 'hidden' },

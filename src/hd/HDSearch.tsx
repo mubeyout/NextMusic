@@ -16,7 +16,7 @@ import { createMMKV } from 'react-native-mmkv';
 import type { SongItem } from '../services/server';
 import { api } from '../services/server';
 import { hdNav } from './hdnav';
-import { FS, FW, SP } from '../theme/tokens';
+import { T,  FS, FW, SP } from '../theme/tokens';
 
 const SOURCES: { id: SearchSrc; label: string }[] = [
   { id: 'kw', label: '酷我' },
@@ -340,7 +340,7 @@ const st = StyleSheet.create({
   title: { color: C.text, fontSize: H.font.md, fontWeight: FW.medium },
   hiRes: { color: C.brand, fontSize: FS.xs, borderWidth: 1, borderColor: 'rgba(30,215,96,.4)', borderRadius: 3, paddingHorizontal: 3 },
   sub: { color: C.text2, fontSize: H.font.sm },
-  srcTag: { color: C.text3, fontSize: FS.xs, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, borderRadius: 3, paddingHorizontal: 4 },
+  srcTag: { color: T.light ? C.text3 : '#ffffffb3', fontSize: FS.xs, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, borderRadius: 3, paddingHorizontal: 4 }, // [1013 老板令] 深色白字
   dur: { color: C.text3, fontSize: H.font.sm, width: 36, textAlign: 'right', fontVariant: ['tabular-nums'] },
   empty: { color: C.text3, fontSize: H.font.md, paddingVertical: 24, textAlign: 'center' },
   tip: { alignItems: 'center', gap: SP.lg, paddingVertical: 60 },
