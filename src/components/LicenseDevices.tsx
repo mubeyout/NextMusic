@@ -73,8 +73,9 @@ export function LicenseDevices({ visible, onClose }: LicenseDevicesProps) {
         ) : lics.length === 0 ? (
           <View style={st.center}>
             <Text style={st.empty}>{msg || '暂无授权——Pro 权益待解锁'}</Text>
+            {/* [1014 渠道翻转] 独角数卡→爱发电 */}
             <TouchableOpacity style={st.shopBtn} activeOpacity={0.85}
-              onPress={() => { if (typeof window !== 'undefined') window.open('https://nextmusic.mubey.top:8300', '_blank'); }}>
+              onPress={() => { if (typeof window !== 'undefined') window.open('https://ifdian.net/a/nextmusic', '_blank'); }}>
               <Text style={st.shopBtnText}>去店铺购买 Pro ¥19.9</Text>
             </TouchableOpacity>
           </View>

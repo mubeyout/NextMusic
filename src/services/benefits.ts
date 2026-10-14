@@ -87,6 +87,6 @@ export const LICENSE_PAGE = {
 
 // ── 外链占位（面包多商品链接后续配置；空串=入口降级 toast） ──
 export const BUY_LINKS = {
-  pro: 'https://nextmusic.mubey.top:8300',   // [1012] 独角数卡店铺(Pro ¥19.9 上架)
-  family: 'https://nextmusic.mubey.top:8300',// [1012] 家庭版 ¥88/补差 ¥68 同店铺
+  pro: 'https://ifdian.net/a/nextmusic',    // [1014 渠道翻转令·老板 16:41] 全面切回爱发电,独角数卡已删
+  family: 'https://ifdian.net/a/nextmusic', // 家庭版 ¥88/补差 ¥68 同链(爱发电商品页)
 } as const;

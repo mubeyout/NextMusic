@@ -103,7 +103,7 @@ export function LicenseActivate({ visible, onClose, onActivated }: LicenseActiva
           <Text style={st.shopHint}>还没有激活码？</Text>
           <TouchableOpacity
             onPress={() => {
-              if (typeof window !== 'undefined') window.open('https://nextmusic.mubey.top:8300', '_blank');
+              if (typeof window !== 'undefined') window.open('https://ifdian.net/a/nextmusic', '_blank'); // [1014 渠道翻转]
             }}
           >
             <Text style={st.shopLink}>去店铺购买 Pro ¥19.9</Text>
