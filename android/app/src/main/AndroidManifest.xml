@@ -32,6 +32,11 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
+        <!-- 1028 星愿车机(LEO 解剖实锤):声明 eCarX 语音助手直达打开——「打开 NextMusic」免手操 -->
+        <intent-filter>
+            <action android:name="ecarx.intent.action.ECARX_VR_APP_OPEN" />
+            <category android:name="android.intent.category.DEFAULT" />
+        </intent-filter>
       </activity>
 
       <!-- lxfix(carlink v1 20260920): 车机互联——库 AudioProPlaybackService 提权 exported，Android Auto/车机可绑定同一 MediaSession：
