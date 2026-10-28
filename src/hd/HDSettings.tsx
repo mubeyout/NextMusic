@@ -16,6 +16,7 @@ import { APP_VERSION, IS_HD } from '../services/appversion';
 import { toast } from '../components/Dialog'; // v3.28:漏 import(5 处调用裸用)
 import { api } from '../services/server';
 import { hdNav } from './hdnav';
+import { effectiveBottomInset } from './hdstyle';
 import { NativeModules } from 'react-native';
 import { SelectSheet } from '../components/SelectSheet';
 
