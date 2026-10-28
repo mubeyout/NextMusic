@@ -1,7 +1,7 @@
 // 全局应用设置：MMKV 持久化 + 轻量订阅（跨组件响应）
 // 注意：不要 import theme/tokens（tokens 反向依赖本模块做启动期主题，避免循环）
 import { useState, useEffect } from 'react';
-import { Platform } from 'react-native';
+import { Platform, NativeModules } from 'react-native';
 import { createMMKV } from 'react-native-mmkv';
 
 const kv = createMMKV({ id: 'nextmusic-settings' });
@@ -106,7 +106,7 @@ export const DEFAULTS: AppSettings = {
   pureBlack: false,
   accent: '#1ED760',
   light: false,
-  uiScale: Platform.OS === 'web' ? '125%' : '100%', // 桌面默认 125%(老板定),CSS zoom 生效;原生重启生效
+  uiScale: Platform.OS === 'web' ? '125%' : ((NativeModules.AppVersionInfo as { uiMode?: string } | undefined)?.uiMode === 'car' ? '150%' : '100%'), // 桌面 125%(老板定)/车机 150%(1028 老板令,LEO D 节同批)/其他 100%;直读 NativeModules 避循环依赖
   showTabLabels: true,
   startupPage: 'home',
   restorePlayback: true, // 全端默认开：冷启动恢复队列+当前曲（暂停态），点播放才取链续播——不卡启动、不丢上下文（lx45）

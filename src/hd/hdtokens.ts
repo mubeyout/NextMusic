@@ -86,9 +86,9 @@ export function applyHdTheme() {
 // applyHdTheme() 的调用在文件末尾(SH 等 const 先于执行,避免 TDZ)
 
 // 界面缩放(设置→外观):重启生效——重启即 JS runtime 重载,所有 StyleSheet.create 以新值重建
-export const UI_SCALES = ['90%', '100%', '110%', '125%'] as const;
+export const UI_SCALES = ['90%', '100%', '110%', '125%', '150%'] as const;
 export type UiScale = (typeof UI_SCALES)[number];
-const scaleOf = (s: string | undefined): number => (s === '90%' ? 0.9 : s === '110%' ? 1.1 : s === '125%' ? 1.25 : 1);
+const scaleOf = (s: string | undefined): number => (s === '90%' ? 0.9 : s === '110%' ? 1.1 : s === '125%' ? 1.25 : s === '150%' ? 1.5 : 1); // 1028 老板令:加 150% 档(车机默认)
 
 export const H = {
   // 字号(桌面 px × 0.75 × 缩放)
