@@ -14,6 +14,7 @@ import { useApp } from '../state/AppState';
 import { providers } from '../services/providers';
 import { settings, onSettings } from '../services/settings';
 import { effectiveBottomInset } from './hdstyle';
+import { IS_CAR_DEVICE } from '../services/appversion';
 import { library } from '../state/library';
 import { playlistSync } from '../state/playlistSync'; // lx163
 import { store as httpStore, normalizeBase } from '../services/server';
@@ -282,7 +283,8 @@ export function HDMain() {
   };
 
   return (
-    <View style={st.screen}>
+    <View style={[st.screen, { paddingLeft: Math.max(insets.left, IS_CAR_DEVICE ? 96 : 0) }]}>
+      {/* 1028 星愿 L 形安全区:左侧 car_left_system_bar 96dp(aapt2 实锤)整体右推;insets 可靠时取真实值 */}
       {/* ===== 侧栏(桌面版结构) ===== */}
       <View style={IS_WEB ? st.sidebarWrapWeb : st.sidebarWrap}>
         {IS_WEB ? (
