@@ -13,6 +13,7 @@ import { usePlayer, usePlayerProgress } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
 import { providers } from '../services/providers';
 import { settings, onSettings } from '../services/settings';
+import { effectiveBottomInset } from './hdstyle';
 import { library } from '../state/library';
 import { playlistSync } from '../state/playlistSync'; // lx163
 import { store as httpStore, normalizeBase } from '../services/server';
@@ -148,9 +149,10 @@ export function HDMain() {
   const [loveCount, setLoveCount] = useState<number | null>(null);
   const [pbCollect, setPbCollect] = useState<import('../services/server').SongItem | null>(null);
   const [innerRoute, setInnerRoute] = useState<string>('Tabs'); // 常驻 bar 按内页路由显隐(Player 时隐藏)
-  // 1028 车机适配:底部系统栏让位高度响应式镜像(设置改即生效;播放条整体抬升)
-  const [botLift, setBotLift] = useState(settings.get().hdBottomInset || 0);
-  useEffect(() => onSettings(() => setBotLift(settings.get().hdBottomInset || 0)), []);
+  // 1028 车机适配:底部安全让位(星愿实测系统栏 112px，设置可覆盖)响应式镜像(设置改即生效;播放条整体抬升)
+  // 取 max(运行时 insets.bottom, effectiveBottomInset())——其他品牌车机 insets 真实值更大时跟随(宁多勿压)
+  const [botLift, setBotLift] = useState(Math.max(insets.bottom, effectiveBottomInset()));
+  useEffect(() => onSettings(() => setBotLift(Math.max(insets.bottom, effectiveBottomInset()))), [insets.bottom]);
   const [innerP, setInnerP] = useState<Record<string, unknown> | null>(null); // v3.27:内页 params(歌单/历史/账号选中态)
   const [providerAccts, setProviderAccts] = useState<import('../services/providers').ProviderAcct[]>([]);
   useEffect(() => {

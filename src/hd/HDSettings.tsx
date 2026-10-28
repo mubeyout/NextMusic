@@ -76,8 +76,8 @@ export function HDSettingsScreen() {
       { kind: 'toggle', icon: 'palette', title: '纯黑背景', desc: 'OLED 友好的纯黑底色(仅深色模式)', value: s.pureBlack, onToggle: () => { settings.set('pureBlack', !s.pureBlack); if (IS_WEB) { hdWebReload(); } else hdRestart(playing); } },
       { kind: 'select', icon: 'palette', title: '界面主题', desc: IS_WEB ? '深色/浅色即时切换' : '深色(车机/TV 默认)或浅色,切换后自动重启生效', value: s.light ? '浅色' : '深色', options: ['深色', '浅色'], onPick: v => { settings.set('light', v === '浅色'); if (IS_WEB) { hdWebReload(); } else hdRestart(playing); } },
       { kind: 'select', icon: 'palette', title: '强调色', desc: IS_WEB ? '全局品牌色(即时生效)' : '全局品牌色(按钮/高亮/选中态),切换后自动重启生效', value: ACCENTS.find(a => a.color === s.accent)?.name ?? 'Next 绿', options: ACCENTS.map(a => a.name), onPick: v => { const hit = ACCENTS.find(a => a.name === v); if (hit) { settings.set('accent', hit.color); if (IS_WEB) { hdWebReload(); } else hdRestart(playing); } } },
-      // 1028 车机适配:系统底部 bar 遮挡播放条/设置入口时调高让位(即时生效,免重启)
-      { kind: 'select', icon: 'fullscreen', title: '底部安全让位', desc: '车机系统底部栏遮挡播放条时调高(即时生效)', value: `${s.hdBottomInset || 0}px`, options: ['0px', '40px', '60px', '80px', '100px', '120px'], onPick: v => settings.set('hdBottomInset', parseInt(v, 10) || 0) },
+      // 1028 车机适配:底部安全让位(星愿实测系统栏 112px,报告 tmp-re-apk/星愿-底部bar机制与App避让报告.md)即时生效
+      { kind: 'select', icon: 'fullscreen', title: '底部安全让位', desc: '车机系统栏遮挡时调高;0=自动(车机默认112px)', value: `${effectiveBottomInset()}px`, options: ['0px', '40px', '60px', '80px', '100px', '120px'], onPick: v => settings.set('hdBottomInset', parseInt(v, 10) || 0) },
       { kind: 'toggle', icon: 'wave', title: '歌词翻译', desc: '歌词下方显示翻译', value: s.showLyricTranslation, onToggle: () => settings.set('showLyricTranslation', !s.showLyricTranslation) },
       { kind: 'toggle', icon: 'wave', title: '歌词罗马音', desc: '显示罗马音注音', value: s.showLyricRoma, onToggle: () => settings.set('showLyricRoma', !s.showLyricRoma) },
       { kind: 'toggle', icon: 'wave', title: '歌词荧光效果', desc: '当前行荧光高亮', value: s.enableLyricGlow, onToggle: () => settings.set('enableLyricGlow', !s.enableLyricGlow) },
