@@ -166,6 +166,21 @@ export const tfApi = {
 // ---------- SongItem 映射（source='tf' 走 PlayerProvider 听风取链分支）----------
 export const TF_SOURCE = 'tf';
 
+// [老板 1011 16:05 统一封面规则·1028 封面回归恢复] 歌曲缩略图补全:存储缺 thumbnail(旧数据)时按 id 查 songDetail,内存缓存防重复
+// (lib-v2 合流时丢失,1028 LEO 报老板实测全端封面灰块后从 8b6de58 考古恢复)
+const tfThumbCache = new Map<string, string>();
+export async function tfThumbOf(sess: TfSess, id: number | string | undefined): Promise<string | undefined> {
+  if (id == null || id === '') return undefined;
+  const key = String(id);
+  if (tfThumbCache.has(key)) { const v = tfThumbCache.get(key); return v || undefined; }
+  try {
+    const d = await tfApi.songDetail(sess, id);
+    const t = d.thumbnail || '';
+    tfThumbCache.set(key, t);
+    return t || undefined;
+  } catch { tfThumbCache.set(key, ''); return undefined; }
+}
+
 /** songmid 编码：provider 歌带 pid 前缀（pv-xxx:neteaseId），旧数据为裸 neteaseId */
 export function tfToSongItem(s: TfSong, pid?: string): SongItem {
   return {

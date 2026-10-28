@@ -3,6 +3,7 @@ import { fixCoverUrl } from '../utils/cover'; // lxfix:kw 图床域名自愈
 import { Platform } from 'react-native';
 import { View, Text, Pressable, StyleSheet, Image } from 'react-native';
 import { Icon } from '../theme/Icon';
+import { gradColorOf } from '../theme/grads'; // [老板 1011 渐变唯一源·1028 回归恢复]无图行渐变兑底(非灰块)
 import { C } from '../theme/tokens';
 import type { SongItem } from '../services/server';
 import { registerKbRow } from '../hd/hdkeyboard';
@@ -53,7 +54,7 @@ export function SongRow({ song, onPress, playing, extra, onMore, onLongPress, le
       onFocus={() => setFocus(true)}
       onBlur={() => setFocus(false)}>
       <View style={st.artWrap}>
-        {leading != null ? leading : song.img ? <Image source={{ uri: fixCoverUrl(song.img) }} style={st.art} /> : <View style={[st.art, st.fallback]} />}
+        {leading != null ? leading : song.img ? <Image source={{ uri: fixCoverUrl(song.img) }} style={st.art} /> : <View style={[st.art, { backgroundColor: gradColorOf(song.singer || song.name) }]}><Icon name="music" size={16} color="#ffffffcc" /></View>}
       </View>
       <View style={st.meta}>
         <Text style={[st.title, playing && { color: C.brandText }]} numberOfLines={1}>{song.name}</Text>
@@ -95,7 +96,7 @@ const st = StyleSheet.create({
   ringOn: { borderColor: C.brand, backgroundColor: C.hover },
   artWrap: { width: 46, height: 46, borderRadius: 6, overflow: 'hidden' },
   art: { width: 46, height: 46 },
-  fallback: { backgroundColor: C.surface2 },
+  fallback: { backgroundColor: C.surface2 }, // 兼容保留(渐变兑底上线后仅极老分支引用)
   meta: { flex: 1, gap: 1, minWidth: 0 },
   title: { color: C.text, fontSize: 13, lineHeight: 19, fontWeight: '500' },
   sub: { color: C.text2, fontSize: 10, lineHeight: 15 },
