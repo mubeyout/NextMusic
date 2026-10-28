@@ -13,7 +13,8 @@ class VersionModule(reactContext: ReactApplicationContext) : ReactContextBaseJav
         "versionCode" to BuildConfig.VERSION_CODE.toLong(),
         "flavor" to BuildConfig.FLAVOR, // phone / hd —— JS 层 UI 分流
         // 1028 车机适配:设备形态(tv=电视/car=车机/normal)——车机触摸直点输入框/底部 bar 让位要用
-        "uiMode" to when (reactContext.resources.configuration.uiMode and Configuration.UI_MODE_TYPE_MASK) {
+        // 注:构造参数 reactContext 非 val,方法体里必须走基类 reactApplicationContext
+        "uiMode" to when (reactApplicationContext.resources.configuration.uiMode and Configuration.UI_MODE_TYPE_MASK) {
             Configuration.UI_MODE_TYPE_CAR -> "car"
             Configuration.UI_MODE_TYPE_TELEVISION -> "tv"
             else -> "normal"
