@@ -54,7 +54,7 @@ export function applyHdTheme() {
   }
   if (s.pureBlack) {
     C.bg = '#000000';
-    C.surface = '#0D0D0D';
+    C.surface = '#101010'; // 1028 LEO 规范:投影移除后档差补偿(与 theme/tokens 同步)
   }
   if (s.light) {
     T.light = true;
@@ -165,16 +165,9 @@ export const shadowOf = (seed: string) => {
 // 描边光晕=自绘 border,恒定渲染、零裁切
 // lx136:Android 原生彩色弥散投影——elevation+shadowColor(View.setElevation+outlineAmbient/SpotShadowColor API28+),
 // 系统级渲染,比 RN CSS boxShadow 模拟稳定(米电视上 CSS 模拟时灵时不灵)
-export function shadowStyleOf(seed: string): { elevation: number; shadowColor: string } {
-  // 1028 老板令:彩色弥散投影全端移除(elevation 归零,签名保留调用点兼容)
-  return { elevation: 0, shadowColor: 'transparent' };
-  const h = [...seed].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
-  const s2 = 0.7, l = 0.55;
-  const cH = (1 - Math.abs(2 * l - 1)) * s2;
-  const hp = h / 60, x = cH * (1 - Math.abs((hp % 2) - 1));
-  const [r1, g1, b1] = hp < 1 ? [cH, x, 0] : hp < 2 ? [x, cH, 0] : hp < 3 ? [0, cH, x] : hp < 4 ? [0, x, cH] : hp < 5 ? [x, 0, cH] : [cH, 0, x];
-  const m = l - cH / 2;
-  return { elevation: 4, shadowColor: `rgb(${Math.round((r1 + m) * 255)},${Math.round((g1 + m) * 255)},${Math.round((b1 + m) * 255)})` };
+export function shadowStyleOf(seed: string): { elevation: number; shadowColor: string; borderWidth: number; borderColor: string } {
+  // 1028 老板令:彩色弥散投影全端移除;LEO 规范 A.1② 素面卡补偿=hairline 描边(调用点即原投影卡,一处改全挂)
+  return { elevation: 0, shadowColor: 'transparent', borderWidth: 1, borderColor: C.border };
 }
 
 export function haloOf(seed: string): string {

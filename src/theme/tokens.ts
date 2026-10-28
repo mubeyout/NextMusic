@@ -78,8 +78,8 @@ export function applyBootTheme() {
   }
   if (s.pureBlack) {
     C.bg = '#000000';
-    C.surface = '#0D0D0D';
-    C.surface2 = '#161616';
+    C.surface = '#101010'; // 1028 LEO 规范:投影移除后档差补偿(原 #0D0D0D 黑上黑不可辨)
+    C.surface2 = '#181818';
   }
   // 浅色主题：与桌面 Web (nextmusic-desktop) :root 浅色盘同源，优先级高于纯黑
   if (s.light) {
