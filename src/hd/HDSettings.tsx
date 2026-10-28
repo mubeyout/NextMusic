@@ -76,6 +76,8 @@ export function HDSettingsScreen() {
       { kind: 'toggle', icon: 'palette', title: '纯黑背景', desc: 'OLED 友好的纯黑底色(仅深色模式)', value: s.pureBlack, onToggle: () => { settings.set('pureBlack', !s.pureBlack); if (IS_WEB) { hdWebReload(); } else hdRestart(playing); } },
       { kind: 'select', icon: 'palette', title: '界面主题', desc: IS_WEB ? '深色/浅色即时切换' : '深色(车机/TV 默认)或浅色,切换后自动重启生效', value: s.light ? '浅色' : '深色', options: ['深色', '浅色'], onPick: v => { settings.set('light', v === '浅色'); if (IS_WEB) { hdWebReload(); } else hdRestart(playing); } },
       { kind: 'select', icon: 'palette', title: '强调色', desc: IS_WEB ? '全局品牌色(即时生效)' : '全局品牌色(按钮/高亮/选中态),切换后自动重启生效', value: ACCENTS.find(a => a.color === s.accent)?.name ?? 'Next 绿', options: ACCENTS.map(a => a.name), onPick: v => { const hit = ACCENTS.find(a => a.name === v); if (hit) { settings.set('accent', hit.color); if (IS_WEB) { hdWebReload(); } else hdRestart(playing); } } },
+      // 1028 车机适配:系统底部 bar 遮挡播放条/设置入口时调高让位(即时生效,免重启)
+      { kind: 'select', icon: 'fullscreen', title: '底部安全让位', desc: '车机系统底部栏遮挡播放条时调高(即时生效)', value: `${s.hdBottomInset || 0}px`, options: ['0px', '40px', '60px', '80px', '100px', '120px'], onPick: v => settings.set('hdBottomInset', parseInt(v, 10) || 0) },
       { kind: 'toggle', icon: 'wave', title: '歌词翻译', desc: '歌词下方显示翻译', value: s.showLyricTranslation, onToggle: () => settings.set('showLyricTranslation', !s.showLyricTranslation) },
       { kind: 'toggle', icon: 'wave', title: '歌词罗马音', desc: '显示罗马音注音', value: s.showLyricRoma, onToggle: () => settings.set('showLyricRoma', !s.showLyricRoma) },
       { kind: 'toggle', icon: 'wave', title: '歌词荧光效果', desc: '当前行荧光高亮', value: s.enableLyricGlow, onToggle: () => settings.set('enableLyricGlow', !s.enableLyricGlow) },
@@ -122,7 +124,7 @@ export function HDSettingsScreen() {
       // { kind: 'toggle', icon: 'cloud', title: '播放设置自动备份', desc: '音质/主题/播放开关等随账号云端同步,多端一致', value: s.syncSettingsCloud ?? true, onToggle: () => settings.set('syncSettingsCloud' as never, !(s.syncSettingsCloud ?? true) as never) },
       { kind: 'nav', title: '立即同步播放设置', desc: '上传当前播放设置到服务器账号', icon: 'refresh', action: () => { api.settingsPush({ playQuality: s.playQuality, downloadQuality: s.downloadQuality, light: s.light, pureBlack: s.pureBlack, accent: s.accent }).then(() => toast('已上传到服务器账号')).catch(() => toast('同步失败(未连接服务器)')); } },
       { kind: 'nav', title: '下载管理', desc: '查看下载队列与失败重试', icon: 'download', to: 'Downloads' },
-      { kind: 'toggle', icon: 'cloud', title: '缓存歌曲到服务器', desc: '播放时自动把歌曲存到服务器缓存,再次播放零流量。Web 版点「下载」也是存这里(浏览器不落盘)。缓存目录:/server/data/cache/用户名 · Docker 宿主机路径=启动 -v 映射', value: s.enableServerCache, onToggle: () => settings.set('enableServerCache', !s.enableServerCache) },
+      { kind: 'toggle', icon: 'cloud', title: '缓存歌曲到服务器', desc: '仅控制「播放后自动」缓存。手动点「下载/缓存到服务器」不受此开关影响(用户意图优先)。缓存目录:/server/data/cache/用户名 · Docker 宿主机路径=启动 -v 映射', value: s.enableServerCache, onToggle: () => settings.set('enableServerCache', !s.enableServerCache) },
       // { kind: 'toggle', icon: 'cloud', title: '缓存歌词到服务器', desc: '歌词存服务器缓存目录,多端同步极速加载', value: s.enableServerLyricCache, onToggle: () => settings.set('enableServerLyricCache', !s.enableServerLyricCache) },
       { kind: 'toggle', icon: 'heart', title: '优先播放缓存', desc: '有缓存直接用,失效自动重取', value: s.preferServerCache, onToggle: () => settings.set('preferServerCache', !s.preferServerCache) },
       // { kind: 'toggle', icon: 'heart', title: '本地歌词缓存', desc: '已加载歌词存本地', value: s.enableLyricCache, onToggle: () => settings.set('enableLyricCache', !s.enableLyricCache) },

@@ -146,6 +146,8 @@ export const SH = {
 // 彩色弥散投影:与桌面 shadowOf 同公式(按名取色,hsl→rgba 单层,RN boxShadow 兼容)
 // TV/车机(HD)降级返回 none:弱 GPU 上大量网格卡彩色投影导致重绘卡顿(小米电视实测)
 export const shadowOf = (seed: string) => {
+  // 1028 老板令:弥散投影突兀,全端移除(seed 参数保留调用点兼容)
+  return 'none';
   if (TV_LOW_GPU) return 'none';
   const h = [...seed].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
   const s = 0.55, l = 0.5;
@@ -162,6 +164,8 @@ export const shadowOf = (seed: string) => {
 // lx136:Android 原生彩色弥散投影——elevation+shadowColor(View.setElevation+outlineAmbient/SpotShadowColor API28+),
 // 系统级渲染,比 RN CSS boxShadow 模拟稳定(米电视上 CSS 模拟时灵时不灵)
 export function shadowStyleOf(seed: string): { elevation: number; shadowColor: string } {
+  // 1028 老板令:彩色弥散投影全端移除(elevation 归零,签名保留调用点兼容)
+  return { elevation: 0, shadowColor: 'transparent' };
   const h = [...seed].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
   const s2 = 0.7, l = 0.55;
   const cH = (1 - Math.abs(2 * l - 1)) * s2;
@@ -172,6 +176,8 @@ export function shadowStyleOf(seed: string): { elevation: number; shadowColor: s
 }
 
 export function haloOf(seed: string): string {
+  // 1028 老板令:弥散光晕全端移除
+  return 'transparent';
   const h = [...seed].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
   const s2 = 0.62, l = 0.5;
   const cH = (1 - Math.abs(2 * l - 1)) * s2;
@@ -183,6 +189,8 @@ export function haloOf(seed: string): string {
 }
 
 export const shadowOfSm = (seed: string) => {
+  // 1028 老板令:弥散投影全端移除
+  return 'none';
   const h = [...seed].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
   const s = 0.55, l = 0.5;
   const cH = (1 - Math.abs(2 * l - 1)) * s;
@@ -197,6 +205,8 @@ export const shadowOfSm = (seed: string) => {
 // RNW 会把 iOS 系 shadow* 四件套转成 CSS box-shadow,与 shadowOf 同色公式
 import { Platform } from 'react-native';
 export function webCardShadow(seed: string, lift = false): Record<string, string | number | { width: number; height: number }> | null {
+  // 1028 老板令:web 卡片彩色弥散投影移除(hover 上浮由 useHoverCard 的 transform 承担)
+  return null;
   if (Platform.OS !== 'web') return null;
   const h = [...seed].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
   const s2 = 0.58, l = 0.5;

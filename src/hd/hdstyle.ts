@@ -3,6 +3,7 @@
 // 播放条让位 paddingBottom 硬编码 100/116/32 各屏各写——全部收口到这里
 // 规则:HD/桌面内页水平栅格一律 GUTTER;焦点环一律 focus(容器圆角);底部一律 pageBottom()
 import { C, H } from './hdtokens';
+import { settings } from '../services/settings';
 
 /** 页面水平栅格(HDPlaylistDetail 基准;手机屏不引,保持各自紧凑值) */
 export const GUTTER = 22;
@@ -15,4 +16,5 @@ export const FOCUS_CARD = focus(H.radius.card);
 export const FOCUS_PILL = focus(H.radius.pill);
 
 /** 页面底部 padding:常驻播放条 H.playbar 让位(base=内容额外呼吸空间) */
-export const pageBottom = (base = 24) => base + H.playbar;
+// 1028 车机适配:叠加 hdBottomInset(车机系统底部 bar 覆盖时播放条整体抬升,页面让位同步抬高)
+export const pageBottom = (base = 24) => base + H.playbar + (settings.get().hdBottomInset || 0);

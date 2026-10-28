@@ -12,6 +12,7 @@ import { useSeekBar } from '../hooks/useSeekBar'; // R6 全 app 统一 seek
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
 import { providers } from '../services/providers';
+import { settings, onSettings } from '../services/settings';
 import { library } from '../state/library';
 import { playlistSync } from '../state/playlistSync'; // lx163
 import { store as httpStore, normalizeBase } from '../services/server';
@@ -136,6 +137,9 @@ export function HDMain() {
   const [loveCount, setLoveCount] = useState<number | null>(null);
   const [pbCollect, setPbCollect] = useState<import('../services/server').SongItem | null>(null);
   const [innerRoute, setInnerRoute] = useState<string>('Tabs'); // 常驻 bar 按内页路由显隐(Player 时隐藏)
+  // 1028 车机适配:底部系统栏让位高度响应式镜像(设置改即生效;播放条整体抬升)
+  const [botLift, setBotLift] = useState(settings.get().hdBottomInset || 0);
+  useEffect(() => onSettings(() => setBotLift(settings.get().hdBottomInset || 0)), []);
   const [innerP, setInnerP] = useState<Record<string, unknown> | null>(null); // v3.27:内页 params(歌单/历史/账号选中态)
   const [providerAccts, setProviderAccts] = useState<import('../services/providers').ProviderAcct[]>([]);
   useEffect(() => {
@@ -424,7 +428,7 @@ export function HDMain() {
         </NavigationContainer>
 
         {innerRoute !== 'Player' ? (
-        <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 30 }} collapsable={false}>
+        <View style={{ position: 'absolute', left: 0, right: 0, bottom: botLift, zIndex: 30 }} collapsable={false}>
           <HDPlayBar onCollect={setPbCollect} />
         </View>
         ) : null}
