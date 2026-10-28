@@ -19,8 +19,8 @@ export function useHoverCard(seed: string, opts?: { lift?: number; scale?: numbe
   const onHoverIn = () => { if (t.current) clearTimeout(t.current); t.current = setTimeout(() => setHov(true), 80); };
   const onHoverOut = () => { if (t.current) clearTimeout(t.current); setHov(false); };
   const cardStyle: Record<string, unknown> | null = Platform.OS === 'web'
-    // 1028 老板令:去弥散投影,hover 只留上浮/缩放反馈
-    ? { ...(hov ? { transform: [{ translateY: -lift }, { scale }] } : null) }
+    // 1028 老板令去投影后 hover 反馈(LEO 规范 A.1③):描边升档+位移收敛(-2/1.01),叠亮由 .nm-card CSS 承担
+    ? { ...(hov ? { transform: [{ translateY: -2 }, { scale: 1.01 }], borderColor: 'rgba(255,255,255,.16)' } : null) }
     : null;
   return { hov, elRef, onHoverIn, onHoverOut, cardStyle };
 }
