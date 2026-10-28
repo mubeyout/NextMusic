@@ -1,7 +1,7 @@
 // HD 登录页(横版):表单结构与 ProviderEdit(媒体库添加)同构 —— desc + Tab 容器 + 输入卡(label/值/hint) + 测试连接/主按钮双钮
 // 逻辑与 phone AuthLoginScreen 一致:第一步连接服务器(地址),第二步登录该服务器账号
 import React, { useEffect, useState } from 'react';
-import { Platform, View, Text, StyleSheet, ScrollView, TextInput, ActivityIndicator, Image } from 'react-native';
+import { Platform, View, Text, StyleSheet, ScrollView, TextInput, ActivityIndicator, Image, KeyboardAvoidingView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { navRef } from '../navRef';
@@ -12,7 +12,7 @@ import { HDTouch } from './HDTouch';
 import { useApp } from '../state/AppState';
 import { api, normalizeBase } from '../services/server';
 import { pullCloudSettingsOnLogin } from '../services/settingsSync';
-import { IS_HD } from '../services/appversion';
+import { IS_HD, IS_TV_DEVICE } from '../services/appversion';
 const IS_WEB = Platform.OS === 'web'; // v3.28:去重复 import(顶部已有)
 import { toast } from '../components/Dialog';
 import { FS, FW, SP } from '../theme/tokens';
@@ -27,6 +27,8 @@ function InputCard({ label, value, set, ph, opts, onDirty }: {
 }) {
   const ref = React.useRef<React.ComponentRef<typeof TextInput>>(null);
   const [ime, setIme] = React.useState(false);
+  // 1028 车机适配:车机/非 TV 原生端是触摸屏——输入框直接可点(原「OK 才进输入态」是遥控专用,车机触摸被连坐)
+  const touchFirst = !IS_TV_DEVICE;
   React.useEffect(() => { if (ime) ref.current?.focus(); }, [ime]);
   const card = (
     <View style={st.inputCard}>
@@ -46,8 +48,8 @@ function InputCard({ label, value, set, ph, opts, onDirty }: {
         keyboardType={opts?.kbd === 'url' ? 'url' : 'default'}
         returnKeyType={opts?.onSubmit ? 'done' : 'next'}
         onSubmitEditing={opts?.onSubmit}
-        focusable={!IS_HD || ime}
-        showSoftInputOnFocus={!IS_HD ? undefined : ime}
+        focusable={!IS_HD || ime || touchFirst}
+        showSoftInputOnFocus={!IS_HD ? undefined : (touchFirst || ime)}
         onBlur={() => setIme(false)}
       />
       {opts?.hintText ? <Text style={st.inputHint}>{opts.hintText}</Text> : null}
@@ -171,6 +173,8 @@ export function HDAuthLoginScreen() {
         <Text style={st.title}>连接服务器</Text>
       </View>
 
+      {/* 1028 车机适配:键盘弹起不让位会盖住输入内容(车机 ROM 常忽略 adjustResize)——padding 模式拍开 */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={IS_WEB || IS_TV_DEVICE ? undefined : 'padding'} enabled={!IS_WEB}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingHorizontal: 26, paddingBottom: 34, paddingTop: 20, alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}
@@ -269,6 +273,7 @@ export function HDAuthLoginScreen() {
           </HDTouch>
         ) : null}
       </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }

@@ -3,7 +3,7 @@
 // TV 端不 import 本文件的行为面(钩子返回值在原生侧恒空样式,但调用处均 IS_WEB 门控,双保险)
 import React, { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
-import { webCardShadow } from './hdtokens';
+
 
 export function useHoverCard(seed: string, opts?: { lift?: number; scale?: number }) {
   const [hov, setHov] = useState(false);
@@ -19,7 +19,8 @@ export function useHoverCard(seed: string, opts?: { lift?: number; scale?: numbe
   const onHoverIn = () => { if (t.current) clearTimeout(t.current); t.current = setTimeout(() => setHov(true), 80); };
   const onHoverOut = () => { if (t.current) clearTimeout(t.current); setHov(false); };
   const cardStyle: Record<string, unknown> | null = Platform.OS === 'web'
-    ? { ...(webCardShadow(seed, hov) as never as Record<string, unknown>), ...(hov ? { transform: [{ translateY: -lift }, { scale }] } : null) }
+    // 1028 老板令:去弥散投影,hover 只留上浮/缩放反馈
+    ? { ...(hov ? { transform: [{ translateY: -lift }, { scale }] } : null) }
     : null;
   return { hov, elRef, onHoverIn, onHoverOut, cardStyle };
 }
