@@ -133,3 +133,24 @@ NM['SoundFx'] = {
     if (f) f(cfg);
   },
 };
+
+// 1028 老板令「所有单行卡片 rail 可滑」:web 端横向 ScrollView=浏览器原生滚动,纵向滚轮不横滚——
+// 全局 wheel 委托(capture):目标的可横滚祖先消费 deltaY 转 scrollLeft;rail 滚到边界放行页面纵向滚。
+// 仅 desktop/web 入口加载(原生 metro 不引本文件),触摸端不受影响。
+if (typeof document !== 'undefined' && !('__nmWheelH' in document)) {
+  (document as unknown as Record<string, unknown>).__nmWheelH = true;
+  document.addEventListener('wheel', (e: WheelEvent) => {
+    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return; // 已是横向滚(触控板)
+    let el = e.target as HTMLElement | null;
+    while (el && el !== document.body) {
+      const st = getComputedStyle(el);
+      const x = (st.overflowX === 'auto' || st.overflowX === 'scroll') && el.scrollWidth > el.clientWidth;
+      if (x) {
+        const atStart = el.scrollLeft <= 0 && e.deltaY < 0;
+        const atEnd = el.scrollLeft >= el.scrollWidth - el.clientWidth && e.deltaY > 0;
+        if (!atStart && !atEnd) { e.preventDefault(); el.scrollLeft += e.deltaY; return; }
+      }
+      el = el.parentElement;
+    }
+  }, { passive: false, capture: true });
+}
