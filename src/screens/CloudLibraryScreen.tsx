@@ -816,8 +816,8 @@ const c = StyleSheet.create({
   delOkLock: { opacity: 0.45 },
   delOkT: { color: C.onBrand, fontSize: FS.md, fontWeight: FW.heavy },
   // 入口卡
-  entryCard: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.strokeFaint, padding: 14, flexBasis: '48%', minHeight: 72 }, // [老板反馈] 删flexGrow同ml.card——单卡不拉伸居左
-  entryCardHD: { minHeight: 86, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16, flexBasis: 375 }, // [1010 统一] 与 ml.cardHD 同值(定宽卡+自然换行)
+  entryCard: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.strokeFaint, padding: 14, flexBasis: '40%', flexGrow: 1, minHeight: 72 }, // [老板反馈] 删flexGrow同ml.card——单卡不拉伸居左
+  entryCardHD: { minHeight: 86, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16, flexBasis: '23%', flexGrow: 1 }, // [1010 统一] 与 ml.cardHD 同值(定宽卡+自然换行)
   entryIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }, // [hub 网格] 40→44 对齐 ml.iconWrap 统一值,cloud 品牌色改通用底
   entryIconHD: { width: 52, height: 52, borderRadius: 14 }, // [1010 统一] 与 ml.iconWrapHD 同值
   entryTitle: { color: C.text, fontSize: FS.xl, lineHeight: 20, fontWeight: FW.semibold }, // [1010 统一] 14/700→14.5/600 与 ml.title 同值([批次1]→FS.xl 归档)
