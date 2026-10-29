@@ -141,7 +141,7 @@ function BoardCard({ b, i, src, onOpen }: { b: Board; i: number; src: string; bu
         )}
       </View>
       <View style={st.cardChipWrapper}>
-        <View style={st.cardChip}><Text style={st.cardChipText}>{SOURCES.find(s => s.key === src)?.label ?? src}</Text></View>
+        <View style={st.cardChip}><Text style={[st.cardChipText, { color: '#ffffffe6' }]}>{SOURCES.find(s => s.key === src)?.label ?? src}</Text></View>
       </View>
       <View style={st.cardBody}>
         <Text style={st.cardName} numberOfLines={2}>{b.name}</Text>

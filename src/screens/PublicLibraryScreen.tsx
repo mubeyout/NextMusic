@@ -497,7 +497,7 @@ export function PublicLibWallRoute(props: Record<string, unknown>) {
   const route = (props as { route: { params: { kind: 'albums' | 'artists' } } }).route;
   const kind = route.params.kind === 'artists' ? 'artists' : 'albums';
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string, p?: object) => void };
-  const wall = useGridBasis(); const wallBasis = wall.basis; // 1028 老板令(自适应):恢复实测分档(15/18/23/31),写死百分比缩放后折行
+  const wallBasis = IS_HD ? '18%' : '23%'; // 1028 回稳:useGridBasis 的 onLayout setState 重排触发 React removeChild 崩(老板 07:01 报错实证)——回写死百分比,自适应走纯 CSS
   const [items, setItems] = useState<(LibAlbum | LibArtist)[] | null>(null);
   const [total, setTotal] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -529,7 +529,7 @@ export function PublicLibWallRoute(props: Record<string, unknown>) {
       ) : (
         <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
           {kind === 'albums' ? (
-            <View style={[d.wallSec, IS_HD && d.wallSecHD, { marginHorizontal: 16 }]} onLayout={wall.onLayout}>
+            <View style={[d.wallSec, IS_HD && d.wallSecHD, { marginHorizontal: 16 }]}>
               {(items as LibAlbum[]).map(a => (
                 <DiscCard key={a.id} name={a.name} count={a.songCount}
                   sub={a.artist} cover={a.coverFile ? coverUrl(a.coverFile, 'public') : null}
