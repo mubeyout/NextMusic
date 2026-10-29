@@ -288,7 +288,7 @@ export function ExploreScreen() {
                       ? <Image source={{ uri: first.img }} style={st.catArt} />
                       : <View style={[st.catArt, st.catFallback]}><Icon name="music" size={26} color={C.white} /></View>}
                     <View style={st.catShade} />
-                    <Text style={st.catLabel}>{c.label}</Text>
+                    <Text style={[st.catLabel, { color: '#FFFFFF' }]}>{c.label}</Text>
                   </TouchableOpacity>
                 );
               })}

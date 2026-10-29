@@ -186,7 +186,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
                   {pl.img
                     ? <Image source={{ uri: pl.img }} style={st.plArt} />
                     : <View style={[st.plArt, { backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
-                  <View style={st.plCount}><Text style={st.plCountText}>▶ {pl.count}</Text></View>
+                  <View style={st.plCount}><Text style={[st.plCountText, { color: '#FFFFFF' }]}>▶ {pl.count}</Text></View>
                 </View>
                 <View style={st.plTexts}>
                   <Text style={st.plName} numberOfLines={1}>{pl.name}</Text>
@@ -328,7 +328,7 @@ function PlCardWeb({ pl, width, compact, onOpen, onPlay }: { pl: { name: string;
         {pl.img
           ? <Image source={{ uri: pl.img }} style={st.plArt} />
           : <View style={[st.plArt, { backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
-        {pl.count != null ? <View style={[st.plCount, IS_WEB && st.plCountWeb]}><Text style={st.plCountText}>▶ {pl.count}</Text></View> : null}
+        {pl.count != null ? <View style={[st.plCount, IS_WEB && st.plCountWeb]}><Text style={[st.plCountText, { color: '#FFFFFF' }]}>▶ {pl.count}</Text></View> : null}
         {/* A1b 遮罩+播放钮(compact 模式 32px,标准 44px) */}
         <View ref={maskRef} pointerEvents={hov ? 'auto' : 'none'} style={[st.plMask, { opacity: hov ? 1 : 0 }]} />
         <HDTouch ref={playRef} style={[st.plPlay, compact && { width: 32, height: 32, borderRadius: 16 }, { opacity: hov ? 1 : 0, transform: [{ translateY: hov ? 0 : 6 }] }]} onPress={onPlay}>

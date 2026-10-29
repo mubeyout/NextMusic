@@ -87,7 +87,7 @@ export function QueueScreen() {
           onBack={() => nav.goBack()}
           right={selMode ? (
             <T hitSlop={6} onPress={exitSel} style={st.doneBtn}>
-              <Text style={st.doneText}>完成</Text>
+              <Text style={[st.doneText, { color: '#FFFFFF' }]}>完成</Text>
             </T>
           ) : (
             <T

@@ -178,7 +178,7 @@ export function HDSearch() {
                   <HDTouch key={a.n} style={[st.artistCard, shadowStyleOf(a.n)]} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }} onPress={() => { setKw(a.n); search(a.n); }}>
                     {artistImgs[a.n]
                       ? <Image source={{ uri: artistImgs[a.n] }} style={st.artistAvatar} />
-                      : <View style={[st.artistAvatar, { backgroundColor: a.c }]}><Text style={st.artistGlyph}>{a.n[0]}</Text></View>}
+                      : <View style={[st.artistAvatar, { backgroundColor: a.c }]}><Text style={[st.artistGlyph, { color: '#FFFFFF' }]}>{a.n[0]}</Text></View>}
                     <Text style={st.artistName} numberOfLines={1}>{a.n}</Text>
                   </HDTouch>
                 ))}
@@ -191,8 +191,8 @@ export function HDSearch() {
                 {THEME_CARDS.map(g => (
                   <HDTouch key={g.zh} style={[st.themeCard, shadowStyleOf(g.zh)]} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }} onPress={() => { setKw(g.zh); search(g.zh); }}>
                     <LinearGradient colors={[g.from, g.to]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.themeGrad}>
-                      <Text style={st.themeZh}>{g.zh}</Text>
-                      <Text style={st.themeEn}>{g.en}</Text>
+                      <Text style={[st.themeZh, { color: '#FFFFFF' }]}>{g.zh}</Text>
+                      <Text style={[st.themeEn, { color: '#FFFFFF' }]}>{g.en}</Text>
                     </LinearGradient>
                   </HDTouch>
                 ))}

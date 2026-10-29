@@ -47,5 +47,5 @@ export function findActiveLine(lines: LyricLine[], pos: number): number {
     if (lines[i].t <= pos) idx = i; // 1028 老板实测(歌词比歌快一行):去 0.3s 提前量——行密集处 300ms 提前点亮下一行=视觉快一行
     else break;
   }
-  return idx;
+  return Math.max(0, idx - 1); // 1028 老板三轮校准(恒快一句):行匹配语义与源歌词轴错位一行,统一回退一行
 }

@@ -1376,7 +1376,7 @@ const ml = StyleSheet.create({
   sectionHeadHD: { fontSize: FS.lg, letterSpacing: 1.6, marginTop: 30 },
   groupWeb: { width: '100%' }, // [老板 1010] 占满整屏(去 maxWidth 860/1160)——定宽卡 375px 自然铺排;列表区 dv.listWrapWeb 维持 860 可读性不动
   card: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: SP.xl, paddingVertical: 14, paddingHorizontal: 14, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke, elevation: 1, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, flexBasis: '48%' }, // [老板反馈] 删flexGrow——单卡不拉伸,保持48%宽居左对齐
-  cardHD: { minHeight: 86, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16, flexBasis: '23%' }, // 1028 老板令(自适应排满):375 定宽在缩放后容器有效宽缩水=提前折行——改百分比随容器自适应,同排同宽不缩水
+  cardHD: { minHeight: 86, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16, flexBasis: '31%' }, // 1028 老板令(一样大+自适应):23% 档窄容器 138px 太小(附件实证)——31% 三列,卡大且随容器自适应
   cardHover: { borderColor: C.strokeStrong, backgroundColor: C.surface2 }, // hover 细描边提亮,克制不加投影
   iconWrap: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }, // [库族重设计v1 B4] 46→44 对齐 LibBanner kindIcon 现值(规格统一表)
   iconWrapHD: { width: 52, height: 52, borderRadius: 14 }, // [B4] 56→52 同源对齐
