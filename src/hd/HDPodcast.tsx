@@ -20,7 +20,7 @@ import { lxapi } from '../services/lxapi';
 import { hdNav } from './hdnav';
 import { cacheStale, cacheSet } from './hdcache';
 import type { SongItem } from '../services/server';
-import {GRID,  FW, SP } from '../theme/tokens';
+import { GRID, FW, SP } from '../theme/tokens';
 
 interface PodChannel { id: string; name: string; query: string; sub: string; source: 'kw' | 'kg' | 'wy'; }
 
