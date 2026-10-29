@@ -317,12 +317,13 @@ export function HDPlayer() {
         </View>
 
         <View style={[st.infoCol, IS_WEB && st.infoColWeb]}>
-          <Text style={[st.title, IS_WEB && st.titleWeb]} numberOfLines={1}>{current.name}</Text>
-          <Text style={[st.sub, IS_WEB && st.subWeb]} numberOfLines={1}>{current.singer}{current.albumName ? ` · ${current.albumName}` : ''}</Text>
+          {/* 1028 老板实测(深色歌名黑):st 启动期锁定防主题切换残留——渲染层动态色兜底 */}
+          <Text style={[st.title, IS_WEB && st.titleWeb, settings.get().light && { color: '#26282C' }]} numberOfLines={1}>{current.name}</Text>
+          <Text style={[st.sub, IS_WEB && st.subWeb, settings.get().light && { color: 'rgba(38,40,44,.7)' }]} numberOfLines={1}>{current.singer}{current.albumName ? ` · ${current.albumName}` : ''}</Text>
 
           <View style={[st.lyricsBox, IS_WEB && { maxHeight: Math.round(winH * 0.5), overflow: 'hidden' }]}>
             {lyrics ? (
-              lyrics.slice(Math.max(0, activeIdx - (IS_WEB ? 5 : 3)), activeIdx + (IS_WEB ? 6 : 4)).map((l, i) => {
+              lyrics.slice(Math.max(0, activeIdx - (IS_WEB ? 2 : 3)), activeIdx + (IS_WEB ? 3 : 4)).map((l, i) => {
                 const idx = Math.max(0, activeIdx - 3) + i;
                 const on = idx === activeIdx;
                 return (
