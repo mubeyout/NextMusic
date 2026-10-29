@@ -17,7 +17,7 @@ import { PageHeader, EmptyState } from '../components/PageChrome';
 import { toast } from '../components/Dialog';
 import { LibraryHome, HomeSection, RailCard } from '../components/LibraryHome'; // [老板 1011 15:55] HomeRail→GridWall 网格化
 import { GridWall } from '../components/GridWall'; // ①②段骨架+分区头/横滑轨
-import { useGridBasis } from '../components/GridBasis'; // ⑤歌手展开圆墙列基自适应(15/18/23/31/48% 档位表)
+import { useGridBasis } from '../components/GridBasis'; // ⑤歌手展开圆墙列基自适应(15/18/23/31/48% 档位表);1028 全墙页同接(自适应令)
 import { usePlayer } from '../state/PlayerProvider';
 import { coverUrl, setActiveLib, type LibSong, type LibAlbum, type LibArtist } from '../services/myLibrary';
 import { pubLib, pubCheck, pubToSongItem, pubSourceName, usePubEntry } from '../services/publicLibrary';
@@ -497,7 +497,7 @@ export function PublicLibWallRoute(props: Record<string, unknown>) {
   const route = (props as { route: { params: { kind: 'albums' | 'artists' } } }).route;
   const kind = route.params.kind === 'artists' ? 'artists' : 'albums';
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string, p?: object) => void };
-  const wallBasis = IS_HD ? '15%' : '23%'; // [1011 13:2x] 去 useGridBasis 依赖(排查静默死导航:与可用的 Album 路由组件对齐依赖面)
+  const wall = useGridBasis(); const wallBasis = wall.basis; // 1028 老板令(自适应):恢复实测分档(15/18/23/31),写死百分比缩放后折行
   const [items, setItems] = useState<(LibAlbum | LibArtist)[] | null>(null);
   const [total, setTotal] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -529,7 +529,7 @@ export function PublicLibWallRoute(props: Record<string, unknown>) {
       ) : (
         <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
           {kind === 'albums' ? (
-            <View style={[d.wallSec, IS_HD && d.wallSecHD, { marginHorizontal: 16 }]}>
+            <View style={[d.wallSec, IS_HD && d.wallSecHD, { marginHorizontal: 16 }]} onLayout={wall.onLayout}>
               {(items as LibAlbum[]).map(a => (
                 <DiscCard key={a.id} name={a.name} count={a.songCount}
                   sub={a.artist} cover={a.coverFile ? coverUrl(a.coverFile, 'public') : null}
