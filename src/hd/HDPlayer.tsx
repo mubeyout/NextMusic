@@ -12,6 +12,7 @@ import { WebLyricCardModal } from './WebLyricCardModal';
 import { enqueueDownload, isWebServerMode } from '../services/downloads';
 import { webDownloadActionItems } from './hdmenubuilders';
 import { hdActions } from './HDActions';
+import { effectiveBottomInset } from './hdstyle'; // 1028:歌词区让位接车机自动值(底 112)
 import { toast } from '../components/Dialog';
 import { C, T, fmtSec } from './hdtokens';
 import { HDTouch } from './HDTouch';
@@ -91,9 +92,9 @@ export function HDPlayer() {
   const [winH, setWinH] = useState(() => (typeof window !== 'undefined' && typeof window.innerHeight === 'number' ? window.innerHeight : 800));
   // lx180:可视化开关响应式镜像——settings 变更立即驱动 effect
   const [showViz, setShowViz] = useState(settings.get().showDetailVisualizer !== false);
-  const [botInset, setBotInset] = useState(settings.get().hdBottomInset || 0);
+  const [botInset, setBotInset] = useState(effectiveBottomInset()); // 1028 老板实测(歌词被 playerbar 遮挡):接 effectiveBottomInset(车机自动 112,旧接线读 settings 原值恒 0)
   useEffect(() => {
-    const un = onSettings(() => { setShowViz(settings.get().showDetailVisualizer !== false); setBotInset(settings.get().hdBottomInset || 0); });
+    const un = onSettings(() => { setShowViz(settings.get().showDetailVisualizer !== false); setBotInset(effectiveBottomInset()); });
   }, []);
   // [Fix 2026-09-14] Hermes 也定义 window global——typeof window 守卫穿透,native 上 window.addEventListener 不存在
   // → HD/TV 进播放页必崩(TV 实锤 vc169: TypeError undefined is not a function, 老板 09-14 反馈闪退)。守卫改 IS_WEB
@@ -561,7 +562,8 @@ const stLight = {
 };
 type PlayerStyles = Record<string, ViewStyle | TextStyle>;
 // 直接样式对象(不经 StyleSheet.create):双盘在渲染层已定型,create 泛型对联合盘推断崩——RN style prop 原生接受普通样式对象
-const st: PlayerStyles = (settings.get().light ? stLight : stDark) as PlayerStyles;
+// 1028 老板令(播放页歌名黑字看不见):封面系背景(blur 虚化/dark)恒深色盘白字——浅色蒙版 82% 盖不住封面透出暗色,黑字不可辨;仅 solid 纯色背景才随主题
+const st: PlayerStyles = (settings.get().light && settings.get().playerBackground !== 'blur' ? stLight : stDark) as PlayerStyles;
 
 // ===== 桌面(网易云参照)样式 =====
 // v3.4: 工具按钮 hover 浮出 tip(老板:按钮选项改 tips 上浮)
