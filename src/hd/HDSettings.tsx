@@ -89,16 +89,16 @@ export function HDSettingsScreen() {
       { kind: 'toggle', icon: 'wave', title: '歌词翻译', desc: '歌词下方显示翻译', value: s.showLyricTranslation, locked: lyrGate.locked && !s.showLyricTranslation, onToggle: () => (s.showLyricTranslation ? settings.set('showLyricTranslation', false) : lyrOn('showLyricTranslation')) },
       { kind: 'toggle', icon: 'wave', title: '歌词罗马音', desc: '显示罗马音注音', value: s.showLyricRoma, locked: lyrGate.locked && !s.showLyricRoma, onToggle: () => (s.showLyricRoma ? settings.set('showLyricRoma', false) : lyrOn('showLyricRoma')) },
       { kind: 'toggle', icon: 'wave', title: '歌词荧光效果', desc: '当前行荧光高亮', value: s.enableLyricGlow, onToggle: () => settings.set('enableLyricGlow', !s.enableLyricGlow) },
-      { kind: 'select', icon: 'wave', title: '播放页背景', desc: '封面虚化/纯色/黑色', value: s.playerBackground === 'blur' ? '封面虚化' : s.playerBackground === 'solid' ? '纯色背景' : '黑色背景', options: ['封面虚化', '纯色背景', '黑色背景'], onPick: v => settings.set('playerBackground', v === '封面虚化' ? 'blur' : v === '纯色背景' ? 'solid' : 'dark') },
+      { kind: 'select', icon: 'palette', title: '播放页背景', desc: '封面虚化/纯色/黑色', value: s.playerBackground === 'blur' ? '封面虚化' : s.playerBackground === 'solid' ? '纯色背景' : '黑色背景', options: ['封面虚化', '纯色背景', '黑色背景'], onPick: v => settings.set('playerBackground', v === '封面虚化' ? 'blur' : v === '纯色背景' ? 'solid' : 'dark') },
       // [audit 20260921] 以下死开关隐藏(设置审计:全仓零消费者;存储 key 保留)——接线或删除待拍板
       // { kind: 'toggle', icon: 'wave', title: '底部播放条可视化', desc: '频谱装饰', value: s.showFooterVisualizer, onToggle: () => settings.set('showFooterVisualizer', !s.showFooterVisualizer) },
       { kind: 'toggle', icon: 'wave', title: '播放页可视化', desc: '频谱环/粒子', value: s.showDetailVisualizer, onToggle: () => settings.set('showDetailVisualizer', !s.showDetailVisualizer) },
-      { kind: 'toggle', icon: 'fullscreen', title: '屏幕常亮', desc: '播放时阻止休眠', value: s.keepScreenAwake, onToggle: () => settings.set('keepScreenAwake', !s.keepScreenAwake) },
+      { kind: 'toggle', icon: 'tv', title: '屏幕常亮', desc: '播放时阻止休眠', value: s.keepScreenAwake, onToggle: () => settings.set('keepScreenAwake', !s.keepScreenAwake) },
       { kind: 'toggle', icon: 'edit', title: '键盘快捷键', desc: '空格播放 · N/P 切歌 · Alt+←→ 切歌/快进 · ⌘F 搜索', value: s.enableKeyboardShortcuts, onToggle: () => settings.set('enableKeyboardShortcuts', !s.enableKeyboardShortcuts) },
       { kind: 'select', icon: 'fullscreen', title: '界面缩放', desc: '全局字号/触点/行高缩放(桌面即时生效,手机/TV 切换后重启生效)', value: s.uiScale || '100%', options: IS_WEB ? ['100%', '110%', '125%', '150%', '175%'] : ['90%', '100%', '110%', '125%', '150%'], onPick: v => { settings.set('uiScale', v); if (IS_WEB) { const z = Math.max(0.75, Math.min(2, Number(v.replace('%', '')) / 100)); document.documentElement.style.zoom = String(z); } else hdRestart(playing); } }, // v3.28:tsconfig 补 dom 后 document 直用;1028 原生档补 150%(车机默认)
     ],
     '播放体验': [
-      { kind: 'select', icon: 'music', title: '默认音质', desc: '在线播放优先选择的音质档位', value: s.playQuality, options: QUALITY_OPTS, onPick: v => settings.set('playQuality', v as Quality) },
+      { kind: 'select', icon: 'sliders', title: '默认音质', desc: '在线播放优先选择的音质档位', value: s.playQuality, options: QUALITY_OPTS, onPick: v => settings.set('playQuality', v as Quality) },
       { kind: 'toggle', icon: 'history', title: '恢复上次播放', desc: '启动时恢复退出前的播放队列与进度', value: s.restorePlayback, onToggle: () => settings.set('restorePlayback', !s.restorePlayback) },
       { kind: 'nav', title: '均衡器与音效', desc: '10 段 EQ · 空间混响 · 预设', icon: 'sliders', to: 'Fx' },
       // { kind: 'toggle', icon: 'play', title: '音频淡入淡出', desc: '切歌时平滑过渡', value: s.enableCrossfade, onToggle: () => settings.set('enableCrossfade', !s.enableCrossfade) },
@@ -129,7 +129,7 @@ export function HDSettingsScreen() {
       ] : []),
     ],
     '下载与备份': [
-      { kind: 'select', icon: 'music', title: '下载音质', desc: '下载歌曲保存的音质档位', value: s.downloadQuality, options: QUALITY_OPTS, onPick: v => settings.set('downloadQuality', v as Quality) },
+      { kind: 'select', icon: 'sliders', title: '下载音质', desc: '下载歌曲保存的音质档位', value: s.downloadQuality, options: QUALITY_OPTS, onPick: v => settings.set('downloadQuality', v as Quality) },
       { kind: 'select', icon: 'queue', title: '同时下载数', desc: '下载任务并发数', value: String(s.maxConcurrent), options: ['1', '2', '3', '5'], onPick: v => settings.set('maxConcurrent', Number(v)) },
       { kind: 'toggle', icon: 'upload', title: '备份歌单', desc: '云备份时包含本地歌单', value: s.backupPlaylists, onToggle: () => settings.set('backupPlaylists', !s.backupPlaylists) },
       { kind: 'nav', title: '云备份(WebDAV)', desc: '配置 WebDAV,备份/恢复全部数据 · 备份内容=容器 /server/data 全量', icon: 'cloud', to: 'BackupSettings' },

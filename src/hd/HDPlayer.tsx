@@ -485,7 +485,7 @@ const stDark: Record<string, ViewStyle | TextStyle> = {
     webArtCard: { borderRadius: 14, overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.05)', backgroundColor: C.inset },
   webArtImg: { width: '100%', height: '100%' },
 // web vinyl 尺寸
-  vinylWrap: { width: 228, height: 228, borderRadius: 114, backgroundColor: '#0d100e', borderWidth: 5, borderColor: '#161a17', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 18px rgba(0,0,0,.25)' }, // 1028 老板令(投影太重页面脏):44px 大影+荧光圈→轻投影,绿晕退役
+  vinylWrap: { width: 228, height: 228, borderRadius: 114, backgroundColor: '#0d100e', borderWidth: 5, borderColor: '#161a17', alignItems: 'center', justifyContent: 'center' }, // 1028 老板令(投影太重直接去掉):boxShadow 移除,零阴影
   vinylZone: { width: RING_ZONE, height: RING_ZONE, alignItems: 'center', justifyContent: 'center' },
   srcPill: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, height: 24, borderRadius: 12, paddingHorizontal: 12, marginTop: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,.16)', backgroundColor: 'rgba(255,255,255,.06)' },
   srcDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.brand },
@@ -544,7 +544,7 @@ const stLight = {
   backBtn: { ...stDark.backBtn, backgroundColor: 'rgba(31,35,41,.05)' },
   backLabel: { color: 'rgba(38,40,44,.85)', fontSize: FS.md, fontWeight: FW.semibold },
   webArtCard: { ...stDark.webArtCard, boxShadow: '0 24px 64px rgba(31,35,41,.18), 0 0 0 1px rgba(31,35,41,.05)' },
-  vinylWrap: { ...stDark.vinylWrap, boxShadow: '0 6px 18px rgba(31,35,41,.12)' }, // 1028 同令减影
+  vinylWrap: { ...stDark.vinylWrap }, // 1028 同令:阴影彻底移除
   srcPill: { ...stDark.srcPill, borderColor: 'rgba(31,35,41,.08)', backgroundColor: 'rgba(31,35,41,.04)' },
   srcTag: { color: 'rgba(38,40,44,.6)', fontSize: FS.xs, letterSpacing: 2, fontWeight: FW.semibold },
   title: { color: '#26282C', fontSize: FS.display, fontWeight: FW.heavy }, // 浅色覆写值(启动期 StyleSheet 求值特性,保留写死);[LEO 1011] 25→FS.display 与深色版同档
