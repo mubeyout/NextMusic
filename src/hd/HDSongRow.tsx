@@ -193,8 +193,8 @@ const st = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center' },
   sub: { color: C.text3, fontSize: H.font.xs },
   hiRes: { color: C.brand, fontSize: 7, fontWeight: FW.bold }, // [LEO 1011] 档外特排:Hi-Res 徽标角标微字(FS 最小 xs=10 会溢出徽标)
-  srcTag: { backgroundColor: C.elev, borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
-  srcTagText: { color: T.light ? '#62676E' : '#ffffffcc', fontSize: 7, fontWeight: FW.semibold, letterSpacing: 0.5 }, // [1013 老板令] 深色白字/亮态灰(原 C.text3 深色下黑灰字于黑药丸)
+  srcTag: { backgroundColor: 'rgba(0,0,0,.55)', borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 }, // 1028 老板令(字恒白):底恒黑药丸(主题无关),原 C.elev 随主题+T.light 锁定残留=深色灰底灰字看不清
+  srcTagText: { color: '#ffffffcc', fontSize: 7, fontWeight: FW.semibold, letterSpacing: 0.5 }, // 1028 老板令:字恒白
   dur: { color: C.text3, fontSize: H.font.sm, fontVariant: ['tabular-nums'], minWidth: 34, textAlign: 'right' },
   // v3.20 挤出模式:hoverZone 流内占位,hover 34→96(三钮)/已收藏 34→64(♡),标题列被挤压而非覆盖
   hoverZone: { minWidth: 34, alignItems: 'flex-end', overflow: 'hidden' },

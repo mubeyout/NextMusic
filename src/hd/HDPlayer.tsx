@@ -317,9 +317,9 @@ export function HDPlayer() {
         </View>
 
         <View style={[st.infoCol, IS_WEB && st.infoColWeb]}>
-          {/* 1028 老板实测(深色歌名黑):st 启动期锁定防主题切换残留——渲染层动态色兜底 */}
-          <Text style={[st.title, IS_WEB && st.titleWeb, settings.get().light && { color: '#26282C' }]} numberOfLines={1}>{current.name}</Text>
-          <Text style={[st.sub, IS_WEB && st.subWeb, settings.get().light && { color: 'rgba(38,40,44,.7)' }]} numberOfLines={1}>{current.singer}{current.albumName ? ` · ${current.albumName}` : ''}</Text>
+          {/* 1028 老板实测(深色歌名黑):st 启动期锁定防主题切换残留——渲染层动态色双向兜底(浅强制黑/深强制白) */}
+          <Text style={[st.title, IS_WEB && st.titleWeb, settings.get().light ? { color: '#26282C' } : { color: '#FFFFFF' }]} numberOfLines={1}>{current.name}</Text>
+          <Text style={[st.sub, IS_WEB && st.subWeb, settings.get().light ? { color: 'rgba(38,40,44,.7)' } : { color: 'rgba(255,255,255,.7)' }]} numberOfLines={1}>{current.singer}{current.albumName ? ` · ${current.albumName}` : ''}</Text>
 
           <View style={[st.lyricsBox, IS_WEB && { maxHeight: Math.round(winH * 0.5), overflow: 'hidden' }]}>
             {lyrics ? (
@@ -485,7 +485,7 @@ const stDark: Record<string, ViewStyle | TextStyle> = {
     webArtCard: { borderRadius: 14, overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.05)', backgroundColor: C.inset },
   webArtImg: { width: '100%', height: '100%' },
 // web vinyl 尺寸
-  vinylWrap: { width: 228, height: 228, borderRadius: 114, backgroundColor: '#0d100e', borderWidth: 5, borderColor: '#161a17', alignItems: 'center', justifyContent: 'center', boxShadow: '0 18px 44px rgba(0,0,0,.55), 0 0 36px rgba(30,215,96,.14)' },
+  vinylWrap: { width: 228, height: 228, borderRadius: 114, backgroundColor: '#0d100e', borderWidth: 5, borderColor: '#161a17', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 18px rgba(0,0,0,.25)' }, // 1028 老板令(投影太重页面脏):44px 大影+荧光圈→轻投影,绿晕退役
   vinylZone: { width: RING_ZONE, height: RING_ZONE, alignItems: 'center', justifyContent: 'center' },
   srcPill: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, height: 24, borderRadius: 12, paddingHorizontal: 12, marginTop: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,.16)', backgroundColor: 'rgba(255,255,255,.06)' },
   srcDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.brand },
@@ -544,7 +544,7 @@ const stLight = {
   backBtn: { ...stDark.backBtn, backgroundColor: 'rgba(31,35,41,.05)' },
   backLabel: { color: 'rgba(38,40,44,.85)', fontSize: FS.md, fontWeight: FW.semibold },
   webArtCard: { ...stDark.webArtCard, boxShadow: '0 24px 64px rgba(31,35,41,.18), 0 0 0 1px rgba(31,35,41,.05)' },
-  vinylWrap: { ...stDark.vinylWrap, boxShadow: '0 18px 44px rgba(31,35,41,.2), 0 0 36px rgba(30,215,96,.1)' },
+  vinylWrap: { ...stDark.vinylWrap, boxShadow: '0 6px 18px rgba(31,35,41,.12)' }, // 1028 同令减影
   srcPill: { ...stDark.srcPill, borderColor: 'rgba(31,35,41,.08)', backgroundColor: 'rgba(31,35,41,.04)' },
   srcTag: { color: 'rgba(38,40,44,.6)', fontSize: FS.xs, letterSpacing: 2, fontWeight: FW.semibold },
   title: { color: '#26282C', fontSize: FS.display, fontWeight: FW.heavy }, // 浅色覆写值(启动期 StyleSheet 求值特性,保留写死);[LEO 1011] 25→FS.display 与深色版同档

@@ -119,8 +119,8 @@ export function HDSettingsScreen() {
           : { kind: 'nav', title: '连接服务器', desc: '登录账号,同步歌单/收藏/音效', icon: 'server', to: 'AuthLogin' },
       { kind: 'nav', title: '音源管理', desc: 'LX 音源脚本,决定本地取链能力', icon: 'wave', to: 'Sources' },
       // [D1 WP2] PRO 授权闭环(老板 15:14 五缺;MOMO 1012 追加①设备管理)
-      { kind: 'nav', title: '购买 Pro ¥19.9 · 终身', desc: '官方店铺直跳,付款后自动发码', icon: 'heart' as IconName, action: () => { if (typeof window !== 'undefined') window.open(BUY_LINKS.pro, '_blank', 'noopener'); } }, // [1012 老板④]
-      { kind: 'nav', title: '激活授权码', desc: '输入购买得到的 NM 激活码,解锁 Pro', icon: 'heart' as IconName, action: () => setLicAct(true) },
+      { kind: 'nav', title: '购买 Pro ¥19.9 · 终身', desc: '官方店铺直跳,付款后自动发码', icon: 'shield' as IconName, action: () => { if (typeof window !== 'undefined') window.open(BUY_LINKS.pro, '_blank', 'noopener'); } }, // [1012 老板④]
+      { kind: 'nav', title: '激活授权码', desc: '输入购买得到的 NM 激活码,解锁 Pro', icon: 'check' as IconName, action: () => setLicAct(true) },
       { kind: 'nav', title: '我的授权 · 设备管理', desc: '查看授权/设备列表,解绑旧设备腾名额(上限 5 台)', icon: 'server' as IconName, action: () => setLicDev(true) },
       { kind: 'nav', title: '媒体库', desc: 'Emby / Jellyfin / Navidrome / WebDAV', icon: 'music', to: 'MediaLibs' },
       ...(connected ? [
@@ -131,16 +131,16 @@ export function HDSettingsScreen() {
     '下载与备份': [
       { kind: 'select', icon: 'music', title: '下载音质', desc: '下载歌曲保存的音质档位', value: s.downloadQuality, options: QUALITY_OPTS, onPick: v => settings.set('downloadQuality', v as Quality) },
       { kind: 'select', icon: 'queue', title: '同时下载数', desc: '下载任务并发数', value: String(s.maxConcurrent), options: ['1', '2', '3', '5'], onPick: v => settings.set('maxConcurrent', Number(v)) },
-      { kind: 'toggle', icon: 'heart', title: '备份歌单', desc: '云备份时包含本地歌单', value: s.backupPlaylists, onToggle: () => settings.set('backupPlaylists', !s.backupPlaylists) },
+      { kind: 'toggle', icon: 'upload', title: '备份歌单', desc: '云备份时包含本地歌单', value: s.backupPlaylists, onToggle: () => settings.set('backupPlaylists', !s.backupPlaylists) },
       { kind: 'nav', title: '云备份(WebDAV)', desc: '配置 WebDAV,备份/恢复全部数据 · 备份内容=容器 /server/data 全量', icon: 'cloud', to: 'BackupSettings' },
       // { kind: 'toggle', icon: 'cloud', title: '播放设置自动备份', desc: '音质/主题/播放开关等随账号云端同步,多端一致', value: s.syncSettingsCloud ?? true, onToggle: () => settings.set('syncSettingsCloud' as never, !(s.syncSettingsCloud ?? true) as never) },
       { kind: 'nav', title: '立即同步播放设置', desc: '上传当前播放设置到服务器账号', icon: 'refresh', action: () => { api.settingsPush({ playQuality: s.playQuality, downloadQuality: s.downloadQuality, light: s.light, pureBlack: s.pureBlack, accent: s.accent }).then(() => toast('已上传到服务器账号')).catch(() => toast('同步失败(未连接服务器)')); } },
       { kind: 'nav', title: '下载管理', desc: '查看下载队列与失败重试', icon: 'download', to: 'Downloads' },
       { kind: 'toggle', icon: 'cloud', title: '缓存歌曲到服务器', desc: '播放时自动把歌曲存到服务器缓存,再次播放零流量。Web 版点「下载」也是存这里(浏览器不落盘)。缓存目录:/server/data/cache/用户名 · Docker 宿主机路径=启动 -v 映射', value: s.enableServerCache, onToggle: () => settings.set('enableServerCache', !s.enableServerCache) },
       // { kind: 'toggle', icon: 'cloud', title: '缓存歌词到服务器', desc: '歌词存服务器缓存目录,多端同步极速加载', value: s.enableServerLyricCache, onToggle: () => settings.set('enableServerLyricCache', !s.enableServerLyricCache) },
-      { kind: 'toggle', icon: 'heart', title: '优先播放缓存', desc: '有缓存直接用,失效自动重取', value: s.preferServerCache, onToggle: () => settings.set('preferServerCache', !s.preferServerCache) },
+      { kind: 'toggle', icon: 'download', title: '优先播放缓存', desc: '有缓存直接用,失效自动重取', value: s.preferServerCache, onToggle: () => settings.set('preferServerCache', !s.preferServerCache) },
       // { kind: 'toggle', icon: 'heart', title: '本地歌词缓存', desc: '已加载歌词存本地', value: s.enableLyricCache, onToggle: () => settings.set('enableLyricCache', !s.enableLyricCache) },
-      { kind: 'toggle', icon: 'heart', title: '播放链接缓存', desc: '缓存取链结果', value: s.enableSongUrlCache, onToggle: () => settings.set('enableSongUrlCache', !s.enableSongUrlCache) },
+      { kind: 'toggle', icon: 'globe', title: '播放链接缓存', desc: '缓存取链结果', value: s.enableSongUrlCache, onToggle: () => settings.set('enableSongUrlCache', !s.enableSongUrlCache) },
       // { kind: 'toggle', icon: 'download', title: '下载嵌入歌词', desc: '标签+.lrc 写入文件', value: s.embedLyricToFile, onToggle: () => settings.set('embedLyricToFile', !s.embedLyricToFile) },
       // { kind: 'toggle', icon: 'download', title: '下载独立目录', desc: '开:「下载」保存到下载目录 /server/data/music,与播放缓存分开管理 · 关:下载文件也存入缓存目录 /server/data/cache/用户名(两类文件混放)', value: s.enableOnlyDownloadMode, onToggle: () => settings.set('enableOnlyDownloadMode', !s.enableOnlyDownloadMode) },
       // { kind: 'toggle', icon: 'refresh', title: '下载目录歌曲洗版', desc: '自动替换为高音质版本', value: s.enableRemaster, onToggle: () => settings.set('enableRemaster', !s.enableRemaster) },
