@@ -41,7 +41,7 @@ export function mergeTranslation(base: LyricLine[], tRaw: string): LyricLine[] {
 export function findActiveLine(lines: LyricLine[], pos: number): number {
   let idx = -1;
   for (let i = 0; i < lines.length; i++) {
-    if (lines[i].t <= pos + 0.3) idx = i;
+    if (lines[i].t <= pos) idx = i; // 1028 老板实测(歌词比歌快一行):去 0.3s 提前量——行密集处 300ms 提前点亮下一行=视觉快一行
     else break;
   }
   return idx;
