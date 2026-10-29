@@ -378,7 +378,8 @@ export function HDMain() {
         </ScrollView>
         {/* lx85:设置项不贴底——留出焦点环完整显示空间(老板:太靠底被裁切) */}
         {/* v1.2.5:web 设置也走 railNav(内页化,侧栏恒固定);TV 保持原 navigate——零行为差异 */}
-        <View style={st.settingsDock}>
+        <View style={[st.settingsDock, { paddingBottom: Math.max(botLift, 8) }]}>
+          {/* 1028 车机适配:settingsDock 随播放条同抬(botLift)——车机底部 bar 不再盖设置入口(老板实测⑥) */}
           <NavItem icon="settings" label="设置" active={innerRoute === 'Settings'} onPress={() => (IS_WEB ? railNav('Settings') : hdNav()?.navigate('Settings'))} />
           {IS_WEB ? (
             <NavItem icon="server" label="后台管理" onPress={() => {

@@ -452,7 +452,7 @@ export function CloudLibraryScreen() {
               return azRow(s, 'mgmt:', azMgmt.firstIds, (
                 <SongRow
                   key={keyOf(s)}
-                  song={it}
+                  song={s}
                   onPress={() => toggleSel(s)}
                   leading={<View style={[c.chk, sel.has(keyOf(s)) && c.chkOn]}>{sel.has(keyOf(s)) ? <Icon name="check" size={12} color="#fff" /> : null}</View>}
                   extra={prog != null ? (
@@ -481,7 +481,7 @@ export function CloudLibraryScreen() {
             {filtered.map((s, i) => {
               const it = toSongItem(s);
               return azRow(s, 'flt:', azFilter.firstIds, (
-                <SongRow key={keyOf(s)} song={it} playing={current?.hash === s.filename}
+                <SongRow key={keyOf(s)} song={s} playing={current?.hash === s.filename}
                   isNew={!!s.mtime && Date.now() - s.mtime < WEEK_MS}
                   onPress={() => void play(i, filtered)} onMore={() => rowMenu(s)} />
               ));
@@ -501,14 +501,14 @@ export function CloudLibraryScreen() {
           return selMode ? (
             <SongRow
               key={keyOf(s)}
-              song={it}
+              song={s}
               onPress={() => toggleSel(s)}
               leading={<View style={[c.chk, sel.has(keyOf(s)) && c.chkOn]}>{sel.has(keyOf(s)) ? <Icon name="check" size={12} color="#fff" /> : null}</View>}
             />
           ) : azRow(s, 'browse:', azBrowse.firstIds, (
             <SongRow
               key={keyOf(s)}
-              song={it}
+              song={s}
               playing={current?.hash === s.filename}
               onPress={() => void play(idx, songs)}
               onMore={() => rowMenu(s)}
@@ -593,7 +593,7 @@ export function CloudLibraryScreen() {
                   {recentCloud.map((s, i) => {
                     const it = toSongItem(s);
                     return (
-                      <SongRow key={keyOf(s)} song={it} playing={current?.hash === s.filename}
+                      <SongRow key={keyOf(s)} song={s} playing={current?.hash === s.filename}
                         isNew={!!s.mtime && Date.now() - s.mtime < WEEK_MS}
                         onPress={() => void play(i, recentCloud)} onMore={() => rowMenu(s)} />
                     );
@@ -648,7 +648,7 @@ export function CloudLibraryScreen() {
                           <Text style={c.albC}>{list.length} 首</Text>
                         </View>
                         {list.map(s => { const it = toSongItem(s); return (
-                          <SongRow key={keyOf(s)} song={it} playing={current?.hash === s.filename} onPress={() => void play(songs.indexOf(s), songs)} onMore={() => rowMenu(s)} />
+                          <SongRow key={keyOf(s)} song={s} playing={current?.hash === s.filename} onPress={() => void play(songs.indexOf(s), songs)} onMore={() => rowMenu(s)} />
                         ); })}
                       </View>
                     ))}

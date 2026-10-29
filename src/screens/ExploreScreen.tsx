@@ -249,7 +249,7 @@ export function ExploreScreen() {
             onPress={() => navigation.navigate('Search' as never)}
           >
             <Icon name="search" size={20} color={C.text2} />
-            <Text style={st.searchPlaceholder}>{searchHints[tab]}</Text>
+            <Text style={st.searchPlaceholder} numberOfLines={1} ellipsizeMode="tail">{searchHints[tab]}</Text>
             <View style={{ flex: 1 }} />
             <Icon name="chevronright" size={18} color={C.text3} />
           </TouchableOpacity>

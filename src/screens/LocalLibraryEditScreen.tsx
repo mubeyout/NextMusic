@@ -318,7 +318,7 @@ const st = StyleSheet.create({
   optTitle: { color: C.text, fontSize: FS.md, fontWeight: FW.medium },
   optSub: { color: C.text3, fontSize: FS.sm, lineHeight: 15, marginTop: 2 },
   // 按钮
-  primaryBtn: { flexDirection: 'row', height: 46, borderRadius: 12, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', gap: SP.sm, marginTop: 8 },
+  primaryBtn: { flexDirection: 'row', height: 46, borderRadius: 12, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', gap: SP.sm, marginTop: 8, alignSelf: 'stretch' }, // 1028 老板实测:授权卡内按钮被内容收缩成窄条,撑满卡宽
   primaryBtnText: { color: C.onBrand, fontSize: FS.lg, fontWeight: FW.semibold },
   ghostBtn: { flex: 1, height: 46, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
   ghostBtnText: { color: C.text, fontSize: FS.lg, fontWeight: FW.medium },
