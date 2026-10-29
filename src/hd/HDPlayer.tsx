@@ -501,10 +501,10 @@ const stDark: Record<string, ViewStyle | TextStyle> = {
   sub: { color: T.light ? '#3A3F46' : '#ffffffb3', fontSize: FS.lg }, // [浅色修] artwork 邻接双态
   lyricsBox: { flex: 1, gap: SP.md, justifyContent: 'center', alignItems: 'flex-start' }, // 设计稿:歌词左对齐
   // 歌词窗 web 限高: 运行时算(50vh), // lx93:垂直居中(顶贴→太靠上),窗口 7 行填满空隙
-  lyric: { color: T.light ? '#62676E' : '#ffffff7d', fontSize: FS.headline, lineHeight: 24, fontWeight: FW.medium }, // [浅色修]
-  lyricOn: { color: C.white, fontSize: FS.display, lineHeight: 31, fontWeight: FW.heavy, textShadowColor: 'rgba(255,255,255,.3)', textShadowRadius: 12, textShadowOffset: { width: 0, height: 0 } }, // [LEO 1011] 22 档外→display(24)(KAI 修复:注释吞闭括号)
-  lyricTr: { color: '#FFFFFF55', fontSize: FS.body, lineHeight: 17, marginTop: 2 },
-  lyricTrOn: { color: '#FFFFFF99' },
+  lyric: { color: T.light ? 'rgba(38,40,44,.8)' : '#ffffffcc', fontSize: FS.headline, lineHeight: 24, fontWeight: FW.medium }, // 1028 老板规格:浅色更黑/深色更白
+  lyricOn: { color: C.brand, fontSize: FS.display, lineHeight: 31, fontWeight: FW.heavy, textShadowColor: 'transparent', textShadowRadius: 0, textShadowOffset: { width: 0, height: 0 } }, // 1028 老板规格:当前行用主题色+去投影(荧光退役)
+  lyricTr: { color: '#FFFFFF80', fontSize: FS.body, lineHeight: 17, marginTop: 2 },
+  lyricTrOn: { color: '#FFFFFFb3' },
   noLyric: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: SP.lg },
   noLyricText: { color: T.light ? '#62676E' : '#ffffff80', fontSize: FS.md }, // [浅色修]
   progRow: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, marginBottom: 4 },
@@ -548,10 +548,10 @@ const stLight = {
   srcTag: { color: 'rgba(38,40,44,.6)', fontSize: FS.xs, letterSpacing: 2, fontWeight: FW.semibold },
   title: { color: '#26282C', fontSize: FS.display, fontWeight: FW.heavy }, // 浅色覆写值(启动期 StyleSheet 求值特性,保留写死);[LEO 1011] 25→FS.display 与深色版同档
   sub: { color: 'rgba(38,40,44,.7)', fontSize: FS.lg },
-  lyric: { color: 'rgba(38,40,44,.55)', fontSize: FS.headline, lineHeight: 24, fontWeight: FW.medium },
-  lyricOn: { color: '#26282C', fontSize: FS.display, lineHeight: 31, fontWeight: FW.heavy, textShadowColor: 'transparent', textShadowRadius: 0, textShadowOffset: { width: 0, height: 0 } }, // [LEO 1011] 22 档外→display(24)(KAI 修复:注释吞闭括号)
-  lyricTr: { color: 'rgba(38,40,44,.35)', fontSize: FS.body, lineHeight: 17, marginTop: 2 },
-  lyricTrOn: { color: 'rgba(38,40,44,.6)' },
+  lyric: { color: 'rgba(38,40,44,.8)', fontSize: FS.headline, lineHeight: 24, fontWeight: FW.medium }, // 1028 老板规格:浅色更黑
+  lyricOn: { color: C.brand, fontSize: FS.display, lineHeight: 31, fontWeight: FW.heavy, textShadowColor: 'transparent', textShadowRadius: 0, textShadowOffset: { width: 0, height: 0 } }, // 1028 老板规格:当前行主题色
+  lyricTr: { color: 'rgba(38,40,44,.5)', fontSize: FS.body, lineHeight: 17, marginTop: 2 },
+  lyricTrOn: { color: 'rgba(38,40,44,.75)' },
   noLyricText: { color: 'rgba(38,40,44,.5)', fontSize: FS.md },
   time: { color: 'rgba(38,40,44,.7)', fontSize: FS.body, fontVariant: ['tabular-nums'], width: 42, textAlign: 'center' },
   trackRest: { ...stDark.trackRest, backgroundColor: 'rgba(31,35,41,.14)' },
@@ -562,8 +562,7 @@ const stLight = {
 };
 type PlayerStyles = Record<string, ViewStyle | TextStyle>;
 // 直接样式对象(不经 StyleSheet.create):双盘在渲染层已定型,create 泛型对联合盘推断崩——RN style prop 原生接受普通样式对象
-// 1028 老板令(播放页歌名黑字看不见):封面系背景(blur 虚化/dark)恒深色盘白字——浅色蒙版 82% 盖不住封面透出暗色,黑字不可辨;仅 solid 纯色背景才随主题
-const st: PlayerStyles = (settings.get().light && settings.get().playerBackground !== 'blur' ? stLight : stDark) as PlayerStyles;
+const st: PlayerStyles = (settings.get().light ? stLight : stDark) as PlayerStyles; // 1028 老板澄清:歌名随主题切换是对的(「之前挺好的」),恒白字修复误伤已回滚
 
 // ===== 桌面(网易云参照)样式 =====
 // v3.4: 工具按钮 hover 浮出 tip(老板:按钮选项改 tips 上浮)
@@ -603,10 +602,10 @@ const stW = StyleSheet.create({
   title: { color: C.text, fontSize: FS.hero, fontWeight: FW.heavy },
   sub: { color: C.text2, fontSize: FS.lg, marginBottom: 12 },
   lyrics: { minHeight: 300, gap: SP.xl, justifyContent: 'center' },
-  lyric: { color: T.light ? '#26282C99' : '#FFFFFF73', fontSize: FS.title, lineHeight: 24, fontWeight: FW.medium },
-  lyricOn: { color: C.text, fontSize: FS.h1, lineHeight: 31, fontWeight: FW.heavy },
-  lyricTr: { color: T.light ? '#26282C55' : '#FFFFFF45', fontSize: FS.body, lineHeight: 17, marginTop: 1 },
-  lyricTrOn: { color: T.light ? '#26282C99' : '#FFFFFF8C' },
+  lyric: { color: T.light ? 'rgba(38,40,44,.8)' : '#ffffffcc', fontSize: FS.title, lineHeight: 24, fontWeight: FW.medium }, // 1028 老板规格:对比度加强
+  lyricOn: { color: C.brand, fontSize: FS.h1, lineHeight: 31, fontWeight: FW.heavy }, // 1028 老板规格:当前行用主题色
+  lyricTr: { color: T.light ? 'rgba(38,40,44,.5)' : '#FFFFFF80', fontSize: FS.body, lineHeight: 17, marginTop: 1 },
+  lyricTrOn: { color: T.light ? 'rgba(38,40,44,.75)' : '#FFFFFFb3' },
   maskTop: { position: 'absolute', top: -8, left: -16, right: -16, height: 44, zIndex: 2 },
   maskBottom: { position: 'absolute', bottom: -8, left: -16, right: -16, height: 44, zIndex: 2 },
   noLyric: { alignItems: 'center', gap: SP.lg, marginTop: 30 },
