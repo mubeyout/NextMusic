@@ -76,8 +76,9 @@ export function BoardsSquareScreen() {
                   start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                   style={st.card}
                 >
-                  <Text style={st.name} numberOfLines={2}>{b.name}</Text>
-                  <Text style={st.sub}>{SOURCES.find(s => s.key === src)?.sub ?? '榜单'} ›</Text>
+                  {/* 1028 老板令(彩色卡恒白·终局修):黑遮罩卡上行内恒白叠加(DOM 实证定位) */}
+                  <Text style={[st.name, { color: '#FFFFFF' }]} numberOfLines={2}>{b.name}</Text>
+                  <Text style={[st.sub, { color: '#ffffffcc' }]}>{SOURCES.find(s => s.key === src)?.sub ?? '榜单'} ›</Text>
                 </LinearGradient>
               </TouchableOpacity>
             ))}

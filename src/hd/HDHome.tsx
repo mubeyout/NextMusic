@@ -228,10 +228,11 @@ function BigCard({ colors, badge, title, sub, onPress, busy }: { colors: [string
       {...(IS_WEB ? { onHoverIn: () => { t.current && clearTimeout(t.current); t.current = setTimeout(() => setHov(true), 80); }, onHoverOut: () => { t.current && clearTimeout(t.current); setHov(false); } } as Record<string, unknown> : {})}>
       <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.bigBg} />
       <View style={st.big}>
-        <Text style={st.bigBadge}>{badge}</Text>
+        {/* 1028 老板令(彩色卡恒白·终局修):行内恒白叠加——无论样式层哪层被主题污染,最终恒白(DOM 实证定位) */}
+        <Text style={[st.bigBadge, { color: '#ffffffcc' }]}>{badge}</Text>
         <View style={{ flex: 1, minWidth: 0, paddingRight: 6 }}>
-          <Text style={st.bigTitle} numberOfLines={1}>{title}</Text>
-          <Text style={st.bigSub} numberOfLines={1}>{sub}</Text>
+          <Text style={[st.bigTitle, { color: '#FFFFFF' }]} numberOfLines={1}>{title}</Text>
+          <Text style={[st.bigSub, { color: '#ffffffa8' }]} numberOfLines={1}>{sub}</Text>
         </View>
         <View style={st.bigPlay}>
           {busy ? <ActivityIndicator size="small" color="#fff" /> : <Icon name="play" size={11} color="#fff" />}
