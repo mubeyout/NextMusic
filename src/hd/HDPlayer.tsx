@@ -297,7 +297,7 @@ export function HDPlayer() {
               /* v3.39(老板 1011 三稿):web 盘体=brand 位图 clover.png,封面穿透明窗 */
               /* v3.36:容器层外阴影(draft-2 .vinyl:0 24px 70px 黑55%@230,按盘径等比;圆形 borderRadius
                  使阴影随盘缘正圆——旋转不变,svg 根不背锅见 Fix 2026-09-14) */
-              <View style={{ position: 'absolute', top: '50%', left: '50%', width: vinylSize, height: vinylSize, marginLeft: -Math.round(vinylSize / 2), marginTop: -Math.round(vinylSize / 2), borderRadius: Math.round(vinylSize / 2), boxShadow: `0 ${Math.round(24 * vinylSize / 230)}px ${Math.round(70 * vinylSize / 230)}px rgba(0,0,0,.55)`, transform: [{ rotate: String(spinDeg) }] }}>
+              <View style={{ position: 'absolute', top: '50%', left: '50%', width: vinylSize, height: vinylSize, marginLeft: -Math.round(vinylSize / 2), marginTop: -Math.round(vinylSize / 2), borderRadius: Math.round(vinylSize / 2), transform: [{ rotate: String(spinDeg) }] }}>
                 {HD_VINYL_DISC(vinylSize, playing, current.img ? fixCoverUrl(current.img) : undefined)}
               </View>
             ) : (

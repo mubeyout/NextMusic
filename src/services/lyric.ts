@@ -7,13 +7,16 @@ export interface LyricLine {
 
 export function parseLrc(raw: string): LyricLine[] {
   const map = new Map<number, LyricLine>();
+  let offsetMs = 0; // 1028 老板实测(歌词快一句): LRC [offset:±ms] 标签——正值提前/负值延后,此前未解析被丢弃
   for (const line of raw.split('\n')) {
+    const off = /^\s*\[offset:\s*(-?\d+)\s*\]\s*$/i.exec(line);
+    if (off) { offsetMs = +off[1]; continue; }
     const times: number[] = [];
     let rest = line.trim();
     let m: RegExpExecArray | null;
     const re = /\[(\d+):(\d+)(?:[.:](\d+))?\]/g;
     while ((m = re.exec(rest))) {
-      const t = +m[1] * 60 + +m[2] + (m[3] ? +('0.' + m[3]) : 0);
+      const t = +m[1] * 60 + +m[2] + (m[3] ? +('0.' + m[3]) : 0) - offsetMs / 1000;
       times.push(t);
     }
     if (!times.length) continue;

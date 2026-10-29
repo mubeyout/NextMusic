@@ -219,10 +219,7 @@ function BigCard({ colors, badge, title, sub, onPress, busy }: { colors: [string
     if (el && el.classList) el.classList.add('nm-card');
   }, []);
   const rgb = (hex: string) => { const n = parseInt(hex.slice(1), 16); return `rgb(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255})`; };
-  const webSh: Record<string, unknown> | null = IS_WEB ? {
-    shadowColor: rgb(colors[1]), shadowOffset: { width: 0, height: hov ? 14 : 8 },
-    shadowOpacity: hov ? 0.42 : 0.26, shadowRadius: hov ? 26 : 16,
-  } : null;
+  const webSh: Record<string, unknown> | null = null; // 1028 老板令(去投影):双大卡彩色 hover 影退役(与全站去投影令一致)
   return (
     <HDTouch activeOpacity={0.9} onPress={onPress} zoom={1.04}
       ref={elRef as never}
