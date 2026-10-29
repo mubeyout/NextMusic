@@ -20,7 +20,7 @@ import { lxapi } from '../services/lxapi';
 import { hdNav } from './hdnav';
 import { cacheStale, cacheSet } from './hdcache';
 import type { SongItem } from '../services/server';
-import { FW, SP } from '../theme/tokens';
+import {GRID,  FW, SP } from '../theme/tokens';
 
 interface PodChannel { id: string; name: string; query: string; sub: string; source: 'kw' | 'kg' | 'wy'; }
 
@@ -99,7 +99,7 @@ export function HDPodcast() {
       </View>
 
       {/* 频道卡(桌面同构:自适应网格+彩色投影) */}
-      <HDGrid min={132 * (H.font.sm / 10)}>
+      <HDGrid min={GRID.hdMin * (H.font.sm / 10)}>
         {POD_CHANNELS.map((ch, ci) => {
           const f = feeds[ch.id] || [];
           // lx88(老板反馈):底角也要圆角——卡加底色+全圆角 12(overflow 裁剪封面),环统一 14

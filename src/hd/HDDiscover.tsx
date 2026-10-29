@@ -17,7 +17,7 @@ import type { SongItem } from '../services/server';
 import { toast } from '../components/Dialog';
 import { hdNav } from './hdnav';
 import { cacheStale, cacheSet } from './hdcache';
-import { FS, FW, SP } from '../theme/tokens';
+import {GRID,  FS, FW, SP } from '../theme/tokens';
 
 type PL = { id: string; name: string; author?: string; total?: number | string; img?: string; play_count?: string; source?: string };
 type Tag = { id: string; name: string };
@@ -148,7 +148,7 @@ export function HDDiscover() {
       {pls == null ? (
         <View style={st.tip}><ActivityIndicator color={C.brand} size="large" /><Text style={st.tipText}>歌单加载中…</Text></View>
       ) : (
-        <HDGrid min={128 * (H.font.sm / 10)} onCols={setCols}>
+        <HDGrid min={GRID.hdMin * (H.font.sm / 10)} onCols={setCols}>
           {pls.map((pl, i) => (
             <PLCard key={`${pl.id}_${i}`} pl={pl} i={i} src={src} onOpen={() => open(pl)}
               busy={busyId === pl.id}

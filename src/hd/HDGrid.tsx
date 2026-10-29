@@ -4,7 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 export function HDGrid({
-  min = 124, gap = 12, maxCols = 9, minCols = 3, children, onCols,
+  min = 128, // 1028 老板令(一样大):默认基数统一 128
+  gap = 12, maxCols = 9, minCols = 3, children, onCols,
 }: {
   /** 单卡最小宽(dp);列数 = floor((容器宽+gap)/(min+gap)),再夹在 [minCols, maxCols] */
   min?: number; gap?: number; maxCols?: number; minCols?: number;

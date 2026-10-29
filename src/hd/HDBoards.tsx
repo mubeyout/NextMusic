@@ -16,7 +16,7 @@ import type { SongItem } from '../services/server';
 import { toast } from '../components/Dialog';
 import { hdNav } from './hdnav';
 import { cacheStale, cacheSet } from './hdcache';
-import { FS, FW, SP } from '../theme/tokens';
+import {GRID,  FS, FW, SP } from '../theme/tokens';
 
 type Board = { id: string; name: string; bangid: string; image?: string };
 const SOURCES: { key: string; label: string }[] = [
@@ -88,7 +88,7 @@ export function HDBoards() {
       ) : (
         // lx83(老板反馈):封面顶角补圆角随卡 12——卡全圆角,环统一 14 贴附;zoom 悬浮放大
         // v1.2.6 web:彩色投影+hover 上浮(老板:卡片要 hover;elevation 在 RNW 不渲染)+overflow hidden 修渐变圆角
-        <HDGrid min={128 * (H.font.sm / 10)}>
+        <HDGrid min={GRID.hdMin * (H.font.sm / 10)}>
           {boards.map((b, i) => (
             <BoardCard key={b.id} b={b} i={i} src={src} busy={busy} onOpen={() => openBoard(b)} />
           ))}
