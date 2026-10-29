@@ -1,6 +1,9 @@
 // HD 设置页 —— 对齐桌面版 SettingsScreen:顶部 tab + 行式设置卡
 // 行 = 标题/描述 + 右侧控件;TV 交互:整行可聚焦,CENTER 切换开关/循环选项/进入子页
 import React, { useState } from 'react';
+import { LicenseActivate } from '../components/LicenseActivate';
+import { LicenseDevices } from '../components/LicenseDevices'; // [D1 WP2] 设备管理(MOMO 1012 追加①)
+import { BUY_LINKS } from '../services/benefits'; // [1012] 购买直跳
 import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 const IS_WEB = Platform.OS === 'web';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,9 +19,10 @@ import { APP_VERSION, IS_HD } from '../services/appversion';
 import { toast } from '../components/Dialog'; // v3.28:漏 import(5 处调用裸用)
 import { api } from '../services/server';
 import { hdNav } from './hdnav';
-import { effectiveBottomInset } from './hdstyle';
 import { NativeModules } from 'react-native';
 import { SelectSheet } from '../components/SelectSheet';
+import { useFeatureGate, FeatureGateModal } from '../components/FeatureGate';
+import { FS, FW, SP } from '../theme/tokens';
 
 const Restart = NativeModules.AppRestart as { restart: () => void } | undefined;
 const ACCENTS = [
@@ -45,7 +49,7 @@ const TABS = ['外观与界面', '播放体验', '账号与同步', '下载与�
 type Tab = typeof TABS[number];
 
 type RowDef =
-  | { kind: 'toggle'; title: string; desc?: string; icon?: IconName; value: boolean; onToggle: () => void }
+  | { kind: 'toggle'; title: string; desc?: string; icon?: IconName; value: boolean; locked?: boolean; onToggle: () => void }
   | { kind: 'select'; title: string; desc?: string; icon?: IconName; value: string; options: string[]; onPick: (v: string) => void }
   | { kind: 'nav'; title: string; desc?: string; icon?: IconName; to?: string; action?: () => void }
   | { kind: 'info'; title: string; desc?: string; icon?: IconName; value: string };
@@ -57,11 +61,16 @@ export function HDSettingsScreen() {
   const s = useSettings();
   const { connected, base, username, token, setAuth, disconnectServer } = useApp(); // lx184:token/setAuth 补齐(三态+退出登录)
   const { playing } = usePlayer();
+  // D2 lyrics_deep：翻译/罗马音=深度歌词功能——开启处拦免费（基础歌词显示不拦；OFF 恒可关=存量友好）
+  const lyrGate = useFeatureGate('lyrics_deep');
+  const lyrOn = (key: 'showLyricTranslation' | 'showLyricRoma') => lyrGate.guard(() => settings.set(key, true));
 
   const QUALITY_OPTS: string[] = ['128k', '320k', 'flac'];
 
   // v2 功能对齐:服务器缓存管理面板
   const [cacheOpen, setCacheOpen] = useState(false);
+  const [licAct, setLicAct] = useState(false);
+  const [licDev, setLicDev] = useState(false); // [D1 WP2] 授权弹层
   const [cacheStats, setCacheStats] = useState<{ totalSize: number; fileCount: number } | null>(null);
   // lx179(B):缓存列表状态 undefined=未加载 null=失败 数组=列表
   const [cacheFiles, setCacheFiles] = useState<{ name: string; size: number }[] | null | undefined>(undefined);
@@ -77,10 +86,8 @@ export function HDSettingsScreen() {
       { kind: 'toggle', icon: 'palette', title: '纯黑背景', desc: 'OLED 友好的纯黑底色(仅深色模式)', value: s.pureBlack, onToggle: () => { settings.set('pureBlack', !s.pureBlack); if (IS_WEB) { hdWebReload(); } else hdRestart(playing); } },
       { kind: 'select', icon: 'palette', title: '界面主题', desc: IS_WEB ? '深色/浅色即时切换' : '深色(车机/TV 默认)或浅色,切换后自动重启生效', value: s.light ? '浅色' : '深色', options: ['深色', '浅色'], onPick: v => { settings.set('light', v === '浅色'); if (IS_WEB) { hdWebReload(); } else hdRestart(playing); } },
       { kind: 'select', icon: 'palette', title: '强调色', desc: IS_WEB ? '全局品牌色(即时生效)' : '全局品牌色(按钮/高亮/选中态),切换后自动重启生效', value: ACCENTS.find(a => a.color === s.accent)?.name ?? 'Next 绿', options: ACCENTS.map(a => a.name), onPick: v => { const hit = ACCENTS.find(a => a.name === v); if (hit) { settings.set('accent', hit.color); if (IS_WEB) { hdWebReload(); } else hdRestart(playing); } } },
-      // 1028 车机适配:底部安全让位(星愿实测系统栏 112px,报告 tmp-re-apk/星愿-底部bar机制与App避让报告.md)即时生效
-      { kind: 'select', icon: 'fullscreen', title: '底部安全让位', desc: '车机系统栏遮挡时调高;0=自动(车机默认112px)', value: `${effectiveBottomInset()}px`, options: ['0px', '40px', '60px', '80px', '100px', '120px'], onPick: v => settings.set('hdBottomInset', parseInt(v, 10) || 0) },
-      { kind: 'toggle', icon: 'wave', title: '歌词翻译', desc: '歌词下方显示翻译', value: s.showLyricTranslation, onToggle: () => settings.set('showLyricTranslation', !s.showLyricTranslation) },
-      { kind: 'toggle', icon: 'wave', title: '歌词罗马音', desc: '显示罗马音注音', value: s.showLyricRoma, onToggle: () => settings.set('showLyricRoma', !s.showLyricRoma) },
+      { kind: 'toggle', icon: 'wave', title: '歌词翻译', desc: '歌词下方显示翻译', value: s.showLyricTranslation, locked: lyrGate.locked && !s.showLyricTranslation, onToggle: () => (s.showLyricTranslation ? settings.set('showLyricTranslation', false) : lyrOn('showLyricTranslation')) },
+      { kind: 'toggle', icon: 'wave', title: '歌词罗马音', desc: '显示罗马音注音', value: s.showLyricRoma, locked: lyrGate.locked && !s.showLyricRoma, onToggle: () => (s.showLyricRoma ? settings.set('showLyricRoma', false) : lyrOn('showLyricRoma')) },
       { kind: 'toggle', icon: 'wave', title: '歌词荧光效果', desc: '当前行荧光高亮', value: s.enableLyricGlow, onToggle: () => settings.set('enableLyricGlow', !s.enableLyricGlow) },
       { kind: 'select', icon: 'wave', title: '播放页背景', desc: '封面虚化/纯色/黑色', value: s.playerBackground === 'blur' ? '封面虚化' : s.playerBackground === 'solid' ? '纯色背景' : '黑色背景', options: ['封面虚化', '纯色背景', '黑色背景'], onPick: v => settings.set('playerBackground', v === '封面虚化' ? 'blur' : v === '纯色背景' ? 'solid' : 'dark') },
       // [audit 20260921] 以下死开关隐藏(设置审计:全仓零消费者;存储 key 保留)——接线或删除待拍板
@@ -88,7 +95,8 @@ export function HDSettingsScreen() {
       { kind: 'toggle', icon: 'wave', title: '播放页可视化', desc: '频谱环/粒子', value: s.showDetailVisualizer, onToggle: () => settings.set('showDetailVisualizer', !s.showDetailVisualizer) },
       { kind: 'toggle', icon: 'fullscreen', title: '屏幕常亮', desc: '播放时阻止休眠', value: s.keepScreenAwake, onToggle: () => settings.set('keepScreenAwake', !s.keepScreenAwake) },
       { kind: 'toggle', icon: 'edit', title: '键盘快捷键', desc: '空格播放 · N/P 切歌 · Alt+←→ 切歌/快进 · ⌘F 搜索', value: s.enableKeyboardShortcuts, onToggle: () => settings.set('enableKeyboardShortcuts', !s.enableKeyboardShortcuts) },
-      { kind: 'select', icon: 'fullscreen', title: '界面缩放', desc: '全局字号/触点/行高缩放(桌面即时生效,手机/TV 切换后重启生效)', value: s.uiScale || '100%', options: IS_WEB ? ['100%', '110%', '125%', '150%', '175%'] : ['90%', '100%', '110%', '125%', '150%'], onPick: v => { settings.set('uiScale', v); if (IS_WEB) { const z = Math.max(0.75, Math.min(2, Number(v.replace('%', '')) / 100)); document.documentElement.style.zoom = String(z); } else hdRestart(playing); } }, // v3.28:tsconfig 补 dom 后 document 直用;1028 原生档补 150%(车机默认)
+      { kind: 'select', icon: 'fullscreen', title: '车机底部补偿', desc: '系统栏遮挡播放器底部时增大让位（车机自绘 bar 不上报 insets 时用;即时生效）', value: String(s.hdBottomInset || 0), options: ['0', '16', '24', '32', '48', '64', '80', '96', '120'], onPick: v => settings.set('hdBottomInset', Number(v)) },
+      { kind: 'select', icon: 'fullscreen', title: '界面缩放', desc: '全局字号/触点/行高缩放(桌面即时生效,手机/TV 切换后重启生效)', value: s.uiScale || '100%', options: IS_WEB ? ['100%', '110%', '125%', '150%', '175%'] : ['90%', '100%', '110%', '125%'], onPick: v => { settings.set('uiScale', v); if (IS_WEB) { const z = Math.max(0.75, Math.min(2, Number(v.replace('%', '')) / 100)); document.documentElement.style.zoom = String(z); } else hdRestart(playing); } }, // v3.28:tsconfig 补 dom 后 document 直用
     ],
     '播放体验': [
       { kind: 'select', icon: 'music', title: '默认音质', desc: '在线播放优先选择的音质档位', value: s.playQuality, options: QUALITY_OPTS, onPick: v => settings.set('playQuality', v as Quality) },
@@ -111,6 +119,10 @@ export function HDSettingsScreen() {
           ? { kind: 'nav', title: '登录服务器', desc: `${base} 可达 · 登录后同步歌单/收藏/音效`, icon: 'server', to: 'AuthLogin' }
           : { kind: 'nav', title: '连接服务器', desc: '登录账号,同步歌单/收藏/音效', icon: 'server', to: 'AuthLogin' },
       { kind: 'nav', title: '音源管理', desc: 'LX 音源脚本,决定本地取链能力', icon: 'wave', to: 'Sources' },
+      // [D1 WP2] PRO 授权闭环(老板 15:14 五缺;MOMO 1012 追加①设备管理)
+      { kind: 'nav', title: '购买 Pro ¥19.9 · 终身', desc: '官方店铺直跳,付款后自动发码', icon: 'heart' as IconName, action: () => { if (typeof window !== 'undefined') window.open(BUY_LINKS.pro, '_blank', 'noopener'); } }, // [1012 老板④]
+      { kind: 'nav', title: '激活授权码', desc: '输入购买得到的 NM 激活码,解锁 Pro', icon: 'heart' as IconName, action: () => setLicAct(true) },
+      { kind: 'nav', title: '我的授权 · 设备管理', desc: '查看授权/设备列表,解绑旧设备腾名额(上限 5 台)', icon: 'server' as IconName, action: () => setLicDev(true) },
       { kind: 'nav', title: '媒体库', desc: 'Emby / Jellyfin / Navidrome / WebDAV', icon: 'music', to: 'MediaLibs' },
       ...(connected ? [
         ...(token ? [{ kind: 'nav' as const, title: '退出登录', desc: '保留服务器地址,清除登录态', icon: 'close' as IconName, action: () => { setAuth(null as never, null as never); toast('已退出登录'); } }] : []),
@@ -125,7 +137,7 @@ export function HDSettingsScreen() {
       // { kind: 'toggle', icon: 'cloud', title: '播放设置自动备份', desc: '音质/主题/播放开关等随账号云端同步,多端一致', value: s.syncSettingsCloud ?? true, onToggle: () => settings.set('syncSettingsCloud' as never, !(s.syncSettingsCloud ?? true) as never) },
       { kind: 'nav', title: '立即同步播放设置', desc: '上传当前播放设置到服务器账号', icon: 'refresh', action: () => { api.settingsPush({ playQuality: s.playQuality, downloadQuality: s.downloadQuality, light: s.light, pureBlack: s.pureBlack, accent: s.accent }).then(() => toast('已上传到服务器账号')).catch(() => toast('同步失败(未连接服务器)')); } },
       { kind: 'nav', title: '下载管理', desc: '查看下载队列与失败重试', icon: 'download', to: 'Downloads' },
-      { kind: 'toggle', icon: 'cloud', title: '缓存歌曲到服务器', desc: '仅控制「播放后自动」缓存。手动点「下载/缓存到服务器」不受此开关影响(用户意图优先)。缓存目录:/server/data/cache/用户名 · Docker 宿主机路径=启动 -v 映射', value: s.enableServerCache, onToggle: () => settings.set('enableServerCache', !s.enableServerCache) },
+      { kind: 'toggle', icon: 'cloud', title: '缓存歌曲到服务器', desc: '播放时自动把歌曲存到服务器缓存,再次播放零流量。Web 版点「下载」也是存这里(浏览器不落盘)。缓存目录:/server/data/cache/用户名 · Docker 宿主机路径=启动 -v 映射', value: s.enableServerCache, onToggle: () => settings.set('enableServerCache', !s.enableServerCache) },
       // { kind: 'toggle', icon: 'cloud', title: '缓存歌词到服务器', desc: '歌词存服务器缓存目录,多端同步极速加载', value: s.enableServerLyricCache, onToggle: () => settings.set('enableServerLyricCache', !s.enableServerLyricCache) },
       { kind: 'toggle', icon: 'heart', title: '优先播放缓存', desc: '有缓存直接用,失效自动重取', value: s.preferServerCache, onToggle: () => settings.set('preferServerCache', !s.preferServerCache) },
       // { kind: 'toggle', icon: 'heart', title: '本地歌词缓存', desc: '已加载歌词存本地', value: s.enableLyricCache, onToggle: () => settings.set('enableLyricCache', !s.enableLyricCache) },
@@ -164,7 +176,7 @@ export function HDSettingsScreen() {
             <View style={{ marginTop: 8, maxHeight: 220 }}>
               <ScrollView showsVerticalScrollIndicator>
                 {cacheFiles.slice(0, 50).map(f => (
-                  <Text key={f.name} numberOfLines={1} style={{ color: C.text2, fontSize: 11.5, lineHeight: 20 }}>
+                  <Text key={f.name} numberOfLines={1} style={{ color: C.text2, fontSize: FS.body, lineHeight: 20 }}>
                     · {f.name} <Text style={{ color: C.text3 }}>{fmtBytes(f.size)}</Text>
                   </Text>
                 ))}
@@ -173,7 +185,7 @@ export function HDSettingsScreen() {
           ) : (
             <Text style={[st.cacheInfo, { color: C.text3, marginTop: 4 }]}>缓存为空</Text>
           )}
-          <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
+          <View style={{ flexDirection: 'row', gap: SP.lg, marginTop: 18 }}>
             <HDTouch style={st.cacheBtn} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }} onPress={() => { loadCacheStats(); setCacheFiles(undefined); toast('已刷新'); }}>
               <Text style={st.cacheBtnText}>刷新统计</Text>
             </HDTouch>
@@ -197,7 +209,7 @@ export function HDSettingsScreen() {
     ) : null}
     <ScrollView
       style={st.screen}
-      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 30, paddingBottom: IS_WEB ? 30 + 64 + 20 : 30, gap: 14, ...(IS_WEB ? { width: '100%', alignSelf: 'stretch' } : {}) }} // #036:web playbar 绝对定位悬浮,底部让位 64+20(原 30 末行被遮)
+      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 30, paddingBottom: IS_WEB ? 30 + 64 + 20 : 30, gap: SP.xxl, ...(IS_WEB ? { width: '100%', alignSelf: 'stretch' } : {}) }} // #036:web playbar 绝对定位悬浮,底部让位 64+20(原 30 末行被遮)
       showsVerticalScrollIndicator={false}
     >
       <View style={st.head}>
@@ -219,11 +231,16 @@ export function HDSettingsScreen() {
       </View>
 
       {/* 行式设置卡 */}
-      <View style={{ gap: 8 }}>
+      <View style={{ gap: SP.md }}>
         {carRows.map((r, i) => <SettingsRow key={`car_${i}`} row={r} />)}
         {rows[tab].map((r, i) => <SettingsRow key={`${r.title}_${i}`} row={r} />)}
       </View>
     </ScrollView>
+    {/* D2 lyrics_deep 门弹层（翻译/罗马音开启拦截；三命首弹在此记频） */}
+    <FeatureGateModal fg={lyrGate} />
+    {/* [D1 WP2] 授权闭环弹层:激活+设备管理(老板 15:14 五缺;MOMO 1012 追加①) */}
+    <LicenseActivate visible={licAct} onClose={() => setLicAct(false)} />
+    <LicenseDevices visible={licDev} onClose={() => setLicDev(false)} />
     </>
   );
 }
@@ -253,7 +270,8 @@ function SettingsRow({ row }: { row: RowDef }) {
       {row.icon ? (
         <View style={st.rowIcon}><Icon name={row.icon} size={14} color={C.text3} /></View>
       ) : null}
-      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+      <View style={{ flex: 1, minWidth: 0, gap: SP.xs }}>
+        {/* [1012 收敛令] 设置子项零 Pro 痕迹——四 gate 位只在 Fx chips/备份 ActionRow/品牌卡 */}
         <Text style={st.rowTitle}>{row.title}</Text>
         {row.desc ? <Text style={st.rowDesc} numberOfLines={2}>{row.desc}</Text> : null}
       </View>
@@ -282,34 +300,34 @@ function SettingsRow({ row }: { row: RowDef }) {
 
 const st = StyleSheet.create({
   cacheMask: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,.55)', zIndex: 100, alignItems: 'center', justifyContent: 'center' },
-  cachePanel: { width: 420, maxWidth: '90%', backgroundColor: C.elev, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, padding: 22, gap: 4 },
-  cacheTitle: { color: C.text, fontSize: 17, fontWeight: '800' },
-  cacheInfo: { color: C.text2, fontSize: 12, lineHeight: 18 },
+  cachePanel: { width: 420, maxWidth: '90%', backgroundColor: C.elev, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, padding: 22, gap: SP.xs },
+  cacheTitle: { color: C.text, fontSize: FS.headline, fontWeight: FW.heavy },
+  cacheInfo: { color: C.text2, fontSize: FS.body, lineHeight: 18 },
   cacheBtn: { flex: 1, height: 38, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
-  cacheBtnText: { color: C.text, fontSize: 12.5, fontWeight: '600' },
+  cacheBtnText: { color: C.text, fontSize: FS.md, fontWeight: FW.semibold },
   screen: { flex: 1, backgroundColor: C.bg },
-  head: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  head: { flexDirection: 'row', alignItems: 'center', gap: SP.lg },
   backBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   focus: { borderWidth: 2, borderColor: C.brand, borderRadius: 10 },
-  title: { color: C.text, fontSize: H.font.hero, fontWeight: '800', flex: 1 },
-  tabRow: { flexDirection: 'row', gap: 2, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border, paddingBottom: 2 },
+  title: { color: C.text, fontSize: H.font.hero, fontWeight: FW.heavy, flex: 1 },
+  tabRow: { flexDirection: 'row', gap: SP.xs, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border, paddingBottom: 2 },
   tabItem: { paddingHorizontal: 13, paddingVertical: 9, borderRadius: 8, minHeight: 38, justifyContent: 'center' },
   tabFocus: { borderWidth: 1.5, borderColor: C.brand, borderRadius: 8 },
-  tabText: { color: C.text3, fontSize: H.font.md, fontWeight: '500' },
-  tabTextOn: { color: C.text, fontWeight: '700' },
+  tabText: { color: C.text3, fontSize: H.font.md, fontWeight: FW.medium },
+  tabTextOn: { color: C.text, fontWeight: FW.bold },
   tabBar: { height: 2.5, borderRadius: 2, backgroundColor: C.brand, marginTop: 4 },
   row: {
-    flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 64,
+    flexDirection: 'row', alignItems: 'center', gap: SP.xxl, minHeight: 64,
     backgroundColor: C.surface, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth,
     borderColor: C.border, paddingHorizontal: 18, paddingVertical: 10,
   },
   rowIcon: { width: 30, height: 30, borderRadius: 9, backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center' },
-  rowTitle: { color: C.text, fontSize: H.font.md, fontWeight: '600' },
+  rowTitle: { color: C.text, fontSize: H.font.md, fontWeight: FW.semibold },
   rowDesc: { color: C.text3, fontSize: H.font.xs, lineHeight: 15 },
   tgl: { width: 42, height: 23, borderRadius: 12, backgroundColor: C.track, padding: 2 },
   tglOn: { backgroundColor: C.brand },
-  tglDot: { width: 19, height: 19, borderRadius: 10, backgroundColor: '#8A8F98' },
+  tglDot: { width: 19, height: 19, borderRadius: 10, backgroundColor: C.text3 },
   tglDotOn: { alignSelf: 'flex-end', backgroundColor: C.onBrand },
-  sel: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.elev, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+  sel: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, backgroundColor: C.elev, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
   selText: { color: C.text2, fontSize: H.font.sm },
 });
