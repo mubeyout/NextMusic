@@ -283,8 +283,8 @@ export function HDMain() {
   };
 
   return (
-    <View style={[st.screen, { paddingLeft: Math.max(insets.left, IS_CAR_DEVICE ? 96 : 0), paddingTop: Math.max(insets.top, IS_CAR_DEVICE ? 72 : 0) }]}>
-      {/* 1028 星愿 L 形安全区:左侧 car_left_system_bar 96dp(aapt2 实锤)整体右推;顶部 72px(car_top_system_bar_height aapt2)防状态栏重叠(老板实测⑥余项) */}
+    <View style={[st.screen, { paddingLeft: insets.left, paddingTop: Math.max(insets.top, IS_CAR_DEVICE ? 72 : 0) }]}>
+      {/* 1028 星愿安全区:左侧只跟运行时 insets(实车实测固定 96 兑底致无左 bar 车型空一大块——老板实测回退);顶部 72 保留(实锤重叠过) */}
       {/* ===== 侧栏(桌面版结构) ===== */}
       <View style={IS_WEB ? st.sidebarWrapWeb : st.sidebarWrap}>
         {IS_WEB ? (

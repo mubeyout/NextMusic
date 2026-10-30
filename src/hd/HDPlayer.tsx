@@ -13,6 +13,7 @@ import { enqueueDownload, isWebServerMode } from '../services/downloads';
 import { webDownloadActionItems } from './hdmenubuilders';
 import { hdActions } from './HDActions';
 import { effectiveBottomInset } from './hdstyle'; // 1028:歌词区让位接车机自动值(底 112)
+import { IS_CAR_DEVICE } from '../services/appversion'; // 1029:车机播放页走 web 同构上下排布
 import { toast } from '../components/Dialog';
 import { C, T, fmtSec } from './hdtokens';
 import { HDTouch } from './HDTouch';
@@ -344,7 +345,7 @@ export function HDPlayer() {
         </View>
         </View>
           {/* v1.2.15(老板 09-14"进度和按钮一排贴底"):TV=单行 dock(进度 flex 占满+控件组);web 保持上下两行 */}
-          <View style={IS_WEB ? st.dockColWeb : st.dockRow}>
+          <View style={IS_WEB || IS_CAR_DEVICE ? st.dockColWeb : st.dockRow}>
           <View style={[st.progRow, IS_WEB && st.progRowWeb, !IS_WEB && st.progRowDock]}>
             <Text style={[st.time, IS_WEB && { minWidth: 42 }]}>{fmtSec(position)}</Text>
             <TouchableOpacity
