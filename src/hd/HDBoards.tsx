@@ -16,6 +16,7 @@ import type { SongItem } from '../services/server';
 import { toast } from '../components/Dialog';
 import { hdNav } from './hdnav';
 import { cacheStale, cacheSet } from './hdcache';
+import {GRID,  FS, FW, SP } from '../theme/tokens';
 
 type Board = { id: string; name: string; bangid: string; image?: string };
 const SOURCES: { key: string; label: string }[] = [
@@ -62,17 +63,17 @@ export function HDBoards() {
   return (
     <ScrollView
       style={st.screen}
-      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 26, paddingBottom: 28, gap: 12 }}
+      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 26, paddingBottom: 28, gap: SP.xl }}
       showsVerticalScrollIndicator={false}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.md }}>
         <Text style={st.title}>榜单广场</Text>
         <View style={{ flex: 1 }} />
         {busy ? <ActivityIndicator color={C.brand} size="small" /> : null}
         {boards ? <Text style={st.count}>{boards.length} 个榜单</Text> : null}
       </View>
 
-      <View style={{ flexDirection: 'row', gap: 8 }}>
+      <View style={{ flexDirection: 'row', gap: SP.md }}>
         {SOURCES.map(s => (
           <HDTouch key={s.key} style={[st.pill, src === s.key && st.pillOn]}
             focusStyle={src === s.key ? { borderWidth: 2, borderColor: C.brandSoft } : st.pillFocus}
@@ -87,7 +88,7 @@ export function HDBoards() {
       ) : (
         // lx83(老板反馈):封面顶角补圆角随卡 12——卡全圆角,环统一 14 贴附;zoom 悬浮放大
         // v1.2.6 web:彩色投影+hover 上浮(老板:卡片要 hover;elevation 在 RNW 不渲染)+overflow hidden 修渐变圆角
-        <HDGrid min={128 * (H.font.sm / 10)}>
+        <HDGrid min={GRID.hdMin * (H.font.sm / 10)}>
           {boards.map((b, i) => (
             <BoardCard key={b.id} b={b} i={i} src={src} busy={busy} onOpen={() => openBoard(b)} />
           ))}
@@ -140,7 +141,7 @@ function BoardCard({ b, i, src, onOpen }: { b: Board; i: number; src: string; bu
         )}
       </View>
       <View style={st.cardChipWrapper}>
-        <View style={st.cardChip}><Text style={st.cardChipText}>{SOURCES.find(s => s.key === src)?.label ?? src}</Text></View>
+        <View style={st.cardChip}><Text style={[st.cardChipText, { color: '#ffffffe6' }]}>{SOURCES.find(s => s.key === src)?.label ?? src}</Text></View>
       </View>
       <View style={st.cardBody}>
         <Text style={st.cardName} numberOfLines={2}>{b.name}</Text>
@@ -152,23 +153,23 @@ function BoardCard({ b, i, src, onOpen }: { b: Board; i: number; src: string; bu
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
-  title: { color: C.text, fontSize: H.font.hero, fontWeight: '800' },
+  title: { color: C.text, fontSize: H.font.hero, fontWeight: FW.heavy },
   count: { color: C.text3, fontSize: H.font.sm },
   pill: { borderRadius: H.radius.pill, paddingHorizontal: 11, height: 26, backgroundColor: C.elev, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
   pillOn: { backgroundColor: C.brand, borderColor: C.brand },
   pillFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.pill },
   pillLabel: { color: C.text2, fontSize: H.font.sm },
-  pillLabelOn: { color: C.onBrand, fontWeight: '600' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  pillLabelOn: { color: C.onBrand, fontWeight: FW.semibold },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl },
   card: { borderRadius: 12, backgroundColor: C.surface, paddingBottom: 8 },
   cardCoverWrap: { borderRadius: 12 },
   cardCover: { width: '100%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderTopLeftRadius: 12, borderTopRightRadius: 12 },
   cardChipWrapper: { position: 'absolute', right: 8, bottom: 80 },
   cardChip: { backgroundColor: 'rgba(0,0,0,.55)', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
-  cardChipText: { color: '#fff', fontSize: 9 },
-  cardBody: { padding: 10, paddingTop: 8, gap: 3, alignSelf: 'center', width: '94%' },
-  cardName: { color: C.text, fontSize: H.font.md, fontWeight: '700', lineHeight: 16 },
-  cardSub: { color: C.text3, fontSize: 9 },
-  tip: { alignItems: 'center', gap: 10, paddingVertical: 54 },
+  cardChipText: { color: C.white, fontSize: FS.xs },
+  cardBody: { padding: SP.md, gap: SP.xs }, // [老板 1011 15:59] 文字区统一档(去 94% 特殊宽;与全站卡同构)
+  cardName: { color: C.text, fontSize: H.font.md, fontWeight: FW.bold, lineHeight: 16 },
+  cardSub: { color: C.text3, fontSize: FS.xs },
+  tip: { alignItems: 'center', gap: SP.lg, paddingVertical: 54 },
   tipText: { color: C.text2, fontSize: H.font.md, textAlign: 'center', paddingVertical: 30 },
 });

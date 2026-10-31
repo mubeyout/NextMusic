@@ -68,7 +68,7 @@ export function HomeScreen({ visible = true }: { visible?: boolean }) {
         <View style={st.homeOverlay} pointerEvents="box-none">
           <View style={st.homeOverlayCard} pointerEvents="auto">
             <StateOverlayCard
-              glyph="♪"
+              icon="music"
               glyphSize={48}
               title="从你的音乐开始"
               body="当前没有可用音源或本地歌曲。你可以先导入音源，也可以直接扫描设备中的音乐。"
@@ -122,7 +122,7 @@ function PlCard({ pl }: { pl: SongListMeta }) {
     >
       {pl.img
         ? <Image source={{ uri: pl.img }} style={st.plArt} />
-        : <View style={[st.plArt, st.plFallback]}><Text style={st.plGlyph}>♫</Text></View>}
+        : <View style={[st.plArt, st.plFallback]}><Icon name="music" size={24} color={C.text2} /></View>}
       <Text style={st.plName} numberOfLines={2}>{pl.name}</Text>
       <Text style={st.plMeta} numberOfLines={1}>{pl.total ? `${pl.total} 首` : (pl.author || '')}</Text>
     </TouchableOpacity>
@@ -248,7 +248,7 @@ function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.recentRow}>
           {recents.slice(0, 12).map((s, i) => (
             <TouchableOpacity key={`${s.source}-${s.songmid}-${i}`} style={st.recentCard} activeOpacity={0.85} onPress={() => playSong(s, recents)}>
-              {s.img ? <Image source={{ uri: s.img }} style={st.recentArt} /> : <View style={[st.recentArt, st.recentFallback]}><Text style={st.recentGlyph}>♫</Text></View>}
+              {s.img ? <Image source={{ uri: s.img }} style={st.recentArt} /> : <View style={[st.recentArt, st.recentFallback]}><Icon name="music" size={26} color={C.text2} /></View>}
               <Text style={st.recentTitle} numberOfLines={1}>{s.name}</Text>
             </TouchableOpacity>
           ))}
@@ -461,11 +461,11 @@ const st = StyleSheet.create({
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   quickDis: { opacity: 0.5 }, // #012②:disabled 态视觉反馈
   quickCard: {
-    height: 88, borderRadius: 14,
+    height: 128, borderRadius: 14, // [老板 1010] 88→128 与库页英雄卡同高（统合令）
     backgroundColor: C.elev, flexDirection: 'row', alignItems: 'center', gap: 12, overflow: 'hidden',
     paddingHorizontal: 12,
   },
-  quickArt: { width: 64, height: 64, borderRadius: 12 },
+  quickArt: { width: 80, height: 80, borderRadius: 14 },
   quickLabel: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '600', flex: 1, paddingRight: 4 },
   sectionRow: { height: 26, flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
   sectionTitle: { flex: 1, color: C.text, fontSize: 17, lineHeight: 25, fontWeight: '700' },

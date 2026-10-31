@@ -10,6 +10,7 @@ import { toast } from '../components/Dialog';
 import type { LyricLine } from '../services/lyric';
 import type { SongItem } from '../services/server';
 import markUrl from '../assets/brand/mark.png'; // v3.36(老板):卡片水印换 NextMusic 品牌 mark
+import { FS, FW, SP } from '../theme/tokens';
 
 type Layout = 'portrait' | 'landscape' | 'square';
 type Theme = 'light' | 'dark' | 'album';
@@ -378,7 +379,7 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
 
   const Pill = ({ on, label, onPress, w }: { on?: boolean; label: string; onPress: () => void; w?: number }) => (
     <HDTouch style={[stP.pill, on && stP.pillOn, w ? { width: w } : null]} hoverBg="#ffffff1a" onPress={onPress}>
-      <Text style={[stP.pillText, on && { color: '#0b0f0d', fontWeight: '700' }]}>{label}</Text>
+      <Text style={[stP.pillText, on && { color: C.onBrand, fontWeight: FW.bold }]}>{label}</Text>
     </HDTouch>
   );
 
@@ -464,25 +465,25 @@ export function WebLyricCardModal({ onClose, song, lyrics, positionSec }: {
 const stP = StyleSheet.create({
   root: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, backgroundColor: '#000000CC', alignItems: 'center', justifyContent: 'center' },
   panel: { width: '92%', maxWidth: 1020, maxHeight: '90%', backgroundColor: '#17191E', borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, overflow: 'hidden', flexDirection: 'column' as const },
-  head: { flexDirection: 'row' as const, alignItems: 'center', gap: 12, padding: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
-  headTitle: { color: C.text, fontSize: 15, fontWeight: '800' },
-  headSub: { color: C.text3, fontSize: 9, fontWeight: '700', letterSpacing: 1.2, marginTop: 2 },
+  head: { flexDirection: 'row' as const, alignItems: 'center', gap: SP.xl, padding: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
+  headTitle: { color: C.text, fontSize: FS.xl, fontWeight: FW.heavy },
+  headSub: { color: C.text3, fontSize: FS.xs, fontWeight: FW.bold, letterSpacing: 1.2, marginTop: 2 },
   closeBtn: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   body: { flexDirection: 'row' as const, flex: 1, minHeight: 0 },
   bodyCol: { flexDirection: 'column' as const },
   optsNarrow: { width: '100%', borderLeftWidth: 0, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border, maxHeight: 328 } as ViewStyle, // lxfix:264→328,窄屏选项区不再挤成一条缝
   previewBox: { flex: 1, minHeight: 0, alignItems: 'center', justifyContent: 'center', padding: 18, backgroundColor: 'rgba(255,255,255,.02)' },
-  veil: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#00000066', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  veilText: { color: '#ffffffcc', fontSize: 11 },
-  opts: { width: 296, borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: C.border, padding: 14, gap: 6, overflowY: 'auto' as const } as ViewStyle, // v3.28:overflowY 为 RNW 属性,断言
-  secTitle: { color: C.text3, fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginTop: 8 },
-  row: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 6, marginTop: 6 },
+  veil: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#00000066', alignItems: 'center', justifyContent: 'center', gap: SP.md },
+  veilText: { color: '#ffffffcc', fontSize: FS.sm },
+  opts: { width: 296, borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: C.border, padding: 14, gap: SP.sm, overflowY: 'auto' as const } as ViewStyle, // v3.28:overflowY 为 RNW 属性,断言
+  secTitle: { color: C.text3, fontSize: FS.xs, fontWeight: FW.heavy, letterSpacing: 1.5, marginTop: 8 },
+  row: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: SP.sm, marginTop: 6 },
   pill: { height: 28, borderRadius: 14, paddingHorizontal: 10, borderWidth: 1, borderColor: '#ffffff4d', backgroundColor: '#ffffff12', alignItems: 'center', justifyContent: 'center' }, // lxfix(09-21):描边+底色强化存在感(老板:不像按钮)
   pillOn: { backgroundColor: C.brand, borderColor: C.brand },
-  pillText: { color: '#ffffffcc', fontSize: 11, fontWeight: '600' },
-  valText: { color: '#ffffffcc', fontSize: 11, fontWeight: '700', alignSelf: 'center', minWidth: 44, textAlign: 'center', height: 22, lineHeight: 22, borderRadius: 11, backgroundColor: '#ffffff14', overflow: 'hidden' },
-  foot: { flexDirection: 'row' as const, alignItems: 'center', padding: 14, gap: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border },
-  hint: { flex: 1, color: C.text3, fontSize: 11 },
-  saveBtn: { height: 38, borderRadius: 19, backgroundColor: C.brand, paddingHorizontal: 20, flexDirection: 'row' as const, alignItems: 'center', gap: 7 },
-  saveText: { color: '#0b0f0d', fontSize: 13, fontWeight: '800' },
+  pillText: { color: '#ffffffcc', fontSize: FS.sm, fontWeight: FW.semibold },
+  valText: { color: '#ffffffcc', fontSize: FS.sm, fontWeight: FW.bold, alignSelf: 'center', minWidth: 44, textAlign: 'center', height: 22, lineHeight: 22, borderRadius: 11, backgroundColor: '#ffffff14', overflow: 'hidden' },
+  foot: { flexDirection: 'row' as const, alignItems: 'center', padding: 14, gap: SP.xl, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border },
+  hint: { flex: 1, color: C.text3, fontSize: FS.sm },
+  saveBtn: { height: 38, borderRadius: 19, backgroundColor: C.brand, paddingHorizontal: 20, flexDirection: 'row' as const, alignItems: 'center', gap: SP.sm },
+  saveText: { color: C.onBrand, fontSize: FS.md, fontWeight: FW.heavy },
 });

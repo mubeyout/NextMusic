@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { C } from '../theme/tokens';
+import { C, FW } from '../theme/tokens';
 
 // Figma pill tabs: active pill filled brand green (C.brand, label #121212),
 // inactive #2B2B2B (label #B3B3B3), r=18, h=30, pad 16/8, label 12px
@@ -34,8 +34,8 @@ const st = StyleSheet.create({
     backgroundColor: C.surface2,
   },
   pillOn: { backgroundColor: C.brand },
-  label: { color: C.text2, fontSize: 12, lineHeight: 14, fontWeight: '400' },
-  labelOn: { color: C.onBrand, fontWeight: '500' },
+  label: { color: C.text2, fontSize: 12, lineHeight: 14, fontWeight: FW.normal },
+  labelOn: { color: C.onBrand, fontWeight: FW.medium },
 });
 
 
@@ -47,8 +47,8 @@ const hp = StyleSheet.create({
   row: { flexDirection: 'row', gap: 10, paddingVertical: 4 },
   pill: { height: 36, borderRadius: 999, paddingHorizontal: 20, justifyContent: 'center', alignItems: 'center', backgroundColor: C.surface2 },
   pillOn: { backgroundColor: C.brand },
-  label: { color: C.text2, fontSize: 13, fontWeight: '600' },
-  labelOn: { color: C.onBrand, fontWeight: '700' },
+  label: { color: C.text2, fontSize: 13, fontWeight: FW.semibold },
+  labelOn: { color: C.onBrand, fontWeight: FW.bold },
 });
 export function PillTabsHD({ tabs, active, onChange, autoFocusFirst }: {
   tabs: string[]; active: number; onChange: (i: number) => void; autoFocusFirst?: boolean;

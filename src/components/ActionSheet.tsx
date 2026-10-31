@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { C } from '../theme/tokens';
+import { C, FW } from '../theme/tokens';
 
 // 通用底部菜单（右上角 ⋯ / 更多）；extra 可插入自定义内容（表单等）
 export function ActionSheet({ visible, onClose, title, items, extra }: {
@@ -44,7 +44,7 @@ const s = StyleSheet.create({
   handle: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: C.handle, marginBottom: 10 },
   title: { color: C.text2, fontSize: 12, lineHeight: 16, marginBottom: 4 },
   row: { minHeight: 54, justifyContent: 'center', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint },
-  label: { color: C.text, fontSize: 15, lineHeight: 21, fontWeight: '500' },
+  label: { color: C.text, fontSize: 15, lineHeight: 21, fontWeight: FW.medium },
   danger: { color: '#FF6B6B' },
   sub: { color: C.text2, fontSize: 11, lineHeight: 15, marginTop: 1 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: C.brand, alignSelf: 'center' },

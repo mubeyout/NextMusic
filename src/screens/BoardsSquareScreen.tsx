@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
-import { C, softGrad } from '../theme/tokens';
+import { C, FS, FW, SP, softGrad } from '../theme/tokens';
 import { PageHeader } from '../components/PageChrome';
 import { lxapi } from '../services/lxapi';
 import type { SongItem } from '../services/server';
@@ -76,8 +76,9 @@ export function BoardsSquareScreen() {
                   start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                   style={st.card}
                 >
-                  <Text style={st.name} numberOfLines={2}>{b.name}</Text>
-                  <Text style={st.sub}>{SOURCES.find(s => s.key === src)?.sub ?? '榜单'} ›</Text>
+                  {/* 1028 老板令(彩色卡恒白·终局修):黑遮罩卡上行内恒白叠加(DOM 实证定位) */}
+                  <Text style={[st.name, { color: '#FFFFFF' }]} numberOfLines={2}>{b.name}</Text>
+                  <Text style={[st.sub, { color: '#ffffffcc' }]}>{SOURCES.find(s => s.key === src)?.sub ?? '榜单'} ›</Text>
                 </LinearGradient>
               </TouchableOpacity>
             ))}
@@ -95,22 +96,22 @@ export function BoardsSquareScreen() {
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
-  srcRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingBottom: 12 },
+  srcRow: { flexDirection: 'row', alignItems: 'center', gap: SP.md, paddingHorizontal: 20, paddingBottom: 12 },
   srcPill: { height: 32, borderRadius: 16, paddingHorizontal: 16, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   srcPillOn: { backgroundColor: C.brand },
-  srcLabel: { color: C.text2, fontSize: 12, lineHeight: 14, fontWeight: '600' },
+  srcLabel: { color: C.text2, fontSize: FS.body, lineHeight: 14, fontWeight: FW.semibold },
   srcLabelOn: { color: C.onBrand },
-  count: { color: C.text2, fontSize: 11, lineHeight: 14 },
+  count: { color: C.text2, fontSize: FS.sm, lineHeight: 14 },
   content: { paddingHorizontal: 20, paddingBottom: 32 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.md },
   cell: { width: '48.5%' },
-  card: { height: 76, borderRadius: 12, overflow: 'hidden', paddingHorizontal: 12, justifyContent: 'center', gap: 3 },
+  card: { height: 76, borderRadius: 12, overflow: 'hidden', paddingHorizontal: 12, justifyContent: 'center', gap: SP.xs },
   cardArt: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 },
   cardShade: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, backgroundColor: '#00000088' },
-  cardTextWrap: { gap: 3 },
-  name: { color: C.text, fontSize: 13, lineHeight: 16, fontWeight: '700' },
-  sub: { color: C.text2, fontSize: 9, lineHeight: 11 },
+  cardTextWrap: { gap: SP.xs },
+  name: { color: '#FFFFFF', fontSize: FS.md, lineHeight: 16, fontWeight: FW.bold }, // [1013 老板令] cardShade 固定黑遮罩=自含深色面,白字恒对(黑遮罩不随主题切+主题字=浅色黑底黑字)
+  sub: { color: '#ffffffcc', fontSize: FS.xs, lineHeight: 11 }, // [1013 老板令] 同上
   center: { paddingVertical: 48, alignItems: 'center' },
-  empty: { color: C.text2, fontSize: 12, lineHeight: 18, textAlign: 'center', paddingVertical: 40 },
+  empty: { color: C.text2, fontSize: FS.body, lineHeight: 18, textAlign: 'center', paddingVertical: 40 },
   busyWrap: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: '#00000055' },
 });

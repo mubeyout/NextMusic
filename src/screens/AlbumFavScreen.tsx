@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, FlatList } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { PageHeader } from '../components/PageChrome';
 import { HDTouch } from '../hd/HDTouch';
 import { IS_HD } from '../services/appversion';
@@ -33,13 +33,13 @@ export function AlbumFavScreen() {
         <FlatList
           data={list}
           keyExtractor={a => `${a.source || 'wy'}_${a.id}`}
-          contentContainerStyle={{ padding: 16, gap: 8 }}
+          contentContainerStyle={{ padding: 16, gap: SP.md }}
           renderItem={({ item }) => (
             <Row style={st.row} onPress={() => nav.navigate('AlbumDetail', { album: item })}>
               {item.img
                 ? <Image source={{ uri: item.img }} style={st.art} />
                 : <View style={[st.art, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={20} color={C.text3} /></View>}
-              <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
+              <View style={{ flex: 1, minWidth: 0, gap: SP.xs }}>
                 <Text style={st.name} numberOfLines={1}>{item.name}</Text>
                 <Text style={st.sub} numberOfLines={1}>{item.singer || item.source?.toUpperCase() || ''}</Text>
               </View>
@@ -63,9 +63,9 @@ const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { color: C.text3, textAlign: 'center', lineHeight: 22 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: 10, backgroundColor: C.surface },
+  row: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, padding: 10, borderRadius: 10, backgroundColor: C.surface },
   art: { width: 52, height: 52, borderRadius: 8 },
-  name: { color: C.text, fontSize: 15, fontWeight: '600' },
-  sub: { color: C.text3, fontSize: 12 },
+  name: { color: C.text, fontSize: FS.xl, fontWeight: FW.semibold },
+  sub: { color: C.text3, fontSize: FS.body },
   favBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
 });

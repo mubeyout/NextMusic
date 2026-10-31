@@ -1,12 +1,13 @@
 // 第三方媒体库：Emby / Jellyfin / Subsonic(Navidrome·道理鱼) / WebDAV / 听风
-// 管理页：账号卡片列表（v3.31 重设计：克制卡+行尾 ⋯ 菜单，去长按暗门）；浏览页（2026-09-17 老板指令·参考 Amcfy 主页）：
-// 连接后是【一个综合页面】——分区纵排（随机来点/专辑/艺术家/歌单 或 听风 我的/推荐/排行/新歌），不再 tab 切换
+// 管理页：账号卡片列表（v3.31 重设计：克制卡+行尾 ⋯ 菜单，去长按暗门）；浏览页：连接后是【一个综合页面】——
+// [老板 1010·按源定制] 拒绝同一个模板：emby/jf=媒体服务器富布局(英雄卡+最新入库+专辑墙/艺人圆墙)·
+// subsonic 系=导航式精简(专辑墙/歌曲前置+3 真实能力芯片)·听风=网易云风(搜索+推荐歌单横滑墙+新歌速递+排行榜入口行)；WebDAV 目录浏览不变
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, type ViewStyle, ScrollView, TouchableOpacity, Image, ActivityIndicator, Dimensions, Animated } from 'react-native';
+import { View, Text, StyleSheet, type ViewStyle, ScrollView, TouchableOpacity, Image, ActivityIndicator, Dimensions, Animated, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Icon, BrandIcon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, CARD, FS, FW, SP } from '../theme/tokens';
 import { Platform } from 'react-native';
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
@@ -16,19 +17,27 @@ import { pubCheck, usePubEntry } from '../services/publicLibrary'; // ④公共�
 import { ActionSheet } from '../components/ActionSheet';
 import { CollectSheet } from '../components/CollectSheet';
 import { SongRow } from '../components/SongRow';
+import { ArtistRow } from '../components/ArtistRow'; // [批次1] 歌手行统一件(替 st.artistRow/bv.row 自造行)
+import { PlaylistRow } from '../components/PlaylistRow'; // [批次1] 歌单行统一件(替 st.plRow 自造行)
 import { toast, dialog } from '../components/Dialog';
 import { dropdownMenu, isDropdownPlatform, type MenuAnchor } from '../components/DropdownMenu';
 import { PageHeader, EmptyState } from '../components/PageChrome';
+import { LibBanner, LibActions, HeroPair, type LibHero, type HeroGrad } from '../components/LibraryHome'; // ⑦.3-v2 壳统一 + [v5.6 1010] HeroPair 英雄卡对(第三方页源身份卡+duo 入口行)
 import { GUTTER, focus, pageBottom } from '../hd/hdstyle'; // v3.28:统一栅格/焦点环/播放条让位
 import { usePlayer } from '../state/PlayerProvider';
 import { library } from '../state/library';
 import { enqueueDownload, downloads as dlStore } from '../services/downloads';
 import {
-  providers, providerApi, PROVIDER_META,
+  providers, providerApi, PROVIDER_META, PROTOCOL, embyAlbumArtFill,
   type ProviderAcct, type ProviderType, type PvArtist, type PvAlbum, type PvPlaylist,
 } from '../services/providers';
 import { localLib, checkLocalLib, type LocalLibConfig } from '../services/localLibrary';
+import { useSlbEntries, slbRefresh } from '../services/serverLocalLibrary'; // [web]本地曲库(服务器侧目录,升级稿 §二)
 import type { SongItem } from '../services/server';
+import { useHoverCard } from '../hd/hdweb';
+import { GridWall } from '../components/GridWall';
+import { DiscCard } from './MyLibraryScreen'; // [老板 1011 15:49] 专辑卡统一件
+import { PvCard } from '../components/PvCard'; // [老板 1011 16:15] 歌单卡统一件(共享化)
 
 // 有品牌 logo 的类型用 BrandIcon，其余回退语义图标
 // v3: 媒体库 icon 一律 BrandIcon(品牌图标一一对应)
@@ -56,18 +65,6 @@ function T(props: { style?: unknown; onPress?: (e?: unknown) => void; onLongPres
 
 const IS_WEB = Platform.OS === 'web';
 
-
-// 封面渐变库(无封面 fallback,App 端同款 6 组): 按名字 hash 选色
-const COVER_GRADS: [string, string][] = [
-  ['#1F8061', '#6B2973'], ['#6B2980', '#1F578A'], ['#8C401F', '#217A5C'],
-  ['#2B4F9E', '#6B2973'], ['#1F578A', '#1F8061'], ['#217A5C', '#8C401F'],
-];
-function coverGrad(name?: string) {
-  let h = 0; for (let i = 0; i < (name || '').length; i++) h = (name || '').charCodeAt(i) + ((h << 5) - h);
-  const g = COVER_GRADS[Math.abs(h) % COVER_GRADS.length];
-  return { background: `linear-gradient(135deg, ${g[0]}, ${g[1]})` }; // v3.28:去 as const
-}
-
 export function MediaLibsScreen() {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string, p?: object) => void };
@@ -80,6 +77,8 @@ export function MediaLibsScreen() {
   // ②本机曲库行(含失效态 v3 A5:灰置+danger 状态点+副文案+行内重新选择)
   const [locLibs, setLocLibs] = useState<LocalLibConfig[]>([]);
   const [locBad, setLocBad] = useState<Record<string, boolean>>({});
+  // [web]本地曲库行(服务器侧目录;有库才显示行,同 APK 模式——共享库 unlocked 即可浏览)
+  const serverLibs = useSlbEntries().filter(e => !e.locked);
   // ④公共曲库系统库置顶条目(官方徽标·不可删;未授权/开关关→完全不渲染)
   const pub = usePubEntry();
   const pubVisible = pub.authorized && pub.showEntry;
@@ -92,7 +91,7 @@ export function MediaLibsScreen() {
   }, []);
   useEffect(refresh, []);
   // 从 ProviderEdit 保存/删除返回时刷新列表（屏幕停留挂载不会重走 mount）
-  useFocusEffect(useCallback(() => { refresh(); refreshLocals(); pubCheck(); }, [refresh, refreshLocals]));
+  useFocusEffect(useCallback(() => { refresh(); refreshLocals(); pubCheck(); slbRefresh(); }, [refresh, refreshLocals]));
 
   // 按钮入口：Figma NM-REMOTE-SELECT-001 选择类型页（ProviderEditScreen 内部先选类型再连接）
   const addMenu = () => nav.navigate('ProviderEdit', {});
@@ -169,9 +168,12 @@ export function MediaLibsScreen() {
                       <Text style={[ml.title, IS_HD && ml.titleHD]} numberOfLines={1}>{l.name}</Text>
                       <View style={ml.typeChip}><Text style={ml.typeChipText}>本机</Text></View>
                     </View>
-                    <Text style={[ml.sub, IS_HD && ml.subHD]} numberOfLines={1}>
-                      {bad ? '目录不可用（SD 卡拔出/目录被移除）' : `${l.rootLabel || '本机目录'}${l.trackCount ? ` · ${l.trackCount} 首` : ' · 未扫描'}`}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm }}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: bad ? C.text3 : C.brand }} />
+                      <Text style={[ml.sub, IS_HD && ml.subHD]} numberOfLines={1}>
+                        {bad ? '目录不可用（SD 卡拔出/目录被移除）' : `正常 · ${l.rootLabel || '本机目录'}${l.trackCount ? ` · ${l.trackCount} 首` : ' · 未扫描'}`}
+                      </Text>
+                    </View>
                   </View>
                   {bad ? (
                     <T style={ml.repickBtn} hitSlop={6} onPress={() => nav.navigate('LocalLibEdit', { libId: l.id })}>
@@ -186,9 +188,50 @@ export function MediaLibsScreen() {
                 </PressCard>
               );
             })}
+            {/* [web] 本地曲库行(服务器侧目录;有库才显示行,同 APK 模式)——浏览/播放走 lib 路由,管理进 ServerLocalLib */}
+            {IS_WEB ? serverLibs.map(l => (
+              <PressCard
+                key={'slb-' + l.id}
+                style={[ml.card, IS_HD && ml.cardHD]}
+                hoverStyle={ml.cardHover} tvFocus
+                onPress={() => nav.navigate('ServerLocalLib', { libId: l.id })}
+              >
+                <View style={[ml.iconWrap, IS_HD && ml.iconWrapHD]}><Icon name="folder-music" size={IS_HD ? 32 : 26} color={C.brandText} /></View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <View style={ml.titleRow}>
+                    <Text style={[ml.title, IS_HD && ml.titleHD]} numberOfLines={1}>{l.name}</Text>
+                    <View style={ml.typeChip}><Text style={ml.typeChipText}>服务器</Text></View>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm }}>
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: l.trackCount ? C.brand : C.text3 }} />
+                    <Text style={[ml.sub, IS_HD && ml.subHD]} numberOfLines={1}>
+                      {l.trackCount ? `就绪 · ${l.trackCount.toLocaleString()} 首 · 服务器目录` : '未扫描 · 服务器目录'}
+                    </Text>
+                  </View>
+                </View>
+                <Icon name="chevronright" size={IS_HD ? 22 : 18} color={C.text3} />
+              </PressCard>
+            )) : null}
+            {/* [web] T1 入口卡:空态「绑定服务器目录」三步引导(升级稿 §二 T1 步1) */}
+            {IS_WEB && !serverLibs.length ? (
+              <PressCard
+                style={[ml.card, IS_HD && ml.cardHD]}
+                hoverStyle={ml.cardHover} tvFocus
+                onPress={() => nav.navigate('ServerLocalLib', {})}
+              >
+                <View style={[ml.iconWrap, IS_HD && ml.iconWrapHD]}><Icon name="folder-music" size={IS_HD ? 32 : 26} color={C.brandText} /></View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <View style={ml.titleRow}>
+                    <Text style={[ml.title, IS_HD && ml.titleHD]} numberOfLines={1}>绑定服务器目录</Text>
+                  </View>
+                  <Text style={[ml.sub, IS_HD && ml.subHD]} numberOfLines={1}>本地曲库 · 绑定目录 → 扫描入库 → 开始听歌</Text>
+                </View>
+                <Icon name="add" size={IS_HD ? 20 : 17} color={C.brand} />
+              </PressCard>
+            ) : null}
           {/* spec③:云曲库入口卡(登录后渲染)——我的曲库组第二成员 */}
           {token ? <CloudLibCard onEnter={() => nav.navigate('CloudLibrary', {})} /> : null}
-          {!locLibs.length && !token ? (
+          {!locLibs.length && !serverLibs.length && !token && !IS_WEB ? (
             <Text style={[st.intro, IS_HD && hd.intro]}>登录后可开启云曲库，或点右上角 ＋ 添加本机曲库。</Text>
           ) : null}
         </View>
@@ -203,7 +246,7 @@ export function MediaLibsScreen() {
             <View style={{ flex: 1, minWidth: 0 }}>
               <View style={ml.titleRow}>
                 <Text style={[ml.title, IS_HD && ml.titleHD]} numberOfLines={1}>{pub.summary?.name || '公共曲库'}</Text>
-                <View style={[ml.typeChip, { flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
+                <View style={[ml.typeChip, { flexDirection: 'row', alignItems: 'center', gap: SP.xs }]}>
                   <Icon name="shield" size={9} color={C.brandText} />
                   <Text style={ml.typeChipText}>官方</Text>
                 </View>
@@ -235,13 +278,16 @@ export function MediaLibsScreen() {
                   onLongPress={IS_WEB ? undefined : () => openMenu(a)}
                   onHoverIn={IS_WEB ? () => setHoverId(a.id) : undefined}
                   onHoverOut={IS_WEB ? () => setHoverId(null) : undefined}                >
-                  <View style={[ml.iconWrap, IS_HD && ml.iconWrapHD]}><AcctGlyph type={a.type} size={IS_HD ? 34 : 28} /></View>
+                  <View style={[ml.iconWrap, IS_HD && ml.iconWrapHD]}><AcctGlyph type={a.type} size={IS_HD ? 32 : 26} /></View>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <View style={ml.titleRow}>
                       <Text style={[ml.title, IS_HD && ml.titleHD]} numberOfLines={1}>{a.name || label}</Text>
                       <View style={ml.typeChip}><Text style={ml.typeChipText}>{label}</Text></View>
                     </View>
-                    <Text style={[ml.sub, IS_HD && ml.subHD]} numberOfLines={1}>{a.base}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm }}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.brand }} />
+                      <Text style={[ml.sub, IS_HD && ml.subHD]} numberOfLines={1}>已连接 · {a.base}</Text>
+                    </View>
                   </View>
                   {testId === a.id ? <ActivityIndicator size="small" color={C.brand} style={ml.spin} /> : null}
                   {/* lx167:⋯ 菜单常驻——原先 web 靠 hover 浮出,HD/桌面/触屏无 hover 等于没有管理入口 */}
@@ -307,6 +353,76 @@ const AnimatedTO = Animated.createAnimatedComponent(TouchableOpacity);
 // 单段数据缓存：null=未加载
 interface SegState<T> { data: T | null; err: string | null; busy: boolean; }
 
+// ---------- [v5.6 1010·LEO 基准稿v5.6] 第三方单源页 v5 静态能力表 ----------
+// 从 providers.ts / providers-v2.ts 各引擎实际接线推导(streamFor/streamOf·transcodeFor·scrobble·playlists·Items/Latest):
+// 批5a:相似电台(similarFor)+收藏打星(favorite)已接 subsonic系+emby/jf(听风/WebDAV/v2 族无对应 API 恒 dim);进度同步=ABS 专有且 v1 未接(dim);最新入库=emby/jf Items/Latest 原生
+interface PvCaps {
+  link: boolean;      // 万能取链(streamFor/streamOf 已接)
+  transcode: boolean; // 服务端转码(transcodeFor:emby/jf 转码流·subsonic 系限码率)
+  radio: boolean;     // 相似电台
+  star: boolean;      // 收藏打星
+  scrobble: boolean;  // 播放上报(scrobble?id= / PlayedItems+Sessions)
+  playlist: boolean;  // 歌单同步(playlists() 已接)
+  progress: boolean;  // 进度同步(ABS 专有,v1 未接)
+  latest: boolean;    // 最新入库端点(Items/Latest)
+  albums: boolean; artists: boolean; // 维度 tabs 显隐
+}
+type DimKey = 'songs' | 'albums' | 'artists' | 'lists'; // [老板 1010] 只留真实维度键;收藏/文件夹/电台无端点恒死,死键直接删
+// [老板 1010·按源定制] 分源布局:PROTOCOL 映射分流,不改路由结构——
+// media=emby/jf 媒体服务器富布局 · lean=subsonic 系导航式精简 · netease=听风网易云风 · generic=v2 族保持通用维度 tabs(daoliyu/plex 等后续批)
+type PvLayout = 'media' | 'lean' | 'netease' | 'generic';
+function pvLayoutOf(t: ProviderType): PvLayout {
+  const p = PROTOCOL[t];
+  if (p === 'emby' || p === 'jellyfin') return 'media';
+  if (p === 'subsonic') return 'lean';
+  if (p === 'tingfeng') return 'netease';
+  return 'generic';
+}
+const PV_CAPS: Record<ProviderType, PvCaps> = {
+  // 六已接源(增量批1)
+  emby:     { link: true, transcode: true,  radio: true,  star: true,  scrobble: true,  playlist: true,  progress: false, latest: true,  albums: true,  artists: true },
+  jellyfin: { link: true, transcode: true,  radio: true,  star: true,  scrobble: true,  playlist: true,  progress: false, latest: true,  albums: true,  artists: true },
+  subsonic: { link: true, transcode: true,  radio: true,  star: true,  scrobble: true,  playlist: true,  progress: false, latest: false, albums: true,  artists: true },
+  navidrome:{ link: true, transcode: true,  radio: true,  star: true,  scrobble: true,  playlist: true,  progress: false, latest: false, albums: true,  artists: true },
+  webdav:   { link: true, transcode: false, radio: false, star: false, scrobble: false, playlist: false, progress: false, latest: false, albums: false, artists: false },
+  tingfeng: { link: true, transcode: false, radio: false, star: false, scrobble: false, playlist: true,  progress: false, latest: false, albums: false, artists: false },
+  // 后续批(Songloft/群晖/飞牛/道理鱼/ABS 等;接线以 providers-v2 现状为准,待后续批拉齐)
+  plex:           { link: true, transcode: false, radio: false, star: false, scrobble: true,  playlist: true, progress: false, latest: false, albums: true, artists: true },
+  audiobookshelf: { link: true, transcode: false, radio: false, star: false, scrobble: false, playlist: true, progress: false, latest: false, albums: true, artists: true },
+  audiostation:   { link: true, transcode: false, radio: false, star: false, scrobble: false, playlist: true, progress: false, latest: false, albums: true, artists: true },
+  mstream:        { link: true, transcode: false, radio: false, star: false, scrobble: false, playlist: true, progress: false, latest: false, albums: true, artists: true },
+  songloft:       { link: true, transcode: false, radio: false, star: false, scrobble: true,  playlist: true, progress: false, latest: false, albums: true, artists: true },
+  feiniu:         { link: true, transcode: false, radio: false, star: false, scrobble: false, playlist: true, progress: false, latest: false, albums: true, artists: true },
+  daoliyu:        { link: true, transcode: false, radio: false, star: false, scrobble: true,  playlist: true, progress: false, latest: false, albums: true, artists: true },
+};
+// [老板 1010·按源定制] 能力芯片键序(渲染按布局分流,见组件内 chips):
+// lean 只留真实接线位(相似电台/收藏打星/转码限码率,删不 dim)·media 全量但转码 dim(直流用户无感)+进度芯片删(ABS 专属)·
+// netease 不渲染芯片条(网易云风无能力条)·generic 只渲染已接芯片(死芯片不显示)
+const CAP_KEYS: { key: 'link' | 'transcode' | 'radio' | 'star' | 'scrobble' | 'playlist'; label: string }[] = [
+  { key: 'link', label: '万能取链' },
+  { key: 'transcode', label: '服务端转码' },
+  { key: 'radio', label: '相似电台' },
+  { key: 'star', label: '收藏打星' },
+  { key: 'scrobble', label: '播放上报' },
+  { key: 'playlist', label: '歌单同步' },
+];
+// [批5a] 音质档按钮组(基准稿 qrow):v=kbps 传引擎限码率(subsonic maxBitRate / emby·jf audioBitRate);末档=无损(原始流直出)
+// 仅服务端转码能力源(caps.transcode:emby/jf/subsonic系)渲染——WebDAV/听风/v2 族无端点不显,不亮不造假
+const PV_QUALITIES: { label: string; v?: number }[] = [
+  { label: '128', v: 128 },
+  { label: '192', v: 192 },
+  { label: '256', v: 256 },
+  { label: '320', v: 320 },
+  { label: '无损' },
+];
+// 品牌渐变映射(HERO_GRADS 已扩品牌档;plex=金复用 gold;未映射源回退 blue)
+const BRAND_HERO_GRAD: Partial<Record<ProviderType, HeroGrad>> = {
+  emby: 'emby', jellyfin: 'jellyfin', navidrome: 'navidrome', subsonic: 'subsonic',
+  webdav: 'webdav', tingfeng: 'tingfeng', plex: 'gold',
+};
+// 源健康点配色(同 LibStatus 三态:正常 brand/延迟 warn/断连 danger)
+const PV_STATUS_COLOR: Record<string, string> = { ok: C.brand, warn: '#E8B33D', bad: '#D94D45' };
+
 export function ProviderBrowseScreen({ route }: { route: { params: { acctId: string } } }) {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string, p?: object) => void };
@@ -337,6 +453,16 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
   const [songs, setSongs] = useState<SegState<SongItem[]>>({ data: null, err: null, busy: false });
   const [lists, setLists] = useState<SegState<PvPlaylist[]>>({ data: null, err: null, busy: false });
   const [swSheet, setSwSheet] = useState(false);
+  // [v5.6 1010] 维度 tabs 当前项(songs/albums/artists/lists;收藏/文件夹/电台=后续批能力,本批恒灰)
+  const [dimTab, setDimTab] = useState<DimKey>('albums');
+  // [v5.6 1010] 最新入库(Items/Latest):仅 emby/jf 引擎有此端点(能力表驱动);拉不到不渲染副卡,不造假数据
+  const [latest, setLatest] = useState<SegState<PvAlbum[]>>({ data: null, err: null, busy: false });
+  // [批5a] 账号级音质档重渲染钟摆(档位真身存 ProviderAcct.quality,qrow 点选落盘后 setQSel 触发重读 acct)
+  const [, setQSel] = useState<number | undefined>(undefined);
+  // [老板 1010·听风重规划] 源内搜索(netease 布局专属·真端点 netease/search):关键词/结果/最近一次搜索词
+  const [tfKw, setTfKw] = useState('');
+  const [tfLastKw, setTfLastKw] = useState('');
+  const [tfRes, setTfRes] = useState<SegState<SongItem[]>>({ data: null, err: null, busy: false });
 
   // webdav 状态（沿用目录浏览）
   const [davDir, setDavDir] = useState('/');
@@ -353,6 +479,8 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
     setArtists({ data: null, err: null, busy: false });
     setSongs({ data: null, err: null, busy: false });
     setLists({ data: null, err: null, busy: false });
+    setLatest({ data: null, err: null, busy: false });
+    setTfKw(''); setTfLastKw(''); setTfRes({ data: null, err: null, busy: false });
   };
 
   // 分段数据加载器（懒加载与重试共用；不能只重置 state 依赖 effect 重跑——deps 不含 state）
@@ -380,6 +508,30 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
       .then(d => setLists({ data: d, err: null, busy: false }))
       .catch(e => setLists({ data: null, err: (e as Error).message, busy: false }));
   };
+  // [v5.6 1010] 最新入库:Items/Latest(JF 谱系原生端点;能力表 latest=true 才拉);失败静默(副卡不渲染),旧数据保留
+  const loadLatest = (a: ProviderAcct, force = false) => {
+    if (!PV_CAPS[a.type].latest) return;
+    setLatest(s => (s.data || s.busy ? (force ? { ...s, busy: true } : s) : { ...s, busy: true }));
+    const root = a.root || (a.type === 'emby' ? `${a.base.trim().replace(/\/+$/, '')}/emby` : a.base.trim().replace(/\/+$/, ''));
+    const q = a.token ? `&api_key=${encodeURIComponent(a.token)}` : ''; // query token:web 端 <img> 带不了 header,同既有封面 URL 先例
+    fetch(`${root}/Users/${a.userId}/Items/Latest?IncludeItemTypes=MusicAlbum&Limit=12${q}`)
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(async (d: unknown) => {
+        const items = (Array.isArray(d) ? d : ((d as { Items?: Record<string, unknown>[] }).Items || [])) as Record<string, unknown>[];
+        const list: PvAlbum[] = items.filter(it => !/\.(mp4|mkv|avi|ts|mov|flv|webm|m2ts|wmv)$/i.test(String(it.Name || ''))).map(it => ({ // [老板 1011 15:57] 视频伪专辑过滤
+            id: String(it.Id), name: String(it.Name || ''),
+            artist: it.AlbumArtist ? String(it.AlbumArtist)
+              : (Array.isArray(it.Artists) && (it.Artists as unknown[]).length ? String((it.Artists as unknown[])[0]) : undefined),
+            songCount: it.ChildCount ? Number(it.ChildCount) : undefined,
+            year: it.ProductionYear ? Number(it.ProductionYear) : undefined,
+            cover: (it.ImageTags as Record<string, string> | undefined)?.Primary
+              ? `${root}/Items/${it.Id}/Images/Primary?maxWidth=300${q}` : undefined,
+        }));
+        await embyAlbumArtFill(a, list); // [老板 1011 11:35] 缺封面→专辑内首曲嵌入图兜底
+        setLatest({ data: list, err: null, busy: false });
+      })
+      .catch(e => setLatest(s => (s.data ? s : { data: null, err: (e as Error).message, busy: false })));
+  };
 
   // 听风无专辑/艺术家概念：歌曲=新歌速递；歌单数组含 liked:/recent:/mine:/pl:/top: 五类
   const isTf = acct?.type === 'tingfeng';
@@ -388,7 +540,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
   useEffect(() => {
     if (!acct || isDav) return;
     if (!isTf) { loadAlbums(acct); loadArtists(acct); }
-    loadSongs(acct); loadLists(acct);
+    loadSongs(acct); loadLists(acct); loadLatest(acct);
   }, [acctId, isDav]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // WebDAV 目录加载
@@ -408,11 +560,34 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
     if (id === acctId) return;
     setAcctId(id);
     setDavDir('/'); setDavDirs([]); setDavSongs([]); setDavBusy(true);
+    setQSel(undefined); // [批5a] 音质档随账号切换重读(acct.quality 渲染时取真值)
     resetAll();
     setExpanded({});
   };
 
   const refreshSongs = () => { if (acct) loadSongs(acct); };
+
+  // [老板 1010·听风重规划] 源内搜索:真端点 netease/search(只跟听风引擎);清空即收起结果
+  const runTfSearch = () => {
+    const kw = tfKw.trim();
+    if (!kw || !acct) return;
+    setTfLastKw(kw);
+    setTfRes({ data: null, err: null, busy: true });
+    providerApi.search(acct, kw)
+      .then(d => setTfRes({ data: d, err: null, busy: false }))
+      .catch(e => setTfRes({ data: null, err: (e as Error).message, busy: false }));
+  };
+  const clearTfSearch = () => { setTfKw(''); setTfLastKw(''); setTfRes({ data: null, err: null, busy: false }); };
+
+  // ⑦.3-v2:整库刷新(重置分区缓存后重拉)+源健康状态点(全部分区失败=断连/部分失败=延迟/正常)
+  const refreshAll = () => {
+    if (!acct) return;
+    if (!isTf) { setAlbums({ data: null, err: null, busy: false }); setArtists({ data: null, err: null, busy: false }); loadAlbums(acct); loadArtists(acct); }
+    setLists({ data: null, err: null, busy: false }); loadLists(acct); loadSongs(acct);
+    setLatest({ data: null, err: null, busy: false }); loadLatest(acct, true);
+  };
+  const pvStatus = (albums.err && artists.err && songs.err) || (isTf && songs.err && lists.err) ? 'bad'
+    : albums.err || artists.err || songs.err || lists.err ? 'warn' : 'ok';
 
   const importDav = (name: string, ss: SongItem[]) => {
     if (!ss.length) return;
@@ -464,6 +639,99 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
   // ---------- render ----------
   const allAccts = providers.all();
 
+  // ---------- [v5.6 1010] 第三方页 v5 头区派生值:能力表/品牌渐变/英雄卡对/维度 tabs(统计=既有 SegState 真值) ----------
+  const caps = PV_CAPS[acct.type];
+  const brandLabel = PROVIDER_META[acct.type].label;
+  const heroGrad: HeroGrad = BRAND_HERO_GRAD[acct.type] || 'blue';
+  const statusWord = pvStatus === 'ok' ? '连接正常' : pvStatus === 'warn' ? '连接波动' : '连接异常';
+
+  // duo 双入口真播放(songs 队列:播放全部原序/随机播放洗牌)——仅第三方页保留入口行(v5.6 老板令)
+  const playProviderAll = () => {
+    const d = songs.data || [];
+    if (!d.length) { toast('库里还没有歌曲'); return; }
+    playSong(d[0], d);
+  };
+  const playProviderShuffle = () => {
+    const d = songs.data || [];
+    if (!d.length) { toast('库里还没有歌曲'); return; }
+    const sh = [...d];
+    for (let i = sh.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [sh[i], sh[j]] = [sh[j], sh[i]]; }
+    playSong(sh[0], sh);
+  };
+
+  // [批5a] 相似电台:长按专辑卡/艺人行/最新入库卡 或歌曲菜单「相似电台」——引擎 similarFor
+  // (subsonic getSimilarSongs2·getTopSongs 回退 / emby·jf InstantMix·Artists/Similar 回退)→playSong 队列;失败 toast 不造假
+  const playRadio = (id: string, name: string, kind: 'song' | 'album' | 'artist', artistName?: string) => {
+    if (!acct || !caps.radio || !id) return;
+    toast(`正在生成「${name}」相似电台…`);
+    providerApi.similarFor(acct, id, { kind, artistName })
+      .then(q => { if (q.length) { playSong(q[0], q); toast(`相似电台已开播 · ${q.length} 首`); } else toast('服务器没有返回相似歌曲'); })
+      .catch(e => toast(`相似电台失败：${(e as Error).message}`));
+  };
+  // [批5a] 源侧收藏打星:subsonic star/unstar · emby/jf FavoriteItems;songmid=pid:itemId 解析回源账号;成功 toast
+  const pvFavToggle = (s: SongItem) => {
+    const [spid, iid] = String(s.songmid ?? '').split(':');
+    if (!acct || !iid) return;
+    const ta = providers.get(spid) || acct;
+    if (!PV_CAPS[ta.type].star) return;
+    const on = (s as { pvFav?: boolean }).pvFav !== true; // 已收藏→取消
+    providerApi.favorite(ta, iid, on)
+      .then(() => { toast(on ? `已收藏到「${ta.name || PROVIDER_META[ta.type].label}」` : '已取消收藏'); setActSong(null); })
+      .catch(e => toast(`收藏失败：${(e as Error).message}`));
+  };
+
+  // 主卡统计(真实数据:emby/jf 列表端点上限 300、subsonic 系 200,贴满显 + 不吹总数)
+  const songTotal = (albums.data || []).reduce((n, al) => n + (al.songCount || 0), 0);
+  const listCap = acct.type === 'emby' || acct.type === 'jellyfin' ? 300 : 200;
+  const fmtCap = (n: number, cap: number) => (n >= cap ? `${n}+` : String(n));
+  const heroStats: React.ReactNode = isTf
+    ? (lists.data ? `歌单 ${lists.data.length} · 新歌 ${songs.data?.length ?? 0} 首` : '统计读取中…')
+    : albums.data != null || artists.data != null
+      ? (<>{songTotal > 0 ? <><Text style={pv.heroStB}>{songTotal.toLocaleString()} 首</Text>{' · '}</> : null}{`专辑 ${fmtCap(albums.data?.length || 0, listCap)} · 艺人 ${fmtCap(artists.data?.length || 0, listCap)}`}</>)
+      : (albums.err && artists.err ? '统计暂不可用' : '统计读取中…');
+
+  // 英雄卡对:主卡=源身份卡(品牌渐变+真实统计+连接 mini+播放钮,点击=播放全部);副卡=violet 最新入库(有 Latest 数据才渲染)
+  const heroes: LibHero[] = [{
+    grad: heroGrad,
+    big: acct.name && acct.name !== brandLabel ? `${brandLabel} · ${acct.name}` : brandLabel,
+    st: heroStats,
+    mini: `${statusWord}${acct.user ? ` · ${acct.user}` : ''} · ${acct.base}`,
+    icon: 'play',
+    onPress: playProviderAll,
+    disabled: !songs.data?.length,
+  }];
+  if (latest.data?.length) {
+    heroes.push({
+      grad: 'violet', big: '最新入库', icon: 'play',
+      st: <>最近入库 <Text style={pv.heroStB}>{latest.data.length} 张专辑</Text></>,
+      mini: latest.data[0]?.name ? `新到《${latest.data[0].name}》 · Items/Latest 端点` : 'Items/Latest 端点 · 实时',
+      onPress: () => {
+        const first = latest.data?.[0];
+        if (!first) return;
+        providerApi.albumSongs(acct, first.id)
+          .then(ss => { if (ss.length) playSong(ss[0], ss); else toast('这张专辑还没有歌曲'); })
+          .catch(e => toast(`取歌失败：${(e as Error).message}`));
+      },
+    });
+  }
+
+  const pvLayout = pvLayoutOf(acct.type); // [老板 1010·按源定制] 布局分流:media/lean/netease/generic
+  // 维度 tabs(按源能力;count=SegState 真值) [老板 1010] 死键(收藏/文件夹/电台=恒灰)删除不渲染;
+  // lean(subsonic 系)导航式精简=高频前置(专辑墙/歌曲在先);netease(听风)不渲染 tabs——网易云风分区纵排
+  const dimDefs: { key: DimKey; label: string; on: boolean; count?: string }[] = pvLayout === 'lean' ? [
+    { key: 'albums', label: '专辑', on: caps.albums, count: albums.data ? fmtCap(albums.data.length, listCap) : undefined },
+    { key: 'songs', label: '歌曲', on: true, count: songs.data ? String(songs.data.length) : undefined },
+    { key: 'artists', label: '艺人', on: caps.artists, count: artists.data ? fmtCap(artists.data.length, listCap) : undefined },
+    { key: 'lists', label: '歌单', on: caps.playlist, count: lists.data ? String(lists.data.length) : undefined },
+  ] : [
+    { key: 'songs', label: isTf ? '新歌' : '歌曲', on: true, count: songs.data ? String(songs.data.length) : undefined },
+    { key: 'albums', label: '专辑', on: caps.albums, count: albums.data ? fmtCap(albums.data.length, listCap) : undefined },
+    { key: 'artists', label: '艺人', on: caps.artists, count: artists.data ? fmtCap(artists.data.length, listCap) : undefined },
+    { key: 'lists', label: '歌单', on: caps.playlist, count: lists.data ? String(lists.data.length) : undefined },
+  ];
+  const dimOk = (k: DimKey) => (k === 'songs' ? true : k === 'albums' ? caps.albums : k === 'artists' ? caps.artists : k === 'lists' ? caps.playlist : false);
+  const dim = dimOk(dimTab) ? dimTab : (caps.albums ? 'albums' : 'lists'); // 切账号后当前维度不可用时回退默认
+
   return (
     <View style={st.screen}>
       {/* 自定义头部：返回 + [logo+账号名 ▾] 一键切换 + 添加 */}
@@ -501,6 +769,18 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
       {isDav ? (
         /* ---------- WebDAV 目录浏览 v3.31 行式 + 0922 三端适配：TV 焦点放大行 / 桌面≥900 双区（左列表+右操作栏）/ 窄窗单列 ---------- */
         <ScrollView contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : (IS_WEB ? Math.min(Math.max(winW * 0.02, 16), 40) : 20), paddingTop: 4, paddingBottom: ((current ? 100 : 0) + insets.bottom + 24) + (IS_HD ? 24 : 0) }}>
+          {/* ⑦.3-v2 壳统一:品牌 logo 横幅+连接状态点+快捷动作(内容=目录型 B 层能力:文件夹为主,不硬造热门/流派) */}
+          <View style={{ gap: SP.xl, marginBottom: 8 }}>
+            <LibBanner kind="provider" name={acct.name || 'WebDAV'} sub={acct.base}
+              status={davErr ? 'bad' : davBusy ? 'warn' : 'ok'}
+              stats={davBusy ? '读取中' : davErr ? '连接失败' : `${davDirs.length} 个文件夹 · ${davSongs.length} 首`}
+              brand={<AcctGlyph type={acct.type} size={IS_HD ? 30 : 22} />} />
+            <LibActions actions={[
+              { icon: 'refresh', label: '刷新', onPress: () => void davLoad(), disabled: davBusy },
+              { icon: 'settings', label: '连接设置', onPress: () => nav.navigate('ProviderEdit', { acctId: acct.id }) },
+              ...(davSongs.length && !davSelMode ? [{ icon: 'play' as const, label: '播放全部', primary: true, onPress: () => playSong(davSongs[0], davSongs) }] : []),
+            ]} />
+          </View>
           {davBusy ? (
             <View style={[dv.listWrap, davWide && dv.listWrapWeb]}>
               {[0, 1, 2, 3, 4, 5].map(i => <View key={i} style={[dv.rowSkel, IS_HD && dv.rowSkelHD]} />)}
@@ -517,7 +797,7 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
             <>
               {/* 顶栏：左面包屑目录层级(flex:1 可横向滚动) + 右侧页面右端常驻动作组(不折叠不收纳，不入滚动区) */}
               <View style={dv.topRow}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[dv.crumbWrap, { flex: 1, minWidth: 0 }]} contentContainerStyle={{ gap: IS_HD ? 6 : 4, alignItems: 'center' }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[dv.crumbWrap, { flex: 1, minWidth: 0 }]} contentContainerStyle={{ gap: IS_HD ? SP.sm : SP.xs, alignItems: 'center' }}>
                 {(() => {
                   const segs = davDir.split('/').filter(Boolean);
                   const crumbs = [{ label: '根目录', path: '/' }];
@@ -646,13 +926,119 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
       ) : (
         /* ---------- 综合浏览页：分区纵排（2026-09-17 老板：一个综合页面，不做 tab） ---------- */
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingBottom: IS_HD ? pageBottom(32) : (current ? 116 : 32), gap: IS_HD ? 22 : 16 }}
+          contentContainerStyle={{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingBottom: IS_HD ? pageBottom(32) : (current ? 116 : 32), gap: SP.section }} // [老板 1011 12:44] 段距统一 18(为我推荐基准;原 HD24/phone20)
         >
-          {isTf ? (() => {
-            // 听风：providers.playlists 返回五类（liked:/recent:/mine:/pl:/top: 前缀），拆成分区
+          {/* [v5.6 1010·LEO 基准稿] phead:品牌标+源名+账号@地址 sub+连接状态点(辉光)+右上 刷新/连接设置 */}
+          <View style={pv.phead}>
+            <View style={[pv.pheadLogo, IS_HD && pv.pheadLogoHD]}><AcctGlyph type={acct.type} size={IS_HD ? 30 : 24} /></View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <View style={pv.pheadNameRow}>
+                <Text style={[pv.pheadName, IS_HD && pv.pheadNameHD]} numberOfLines={1}>{acct.name || PROVIDER_META[acct.type].label}</Text>
+                <View style={[pv.dot, { backgroundColor: PV_STATUS_COLOR[pvStatus], shadowColor: PV_STATUS_COLOR[pvStatus] }]} />
+              </View>
+              <Text style={pv.pheadSub} numberOfLines={1}>
+                {PROVIDER_META[acct.type].label}{acct.user ? ` · ${acct.user}` : ''} · {acct.base}
+              </Text>
+            </View>
+            <T style={[pv.pheadBtn, IS_HD && pv.pheadBtnHD]} focusStyle={focus(12)} onPress={refreshAll}>
+              <Icon name="refresh" size={IS_HD ? 19 : 16} color={C.text2} />
+            </T>
+            <T style={[pv.pheadBtn, IS_HD && pv.pheadBtnHD]} focusStyle={focus(12)} onPress={() => nav.navigate('ProviderEdit', { acctId: acct.id })}>
+              <Icon name="settings" size={IS_HD ? 19 : 16} color={C.text2} />
+            </T>
+          </View>
+
+          {/* 英雄卡对(仅第三方页保留 duo 入口行——英雄卡=源身份卡非动作卡):主卡=品牌渐变身份卡(真实统计+连接 mini+播放钮);副卡=violet 最新入库(有 Latest 数据才渲染) */}
+          <HeroPair heroes={heroes} duo={{ playAll: playProviderAll, shuffle: playProviderShuffle, disabled: !songs.data?.length }} />
+
+          {/* [老板 1010·听风重规划] 源内搜索框(netease 布局专属·真端点 netease/search):网易云风顶部搜索位,回车搜/×清空收起 */}
+          {pvLayout === 'netease' || pvLayout === 'media' ? (
+            <View style={[pv.tfSearchBar, IS_HD && pv.tfSearchBarHD]}>
+              <Icon name="search" size={20} color={C.text2} />
+              <TextInput
+                style={pv.tfSearchInput}
+                placeholder={pvLayout === 'netease' ? '搜索听风：歌名 / 歌手' : '搜索曲库：歌名 / 歌手'}
+                placeholderTextColor={C.text3}
+                value={tfKw}
+                onChangeText={setTfKw}
+                onSubmitEditing={runTfSearch}
+                returnKeyType="search"
+              />
+              {tfKw ? (
+                <T focusStyle={focus(10)} onPress={clearTfSearch} hitSlop={6}>
+                  <Icon name="close" size={14} color={C.text3} />
+                </T>
+              ) : null}
+            </View>
+          ) : null}
+
+          {/* 能力芯片 caps [老板 1010·按源定制]:netease(听风)不渲染能力条;lean(subsonic系)只留真实接线位(相似电台/收藏打星/服务端转码);media/generic 只亮已接芯片(死芯片不显示·拒绝造假) */}
+          {pvLayout !== 'netease' ? (
+            <View style={pv.caps}>
+              {CAP_KEYS.filter(cd => (pvLayout === 'lean' ? ['radio', 'star', 'transcode'].includes(cd.key) : true) && caps[cd.key]).map(cd => (
+                <View key={cd.key} style={pv.cap}>
+                  <View style={[pv.capDot, { backgroundColor: C.brand }]} />
+                  <Text style={[pv.capT, pv.capTOn]}>{cd.label}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          {/* [批5a] 音质档 qrow(基准稿):仅服务端转码能力源显(emby/jf/subsonic系)——128/192/256/320/无损;当前档高亮,点选持久化到账号(ProviderAcct.quality),取链时引擎读取 */}
+          {caps.transcode ? (
+            <View style={pv.qrow}>
+              <Text style={pv.qLabel}>音质档</Text>
+              {PV_QUALITIES.map(t => {
+                const on = acct.quality === t.v; // 缺省(undefined)=无损档
+                return (
+                  <T key={t.label} style={[pv.qBtn, on && pv.qBtnOn]} focusStyle={focus(10)}
+                    onPress={() => { providers.save({ ...acct, quality: t.v }); setQSel(t.v); toast(t.v ? `音质档已设为 ${t.v}k · 账号级，下次取链生效` : '音质档已设为无损 · 原始流直出'); }}>
+                    <Text style={[pv.qBtnT, on && pv.qBtnTOn]}>{t.label}</Text>
+                  </T>
+                );
+              })}
+            </View>
+          ) : null}
+
+          {/* 维度 tabs(按源能力;灰=该源无此维度) [老板 1010] netease(听风)不渲染——网易云风分区纵排 */}
+          {pvLayout !== 'netease' && !tfLastKw ? <View style={pv.dimtabs}>
+            {dimDefs.map(t => t.on ? (
+              <T key={t.key} style={[pv.dimtab, IS_HD && pv.dimtabHD, dim === t.key && pv.dimtabOn]} focusStyle={focus(999)} onPress={() => setDimTab(t.key)}>
+                <Text style={[pv.dimtabT, dim === t.key && pv.dimtabTOn]}>{t.label}</Text>
+                {t.count ? <Text style={[pv.dimtabCnt, dim === t.key && pv.dimtabCntOn]}>{t.count}</Text> : null}
+              </T>
+            ) : (
+              <View key={t.key} style={[pv.dimtab, IS_HD && pv.dimtabHD, pv.dimtabOff]}>
+                <Text style={pv.dimtabTOff}>{t.label}</Text>
+              </View>
+            ))}
+          </View> : null}
+          {/* [老板 1011 11:49] media(emby/jf)搜索结果态:与 netease 同款,替换维度内容 */}
+          {pvLayout === 'media' && tfLastKw ? (
+            <View>
+              <SectionHead title={`搜索「${tfLastKw}」`} actionLabel="清除返回" onAction={clearTfSearch} />
+              <SegBody state={tfRes} onRetry={runTfSearch}>
+                <View style={sec.songsBar}>
+                  {tfRes.data?.length ? (<>
+                    <Text style={sec.previewHint}>共 {tfRes.data.length} 首</Text>
+                    <T style={st.shuffleBtn} activeOpacity={0.7} focusStyle={focus(16)}
+                      onPress={() => { if (tfRes.data?.length) playSong(tfRes.data[0], tfRes.data); }}>
+                      <Icon name="play" size={14} color={C.onBrand} />
+                      <Text style={st.shuffleBtnText}>播放全部</Text>
+                    </T>
+                  </>) : null}
+                </View>
+                {(tfRes.data || []).map((s, i) => (
+                  <SongRow key={`pvs-${s.songmid}-${i}`} song={s} playing={current?.songmid === s.songmid} onPress={() => playSong(s, tfRes.data || [])} onMore={() => setActSong(s)} />
+                ))}
+              </SegBody>
+            </View>
+          ) : isTf ? (() => {
+            // 听风：providers.playlists 返回六类（liked:/recent:/dl:/mine:/pl:/top: 前缀），拆成分区
             const all = lists.data || [];
             const tfLiked = all.find(x => x.id === 'liked:');
             const tfRecent = all.find(x => x.id === 'recent:');
+            const tfDl = all.find(x => x.id === 'dl:'); // [老板 1011 11:27] NAS 曲库(听风自动落库曲)
             const mine = all.filter(x => x.id.startsWith('mine:'));
             const recs = all.filter(x => x.id.startsWith('pl:'));
             const tops = all.filter(x => x.id.startsWith('top:'));
@@ -660,25 +1046,41 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
               acctId: acct.id, kind: 'playlist', id: pl.id, name: pl.name, cover: pl.cover,
               sub: pl.songCount ? `${pl.songCount} 首` : undefined,
             });
+            // [老板 1010·听风重规划] 搜索结果态:tfLastKw 非空时整页切结果区(清空返回正常分区)
+            if (tfLastKw) {
+              return (
+                <View>
+                  <SectionHead title={`搜索「${tfLastKw}」`} actionLabel="清除返回" onAction={clearTfSearch} />
+                  <SegBody state={tfRes} onRetry={runTfSearch}>
+                    <View style={sec.songsBar}>
+                      {tfRes.data?.length ? (<>
+                        <Text style={sec.previewHint}>共 {tfRes.data.length} 首</Text>
+                        <T style={st.shuffleBtn} activeOpacity={0.7} focusStyle={focus(16)}
+                          onPress={() => { if (tfRes.data?.length) playSong(tfRes.data[0], tfRes.data); }}>
+                          <Icon name="play" size={14} color={C.onBrand} />
+                          <Text style={st.shuffleBtnText}>播放全部</Text>
+                        </T>
+                      </>) : null}
+                    </View>
+                    {(tfRes.data || []).map((s, i) => (
+                      <SongRow key={`tfs-${s.songmid}-${i}`} song={s} playing={current?.songmid === s.songmid} onPress={() => playSong(s, tfRes.data || [])} onMore={() => setActSong(s)} />
+                    ))}
+                  </SegBody>
+                </View>
+              );
+            }
             return (
               <>
-                {/* 我的音乐：继续收听 / 我喜欢的 双入口卡 */}
+                {/* [v5.6] 歌单维度 tab:我的音乐/我的歌单/推荐/排行(原分区纵排收进 tab);[老板 1010] netease 布局恒显(网易云风纵排无 tabs) */}
+                {(pvLayout === 'netease' || dim === 'lists') ? (<>
+                {/* [老板 1011 11:57] 我的音乐:PvCard 标准规格(与推荐歌单 rail 同款卡同 gap;修间距大卡片小不统一) */}
                 <View>
                   <SectionHead title="我的音乐" />
-                  <View style={sec.dualRow}>
-                    {[tfRecent, tfLiked].filter(Boolean as unknown as (v: PvPlaylist | undefined) => v is PvPlaylist).map(pl => (
-                      <T key={pl.id} style={sec.dualCard} activeOpacity={0.85} focusStyle={focus(14)} onPress={() => toDetail(pl)}>
-                        <View style={[sec.dualCover, coverGrad(pl.name) as ViewStyle]}>
-                          <Icon name={pl.id === 'liked:' ? 'heart' : 'play'} size={20} color="#ffffffcc" />
-                        </View>
-                        <View style={{ flex: 1, minWidth: 0 }}>
-                          <Text style={sec.dualTitle} numberOfLines={1}>{pl.name}</Text>
-                          <Text style={sec.dualMeta} numberOfLines={1}>{pl.songCount ? `${pl.songCount} 首` : '—'}</Text>
-                        </View>
-                        <Icon name="chevronright" size={16} color={C.text3} />
-                      </T>
-                    ))}
-                  </View>
+                  <GridWall>
+                    {tfDl ? <PvCard fill name="NAS 曲库" cover={tfDl.cover} meta={tfDl.songCount ? `${tfDl.songCount} 首 · 自动落库` : '暂无落库歌曲'} onPress={() => toDetail(tfDl)} /> : null}
+                    {tfRecent ? <PvCard fill name="最近播放" cover={tfRecent.cover} meta={tfRecent.songCount ? `${tfRecent.songCount} 首` : '—'} onPress={() => toDetail(tfRecent)} /> : null}
+                    {tfLiked ? <PvCard fill name="我喜欢的音乐" cover={tfLiked.cover} meta={tfLiked.songCount ? `${tfLiked.songCount} 首` : '—'} onPress={() => toDetail(tfLiked)} /> : null}
+                  </GridWall>
                 </View>
 
                 {/* 我的歌单 */}
@@ -686,18 +1088,13 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                   <View>
                     <SectionHead title="我的歌单" count={mine.length} actionLabel={expanded.tfMine ? '收起' : '全部'} onAction={() => setExpanded(e => ({ ...e, tfMine: !e.tfMine }))} />
                     {expanded.tfMine ? (
-                      <View style={st.albumGrid}>
+                      <GridWall>
                         {mine.map(pl => (
-                          <T key={pl.id} style={[st.albumCell, IS_WEB && st.albumCellWeb]} activeOpacity={0.85} focusStyle={focus(10)} onPress={() => toDetail(pl)}>
-                            {pl.cover ? <Image source={{ uri: pl.cover }} style={st.albumCover} />
-                              : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name) as ViewStyle]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
-                            <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{pl.name}</Text>
-                            <Text style={[st.albumMeta, IS_HD && bv.albumMeta]} numberOfLines={1}>{pl.songCount ? `${pl.songCount}首` : ''}</Text>
-                          </T>
-                        ))}
-                      </View>
+  <PvCard fill key={pl.id} cover={pl.cover} name={pl.name} meta={pl.songCount ? `${pl.songCount} 首` : ''} onPress={() => toDetail(pl)} />
+))}
+                      </GridWall>
                     ) : (
-                      <Rail>{mine.map(pl => <PvCard key={pl.id} cover={pl.cover} name={pl.name} meta={pl.songCount ? `${pl.songCount} 首` : ''} onPress={() => toDetail(pl)} />)}</Rail>
+                      <GridWall>{mine.map(pl => <PvCard fill key={pl.id} cover={pl.cover} name={pl.name} meta={pl.songCount ? `${pl.songCount} 首` : ''} onPress={() => toDetail(pl)} />)}</GridWall>
                     )}
                   </View>
                 ) : null}
@@ -707,17 +1104,13 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                   <View>
                     <SectionHead title="推荐歌单" count={recs.length} actionLabel={expanded.tfRecs ? '收起' : '全部'} onAction={() => setExpanded(e => ({ ...e, tfRecs: !e.tfRecs }))} />
                     {expanded.tfRecs ? (
-                      <View style={st.albumGrid}>
+                      <GridWall>
                         {recs.map(pl => (
-                          <T key={pl.id} style={[st.albumCell, IS_WEB && st.albumCellWeb]} activeOpacity={0.85} focusStyle={focus(10)} onPress={() => toDetail(pl)}>
-                            {pl.cover ? <Image source={{ uri: pl.cover }} style={st.albumCover} />
-                              : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name) as ViewStyle]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
-                            <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{pl.name}</Text>
-                          </T>
-                        ))}
-                      </View>
+  <PvCard fill key={pl.id} cover={pl.cover} name={pl.name} meta={pl.songCount ? `${pl.songCount} 首` : ''} onPress={() => toDetail(pl)} />
+))}
+                      </GridWall>
                     ) : (
-                      <Rail>{recs.map(pl => <PvCard key={pl.id} cover={pl.cover} name={pl.name} meta={pl.songCount ? `${pl.songCount} 首` : ''} onPress={() => toDetail(pl)} />)}</Rail>
+                      <GridWall>{recs.map(pl => <PvCard fill key={pl.id} cover={pl.cover} name={pl.name} meta={pl.songCount ? `${pl.songCount} 首` : ''} onPress={() => toDetail(pl)} />)}</GridWall>
                     )}
                   </View>
                 ) : null}
@@ -727,22 +1120,20 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                   <View>
                     <SectionHead title="排行榜" count={tops.length} actionLabel={expanded.tfTops ? '收起' : '全部'} onAction={() => setExpanded(e => ({ ...e, tfTops: !e.tfTops }))} />
                     {expanded.tfTops ? (
-                      <View style={st.albumGrid}>
+                      <GridWall>
                         {tops.map(pl => (
-                          <T key={pl.id} style={[st.albumCell, IS_WEB && st.albumCellWeb]} activeOpacity={0.85} focusStyle={focus(10)} onPress={() => toDetail(pl)}>
-                            {pl.cover ? <Image source={{ uri: pl.cover }} style={st.albumCover} />
-                              : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name) as ViewStyle]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
-                            <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{pl.name}</Text>
-                          </T>
-                        ))}
-                      </View>
+  <PvCard fill key={pl.id} cover={pl.cover} name={pl.name} onPress={() => toDetail(pl)} />
+))}
+                      </GridWall>
                     ) : (
-                      <Rail>{tops.map(pl => <PvCard key={pl.id} cover={pl.cover} name={pl.name} onPress={() => toDetail(pl)} />)}</Rail>
+                      <GridWall>{tops.map(pl => <PvCard fill key={pl.id} cover={pl.cover} name={pl.name} onPress={() => toDetail(pl)} />)}</GridWall>
                     )}
                   </View>
                 ) : null}
+                </>) : null}
 
-                {/* 新歌速递 */}
+                {/* 新歌速递([v5.6] 歌曲维度 tab);[老板 1010] netease 布局恒显 */}
+                {(pvLayout === 'netease' || dim === 'songs') ? (
                 <View>
                   <SectionHead title="新歌速递" actionLabel="换一批" onAction={refreshSongs} />
                   <SegBody state={songs} onRetry={refreshSongs}>
@@ -752,24 +1143,20 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                         <Icon name="play" size={14} color={C.onBrand} />
                         <Text style={st.shuffleBtnText}>播放全部</Text>
                       </T>
-                      {(songs.data?.length || 0) > 8 && !expanded.tfSongs ? <Text style={sec.previewHint}>前 8 首</Text> : null}
+                      {songs.data?.length ? <Text style={sec.previewHint}>共 {songs.data.length} 首</Text> : null}
                     </View>
-                    {(expanded.tfSongs ? songs.data || [] : (songs.data || []).slice(0, 8)).map((s, i) => (
+                    {(songs.data || []).map((s, i) => (
                       <SongRow key={`${s.songmid}-${i}`} song={s} playing={current?.songmid === s.songmid} onPress={() => playSong(s, songs.data || [])} onMore={() => setActSong(s)} />
                     ))}
-                    {(songs.data?.length || 0) > 8 ? (
-                      <T style={sec.moreRow} focusStyle={focus(10)} onPress={() => setExpanded(e => ({ ...e, tfSongs: !e.tfSongs }))}>
-                        <Text style={sec.moreText}>{expanded.tfSongs ? '收起' : `展开全部 ${songs.data!.length} 首`}</Text>
-                        <Icon name="chevronright" size={13} color={C.text2} />
-                      </T>
-                    ) : null}
                   </SegBody>
                 </View>
+                ) : null}
               </>
             );
           })() : (
             <>
-              {/* 随机来点 */}
+              {/* 歌曲([v5.6] 维度 tab):随机来点全量列表+换一批 */}
+              {dim === 'songs' ? (
               <View>
                 <SectionHead title="随机来点" actionLabel="换一批" onAction={refreshSongs} />
                 <SegBody state={songs} onRetry={refreshSongs}>
@@ -779,110 +1166,93 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
                       <Icon name="play" size={14} color={C.onBrand} />
                       <Text style={st.shuffleBtnText}>播放全部</Text>
                     </T>
-                    {(songs.data?.length || 0) > 8 && !expanded.songs ? <Text style={sec.previewHint}>前 8 首</Text> : null}
+                    {songs.data?.length ? <Text style={sec.previewHint}>共 {songs.data.length} 首</Text> : null}
                   </View>
-                  {(expanded.songs ? songs.data || [] : (songs.data || []).slice(0, 8)).map((s, i) => (
+                  {(songs.data || []).map((s, i) => (
                     <SongRow key={`${s.songmid}-${i}`} song={s} playing={current?.songmid === s.songmid} onPress={() => playSong(s, songs.data || [])} onMore={() => setActSong(s)} />
                   ))}
-                  {(songs.data?.length || 0) > 8 ? (
-                    <T style={sec.moreRow} focusStyle={focus(10)} onPress={() => setExpanded(e => ({ ...e, songs: !e.songs }))}>
-                      <Text style={sec.moreText}>{expanded.songs ? '收起' : `展开全部 ${songs.data!.length} 首`}</Text>
-                      <Icon name="chevronright" size={13} color={C.text2} />
-                    </T>
-                  ) : null}
                 </SegBody>
               </View>
+              ) : null}
 
-              {/* 专辑 */}
+              {/* 专辑([v5.6] 维度 tab):最近入库横滑(Items/Latest 真数据,仅 emby/jf)+全量专辑墙(百分比定宽自然换行) */}
+              {dim === 'albums' ? (
               <View>
-                <SectionHead title="专辑" count={albums.data?.length} actionLabel={expanded.albums ? '收起' : '全部'} onAction={() => setExpanded(e => ({ ...e, albums: !e.albums }))} />
-                <SegBody state={albums} onRetry={() => { setAlbums({ data: null, err: null, busy: false }); if (acct) loadAlbums(acct); }}>
-                  {albums.data && albums.data.length === 0 ? <EmptyState icon="music" title="服务器上没有专辑" sub="先在媒体服务器里添加音乐库" /> : null}
-                  {expanded.albums ? (
-                    <View style={st.albumGrid}>
-                      {(albums.data || []).map(al => (
-                        <T key={al.id} style={[st.albumCell, IS_WEB && st.albumCellWeb]} activeOpacity={0.85} focusStyle={focus(10)}
-                          onPress={() => nav.navigate('ProviderDetail', {
-                            acctId: acct.id, kind: 'album', id: al.id, name: al.name, cover: al.cover,
-                            sub: [al.artist, al.songCount ? `${al.songCount}首` : null].filter(Boolean).join(' · ') || undefined,
-                          })}>
-                          {al.cover ? <Image source={{ uri: al.cover }} style={st.albumCover} />
-                            : <View style={[st.albumCover, { alignItems: 'center', justifyContent: 'center' }, coverGrad(al.name) as ViewStyle]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
-                          <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{al.name}</Text>
-                          <Text style={[st.albumMeta, IS_HD && bv.albumMeta]} numberOfLines={1}>{al.artist || ''}{al.songCount ? ` · ${al.songCount}首` : ''}</Text>
-                        </T>
-                      ))}
-                    </View>
-                  ) : (
-                    <Rail>
-                      {(albums.data || []).slice(0, 10).map(al => (
-                        <PvCard key={al.id} cover={al.cover} name={al.name} meta={al.artist || (al.songCount ? `${al.songCount} 首` : '')}
+                {latest.data?.length ? (
+                  <View style={{ marginBottom: 4 }}>
+                    <SectionHead title="最近入库" count={latest.data.length} actionLabel="换一批" onAction={() => { if (acct) loadLatest(acct, true); }} />
+                    <GridWall>
+                      {latest.data.map(al => (
+                        <DiscCard fill key={al.id} cover={al.cover} name={al.name} count={al.songCount}
+                          sub={[al.artist, al.year ? String(al.year) : null].filter(Boolean).join(' · ') || undefined}
+                          unknown={!al.cover}
                           onPress={() => nav.navigate('ProviderDetail', {
                             acctId: acct.id, kind: 'album', id: al.id, name: al.name, cover: al.cover,
                             sub: [al.artist, al.songCount ? `${al.songCount}首` : null].filter(Boolean).join(' · ') || undefined,
                           })} />
                       ))}
-                    </Rail>
-                  )}
+                    </GridWall>
+                  </View>
+                ) : null}
+                <SectionHead title="专辑" count={albums.data?.length} />
+                <SegBody state={albums} onRetry={() => { setAlbums({ data: null, err: null, busy: false }); if (acct) loadAlbums(acct); }}>
+                  {albums.data && albums.data.length === 0 ? <EmptyState icon="music" title="服务器上没有专辑" sub="先在媒体服务器里添加音乐库" /> : null}
+                  <GridWall>
+                    {(albums.data || []).map(al => (
+                      <DiscCard fill key={al.id} cover={al.cover} name={al.name} count={al.songCount}
+                        sub={al.artist || undefined} unknown={!al.cover}
+                        onLongPress={caps.radio ? () => playRadio(al.id, al.name, 'album', al.artist) : undefined}
+                        onPress={() => nav.navigate('ProviderDetail', {
+                          acctId: acct.id, kind: 'album', id: al.id, name: al.name, cover: al.cover,
+                          sub: [al.artist, al.songCount ? `${al.songCount}首` : null].filter(Boolean).join(' · ') || undefined,
+                        })} />
+                    ))}
+                  </GridWall>
                 </SegBody>
               </View>
+              ) : null}
 
-              {/* 艺术家 */}
+              {/* 艺术家([v5.6] 维度 tab):全量行式列表 */}
+              {dim === 'artists' ? (
               <View>
-                <SectionHead title="艺术家" count={artists.data?.length} actionLabel={expanded.artists ? '收起' : '全部'} onAction={() => setExpanded(e => ({ ...e, artists: !e.artists }))} />
+                <SectionHead title="艺术家" count={artists.data?.length} />
                 <SegBody state={artists} onRetry={() => { setArtists({ data: null, err: null, busy: false }); if (acct) loadArtists(acct); }}>
                   {artists.data && artists.data.length === 0 ? <EmptyState icon="music" title="没有找到艺术家" /> : null}
-                  {expanded.artists ? (
-                    <>
+                  {/* [老板 1010·按源定制] media(emby/jf)艺人=圆头像墙(媒体服务器富布局);lean/generic 保持行列表(导航式精简) */}
+                  {pvLayout === 'media' ? (
+                    <GridWall>
                       {(artists.data || []).map(ar => (
-                        <T key={ar.id} style={[st.artistRow, IS_HD && bv.row]} activeOpacity={0.75} focusStyle={focus(12)}
-                          onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'artist', id: ar.id, name: ar.name, sub: ar.albumCount ? `${ar.albumCount} 张专辑` : undefined })}>
-                          {ar.cover ? <Image source={{ uri: ar.cover }} style={[st.artistArt, IS_HD && bv.art]} />
-                            : <View style={[st.artistArt, IS_HD && bv.art, st.artistFallback]}><Text style={st.artistInitial}>{ar.name.slice(0, 1)}</Text></View>}
-                          <View style={{ flex: 1, minWidth: 0 }}>
-                            <Text style={[st.artistName, IS_HD && bv.rowTitle]} numberOfLines={1}>{ar.name}</Text>
-                            <Text style={[st.artistMeta, IS_HD && bv.rowSub]} numberOfLines={1}>{ar.albumCount ? `${ar.albumCount} 张专辑` : PROVIDER_META[acct.type].label}</Text>
-                          </View>
-                          <Icon name="chevronright" size={18} color={C.text3} />
-                        </T>
-                      ))}
-                    </>
-                  ) : (
-                    <Rail>
-                      {(artists.data || []).slice(0, 10).map(ar => (
-                        <PvCard key={ar.id} round cover={ar.cover} name={ar.name} meta={ar.albumCount ? `${ar.albumCount} 张专辑` : ''}
+                        <PvCard fill key={ar.id} round cover={ar.cover} name={ar.name} meta={ar.albumCount ? `${ar.albumCount} 张专辑` : undefined}
+                          onLongPress={caps.radio ? () => playRadio(ar.id, ar.name, 'artist', ar.name) : undefined}
                           onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'artist', id: ar.id, name: ar.name, sub: ar.albumCount ? `${ar.albumCount} 张专辑` : undefined })} />
                       ))}
-                    </Rail>
+                    </GridWall>
+                  ) : (
+                  (artists.data || []).map(ar => (
+                    <ArtistRow key={ar.id} cover={ar.cover} name={ar.name}
+                      sub={ar.albumCount ? `${ar.albumCount} 张专辑` : PROVIDER_META[acct.type].label}
+                      onLongPress={caps.radio ? () => playRadio(ar.id, ar.name, 'artist', ar.name) : undefined}
+                      onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'artist', id: ar.id, name: ar.name, sub: ar.albumCount ? `${ar.albumCount} 张专辑` : undefined })} />
+                  ))
                   )}
                 </SegBody>
               </View>
+              ) : null}
 
-              {/* 歌单 */}
+              {/* 歌单([v5.6] 维度 tab):全量行式列表 */}
+              {dim === 'lists' ? (
               <View>
-                <SectionHead title="歌单" count={lists.data?.length} actionLabel={expanded.lists ? '收起' : '全部'} onAction={() => setExpanded(e => ({ ...e, lists: !e.lists }))} />
+                <SectionHead title="歌单" count={lists.data?.length} />
                 <SegBody state={lists} onRetry={() => { setLists({ data: null, err: null, busy: false }); if (acct) loadLists(acct); }}>
                   {lists.data && lists.data.length === 0 ? <EmptyState icon="music" title="服务器上没有歌单" sub="在媒体服务器或 amcfy 等客户端里创建" /> : null}
-                  {(expanded.lists ? lists.data || [] : (lists.data || []).slice(0, 6)).map(pl => (
-                    <T key={pl.id} style={[st.plRow, IS_HD && bv.row]} activeOpacity={0.75} focusStyle={focus(12)}
-                      onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'playlist', id: pl.id, name: pl.name, cover: pl.cover, sub: pl.songCount ? `${pl.songCount} 首` : undefined })}>
-                      {pl.cover ? <Image source={{ uri: pl.cover }} style={[st.artistArt, IS_HD && bv.art]} />
-                        : <View style={[st.artistArt, IS_HD && bv.art, { alignItems: 'center', justifyContent: 'center' }, coverGrad(pl.name) as ViewStyle]}><Text style={[st.albumGlyph, { color: '#ffffffb3' }]}>♫</Text></View>}
-                      <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={[st.artistName, IS_HD && bv.rowTitle]} numberOfLines={1}>{pl.name}</Text>
-                        <Text style={[st.artistMeta, IS_HD && bv.rowSub]} numberOfLines={1}>{pl.songCount ? `${pl.songCount} 首` : ''}</Text>
-                      </View>
-                      <Icon name="chevronright" size={18} color={C.text3} />
-                    </T>
+                  {(lists.data || []).map(pl => (
+                    <PlaylistRow key={pl.id} cover={pl.cover} name={pl.name} gradKey={pl.name}
+                      sub={pl.songCount ? `${pl.songCount} 首` : undefined}
+                      onPress={() => nav.navigate('ProviderDetail', { acctId: acct.id, kind: 'playlist', id: pl.id, name: pl.name, cover: pl.cover, sub: pl.songCount ? `${pl.songCount} 首` : undefined })} />
                   ))}
-                  {(lists.data?.length || 0) > 6 ? (
-                    <T style={sec.moreRow} focusStyle={focus(10)} onPress={() => setExpanded(e => ({ ...e, lists: !e.lists }))}>
-                      <Text style={sec.moreText}>{expanded.lists ? '收起' : `展开全部 ${lists.data!.length} 个歌单`}</Text>
-                      <Icon name="chevronright" size={13} color={C.text2} />
-                    </T>
-                  ) : null}
                 </SegBody>
               </View>
+              ) : null}
             </>
           )}
         </ScrollView>
@@ -896,6 +1266,17 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
           dlStore.isDownloaded(actSong)
             ? { label: '已下载 ✓', onPress: () => {} }
             : { label: '下载到本地', onPress: () => { const n = enqueueDownload([actSong]); toast(n ? `已加入下载队列 · ${actSong.name}` : '该歌曲已在下载队列'); } },
+          ...(() => { // [批5a] 源侧真实能力项:收藏打星+相似电台(仅已接线源;songmid=pid:itemId 解析回源账号,无能力不显项)
+            const [spid, iid] = String(actSong.songmid ?? '').split(':');
+            const ta = acct && acct.type !== 'webdav' ? (providers.get(spid) || acct) : undefined;
+            if (!ta || !iid) return [];
+            const tc = PV_CAPS[ta.type];
+            const starred = (actSong as { pvFav?: boolean }).pvFav === true;
+            return [
+              ...(tc.star ? [{ label: starred ? '取消源收藏' : '收藏到源 · 打星', onPress: () => pvFavToggle(actSong) }] : []),
+              ...(tc.radio ? [{ label: '相似电台', onPress: () => playRadio(iid, actSong.name, 'song', actSong.singer) }] : []),
+            ];
+          })(),
           { label: '收藏到歌单', onPress: () => setCollect(true) },
         ] : []}
       />
@@ -954,98 +1335,62 @@ function SectionHead({ title, count, actionLabel, onAction }: {
   );
 }
 
-function Rail({ children }: { children: React.ReactNode }) {
-  return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: IS_HD ? 14 : 12 }}>
-      {children}
-    </ScrollView>
-  );
-}
 
-function PvCard({ cover, name, meta, round, onPress }: {
-  cover?: string; name: string; meta?: string; round?: boolean; onPress: () => void;
-}) {
-  const size = IS_HD ? 148 : (IS_WEB ? 132 : 112);
-  return (
-    <T style={{ width: size, gap: 5 }} activeOpacity={0.85} onPress={onPress} focusStyle={focus(10)}>
-      {cover ? (
-        <Image source={{ uri: cover }} style={{ width: size, height: size, borderRadius: round ? size / 2 : 10, backgroundColor: C.surface2 }} />
-      ) : (
-        <View style={[
-          { width: size, height: size, borderRadius: round ? size / 2 : 10, alignItems: 'center', justifyContent: 'center' },
-          round ? { backgroundColor: C.artTint2 } : coverGrad(name) as ViewStyle,
-        ]}>
-          <Text style={round ? st.artistInitial : [st.albumGlyph, { color: '#ffffffb3' }]}>{round ? name.slice(0, 1) : '♫'}</Text>
-        </View>
-      )}
-      <Text style={[st.albumName, IS_HD && bv.albumName]} numberOfLines={1}>{name}</Text>
-      {meta ? <Text style={[st.albumMeta, IS_HD && bv.albumMeta]} numberOfLines={1}>{meta}</Text> : null}
-    </T>
-  );
-}
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
-  intro: { color: C.text2, fontSize: 12, lineHeight: 18, marginBottom: 14 },
-  empty: { color: C.text2, fontSize: 12, lineHeight: 18, textAlign: 'center', paddingVertical: 40 },
-  center: { paddingVertical: 60, alignItems: 'center', gap: 12 },
-  retryBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.brand, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 18 },
-  retryText: { color: C.onBrand, fontSize: 13, fontWeight: '600' },
-  tip: { color: C.text3, fontSize: 11, lineHeight: 15, textAlign: 'center', marginTop: 16 },
+  intro: { color: C.text2, fontSize: FS.body, lineHeight: 18, marginBottom: 14 },
+  empty: { color: C.text2, fontSize: FS.body, lineHeight: 18, textAlign: 'center', paddingVertical: 40 },
+  center: { paddingVertical: 60, alignItems: 'center', gap: SP.xl },
+  retryBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, backgroundColor: C.brand, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 18 },
+  retryText: { color: C.onBrand, fontSize: FS.md, fontWeight: FW.semibold },
+  tip: { color: C.text3, fontSize: FS.sm, lineHeight: 15, textAlign: 'center', marginTop: 16 },
   // 浏览页头部
   hWrap: { minHeight: 64, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 6 },
   hSide: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
-  acctBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginHorizontal: 4 },
-  acctName: { color: C.text, fontSize: 18, lineHeight: 25, fontWeight: '700', maxWidth: 200 },
+  acctBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.md, marginHorizontal: 4 },
+  acctName: { color: C.text, fontSize: FS.h2, lineHeight: 25, fontWeight: FW.bold, maxWidth: 200 },
   acctCaret: { transform: [{ rotate: '90deg' }], marginTop: 2 },
   // 专辑网格
-  albumGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  albumCell: { width: '31%', gap: 4 },
+  albumGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl }, // phone 三列(HD/web 走 GridWall→HDGrid)
   albumCellWeb: { width: '15.5%' }, // web 6 列(0.75 zoom 下 31%=2列过大,加密 4 倍)
-  albumCover: { width: '100%', aspectRatio: 1, borderRadius: 10, backgroundColor: C.surface2 },
   albumFallback: { alignItems: 'center', justifyContent: 'center' },
-  albumGlyph: { color: C.text2, fontSize: 24, fontWeight: '700' },
-  albumName: { color: C.text, fontSize: 12, lineHeight: 15, fontWeight: '600' },
-  albumMeta: { color: C.text2, fontSize: 9, lineHeight: 12 },
-  // 艺术家/歌单行
-  artistRow: { minHeight: 60, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint },
-  plRow: { minHeight: 60, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint },
-  artistArt: { width: 44, height: 44, borderRadius: 22 },
-  artistFallback: { borderRadius: 22, backgroundColor: C.artTint2, alignItems: 'center', justifyContent: 'center' },
-  artistInitial: { color: C.brandText, fontSize: 17, fontWeight: '700' },
-  artistName: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '500' },
-  artistMeta: { color: C.text2, fontSize: 11, lineHeight: 15 },
+  albumGlyph: { color: C.text2, fontSize: FS.display, fontWeight: FW.bold },
+  albumName: { color: C.text, fontSize: FS.body, lineHeight: 15, fontWeight: FW.semibold },
+  albumMeta: { color: C.text2, fontSize: FS.xs, lineHeight: 12 },
+  // [批次1] 艺术家/歌单自造行(artistRow/plRow/artistArt/artistFallback/artistName/artistMeta)退役→统一件 ArtistRow/PlaylistRow(artistInitial 留给 PvCard 圆卡兑底)
+  artistInitial: { color: C.brandText, fontSize: FS.headline, fontWeight: FW.bold },
   // 随机歌曲段
   songsBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, marginBottom: 4 },
-  songsHint: { color: C.text2, fontSize: 12 },
-  shuffleBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.brand, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16 },
-  shuffleBtnText: { color: C.onBrand, fontSize: 12, fontWeight: '600' },
+  songsHint: { color: C.text2, fontSize: FS.body },
+  shuffleBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, backgroundColor: C.brand, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16 },
+  shuffleBtnText: { color: C.onBrand, fontSize: FS.body, fontWeight: FW.semibold },
   checkBox: { width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: C.inset2, alignItems: 'center', justifyContent: 'center' },
   checkBoxOn: { borderColor: C.brand, backgroundColor: C.brand },
 });
 
 // v3.31 列表页重设计样式（老板 0921：克制卡——深色底/细描边/微投影/品牌 icon 左置/类型徽标）
 const ml = StyleSheet.create({
-  group: { gap: 10 },
-  sectionHead: { color: C.text3, fontSize: 12, fontWeight: '700', letterSpacing: 1.2, marginTop: 26, marginBottom: 10 },
-  sectionHeadHD: { fontSize: 14, letterSpacing: 1.6, marginTop: 30 },
-  groupWeb: { alignSelf: 'center', width: '100%', maxWidth: 860 }, // lx168(老板 0923 02:58):与曲库浏览同宽 860 居中——原先 720 靠左,宽屏右半空白像"只有半截"
-  card: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, paddingHorizontal: 14, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke, elevation: 1, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } },
-  cardHD: { minHeight: 86, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16 },
+  group: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.lg }, // [老板拍板 10-09] hub 网格卡片风:flexWrap 换行,卡宽 flexBasis 48%=两列(1028 space-between 试验致排版混乱已回滚,老板原版为准)
+  sectionHead: { color: C.text3, fontSize: FS.body, fontWeight: FW.bold, letterSpacing: 1.2, marginTop: 26, marginBottom: 10 },
+  sectionHeadHD: { fontSize: FS.lg, letterSpacing: 1.6, marginTop: 30 },
+  groupWeb: { width: '100%' }, // [老板 1010] 占满整屏(去 maxWidth 860/1160)——定宽卡 375px 自然铺排;列表区 dv.listWrapWeb 维持 860 可读性不动
+  card: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: SP.xl, paddingVertical: 14, paddingHorizontal: 14, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke, elevation: 1, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, flexBasis: '40%', flexGrow: 1 }, // 1028 老板令(排满优先):48%+gap 溢出=一行一卡右侧 52% 空(实证)——grow 拉伸行行铺满
+  cardHD: { minHeight: 86, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16, flexBasis: '23%', flexGrow: 1 }, // 1028 老板令(排满+一样大):grow 拉伸行行铺满,同排等宽
   cardHover: { borderColor: C.strokeStrong, backgroundColor: C.surface2 }, // hover 细描边提亮,克制不加投影
-  iconWrap: { width: 46, height: 46, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  iconWrapHD: { width: 56, height: 56, borderRadius: 14 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  title: { color: C.text, fontSize: 14.5, lineHeight: 20, fontWeight: '600', flexShrink: 1 },
-  titleHD: { fontSize: 16.5, lineHeight: 23 },
+  iconWrap: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }, // [库族重设计v1 B4] 46→44 对齐 LibBanner kindIcon 现值(规格统一表)
+  iconWrapHD: { width: 52, height: 52, borderRadius: 14 }, // [B4] 56→52 同源对齐
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: SP.sm },
+  title: { color: C.text, fontSize: FS.xl, lineHeight: 20, fontWeight: FW.semibold, flexShrink: 1 },
+  titleHD: { fontSize: FS.headline, lineHeight: 23 },
   typeChip: { backgroundColor: C.inset2, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1.5, flexShrink: 0 },
-  typeChipText: { color: C.text2, fontSize: 9.5, fontWeight: '600', letterSpacing: 0.5 },
-  sub: { color: C.text3, fontSize: 11, lineHeight: 15, marginTop: 2 },
-  subHD: { fontSize: 12.5, lineHeight: 17 },
+  typeChipText: { color: C.text2, fontSize: FS.xs, fontWeight: FW.semibold, letterSpacing: 0.5 },
+  sub: { color: C.text3, fontSize: FS.sm, lineHeight: 15, marginTop: 2 },
+  subHD: { fontSize: FS.md, lineHeight: 17 },
   menuBtn: { width: 32, height: 32, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   menuBtnHD: { width: 40, height: 40 },
   repickBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 1, borderColor: C.stroke },
-  repickText: { color: C.brandText, fontSize: 11.5, fontWeight: '600' },
+  repickText: { color: C.brandText, fontSize: FS.body, fontWeight: FW.semibold },
   spin: { marginRight: 2 },
 });
 
@@ -1053,96 +1398,132 @@ const ml = StyleSheet.create({
 const dv = StyleSheet.create({
   crumbWrap: { flexGrow: 0, marginBottom: 10 },
   crumbItem: { paddingVertical: 3, paddingHorizontal: 6, borderRadius: 8 },
-  crumbItemText: { color: C.text2, fontSize: 12 },
+  crumbItemText: { color: C.text2, fontSize: FS.body },
   crumbCur: { backgroundColor: C.brand, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 4 },
-  crumbCurText: { color: C.onBrand, fontSize: 11.5, fontWeight: '700' },
+  crumbCurText: { color: C.onBrand, fontSize: FS.body, fontWeight: FW.bold },
   crumbRefresh: { width: 26, height: 26, borderRadius: 999, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', marginLeft: 4 },
   listWrap: { borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke, paddingHorizontal: 6, paddingVertical: 4 },
-  listWrapWeb: { alignSelf: 'flex-start', width: '100%', maxWidth: 860 }, // 信息密度优先:限宽 860 行式列表
-  headBar: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint },
-  stats: { flex: 1, color: C.text3, fontSize: 11.5 },
-  actBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 28, paddingHorizontal: 12, borderRadius: 999, backgroundColor: C.surface2 },
+  listWrapWeb: { width: '100%' }, // [1013 老板令] 撑满一屏——拆 860 限宽
+  headBar: { flexDirection: 'row', alignItems: 'center', gap: SP.md, paddingHorizontal: 10, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint },
+  stats: { flex: 1, color: C.text3, fontSize: FS.body },
+  actBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.xs, height: 28, paddingHorizontal: 12, borderRadius: 999, backgroundColor: C.surface2 },
   actBtnMain: { backgroundColor: C.brand },
   // 顶栏:左面包屑(flex:1)+右端常驻动作组(固定可见,不入滚动区)
-  topRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
-  actRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 },
-  actBtnText: { color: C.text2, fontSize: 11.5, fontWeight: '600' },
+  topRow: { flexDirection: 'row', alignItems: 'center', gap: SP.md, marginBottom: 10 },
+  actRow: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, flexShrink: 0 },
+  actBtnText: { color: C.text2, fontSize: FS.body, fontWeight: FW.semibold },
   actBtnTextMain: { color: C.onBrand },
   rowSkel: { height: 52, borderRadius: 10, backgroundColor: 'rgba(255,255,255,.05)', marginVertical: 5 },
   rowSkelHD: { height: 78 },
   rowHover: { backgroundColor: C.surface2 },
   // 0922 TV 行焦点：清晰 2.5px 环 + 轻微放大（行高无需 1.05 级，7b 行内禁大 zoom），双保险高亮背景由 focusBg 提供
   rowFocusTv: { borderWidth: 2.5, borderColor: C.brand, borderRadius: 10, transform: [{ scale: 1.02 }] } as ViewStyle,
-  folderRow: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10 },
-  folderRowHD: { minHeight: 76, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12, gap: 14 },
+  folderRow: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: SP.xl, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10 },
+  folderRowHD: { minHeight: 76, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12, gap: SP.xxl },
   folderIcon: { width: 30, height: 30, borderRadius: 9, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   folderIconHD: { width: 42, height: 42, borderRadius: 12 },
-  folderName: { flex: 1, color: C.text, fontSize: 13.5, lineHeight: 19, fontWeight: '500' },
-  textHD: { fontSize: 16.5, lineHeight: 23 }, // TV 10ft 观看：主文字 16.5
-  songRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10 },
-  songRowHD: { minHeight: 80, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12, gap: 14 },
+  folderName: { flex: 1, color: C.text, fontSize: FS.lg, lineHeight: 19, fontWeight: FW.medium },
+  textHD: { fontSize: FS.headline, lineHeight: 23 }, // TV 10ft 观看：主文字 16.5→FS.headline(17)
+  songRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: SP.xl, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10 },
+  songRowHD: { minHeight: 80, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12, gap: SP.xxl },
   songRowOn: { backgroundColor: C.selTint },
   rowDivide: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.strokeFaint, borderRadius: 0 },
-  idx: { width: 26, textAlign: 'center', color: C.text3, fontSize: 11.5, fontVariant: ['tabular-nums'] },
-  idxHD: { width: 34, fontSize: 13 },
-  title: { color: C.text, fontSize: 13.5, lineHeight: 19, fontWeight: '500' },
-  sub: { color: C.text2, fontSize: 10.5, lineHeight: 14, marginTop: 1 },
-  subHD: { fontSize: 12.5, lineHeight: 17 },
-  dur: { color: C.text3, fontSize: 11, fontVariant: ['tabular-nums'] },
-  statsHD: { fontSize: 13 },
+  idx: { width: 26, textAlign: 'center', color: C.text3, fontSize: FS.body, fontVariant: ['tabular-nums'] },
+  idxHD: { width: 34, fontSize: FS.md },
+  title: { color: C.text, fontSize: FS.lg, lineHeight: 19, fontWeight: FW.medium },
+  sub: { color: C.text2, fontSize: FS.sm, lineHeight: 14, marginTop: 1 },
+  subHD: { fontSize: FS.md, lineHeight: 17 },
+  dur: { color: C.text3, fontSize: FS.sm, fontVariant: ['tabular-nums'] },
+  statsHD: { fontSize: FS.md },
   crumbItemHD: { paddingVertical: 5, paddingHorizontal: 8 },
-  crumbItemTextHD: { fontSize: 14 },
+  crumbItemTextHD: { fontSize: FS.lg },
   crumbCurHD: { paddingVertical: 6, paddingHorizontal: 13 },
-  crumbCurTextHD: { fontSize: 13.5 },
+  crumbCurTextHD: { fontSize: FS.lg },
   crumbRefreshHD: { width: 34, height: 34 },
   // 桌面≥900 双区容器：左列表 flex1 + 右操作栏 260 固定（对齐 860 列表右缘）
-  davCols: { flexDirection: 'row', alignItems: 'flex-start', gap: 24, maxWidth: 1140, alignSelf: 'stretch' },
-  sidePanel: { width: 260, flexShrink: 0, gap: 8, position: 'relative', top: 40, padding: 14, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke },
-  sideBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 38, paddingHorizontal: 12, borderRadius: 10, backgroundColor: C.surface2 },
-  sideBtnMain: { color: C.onBrand, fontSize: 12.5, fontWeight: '700' },
-  sideBtnText: { color: C.text2, fontSize: 12.5, fontWeight: '600' },
-  sideHint: { color: C.text3, fontSize: 10.5, lineHeight: 14, marginTop: 4 },
-  eq: { width: 26, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: 2, height: 12 },
+  davCols: { flexDirection: 'row', alignItems: 'flex-start', gap: SP.big, maxWidth: 1140, alignSelf: 'stretch' },
+  sidePanel: { width: 260, flexShrink: 0, gap: SP.md, position: 'relative', top: 40, padding: 14, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke },
+  sideBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.md, height: 38, paddingHorizontal: 12, borderRadius: 10, backgroundColor: C.surface2 },
+  sideBtnMain: { color: C.onBrand, fontSize: FS.md, fontWeight: FW.bold },
+  sideBtnText: { color: C.text2, fontSize: FS.md, fontWeight: FW.semibold },
+  sideHint: { color: C.text3, fontSize: FS.sm, lineHeight: 14, marginTop: 4 },
+  eq: { width: 26, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: SP.xs, height: 12 },
   eqBar: { width: 3, borderRadius: 1.5, backgroundColor: C.brand },
 });
 
 // HD(车机/TV)覆盖样式:限宽居中 + 大触点/大字号(老板:媒体库列表需遥控光标+大屏排版)
 const hd = StyleSheet.create({
-  head: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, marginBottom: 10 },
+  head: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingHorizontal: 20, marginBottom: 10 },
   backBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   addBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, color: C.text, fontSize: 20, fontWeight: '800' }, // lx166 居左
-  intro: { fontSize: 13, lineHeight: 19 },
+  title: { flex: 1, color: C.text, fontSize: FS.h1, fontWeight: FW.heavy }, // lx166 居左
+  intro: { fontSize: FS.md, lineHeight: 19 },
 });
 
 // v3.28(老板:第三方媒体库统一风格):浏览页 HD 尺寸——行高/封面/字号与我的收藏·歌单详情同档
 const bv = StyleSheet.create({
-  row: { minHeight: 68 },
-  rowTitle: { fontSize: 15 },
-  rowSub: { fontSize: 12 },
-  art: { width: 52, height: 52, borderRadius: 26 },
-  albumName: { fontSize: 13, lineHeight: 17 },
-  albumMeta: { fontSize: 10.5, lineHeight: 14 },
-  acctPill: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 38, marginHorizontal: 4 },
-  acctName: { color: C.text, fontSize: 17, fontWeight: '800', maxWidth: 320 },
+  // [批次1] 行覆盖(row/rowTitle/rowSub/art)随自造行退役→统一件内建 HD 规格
+  albumName: { fontSize: FS.md, lineHeight: 17 },
+  albumMeta: { fontSize: FS.sm, lineHeight: 14 },
+  acctPill: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.md, height: 38, marginHorizontal: 4 },
+  acctName: { color: C.text, fontSize: FS.headline, fontWeight: FW.heavy, maxWidth: 320 },
 });
 
 // 综合页分区样式（2026-09-17：一个综合页面）
 const sec = StyleSheet.create({
-  head: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
-  title: { color: C.text, fontSize: 16, lineHeight: 22, fontWeight: '700' },
-  titleHD: { fontSize: 18, lineHeight: 25 },
-  count: { color: C.text3, fontSize: 12 },
-  moreBtn: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: 8, paddingVertical: 4 },
-  moreText: { color: C.text2, fontSize: 12, fontWeight: '500' },
-  moreRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 10 },
-  previewHint: { color: C.text3, fontSize: 11, marginLeft: 'auto' },
-  songsBar: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 },
-  dualRow: { gap: 10 },
-  dualCard: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, backgroundColor: C.surface, borderRadius: 14, padding: 12 },
-  dualCover: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  dualTitle: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '600' },
-  dualMeta: { color: C.text2, fontSize: 11, lineHeight: 15, marginTop: 2 },
+  head: { flexDirection: 'row', alignItems: 'center', gap: SP.md, marginBottom: 10 },
+  title: { color: C.text, fontSize: FS.title, lineHeight: 22, fontWeight: FW.bold },
+  titleHD: { fontSize: FS.h2, lineHeight: 25 },
+  count: { color: C.text3, fontSize: FS.body },
+  moreBtn: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: SP.xs, paddingHorizontal: 8, paddingVertical: 4 },
+  moreText: { color: C.text2, fontSize: FS.body, fontWeight: FW.medium },
+  moreRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.xs, paddingVertical: 10 },
+  previewHint: { color: C.text3, fontSize: FS.sm, marginLeft: 'auto' },
+  songsBar: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, marginBottom: 4 },
+  // [批次1] dualRow/dualCard 族死样式随 HeroPair 统一退役(v5.6 后无使用点)
+});
+
+// [v5.6 1010·LEO 基准稿] 第三方页 v5 样式:phead(品牌标+状态点辉光)/能力芯片/维度 tabs/英雄卡 st 内嵌粗体
+const pv = StyleSheet.create({
+  phead: { flexDirection: 'row', alignItems: 'center', gap: SP.lg },
+  pheadLogo: { width: 44, height: 44, borderRadius: 13, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  pheadLogoHD: { width: 52, height: 52, borderRadius: 16 },
+  pheadNameRow: { flexDirection: 'row', alignItems: 'center', gap: SP.md },
+  pheadName: { color: C.text, fontSize: FS.h1, lineHeight: 25, fontWeight: FW.heavy, flexShrink: 1 },
+  pheadNameHD: { fontSize: FS.h1, lineHeight: 26 }, // [LEO 1011] 22 档外→h1(20)
+  pheadSub: { color: C.text3, fontSize: FS.body, lineHeight: 16, marginTop: 2 },
+  dot: { width: 9, height: 9, borderRadius: 5, flexShrink: 0, shadowOpacity: 0.8, shadowRadius: 6, shadowOffset: { width: 0, height: 0 }, elevation: 2 }, // 状态点+辉光(shadowColor 随状态内联)
+  pheadBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke, alignItems: 'center', justifyContent: 'center' },
+  pheadBtnHD: { width: 42, height: 42, borderRadius: 12 },
+  heroStB: { fontWeight: FW.heavy, color: C.white }, // 英雄卡 st 行内粗体(统计数,基准稿 <b> 同形)
+  caps: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.sm },
+  cap: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, height: 26, paddingHorizontal: 10, borderRadius: 999, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke },
+  capDim: { opacity: 0.45 },
+  capDot: { width: 5, height: 5, borderRadius: 3 },
+  capT: { color: C.text2, fontSize: FS.sm, fontWeight: FW.semibold },
+  capTOn: { color: C.text },
+  // [老板 1010·听风重规划] 源内搜索框(netease 布局专属)
+  // [老板 1011 11:49] 搜索框统一(探索页/公共库 searchBox 同款 pill:44 高/22 圆角/searchPill 底,HD 灰底)
+  tfSearchBar: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, backgroundColor: C.searchPill, borderRadius: 22, paddingHorizontal: 12, height: 44, marginTop: 14 },
+  tfSearchBarHD: { backgroundColor: C.surface2 },
+  tfSearchInput: { flex: 1, color: C.text, fontSize: FS.md, paddingVertical: 0, minWidth: 0 },
+  dimtabs: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.md },
+  dimtab: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, height: 32, paddingHorizontal: 13, borderRadius: 10, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke },
+  dimtabHD: { height: 40, paddingHorizontal: 16 },
+  dimtabOn: { backgroundColor: C.brand, borderColor: C.brand },
+  dimtabT: { color: C.text2, fontSize: FS.md, fontWeight: FW.semibold },
+  dimtabTOn: { color: C.onBrand, fontWeight: FW.bold },
+  dimtabCnt: { color: C.text3, fontSize: FS.sm, fontVariant: ['tabular-nums'] },
+  dimtabCntOn: { color: C.onBrand },
+  dimtabOff: { opacity: 0.4 },
+  dimtabTOff: { color: C.text3, fontSize: FS.md, fontWeight: FW.semibold },
+  // [批5a] 音质档 qrow(仅转码能力源):当前档品牌底高亮,选档持久化 ProviderAcct.quality 由引擎取链时读取
+  qrow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: SP.sm },
+  qLabel: { color: C.text3, fontSize: FS.sm, fontWeight: FW.semibold, marginRight: 2 },
+  qBtn: { height: 26, paddingHorizontal: 11, borderRadius: 8, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke, alignItems: 'center', justifyContent: 'center' },
+  qBtnOn: { backgroundColor: C.brand, borderColor: C.brand },
+  qBtnT: { color: C.text2, fontSize: FS.sm, fontWeight: FW.semibold },
+  qBtnTOn: { color: C.onBrand, fontWeight: FW.bold },
 });
 
 // navigation 注册用包装（native-stack 组件类型兼容）

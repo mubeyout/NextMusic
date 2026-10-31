@@ -13,6 +13,7 @@ export interface LXSong {
   singer: string;
   source: string;
   interval?: string;
+  img?: string; // [识别补全 1010] 存量 LX 列表顶层 img(appToLx 上行才写 meta.picUrl;服务端迁入的老列表只有顶层字段)
   meta?: {
     songId?: number | string;
     albumName?: string;
@@ -67,7 +68,7 @@ export function lxToApp(s: LXSong): SongItem {
     albumId: '',
     interval: s.interval || '',
     albumName: m.albumName,
-    img: m.picUrl,
+    img: m.picUrl || s.img, // [识别补全 1010] meta.picUrl 缺失时兑顶层 img(存量列表封面链路打通)
     types: m.qualitys as SongItem['types'],
     _types: m._qualitys as SongItem['_types'],
   };

@@ -67,7 +67,7 @@ function PlaylistCard({ pl, onPress }: PlaylistCardProps) {
       {pl.img ? (
         <Image source={{ uri: pl.img }} style={p.art} />
       ) : (
-        <View style={[p.art, p.artFallback]}><Text style={p.glyph}>♫</Text></View>
+        <View style={[p.art, p.artFallback]}><Icon name="music" size={24} color={C.text} /></View>
       )}
       <Text style={p.name} numberOfLines={2}>{pl.name}</Text>
       <Text style={p.meta} numberOfLines={1}>{pl.author || ''}{pl.total ? ` · ${pl.total}首` : ''}</Text>
@@ -249,7 +249,7 @@ export function ExploreScreen() {
             onPress={() => navigation.navigate('Search' as never)}
           >
             <Icon name="search" size={20} color={C.text2} />
-            <Text style={st.searchPlaceholder}>{searchHints[tab]}</Text>
+            <Text style={st.searchPlaceholder} numberOfLines={1} ellipsizeMode="tail">{searchHints[tab]}</Text>
             <View style={{ flex: 1 }} />
             <Icon name="chevronright" size={18} color={C.text3} />
           </TouchableOpacity>
@@ -286,9 +286,9 @@ export function ExploreScreen() {
                   >
                     {first?.img
                       ? <Image source={{ uri: first.img }} style={st.catArt} />
-                      : <View style={[st.catArt, st.catFallback]}><Text style={st.catGlyph}>♫</Text></View>}
+                      : <View style={[st.catArt, st.catFallback]}><Icon name="music" size={26} color={C.white} /></View>}
                     <View style={st.catShade} />
-                    <Text style={st.catLabel}>{c.label}</Text>
+                    <Text style={[st.catLabel, { color: '#FFFFFF' }]}>{c.label}</Text>
                   </TouchableOpacity>
                 );
               })}

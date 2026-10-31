@@ -5,7 +5,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIn
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { SongRow } from '../components/SongRow';
 import { ActionSheet } from '../components/ActionSheet';
 import { CollectSheet } from '../components/CollectSheet';
@@ -18,7 +18,9 @@ import { providers, providerApi, type PvAlbum } from '../services/providers';
 import { IS_HD } from '../services/appversion';
 import { Platform } from 'react-native';
 import { HDTouch } from '../hd/HDTouch';
-import { GUTTER, focus, pageBottom } from '../hd/hdstyle'; // v3.28:统一栅格/焦点环/播放条让位
+import { GUTTER, focus, pageBottom } from '../hd/hdstyle';
+import { GridWall } from '../components/GridWall'; // [老板 1011 15:40] 统一墙卡容器(探索同款)
+import { DiscCard } from './MyLibraryScreen'; // [老板 1011 15:49] 专辑卡统一件
 
 const IS_WEB = Platform.OS === 'web';
 // 触点抽象:HD 用 HDTouch(焦点环),phone 保持 TouchableOpacity——与 MediaLibsScreen 同款
@@ -114,7 +116,7 @@ export function ProviderDetailScreen() {
         <View style={st.headCard}>
           {!isArtist ? (
             p.cover ? <Image source={{ uri: p.cover }} style={[st.cover, IS_HD && dv.cover]} />
-              : <View style={[st.cover, IS_HD && dv.cover, st.coverFallback]}><Text style={st.glyph}>♫</Text></View>
+              : <View style={[st.cover, IS_HD && dv.cover, st.coverFallback]}><Icon name="music" size={32} color={C.text2} /></View>
           ) : (
             <View style={[st.cover, IS_HD && dv.cover, st.artistFallback]}><Text style={st.artistInitial}>{p.name.slice(0, 1)}</Text></View>
           )}
@@ -137,22 +139,16 @@ export function ProviderDetailScreen() {
           </View>
         ) : isArtist ? (
           albums.length ? (
-            <View style={st.albumGrid}>
+            <GridWall>
               {albums.map(al => (
-                <T
-                  key={al.id} style={[st.albumCell, IS_WEB && st.albumCellWeb]} activeOpacity={0.85} focusStyle={focus(10)}
+                <DiscCard fill key={al.id} name={al.name} cover={al.cover} unknown={!al.cover}
+                  sub={[al.year ? String(al.year) : '', al.songCount ? `${al.songCount}首` : ''].filter(Boolean).join(' ') || undefined}
                   onPress={() => nav.navigate('ProviderDetail', {
                     acctId: p.acctId, kind: 'album', id: al.id, name: al.name,
                     cover: al.cover, sub: `${al.year || ''}${al.songCount ? ` ${al.songCount}首` : ''}`.trim() || undefined,
-                  })}
-                >
-                  {al.cover ? <Image source={{ uri: al.cover }} style={st.albumCover} />
-                    : <View style={[st.albumCover, st.coverFallback]}><Text style={st.glyph}>♫</Text></View>}
-                  <Text style={[st.albumName, IS_HD && dv.albumName]} numberOfLines={1}>{al.name}</Text>
-                  <Text style={[st.albumMeta, IS_HD && dv.albumMeta]} numberOfLines={1}>{al.year || ''}{al.songCount ? ` · ${al.songCount}首` : ''}</Text>
-                </T>
+                  })} />
               ))}
-            </View>
+            </GridWall>
           ) : <Text style={st.empty}>该艺术家没有专辑</Text>
         ) : (
           <>
@@ -203,44 +199,37 @@ export function ProviderDetailScreen() {
   );
 }
 
+
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
-  headCard: { flexDirection: 'row', gap: 14, marginTop: 4 },
+  headCard: { flexDirection: 'row', gap: SP.xxl, marginTop: 4 },
   cover: { width: 120, height: 120, borderRadius: 10 },
   coverFallback: { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   artistFallback: { backgroundColor: C.artTint2, alignItems: 'center', justifyContent: 'center' },
-  artistInitial: { color: C.brandText, fontSize: 44, fontWeight: '700' },
-  glyph: { color: C.text2, fontSize: 32, fontWeight: '700' },
-  headMeta: { flex: 1, justifyContent: 'center', gap: 6 },
-  title: { color: C.text, fontSize: 18, lineHeight: 25, fontWeight: '700' },
-  stat: { color: C.text2, fontSize: 12, lineHeight: 17 },
-  center: { paddingVertical: 60, alignItems: 'center', gap: 12 },
-  empty: { color: C.text2, fontSize: 12, lineHeight: 18, textAlign: 'center', paddingVertical: 40 },
-  retryBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.brand, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 18 },
-  retryText: { color: C.onBrand, fontSize: 13, fontWeight: '600' },
-  playAllBtn: { height: 46, borderRadius: 14, backgroundColor: C.brand, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 18 },
-  playAllText: { color: C.onBrand, fontSize: 14, fontWeight: '700' },
-  playAllCount: { color: C.onBrand, fontSize: 12, opacity: 0.8 },
-  actionRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  action: { flex: 1, minHeight: 56, borderRadius: 12, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', gap: 6 },
-  actionText: { color: C.text2, fontSize: 11, fontWeight: '500' },
-  songList: { marginTop: 14, gap: 8 },
-  prog: { color: C.brandText, fontSize: 11, width: 38, textAlign: 'right' },
-  albumGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 18 },
-  albumCell: { width: '31%', gap: 4 },
-  albumCover: { width: '100%', aspectRatio: 1, borderRadius: 10, backgroundColor: C.surface2 },
-  albumName: { color: C.text, fontSize: 12, lineHeight: 15, fontWeight: '600' },
-  albumMeta: { color: C.text2, fontSize: 9, lineHeight: 12 },
-  albumCellWeb: { width: '15.5%' }, // v3.28:web 6 列(与浏览页网格同规格;此前 31% 在桌面=3 巨列)
+  artistInitial: { color: C.brandText, fontSize: 44, fontWeight: FW.bold }, // [LEO 1011] 档外特排:头像兜底大字
+  glyph: { color: C.text2, fontSize: 32, fontWeight: FW.bold }, // [LEO 1011] 档外特排:封面兜底大字
+  headMeta: { flex: 1, justifyContent: 'center', gap: SP.sm },
+  title: { color: C.text, fontSize: FS.h2, lineHeight: 25, fontWeight: FW.bold },
+  stat: { color: C.text2, fontSize: FS.body, lineHeight: 17 },
+  center: { paddingVertical: 60, alignItems: 'center', gap: SP.xl },
+  empty: { color: C.text2, fontSize: FS.body, lineHeight: 18, textAlign: 'center', paddingVertical: 40 },
+  retryBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, backgroundColor: C.brand, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 18 },
+  retryText: { color: C.onBrand, fontSize: FS.md, fontWeight: FW.semibold },
+  playAllBtn: { height: 46, borderRadius: 14, backgroundColor: C.brand, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.md, marginTop: 18 },
+  playAllText: { color: C.onBrand, fontSize: FS.lg, fontWeight: FW.bold },
+  playAllCount: { color: C.onBrand, fontSize: FS.body, opacity: 0.8 },
+  actionRow: { flexDirection: 'row', gap: SP.lg, marginTop: 12 },
+  action: { flex: 1, minHeight: 56, borderRadius: 12, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', gap: SP.sm },
+  actionText: { color: C.text2, fontSize: FS.sm, fontWeight: FW.medium },
+  songList: { marginTop: 14, gap: SP.md },
+  prog: { color: C.brandText, fontSize: FS.sm, width: 38, textAlign: 'right' },
 });
 
 // v3.28(老板:统一风格):HD/桌面尺寸——头部卡/按钮/网格字号与全站同档
 const dv = StyleSheet.create({
   cover: { width: 140, height: 140, borderRadius: 12 },
-  title: { fontSize: 20, lineHeight: 27 },
-  stat: { fontSize: 13, lineHeight: 18 },
+  title: { fontSize: FS.h1, lineHeight: 27 },
+  stat: { fontSize: FS.md, lineHeight: 18 },
   playAllBtn: { height: 48, borderRadius: 12 },
   action: { minHeight: 60, borderRadius: 12 },
-  albumName: { fontSize: 13, lineHeight: 17 },
-  albumMeta: { fontSize: 10.5, lineHeight: 14 },
 });

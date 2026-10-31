@@ -3,11 +3,13 @@ import { fixCoverUrl } from '../utils/cover'; // lxfix:kw 图床域名自愈
 import { Platform } from 'react-native';
 import { View, Text, Pressable, StyleSheet, Image } from 'react-native';
 import { Icon } from '../theme/Icon';
-import { gradColorOf } from '../theme/grads'; // [老板 1011 渐变唯一源·1028 回归恢复]无图行渐变兑底(非灰块)
-import { C } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
+import { gradColorOf } from '../theme/grads'; // [老板 1011 15:39] 渐变唯一源
 import type { SongItem } from '../services/server';
+import { coverUrl, type LibSong } from '../services/myLibrary'; // [批次1·P1-1] LibSong 直传(我的/公共曲库封面链与 quality 副行,局部版退役)
 import { registerKbRow } from '../hd/hdkeyboard';
 import { locationsOf, usePresenceVersion } from '../services/cloudPresence'; // spec③:角标三态(队列/搜索/歌单详情等列表行尾);v3.0 细则2:locations 契约
+import { NewBadge } from './LibraryHome'; // ⑤-B6 NEW 标(7 天内入库,brand 底 9px 小标)
 
 // 来源标签（老板 09-18：来源显示）——tf/provider/本地/在线五源统一短名；未知 source 原样展示
 const SOURCE_LABELS: Record<string, string> = {
@@ -18,15 +20,27 @@ const SOURCE_LABELS: Record<string, string> = {
 };
 export const sourceLabel = (s?: string) => (s ? SOURCE_LABELS[s] ?? s : '');
 
+// [批次1·P1-1] 行内曲目二态:LibSong(我的/公共曲库原始对象,带 filename/hasCover/coverHttp/quality)·SongItem(第三方/云曲库)
+type RowSong = SongItem | LibSong;
+function isLibSong(s: RowSong): s is LibSong {
+  return typeof (s as LibSong).filename === 'string' && (s as LibSong).filename.length > 0 && typeof (s as LibSong).hasCover === 'boolean';
+}
+
 // Figma Song Row: 350x46, art 46x46 r=6, title 13 w500 / sub 10, duration right, more icon 20
 // extra: 右侧操作位（下载按钮等）；onMore: ⋯ 菜单回调(不传且无 extra 则不渲染 ⋯——lx163 老板:死图标等于欺骗)
-export function SongRow({ song, onPress, playing, extra, onMore, onLongPress, leading, sourceName }: { song: SongItem; onPress?: () => void; playing?: boolean; extra?: React.ReactNode; onMore?: (pos?: { x: number; y: number }) => void; onLongPress?: () => void; leading?: React.ReactNode; sourceName?: string }) { // lx167d:onLongPress(TV 长按管理);v3.33(老板:队列操作箱优化):onMore 带位置+leading 左槽(批量勾选);v3.0 细则2:sourceName=公共库歌副行源名
+// [批次1·P1-1] idx=左列序号(渲染 idx+1,1 基显示);lib=封面 URL 域(我的/公共曲库内嵌封面);LibSong 直传对齐局部版显示
+export function SongRow({ song, idx, onPress, playing, extra, onMore, onLongPress, leading, sourceName, isNew, lib }: {
+  song: RowSong; idx?: number; onPress?: () => void; playing?: boolean; extra?: React.ReactNode;
+  onMore?: (pos?: { x: number; y: number }) => void; onLongPress?: () => void; leading?: React.ReactNode; sourceName?: string; isNew?: boolean; lib?: string;
+}) { // lx167d:onLongPress(TV 长按管理);v3.33(老板:队列操作箱优化):onMore 带位置+leading 左槽(批量勾选);v3.0 细则2:sourceName=公共库歌副行源名;⑤:isNew=7 天内入库 NEW 标
   const [focus, setFocus] = useState(false); // lx145:TV D-pad 光标(队列页无选中态)
   // spec③:行尾角标三态(14px)——仅本机 devices/text3 · 仅云端 cloud/brand · 双在 cloud-check/text2;
   // v3.0 细则2:locations:{local,cloud} 契约——公共库歌两者 false 不占角标轴(来源=副行文字)
   usePresenceVersion();
-  const loc = locationsOf(song);
-  const isPub = (song as SongItem & { _lib?: string })._lib === 'public';
+  const ls = isLibSong(song) ? song : null; // LibSong 分支:封面 coverHttp→内嵌 coverUrl→渐变兜底;副行带 quality/文件夹分组
+  const it = ls ? null : (song as SongItem); // SongItem 分支:原有显示(来源·歌手·专辑·无损)
+  const loc = it ? locationsOf(it) : null; // 副本角标仅 SongItem 支(局部版无角标,显示对齐)
+  const isPub = !ls && (it as (SongItem & { _lib?: string }) | null)?._lib === 'public';
   const moreRef = useRef<unknown>(null); // v3.33:⋯ 按钮锚点(web 定位菜单)
   const kbRef = useRef<unknown>(null);
   // D3 A2:键盘导航注册(队列/媒体库浏览行;web only,native 注册表无人读)
@@ -41,7 +55,13 @@ export function SongRow({ song, onPress, playing, extra, onMore, onLongPress, le
       play: () => onPress?.(),
       menu: undefined, // 队列行 A3 菜单 v1.2.4 后续接入
     });
-  }, [song.songmid, song.source]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [song.songmid, it?.source]); // eslint-disable-line react-hooks/exhaustive-deps
+  // 副行:LibSong=歌手·专辑(文件夹分组)·音质·源名(局部版同串);SongItem=原有来源·歌手·专辑·无损
+  const sub = ls
+    ? `${ls.singer || '未知歌手'} · ${ls.album || (ls.subPath ? '文件夹分组' : '未知专辑')}${ls.quality && ls.quality !== '128k' ? ' · ' + ls.quality.toUpperCase() : ''}${sourceName ? ' · ' + sourceName : ''}`
+    : `${isPub ? `公共${sourceName ? ` · ${sourceName}` : ''} · ` : sourceLabel(it?.source) ? `${sourceLabel(it?.source)} · ` : ''}${song.singer}${it?.albumName ? ` · ${it.albumName}` : ''}${it?._types?.flac ? ' · 无损' : ''}`;
+  const dur = ls ? (ls.interval || ls.ext.toUpperCase()) : (it?.interval ?? '');
+  const g1 = gradColorOf(ls ? (ls.album || ls.singer) : (it?.albumName || song.singer));
   return (
     <Pressable
       ref={kbRef as never}
@@ -53,16 +73,23 @@ export function SongRow({ song, onPress, playing, extra, onMore, onLongPress, le
       focusable={!!onPress}
       onFocus={() => setFocus(true)}
       onBlur={() => setFocus(false)}>
+      {idx !== undefined ? <Text style={st.idx}>{idx + 1}</Text> : null}
       <View style={st.artWrap}>
-        {leading != null ? leading : song.img ? <Image source={{ uri: fixCoverUrl(song.img) }} style={st.art} /> : <View style={[st.art, { backgroundColor: gradColorOf(song.singer || song.name) }]}><Icon name="music" size={16} color="#ffffffcc" /></View>}
+        {leading != null ? leading
+          : ls
+            ? (ls.coverHttp ? <Image source={{ uri: ls.coverHttp }} style={st.art} /> // [识别补全 1010] 在线封面直链(优先于嵌入图)
+              : ls.hasCover ? <Image source={{ uri: coverUrl(ls.filename, lib) }} style={st.art} />
+              : <View style={[st.art, { backgroundColor: g1 }]}><Icon name="music" size={16} color="#ffffffcc" /></View>)
+            : it?.img ? <Image source={{ uri: fixCoverUrl(it.img) }} style={st.art} /> : <View style={[st.art, st.fallback]} />}
       </View>
       <View style={st.meta}>
-        <Text style={[st.title, playing && { color: C.brandText }]} numberOfLines={1}>{song.name}</Text>
-        <Text style={st.sub} numberOfLines={1}>
-          {isPub ? `公共${sourceName ? ` · ${sourceName}` : ''} · ` : sourceLabel(song.source) ? `${sourceLabel(song.source)} · ` : ''}{song.singer}{song.albumName ? ` · ${song.albumName}` : ''}{song._types?.flac ? ' · 无损' : ''}
-        </Text>
+        <View style={st.titleRow}>
+          <Text style={[st.title, playing && { color: C.brandText }]} numberOfLines={1}>{song.name}</Text>
+          {isNew ? <NewBadge /> : null}
+        </View>
+        <Text style={st.sub} numberOfLines={1}>{sub}</Text>
       </View>
-      <Text style={st.dur}>{playing ? '正在播放' : song.interval}</Text>
+      <Text style={st.dur}>{playing ? '正在播放' : dur}</Text>
       {loc && (loc.local || loc.cloud) ? (
         <Icon
           name={!loc.cloud ? 'devices' : !loc.local ? 'cloud' : 'cloud-check'}
@@ -91,15 +118,17 @@ export function SongRow({ song, onPress, playing, extra, onMore, onLongPress, le
 }
 
 const st = StyleSheet.create({
-  row: { minHeight: 50, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10, marginVertical: 1 }, // lx148:上下 padding
+  row: { minHeight: 50, flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingHorizontal: SP.md, paddingVertical: SP.xs, borderRadius: 10, marginVertical: 1 }, // lx148:上下 padding
   ringBase: { borderWidth: 2, borderColor: 'transparent' }, // 常驻占位,布局恒定
   ringOn: { borderColor: C.brand, backgroundColor: C.hover },
+  idx: { width: 22, textAlign: 'center', color: C.text3, fontSize: FS.body }, // [批次1] 序号列(1 基显示,对齐局部版)
   artWrap: { width: 46, height: 46, borderRadius: 6, overflow: 'hidden' },
   art: { width: 46, height: 46 },
-  fallback: { backgroundColor: C.surface2 }, // 兼容保留(渐变兑底上线后仅极老分支引用)
-  meta: { flex: 1, gap: 1, minWidth: 0 },
-  title: { color: C.text, fontSize: 13, lineHeight: 19, fontWeight: '500' },
-  sub: { color: C.text2, fontSize: 10, lineHeight: 15 },
-  dur: { color: C.text2, fontSize: 10, lineHeight: 15 },
+  fallback: { backgroundColor: C.surface2 },
+  meta: { flex: 1, gap: 1, minWidth: 0 }, // gap:1 低于 token 档下限(标题/副行密排),保留
+  titleRow: { flexDirection: 'row', alignItems: 'center' },
+  title: { color: C.text, fontSize: FS.md, lineHeight: 19, fontWeight: FW.medium },
+  sub: { color: C.text2, fontSize: FS.xs, lineHeight: 15 },
+  dur: { color: C.text2, fontSize: FS.xs, lineHeight: 15 },
   more: { width: 20, height: 20, alignItems: 'center', justifyContent: 'center', marginLeft: 0 },
 });

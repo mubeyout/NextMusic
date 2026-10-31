@@ -21,6 +21,8 @@ export const C: Record<string, string> = {
   grad2: 'rgba(255,255,255,.018)',
   border: 'rgba(255,255,255,.08)',
   stroke: 'rgba(255,255,255,.08)',
+  strokeStrong: 'rgba(255,255,255,.15)', // [LEO 1011 统一令] ghost 按钮描边(与 theme tokens 同语义)
+  knob: '#FFFFFF', // [LEO 1011 统一令] 开关钮恒白(与 theme tokens 同语义)
   text: '#FFFFFF',
   text2: '#B3B3B3',
   text3: '#595959',

@@ -1,7 +1,7 @@
 // HD(车机/TV)主壳 —— 对齐桌面版:左侧 174dp 侧栏(发现/我的乐库/歌单 三组)
 // + 内容区(层叠保状态) + 底部 64dp 桌面式播放条
 // 业务层(播放引擎/音源/媒体库)全复用 phone 版,仅 UI 形态不同
-import React, { useEffect, useReducer, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, Platform, ActivityIndicator } from 'react-native';
 const IS_WEB = Platform.OS === 'web';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,7 +9,7 @@ import { Icon, BrandIcon } from '../theme/Icon';
 import { C, H, SH, fmtSec } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { useSeekBar } from '../hooks/useSeekBar'; // R6 全 app 统一 seek
-import { usePlayer } from '../state/PlayerProvider';
+import { usePlayer, usePlayerProgress } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
 import { providers } from '../services/providers';
 import { settings, onSettings } from '../services/settings';
@@ -44,11 +44,15 @@ import { PlayerSettingsScreen } from '../screens/PlayerSettingsScreen';
 import { ImportPlaylistScreen } from '../screens/ImportPlaylistScreen';
 import { FxScreen } from '../screens/FxScreen';
 import { HDFxScreen } from './HDFxScreen'; // v3.20(老板):web/pc 重构版均衡器与音效页
+import { LicenseScreen } from '../screens/LicenseScreen'; // [D1 WP2] 授权与升级(双侧注册铁律)
 import { MediaLibsScreen, ProviderBrowseRoute } from '../screens/MediaLibsScreen';
+import { CloudLibraryScreen } from '../screens/CloudLibraryScreen'; // [KAI 20261008 老板 02:28] 云曲库轨道入口存在但屏幕从未注册=railNav 静默无操作=留发现页
 import { MyLibraryScreen, MyLibAlbumRoute, MyLibArtistRoute } from '../screens/MyLibraryScreen';
-import { PublicLibraryScreen, PublicLibAlbumRoute, PublicLibArtistRoute } from '../screens/PublicLibraryScreen'; // ④公共曲库(LEO v2.2 规格④)
+import { PublicLibraryScreen, PublicLibAlbumRoute, PublicLibArtistRoute, PublicLibWallRoute } from '../screens/PublicLibraryScreen'; // ④公共曲库(LEO v2.2 规格④)+全墙页
 import { pubCheck, usePubEntry } from '../services/publicLibrary'; // ④侧栏固定行授权态
 import { localLib } from '../services/localLibrary'; // 细则1:侧栏本机曲库行
+import { ServerLocalLibraryScreen } from '../screens/ServerLocalLibraryScreen'; // [web]本地曲库(服务器侧目录,升级稿 §二)
+import { useSlbEntries, slbRefresh } from '../services/serverLocalLibrary';
 import { ArtistFavScreen } from '../screens/ArtistFavScreen'; // lx161:收藏歌手
 import { ArtistDetailScreen } from '../screens/ArtistDetailScreen';
 import { AlbumFavScreen } from '../screens/AlbumFavScreen'; // v1.2.9 桌面:收藏专辑入口
@@ -114,8 +118,14 @@ const railNav = (s: string, p?: object) => {
 // HD 屏 token=桌面px×0.75,phone 屏是原生 px;v1.2.6 缩放源修正后并排密度差一截(设置子页字体特大)。
 // 全部桥接 phone 屏(队列/评论/Fx/媒体库族/下载/榜单广场/搜索/设置族/账号族)包 0.75 缩放,与 HD 屏密度统一;
 // TV/原生侧原样返回组件,零 diff。Route(投屏弹层)除外——absolute 弹层定位不适用 transform 缩放
+// [KAI 20261001] 桥接缩放包装必须按原组件缓存——原先每次调用新建 W 组件身份，
+// 而 HDMain JSX 里内联调用（component={withPhoneScale(X)}）→ HDMain 每次重淄=全部桥接屏
+// 整树重挂(状态/手势/滚动全灭+focus effect 重跑)。缓存后同原组件恒同身份，重淮不重挂。
+const phoneScaleCache = new Map<React.ComponentType<Record<string, unknown>>, React.ComponentType<Record<string, unknown>>>();
 export const withPhoneScale = (Cmp: React.ComponentType<Record<string, unknown>>) => {
   if (!IS_WEB) return Cmp;
+  const hit = phoneScaleCache.get(Cmp);
+  if (hit) return hit;
   // web: CSS zoom 替代 transform scale——zoom 参与布局,ScrollView 尺寸/滚轮坐标自动适配
   // (transform 0.75 下 RNW ScrollView 计算布局尺寸按未缩放值,底部内容不可达=裁切,老板实测)
   const W = (props: Record<string, unknown>) => (
@@ -124,6 +134,7 @@ export const withPhoneScale = (Cmp: React.ComponentType<Record<string, unknown>>
     </div>
   );
   W.displayName = 'PhoneScale';
+  phoneScaleCache.set(Cmp, W);
   return W;
 };
 
@@ -160,7 +171,11 @@ export function HDMain() {
   // ④公共曲库侧栏固定行(授权+个人开关开才渲染;404/未授权完全不可见)
   const pub = usePubEntry();
   const locLibsRail = localLib.all(); // 细则1:侧栏本机曲库行(有库才显示;导航时重读)
-  useEffect(() => { pubCheck(); }, []);
+  const slbRail = useSlbEntries().filter(e => !e.locked); // [web]本地曲库侧栏行(服务器侧目录;有库才显示)
+  useEffect(() => { pubCheck(); slbRefresh(); }, []);
+
+  // [KAI 20261001] Tabs 屏 children 稳定引用——只随 tab 变;HDMain 无关重渲不再级联进 Tabs 屏
+  const tabsChildren = useCallback(() => <TabsHost tab={tab} setTab={setTab} />, [tab, setTab]);
 
   // 歌单列表(本地+同步)与"我喜欢的"计数——lx91 单次拉取;lx104:缓存秒出+我喜欢的去重+离线收藏合并
   const [syncTick, setSyncTick] = useState(0);
@@ -268,8 +283,8 @@ export function HDMain() {
   };
 
   return (
-    <View style={[st.screen, { paddingLeft: Math.max(insets.left, IS_CAR_DEVICE ? 96 : 0) }]}>
-      {/* 1028 星愿 L 形安全区:左侧 car_left_system_bar 96dp(aapt2 实锤)整体右推;insets 可靠时取真实值 */}
+    <View style={[st.screen, { paddingLeft: insets.left, paddingTop: Math.max(insets.top, IS_CAR_DEVICE ? 72 : 0) }]}>
+      {/* 1028 星愿安全区:左侧只跟运行时 insets(实车实测固定 96 兑底致无左 bar 车型空一大块——老板实测回退);顶部 72 保留(实锤重叠过) */}
       {/* ===== 侧栏(桌面版结构) ===== */}
       <View style={IS_WEB ? st.sidebarWrapWeb : st.sidebarWrap}>
         {IS_WEB ? (
@@ -313,22 +328,25 @@ export function HDMain() {
           <NavItem icon="server" label="媒体库" active={innerRoute === 'MediaLibs'} onPress={() => railNav('MediaLibs')} />
           {/* 定稿v3.0细则1 四库总序:本机曲库→云曲库→公共曲库→(分隔)→第三方库们;本机行有库才显示(细则1),云端=登录可见 */}
           {locLibsRail.map(l => (
-            <NavItem key={'loc-' + l.id} icon="folder-music" label={l.name} active={innerRoute === 'LocalLibBrowse' && innerP?.libId === l.id} onPress={() => railNav('LocalLibBrowse', { libId: l.id })} />
+            <NavItem key={'loc-' + l.id} icon="folder-music" label={l.name} active={innerRoute === 'LocalLibBrowse' && innerP?.libId === l.id} child onPress={() => railNav('LocalLibBrowse', { libId: l.id })} />
+          ))}
+          {/* [web] 本地曲库行(服务器侧目录;有库才显示,同 APK 模式)——浏览进 ServerLocalLib */}
+          {IS_WEB && slbRail.map(l => (
+            <NavItem key={'slb-' + l.id} icon="folder-music" label={l.name} active={innerRoute === 'ServerLocalLib' && innerP?.libId === l.id} child onPress={() => railNav('ServerLocalLib', { libId: l.id })} />
           ))}
           {token ? (
-            <NavItem icon="cloud" label="云曲库" active={innerRoute === 'CloudLibrary'} onPress={() => railNav('CloudLibrary')} />
+            <NavItem icon="cloud" label="云曲库" active={innerRoute === 'CloudLibrary'} child onPress={() => railNav('CloudLibrary')} />
           ) : null}
           {/* ④公共曲库:媒体库组固定行(library 图标;未授权/开关关→不渲染;官方共享库非个人连接) */}
           {pub.authorized && pub.showEntry ? (
-            <NavItem icon="library" label="公共曲库" active={innerRoute === 'PublicLibrary'} onPress={() => railNav('PublicLibrary')} />
+            <NavItem icon="library" label="公共曲库" active={innerRoute === 'PublicLibrary'} child onPress={() => railNav('PublicLibrary')} />
           ) : null}
-          {/* 定稿细则1:公共曲库与第三方库们分组分隔 */}
-          {providerAccts.length ? <View style={st.navSep} /> : null}
+          {/* [库族重设计v1 PartA] navSep 已删:组内统一缩进树,零分割线 */}
           {/* v3:已连接媒体库账号直入口(Emby/Jellyfin/Navidrome/WebDAV/道理鱼) */}
           {providerAccts.map(pa => {
             const on = innerRoute === 'ProviderBrowse' && innerP?.acctId === pa.id; // v3.27 账号选中态
             return (
-            <HDTouch key={pa.id} style={[st.navItem, { paddingLeft: 34 }, on && st.navItemOn]} focusStyle={st.navFocus} hoverBg={IS_WEB && !on ? C.hover : false}
+            <HDTouch key={pa.id} style={[st.navItem, st.navItemChild, on && st.navItemOn]} focusStyle={st.navFocus} hoverBg={IS_WEB && !on ? C.hover : false}
               onPress={() => railNav('ProviderBrowse', { acctId: pa.id })}>
               <BrandIcon name={pa.type as never} size={16} />
               <Text style={[st.navLabel, on && { fontWeight: '700', color: C.text }]} numberOfLines={1}>{pa.name}</Text>
@@ -360,7 +378,8 @@ export function HDMain() {
         </ScrollView>
         {/* lx85:设置项不贴底——留出焦点环完整显示空间(老板:太靠底被裁切) */}
         {/* v1.2.5:web 设置也走 railNav(内页化,侧栏恒固定);TV 保持原 navigate——零行为差异 */}
-        <View style={st.settingsDock}>
+        <View style={[st.settingsDock, { paddingBottom: Math.max(botLift, 8) }]}>
+          {/* 1028 车机适配:settingsDock 随播放条同抬(botLift)——车机底部 bar 不再盖设置入口(老板实测⑥) */}
           <NavItem icon="settings" label="设置" active={innerRoute === 'Settings'} onPress={() => (IS_WEB ? railNav('Settings') : hdNav()?.navigate('Settings'))} />
           {IS_WEB ? (
             <NavItem icon="server" label="后台管理" onPress={() => {
@@ -377,8 +396,11 @@ export function HDMain() {
         <NavigationIndependentTree>
         <NavigationContainer ref={hdInnerRef} theme={hdInnerTheme} onStateChange={() => { try { const r = hdInnerRef.getCurrentRoute() as unknown as { name?: string; params?: object } | undefined; setInnerRoute(r?.name || 'Tabs'); setInnerP((r?.params as Record<string, unknown>) || null); } catch { /* ignore */ } }}>
           {/* 坞108:TV 转场必须直切;坞57:fade 有变亮中间态 */}
-          <InnerStack.Navigator screenOptions={{ headerShown: false, animation: 'none', contentStyle: { backgroundColor: C.bg }, freezeOnBlur: true }}>
-            <InnerStack.Screen name="Tabs">{() => <TabsHost tab={tab} setTab={setTab} />}</InnerStack.Screen>
+          {/* [KAI 20261001] freezeOnBlur 关闭——冻结快照层事件死点:匿名态媒体库可见但点击无反应无焦点(老板 12:50 报障,浏览器实证:登录态同环境正常/匿名态 Pressable 零响应);冻结屏量级有限性能可接受 */}
+          <InnerStack.Navigator screenOptions={{ headerShown: false, animation: 'none', contentStyle: { backgroundColor: C.bg }, freezeOnBlur: false }}>
+            {/* [KAI 20261001] Tabs children 稳定化:原内联箭头函数每次 HDMain 重淄换身份，
+            与屏无关的重渲(风暴期 281 次/3s)全部级联进 Tabs 屏;useCallback 只随 tab 变 */}
+            <InnerStack.Screen name="Tabs">{tabsChildren}</InnerStack.Screen>
             <InnerStack.Screen name="Player" component={HDPlayerSafe} />
             <InnerStack.Screen name="Queue" component={withPhoneScale(QueueScreen)} />
             <InnerStack.Screen name="Route" component={RoutePage} options={{ presentation: 'transparentModal' }} />
@@ -389,13 +411,20 @@ export function HDMain() {
             <InnerStack.Screen name="ImportPlaylist" component={withPhoneScale(ImportPlaylistScreen)} />
             {/* v3.20:web 全宽 HD 版 Fx(注释放 Navigator 内会炸——lx168 红线,注释放表达式内) */}
             <InnerStack.Screen name="Fx" component={IS_WEB ? HDFxScreen : withPhoneScale(FxScreen)} />
+            {/* [D1 WP2] HD 侧授权页——FeatureSheet 升级 CTA 落点(注释独占一行:行尾注释留空格=JSX 字符串子节点,navigator 拒收) */}
+            <InnerStack.Screen name="License" component={withPhoneScale(LicenseScreen)} />
             <InnerStack.Screen name="MediaLibs" component={withPhoneScale(MediaLibsScreen)} />
+            {/* [KAI 20261008] 云曲库注册补齐(lx168 红线:注释放 Navigator 内会炸,同独占一行才安全) */}
+            <InnerStack.Screen name="CloudLibrary" component={withPhoneScale(CloudLibraryScreen)} />
             <InnerStack.Screen name="MyLibrary" component={withPhoneScale(MyLibraryScreen)} />
             <InnerStack.Screen name="MyLibAlbum" component={withPhoneScale(MyLibAlbumRoute)} />
             <InnerStack.Screen name="MyLibArtist" component={withPhoneScale(MyLibArtistRoute)} />
             {/* ④公共曲库三路由(浏览+专辑/歌手详情;phone 桥接缩放同 MyLibrary 族) */}
             <InnerStack.Screen name="PublicLibrary" component={withPhoneScale(PublicLibraryScreen)} />
+            <InnerStack.Screen name="ServerLocalLib" component={withPhoneScale(ServerLocalLibraryScreen)} />
             <InnerStack.Screen name="PublicLibAlbum" component={withPhoneScale(PublicLibAlbumRoute)} />
+            {/* [老板 1011 13:01 破案] HD 壳独立导航器缺全墙注册=查看全部静默死根因(注释独占一行——行内注释会变 navigator 子节点炸,lx168 红线) */}
+            <InnerStack.Screen name="PublicLibWall" component={withPhoneScale(PublicLibWallRoute)} />
             <InnerStack.Screen name="PublicLibArtist" component={withPhoneScale(PublicLibArtistRoute)} />
             <InnerStack.Screen name="ArtistFavs" component={withPhoneScale(ArtistFavScreen)} />
             <InnerStack.Screen name="AlbumFavs" component={withPhoneScale(AlbumFavScreen)} />
@@ -478,11 +507,11 @@ function Group({ label, top = 4 }: { label: string; top?: number }) {
   return <Text style={[st.group, { marginTop: top + 5 }, IS_WEB && { paddingHorizontal: 18 }]}>{label}</Text>;
 }
 
-function NavItem({ icon, label, active, first, onPress }: { icon: string; label: string; active?: boolean; first?: boolean; onPress: () => void }) {
+function NavItem({ icon, label, active, first, child, onPress }: { icon: string; label: string; active?: boolean; first?: boolean; child?: boolean; onPress: () => void }) {
   return (
-    <HDTouch style={[st.navItem, active && st.navItemOn]} focusStyle={st.navFocus} hoverBg={IS_WEB && !active ? C.hover : false} hasTVPreferredFocus={first}
+    <HDTouch style={[st.navItem, child && st.navItemChild, active && st.navItemOn]} focusStyle={st.navFocus} hoverBg={IS_WEB && !active ? C.hover : false} hasTVPreferredFocus={first}
       onPress={onPress}>
-      <Icon name={icon as never} size={16} color={active ? C.text : C.text2} />
+      <Icon name={icon as never} size={16} color={C.text} />
       <Text style={[st.navLabel, active && { fontWeight: '700', color: C.text }]} numberOfLines={1}>{label}</Text>
     </HDTouch>
   );
@@ -502,7 +531,8 @@ function PlItem({ name, count, add, active, onPress, onLongPress }: { name: stri
 
 // 桌面式播放条:左(封面+曲目+收藏) 中(控件+进度) 右(队列/音效/详情)——投屏入口已删(老板 09-14)
 function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server').SongItem) => void }) {
-  const { current, playing, position, duration, toggle, skipNext, skipPrev, queue, shuffle, repeat, setShuffle, cycleRepeat, seekTo } = usePlayer();
+  const { current, playing, toggle, skipNext, skipPrev, queue, shuffle, repeat, setShuffle, cycleRepeat, seekTo } = usePlayer();
+  const { position, duration } = usePlayerProgress(); // [1011 15:16] 进度独立订阅
   const { faved } = useFav(current); // lx103:收藏态展示(操作走选歌单面板)
   const pct = duration > 0 ? Math.min(1, position / duration) : 0;
   // R6 根治:HDPlayBar 底部条是全 app 第 4 处独立 seek 实现(R3 自加坐标层三病:左边距恒0/宽度量错元素/直写 audio 绕过通道)
@@ -523,7 +553,7 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
         <HDTouch style={st.pbCoverTouch} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 9 }} hoverBg={IS_WEB ? C.hover : false} onPress={() => hdNav()?.navigate('Player')}>
           {current?.img
             ? <Image source={{ uri: current.img }} style={st.pbArt} />
-            : <View style={[st.pbArt, { backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' }]}><Text style={{ color: C.text3, fontSize: 14 }}>♪</Text></View>}
+            : <View style={[st.pbArt, { backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={14} color={C.text3} /></View>} {/* [审计 1010] ♪ 字形→真矢量 */}
         </HDTouch>
         <View style={{ minWidth: 0, flex: 1, gap: 1 }}>
           <Text style={st.pbTitle} numberOfLines={1}>{current?.name ?? '未在播放'}</Text>
@@ -581,10 +611,10 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
           <Icon name="comments" size={14} color={C.text2} />
         </HDTouch>
         <HDTouch style={st.tool} focusStyle={st.toolFocus} hoverBg={IS_WEB ? C.hover : false} onPress={() => hdNav()?.navigate('Fx')}>
-          <Icon name="sliders" size={14} color={C.text2} />
+          <Icon name="sliders" size={14} color={C.text} />
         </HDTouch>
         <HDTouch style={st.tool} focusStyle={st.toolFocus} hoverBg={IS_WEB ? C.hover : false} onPress={() => hdNav()?.navigate('Player')}>
-          <Icon name="fullscreen" size={14} color={C.text2} />
+          <Icon name="fullscreen" size={14} color={C.text} />
         </HDTouch>
       </View>
     </View>
@@ -592,7 +622,7 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
 }
 
 const st = StyleSheet.create({
-  navSep: { height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(255,255,255,.08)', marginLeft: 34, marginVertical: 6 },
+  navItemChild: { paddingLeft: 34 }, // [库族重设计v1 PartA] 子行统一缩进(与第三方现行 34 一致,不发明新值)
   screen: { flex: 1, flexDirection: 'row', backgroundColor: C.bg },
   sidebarWrap: { width: H.sidebar, backgroundColor: C.glass, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border },
   // v1.1.9 web:侧栏常驻最顶层(内页卡片 marginLeft 让位,zIndex 保证转场时侧栏不被卡片盖住)
@@ -609,15 +639,15 @@ const st = StyleSheet.create({
   logoMarkMac: { width: 18, height: 19.75 }, // mac 轨道区稍大,仍对齐 nav 槽
   brandNameWeb: { color: C.text, fontSize: 13.5, fontWeight: '800', letterSpacing: 0.2 },
   settingsDock: { paddingHorizontal: 0, paddingVertical: 6 },
-  group: { fontSize: 9, color: C.text3, paddingHorizontal: 12, paddingTop: 5, paddingBottom: 3, letterSpacing: 1, fontWeight: '600' },
+  group: { fontSize: 9, color: C.text2, paddingHorizontal: 12, paddingTop: 5, paddingBottom: 3, letterSpacing: 1, fontWeight: '600' }, // [老板 1011 15:35 浅色] text3→text2:浅色下分组小标太浅
   navItem: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 8, paddingHorizontal: 10, height: 35, borderRadius: 9 },
   navItemOn: { backgroundColor: C.brandDim },
   navFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 9 },
-  navLabel: { color: C.text2, fontSize: H.font.md, fontWeight: '500', flex: 1 },
+  navLabel: { color: C.text, fontSize: H.font.md, fontWeight: '500', flex: 1 }, // [老板 1011 15:35 浅色] text2→text:浅色下侧栏标签太浅;层级靠字重500/700+brandDim底
   plItem: { flexDirection: 'row', alignItems: 'center', gap: 9, marginHorizontal: 8, paddingHorizontal: 10, height: 35, borderRadius: 9 },
   plChip: { width: 20, height: 20, borderRadius: 6, backgroundColor: C.grad1, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
   plAddChip: { width: 20, height: 20, borderRadius: 6, borderWidth: 1, borderStyle: 'dashed', borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
-  plName: { color: C.text2, fontSize: H.font.sm, flex: 1 },
+  plName: { color: C.text, fontSize: H.font.sm, flex: 1 }, // [老板 1011 15:35 浅色] text2→text:与 navLabel 同步
   body: { flex: 1 },
   tabStack: { flex: 1 },
   tabHost: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
@@ -641,7 +671,7 @@ const st = StyleSheet.create({
   toolRepOne: { position: 'absolute', right: -1, top: -1, color: C.brand, fontSize: 8, fontWeight: '800' },
   playBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   playBtnFocus: { borderWidth: 2, borderColor: '#FFFFFF', borderRadius: 16 },
-  pbTime: { color: C.text3, fontSize: 8, fontVariant: ['tabular-nums'], minWidth: 26 },
+  pbTime: { color: C.text2, fontSize: 8, fontVariant: ['tabular-nums'], minWidth: 26 }, // [老板 1011 15:35 浅色] text3→text2
   pbTrack: { flex: 1, height: 3, borderRadius: 2, flexDirection: 'row' },
   pbRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   badge: { position: 'absolute', right: -3, bottom: -3, minWidth: 12, height: 12, borderRadius: 6, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 2 },

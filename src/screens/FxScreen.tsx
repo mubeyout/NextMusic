@@ -23,16 +23,18 @@ function T(props: { style?: unknown; onPress?: () => void; disabled?: boolean; c
 function StepBtn({ d, onPress }: { d: -1 | 1; onPress: () => void }) {
   return (
     <HDTouch onPress={onPress} style={{ width: 30, height: 34, borderRadius: 8, backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ color: C.text, fontSize: 15, fontWeight: '800', lineHeight: 18 }}>{d < 0 ? '−' : '+'}</Text>
+      <Text style={{ color: C.text, fontSize: FS.xl, fontWeight: FW.heavy, lineHeight: 18 }}>{d < 0 ? '−' : '+'}</Text>
     </HDTouch>
   );
 }
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { toast } from '../components/Dialog';
 import { ActionSheet } from '../components/ActionSheet';
+import { useFeatureGate, FeatureGateModal } from '../components/FeatureGate';
+import { ProTag } from '../components/ProTag'; // [D1 WP2] 去锁化——ProTag 替代 LockGlyph
 import {
   FX_DEFAULT_PRESETS, FX_FREQ_LABELS, FX_REVERB_OPTIONS,
   subscribeFx, fxSnapshot, fxSyncState, fetchFxFromServer,
@@ -74,13 +76,13 @@ function FxRow({ label, value, min, max, step, onChange, fmt }: {
 }
 
 const fxrowSt = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 5 },
-  label: { color: C.text2, fontSize: 13, width: 56, fontVariant: ['tabular-nums'] },
+  row: { flexDirection: 'row', alignItems: 'center', gap: SP.xxl, paddingVertical: 5 },
+  label: { color: C.text2, fontSize: FS.md, width: 56, fontVariant: ['tabular-nums'] },
   track: { flex: 1, height: 8, flexDirection: 'row', alignItems: 'center' },
   halfA: { height: 8, backgroundColor: C.brand, borderTopLeftRadius: 4, borderBottomLeftRadius: 4 },
   halfB: { height: 8, backgroundColor: C.inset },
   bar: { width: 2, height: 14, borderRadius: 1, backgroundColor: C.text },
-  val: { color: C.text, fontSize: 14, fontWeight: '600', width: 64, textAlign: 'right', fontVariant: ['tabular-nums'] },
+  val: { color: C.text, fontSize: FS.lg, fontWeight: FW.semibold, width: 64, textAlign: 'right', fontVariant: ['tabular-nums'] },
 });
 
 function HSlider({ value, min, max, step, onChange, disabled, style }: {
@@ -132,7 +134,7 @@ function HSlider({ value, min, max, step, onChange, disabled, style }: {
       <View style={[hs.fill, { width: r * w }]} pointerEvents="none" />
       <View style={[hs.thumb, { left: (w ? r * w : 0) - 7 }]} pointerEvents="none" />
       {IS_HD && !disabled ? (
-        <View style={{ position: 'absolute', right: -2, top: -6, flexDirection: 'row', gap: 4 }}>
+        <View style={{ position: 'absolute', right: -2, top: -6, flexDirection: 'row', gap: SP.xs }}>
           <StepBtn d={-1} onPress={() => onChange(Math.max(min, Math.round((value - step) / step) * step))} />
           <StepBtn d={1} onPress={() => onChange(Math.min(max, Math.round((value + step) / step) * step))} />
         </View>
@@ -205,7 +207,7 @@ function VSlider({ value, min, max, step, onChange, height = 150 }: {
       <View style={[vs.fill, { top: fillTop, height: fillH }]} pointerEvents="none" />
       <View style={[vs.thumb, { top: thumbY }]} pointerEvents="none" />
       {IS_HD ? (
-        <View style={{ position: 'absolute', bottom: -2, flexDirection: 'row', gap: 4 }}>
+        <View style={{ position: 'absolute', bottom: -2, flexDirection: 'row', gap: SP.xs }}>
           <StepBtn d={-1} onPress={() => onChange(Math.max(min, Math.round((value - step) / step) * step))} />
           <StepBtn d={1} onPress={() => onChange(Math.min(max, Math.round((value + step) / step) * step))} />
         </View>
@@ -257,6 +259,9 @@ export function FxScreen() {
   const [managePreset, setManagePreset] = useState<string | null>(null);
   const [aeqQuery, setAeqQuery] = useState(''); // lx52 AutoEq 型号搜索
   const [advancedOpen, setAdvancedOpen] = useState(false); // lx57 高级折叠
+  // D2 eq_custom：自定义预设入口门（免费拦——guard 三命；内置预设应用/听感模式不拦；重命名/删除=存量管理不拦）
+  const eqGate = useFeatureGate('eq_custom');
+  const openAddPreset = () => { setInputVal(''); setPresetSheet({ mode: 'add' }); };
 
   useEffect(() => subscribeFx(() => force(x => x + 1)), []);
 
@@ -293,7 +298,7 @@ export function FxScreen() {
         </T>
       </View>
 
-      <ScrollView contentContainerStyle={[st.content, IS_HD && { maxWidth: 860, alignSelf: 'flex-start', width: '100%' }]} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[st.content, IS_HD && { width: '100%' }]} showsVerticalScrollIndicator={false}>
         {/* ===== lx57: 听感模式(一键,普通用户唯一入口) ===== */}
         <View style={st.modeGrid}>
           {SOUND_MODES.filter(m => m.id !== 'custom').map(m => {
@@ -332,7 +337,9 @@ export function FxScreen() {
               </T>
             );
           })}
-          <T style={st.chipAdd} activeOpacity={0.7} onPress={() => { setInputVal(''); setPresetSheet({ mode: 'add' }); }}>
+          {/* D2 eq_custom：＋chip=自定义预设入口（免费锁标+三命拦截） */}
+          <T style={st.chipAdd} activeOpacity={0.7} onPress={() => eqGate.guard(openAddPreset)}>
+            {eqGate.locked ? <ProTag size="compact" /> : null}
             <Text style={st.chipAddText}>＋</Text>
           </T>
         </ScrollView>
@@ -341,7 +348,7 @@ export function FxScreen() {
         <View style={st.card}>
           <View style={st.cardHead}>
             <Text style={st.cardTitle}>均衡器</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.lg }}>
               {activePresetName ? <Text style={st.presetNameOn}>{activePresetName}</Text> : null}
               {eqTouched ? (
                 <T onPress={resetEQ} hitSlop={4}>
@@ -351,7 +358,7 @@ export function FxScreen() {
             </View>
           </View>
           {IS_HD ? (
-            <View style={{ gap: 4 }}>
+            <View style={{ gap: SP.xs }}>
               {FX_FREQ_LABELS.map((label, i) => (
                 <FxRow key={label} label={label} value={settings.eq[i]} min={-12} max={12} step={1} onChange={v => setEQ(i, v)} />
               ))}
@@ -470,7 +477,7 @@ export function FxScreen() {
             {AUTOEQ_MODELS.filter(m => !aeqQuery || m.toLowerCase().includes(aeqQuery.toLowerCase())).slice(0, 60).map(m => (
               <T key={m} activeOpacity={0.7} onPress={() => setViper({ autoeqName: m, autoeqOn: true })}>
                 <View style={[st.aeqRow, settings.viper.autoeqName === m && st.aeqRowOn]}>
-                  <Text style={[st.aeqRowText, settings.viper.autoeqName === m && { color: C.brand, fontWeight: '700' }]} numberOfLines={1}>{m}</Text>
+                  <Text style={[st.aeqRowText, settings.viper.autoeqName === m && { color: C.brand, fontWeight: FW.bold }]} numberOfLines={1}>{m}</Text>
                   {settings.viper.autoeqName === m ? (
                     <Text style={st.aeqMeta}>{autoeqProfile(m)?.f.length ?? 0} 段滤波</Text>
                   ) : null}
@@ -550,6 +557,9 @@ export function FxScreen() {
         </Text>
       </ScrollView>
 
+      {/* D2 eq_custom 门弹层（三命首弹在此记频；试用成功重放=直接弹命名框） */}
+      <FeatureGateModal fg={eqGate} />
+
       {/* 添加 / 重命名预设 */}
       <ActionSheet
         visible={presetSheet !== null}
@@ -608,80 +618,81 @@ export function FxScreen() {
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 12 },
-  title: { color: C.text, fontSize: 20, fontWeight: '800', flex: 1 }, // lx166 居左
-  syncBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, width: 26 + 46, justifyContent: 'flex-end' },
+  title: { color: C.text, fontSize: FS.h1, fontWeight: FW.heavy, flex: 1 }, // lx166 居左
+  syncBadge: { flexDirection: 'row', alignItems: 'center', gap: SP.xs, width: 26 + 46, justifyContent: 'flex-end' },
   syncDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.text3 },
   syncDotOn: { backgroundColor: C.brand },
-  syncText: { color: C.text2, fontSize: 10, fontWeight: '600' },
+  syncText: { color: C.text2, fontSize: FS.xs, fontWeight: FW.semibold },
 
   content: { paddingHorizontal: 24, paddingBottom: 40, paddingTop: 8 },
 
   // 预设胶囊（横滚）
-  presetScroll: { gap: 8, paddingBottom: 8, paddingTop: 6, paddingHorizontal: 4, marginBottom: 12 }, // lx130:选中态留呼吸空间防裁切
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10, paddingHorizontal: 4 },
+  presetScroll: { gap: SP.md, paddingBottom: 8, paddingTop: 6, paddingHorizontal: 4, marginBottom: 12 }, // lx130:选中态留呼吸空间防裁切
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.md, marginBottom: 10, paddingHorizontal: 4 },
   chip: { paddingHorizontal: 14, height: 32, borderRadius: 16, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', marginVertical: 2, borderWidth: 2, borderColor: 'transparent' }, // lx130:透明边框占位——选中描边不再裁切文字
   chipOn: { backgroundColor: C.brand },
-  chipText: { color: C.text2, fontSize: 12, fontWeight: '600' },
-  chipTextOn: { color: C.onBrand, fontWeight: '800' },
+  chipText: { color: C.text2, fontSize: FS.body, fontWeight: FW.semibold },
+  chipTextOn: { color: C.onBrand, fontWeight: FW.heavy },
   chipAdd: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', borderColor: C.strokeStrong, alignItems: 'center', justifyContent: 'center' },
-  chipAddText: { color: C.text3, fontSize: 15, fontWeight: '800', lineHeight: 17 },
-  modeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14, paddingHorizontal: 2 },
+  chipAddLock: { width: 48, flexDirection: 'row', gap: SP.xs }, // [D1 WP2 已退役] ProTag 替代锁标
+  chipAddText: { color: C.text3, fontSize: FS.xl, fontWeight: FW.heavy, lineHeight: 17 },
+  modeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.sm, marginBottom: 14, paddingHorizontal: 2 },
   modeCell: { width: '31%', flexGrow: 0, flexShrink: 0 },
   modeCard: { borderRadius: 12, backgroundColor: C.surface2, paddingHorizontal: 8, paddingVertical: 10, alignItems: 'center', minHeight: 62, justifyContent: 'center', borderWidth: 2, borderColor: 'transparent', margin: 2 }, // lx138:边距+透明描边占位,选中不裁切
   modeCardOn: { backgroundColor: C.brand, borderColor: C.brandSoft },
-  modeName: { color: C.text, fontSize: 14, fontWeight: '700' },
+  modeName: { color: C.text, fontSize: FS.lg, fontWeight: FW.bold },
   modeNameOn: { color: C.onBrand },
-  modeDesc: { color: C.text3, fontSize: 10, marginTop: 2, textAlign: 'center' },
-  advToggle: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, marginBottom: 4 },
-  advToggleText: { color: C.text2, fontSize: 14, fontWeight: '600' },
-  advHint: { color: C.text3, fontSize: 11 },
-  aeqInput: { height: 38, borderRadius: 10, backgroundColor: C.inset, color: C.text, fontSize: 13, paddingHorizontal: 12, marginBottom: 8 },
+  modeDesc: { color: C.text3, fontSize: FS.xs, marginTop: 2, textAlign: 'center' },
+  advToggle: { flexDirection: 'row', alignItems: 'center', gap: SP.md, paddingVertical: 12, marginBottom: 4 },
+  advToggleText: { color: C.text2, fontSize: FS.lg, fontWeight: FW.semibold },
+  advHint: { color: C.text3, fontSize: FS.sm },
+  aeqInput: { height: 38, borderRadius: 10, backgroundColor: C.inset, color: C.text, fontSize: FS.md, paddingHorizontal: 12, marginBottom: 8 },
   aeqList: { maxHeight: 220, borderRadius: 12 },
   aeqRow: { flexDirection: 'row', alignItems: 'center', height: 40, paddingHorizontal: 12, borderRadius: 10, backgroundColor: C.surface2, marginBottom: 4 },
   aeqRowOn: { backgroundColor: C.selTint },
-  aeqRowText: { flex: 1, color: C.text, fontSize: 13 },
-  aeqMeta: { color: C.text3, fontSize: 11 },
+  aeqRowText: { flex: 1, color: C.text, fontSize: FS.md },
+  aeqMeta: { color: C.text3, fontSize: FS.sm },
 
   // 卡片
   card: { backgroundColor: C.surface, borderRadius: 12, padding: 14, marginBottom: 12 },
-  cardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, gap: 8 },
-  cardTitleAuto: { flex: 1, color: C.text, fontSize: 14, fontWeight: '700' },
-  cardTitle: { color: C.text, fontSize: 14, fontWeight: '700' },
-  cardMeta: { color: C.brandText, fontSize: 11, fontWeight: '700', maxWidth: 120 },
-  cardHint: { color: C.text3, fontSize: 11, fontWeight: '500' },
-  linkBtn: { color: C.brandText, fontSize: 11, fontWeight: '800' },
-  presetNameOn: { color: C.text2, fontSize: 11, fontWeight: '600' },
+  cardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, gap: SP.md },
+  cardTitleAuto: { flex: 1, color: C.text, fontSize: FS.lg, fontWeight: FW.bold },
+  cardTitle: { color: C.text, fontSize: FS.lg, fontWeight: FW.bold },
+  cardMeta: { color: C.brandText, fontSize: FS.sm, fontWeight: FW.bold, maxWidth: 120 },
+  cardHint: { color: C.text3, fontSize: FS.sm, fontWeight: FW.medium },
+  linkBtn: { color: C.brandText, fontSize: FS.sm, fontWeight: FW.heavy },
+  presetNameOn: { color: C.text2, fontSize: FS.sm, fontWeight: FW.semibold },
 
   // EQ 垂直网格
   eqGrid: { flexDirection: 'row', justifyContent: 'space-between' },
-  eqCol: { width: '9%', alignItems: 'center', gap: 6 },
-  eqDb: { color: C.text3, fontSize: 9, fontWeight: '800', height: 12 },
+  eqCol: { width: '9%', alignItems: 'center', gap: SP.sm },
+  eqDb: { color: C.text3, fontSize: FS.xs, fontWeight: FW.heavy, height: 12 },
   eqDbHot: { color: C.brandText },
   eqDbLow: { color: C.brandSoft },
-  eqFreq: { color: C.text2, fontSize: 9, fontWeight: '600' },
+  eqFreq: { color: C.text2, fontSize: FS.xs, fontWeight: FW.semibold },
 
   // 混响胶囊网格（4 列）
-  revGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  revGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.md },
   revChip: { width: '23%', paddingHorizontal: 0, height: 30 },
 
   // 卡片内滑杆块
   srow: { backgroundColor: C.surface2, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
   srowDisabled: { opacity: 0.4 },
   srowHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  srowLabel: { color: C.text2, fontSize: 12, fontWeight: '600' },
-  srowValue: { color: C.text, fontSize: 12, fontWeight: '800' },
+  srowLabel: { color: C.text2, fontSize: FS.body, fontWeight: FW.semibold },
+  srowValue: { color: C.text, fontSize: FS.body, fontWeight: FW.heavy },
 
   // 3D 开关
   switch: { width: 44, height: 26, borderRadius: 13, backgroundColor: C.inset2, padding: 3 },
   switchOn: { backgroundColor: C.brand },
   knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: C.knob },
-  knobOn: { backgroundColor: '#FFFFFF', alignSelf: 'flex-end' },
+  knobOn: { backgroundColor: C.knob, alignSelf: 'flex-end' },
 
-  syncCaption: { color: C.text3, fontSize: 10, textAlign: 'center', marginTop: 2 },
+  syncCaption: { color: C.text3, fontSize: FS.xs, textAlign: 'center', marginTop: 2 },
 
   // sheet
-  sheetInputRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
-  sheetInput: { flex: 1, backgroundColor: C.inset, borderRadius: 12, paddingHorizontal: 14, height: 44, color: C.text, fontSize: 15 },
+  sheetInputRow: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingVertical: 12 },
+  sheetInput: { flex: 1, backgroundColor: C.inset, borderRadius: 12, paddingHorizontal: 14, height: 44, color: C.text, fontSize: FS.xl },
   sheetInputOk: { backgroundColor: C.brand, borderRadius: 12, paddingHorizontal: 18, height: 44, alignItems: 'center', justifyContent: 'center' },
-  sheetInputOkText: { color: C.onBrand, fontSize: 14, fontWeight: '800' },
+  sheetInputOkText: { color: C.onBrand, fontSize: FS.lg, fontWeight: FW.heavy },
 });

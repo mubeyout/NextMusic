@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Icon, type IconName } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, FW } from '../theme/tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { settings, useSettings } from '../services/settings';
 
@@ -54,6 +54,6 @@ const st = StyleSheet.create({
     paddingTop: 8, paddingHorizontal: 24,
   },
   item: { flex: 1, alignItems: 'center', gap: 4, paddingVertical: 4 },
-  label: { color: C.text2, fontSize: 11, lineHeight: 13, fontWeight: '400' },
-  labelOn: { color: C.brandText, fontWeight: '500' },
+  label: { color: C.text2, fontSize: 11, lineHeight: 13, fontWeight: FW.normal },
+  labelOn: { color: C.brandText, fontWeight: FW.medium },
 });

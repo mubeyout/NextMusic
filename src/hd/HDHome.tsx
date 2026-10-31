@@ -22,6 +22,7 @@ import { toast } from '../components/Dialog';
 import { hdNav } from './hdnav';
 import { cacheStale, cacheSet } from './hdcache';
 import type { SongItem } from '../services/server';
+import { FS, FW, SP } from '../theme/tokens';
 
 export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
   const insets = useSafeAreaInsets();
@@ -104,7 +105,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
   return (
     <ScrollView
       style={st.screen}
-      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 26, paddingBottom: 28, gap: 18 }}
+      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 26, paddingBottom: 28, gap: SP.section }}
       showsVerticalScrollIndicator={false}
     >
       <Text style={st.greet}>Hi,{greet}{connected && snap ? ',Mubey' : ''}</Text>
@@ -112,7 +113,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
       {/* 双大卡 */}
       {/* v3.30(LEO P1):双大卡间距 12→22(GUTTER) */}
       {/* v3.32(老板 P1 修复):裸注释曾被渲染为匿名 flex 文本节点占 371px 致双大卡不占满行——JSX 子位置注释必须用花括号包裹形式 */}
-      <View style={{ flexDirection: 'row', gap: 22 }}>
+      <View style={{ flexDirection: 'row', gap: SP.big }}>
         <BigCard colors={['#7C4DFF', '#3F8CFF']} badge="30" title="每日精选" sub="30 首热歌 · 每天更新" busy={dailyBusy} onPress={playDaily} />
         <BigCard colors={['#0FA3A3', '#1ED760']} badge="雷达" title="私人雷达" sub="你最近循环的歌" onPress={playRadar} />
       </View>
@@ -120,7 +121,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
       {recents.length ? (
         <Section title="最近播放" more="查看全部" onMore={() => hdNav()?.navigate('PlaylistDetail', { title: '最近播放', songs: recents, meta: `${recents.length} 首` })}>
           {/* 最近播放(lx88:横向 ScrollView 会裁切 zoom 溢出——小卡去 zoom 只留环;lx92:左右 padding 4 留出环的 2px 外溢,首尾卡选中不裁) */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: 10, paddingLeft: 26, paddingRight: 12, paddingTop: IS_WEB ? 10 : 6, paddingBottom: IS_WEB ? 26 : 16 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: SP.lg, paddingLeft: 26, paddingRight: 12, paddingTop: IS_WEB ? 10 : 6, paddingBottom: IS_WEB ? 26 : 16 }}>
             {recents.slice(0, 8).map((s, i) => (
               IS_WEB ? (
                 <PlCardWeb key={`${s.source}_${s.songmid}_${i}`} width={96} compact
@@ -145,7 +146,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
       {/* 推荐歌单(五源聚合,单行横滑 lx131) */}
       <Section title="推荐歌单" hint={recSource ? `五源聚合 · ${recSource}` : '五源聚合'} more="更多" onMore={() => onGotoSearch?.()}>
         {recPls.length ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: 12, paddingLeft: 26, paddingRight: 12, paddingTop: IS_WEB ? 10 : 6, paddingBottom: IS_WEB ? 26 : 16 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: SP.xl, paddingLeft: 26, paddingRight: 12, paddingTop: IS_WEB ? 10 : 6, paddingBottom: IS_WEB ? 26 : 16 }}>
             {recPls.slice(0, 10).map(pl => (
               IS_WEB ? (
                 <PlCardWeb key={`${pl.source}_${pl.id}`} width={148} pl={pl} onOpen={() => openRecPl(pl)} onPlay={() => openRecPl(pl)} />
@@ -185,7 +186,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
                   {pl.img
                     ? <Image source={{ uri: pl.img }} style={st.plArt} />
                     : <View style={[st.plArt, { backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
-                  <View style={st.plCount}><Text style={st.plCountText}>▶ {pl.count}</Text></View>
+                  <View style={st.plCount}><Text style={[st.plCountText, { color: '#FFFFFF' }]}>▶ {pl.count}</Text></View>
                 </View>
                 <View style={st.plTexts}>
                   <Text style={st.plName} numberOfLines={1}>{pl.name}</Text>
@@ -218,10 +219,7 @@ function BigCard({ colors, badge, title, sub, onPress, busy }: { colors: [string
     if (el && el.classList) el.classList.add('nm-card');
   }, []);
   const rgb = (hex: string) => { const n = parseInt(hex.slice(1), 16); return `rgb(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255})`; };
-  const webSh: Record<string, unknown> | null = IS_WEB ? {
-    shadowColor: rgb(colors[1]), shadowOffset: { width: 0, height: hov ? 14 : 8 },
-    shadowOpacity: hov ? 0.42 : 0.26, shadowRadius: hov ? 26 : 16,
-  } : null;
+  const webSh: Record<string, unknown> | null = null; // 1028 老板令(去投影):双大卡彩色 hover 影退役(与全站去投影令一致)
   return (
     <HDTouch activeOpacity={0.9} onPress={onPress} zoom={1.04}
       ref={elRef as never}
@@ -230,10 +228,11 @@ function BigCard({ colors, badge, title, sub, onPress, busy }: { colors: [string
       {...(IS_WEB ? { onHoverIn: () => { t.current && clearTimeout(t.current); t.current = setTimeout(() => setHov(true), 80); }, onHoverOut: () => { t.current && clearTimeout(t.current); setHov(false); } } as Record<string, unknown> : {})}>
       <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.bigBg} />
       <View style={st.big}>
-        <Text style={st.bigBadge}>{badge}</Text>
+        {/* 1028 老板令(彩色卡恒白·终局修):行内恒白叠加——无论样式层哪层被主题污染,最终恒白(DOM 实证定位) */}
+        <Text style={[st.bigBadge, { color: '#ffffffcc' }]}>{badge}</Text>
         <View style={{ flex: 1, minWidth: 0, paddingRight: 6 }}>
-          <Text style={st.bigTitle} numberOfLines={1}>{title}</Text>
-          <Text style={st.bigSub} numberOfLines={1}>{sub}</Text>
+          <Text style={[st.bigTitle, { color: '#FFFFFF' }]} numberOfLines={1}>{title}</Text>
+          <Text style={[st.bigSub, { color: '#ffffffa8' }]} numberOfLines={1}>{sub}</Text>
         </View>
         <View style={st.bigPlay}>
           {busy ? <ActivityIndicator size="small" color="#fff" /> : <Icon name="play" size={11} color="#fff" />}
@@ -245,8 +244,8 @@ function BigCard({ colors, badge, title, sub, onPress, busy }: { colors: [string
 
 function Section({ title, hint, more, onMore, children }: { title: string; hint?: string; more?: string; onMore?: () => void; children: React.ReactNode }) {
   return (
-    <View style={{ gap: 9 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 7 }}>
+    <View style={{ gap: SP.lg }}>
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: SP.sm }}>
         <Text style={st.secTitle}>{title}</Text>
         {hint ? <Text style={st.secHint}>{hint}</Text> : null}
         <View style={{ flex: 1 }} />
@@ -261,42 +260,42 @@ const st = StyleSheet.create({
   retryBtn: { marginTop: 10, borderRadius: 999, paddingHorizontal: 20, height: 30, backgroundColor: C.elev, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
   retryText: { color: C.text2, fontSize: H.font.sm },
   screen: { flex: 1, backgroundColor: C.bg },
-  greet: { color: C.text, fontSize: H.font.hero, fontWeight: '800' },
+  greet: { color: C.text, fontSize: H.font.hero, fontWeight: FW.heavy },
   bigBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: H.radius.card },
   // v1.2.6:web 圆角真修——react-native-linear-gradient 在 RNW 不吃 borderRadius(实测卡角方形),
   // 卡根 overflow hidden 直接裁(老板:每日推荐/私人雷达圆角没有了);TV 不动(原生正常)
   bigCardWeb: { overflow: 'hidden' as const, borderRadius: 12 },
-  big: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 14, gap: 13, borderRadius: H.radius.card },
-  bigBadge: { color: '#ffffffcc', fontSize: 11, fontWeight: '700', opacity: 0.9 }, // 数字退层级(原 18px 压过标题)
-  bigTitle: { color: '#fff', fontSize: H.font.xl, fontWeight: '800', letterSpacing: -.3 },
-  bigSub: { color: '#ffffffa8', fontSize: H.font.sm, marginTop: 2 },
+  big: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 14, gap: SP.xxl, borderRadius: H.radius.card },
+  bigBadge: { color: '#ffffffcc', fontSize: FS.sm, fontWeight: FW.bold, opacity: 0.9 }, // [1012 回滚] 渐变卡=自含深色面,白字系为设计意图(audit 把透明渐变下的页面底误判成卡片底) // 数字退层级(原 18px 压过标题)
+  bigTitle: { color: C.white, fontSize: H.font.xl, fontWeight: FW.heavy, letterSpacing: -.3 },
+  bigSub: { color: '#ffffffa8', fontSize: H.font.sm, marginTop: 2 }, // [1012 回滚] 同上
   bigPlay: { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,.22)', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(0,0,0,.35)' },
-  secTitle: { color: C.text, fontSize: H.font.xl, fontWeight: '700' },
+  secTitle: { color: C.text, fontSize: H.font.xl, fontWeight: FW.bold },
   secHint: { color: C.text3, fontSize: H.font.xs },
   secMore: { color: C.brand, fontSize: H.font.sm },
   // v6(老板反馈):环必须贴附卡片几何——环宽=封面宽(去水平 padding),环圆角=封面圆角+2(描边外扩 2px,圆角同步外放才不显小)
-  recCard: { width: 92, gap: 4, paddingBottom: 4, borderRadius: 9, backgroundColor: C.surface }, // lx98:去 overflow(米电视丢重绘=内容消失);圆角由封面自带
+  recCard: { width: 92, gap: SP.xs, paddingBottom: 4, borderRadius: 9, backgroundColor: C.surface }, // lx98:去 overflow(米电视丢重绘=内容消失);圆角由封面自带
   recArt: { width: '100%', aspectRatio: 1, borderRadius: 9 },
-  recName: { color: C.text, fontSize: H.font.xs, fontWeight: '500' },
-  recSub: { color: C.text3, fontSize: 8 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  recName: { color: C.text, fontSize: H.font.xs, fontWeight: FW.medium },
+  recSub: { color: C.text3, fontSize: FS.xs },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl },
   // 卡片内文字离边留气口(老板反馈:文字太贴边,左右和底部缺 padding)
-  plCard: { width: '100%', gap: 5, paddingBottom: 7, borderRadius: 12, backgroundColor: C.surface },
-  plCardSm: { gap: 3, paddingBottom: 4 },
+  plCard: { width: '100%', gap: SP.sm, paddingBottom: 7, borderRadius: 12, backgroundColor: C.surface },
+  plCardSm: { gap: SP.xs, paddingBottom: 4 },
   plMask: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,.38)', borderTopLeftRadius: 12, borderTopRightRadius: 12 }, // 跟随封面容器高度(原写死 126,响应式卡宽≠126 时遮罩短一截)
   plPlay: { position: 'absolute', right: 7, bottom: 7, width: 44, height: 44, borderRadius: 22, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }, // lx98:去 overflow;顶角由封面带
   plArt: { width: '100%', aspectRatio: 1, borderTopLeftRadius: 12, borderTopRightRadius: 12 },
   plCount: { position: 'absolute', bottom: 5, right: 5, backgroundColor: 'rgba(0,0,0,.6)', borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1, height: 16, justifyContent: 'center' }, // 显式高度防 absolute 拉伸(zoom 下胶囊曾撑满封面高)
-  plCountText: { color: '#fff', fontSize: 8 },
+  plCountText: { color: C.white, fontSize: FS.xs },
   plCountWeb: { top: 6, right: 6, bottom: undefined, borderRadius: 999, paddingHorizontal: 6, backgroundColor: 'rgba(0,0,0,.58)', height: 18, justifyContent: 'center' },
-  plName: { color: C.text, fontSize: H.font.sm, fontWeight: '600' },
+  plName: { color: C.text, fontSize: H.font.sm, fontWeight: FW.semibold },
   plArtFull: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   plVeil: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 9 },
   plTextsOverlay: { position: 'absolute', left: 8, right: 8, bottom: 7 },
-  plNameOnArt: { color: '#FFFFFF', fontSize: H.font.sm, fontWeight: '700' },
-  recSubOnArt: { color: '#FFFFFFCC', fontSize: 8 },
-  plTexts: { alignSelf: 'stretch', paddingHorizontal: 8, gap: 3 },
-  empty: { height: 64, borderRadius: H.radius.card, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', gap: 8, flexDirection: 'row', paddingHorizontal: 14 },
+  plNameOnArt: { color: C.white, fontSize: H.font.sm, fontWeight: FW.bold },
+  recSubOnArt: { color: '#FFFFFFCC', fontSize: FS.xs },
+  plTexts: { alignSelf: 'stretch', paddingHorizontal: 8, gap: SP.xs },
+  empty: { height: 64, borderRadius: H.radius.card, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', gap: SP.md, flexDirection: 'row', paddingHorizontal: 14 },
   emptyText: { color: C.text3, fontSize: H.font.sm },
 });
 
@@ -329,7 +328,7 @@ function PlCardWeb({ pl, width, compact, onOpen, onPlay }: { pl: { name: string;
         {pl.img
           ? <Image source={{ uri: pl.img }} style={st.plArt} />
           : <View style={[st.plArt, { backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
-        {pl.count != null ? <View style={[st.plCount, IS_WEB && st.plCountWeb]}><Text style={st.plCountText}>▶ {pl.count}</Text></View> : null}
+        {pl.count != null ? <View style={[st.plCount, IS_WEB && st.plCountWeb]}><Text style={[st.plCountText, { color: '#FFFFFF' }]}>▶ {pl.count}</Text></View> : null}
         {/* A1b 遮罩+播放钮(compact 模式 32px,标准 44px) */}
         <View ref={maskRef} pointerEvents={hov ? 'auto' : 'none'} style={[st.plMask, { opacity: hov ? 1 : 0 }]} />
         <HDTouch ref={playRef} style={[st.plPlay, compact && { width: 32, height: 32, borderRadius: 16 }, { opacity: hov ? 1 : 0, transform: [{ translateY: hov ? 0 : 6 }] }]} onPress={onPlay}>

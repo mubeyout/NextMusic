@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, FlatList } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { PageHeader } from '../components/PageChrome';
 import { HDTouch } from '../hd/HDTouch';
 import { IS_HD } from '../services/appversion';
@@ -78,11 +78,11 @@ export function ArtistFavScreen() {
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  empty: { color: C.text2, fontSize: 13, lineHeight: 20, textAlign: 'center' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, paddingHorizontal: 14, borderRadius: 12 },
+  empty: { color: C.text2, fontSize: FS.md, lineHeight: 20, textAlign: 'center' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, minHeight: 64, paddingHorizontal: 14, borderRadius: 12 },
   roundArt: { width: 46, height: 46, borderRadius: 23 },
   artFallback: { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  glyph: { color: C.text2, fontSize: 18, fontWeight: '700' },
-  name: { color: C.text, fontSize: 14, fontWeight: '600' },
-  meta: { color: C.text2, fontSize: 11, marginTop: 2 },
+  glyph: { color: C.text2, fontSize: FS.h2, fontWeight: FW.bold },
+  name: { color: C.text, fontSize: FS.lg, fontWeight: FW.semibold },
+  meta: { color: C.text2, fontSize: FS.sm, marginTop: 2 },
 });

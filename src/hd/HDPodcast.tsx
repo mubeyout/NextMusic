@@ -20,6 +20,7 @@ import { lxapi } from '../services/lxapi';
 import { hdNav } from './hdnav';
 import { cacheStale, cacheSet } from './hdcache';
 import type { SongItem } from '../services/server';
+import { GRID, FW, SP } from '../theme/tokens';
 
 interface PodChannel { id: string; name: string; query: string; sub: string; source: 'kw' | 'kg' | 'wy'; }
 
@@ -89,7 +90,7 @@ export function HDPodcast() {
   return (
     <ScrollView
       style={st.screen}
-      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 26, paddingBottom: 28, gap: 16 }}
+      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 26, paddingBottom: 28, gap: SP.wide }}
       showsVerticalScrollIndicator={false}
     >
       <View style={st.head}>
@@ -98,7 +99,7 @@ export function HDPodcast() {
       </View>
 
       {/* 频道卡(桌面同构:自适应网格+彩色投影) */}
-      <HDGrid min={132 * (H.font.sm / 10)}>
+      <HDGrid min={GRID.hdMin * (H.font.sm / 10)}>
         {POD_CHANNELS.map((ch, ci) => {
           const f = feeds[ch.id] || [];
           // lx88(老板反馈):底角也要圆角——卡加底色+全圆角 12(overflow 裁剪封面),环统一 14
@@ -110,14 +111,14 @@ export function HDPodcast() {
       </HDGrid>
 
       {/* 热门节目 */}
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: SP.md }}>
         <Text style={st.secTitle}>热门节目</Text>
         <Text style={st.secHint}>混合各频道</Text>
       </View>
       {loading && !hotMix.length ? (
         <View style={st.loading}><ActivityIndicator color={C.brand} /><Text style={st.loadingText}>电台内容加载中…</Text></View>
       ) : hotMix.length ? (
-        <View style={{ gap: 4 }}>
+        <View style={{ gap: SP.xs }}>
           {hotMix.slice(0, 14).map((s, i) => (
             <HDSongRow key={`${s.source}_${s.songmid}_${i}`} song={s} index={i + 1} first={i === 0}
               playing={current?.songmid === s.songmid && current?.source === s.source}
@@ -173,21 +174,21 @@ function PodCard({ ch, ci, count, firstName, onOpen, onPlay }: { ch: { id: strin
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
-  head: { gap: 3 },
-  title: { color: C.text, fontSize: H.font.hero, fontWeight: '800' },
+  head: { gap: SP.xs },
+  title: { color: C.text, fontSize: H.font.hero, fontWeight: FW.heavy },
   sub: { color: C.text3, fontSize: H.font.sm },
-  card: { gap: 5, borderRadius: 12, backgroundColor: C.surface, overflow: 'hidden' },
+  card: { gap: SP.sm, borderRadius: 12, backgroundColor: C.surface, overflow: 'hidden' },
   cardCover: { width: '100%', aspectRatio: 1.35, padding: 12, flexDirection: 'row', alignItems: 'flex-start' },
   // v1.2.11 web 版封面:更竖的幅面+icon 居中+光晕圆底(与 HD 左上角小 icon 分流)
   cardCoverWeb: { width: '100%', aspectRatio: 1.2, alignItems: 'center', justifyContent: 'center' },
   coverHaloWeb: { width: 82, height: 82, borderRadius: 41, backgroundColor: 'rgba(255,255,255,.16)', alignItems: 'center', justifyContent: 'center' },
   cardPlayWeb: { position: 'absolute', right: 12, bottom: 12, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,.24)', alignItems: 'center', justifyContent: 'center' },
-  cardBody: { paddingHorizontal: 8, paddingBottom: 8, paddingTop: 0, gap: 3 },
+  cardBody: { paddingHorizontal: 8, paddingBottom: 8, paddingTop: 0, gap: SP.xs },
   cardPlay: { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,.22)', alignItems: 'center', justifyContent: 'center' },
-  cardName: { color: C.text, fontSize: H.font.sm, fontWeight: '700' },
+  cardName: { color: C.text, fontSize: H.font.sm, fontWeight: FW.bold },
   cardSub: { color: C.text3, fontSize: H.font.xs },
-  secTitle: { color: C.text, fontSize: H.font.xl, fontWeight: '700' },
+  secTitle: { color: C.text, fontSize: H.font.xl, fontWeight: FW.bold },
   secHint: { color: C.text3, fontSize: H.font.xs },
-  loading: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 18 },
+  loading: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingVertical: 18 },
   loadingText: { color: C.text3, fontSize: H.font.sm },
 });

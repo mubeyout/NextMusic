@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, CARD, FS, FW, SP } from '../theme/tokens';
 import { PageHeader } from '../components/PageChrome';
 import { SongRow } from '../components/SongRow';
 import { HDTouch } from '../hd/HDTouch';
@@ -98,17 +98,17 @@ export function ArtistDetailScreen() {
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
-  head: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 12 },
+  head: { flexDirection: 'row', alignItems: 'center', gap: SP.xxl, paddingVertical: 12 },
   avatar: { width: 72, height: 72, borderRadius: 36 },
   avaFallback: { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  avaGlyph: { color: C.text2, fontSize: 26, fontWeight: '800' },
-  name: { color: C.text, fontSize: 19, fontWeight: '800' },
-  meta: { color: C.text2, fontSize: 12, marginTop: 3 },
-  sec: { color: C.text, fontSize: 15, fontWeight: '700', marginTop: 18, marginBottom: 8 },
-  empty: { color: C.text2, fontSize: 12, textAlign: 'center', paddingVertical: 20 },
-  albumGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  albumCard: { width: 104, gap: 5 },
+  avaGlyph: { color: C.text2, fontSize: FS.display, fontWeight: FW.heavy }, // [LEO 1011] 26 档外→display(24)
+  name: { color: C.text, fontSize: FS.h1, fontWeight: FW.heavy },
+  meta: { color: C.text2, fontSize: FS.body, marginTop: 3 },
+  sec: { color: C.text, fontSize: FS.xl, fontWeight: FW.bold, marginTop: 18, marginBottom: 8 },
+  empty: { color: C.text2, fontSize: FS.body, textAlign: 'center', paddingVertical: 20 },
+  albumGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl },
+  albumCard: { width: CARD.rail.phone, gap: SP.sm }, // [老板 1011 15:39] rail 卡宽唯一源
   albumArt: { width: 104, height: 104, borderRadius: 10 },
-  albumName: { color: C.text, fontSize: 12, fontWeight: '600' },
-  albumYear: { color: C.text2, fontSize: 10 },
+  albumName: { color: C.text, fontSize: FS.body, fontWeight: FW.semibold },
+  albumYear: { color: C.text2, fontSize: FS.xs },
 });

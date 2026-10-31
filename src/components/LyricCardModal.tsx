@@ -7,7 +7,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { fixCoverUrl } from '../utils/cover'; // lxfix:kw 图床域名自愈
 import { captureRef } from 'react-native-view-shot';
 import { Icon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, FW } from '../theme/tokens';
 import { toast } from './Dialog';
 import type { LyricLine } from '../services/lyric';
 import type { SongItem } from '../services/server';
@@ -94,7 +94,7 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
   const fsTr = cardH * 0.056 * fMul, fsLr = cardH * 0.042 * fMul, fsAr = cardH * 0.033 * fMul; // 横版左右结构放大
 
   const pill = (on: boolean) => on ? st.pillOn : null;
-  const pillText = (on: boolean) => [st.pillText, on && st.pillTextOn] as { color: string; fontSize: number; fontWeight: '600' | '800' }[];
+  const pillText = (on: boolean) => [st.pillText, on && st.pillTextOn] as { color: string; fontSize: number; fontWeight: typeof FW.semibold | typeof FW.heavy }[];
   const Pill = ({ on, label, onPress, w }: { on?: boolean; label: string; onPress: () => void; w?: number }) => (
     <TouchableOpacity style={[st.pill, w ? { width: w } : null, pill(!!on)]} activeOpacity={0.72} onPress={onPress}>
       <Text style={pillText(!!on)}>{label}</Text>
@@ -106,7 +106,7 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
       {lines.length ? lines.map((l, i) => (
         <Text
           key={`${l.t}-${i}`}
-          style={[st.lyric, { color: tLyric, fontSize: Math.round(fs), lineHeight: Math.round(fs * 1.7 * opt.lineSpacing) }, i === active && { color: tLyricOn, fontSize: Math.round(fs * 1.12), fontWeight: '800' }]}
+          style={[st.lyric, { color: tLyric, fontSize: Math.round(fs), lineHeight: Math.round(fs * 1.7 * opt.lineSpacing) }, i === active && { color: tLyricOn, fontSize: Math.round(fs * 1.12), fontWeight: FW.heavy }]}
           numberOfLines={2} ellipsizeMode="tail"
         >
           {l.text || '♪'}
@@ -152,7 +152,7 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
                 )}
                 <View style={{ flex: 1, minHeight: 0, justifyContent: 'center' }}>
                   {opt.showTitle && (
-                    <Text style={{ color: tTitle, fontSize: Math.round(fsTr), fontWeight: '800' }} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>
+                    <Text style={{ color: tTitle, fontSize: Math.round(fsTr), fontWeight: FW.heavy }} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>
                       {song.name}
                     </Text>
                   )}
@@ -176,7 +176,7 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
                   </View>
                 )}
                 {opt.showTitle && (
-                  <Text style={{ color: tTitle, fontSize: Math.round(fsT), fontWeight: '800', textAlign: 'center' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                  <Text style={{ color: tTitle, fontSize: Math.round(fsT), fontWeight: FW.heavy, textAlign: 'center' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
                     {song.name}
                   </Text>
                 )}
@@ -271,17 +271,17 @@ const st = StyleSheet.create({
   lyric: { textAlign: 'center' },
   brandRow: { position: 'absolute', right: 16, bottom: 12, flexDirection: 'row', alignItems: 'center', gap: 5 },
   brandMark: { width: 13, height: 13 },
-  brandText: { color: '#ffffffb3', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
+  brandText: { color: '#ffffffb3', fontSize: 10, fontWeight: FW.bold, letterSpacing: 0.5 },
   ops: { marginTop: 12, maxHeight: 268, width: '100%' },
   opsInner: { alignItems: 'center', gap: 7, paddingHorizontal: 16 },
-  secTitle: { color: '#ffffff59', fontSize: 10, fontWeight: '700', letterSpacing: 2, marginTop: 2 },
+  secTitle: { color: '#ffffff59', fontSize: 10, fontWeight: FW.bold, letterSpacing: 2, marginTop: 2 },
   opsRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
   ctlGroup: { flexDirection: 'row', alignItems: 'center', gap: 6 }, // 字号/行距组:整组不折行,数值胶囊居中
   pill: { height: 32, borderRadius: 16, paddingHorizontal: 14, borderWidth: 1, borderColor: '#ffffff5c', justifyContent: 'center', backgroundColor: '#ffffff1f' },
   pillOn: { backgroundColor: C.brand, borderColor: C.brand },
-  pillText: { color: '#ffffffe6', fontSize: 12, fontWeight: '600' },
-  pillTextOn: { color: '#0b0f0d', fontWeight: '800' },
-  valPill: { color: '#ffffffcc', fontSize: 11, fontWeight: '700', minWidth: 46, textAlign: 'center', height: 24, lineHeight: 24, borderRadius: 12, backgroundColor: '#ffffff17', overflow: 'hidden' },
+  pillText: { color: '#ffffffe6', fontSize: 12, fontWeight: FW.semibold },
+  pillTextOn: { color: '#0b0f0d', fontWeight: FW.heavy },
+  valPill: { color: '#ffffffcc', fontSize: 11, fontWeight: FW.bold, minWidth: 46, textAlign: 'center', height: 24, lineHeight: 24, borderRadius: 12, backgroundColor: '#ffffff17', overflow: 'hidden' },
   opMain: { height: 42, borderRadius: 21, backgroundColor: '#1ED760', paddingHorizontal: 22, flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 4 },
-  opMainText: { color: '#0b0f0d', fontSize: 13, fontWeight: '800' },
+  opMainText: { color: '#0b0f0d', fontSize: 13, fontWeight: FW.heavy },
 });

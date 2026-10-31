@@ -25,6 +25,7 @@ import { sync, isPlatformList } from '../services/sync';
 import { useApp } from '../state/AppState';
 import type { SongItem } from '../services/server';
 import { isArtistFav, toggleArtistFav, useArtistFavTick, type ArtistFav } from '../state/artistFavs'; // lx161
+import { FS, FW, SP } from '../theme/tokens';
 
 interface Params { title?: string; songs?: SongItem[]; meta?: string; localId?: string; plKey?: string; love?: boolean; artist?: ArtistFav; }
 
@@ -189,11 +190,11 @@ export function HDPlaylistDetailScreen() {
         {cover
           ? <Image source={{ uri: cover }} style={st.cover} />
           : <View style={[st.cover, { backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={40} color={C.text3} /></View>}
-        <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
+        <View style={{ flex: 1, minWidth: 0, gap: SP.sm }}>
           <Text style={st.kindTag}>歌单</Text>
           <Text style={st.title} numberOfLines={1}>{title}</Text>
           <Text style={st.meta} numberOfLines={1}>{meta}</Text>
-          <View style={{ flexDirection: 'row', gap: 9, marginTop: 4 }}>
+          <View style={{ flexDirection: 'row', gap: SP.lg, marginTop: 4 }}>
             <HDTouch style={st.btnPrimary} glow={SH.brand} onPress={playAll}>
               <Icon name="play" size={10} color={C.onBrand} />
               <Text style={st.btnPrimaryText}>播放全部</Text>
@@ -229,7 +230,7 @@ export function HDPlaylistDetailScreen() {
 
       {/* ===== 歌曲列表(全宽行 + 焦点选中态) ===== */}
       {songs.length ? (
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 22, paddingTop: 8, paddingBottom: 20 + H.playbar, gap: 2, ...(Platform.OS === 'web' ? { width: '100%', alignSelf: 'stretch' as const } : null) }} showsVerticalScrollIndicator={false}
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 22, paddingTop: 8, paddingBottom: 20 + H.playbar, gap: SP.xs, ...(Platform.OS === 'web' ? { width: '100%', alignSelf: 'stretch' as const } : null) }} showsVerticalScrollIndicator={false}
           onScroll={e => {
             const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
             if (layoutMeasurement.height + contentOffset.y > contentSize.height - 600) setLimit(n => (n < songs.length ? n + 40 : n));
@@ -264,17 +265,17 @@ export function HDPlaylistDetailScreen() {
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
-  head: { flexDirection: 'row', gap: 14, paddingHorizontal: 22, paddingBottom: 12, alignItems: 'center' },
+  head: { flexDirection: 'row', gap: SP.xxl, paddingHorizontal: 22, paddingBottom: 12, alignItems: 'center' },
   backBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', alignSelf: 'center' },
   cover: { width: 128, height: 128, borderRadius: 11 },
-  kindTag: { color: C.brand, fontSize: H.font.xs, fontWeight: '700', letterSpacing: 1 },
-  title: { color: C.text, fontSize: H.font.hero, fontWeight: '800' },
+  kindTag: { color: C.brand, fontSize: H.font.xs, fontWeight: FW.bold, letterSpacing: 1 },
+  title: { color: C.text, fontSize: H.font.hero, fontWeight: FW.heavy },
   meta: { color: C.text2, fontSize: H.font.sm },
-  btnPrimary: { height: 36, borderRadius: 9, backgroundColor: C.brand, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 14 },
-  more: { color: C.text3, fontSize: 11, textAlign: 'center', paddingVertical: 10 },
-  btnPrimaryText: { color: C.onBrand, fontSize: H.font.sm, fontWeight: '700' },
-  btn: { height: 36, borderRadius: 9, backgroundColor: C.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 12 },
-  btnText: { color: C.text, fontSize: H.font.sm, fontWeight: '600' },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
+  btnPrimary: { height: 36, borderRadius: 9, backgroundColor: C.brand, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.sm, paddingHorizontal: 14 },
+  more: { color: C.text3, fontSize: FS.sm, textAlign: 'center', paddingVertical: 10 },
+  btnPrimaryText: { color: C.onBrand, fontSize: H.font.sm, fontWeight: FW.bold },
+  btn: { height: 36, borderRadius: 9, backgroundColor: C.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.sm, paddingHorizontal: 12 },
+  btnText: { color: C.text, fontSize: H.font.sm, fontWeight: FW.semibold },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: SP.lg },
   emptyText: { color: C.text3, fontSize: H.font.sm },
 });

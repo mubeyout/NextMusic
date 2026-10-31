@@ -17,6 +17,7 @@ import type { SongItem } from '../services/server';
 import { toast } from '../components/Dialog';
 import { hdNav } from './hdnav';
 import { cacheStale, cacheSet } from './hdcache';
+import {GRID,  FS, FW, SP } from '../theme/tokens';
 
 type PL = { id: string; name: string; author?: string; total?: number | string; img?: string; play_count?: string; source?: string };
 type Tag = { id: string; name: string };
@@ -108,17 +109,17 @@ export function HDDiscover() {
   return (
     <ScrollView
       style={st.screen}
-      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 26, paddingBottom: 28, gap: 12 }}
+      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 26, paddingBottom: 28, gap: SP.xl }}
       showsVerticalScrollIndicator={false}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.md }}>
         <Text style={st.title}>歌单广场</Text>
         <View style={{ flex: 1 }} />
         {busy ? <ActivityIndicator color={C.brand} size="small" /> : null}
         {pls ? <Text style={st.count}>{pls.length} 个歌单</Text> : null}
       </View>
 
-      <View style={{ flexDirection: 'row', gap: 8 }}>
+      <View style={{ flexDirection: 'row', gap: SP.md }}>
         {SOURCES.map(s => (
           <HDTouch key={s.key} style={[st.pill, src === s.key && st.pillOn]}
             focusStyle={src === s.key ? { borderWidth: 2, borderColor: C.brandSoft } : st.pillFocus}
@@ -129,7 +130,7 @@ export function HDDiscover() {
       </View>
 
       {/* 标签横滚(推荐 + 热门标签),滚轮/拖拽滑动,无滚动条 */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingRight: 26 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: SP.md, paddingRight: 26 }}>
         <HDTouch style={[st.pill, tag === '' && st.pillOn]}
           focusStyle={tag === '' ? { borderWidth: 2, borderColor: C.brandSoft } : st.pillFocus}
           onPress={() => setTag('')}>
@@ -147,7 +148,7 @@ export function HDDiscover() {
       {pls == null ? (
         <View style={st.tip}><ActivityIndicator color={C.brand} size="large" /><Text style={st.tipText}>歌单加载中…</Text></View>
       ) : (
-        <HDGrid min={128 * (H.font.sm / 10)} onCols={setCols}>
+        <HDGrid min={GRID.hdMin * (H.font.sm / 10)} onCols={setCols}>
           {pls.map((pl, i) => (
             <PLCard key={`${pl.id}_${i}`} pl={pl} i={i} src={src} onOpen={() => open(pl)}
               busy={busyId === pl.id}
@@ -193,7 +194,7 @@ function PLCard({ pl, i, src, onOpen, busy, lastRow, nextDown }: { pl: PL; i: nu
         </View>
       ) : null}
       <View style={st.cardChipWrapper}>
-        <View style={st.cardChip}><Text style={st.cardChipText}>{SOURCES.find(s => s.key === src)?.label ?? src}</Text></View>
+        <View style={st.cardChip}><Text style={[st.cardChipText, { color: '#ffffffe6' }]}>{SOURCES.find(s => s.key === src)?.label ?? src}</Text></View>
       </View>
       <View style={st.cardBody}>
         <Text style={st.cardName} numberOfLines={2}>{pl.name}</Text>
@@ -205,23 +206,23 @@ function PLCard({ pl, i, src, onOpen, busy, lastRow, nextDown }: { pl: PL; i: nu
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
-  title: { color: C.text, fontSize: H.font.hero, fontWeight: '800' },
+  title: { color: C.text, fontSize: H.font.hero, fontWeight: FW.heavy },
   count: { color: C.text3, fontSize: H.font.sm },
   pill: { borderRadius: H.radius.pill, paddingHorizontal: 11, height: 26, backgroundColor: C.elev, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
   pillOn: { backgroundColor: C.brand, borderColor: C.brand },
   pillFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.pill },
   pillLabel: { color: C.text2, fontSize: H.font.sm },
-  pillLabelOn: { color: C.onBrand, fontWeight: '600' },
+  pillLabelOn: { color: C.onBrand, fontWeight: FW.semibold },
   card: { borderRadius: 12, backgroundColor: C.surface, paddingBottom: 8 },
   cardCover: { width: '100%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderTopLeftRadius: 12, borderTopRightRadius: 12 },
   cardBusy: { position: 'absolute', top: 0, left: 0, right: 0, height: '62%', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,.45)' },
   cardChipWrapper: { position: 'absolute', right: 8, bottom: 80 },
   cardChip: { backgroundColor: 'rgba(0,0,0,.55)', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
-  cardChipText: { color: '#fff', fontSize: 9 },
-  cardBody: { padding: 10, paddingTop: 8, gap: 3, alignSelf: 'center', width: '94%' },
-  cardName: { color: C.text, fontSize: H.font.md, fontWeight: '700', lineHeight: 16 },
-  cardSub: { color: C.text3, fontSize: 9 },
-  tip: { alignItems: 'center', gap: 10, paddingVertical: 54 },
+  cardChipText: { color: C.white, fontSize: FS.xs },
+  cardBody: { padding: SP.md, gap: SP.xs }, // [老板 1011 15:59] 文字区统一档(去 94% 特殊宽;与全站卡同构)
+  cardName: { color: C.text, fontSize: H.font.md, fontWeight: FW.bold, lineHeight: 16 },
+  cardSub: { color: C.text3, fontSize: FS.xs },
+  tip: { alignItems: 'center', gap: SP.lg, paddingVertical: 54 },
   tipText: { color: C.text2, fontSize: H.font.md, textAlign: 'center', paddingVertical: 30 },
   moreBtn: { alignSelf: 'center', marginTop: 6, borderRadius: H.radius.pill, paddingHorizontal: 22, height: 32, backgroundColor: C.elev, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
   moreText: { color: C.text2, fontSize: H.font.sm },

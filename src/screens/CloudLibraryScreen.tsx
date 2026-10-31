@@ -5,26 +5,37 @@
 // v3.0 定稿作废项移除:本页「上传」按钮/本机选歌器已删——上传唯一源=本机曲库(③3.0 原则2);
 // 空态「去本机曲库」=纯跳转(不代开多选,尊重用户浏览节奏)
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable, ActivityIndicator, Image, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { toast, dialog } from '../components/Dialog';
 import { EmptyState } from '../components/PageChrome';
 import { SongRow } from '../components/SongRow';
 import { store as httpStore } from '../services/server';
-import { myLib, toSongItem, libCache, type LibSong } from '../services/myLibrary';
+import { myLib, toSongItem, libCache, coverUrl, type LibSong } from '../services/myLibrary';
 import { cloudLib, fmtBytes, type QuotaInfo } from '../services/cloudLibrary';
-import { setCloudSongs, presenceOf } from '../services/cloudPresence';
-import { downloads } from '../services/downloads';
+import { setCloudSongs, presenceOf, subscribePresence } from '../services/cloudPresence';
+import { downloads, enqueueDownload, downloadProgress, subscribeDownloads } from '../services/downloads';
 import { useUploadSheet } from './UploadSheet';
 import { localLib } from '../services/localLibrary';
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
+import { LibraryHome, HomeSection, ChipsRow } from '../components/LibraryHome'; // ⑤/⑦ 全库首页化骨架
+import { AzIndex, azGroup, useAzJump } from '../components/AzIndex'; // ⑤-4 A-Z 字母索引条
+import { IS_HD } from '../services/appversion'; // ⑥ HD 分支适配
+import { HDTouch } from '../hd/HDTouch';
+import { focus, GUTTER } from '../hd/hdstyle';
+import { isFav, subscribeFav } from '../state/favorites';
+import { library } from '../state/library';
+import { sync, subscribeSync, lxNormKey } from '../services/sync';
+import { getUploadStore, subscribeUpload } from '../state/UploadQueue';
+import { deviceTracks } from '../services/devicelibrary';
 
 const WARN_YELLOW = '#E8B34B'; // spec③ 用量条 ≥80% 警示黄
-const DANGER_RED = '#E8618C';  // 100% 红 / 强警示(全站错误品红同源)
+const DANGER_RED = C.danger;  // 100% 红 / 强警示(全站错误品红同源)
+const WEEK_MS = 7 * 24 * 3600 * 1000; // ⑤-B6 NEW 标窗口(7 天内入库)
 
 // ── 分级删除确认(LEO 裁决①) ─────────────────────────────────
 // 双在=轻确认;含仅云端副本=强警示红字+3s 倒计时二次点击;批量按唯一副本数升级文案
@@ -80,6 +91,119 @@ function DeleteConfirm({ list, onClose, onConfirm, busy }: { list: LibSong[]; on
   );
 }
 
+// ── ⑥ 管理三件套类型与常量(§8.1) ────────────────────────────
+type PFilter = 'all' | 'cloudonly' | 'both' | 'fav'; // 筛选chips:全部/仅云端(数据安全清单)/双在/已收藏
+type SortKey = 'recent' | 'size' | 'title';           // 排序:最近上传/文件大小↓(清理核心)/标题A-Z
+const SORT_LABEL: Record<SortKey, string> = { recent: '最近上传', size: '文件大小', title: '标题 A-Z' };
+const FILTER_TITLE: Record<PFilter, string> = { all: '全部', cloudonly: '仅云端副本', both: '已同步（本机与云端双在）', fav: '已收藏' };
+const FILTER_CHIPS: { key: string; label: string }[] = [
+  { key: 'all', label: '全部' },
+  { key: 'cloudonly', label: '仅云端' },
+  { key: 'both', label: '双在' },
+  { key: 'fav', label: '已收藏' },
+];
+
+// ⑥ HD 分支适配:TV/车机 D-pad 焦点可达(web 桌面自动退化 TouchableOpacity;同 Dialog.DTouch 模式)
+function STouch(props: { style?: StyleProp<ViewStyle>; onPress?: () => void; disabled?: boolean; hitSlop?: number; pill?: number; children?: React.ReactNode }) {
+  const { style, onPress, disabled, hitSlop, pill = 999, children } = props;
+  if (IS_HD) return (
+    <HDTouch style={style as never} onPress={disabled ? undefined : onPress} focusStyle={focus(pill)}>
+      {children}
+    </HDTouch>
+  );
+  return (
+    <TouchableOpacity style={style} onPress={onPress} disabled={disabled} hitSlop={hitSlop} activeOpacity={0.78}>
+      {children}
+    </TouchableOpacity>
+  );
+}
+
+// ── ⑥ 附透:存储明细半屏(quota 端点 + 本地计算) ──────────────
+// 音频 N 首 X · 最大 10 首占 Y(清理核心大文件榜) · 上传队列暂存 Z(进行中批次待传体积)
+function StorageSheet({ quota, songs, onClose }: { quota: QuotaInfo | null; songs: LibSong[] | null; onClose: () => void }) {
+  const insets = useSafeAreaInsets();
+  const [upTick, bumpUp] = useState(0);
+  useEffect(() => subscribeUpload(() => bumpUp(t => t + 1)), []);
+  const audioBytes = useMemo(() => (songs || []).reduce((n, s) => n + (s.size || 0), 0), [songs]);
+  const top10 = useMemo(() => (songs ? [...songs].sort((a, b) => (b.size || 0) - (a.size || 0)).slice(0, 10) : []), [songs]);
+  const top10Bytes = useMemo(() => top10.reduce((n, s) => n + (s.size || 0), 0), [top10]);
+  // 上传暂存:进行中批次按 uri 匹配设备曲目取体积(web 选文件无 uri 体积→未知项如实计数)
+  const staging = useMemo(() => {
+    const b = getUploadStore().batch;
+    const pending = b ? b.items.filter(i => i.st === 'wait' || i.st === 'up') : [];
+    let bytes = 0, unknown = 0;
+    if (pending.length) {
+      try {
+        const byPath = new Map(deviceTracks().map(d => [d.path, d]));
+        for (const it of pending) {
+          const sz = byPath.get(it.uri)?.size || 0;
+          if (sz) bytes += sz; else unknown++;
+        }
+      } catch { unknown = pending.length; }
+    }
+    return { count: pending.length, bytes, unknown };
+  }, [upTick]); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <Modal transparent visible animationType="slide" onRequestClose={onClose}>
+      <Pressable style={c2.back} onPress={onClose}>
+        <Pressable style={[c2.sheet, { paddingBottom: insets.bottom + 16 }]} onPress={() => {}}>
+          <View style={c2.head}>
+            <Text style={c2.title}>存储明细</Text>
+            <STouch style={c2.close} onPress={onClose}>
+              <Icon name="close" size={14} color={C.text2} />
+            </STouch>
+          </View>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <Text style={c2.rowT}>总用量（配额端点）</Text>
+            <Text style={c2.rowV}>{quota
+              ? (quota.quotaBytes < 0
+                ? `已用 ${fmtBytes(quota.usedBytes)} · 不限容量`
+                : `已用 ${fmtBytes(quota.usedBytes)} / ${fmtBytes(quota.quotaBytes)}（${Math.max(0, Math.min(100, quota.percent || 0))}%）`)
+              : '暂无配额数据'}</Text>
+            <Text style={c2.rowT}>音频文件</Text>
+            <Text style={c2.rowV}>{songs ? `${songs.length.toLocaleString()} 首 · ${fmtBytes(audioBytes)}` : '暂无列表数据'}</Text>
+            {top10.length ? (
+              <>
+                <Text style={c2.rowT}>最大 {top10.length} 首 · 合计 {fmtBytes(top10Bytes)}</Text>
+                {top10.map((s, i) => (
+                  <View key={s.id || s.filename} style={c2.item}>
+                    <Text style={c2.itemIdx}>{i + 1}</Text>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={c2.itemName} numberOfLines={1}>{s.name || s.filename}</Text>
+                      {s.singer ? <Text style={c2.itemSub} numberOfLines={1}>{s.singer}</Text> : null}
+                    </View>
+                    <Text style={c2.itemSize}>{fmtBytes(s.size || 0)}</Text>
+                  </View>
+                ))}
+              </>
+            ) : null}
+            <Text style={c2.rowT}>上传队列暂存</Text>
+            <Text style={c2.rowV} numberOfLines={2}>
+              {staging.count
+                ? `${staging.count} 首 · ${fmtBytes(staging.bytes)}${staging.unknown ? `（另 ${staging.unknown} 首体积未知）` : ''}`
+                : '暂无进行中上传'}
+            </Text>
+          </ScrollView>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+const c2 = StyleSheet.create({
+  back: { flex: 1, backgroundColor: 'rgba(0,0,0,.55)', justifyContent: 'flex-end' },
+  sheet: { maxHeight: '78%', backgroundColor: '#151517', borderTopLeftRadius: 20, borderTopRightRadius: 20, borderWidth: 1, borderColor: C.stroke, paddingHorizontal: 18, paddingTop: 14 },
+  head: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+  title: { color: C.text, fontSize: FS.title, fontWeight: FW.heavy, flex: 1 },
+  close: { width: 30, height: 30, borderRadius: 999, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  rowT: { color: C.text3, fontSize: FS.sm, letterSpacing: 1, marginTop: 12, marginBottom: 3 },
+  rowV: { color: C.text, fontSize: FS.md, fontWeight: FW.semibold, lineHeight: 18 },
+  item: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: C.strokeFaint },
+  itemIdx: { color: C.text3, fontSize: FS.sm, width: 14, textAlign: 'center' },
+  itemName: { color: C.text, fontSize: FS.body, fontWeight: FW.semibold },
+  itemSub: { color: C.text3, fontSize: FS.xs, marginTop: 1 },
+  itemSize: { color: C.text2, fontSize: FS.body, fontVariant: ['tabular-nums'] },
+});
+
 // ── 主屏 ─────────────────────────────────────────────────────
 export function CloudLibraryScreen() {
   const insets = useSafeAreaInsets();
@@ -94,6 +218,7 @@ export function CloudLibraryScreen() {
   const [offline, setOffline] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [selMode, setSelMode] = useState(false);
+  const [albExpand, setAlbExpand] = useState(false); // [两段式·LEO 1010] 云页专辑分组展开态(默认只出前6张,全部可展)
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [delTargets, setDelTargets] = useState<LibSong[] | null>(null);
   const [delBusy, setDelBusy] = useState(false);
@@ -115,6 +240,20 @@ export function CloudLibraryScreen() {
       .catch(() => { const q = libCache.get<QuotaInfo>('cloudlib:quota'); if (q) setQuota(q); });
   }, []);
   useEffect(() => { void load(); }, [load]); // eslint-disable-line react-hooks/exhaustive-deps
+  // ── ⑥ 管理三件套状态与联动 ──
+  const [sortBy, setSortBy] = useState<SortKey>('recent'); // 排序:最近上传/文件大小↓/标题A-Z
+  const [storageOpen, setStorageOpen] = useState(false);   // 附透:用量条点击→存储明细半屏
+  const [favTick, bumpFav] = useState(0);                  // 收藏三源变化→已收藏筛选重算
+  const [, setDlTick] = useState(0);                       // 行内下载进度重渲
+  const [presTick, bumpPres] = useState(0);                // 副本判定版本(下载完成→chips/筛选联动)
+  useEffect(() => subscribeDownloads(() => setDlTick(t => t + 1)), []);
+  useEffect(() => subscribePresence(() => bumpPres(t => t + 1)), []);
+  useEffect(() => {
+    const a = subscribeFav(() => bumpFav(t => t + 1));
+    const b = subscribeSync(() => bumpFav(t => t + 1));
+    const d = library.subscribe(() => bumpFav(t => t + 1));
+    return () => { a(); b(); d(); };
+  }, []);
 
   // 分组:我上传的(默认——v2.2 云端副本唯一来源=本机上传) / 我下载的(服务器缓存下载记录;P1「在线歌下载到云曲库」合入后转正)
   const groups = useMemo(() => {
@@ -130,9 +269,72 @@ export function CloudLibraryScreen() {
   }, [songs]);
 
   const keyOf = (s: LibSong) => s.id || s.filename;
+  // ⑤/⑦ 首页化:筛选视图(已同步/仅云端)+最近添加+双在分区数据(cloudPresence 判定)
+  const [pFilter, setPFilter] = useState<PFilter>('all'); // ⑥ chips 扩展:全部/仅云端/双在/已收藏
+  const recentCloud = useMemo(() => songs ? [...songs].sort((a, b) => (b.mtime || 0) - (a.mtime || 0)).slice(0, 4) : [], [songs]);
+  const bothCount = useMemo(() => songs ? songs.filter(s => presenceOf(toSongItem(s)) === 'both').length : 0, [songs, presTick]); // eslint-disable-line react-hooks/exhaustive-deps
+  const cloudOnlyCount = useMemo(() => songs ? songs.filter(s => presenceOf(toSongItem(s)) === 'cloud').length : 0, [songs, presTick]); // eslint-disable-line react-hooks/exhaustive-deps
   const toggleSel = (s: LibSong) => setSel(prev => { const n = new Set(prev); if (n.has(keyOf(s))) n.delete(keyOf(s)); else n.add(keyOf(s)); return n; });
   const exitSel = () => { setSelMode(false); setSel(new Set()); };
   const selSongs = useMemo(() => (songs || []).filter(s => sel.has(keyOf(s))), [songs, sel]); // eslint-disable-line react-hooks/exhaustive-deps
+  // ── ⑥ 已收藏判定(useFav 同源三源:本机收藏/任意歌单收录/服务器 loveList+userList) ──
+  const favKeySet = useMemo(() => {
+    const s = new Set<string>();
+    type K = Parameters<typeof lxNormKey>[0];
+    try { for (const pl of library.all()) for (const x of (pl.songs || []) as K[]) { const k = lxNormKey(x); if (k) s.add(k); } } catch { /* ignore */ }
+    try {
+      const snap = sync.cachedLists();
+      for (const x of snap?.loveList || []) { if (x?.id) s.add(String(x.id)); }
+      for (const u of snap?.userList || []) for (const x of (u.list || []) as K[]) { const k = lxNormKey(x); if (k) s.add(k); }
+    } catch { /* ignore */ }
+    return s;
+  }, [favTick]); // eslint-disable-line react-hooks/exhaustive-deps
+  const favCloud = useCallback((s: LibSong) => {
+    const it = toSongItem(s);
+    return favKeySet.has(`custom_${it.songmid}`) || isFav(it);
+  }, [favKeySet]);
+  // ⑥ 筛选(浏览/管理共用;副本态随下载完成联动) + 排序(仅管理模式)
+  const filteredSongs = useMemo(() => {
+    if (!songs) return [];
+    if (pFilter === 'cloudonly') return songs.filter(s => presenceOf(toSongItem(s)) === 'cloud');
+    if (pFilter === 'both') return songs.filter(s => presenceOf(toSongItem(s)) === 'both');
+    if (pFilter === 'fav') return songs.filter(favCloud);
+    return songs;
+  }, [songs, pFilter, favCloud, presTick]); // eslint-disable-line react-hooks/exhaustive-deps
+  const mgmtSongs = useMemo(() => {
+    const arr = [...filteredSongs];
+    if (sortBy === 'recent') arr.sort((a, b) => (b.mtime || 0) - (a.mtime || 0));
+    else if (sortBy === 'size') arr.sort((a, b) => (b.size || 0) - (a.size || 0));
+    else arr.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    return arr;
+  }, [filteredSongs, sortBy]);
+  // ── ⑤-4 字母索引条:分组键=歌名首字母(localeCompare 近似拼音口径见 AzIndex;浏览/筛选/管理三态接线) ──
+  const azName = (s: LibSong) => s.name || s.filename || '';
+  const { scrollRef: azScroll, reg: azReg, jump: azJump } = useAzJump();
+  const browseAll = useMemo(() => (groups ? [...groups.uploaded, ...groups.downloaded] : []), [groups]);
+  const azBrowse = useMemo(() => azGroup(browseAll, azName, keyOf), [browseAll]);
+  const azFilter = useMemo(() => azGroup(filteredSongs, azName, keyOf), [filteredSongs]);
+  const azMgmt = useMemo(() => azGroup(mgmtSongs, azName, keyOf), [mgmtSongs]);
+  // 字母首项行包 View 登记 onLayout y(仅首项包,≤27 处);非首项原样返回
+  const azRow = (s: LibSong, prefix: string, firstIds: Map<string, string>, row: React.ReactNode) => {
+    const L = firstIds.get(keyOf(s));
+    return L ? <View key={keyOf(s)} onLayout={azReg(prefix + L)}>{row}</View> : row;
+  };
+  // ⑥ 批量「下载到本机」:选中项里的仅云端副本(enqueueDownload 自带去重;逐首进度=下载队列原生)
+  const selCloudOnly = useMemo(() => selSongs.filter(s => presenceOf(toSongItem(s)) === 'cloud'), [selSongs, presTick]); // eslint-disable-line react-hooks/exhaustive-deps
+  const doDownload = () => {
+    const list = selCloudOnly;
+    if (!list.length) return;
+    try {
+      const n = enqueueDownload(list.map(s => toSongItem(s)));
+      toast(n ? `已加入下载队列（${n} 首），逐首进度见下载管理` : '所选仅云端歌已在下载队列');
+    } catch { toast('加入下载失败'); }
+  };
+  // ⑥ 排序 ActionSheet(dialog.menu 底部菜单;当前项文字标注,零 emoji)
+  const openSort = () => dialog.menu('排序方式', (['recent', 'size', 'title'] as SortKey[]).map(k => ({
+    label: k === sortBy ? `${SORT_LABEL[k]}（当前）` : SORT_LABEL[k],
+    onPress: () => setSortBy(k),
+  })));
 
   const play = async (i: number, list: LibSong[]) => {
     const items = list.map(x => toSongItem(x));
@@ -169,37 +371,43 @@ export function CloudLibraryScreen() {
     }
   };
 
-  // ── 用量条(spec③:≥80 黄/100 红;-1 不限) ──
+  // ── 用量条(spec③:≥80 黄/100 红;-1 不限;⑥ 点击→存储明细半屏) ──
   const quotaCard = quota ? (
-    quota.quotaBytes < 0 ? (
-      <View style={c.quotaCard}>
+    <STouch style={c.quotaCard} onPress={() => setStorageOpen(true)} pill={14}>
+      {quota.quotaBytes < 0 ? (
         <View style={c.quotaRow}>
           <Icon name="cloud" size={13} color={C.brand} />
           <Text style={c.quotaLabel}>云曲库空间</Text>
           <Text style={c.quotaVal}>不限容量 · 已用 {fmtBytes(quota.usedBytes)}</Text>
         </View>
+      ) : (() => {
+        const p = Math.max(0, Math.min(100, quota.percent || 0));
+        const col = p >= 100 ? DANGER_RED : p >= 80 ? WARN_YELLOW : C.brand;
+        return (
+          <>
+            <View style={c.quotaRow}>
+              <Icon name="cloud" size={13} color={C.brand} />
+              <Text style={c.quotaLabel}>云曲库空间</Text>
+              <Text style={[c.quotaVal, p >= 80 && { color: col }]}>
+                {fmtBytes(quota.usedBytes)} / {fmtBytes(quota.quotaBytes)}
+              </Text>
+              <Text style={[c.quotaPct, p >= 80 && { color: col }]}>{p}%</Text>
+            </View>
+            <View style={c.quotaTrack}>
+              <View style={[c.quotaFill, { width: `${p}%`, backgroundColor: col }]} />
+            </View>
+            {p >= 80 ? <Text style={[c.quotaWarn, { color: col }]}>{p >= 100 ? '空间已满，清理后才能继续上传' : '空间即将用完'}</Text> : null}
+          </>
+        );
+      })()}
+      <View style={c.quotaMore}>
+        <Text style={c.quotaMoreT}>存储明细</Text>
+        <Icon name="chevronright" size={11} color={C.text3} />
       </View>
-    ) : (() => {
-      const p = Math.max(0, Math.min(100, quota.percent || 0));
-      const col = p >= 100 ? DANGER_RED : p >= 80 ? WARN_YELLOW : C.brand;
-      return (
-        <View style={c.quotaCard}>
-          <View style={c.quotaRow}>
-            <Icon name="cloud" size={13} color={C.brand} />
-            <Text style={c.quotaLabel}>云曲库空间</Text>
-            <Text style={[c.quotaVal, p >= 80 && { color: col }]}>
-              {fmtBytes(quota.usedBytes)} / {fmtBytes(quota.quotaBytes)}
-            </Text>
-            <Text style={[c.quotaPct, p >= 80 && { color: col }]}>{p}%</Text>
-          </View>
-          <View style={c.quotaTrack}>
-            <View style={[c.quotaFill, { width: `${p}%`, backgroundColor: col }]} />
-          </View>
-          {p >= 80 ? <Text style={[c.quotaWarn, { color: col }]}>{p >= 100 ? '空间已满，清理后才能继续上传' : '空间即将用完'}</Text> : null}
-        </View>
-      );
-    })()
+    </STouch>
   ) : null;
+
+  // ── [库族重设计v1 B1] 用量条已撤(原 quotaCard 块)——配额在 banner stats 行,≥80% bannerExtra 入存储明细 sheet(StorageSheet 保留) ──
 
   // ── 列表体 ──
   const body = () => {
@@ -222,10 +430,65 @@ export function CloudLibraryScreen() {
         <View style={c.emptyWrap}>
           <Icon name="cloud" size={30} color={C.text3} />
           <Text style={c.emptyT1}>云端还是空的</Text>
-          <Text style={c.emptyT2}>去本机曲库，长按或 ⋯ 多选后上传</Text>
+          <Text style={c.emptyT2}>上传第一首歌，手机电脑随时听</Text>
           <TouchableOpacity style={c.emptyBtn} onPress={goLocalLib} activeOpacity={0.85}>
             <Text style={c.emptyBtnT}>去本机曲库</Text>
           </TouchableOpacity>
+        </View>
+      );
+    }
+    // ⑥ 管理模式:筛选chips+排序平铺列表(批量动作条在屏底;浏览态不进此分支)
+    if (selMode) {
+      return (
+        <View style={{ flex: 1 }}>
+          <View style={[c.chipsWrap, IS_HD && c.chipsWrapHD]}>
+            <ChipsRow chips={FILTER_CHIPS} active={pFilter} onChange={k => setPFilter(k as PFilter)} />
+          </View>
+          {/* key=排序/筛选:重排即重挂,字母首项 onLayout 偏移保鲜(⑤-4) */}
+          <ScrollView key={`mgmt:${sortBy}:${pFilter}`} ref={azScroll} contentContainerStyle={{ paddingBottom: 140 + insets.bottom }}>
+            {mgmtSongs.map(s => {
+              const it = toSongItem(s);
+              const prog = downloadProgress(it); // 逐首进度(下载中行内细条)
+              return azRow(s, 'mgmt:', azMgmt.firstIds, (
+                <SongRow
+                  key={keyOf(s)}
+                  song={s}
+                  onPress={() => toggleSel(s)}
+                  leading={<View style={[c.chk, sel.has(keyOf(s)) && c.chkOn]}>{sel.has(keyOf(s)) ? <Icon name="check" size={12} color="#fff" /> : null}</View>}
+                  extra={prog != null ? (
+                    <View style={c.dlTrack}><View style={[c.dlFill, { width: `${Math.round(Math.max(0, Math.min(1, prog)) * 100)}%` }]} /></View>
+                  ) : null}
+                />
+              ));
+            })}
+            {!mgmtSongs.length ? <Text style={c.emptyInline}>没有匹配的歌曲</Text> : null}
+          </ScrollView>
+          {azMgmt.letters.length > 1 ? <AzIndex letters={azMgmt.letters} onPick={l => azJump('mgmt:' + l)} /> : null}
+        </View>
+      );
+    }
+    // ⑤ 筛选视图(浏览态):已同步/仅云端/已收藏——分区卡或管理 chips 带入,清除回到分组列表
+    if (pFilter !== 'all') {
+      const filtered = filteredSongs;
+      return (
+        <View style={{ flex: 1 }}>
+          {/* key 含长度:收藏/副本态变化致成员变动即重挂,偏移保鲜(⑤-4) */}
+          <ScrollView key={`flt:${pFilter}:${filtered.length}`} ref={azScroll} contentContainerStyle={{ paddingBottom: 140 + insets.bottom }}>
+            <View style={c.filterBar}>
+              <Text style={c.filterT} numberOfLines={1}>{FILTER_TITLE[pFilter]} · {filtered.length} 首</Text>
+              <TouchableOpacity hitSlop={6} onPress={() => setPFilter('all')}><Text style={c.filterClear}>清除筛选</Text></TouchableOpacity>
+            </View>
+            {filtered.map((s, i) => {
+              const it = toSongItem(s);
+              return azRow(s, 'flt:', azFilter.firstIds, (
+                <SongRow key={keyOf(s)} song={s} playing={current?.hash === s.filename}
+                  isNew={!!s.mtime && Date.now() - s.mtime < WEEK_MS}
+                  onPress={() => void play(i, filtered)} onMore={() => rowMenu(s)} />
+              ));
+            })}
+            {!filtered.length ? <Text style={c.emptyInline}>没有匹配的歌曲</Text> : null}
+          </ScrollView>
+          {azFilter.letters.length > 1 ? <AzIndex letters={azFilter.letters} onPick={l => azJump('flt:' + l)} /> : null}
         </View>
       );
     }
@@ -238,27 +501,31 @@ export function CloudLibraryScreen() {
           return selMode ? (
             <SongRow
               key={keyOf(s)}
-              song={it}
+              song={s}
               onPress={() => toggleSel(s)}
               leading={<View style={[c.chk, sel.has(keyOf(s)) && c.chkOn]}>{sel.has(keyOf(s)) ? <Icon name="check" size={12} color="#fff" /> : null}</View>}
             />
-          ) : (
+          ) : azRow(s, 'browse:', azBrowse.firstIds, (
             <SongRow
               key={keyOf(s)}
-              song={it}
+              song={s}
               playing={current?.hash === s.filename}
               onPress={() => void play(idx, songs)}
               onMore={() => rowMenu(s)}
             />
-          );
+          ));
         })}
       </React.Fragment>
     ) : null;
     return (
-      <ScrollView contentContainerStyle={{ paddingBottom: 140 + insets.bottom }}>
-        {renderGroup('我上传的', groups.uploaded)}
-        {renderGroup('我下载的', groups.downloaded)}
-      </ScrollView>
+      <View style={{ flex: 1 }}>
+        {/* key 含长度:删除/上传致成员变动即重挂,字母首项偏移保鲜(⑤-4) */}
+        <ScrollView key={`browse:${songs.length}`} ref={azScroll} contentContainerStyle={{ paddingBottom: 140 + insets.bottom }}>
+          {renderGroup('我上传的', groups.uploaded)}
+          {renderGroup('我下载的', groups.downloaded)}
+        </ScrollView>
+        {azBrowse.letters.length > 1 ? <AzIndex letters={azBrowse.letters} onPick={l => azJump('browse:' + l)} /> : null}
+      </View>
     );
   };
 
@@ -274,20 +541,132 @@ export function CloudLibraryScreen() {
           <Icon name="back" size={16} color={C.text2} />
         </TouchableOpacity>
         <Text style={c.headTitle}>云曲库</Text>
-        <Text style={c.headStats} numberOfLines={1}>{songs ? `${songs.length} 首` : ''}</Text>
+        <View style={{ flex: 1 }} />
         {logged ? (
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={{ flexDirection: 'row', gap: SP.md }}>
+            {/* [v5.5 1010] v3:横幅退役,上传/存储明细收进页头 */}
+            <STouch style={c.headBtn} onPress={offline ? undefined : goLocalLib} hitSlop={6} pill={9}><Text style={c.headBtnT}>上传</Text></STouch>
+            {quota ? <STouch style={c.headBtn} onPress={() => setStorageOpen(true)} hitSlop={6} pill={9}><Text style={c.headBtnT}>明细</Text></STouch> : null}
             {songs && songs.length && !offline ? (
-              <TouchableOpacity style={c.headBtn} onPress={() => { selMode ? exitSel() : setSelMode(true); }} hitSlop={6}>
-                <Text style={c.headBtnT}>{selMode ? '完成' : '管理'}</Text>
-              </TouchableOpacity>
+              selMode ? (
+                <>
+                  {/* ⑥ 排序文字钮:ActionSheet 三选(当前项标注) */}
+                  <STouch style={c.headBtn} onPress={openSort} hitSlop={6} pill={9}>
+                    <Text style={c.headBtnT}>排序</Text>
+                  </STouch>
+                  <STouch style={c.headBtn} onPress={exitSel} hitSlop={6} pill={9}>
+                    <Text style={c.headBtnT}>完成</Text>
+                  </STouch>
+                </>
+              ) : (
+                <STouch style={c.headBtn} onPress={() => setSelMode(true)} hitSlop={6} pill={9}>
+                  <Text style={c.headBtnT}>管理</Text>
+                </STouch>
+              )
             ) : null}
           </View>
         ) : null}
       </View>
+      {/* ⑤/⑦ 首页化:[v5.5 1010] v3 双渐变英雄卡(统计在卡内)+双入口真播放;上传/存储明细收进页头钮 */}
+      {logged ? (
+        <LibraryHome
+          kind="cloud" name="云曲库" sub="个人空间"
+          heroes={songs ? [
+            {
+              grad: 'gold' as const, big: '播放全部', icon: 'play' as const,
+              st: <><Text style={c.heroStB}>{songs.length.toLocaleString()} 首</Text>{` · ${fmtBytes(quota?.usedBytes || 0)} · 仅云端 ${cloudOnlyCount}`}</>,
+              mini: quota && quota.quotaBytes > 0 ? `剩余配额 ${fmtBytes(Math.max(0, quota.quotaBytes - quota.usedBytes))}` : '个人云端空间',
+              onPress: () => { if (songs.length) void play(0, songs); }, disabled: !songs.length || offline,
+            },
+            {
+              grad: 'violet' as const, big: '随机播放', icon: 'shuffle' as const,
+              st: <>整库随机 · <Text style={c.heroStB}>换个口味</Text></>,
+              mini: recentCloud.length ? `最近上传 ${recentCloud.length} 首 · 来自本机曲库` : '来自本机曲库挑歌上传',
+              onPress: () => { if (songs.length) void play(Math.floor(Math.random() * songs.length), songs); }, disabled: !songs.length || offline,
+            },
+          ] : undefined}
+        >
+          {songs && songs.length && !selMode && !offline ? (
+            <>
+              {recentCloud.length ? (
+                <HomeSection title="最近添加">
+                  {recentCloud.map((s, i) => {
+                    const it = toSongItem(s);
+                    return (
+                      <SongRow key={keyOf(s)} song={s} playing={current?.hash === s.filename}
+                        isNew={!!s.mtime && Date.now() - s.mtime < WEEK_MS}
+                        onPress={() => void play(i, recentCloud)} onMore={() => rowMenu(s)} />
+                    );
+                  })}
+                </HomeSection>
+              ) : null}
+              {bothCount > 0 || cloudOnlyCount > 0 ? (
+                <HomeSection title="同步状态">
+                  <View style={c.syncRow}>
+                    {bothCount > 0 ? (
+                      <TouchableOpacity style={c.syncCard} activeOpacity={0.8} onPress={() => setPFilter('both')}>
+                        <View style={c.syncIcon}><Icon name="cloud-check" size={17} color={C.brand} /></View>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={c.syncT}>已同步 {bothCount} 首</Text>
+                          <Text style={c.syncSub} numberOfLines={1}>本机与云端双在 · 离线可播</Text>
+                        </View>
+                        <Icon name="chevronright" size={14} color={C.text3} />
+                      </TouchableOpacity>
+                    ) : null}
+                    {cloudOnlyCount > 0 ? (
+                      <TouchableOpacity style={c.syncCard} activeOpacity={0.8} onPress={() => setPFilter('cloudonly')}>
+                        <View style={c.syncIcon}><Icon name="cloud" size={17} color={WARN_YELLOW} /></View>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={c.syncT}>仅云端 {cloudOnlyCount} 首</Text>
+                          <Text style={c.syncSub} numberOfLines={1}>云端唯一副本 · 建议下载备份</Text>
+                        </View>
+                        <Icon name="chevronright" size={14} color={C.text3} />
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                </HomeSection>
+              ) : null}
+              {/* [两段式·LEO 10-10 裁定] 云页网格区降级=按专辑分组歌曲列表(封面位音符占位过审计;服务端补 albums 端点后升回封面墙) */}
+              {songs && songs.length ? (() => {
+                const grp = new Map<string, typeof songs[number][]>();
+                for (const s of songs) { const k = s.album || '未知专辑'; const a = grp.get(k); if (a) a.push(s); else grp.set(k, [s]); }
+                const arr = [...grp.entries()].sort((a, b) => b[1].length - a[1].length);
+                const shown = albExpand ? arr : arr.slice(0, 6);
+                return (
+                  <HomeSection title="专辑" count={arr.length}>
+                    {shown.map(([album, list]) => (
+                      <View key={album} style={c.albGrp}>
+                        <View style={c.albHead}>
+                          <View style={c.albArt}>
+                            {list[0] ? (
+                              <Image source={{ uri: coverUrl(list[0].filename) }} style={c.albArtImg} />
+                            ) : (
+                              <Icon name="music" size={22} color={C.text3} />
+                            )}
+                          </View>
+                          <Text style={c.albT} numberOfLines={1}>{album}</Text>
+                          <Text style={c.albC}>{list.length} 首</Text>
+                        </View>
+                        {list.map(s => { const it = toSongItem(s); return (
+                          <SongRow key={keyOf(s)} song={s} playing={current?.hash === s.filename} onPress={() => void play(songs.indexOf(s), songs)} onMore={() => rowMenu(s)} />
+                        ); })}
+                      </View>
+                    ))}
+                    {arr.length > 6 ? (
+                      <TouchableOpacity style={c.albMore} activeOpacity={0.75} onPress={() => setAlbExpand(v => !v)}>
+                        <Text style={c.albMoreT}>{albExpand ? '收起' : `全部 ${arr.length} 张专辑`}</Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </HomeSection>
+                );
+              })() : null}
+            </>
+          ) : null}
+        </LibraryHome>
+      ) : null}
       {logged ? (
         <View style={{ paddingHorizontal: 16 }}>
-          {quotaCard}
+          {/* [库族重设计v1 B1] 用量条已撤:配额数字进 banner stats,≥80% 状态点变暖+bannerExtra 入存储明细 sheet */}
           {offline ? (
             <View style={c.offBar}>
               <Icon name="wifi-off" size={13} color={WARN_YELLOW} />
@@ -297,26 +676,36 @@ export function CloudLibraryScreen() {
         </View>
       ) : null}
       <View style={{ flex: 1 }}>{body()}</View>
-      {/* 多选动作条(全选/删除 N/退出;与队列批量条同款) */}
+      {/* ⑥ 多选动作条:全选(随筛选可见集)/下载到本机(仅云端 N)/删除 N(分级确认链路不动) */}
       {selMode && songs && songs.length ? (
         <View style={[c.selBar, { paddingBottom: insets.bottom + 8 }]}>
-          <Text style={c.selCount}>已选 {sel.size} 首</Text>
-          <TouchableOpacity style={c.selBtn} onPress={() => setSel(sel.size >= songs.length ? new Set() : new Set(songs.map(keyOf)))}>
-            <Text style={c.selBtnT}>{sel.size >= songs.length ? '全不选' : '全选'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          <Text style={c.selCount} numberOfLines={1}>已选 {sel.size} 首</Text>
+          <STouch style={c.selBtn} onPress={() => setSel(sel.size >= mgmtSongs.length && mgmtSongs.length ? new Set() : new Set(mgmtSongs.map(keyOf)))}>
+            <Text style={c.selBtnT}>{sel.size >= mgmtSongs.length && mgmtSongs.length ? '全不选' : '全选'}</Text>
+          </STouch>
+          <STouch
+            style={[c.selDl, !selCloudOnly.length && c.selDlOff]}
+            disabled={!selCloudOnly.length}
+            onPress={doDownload}
+          >
+            <Icon name="download" size={13} color={!selCloudOnly.length ? C.text3 : C.brandText} />
+            <Text style={[c.selDlT, !selCloudOnly.length && { color: C.text3 }]}>下载到本机{selCloudOnly.length ? ` (${selCloudOnly.length})` : ''}</Text>
+          </STouch>
+          <STouch
             style={[c.selDel, !sel.size && c.selDelOff]}
             disabled={!sel.size}
             onPress={() => setDelTargets(selSongs)}
           >
             <Icon name="trash" size={13} color={!sel.size ? C.text3 : '#fff'} />
             <Text style={[c.selDelT, !sel.size && { color: C.text3 }]}>删除{sel.size ? ` (${sel.size})` : ''}</Text>
-          </TouchableOpacity>
+          </STouch>
         </View>
       ) : null}
       {delTargets ? (
         <DeleteConfirm list={delTargets} busy={delBusy} onClose={() => { if (!delBusy) setDelTargets(null); }} onConfirm={() => void doDelete()} />
       ) : null}
+      {/* ⑥ 附透:用量条点击→存储明细半屏 */}
+      {storageOpen ? <StorageSheet quota={quota} songs={songs} onClose={() => setStorageOpen(false)} /> : null}
       <UploadSheet.View />
     </View>
   );
@@ -324,12 +713,31 @@ export function CloudLibraryScreen() {
 
 // ── 媒体库页入口卡(登录后渲染,未登录不渲染——spec③ 登录个人空间) ──
 export function CloudLibCard({ onEnter }: { onEnter: () => void }) {
+  // [二波② LEO 缺口单] 信息层:首歌数+配额(SWR 缓存优先,静默失败降级原文案)+状态点
+  const [info, setInfo] = useState<{ n: number; used: string; pct: number } | null>(null);
+  useEffect(() => {
+    let dead = false;
+    const cached = libCache.get<{ n: number; used: string; pct: number }>('cloudlib:card');
+    if (cached) setInfo(cached);
+    Promise.all([cloudLib.songs().catch(() => null), cloudLib.quota().catch(() => null)])
+      .then(([songs, quota]) => {
+        if (dead || !songs) return;
+        const v = { n: songs.length, used: fmtBytes(quota?.usedBytes || 0), pct: quota && quota.quotaBytes >= 0 ? Math.max(0, Math.min(100, quota.percent || 0)) : -1 };
+        setInfo(v); libCache.set('cloudlib:card', v);
+      });
+    return () => { dead = true; };
+  }, []);
   return (
-    <TouchableOpacity style={c.entryCard} onPress={onEnter} activeOpacity={0.8}>
-      <View style={c.entryIcon}><Icon name="cloud" size={20} color={C.brand} /></View>
-      <View style={{ flex: 1 }}>
-        <Text style={c.entryTitle}>云曲库</Text>
-        <Text style={c.entrySub}>个人云端空间 · 用量 / 上传 / 文件管理</Text>
+    <TouchableOpacity style={[c.entryCard, IS_HD && c.entryCardHD]} onPress={onEnter} activeOpacity={0.8}>
+      <View style={[c.entryIcon, IS_HD && c.entryIconHD]}><Icon name="cloud" size={IS_HD ? 32 : 26} color={C.brand} /></View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={[c.entryTitle, IS_HD && c.entryTitleHD]}>云曲库</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm }}>
+          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.brand }} />
+          <Text style={[c.entrySub, IS_HD && c.entrySubHD]} numberOfLines={1}>
+            {info ? `${info.n} 首 · ${info.used}${info.pct >= 0 ? ` · 配额 ${info.pct}%` : ''}` : '个人云端空间 · 用量 / 上传 / 文件管理'}
+          </Text>
+        </View>
       </View>
       <Icon name="chevronright" size={13} color={C.text3} />
     </TouchableOpacity>
@@ -338,58 +746,92 @@ export function CloudLibCard({ onEnter }: { onEnter: () => void }) {
 
 const c = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
-  head: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 16 },
-  headTitle: { color: C.text, fontSize: 17, fontWeight: '800' },
-  headStats: { flex: 1, color: C.text3, fontSize: 10.5, textAlign: 'right', marginRight: 2 },
+  head: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingVertical: 10, paddingHorizontal: 16 },
+  headTitle: { color: C.text, fontSize: FS.headline, fontWeight: FW.heavy },
+  // ⑤ 同步状态分区卡与筛选视图
+  syncRow: { flexDirection: 'row', gap: SP.lg },
+  syncCard: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: SP.lg, backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.strokeFaint, padding: 12 },
+  syncIcon: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  syncT: { color: C.text, fontSize: FS.md, fontWeight: FW.bold },
+  syncSub: { color: C.text3, fontSize: FS.sm, lineHeight: 14, marginTop: 1 },
+  filterBar: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, marginHorizontal: 16, marginTop: 10, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: C.surface2 },
+  filterT: { flex: 1, color: C.text2, fontSize: FS.body },
+  filterClear: { color: C.brandText, fontSize: FS.body, fontWeight: FW.semibold },
+  emptyInline: { color: C.text2, fontSize: FS.body, textAlign: 'center', paddingVertical: 40 },
+  headStats: { flex: 1, color: C.text3, fontSize: FS.sm, textAlign: 'right', marginRight: 2 },
   headBtn: { height: 30, minWidth: 30, paddingHorizontal: 8, borderRadius: 9, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  headBtnT: { color: C.text2, fontSize: 12, fontWeight: '600' },
+  headBtnT: { color: C.text2, fontSize: FS.body, fontWeight: FW.semibold },
   // 用量条
   quotaCard: { backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.strokeFaint, padding: 14, marginTop: 6 },
-  quotaRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  quotaLabel: { color: C.text, fontSize: 12.5, fontWeight: '700', marginRight: 'auto' },
-  quotaVal: { color: C.text2, fontSize: 11.5 },
-  quotaPct: { color: C.text3, fontSize: 11.5, marginLeft: 8 },
+  quotaRow: { flexDirection: 'row', alignItems: 'center', gap: SP.sm },
+  quotaLabel: { color: C.text, fontSize: FS.md, fontWeight: FW.bold, marginRight: 'auto' },
+  quotaVal: { color: C.text2, fontSize: FS.body },
+  quotaPct: { color: C.text3, fontSize: FS.body, marginLeft: 8 },
   quotaTrack: { height: 5, borderRadius: 5, backgroundColor: 'rgba(255,255,255,.08)', marginTop: 10, overflow: 'hidden' },
   quotaFill: { height: '100%', borderRadius: 5 },
-  quotaWarn: { fontSize: 10.5, marginTop: 7 },
+  quotaWarn: { fontSize: FS.sm, marginTop: 7 },
   // 离线横幅
-  offBar: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(232,179,75,.08)', borderWidth: 1, borderColor: 'rgba(232,179,75,.22)', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9, marginTop: 8 },
-  offT: { color: WARN_YELLOW, fontSize: 11, flex: 1 },
+  offBar: { flexDirection: 'row', alignItems: 'center', gap: SP.md, backgroundColor: 'rgba(232,179,75,.08)', borderWidth: 1, borderColor: 'rgba(232,179,75,.22)', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9, marginTop: 8 },
+  offT: { color: WARN_YELLOW, fontSize: FS.sm, flex: 1 },
   // 分组与行
-  grp: { color: C.text3, fontSize: 11, letterSpacing: 1, marginHorizontal: 16, marginTop: 14, marginBottom: 6 },
+  grp: { color: C.text3, fontSize: FS.sm, letterSpacing: 1, marginHorizontal: 16, marginTop: 14, marginBottom: 6 },
   chk: { width: 20, height: 20, borderRadius: 999, borderWidth: 1.5, borderColor: C.strokeStrong, alignItems: 'center', justifyContent: 'center' },
   chkOn: { backgroundColor: C.brand, borderColor: C.brand },
   // 空态
-  emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 40, paddingVertical: 60 },
-  emptyT1: { color: C.text, fontSize: 14, fontWeight: '700', marginTop: 4 },
-  emptyT2: { color: C.text3, fontSize: 11.5, lineHeight: 17, textAlign: 'center', maxWidth: 240 },
-  emptyBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.brand, borderRadius: 999, paddingHorizontal: 20, paddingVertical: 9, marginTop: 10 },
-  emptyBtnT: { color: '#04120a', fontSize: 12.5, fontWeight: '800' },
+  emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: SP.md, paddingHorizontal: 40, paddingVertical: 60 },
+  emptyT1: { color: C.text, fontSize: FS.lg, fontWeight: FW.bold, marginTop: 4 },
+  emptyT2: { color: C.text3, fontSize: FS.body, lineHeight: 17, textAlign: 'center', maxWidth: 240 },
+  emptyBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, backgroundColor: C.brand, borderRadius: 999, paddingHorizontal: 20, paddingVertical: 9, marginTop: 10 },
+  emptyBtnT: { color: C.onBrand, fontSize: FS.md, fontWeight: FW.heavy },
   // 多选动作条
-  selBar: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.strokeFaint },
-  selCount: { color: C.text2, fontSize: 12, fontWeight: '600', marginRight: 'auto' },
+  selBar: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.strokeFaint },
+  selCount: { color: C.text2, fontSize: FS.body, fontWeight: FW.semibold, marginRight: 'auto', flexShrink: 1 },
   selBtn: { borderWidth: 1, borderColor: C.stroke, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7 },
-  selBtnT: { color: C.text2, fontSize: 12, fontWeight: '600' },
-  selDel: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: DANGER_RED, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 8 },
+  selBtnT: { color: C.text2, fontSize: FS.body, fontWeight: FW.semibold },
+  selDel: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, backgroundColor: DANGER_RED, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 8 },
   selDelOff: { backgroundColor: C.surface2 },
-  selDelT: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  selDelT: { color: C.white, fontSize: FS.body, fontWeight: FW.bold },
+  // ⑥ 批量下载钮/chips/行内进度/明细入口
+  selDl: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, borderWidth: 1, borderColor: C.brand, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 7 },
+  selDlOff: { borderColor: C.stroke, opacity: 0.55 },
+  selDlT: { color: C.brandText, fontSize: FS.body, fontWeight: FW.bold },
+  chipsWrap: { marginTop: 10, marginHorizontal: 16 },
+  chipsWrapHD: { marginHorizontal: GUTTER },
+  dlTrack: { width: 46, height: 4, borderRadius: 4, backgroundColor: 'rgba(255,255,255,.08)', overflow: 'hidden' },
+  dlFill: { height: '100%', borderRadius: 4, backgroundColor: C.brand },
+  quotaMore: { flexDirection: 'row', alignItems: 'center', gap: SP.xs, justifyContent: 'flex-end', marginTop: 8 },
+  quotaMoreT: { color: C.text3, fontSize: FS.sm },
   // 删除确认
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,.55)', justifyContent: 'center', alignItems: 'center' },
   delCard: { width: '88%', maxWidth: 380, backgroundColor: '#151517', borderRadius: 18, borderWidth: 1, borderColor: C.stroke, padding: 20, alignItems: 'center' },
   delIcon: { width: 52, height: 52, borderRadius: 15, backgroundColor: 'rgba(255,255,255,.05)', borderWidth: 1, borderColor: C.stroke, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   delIconStrong: { backgroundColor: 'rgba(232,97,140,.08)', borderColor: 'rgba(232,97,140,.25)' },
-  delTitle: { color: C.text, fontSize: 15.5, fontWeight: '800', textAlign: 'center' },
-  delMsg: { color: C.text2, fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: 8 },
-  delWarn: { color: DANGER_RED, fontSize: 11, marginTop: 6, textAlign: 'center', fontWeight: '600' },
-  delBtns: { flexDirection: 'row', gap: 10, marginTop: 16, alignSelf: 'stretch' },
+  delTitle: { color: C.text, fontSize: FS.title, fontWeight: FW.heavy, textAlign: 'center' },
+  delMsg: { color: C.text2, fontSize: FS.body, lineHeight: 18, textAlign: 'center', marginTop: 8 },
+  delWarn: { color: DANGER_RED, fontSize: FS.sm, marginTop: 6, textAlign: 'center', fontWeight: FW.semibold },
+  delBtns: { flexDirection: 'row', gap: SP.lg, marginTop: 16, alignSelf: 'stretch' },
   delCancel: { flex: 1, borderWidth: 1, borderColor: C.stroke, borderRadius: 999, paddingVertical: 10, alignItems: 'center' },
-  delCancelT: { color: C.text2, fontSize: 13, fontWeight: '600' },
+  delCancelT: { color: C.text2, fontSize: FS.md, fontWeight: FW.semibold },
   delOk: { flex: 1, backgroundColor: C.brand, borderRadius: 999, paddingVertical: 10, alignItems: 'center' },
   delOkLock: { opacity: 0.45 },
-  delOkT: { color: '#04120a', fontSize: 13, fontWeight: '800' },
+  delOkT: { color: C.onBrand, fontSize: FS.md, fontWeight: FW.heavy },
   // 入口卡
-  entryCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.strokeFaint, padding: 14, marginBottom: 14 },
-  entryIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(30,215,96,.08)', borderWidth: 1, borderColor: 'rgba(30,215,96,.18)', alignItems: 'center', justifyContent: 'center' },
-  entryTitle: { color: C.text, fontSize: 14, fontWeight: '700' },
-  entrySub: { color: C.text3, fontSize: 10.5, marginTop: 2 },
+  entryCard: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderColor: C.strokeFaint, padding: 14, flexBasis: '40%', flexGrow: 1, minHeight: 72 }, // [老板反馈] 删flexGrow同ml.card——单卡不拉伸居左
+  entryCardHD: { minHeight: 86, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16, flexBasis: '23%', flexGrow: 1 }, // [1010 统一] 与 ml.cardHD 同值(定宽卡+自然换行)
+  entryIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }, // [hub 网格] 40→44 对齐 ml.iconWrap 统一值,cloud 品牌色改通用底
+  entryIconHD: { width: 52, height: 52, borderRadius: 14 }, // [1010 统一] 与 ml.iconWrapHD 同值
+  entryTitle: { color: C.text, fontSize: FS.xl, lineHeight: 20, fontWeight: FW.semibold }, // [1010 统一] 14/700→14.5/600 与 ml.title 同值([批次1]→FS.xl 归档)
+  heroStB: { color: C.white, fontWeight: FW.heavy }, // [v5.5] 英雄卡统计行加粗段
+  // [两段式·LEO 1010] 云页专辑分组(行头/占位封面/展开钮)
+  albGrp: { gap: SP.xs },
+  albHead: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingVertical: 8 },
+  albArt: { width: 44, height: 44, borderRadius: 10, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  albArtImg: { width: '100%', height: '100%' }, // [批5b] 专辑代表封面(组内首曲内嵌图,cover 端点链;无图回落矢量)
+  albT: { flex: 1, minWidth: 0, color: C.text, fontSize: FS.lg, fontWeight: FW.bold },
+  albC: { color: C.text3, fontSize: FS.sm },
+  albMore: { paddingVertical: 10, alignItems: 'center' },
+  albMoreT: { color: C.text2, fontSize: FS.body, fontWeight: FW.semibold },
+  entryTitleHD: { fontSize: FS.headline, lineHeight: 23 },
+  entrySub: { color: C.text3, fontSize: FS.sm, lineHeight: 15, marginTop: 2 }, // [1010 统一] 10.5→11 与 ml.sub 同值([批次1]→FS.sm 归档)
+  entrySubHD: { fontSize: FS.md, lineHeight: 17 },
 });

@@ -21,7 +21,7 @@ function DTouch(props: { style?: unknown; onPress?: () => void; children?: React
   );
 }
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { C } from '../theme/tokens';
+import { C, FW } from '../theme/tokens';
 
 export interface DialogButton { text: string; style?: 'default' | 'cancel' | 'destructive'; onPress?: () => void }
 
@@ -214,15 +214,15 @@ const s = StyleSheet.create({
   handle: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: C.handle, marginBottom: 10 },
   sheetTitle: { color: C.text2, fontSize: 12, lineHeight: 16, marginBottom: 6 },
   sheetRow: { minHeight: 54, justifyContent: 'center', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.strokeFaint },
-  sheetRowText: { color: C.text, fontSize: 15, lineHeight: 21, fontWeight: '500', textAlign: 'center' },
+  sheetRowText: { color: C.text, fontSize: 15, lineHeight: 21, fontWeight: FW.medium, textAlign: 'center' },
   center: { flex: 1, backgroundColor: C.scrim, alignItems: 'center', justifyContent: 'center', padding: 40 },
   card: { width: '100%', maxWidth: 320, borderRadius: 16, backgroundColor: C.elev, padding: 20 },
-  cardTitle: { color: C.text, fontSize: 17, lineHeight: 24, fontWeight: '700', textAlign: 'center' },
+  cardTitle: { color: C.text, fontSize: 17, lineHeight: 24, fontWeight: FW.bold, textAlign: 'center' },
   cardMsg: { color: C.text2, fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 10 },
   btnRow: { flexDirection: 'column', gap: 8, marginTop: 18 },
   btn: { height: 44, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   btnMain: { backgroundColor: C.brand },
-  btnText: { color: C.text, fontSize: 14, lineHeight: 18, fontWeight: '600' },
+  btnText: { color: C.text, fontSize: 14, lineHeight: 18, fontWeight: FW.semibold },
   btnMainText: { color: C.onBrand },
   input: { backgroundColor: C.surface2, borderRadius: 10, color: C.text, fontSize: 14, paddingHorizontal: 14, height: 44, marginTop: 14 },
   toastWrap: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'flex-end' },

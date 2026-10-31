@@ -16,11 +16,13 @@ import { setHoverMenu } from './hdctxmenu';
 import { hdActions } from './HDActions';
 import { registerKbRow } from './hdkeyboard';
 import { locationsOf, usePresenceVersion } from '../services/cloudPresence'; // spec③:角标三态全端统一;v3.0 细则2 locations 契约
+import { NewBadge } from '../components/LibraryHome'; // ⑤-B6 NEW 标(7 天内入库,brand 底 9px 小标)
 import { IS_HD, isCarUi } from '../services/appversion'; // 细则6:HD 角标 16px/车机不显角标
+import { FW, SP , T} from '../theme/tokens';
 
 const IS_WEB = Platform.OS === 'web';
 
-export function HDSongRow({ song, index, onPress, onLongPress, onAction, playing, showAlbum = true, first, buildMenu }: {
+export function HDSongRow({ song, index, onPress, onLongPress, onAction, playing, showAlbum = true, first, buildMenu, isNew }: {
   song: SongItem;
   index?: number;
   onPress?: () => void;
@@ -29,6 +31,7 @@ export function HDSongRow({ song, index, onPress, onLongPress, onAction, playing
   playing?: boolean;
   showAlbum?: boolean;
   first?: boolean;
+  isNew?: boolean; // ⑤:7 天内入库 NEW 标
   buildMenu?: (song: SongItem) => CtxMenuItem[]; // v1.2.4 D1:web 行尾⋯/右键共用菜单数据
 }) {
   const { faved, toggle } = useFav(song);
@@ -115,11 +118,14 @@ export function HDSongRow({ song, index, onPress, onLongPress, onAction, playing
           </View>
         ) : null}
       </View>
-      <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
-        <Text style={[st.title, playing && { color: C.brand }]} numberOfLines={1}>
-          {song.name}
-          {song._types?.flac ? <Text style={st.hiRes}> 无损</Text> : null}
-        </Text>
+      <View style={{ flex: 1, minWidth: 0, gap: SP.xs }}>
+        <View style={st.titleRow}>
+          <Text style={[st.title, playing && { color: C.brand }]} numberOfLines={1}>
+            {song.name}
+            {song._types?.flac ? <Text style={st.hiRes}> 无损</Text> : null}
+          </Text>
+          {isNew ? <NewBadge /> : null}
+        </View>
         <Text style={st.sub} numberOfLines={1}>{song.singer}{showAlbum && song.albumName ? ` · ${song.albumName}` : ''}</Text>
       </View>
       <View style={st.srcTag}><Text style={st.srcTagText}>{(song as SongItem & { _lib?: string })._lib === 'public' ? '公共' : song.source}</Text></View>
@@ -177,24 +183,25 @@ const st = StyleSheet.create({
   // 整行占满(父容器全宽),左右留 16 padding —— 老板反馈「一行没有占满/文字太贴边」
   row: {
     minHeight: 52, borderRadius: H.radius.row, paddingHorizontal: 16,
-    flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1,
+    flexDirection: 'row', alignItems: 'center', gap: SP.xl, flex: 1,
   },
   idx: { color: C.text3, fontSize: H.font.md, fontVariant: ['tabular-nums'], width: 24, textAlign: 'center' },
   artWrap: { position: 'relative' },
   art: { width: 36, height: 36, borderRadius: 6 },
   artPlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 6, backgroundColor: 'rgba(0,0,0,.45)', alignItems: 'center', justifyContent: 'center' },
-  title: { color: C.text, fontSize: H.font.md, fontWeight: '600' },
+  title: { color: C.text, fontSize: H.font.md, fontWeight: FW.semibold },
+  titleRow: { flexDirection: 'row', alignItems: 'center' },
   sub: { color: C.text3, fontSize: H.font.xs },
-  hiRes: { color: C.brand, fontSize: 7, fontWeight: '700' },
-  srcTag: { backgroundColor: C.elev, borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
-  srcTagText: { color: C.text3, fontSize: 7, fontWeight: '600', letterSpacing: 0.5 },
+  hiRes: { color: C.brand, fontSize: 7, fontWeight: FW.bold }, // [LEO 1011] 档外特排:Hi-Res 徽标角标微字(FS 最小 xs=10 会溢出徽标)
+  srcTag: { backgroundColor: 'rgba(0,0,0,.55)', borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 }, // 1028 老板令(字恒白):底恒黑药丸(主题无关),原 C.elev 随主题+T.light 锁定残留=深色灰底灰字看不清
+  srcTagText: { color: '#ffffffcc', fontSize: 7, fontWeight: FW.semibold, letterSpacing: 0.5 }, // 1028 老板令:字恒白
   dur: { color: C.text3, fontSize: H.font.sm, fontVariant: ['tabular-nums'], minWidth: 34, textAlign: 'right' },
   // v3.20 挤出模式:hoverZone 流内占位,hover 34→96(三钮)/已收藏 34→64(♡),标题列被挤压而非覆盖
   hoverZone: { minWidth: 34, alignItems: 'flex-end', overflow: 'hidden' },
   hoverZoneOn: { minWidth: 96 },
   hoverZoneFav: { minWidth: 64 },
-  hovBtns: { flexDirection: 'row', gap: 2, alignItems: 'center' },
+  hovBtns: { flexDirection: 'row', gap: SP.xs, alignItems: 'center' },
   hovBtn: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
-  rowWrap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  rowWrap: { flexDirection: 'row', alignItems: 'center', gap: SP.sm },
   act: { width: 30, height: 52, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
 });

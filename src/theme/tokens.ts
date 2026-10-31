@@ -5,6 +5,8 @@ import { settings } from '../services/settings';
 
 export const C: Record<string, string> = {
   brand: '#1ED760',       // Next Green
+  proGold: '#F0C75E',      // Pro Gold [D1 WP2 spec §一]
+  proGoldDark: '#8A6914',   // Pro Gold 亮色降饱和
   brandDim: '#1ed76047',
   brandSoft: '#6BE88F',   // lyrics active green
   bg: '#121212',          // Night
@@ -38,6 +40,7 @@ export const C: Record<string, string> = {
   sheet: '#161618F5',      // 半透明抽屉面（浅色下乳白）
   brandText: '#1ED760',    // 绿色文字（浅色下换深绿，避免绿字贴白底看不清）
   heart: '#FF5A76',        // 收藏心形(spotify pink;v3.28 全局 token 化,散落硬编码收口)
+  danger: '#FF6B6B',       // 错误/危险色(与 HD hdtokens 同值;[LEO 1011 统一令] 散落 #FF6B6B/#E8618C 收口)
 };
 
 // 启动期主题覆写（模块加载时同步执行；后续所有 StyleSheet.create 拿到的就是用户主题）
@@ -106,6 +109,7 @@ export function applyBootTheme() {
     C.badgeOn = acc ? mixHex(acc, '#FFFFFF', 0.88) : '#D9F4E5';
     C.artTint = acc ? mixHex(acc, '#FFFFFF', 0.90) : '#E7F1EB';
     C.artTint2 = acc ? mixHex(acc, '#FFFFFF', 0.90) : '#E7F1EB';
+    C.proGold = '#8A6914'; // 亮色主题降饱和 [D1 WP2]
     C.knobOn = '#FFFFFF';
     C.knob = '#8F969E';
     C.failTint = '#FDEEEE';
@@ -114,20 +118,36 @@ export function applyBootTheme() {
 }
 applyBootTheme();
 
-export const SP = {
-  screen: 20,             // horizontal page padding (Figma @20, width 350 on 390)
-};
+// ─── [老板 1011 12:04] 全局设计 token:间距/字号收敛规范(详见 docs/design-tokens.md;旧 SP.screen/FS.title28 体系零使用点已并入) ───
+/** 间距档:全偶数 4-24,共 9 档(淘汰 2/3/5/7/9/11 碎片档——就近归并;新代码禁裸写数字 gap) */
+export const SP = { xs: 4, sm: 6, md: 8, lg: 10, xl: 12, xxl: 14, section: 18, wide: 16, wider: 20, big: 24, screen: 20 } as const; // [12:44] section=18 为我推荐段距基准档
+/** 字号档:10-28 全整数,共 12 档(淘汰 8/9 特小档与 .5 半档——8/9→10,10.5→11,11.5→12,12.5→13;新代码禁裸写 fontSize) */
+export const FS = { xs: 10, sm: 11, body: 12, md: 13, lg: 14, xl: 15, title: 16, headline: 17, h2: 18, h1: 20, display: 24, hero: 28 } as const;
 
-export const FS = {
-  // rounded sizes used across screens
-  title28: 28,
-  title24: 24,
-  title18: 18,
-  title17: 17,
-  body14: 14,
-  body13: 13,
-  body12: 12,
-  caption11: 11,
-  caption10: 10,
-  small9: 9,
+// ── [老板 1011 15:39 全局统一令] 字重/网格/卡宽 token(唯一定义源;详见 docs/design-tokens.md) ──
+/** 字重档:5 主档+900 特例;新代码禁裸写 fontWeight 字符串 */
+export const FW = { normal: '400', medium: '500', semibold: '600', bold: '700', heavy: '800', black: '900' } as const;
+export type FontWeightToken = keyof typeof FW;
+
+/** 网格系统:墙列基档(phone 百分比)/HD 密网格参数/栅格与页边距(跨页面零差距唯一源) */
+export const GRID = {
+  wallTiers: [[1500, '15%'], [1100, '18%'], [800, '23%'], [0, '31%']] as [number, string][], // phone 墙列基(GridBasis/DiscCard 同源)
+  hdMin: 128,     // HD/web 密网格最小卡宽 dp(×uiScale;探索同款)
+  hdGap: 12, hdMaxCols: 9, hdMinCols: 3,
+  gutterHD: 22,   // HD 内页水平栅格(hdstyle.GUTTER 同源)
+  pageHD: 26,     // HD 页边距(为我推荐基准)
+  pagePhone: 20,  // phone 内容页边距(Home/Explore 基准)
+  libPhone: 16,   // 库族页边距(LibraryHome 基准)
 } as const;
+
+/** 卡宽档:同层级卡跨页面同大小(rail 封面卡=PvCard 基准;迷你卡=最近播放层) */
+export const CARD = {
+  rail: { phone: 112, web: 132, hd: 148 }, // rail 封面卡宽(RailCard/PvCard/DiscCard/搜索专辑/艺人专辑卡全对齐)
+  mini: 80,                                 // 迷你卡(最近播放 rail)
+  radius: 12,                               // nm-card 标准圆角
+  radiusHero: 16,                           // 英雄卡圆角
+} as const;
+export type SpaceToken = keyof typeof SP;
+export type FontToken = keyof typeof FS;
+// 旧键别名(零使用点,保险兼容)
+export const FS_OLD = { title28: FS.hero, title24: FS.display, title18: FS.h2, title17: FS.headline, body14: FS.lg, body13: FS.md, body12: FS.body, caption11: FS.sm, caption10: FS.xs } as const;

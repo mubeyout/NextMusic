@@ -77,3 +77,4 @@ yarn-error.log
 ._*
 tmp/
 desktop/dist-phone/
+desktop/dist-hd/

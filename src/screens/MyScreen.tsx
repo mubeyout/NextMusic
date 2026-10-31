@@ -4,7 +4,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon, BrandIcon } from '../theme/Icon';
-import { C, softGrad } from '../theme/tokens';
+import { C, FS, FW, SP, softGrad } from '../theme/tokens';
+import { GRAD } from '../theme/grads';
+import { PvCard } from '../components/PvCard'; // [老板 1011 16:15] 歌单卡统一件(自建歌单大卡并入)
+import { GridWall } from '../components/GridWall';
 import { PillTabs } from '../components/PillTabs';
 import { EmptyState } from '../components/PageChrome';
 import { ActionSheet } from '../components/ActionSheet';
@@ -29,14 +32,6 @@ import type { SongItem } from '../services/server';
 // Library Summary banner(#145938→#1f2e52 r14 h72, 我的收藏 + counts + ＋新建 C.brand r18) +
 // Quick row 3 cards (#2b2b2b r12 110x66: 最近播放/我喜欢的/本地音乐) +
 // 自建歌单 2-col grid (169x104 gradient covers + ♫ + 13px w700 + 9px meta)
-const COVER_GRADS: [string, string][] = [
-  ['#1f6b5c', '#142647'],
-  ['#80381f', '#381a2e'],
-  ['#5c297a', '#1f3861'],
-  ['#146b85', '#1f2e47'],
-  ['#1f6b5c', '#142647'],
-  ['#80381f', '#381a2e'],
-];
 
 export function MyScreen({ visible = true }: { visible?: boolean }) {
   const insets = useSafeAreaInsets();
@@ -120,7 +115,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
     })),
     ...syncPls.filter(u => !localGridNames.has(u.name)).map(u => {
       const songs = (u.list || []).map(lxToApp);
-      return { key: u.id, name: u.name, count: songs.length, img: songs[0]?.img, songs };
+      return { key: u.id, name: u.name, count: songs.length, img: (u as { cover?: string }).cover || songs[0]?.img, songs }; // [识别补全 1010] 服务端动态派生封面优先(存量歌单快照无 img 根治)
     }),
   ];
 
@@ -138,7 +133,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
           <Icon name="settings" size={20} />
         </TouchableOpacity>
       </View>
-      {offline && <Text style={{ color: C.brand, fontSize: 12, marginBottom: 10 }}>离线模式 · 数据来自缓存，联网后自动同步</Text>}
+      {offline && <Text style={{ color: C.brand, fontSize: FS.body, marginBottom: 10 }}>离线模式 · 数据来自缓存，联网后自动同步</Text>}
 
       <PillTabs tabs={['歌单', '歌手', '专辑', '已下载']} active={tab} onChange={setTab} />
 
@@ -192,7 +187,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
               </TouchableOpacity>
             );
             return (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 4 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: SP.lg, paddingBottom: 4 }}>
                 {pv.map((a: ProviderAcct) => {
                   // v3.4(老板 07:45):媒体库入口 icon 一律 BrandIcon(旧白名单漏了 tingfeng/plex/飞牛/道理鱼等→落通用音符)
                   return (
@@ -219,12 +214,9 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
             </TouchableOpacity>
           </View>
           {gridItems.length ? (
-            <View style={st.plGrid}>
-              {gridItems.slice(0, 12).map((g, i) => (
-                <TouchableOpacity
-                  key={g.key}
-                  style={st.plCell}
-                  activeOpacity={0.85}
+            <GridWall>
+              {gridItems.slice(0, 12).map(g => (
+                <PvCard fill key={g.key} cover={g.img} name={g.name} meta={`${g.count} 首`}
                   onPress={() => g.localId
                     ? nav.navigate('PlaylistDetail', { localId: g.localId, title: g.name, songs: g.songs, cover: g.img })
                     : openSongs(g.name, g.songs, g.img, g.localId ? undefined : { plKey: g.key })}
@@ -236,20 +228,9 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
                       // lx101:同步歌单也可管理(服务器 userList 重命名/删除)
                       setActSyncPl({ id: g.key, name: g.name, count: g.count });
                     }
-                  }}
-                >                  {/* lx163(老板):真实封面优先(首曲专辑图),无图兑底渐变抽象封面 */}
-                  {g.img ? (
-                    <Image source={{ uri: g.img }} style={st.plCover} />
-                  ) : (
-                    <LinearGradient colors={COVER_GRADS[i % COVER_GRADS.length]} style={st.plCover}>
-                      <Text style={st.plGlyph}>♫</Text>
-                    </LinearGradient>
-                  )}
-                  <Text style={st.plName} numberOfLines={1}>{g.name}</Text>
-                  <Text style={st.plMeta} numberOfLines={1}>{g.count} 首</Text>
-                </TouchableOpacity>
+                  }} />
               ))}
-            </View>
+            </GridWall>
           ) : (
             <Text style={st.empty}>{loggedIn ? '还没有歌单，点右上导入' : '登录后同步服务器歌单'}</Text>
           )}
@@ -286,7 +267,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
             : albums == null ? <View style={st.center}><ActivityIndicator color={C.brand} /></View>
             : albums.length ? albums.map(a => (
               <TouchableOpacity key={a.id} style={st.row} activeOpacity={0.8} onPress={() => openAlbum(a)}>
-                {a.img ? <Image source={{ uri: a.img }} style={st.art} /> : <View style={[st.art, st.artFallback]}><Text style={st.rowGlyph}>♫</Text></View>}
+                {a.img ? <Image source={{ uri: a.img }} style={st.art} /> : <View style={[st.art, st.artFallback]}><Icon name="music" size={20} color={C.text2} /></View>}
                 <View style={{ flex: 1 }}>
                   <Text style={st.rowName} numberOfLines={1}>{a.name}</Text>
                   <Text style={st.rowMeta} numberOfLines={1}>{a.singer || ''}</Text>
@@ -311,7 +292,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
             </TouchableOpacity>
           </View>
           {dlList.length ? (
-            <View style={{ gap: 4 }} key={dlTick}>
+            <View style={{ gap: SP.xs }} key={dlTick}>
               {dlList.slice(0, 100).map(r => (
                 <SongRow
                   key={r.key}
@@ -389,43 +370,43 @@ const COL = (Dimensions.get('window').width - 40 - 24) / 3; // 3 列自适应填
 
 const st = StyleSheet.create({
   content: { paddingHorizontal: 20 },
-  headerRow: { height: 44, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  title: { flex: 1, color: C.text, fontSize: 28, lineHeight: 34, fontWeight: '700' },
+  headerRow: { height: 44, flexDirection: 'row', alignItems: 'center', gap: SP.xl },
+  title: { flex: 1, color: C.text, fontSize: FS.hero, lineHeight: 34, fontWeight: FW.bold },
   settingsBtn: { width: 44, height: 44, borderRadius: 999, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  body: { gap: 8, paddingTop: 14 },
+  body: { gap: SP.md, paddingTop: 14 },
   banner: {
     height: 72, borderRadius: 14, marginTop: 12, flexDirection: 'row',
-    alignItems: 'center', paddingHorizontal: 16, gap: 12,
+    alignItems: 'center', paddingHorizontal: 16, gap: SP.xl,
   },
-  bannerTitle: { color: C.text, fontSize: 15, lineHeight: 18, fontWeight: '700' },
-  bannerMeta: { color: C.text2, fontSize: 11, lineHeight: 13, marginTop: 6 },
+  bannerTitle: { color: C.text, fontSize: FS.xl, lineHeight: 18, fontWeight: FW.bold },
+  bannerMeta: { color: C.text2, fontSize: FS.sm, lineHeight: 13, marginTop: 6 },
   newBtn: { height: 36, borderRadius: 18, backgroundColor: C.brand, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
-  newBtnText: { color: C.white, fontSize: 12, lineHeight: 14, fontWeight: '500' },
-  quickRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  quickCard: { flex: 1, height: 66, borderRadius: 12, backgroundColor: C.surface2, padding: 12, justifyContent: 'center', gap: 6 },
-  pvCard: { width: 138, minHeight: 64, borderRadius: 12, backgroundColor: C.surface2, padding: 12, justifyContent: 'center', gap: 5 },
-  pvName: { color: C.text, fontSize: 12, lineHeight: 15, fontWeight: '600' },
-  pvMeta: { color: C.text2, fontSize: 9, lineHeight: 12 },
-  pvAddRow: { minHeight: 48, borderRadius: 12, backgroundColor: C.surface2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  pvAddText: { color: C.text2, fontSize: 11, lineHeight: 15 },
-  quickTitle: { color: C.text, fontSize: 12, lineHeight: 14, fontWeight: '500' },
-  quickMeta: { color: C.text2, fontSize: 10, lineHeight: 12 },
+  newBtnText: { color: C.white, fontSize: FS.body, lineHeight: 14, fontWeight: FW.medium },
+  quickRow: { flexDirection: 'row', gap: SP.lg, marginTop: 12 },
+  quickCard: { flex: 1, height: 66, borderRadius: 12, backgroundColor: C.surface2, padding: 12, justifyContent: 'center', gap: SP.sm },
+  pvCard: { width: 138, minHeight: 64, borderRadius: 12, backgroundColor: C.surface2, padding: 12, justifyContent: 'center', gap: SP.sm },
+  pvName: { color: C.text, fontSize: FS.body, lineHeight: 15, fontWeight: FW.semibold },
+  pvMeta: { color: C.text2, fontSize: FS.xs, lineHeight: 12 },
+  pvAddRow: { minHeight: 48, borderRadius: 12, backgroundColor: C.surface2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.sm },
+  pvAddText: { color: C.text2, fontSize: FS.sm, lineHeight: 15 },
+  quickTitle: { color: C.text, fontSize: FS.body, lineHeight: 14, fontWeight: FW.medium },
+  quickMeta: { color: C.text2, fontSize: FS.xs, lineHeight: 12 },
   sectionRow: { flexDirection: 'row', alignItems: 'center', height: 26, marginTop: 12 },
-  sectionTitle: { flex: 1, color: C.text, fontSize: 18, lineHeight: 22, fontWeight: '700' },
-  sectionMeta: { color: C.brandSoft, fontSize: 10, lineHeight: 12 },
-  plGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 4 },
-  plCell: { width: '31%', gap: 4 },
+  sectionTitle: { flex: 1, color: C.text, fontSize: FS.h2, lineHeight: 22, fontWeight: FW.bold },
+  sectionMeta: { color: C.brandSoft, fontSize: FS.xs, lineHeight: 12 },
+  plGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl, marginTop: 4 },
+  plCell: { width: '31%', gap: SP.xs },
   plCover: { width: '100%', aspectRatio: 1, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  plGlyph: { color: C.white, fontSize: 26, fontWeight: '700' },
-  plName: { color: C.text, fontSize: 13, lineHeight: 16, fontWeight: '700' },
-  plMeta: { color: C.text2, fontSize: 9, lineHeight: 11 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
+  plGlyph: { color: C.white, fontSize: FS.display, fontWeight: FW.bold }, // [LEO 1011] 26 档外→display(24)
+  plName: { color: C.text, fontSize: FS.md, lineHeight: 16, fontWeight: FW.bold },
+  plMeta: { color: C.text2, fontSize: FS.xs, lineHeight: 11 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, paddingVertical: 8 },
   art: { width: 50, height: 50, borderRadius: 8, backgroundColor: C.surface2 },
   roundArt: { width: 50, height: 50, borderRadius: 25, backgroundColor: C.surface2 },
   artFallback: { alignItems: 'center', justifyContent: 'center' },
-  rowGlyph: { color: C.text2, fontSize: 20, fontWeight: '700' },
-  rowName: { color: C.text, fontSize: 14, lineHeight: 19, fontWeight: '500' },
-  rowMeta: { color: C.text2, fontSize: 11, lineHeight: 15 },
-  empty: { color: C.text2, fontSize: 12, lineHeight: 17, textAlign: 'center', paddingTop: 18, paddingBottom: 6 },
+  rowGlyph: { color: C.text2, fontSize: FS.h1, fontWeight: FW.bold },
+  rowName: { color: C.text, fontSize: FS.lg, lineHeight: 19, fontWeight: FW.medium },
+  rowMeta: { color: C.text2, fontSize: FS.sm, lineHeight: 15 },
+  empty: { color: C.text2, fontSize: FS.body, lineHeight: 17, textAlign: 'center', paddingTop: 18, paddingBottom: 6 },
   center: { paddingVertical: 24 },
 });

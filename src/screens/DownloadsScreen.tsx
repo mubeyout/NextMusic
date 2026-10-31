@@ -4,7 +4,7 @@ import { Platform, View, Text, StyleSheet, ScrollView, TouchableOpacity, } from 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { SongRow } from '../components/SongRow';
 import { PageHeader, EmptyState } from '../components/PageChrome';
 import { usePlayer } from '../state/PlayerProvider';
@@ -55,12 +55,13 @@ export function DownloadsScreen() {
       />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 120 }}>
       {typeof Platform !== 'undefined' && Platform.OS === 'web' && !/electron/i.test((globalThis as any).navigator?.userAgent || '') && cacheStat ? (
-        <Text style={{ color: '#9aa5a0', fontSize: 11, marginBottom: 8 }}>已缓存 {cacheStat.fileCount} 首 · {fmtBytes(cacheStat.totalSize)}</Text>
+        <Text style={{ color: '#9aa5a0', fontSize: FS.sm, marginBottom: 8 }}>已缓存 {cacheStat.fileCount} 首 · {fmtBytes(cacheStat.totalSize)}</Text>
       ) : null}
         <Text style={st.stat}>{list.length} 首 · {fmtBytes(dlStore.totalBytes())}{list.some(r => r.server) ? ' · 含服务器缓存(后台·设置·存储备份可清理)' : ' · 内部存储/Music/NextMusic'}</Text>
         {lastFails.length ? (
           <View style={st.failCard}>
-            <Text style={st.failTitle} numberOfLines={1}>⚠ {fails.length} 首下载失败 · 最近：{lastFails[0].err}</Text>
+            <Icon name="shield" size={14} color={C.danger} />
+            <Text style={st.failTitle} numberOfLines={1}>{fails.length} 首下载失败 · 最近：{lastFails[0].err}</Text>
             {/* lx179(B):一键重试(带曲目信息的失败项重新入队;web 走服务器缓存路径) */}
             <TouchableOpacity hitSlop={6} onPress={() => { const r = retryFails(); if (!r.retried) toast('没有可重试的记录（旧记录缺曲目信息，已保留）'); }}>
               <Text style={st.failClear}>重试</Text>
@@ -100,12 +101,12 @@ export function DownloadsScreen() {
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   header: { height: 64, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 6 },
-  title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700' }, // lx166 居左
-  stat: { color: C.text2, fontSize: 11, lineHeight: 15, marginBottom: 12 },
-  failCard: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.failTint, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 10 },
-  failTitle: { flex: 1, color: '#FF9B9B', fontSize: 11, lineHeight: 15 },
-  failClear: { color: C.text2, fontSize: 11 },
-  empty: { color: C.text2, fontSize: 12, lineHeight: 18, textAlign: 'center', paddingVertical: 40 },
+  title: { flex: 1, color: C.text, fontSize: FS.display, lineHeight: 35, fontWeight: FW.bold }, // lx166 居左
+  stat: { color: C.text2, fontSize: FS.sm, lineHeight: 15, marginBottom: 12 },
+  failCard: { flexDirection: 'row', alignItems: 'center', gap: SP.md, backgroundColor: C.failTint, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 10 },
+  failTitle: { flex: 1, color: C.danger, fontSize: FS.sm, lineHeight: 15 }, // [LEO 1011] #FF9B9B→C.danger 错误色族统一
+  failClear: { color: C.text2, fontSize: FS.sm },
+  empty: { color: C.text2, fontSize: FS.body, lineHeight: 18, textAlign: 'center', paddingVertical: 40 },
   progTrack: { flexDirection: 'row', height: 3, borderRadius: 2, backgroundColor: C.surface2, marginTop: 2, marginBottom: 4 },
   progBar: { backgroundColor: C.brand, borderRadius: 2 },
   miniDock: { position: 'absolute', left: 0, right: 0, bottom: 0 },

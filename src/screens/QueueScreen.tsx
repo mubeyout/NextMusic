@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'rea
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { IS_HD } from '../services/appversion';
 import { Platform } from 'react-native';
 const IS_WEB = Platform.OS === 'web'; // v3.33:队列行菜单定位弹出(web)分支
@@ -27,7 +27,7 @@ import { SongRow } from '../components/SongRow';
 import { ActionSheet } from '../components/ActionSheet';
 import { CollectSheet } from '../components/CollectSheet';
 import { hdActions } from '../hd/HDActions';
-import { usePlayer, type QueueTrack } from '../state/PlayerProvider';
+import { usePlayer, usePlayerProgress, type QueueTrack } from '../state/PlayerProvider';
 import { PageHeader, EmptyState } from '../components/PageChrome';
 import { dialog, toast } from '../components/Dialog';
 import { enqueueDownload, downloads as dlStore } from '../services/downloads';
@@ -46,7 +46,8 @@ export function QueueScreen() {
   const exitSel = () => { setSelMode(false); setSel(new Set()); };
   const toggleSel = (t: QueueTrack) => setSel(prev => { const n = new Set(prev); if (n.has(keyOf(t))) n.delete(keyOf(t)); else n.add(keyOf(t)); return n; });
   const nav = useNavigation() as { goBack: () => void };
-  const { queue, current, playSong, position, duration, clearQueue, reorderQueue } = usePlayer();
+  const { queue, current, playSong, clearQueue, reorderQueue } = usePlayer();
+  const { position, duration } = usePlayerProgress(); // [1011 15:16] 进度独立订阅
 
   const upcoming = current ? queue.filter(t => t.songmid !== current.songmid) : queue;
   const pct = duration > 0 ? Math.min(1, position / duration) : 0;
@@ -86,7 +87,7 @@ export function QueueScreen() {
           onBack={() => nav.goBack()}
           right={selMode ? (
             <T hitSlop={6} onPress={exitSel} style={st.doneBtn}>
-              <Text style={st.doneText}>完成</Text>
+              <Text style={[st.doneText, { color: '#FFFFFF' }]}>完成</Text>
             </T>
           ) : (
             <T
@@ -154,7 +155,7 @@ export function QueueScreen() {
               toast(`已移除 ${idxs.length} 首`);
               exitSel();
             }}>
-              <Text style={[st.batchBtnText, { color: '#FF6B6B' }]}>移除</Text>
+              <Text style={[st.batchBtnText, { color: C.danger }]}>移除</Text>
             </T>
           </View>
         )}
@@ -179,7 +180,7 @@ export function QueueScreen() {
         ) : (
           <EmptyState title={queue.length ? '没有下一首了' : '队列为空'} sub={queue.length ? undefined : '去首页或探索页添加歌曲'} />
         )}
-        {limit < upcoming.length ? <Text style={{ color: '#999', fontSize: 11, textAlign: 'center', paddingVertical: 8 }}>滚动加载更多({limit}/{upcoming.length})</Text> : null}
+        {limit < upcoming.length ? <Text style={{ color: C.text2, fontSize: FS.sm, textAlign: 'center', paddingVertical: 8 }}>滚动加载更多({limit}/{upcoming.length})</Text> : null}
       </ScrollView>
       {/* lx163:队列行操作菜单(收藏到歌单/下载)——⋯ 从死图标变真按钮 */}
       <ActionSheet
@@ -203,27 +204,27 @@ export function QueueScreen() {
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bgDeep },
   nowCard: { borderRadius: 12, backgroundColor: C.elev, padding: 12, marginTop: 8 },
-  nowRow: { flexDirection: 'row', gap: 10 },
+  nowRow: { flexDirection: 'row', gap: SP.lg },
   nowArtWrap: { width: 60, height: 60, borderRadius: 7, overflow: 'hidden' },
   nowArt: { width: 60, height: 60 },
-  nowMeta: { flex: 1, gap: 2 },
-  nowTitle: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '700' },
-  nowArtist: { color: C.text2, fontSize: 11, lineHeight: 16 },
+  nowMeta: { flex: 1, gap: SP.xs },
+  nowTitle: { color: C.text, fontSize: FS.lg, lineHeight: 20, fontWeight: FW.bold },
+  nowArtist: { color: C.text2, fontSize: FS.sm, lineHeight: 16 },
   nowBar: { height: 4, borderRadius: 2, backgroundColor: C.inset, marginTop: 8, overflow: 'hidden' },
   nowBarValue: { height: 4, borderRadius: 2, backgroundColor: C.brand },
-  sectionRow: { height: 26, flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16, marginBottom: 8 },
-  sectionTitle: { flex: 1, color: C.text, fontSize: 17, lineHeight: 25, fontWeight: '700' },
-  sectionMeta: { color: C.text2, fontSize: 11, lineHeight: 16 },
-  list: { gap: 8 },
+  sectionRow: { height: 26, flexDirection: 'row', alignItems: 'center', gap: SP.md, marginTop: 16, marginBottom: 8 },
+  sectionTitle: { flex: 1, color: C.text, fontSize: FS.headline, lineHeight: 25, fontWeight: FW.bold },
+  sectionMeta: { color: C.text2, fontSize: FS.sm, lineHeight: 16 },
+  list: { gap: SP.md },
   // v3.33:批量操作工具栏
-  batchBar: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.surface, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginTop: 10 },
-  batchCount: { color: C.text, fontSize: 13, fontWeight: '700' },
+  batchBar: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, backgroundColor: C.surface, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginTop: 10 },
+  batchCount: { color: C.text, fontSize: FS.md, fontWeight: FW.bold },
   batchBtn: { height: 32, paddingHorizontal: 14, borderRadius: 16, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   batchBtnPri: { backgroundColor: C.brand },
-  batchBtnText: { color: C.text, fontSize: 12, fontWeight: '600' },
-  batchBtnPriText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  batchBtnText: { color: C.text, fontSize: FS.body, fontWeight: FW.semibold },
+  batchBtnPriText: { color: C.white, fontSize: FS.body, fontWeight: FW.semibold },
   chk: { width: 46, height: 46, borderRadius: 8, borderWidth: 2, borderColor: C.stroke, alignItems: 'center', justifyContent: 'center' },
   chkOn: { backgroundColor: C.brand, borderColor: C.brand },
   doneBtn: { height: 30, paddingHorizontal: 14, borderRadius: 15, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
-  doneText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  doneText: { color: C.white, fontSize: FS.body, fontWeight: FW.bold },
 });

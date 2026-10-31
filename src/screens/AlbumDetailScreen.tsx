@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { PageHeader } from '../components/PageChrome';
 import { HDTouch } from '../hd/HDTouch';
 import { IS_HD } from '../services/appversion';
@@ -70,11 +70,11 @@ export function AlbumDetailScreen() {
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
-  head: { flexDirection: 'row', gap: 14, paddingVertical: 12, alignItems: 'center' },
+  head: { flexDirection: 'row', gap: SP.xxl, paddingVertical: 12, alignItems: 'center' },
   cover: { width: 110, height: 110, borderRadius: 12 },
-  name: { color: C.text, fontSize: 17, fontWeight: '800', lineHeight: 23 },
-  meta: { color: C.text2, fontSize: 12, marginTop: 4 },
-  favBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, alignSelf: 'flex-start', borderWidth: 1, borderColor: C.strokeFaint, borderRadius: 15, paddingHorizontal: 12, paddingVertical: 6 },
-  favText: { color: C.text2, fontSize: 12, fontWeight: '600' },
-  empty: { color: C.text2, fontSize: 12, textAlign: 'center', paddingVertical: 30 },
+  name: { color: C.text, fontSize: FS.headline, fontWeight: FW.heavy, lineHeight: 23 },
+  meta: { color: C.text2, fontSize: FS.body, marginTop: 4 },
+  favBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, marginTop: 10, alignSelf: 'flex-start', borderWidth: 1, borderColor: C.strokeFaint, borderRadius: 15, paddingHorizontal: 12, paddingVertical: 6 },
+  favText: { color: C.text2, fontSize: FS.body, fontWeight: FW.semibold },
+  empty: { color: C.text2, fontSize: FS.body, textAlign: 'center', paddingVertical: 30 },
 });

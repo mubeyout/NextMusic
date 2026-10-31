@@ -6,9 +6,12 @@ import { useNavigation } from '@react-navigation/native';
 import RNBlobUtil from 'react-native-blob-util';
 import SafX from 'react-native-saf-x';
 import { Icon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { SubPage } from '../components/SubPage';
 import { ToggleRow, ValueRow, ActionRow, StaticRow, NavRow, InputRow, Section, PageShell } from '../components/SettingRows';
+import { LicenseActivate } from '../components/LicenseActivate';
+import { LicenseDevices } from '../components/LicenseDevices'; // [D1 WP2] 设备管理(MOMO 1012 追加①)
+import { BUY_LINKS } from '../services/benefits'; // [1012] 购买直跳(老板④:入口藏太深)
 import { settings, useSettings, QUALITY_LABEL, type Quality } from '../services/settings';
 import { providerApi, providers, type ProviderAcct } from '../services/providers';
 import { loadSources, saveSources, type CustomSource } from '../services/customSource';
@@ -19,9 +22,12 @@ import { downloads as dlStore, fmtBytes, downloadFails, clearFails, subscribeDow
 import { APP_VERSION, IS_HD } from '../services/appversion';
 import { api, store as httpStore, normalizeBase } from '../services/server';
 import { pubCheck, pubSetShowEntry, usePubEntry } from '../services/publicLibrary'; // ④公共曲库个人显示开关
+import { useFeatureGate, FeatureGateModal } from '../components/FeatureGate';
 
 // ---------- 基本设置 ----------
 export function BasicSettingsScreen() {
+  const [licAct, setLicAct] = React.useState(false); // [D1 WP2] 授权弹层(P0 修正:state 移入函数体——原 regex 插桩落模块顶层=非法 hook 白屏)
+  const [licDev, setLicDev] = React.useState(false);
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string) => void };
   const s = useSettings();
   const [cacheSize, setCacheSize] = useState('计算中…');
@@ -87,12 +93,23 @@ export function BasicSettingsScreen() {
           }} />
         </Section>
       ) : null}
+      {/* [D1 WP2] PRO 授权闭环:输码入口+设备管理(老板 15:14 五缺之二/四;MOMO 1012 追加①) */}
+      <Section title="PRO 授权">
+        <ActionRow label="购买 Pro ¥19.9 · 终身" value="官方店铺" onPress={() => {
+          const url = BUY_LINKS.pro;
+          if (typeof window !== 'undefined') window.open(url, '_blank', 'noopener');
+        }} /> {/* [1012 老板④] 购买入口直跳店铺——藏在激活流程里太深 */}
+        <ActionRow label="激活授权码" value="NM-…" onPress={() => setLicAct(true)} />
+        <ActionRow label="我的授权 · 设备管理" value="5 台上限" onPress={() => setLicDev(true)} />
+      </Section>
       <Section title="缓存">
         <StaticRow label="图片与网络缓存" value={cacheSize} />
         <ActionRow label="清除缓存" value="" onPress={clearCache} />
         <StaticRow label="已下载占用" value={fmtBytes(dlStore.totalBytes())} />
         <NavRow label="下载管理" value={`${dlStore.all().length} 首`} onPress={() => nav.navigate('Downloads')} />
       </Section>
+      <LicenseActivate visible={licAct} onClose={() => setLicAct(false)} />
+      <LicenseDevices visible={licDev} onClose={() => setLicDev(false)} />
     </PageShell>
   );
 }
@@ -412,6 +429,8 @@ export function BackupSettingsScreen() {
   const s = useSettings();
   const [dav, setDav] = useState<DavConf>(loadDav);
   const [busy, setBusy] = useState(false);
+  // D2 webdav_backup：云端备份/恢复入口门（免费拦；本地文件导出/导入=免费迁移路径不拦；服务器配置/测试不拦）
+  const bkGate = useFeatureGate('webdav_backup');
 
   const save = (patch: Partial<DavConf>) => {
     const next = { ...dav, ...patch };
@@ -527,8 +546,8 @@ export function BackupSettingsScreen() {
         <ActionRow label={busy ? '处理中…' : '测试连接'} onPress={test} />
       </Section>
       <Section title="备份">
-        <ActionRow label={busy ? '处理中…' : '立即备份'} onPress={backupNow} />
-        <ActionRow label="从云端恢复" onPress={restore} />
+        <ActionRow label={busy ? '处理中…' : '立即备份'} locked={bkGate.locked} onPress={() => bkGate.guard(backupNow)} />
+        <ActionRow label="从云端恢复" locked={bkGate.locked} onPress={() => bkGate.guard(restore)} />
       </Section>
       <Section title="本地文件（换机迁移 / 归档）">
         <ActionRow label="导出到文件" value="保存为 JSON" onPress={exportToFile} />
@@ -538,6 +557,9 @@ export function BackupSettingsScreen() {
         <ToggleRow label="歌单与收藏" value={s.backupPlaylists} onChange={v => settings.set('backupPlaylists', v)} />
         <ToggleRow label="设置项" value={s.backupSettings} onChange={v => settings.set('backupSettings', v)} />
       </Section>
+
+      {/* D2 webdav_backup 门弹层（三命首弹在此记频；试用成功重放原备份/恢复动作） */}
+      <FeatureGateModal fg={bkGate} />
     </PageShell>
   );
 }
@@ -545,18 +567,18 @@ export function BackupSettingsScreen() {
 // ---------- 可视化 / 代理：lx34 移除（无真实实现，避免“死设置”；后续做播放页频谱时随功能回归） ----------
 
 const ts = StyleSheet.create({
-  modeRow: { flexDirection: 'row', gap: 8, paddingVertical: 6 },
+  modeRow: { flexDirection: 'row', gap: SP.md, paddingVertical: 6 },
   modePill: { flex: 1, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2 },
   modeOn: { backgroundColor: C.brand },
-  modeText: { color: C.text2, fontSize: 13, fontWeight: '600' },
-  modeTextOn: { color: C.onBrand, fontWeight: '700' },
-  swatchRow: { flexDirection: 'row', gap: 14, paddingHorizontal: 4, marginTop: 10 },
-  swatchItem: { alignItems: 'center', gap: 8 },
+  modeText: { color: C.text2, fontSize: FS.md, fontWeight: FW.semibold },
+  modeTextOn: { color: C.onBrand, fontWeight: FW.bold },
+  swatchRow: { flexDirection: 'row', gap: SP.xxl, paddingHorizontal: 4, marginTop: 10 },
+  swatchItem: { alignItems: 'center', gap: SP.md },
   swatch: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   swatchOn: { borderWidth: 2, borderColor: C.text },
-  swatchName: { color: C.text2, fontSize: 11 },
-  note: { color: C.text3, fontSize: 11, lineHeight: 15, marginTop: 12, paddingHorizontal: 4 },
-  footer: { color: C.text3, fontSize: 11, textAlign: 'center', marginTop: 16, marginBottom: 8, lineHeight: 16 },
+  swatchName: { color: C.text2, fontSize: FS.sm },
+  note: { color: C.text3, fontSize: FS.sm, lineHeight: 15, marginTop: 12, paddingHorizontal: 4 },
+  footer: { color: C.text3, fontSize: FS.sm, textAlign: 'center', marginTop: 16, marginBottom: 8, lineHeight: 16 },
 });
 
 // 保留 SubPage 引用避免未使用告警（部分页面共用样式）

@@ -7,7 +7,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
-import { C } from '../theme/tokens';
+import { C, FS, FW, SP } from '../theme/tokens';
 import { PageHeader } from '../components/PageChrome';
 import { SongRow } from '../components/SongRow';
 import { dialog, toast } from '../components/Dialog';
@@ -17,6 +17,9 @@ import { precheckUpload, fmtBytes } from '../services/cloudLibrary';
 import { enqueueUpload } from '../state/UploadQueue';
 import { useUploadSheet } from './UploadSheet';
 import { IS_HD } from '../services/appversion';
+import { GUTTER } from '../hd/hdstyle';
+import { LibBanner, LibActions, HomeSection, RailCard } from '../components/LibraryHome';
+import { GridWall } from '../components/GridWall'; // [老板 1011 15:55] rail→网格墙 // ⑤/⑦ 全库首页化骨架
 import {
   localLib, localArtists, localAlbums, localSingerTracks, localAlbumTracks,
   localFolderView, checkLocalLib, rescanLocalLibrary,
@@ -30,6 +33,9 @@ const VIEWS: { key: LibView; label: string }[] = [
   { key: 'albums', label: '专辑' },
   { key: 'folders', label: '文件夹' },
 ];
+
+const WEEK_MS = 7 * 24 * 3600 * 1000;
+const isNewLocal = (t: LocalTrack) => Date.now() - t.addedAt < WEEK_MS; // ⑤-B6:7 天内入库 NEW 标(本机=扫描 addedAt)
 
 /** 歌曲行「文件名识别」小 tag(v3 A3:11px text3 surface2 底 radius 999) */
 function FilenameTag() {
@@ -193,6 +199,10 @@ export function LocalLibraryScreen({ route }: { route: { params: { libId: string
 
   const artists = localArtists(cfg.id);
   const albums = localAlbums(cfg.id);
+  // ⑤ 首页化数据:随机播放全量(与多选作用域同源)+最近添加(addedAt 排序)+根目录入口卡
+  const allTracks = albums.flatMap(a => localAlbumTracks(cfg.id, a.key));
+  const recentTracks = [...allTracks].sort((x, y) => y.addedAt - x.addedAt).slice(0, 4);
+  const rootDirs = localFolderView(cfg.id, '').dirs.slice(0, IS_HD ? 10 : 8);
 
   // ---------- 目录失效态(v3 A5):空态页+恢复入口,不自动删数据 ----------
   if (avail === false) {
@@ -235,6 +245,7 @@ export function LocalLibraryScreen({ route }: { route: { params: { libId: string
               key={t.id}
               song={{ name: t.name, singer: t.singer || UNKNOWN_ARTIST, source: 'device', songmid: t.uri || t.id, albumId: '', interval: t.durationSec ? `${Math.floor(t.durationSec / 60)}:${Math.round(t.durationSec % 60) < 10 ? '0' : ''}${Math.round(t.durationSec % 60)}` : '', albumName: t.album || undefined }}
               playing={current?.hash === t.id}
+              isNew={isNewLocal(t)}
               onPress={() => (selMode ? toggleSel(t.id) : play(tracks, i))}
               onLongPress={selMode ? undefined : () => menuOf(t, tracks, i)}
               onMore={selMode ? undefined : () => menuOf(t, tracks, i)}
@@ -256,13 +267,26 @@ export function LocalLibraryScreen({ route }: { route: { params: { libId: string
   return (
     <View style={st.screen}>
       <PageHeader
-        title={cfg.name}
+        title="本机曲库"
         right={(
           <TouchableOpacity onPress={openMenu} hitSlop={6}>
             <Icon name="more" size={22} />
           </TouchableOpacity>
         )}
       />
+      {/* ⑤/⑦ 首页化:库头横幅+快捷动作(渐进包裹,三视图/多选/上传链路不动) */}
+      <View style={[st.homeWrap, IS_HD && st.homeWrapHD]}>
+        <LibBanner kind="local" name={cfg.name}
+          stats={cfg.trackCount ? `${cfg.trackCount.toLocaleString()} 首 · ${albums.length} 专辑 · ${artists.length} 歌手` : '还未扫描'} />
+        <LibActions actions={[
+          { icon: 'refresh', label: '重扫', onPress: doRescan, disabled: !!rescan },
+          { icon: 'folder', label: '选目录', onPress: () => nav.navigate('LocalLibEdit', { libId: cfg.id }) },
+          {
+            icon: 'shuffle', label: '随机播放', primary: true, disabled: !allTracks.length || !!rescan,
+            onPress: () => void play(allTracks, Math.floor(Math.random() * allTracks.length)),
+          },
+        ]} />
+      </View>
       {/* 增量重扫进度(顶栏下细条) */}
       {rescan ? (
         <View style={st.rescanBar}>
@@ -283,6 +307,41 @@ export function LocalLibraryScreen({ route }: { route: { params: { libId: string
         ))}
         <Text style={st.statsText}>{cfg.trackCount} 首</Text>
       </View>
+
+      {/* ⑤ 首页化内容分区:最近添加(扫描 addedAt,NEW 标)+按文件夹入口卡(本机独有组织);能力缺失整段不渲染 */}
+      {cfg.trackCount > 0 && !rescan ? (
+        <View style={[st.homeWrap, IS_HD && st.homeWrapHD, st.homeSections]}>
+          {recentTracks.length ? (
+            <HomeSection title="最近添加" actionLabel="播放全部" onAction={() => void play(recentTracks, 0)}>
+              {recentTracks.map((t, i) => (
+                <SongRow
+                  key={t.id}
+                  song={{ name: t.name, singer: t.singer || UNKNOWN_ARTIST, source: 'device', songmid: t.uri || t.id, albumId: '', interval: t.durationSec ? `${Math.floor(t.durationSec / 60)}:${Math.round(t.durationSec % 60) < 10 ? '0' : ''}${Math.round(t.durationSec % 60)}` : '', albumName: t.album || undefined }}
+                  playing={current?.hash === t.id}
+                  isNew={isNewLocal(t)}
+                  onPress={() => (selMode ? toggleSel(t.id) : void play(recentTracks, i))}
+                  onLongPress={selMode ? undefined : () => menuOf(t, recentTracks, i)}
+                  onMore={selMode ? undefined : () => menuOf(t, recentTracks, i)}
+                  leading={selMode ? (
+                    <View style={[st.chk, sel.has(t.id) && st.chkOn]}>{sel.has(t.id) ? <Icon name="check" size={12} color="#fff" /> : null}</View>
+                  ) : undefined}
+                  extra={!selMode && t.tagSource === 'filename' ? <FilenameTag /> : undefined}
+                />
+              ))}
+            </HomeSection>
+          ) : null}
+          {rootDirs.length ? (
+            <HomeSection title="按文件夹">
+              <GridWall>
+                {rootDirs.map(dd => (
+                  <RailCard fill key={dd.path} icon="folder" name={dd.name} sub={`${dd.count} 首`}
+                    onPress={() => { exitSel(); setView('folders'); setDirPath(dd.path); }} />
+                ))}
+              </GridWall>
+            </HomeSection>
+          ) : null}
+        </View>
+      ) : null}
 
       {cfg.trackCount === 0 ? (
         <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
@@ -362,7 +421,7 @@ function FolderPane({ libId, dirPath, onDir, onPlay, currentHash, selMode, sel, 
   return (
     <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 140 }}>
       {/* 面包屑 */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.crumbWrap} contentContainerStyle={{ gap: 4, alignItems: 'center' }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.crumbWrap} contentContainerStyle={{ gap: SP.xs, alignItems: 'center' }}>
         <TouchableOpacity hitSlop={4} onPress={() => onDir('')}>
           <Text style={[st.crumbItem, !dirPath && st.crumbCur]}>根目录</Text>
         </TouchableOpacity>
@@ -410,6 +469,7 @@ function FolderPane({ libId, dirPath, onDir, onPlay, currentHash, selMode, sel, 
           key={t.id}
           song={{ name: t.name, singer: t.singer || UNKNOWN_ARTIST, source: 'device', songmid: t.uri || t.id, albumId: '', interval: t.durationSec ? `${Math.floor(t.durationSec / 60)}:${Math.round(t.durationSec % 60) < 10 ? '0' : ''}${Math.round(t.durationSec % 60)}` : '', albumName: t.album || undefined }}
           playing={currentHash === t.id}
+          isNew={isNewLocal(t)}
           onPress={() => (selMode ? onToggle(t.id) : onPlay(allSongs, i))}
           onLongPress={selMode ? undefined : () => onMenu(t, allSongs, i)}
           onMore={selMode ? undefined : () => onMenu(t, allSongs, i)}
@@ -426,58 +486,62 @@ function FolderPane({ libId, dirPath, onDir, onPlay, currentHash, selMode, sel, 
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
-  missing: { color: C.text2, fontSize: 12, textAlign: 'center', paddingVertical: 40 },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 10, gap: 8 },
-  title: { color: C.text, fontSize: 20, fontWeight: '700' },
-  subTitle: { color: C.text3, fontSize: 11, marginTop: 1 },
-  playAllBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.brand, borderRadius: 16, paddingHorizontal: 13, paddingVertical: 8 },
-  playAllText: { color: C.onBrand, fontSize: 12, fontWeight: '600' },
+  // ⑤/⑦ 首页化骨架容器
+  homeWrap: { marginHorizontal: 16, gap: SP.xl, marginTop: 2 },
+  homeWrapHD: { marginHorizontal: GUTTER },
+  homeSections: { marginBottom: 2 },
+  missing: { color: C.text2, fontSize: FS.body, textAlign: 'center', paddingVertical: 40 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 10, gap: SP.md },
+  title: { color: C.text, fontSize: FS.h1, fontWeight: FW.bold },
+  subTitle: { color: C.text3, fontSize: FS.sm, marginTop: 1 },
+  playAllBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, backgroundColor: C.brand, borderRadius: 16, paddingHorizontal: 13, paddingVertical: 8 },
+  playAllText: { color: C.onBrand, fontSize: FS.body, fontWeight: FW.semibold },
   // 胶囊 tab
-  tabs: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8 },
+  tabs: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, paddingHorizontal: 16, paddingVertical: 8 },
   tab: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999, backgroundColor: C.surface2 },
   tabOn: { backgroundColor: C.brand },
-  tabText: { color: C.text2, fontSize: 12, fontWeight: '600' },
+  tabText: { color: C.text2, fontSize: FS.body, fontWeight: FW.semibold },
   tabTextOn: { color: C.onBrand },
-  statsText: { flex: 1, color: C.text3, fontSize: 11, textAlign: 'right' },
+  statsText: { flex: 1, color: C.text3, fontSize: FS.sm, textAlign: 'right' },
   // 重扫条
-  rescanBar: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 6, backgroundColor: C.surface2, marginHorizontal: 16, borderRadius: 10 },
-  rescanText: { flex: 1, color: C.text2, fontSize: 11.5 },
-  cancelText: { color: C.brandText, fontSize: 12, fontWeight: '600' },
+  rescanBar: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingHorizontal: 16, paddingVertical: 6, backgroundColor: C.surface2, marginHorizontal: 16, borderRadius: 10 },
+  rescanText: { flex: 1, color: C.text2, fontSize: FS.body },
+  cancelText: { color: C.brandText, fontSize: FS.body, fontWeight: FW.semibold },
   // 墙
-  wall: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  wallRound: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  wall: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl },
+  wallRound: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl },
   // 空态/失效
-  emptyWrap: { alignItems: 'center', gap: 10, paddingVertical: 64, paddingHorizontal: 32 },
-  emptyT1: { color: C.text, fontSize: 16, fontWeight: '700' },
-  emptyT2: { color: C.text2, fontSize: 12, lineHeight: 17, textAlign: 'center' },
+  emptyWrap: { alignItems: 'center', gap: SP.lg, paddingVertical: 64, paddingHorizontal: 32 },
+  emptyT1: { color: C.text, fontSize: FS.title, fontWeight: FW.bold },
+  emptyT2: { color: C.text2, fontSize: FS.body, lineHeight: 17, textAlign: 'center' },
   retryBtn: { backgroundColor: C.brand, borderRadius: 18, paddingHorizontal: 20, paddingVertical: 10, marginTop: 8 },
-  retryText: { color: C.onBrand, fontSize: 13, fontWeight: '600' },
-  emptyInline: { color: C.text2, fontSize: 12, textAlign: 'center', paddingVertical: 40 },
+  retryText: { color: C.onBrand, fontSize: FS.md, fontWeight: FW.semibold },
+  emptyInline: { color: C.text2, fontSize: FS.body, textAlign: 'center', paddingVertical: 40 },
   // 文件夹视角
   crumbWrap: { flexGrow: 0, marginBottom: 10 },
-  crumbItem: { color: C.text2, fontSize: 12, paddingVertical: 2 },
-  crumbCur: { color: C.text, fontWeight: '700' },
+  crumbItem: { color: C.text2, fontSize: FS.body, paddingVertical: 2 },
+  crumbCur: { color: C.text, fontWeight: FW.bold },
   uncWrap: { backgroundColor: C.surface2, borderRadius: 12, padding: 12, marginBottom: 10 },
-  uncHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  uncTitle: { color: C.text, fontSize: 13.5, fontWeight: '600' },
-  uncSub: { color: C.text3, fontSize: 10.5, lineHeight: 14, marginTop: 1 },
-  dirRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 9, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint },
+  uncHead: { flexDirection: 'row', alignItems: 'center', gap: SP.lg },
+  uncTitle: { color: C.text, fontSize: FS.md, fontWeight: FW.semibold },
+  uncSub: { color: C.text3, fontSize: FS.sm, lineHeight: 14, marginTop: 1 },
+  dirRow: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, paddingVertical: 9, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.strokeFaint },
   dirIcon: { width: 30, height: 30, borderRadius: 9, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  dirName: { flex: 1, color: C.text, fontSize: 13.5, fontWeight: '500', minWidth: 0 },
-  dirCount: { color: C.text3, fontSize: 11 },
-  fnTag: { color: C.text3, fontSize: 11, backgroundColor: C.surface2, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2, overflow: 'hidden' },
+  dirName: { flex: 1, color: C.text, fontSize: FS.md, fontWeight: FW.medium, minWidth: 0 },
+  dirCount: { color: C.text3, fontSize: FS.sm },
+  fnTag: { color: C.text3, fontSize: FS.sm, backgroundColor: C.surface2, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2, overflow: 'hidden' },
   // 多选动作条(⑥6.2)
-  selBar: { backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.strokeFaint, paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
-  selRow1: { flexDirection: 'row', alignItems: 'center', gap: 18 },
-  selCount: { color: C.text2, fontSize: 12, fontWeight: '600', marginRight: 'auto' },
-  selBtnT: { color: C.brandText, fontSize: 12, fontWeight: '600' },
-  selRow2: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  selBar: { backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.strokeFaint, paddingHorizontal: 16, paddingVertical: 10, gap: SP.md },
+  selRow1: { flexDirection: 'row', alignItems: 'center', gap: SP.section },
+  selCount: { color: C.text2, fontSize: FS.body, fontWeight: FW.semibold, marginRight: 'auto' },
+  selBtnT: { color: C.brandText, fontSize: FS.body, fontWeight: FW.semibold },
+  selRow2: { flexDirection: 'row', alignItems: 'center', gap: SP.md },
   selGhost: { borderWidth: 1, borderColor: C.stroke, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
-  selGhostT: { color: C.text2, fontSize: 12, fontWeight: '600' },
+  selGhostT: { color: C.text2, fontSize: FS.body, fontWeight: FW.semibold },
   selPri: { flex: 1, backgroundColor: C.brand, borderRadius: 999, paddingVertical: 9, alignItems: 'center', justifyContent: 'center' },
   selPriOff: { opacity: 0.45 },
-  selPriT: { color: C.onBrand, fontSize: 12.5, fontWeight: '800' },
-  selSub: { color: C.text3, fontSize: 10.5 },
+  selPriT: { color: C.onBrand, fontSize: FS.md, fontWeight: FW.heavy },
+  selSub: { color: C.text3, fontSize: FS.sm },
   chk: { width: 20, height: 20, borderRadius: 999, borderWidth: 1.5, borderColor: C.strokeStrong, alignItems: 'center', justifyContent: 'center' },
   chkOn: { backgroundColor: C.brand, borderColor: C.brand },
 });

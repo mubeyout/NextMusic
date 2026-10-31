@@ -11,6 +11,7 @@ export interface LibSong {
   id: string; songmid: string; name: string; singer: string; album: string;
   interval: string; quality: string; filename: string; subPath: string;
   ext: string; hasCover: boolean; hasLyric: boolean; mtime: number; size: number;
+  coverHttp?: string; // [识别补全 1010] 在线识别封面直链(服务端 songOut 投影透传;SongRow 优先于嵌入图)
 }
 export interface LibStats { songs: number; artists: number; albums: number; totalBytes: number }
 
@@ -22,12 +23,15 @@ export function toSongItem(l: LibSong, lib?: string): SongItem {
     name: l.name || l.filename.split('/').pop() || '未知曲目',
     singer: l.singer || '未知歌手',
     source: 'custom',
-    songmid: l.songmid || l.id,
+    songmid: String(l.songmid ?? l.id ?? ''),
     albumId: '',
     interval: l.interval || '',
     hash: l.filename,
     albumName: l.album || undefined,
   } as SongItem;
+  // [识别补全 1010] 在线识别封面直链→img(播放条/黑胶盘心/详情页封面全链受益)
+  const coverHttp = (l as LibSong & { coverHttp?: string }).coverHttp;
+  if (coverHttp) s.img = coverHttp;
   if (lib) (s as SongItem & { _lib?: string })._lib = lib; // ④公共曲库:lib 随歌携带(队列/详情跨页播放不丢域)
   return s;
 }
@@ -51,8 +55,9 @@ export function streamUrl(filename: string, lib?: string): string {
   return `${b}/api/music/custom/file` + Q(filename, lib);
 }
 
-/** 封面地址(嵌入图代打;web 同源走相对,原生需 base+token) */
+/** 封面地址(嵌入图代打;web 同源走相对,原生需 base+token)——http(s) 直链直通(在线识别补全的封面不经本地端点) */
 export function coverUrl(filename: string, lib?: string): string {
+  if (/^https?:\/\//.test(String(filename || ''))) return filename; // [识别补全 1010] 在线元数据封面直通
   const b = B();
   if (!b) return IS_WEB_PLAT && store.token ? '/api/music/custom/cover' + Q(filename, lib) : '';
   return store.token ? `${b}/api/music/custom/cover` + Q(filename, lib) : '';
