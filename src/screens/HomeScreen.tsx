@@ -133,7 +133,7 @@ function PlCard({ pl }: { pl: SongListMeta }) {
 
 function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
   // [carlink v2] 快捷卡宽随窗宽(横屏/投屏/折叠不再写死竖屏列宽)
-  const cardW = (useWindowDimensions().width - 40 - 12) / 2;
+  const cardW = (useWindowDimensions().width - 40 - 24) / 3; // 1104 老板令(卡片太大):两列大卡→三列自适应
   const nav = useNavigation() as { navigate: (s: string, p?: object) => void };
   const { connected, token } = useApp();
   const { playSong } = usePlayer();
@@ -373,7 +373,7 @@ function HomePodcast() {
 /* ---------- 音乐 tab：与「全部」同样设计，音乐向真实数据 ---------- */
 
 function HomeMusic() {
-  const cardW = (useWindowDimensions().width - 40 - 12) / 2; // [carlink v2] 横屏/投屏自适应
+  const cardW = (useWindowDimensions().width - 40 - 24) / 3; // 1104 老板令(卡片太大):两列大卡→三列自适应 // [carlink v2] 横屏/投屏自适应
   const { } = useApp();
   const { playSong } = usePlayer();
   const nav = useNavigation() as { navigate: (s: string, p?: object) => void };
@@ -461,11 +461,11 @@ const st = StyleSheet.create({
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   quickDis: { opacity: 0.5 }, // #012②:disabled 态视觉反馈
   quickCard: {
-    height: 128, borderRadius: 14, // [老板 1010] 88→128 与库页英雄卡同高（统合令）
+    height: 96, borderRadius: 14, // 1104 老板令(太大):128→96,三列小卡(1010 统合令按新口径调)
     backgroundColor: C.elev, flexDirection: 'row', alignItems: 'center', gap: 12, overflow: 'hidden',
     paddingHorizontal: 12,
   },
-  quickArt: { width: 80, height: 80, borderRadius: 14 },
+  quickArt: { width: 64, height: 64, borderRadius: 12 }, // 1104 同批:80→64 配三列小卡
   quickLabel: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '600', flex: 1, paddingRight: 4 },
   sectionRow: { height: 26, flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
   sectionTitle: { flex: 1, color: C.text, fontSize: 17, lineHeight: 25, fontWeight: '700' },
