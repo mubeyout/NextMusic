@@ -181,6 +181,10 @@ function load(): AppSettings {
     const merged = { ...DEFAULTS, ...JSON.parse(kv.getString('settings') || '{}') } as AppSettings;
     if (merged.downloadDir !== 'custom') merged.downloadDir = 'public'; // vc84：默认公共;历史 private 归一
     if (kv.getString('lx45m') !== '1') { merged.restorePlayback = true; kv.set('lx45m', '1'); } // lx45：历史用户从未动过此开关也视默认开（老安装存量 false 覆盖新默认）
+    // 1104 LEO 定位(实车元素小主因):车机旧存储 uiScale '100%' 压过新默认 150%(任何 settings.set 都固化全字段)——车机一次性迁移(用户后续主动改不受影响,迁移标记后不再触发)
+    if ((NativeModules.AppVersionInfo as { uiMode?: string } | undefined)?.uiMode === 'car' && merged.uiScale === '100%' && kv.getString('car150m') !== '1') {
+      merged.uiScale = '150%'; kv.set('car150m', '1'); kv.set('settings', JSON.stringify(merged));
+    }
     return merged;
   } catch { return { ...DEFAULTS }; }
 }
