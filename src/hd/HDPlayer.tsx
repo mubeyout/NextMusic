@@ -369,7 +369,7 @@ export function HDPlayer() {
               <Icon name="previous" size={26} color={ICM} />
             </HDTouch>
             <HDTouch style={[st.cMain, IS_WEB && st.cMainWeb]} onPress={toggle} focusStyle={st.cMainFocus} hasTVPreferredFocus>
-              <Icon name={playing ? 'pause' : 'play'} size={32} color={C.onBrand} />
+              <Icon name={playing ? 'pause' : 'play'} size={IS_CAR_DEVICE ? 44 : 32} color={C.onBrand} />
             </HDTouch>
             <HDTouch style={st.cMode} onPress={skipNext}>
               <Icon name="next" size={26} color={ICM} />

@@ -461,7 +461,7 @@ export function HDMain() {
         </NavigationContainer>
 
         {innerRoute !== 'Player' ? (
-        <View style={{ position: 'absolute', left: 0, right: 0, bottom: botLift, zIndex: 30 }} collapsable={false}>
+        <View style={{ position: 'absolute', left: 0, right: 0, bottom: IS_CAR_DEVICE ? botLift : 0, zIndex: 30 }} collapsable={false}> // 1104:非车机恒贴底(insets 误抬修复)
           <HDPlayBar onCollect={setPbCollect} />
         </View>
         ) : null}
@@ -640,7 +640,7 @@ const st = StyleSheet.create({
   brandNameWeb: { color: C.text, fontSize: 13.5, fontWeight: '800', letterSpacing: 0.2 },
   settingsDock: { paddingHorizontal: 0, paddingVertical: 6 },
   group: { fontSize: 9, color: C.text2, paddingHorizontal: 12, paddingTop: 5, paddingBottom: 3, letterSpacing: 1, fontWeight: '600' }, // [老板 1011 15:35 浅色] text3→text2:浅色下分组小标太浅
-  navItem: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 8, paddingHorizontal: 10, height: 35, borderRadius: 9 },
+  navItem: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 8, paddingHorizontal: 10, height: IS_CAR_DEVICE ? 48 : 35, borderRadius: 9 }, // 1104 E.2:车机触控行 48
   navItemOn: { backgroundColor: C.brandDim },
   navFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 9 },
   navLabel: { color: C.text, fontSize: H.font.md, fontWeight: '500', flex: 1 }, // [老板 1011 15:35 浅色] text2→text:浅色下侧栏标签太浅;层级靠字重500/700+brandDim底

@@ -198,7 +198,7 @@ export const shadowOfSm = (seed: string) => {
 
 // v1.2.5 桌面:web 卡片彩色弥散投影——shadowStyleOf(elevation+shadowColor)在 RNW 不渲染(桌面卡片变灰块的真因);
 // RNW 会把 iOS 系 shadow* 四件套转成 CSS box-shadow,与 shadowOf 同色公式
-import { Platform } from 'react-native';
+import { Platform, NativeModules } from 'react-native';
 export function webCardShadow(seed: string, lift = false): Record<string, string | number | { width: number; height: number }> | null {
   // 1028 老板令:web 卡片彩色弥散投影移除(hover 上浮由 useHoverCard 的 transform 承担)
   return null;
@@ -221,4 +221,13 @@ export function webCardShadow(seed: string, lift = false): Record<string, string
 export const GLASS_REF = { get face() { return C.glass; }, get strong() { return C.glassStrong; } };
 
 applyHdScale(settings.get().uiScale);
+// 1104 老板令(车机布局债·LEO E.1): applyCarProfile 车机终值覆写——uiScale 缩放之上按车机实测定值(150% 后固定尺寸崩的根治)
+export function applyCarProfile() {
+  if (!IS_CAR) return;
+  const f = { xs: 12, sm: 14, md: 16, lg: 18, xl: 22, hero: 28 };
+  (Object.keys(f) as (keyof typeof f)[]).forEach(k => { H.font[k] = f[k]; });
+  H.touch = 56; H.row = 64; H.playbar = 84; H.sidebar = 232;
+}
+export const IS_CAR = ((NativeModules.AppVersionInfo as { uiMode?: string } | undefined)?.uiMode === 'car');
+applyCarProfile();
 applyHdTheme();
