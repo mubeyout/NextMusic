@@ -655,16 +655,25 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     } catch { /* ignore */ }
   };
 
-  const goTo = useCallback((i: number, autoplay = true) => {
+  const goToRef = useRef<(i: number, autoplay?: boolean, hops?: number) => void>(() => {});
+  const goTo = useCallback((i: number, autoplay = true, hops = 0) => {
     const q = queueRef.current;
     if (!q.length) return;
     const idx = ((i % q.length) + q.length) % q.length;
     idxRef.current = idx;
     if (autoplay) {
-      resolveAndPlay(q[idx]).catch(() => setPlaying(false));
+      resolveAndPlay(q[idx]).catch(() => {
+        setPlaying(false);
+        // 1104 老板实测(移动端无法自动下一曲):取链失败静默死=感知「不切歌」——toast+自动跳下一首(连跳≤3 防死循环/短队列防抖)
+        if (hops < 3 && q.length > 1) {
+          toast(`「${(q[idx] as { title?: string }).title || '歌曲'}」取链失败，自动跳下一首`);
+          setTimeout(() => goToRef.current(idx + 1, true, hops + 1), 800);
+        }
+      });
     } else {
       setCurrent(q[idx]);
     }
+    goToRef.current = goTo;
   }, [resolveAndPlay]);
 
   const playSong = useCallback(async (song: SongItem, list?: SongItem[]) => {
