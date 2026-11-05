@@ -9,6 +9,7 @@ import { CarPlayerBar } from './CarPlayerBar';
 import { CarPlayer } from './CarPlayer';
 import { CarPlaylist } from './CarPlaylist';
 import { CarExplore, CarBoards, CarPodcast } from './CarPages';
+import { CarDrawer } from './CarDrawer';
 import type { SongItem } from '../services/server';
 import { C } from '../theme/tokens';
 import { Icon } from '../theme/Icon';
@@ -48,6 +49,7 @@ export function CarShell() {
   const insets = useSafeAreaInsets();
   const [page, setPage] = useState<PageKey>('home');
   const [playerOpen, setPlayerOpen] = useState(false);
+  const [drawer, setDrawer] = useState<'search' | 'queue' | null>(null);
   const [playlist, setPlaylist] = useState<import('./CarPlaylist').CarPlRef | null>(null);
   return (
     <View style={{ flex: 1, flexDirection: 'row', backgroundColor: C.bg, paddingTop: Math.max(insets.top, IS_CAR_TOP) }}>
@@ -66,7 +68,7 @@ export function CarShell() {
         <View style={{ flex: 1 }} />
         {/* Dock: 搜索 + 设置 */}
         <View style={{ flexDirection: 'row', gap: 12, paddingHorizontal: 24 }}>
-          <TouchableOpacity style={st.dockBtn} onPress={() => { /* 搜索抽屉 420 下批 */ }}>
+          <TouchableOpacity style={st.dockBtn} onPress={() => setDrawer('search')}>
             <Icon name="search" size={20} color={C.text2} />
           </TouchableOpacity>
           <TouchableOpacity style={st.dockBtn} onPress={() => settings.set('carModeUi', false)}>
@@ -96,6 +98,13 @@ export function CarShell() {
         </TouchableOpacity>
       </View>
       <CarPlayer visible={playerOpen} onClose={() => setPlayerOpen(false)} />
+      <CarDrawer mode={drawer} onClose={() => setDrawer(null)} />
+      {drawer === null && !playerOpen && (
+        <TouchableOpacity style={{ position: 'absolute', right: CAR.gutter, bottom: CAR.playbar.h + 16, width: 52, height: 52, borderRadius: 26, backgroundColor: '#FFFFFF12', alignItems: 'center', justifyContent: 'center' }}
+          onPress={() => setDrawer('queue')}>
+          <Icon name="queue" size={22} color={C.text2} />
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
