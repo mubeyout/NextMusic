@@ -13,6 +13,7 @@ import { initFx } from './src/services/soundfx';
 import { RootNavigator } from './src/navigation';
 import { DialogHost } from './src/components/Dialog';
 import { DropdownHost } from './src/components/DropdownMenu';
+import { MediaTreeBridge } from './src/components/MediaTreeBridge'; // [NM 内容树 1105]媒体中心浏览/点播桥
 import { IS_HD, isCarUi } from './src/services/appversion';
 import { useSettings, settings } from './src/services/settings';
 import { HDActionHost } from './src/hd/HDActions';
@@ -61,6 +62,7 @@ function App() {
         <StatusBar barStyle={T.light ? 'dark-content' : 'light-content'} />
         <AppStateProvider>
           <PlayerProvider>
+            <MediaTreeBridge /> {/* [NM 内容树 1105]null 渲染桥:推树+点播接管 */}
             <LxEngineHost />
             <RootNavigator />
             {isCarUi() ? <HDActionHost /> : null} {/* carlink:车机模式共享 HDActionHost */}

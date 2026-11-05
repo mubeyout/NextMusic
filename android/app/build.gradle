@@ -91,8 +91,8 @@ android {
             applicationIdSuffix ".hd"
             versionNameSuffix "-hd"
             // HD 独立版本线:与 phone 共享 default,但可单独越号更新(当前 hd v2)
-            versionCode 181
-            versionName "1.4.1" // v1.4.1(0924 夜:三层库 UI 落地+质感批次一+home 端点+seek 统一 hook)
+            versionCode 182
+            versionName "1.4.1" // v1.4.1-vc182(1105:媒体内容树——车机媒体中心浏览 NM 曲库四分类+点播,queue 上下文)
         }
     }
 
@@ -100,8 +100,8 @@ android {
         applicationId "com.mubeyworks.nextmusic"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 160
-        versionName "1.4.1" // v1.4.1(0924 夜:三层库+质感)
+        versionCode 161
+        versionName "1.4.1" // v1.4.1-vc161(1105:媒体内容树——车机媒体中心浏览 NM 曲库四分类+点播,queue 上下文)
     }
     // 多架构分发：GitHub Release 只放编译产物（armeabi-v7a/arm64-v8a/x86/x86_64 + universal 兑底）
     splits {
@@ -150,4 +150,5 @@ dependencies {
     // 均衡器与音效 DSP：BaseAudioProcessor 需 media3-common（与 react-native-audio-pro 同版本）
     implementation("androidx.media3:media3-common:1.6.0")
     implementation("androidx.media3:media3-exoplayer:1.6.0") // lx31: AudioRouteEngine 直接持有 DefaultAudioSink（setPreferredDevice）
+    implementation("androidx.media3:media3-session:1.6.0") // [NM 内容树 1105] NMMediaLibraryCallback 直接实现 MediaLibrarySession.Callback(audio-pro 用 implementation 藏了传递依赖)
 }

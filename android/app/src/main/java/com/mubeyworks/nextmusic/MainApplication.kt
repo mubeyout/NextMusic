@@ -17,6 +17,7 @@ class MainApplication : Application(), ReactApplication {
           // Packages that cannot be autolinked yet can be added manually here, for example:
           // add(MyReactNativePackage())
           add(MusicScannerPackage())
+          add(NMMediaTreePackage()) // [NM 内容树 1105] JS↔原生 树推送/点播桥
         },
     )
   }
