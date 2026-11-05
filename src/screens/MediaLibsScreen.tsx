@@ -7,6 +7,8 @@ import { View, Text, StyleSheet, type ViewStyle, ScrollView, TouchableOpacity, I
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Icon, BrandIcon } from '../theme/Icon';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
+import { SPACE } from '../theme/design-system';
 import { C, CARD, FS, FW, SP } from '../theme/tokens';
 import { Platform } from 'react-native';
 import { IS_HD } from '../services/appversion';
@@ -66,6 +68,7 @@ function T(props: { style?: unknown; onPress?: (e?: unknown) => void; onLongPres
 const IS_WEB = Platform.OS === 'web';
 
 export function MediaLibsScreen() {
+  const layout = useResponsiveLayout();
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void; navigate: (s: string, p?: object) => void };
   const { token } = useApp(); // spec③:云曲库入口登录后才渲染(connected+token 同 SourcesAccountScreens 登录态口径)
@@ -127,23 +130,26 @@ export function MediaLibsScreen() {
             <Icon name="back" size={17} color={C.text2} />
           </HDTouch>
           <Text style={hd.title}>媒体库</Text>
-          <HDTouch style={hd.addBtn} onPress={addMenu} focusStyle={focus(10)}>
-            <Icon name="add" size={20} color={C.brand} />
+          <HDTouch accessibilityLabel="添加媒体库" style={[hd.addBtn, { width: 144, minHeight: 44, flexShrink: 0, paddingHorizontal: SPACE.md, flexDirection: 'row', gap: SPACE.sm }]} onPress={addMenu} focusStyle={focus(10)}>
+            <Icon name="add" size={20} color={C.brand} /><Text style={{ color: C.brandText, fontSize: FS.body }} numberOfLines={1}>添加媒体库</Text>
           </HDTouch>
         </View>
       ) : (
         <PageHeader
           title="媒体库"
           right={(
-            <TouchableOpacity onPress={addMenu} hitSlop={6}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="添加媒体库" onPress={addMenu} style={{ minHeight: 44, paddingHorizontal: SPACE.md, flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}>
               <Icon name="add" size={22} />
             </TouchableOpacity>
           )}
         />
       )}
       <ScrollView
-        contentContainerStyle={[{ paddingHorizontal: IS_HD ? GUTTER : 20, paddingBottom: insets.bottom + 24 }, IS_HD && { paddingTop: 8 }]}
+        contentContainerStyle={[{ paddingHorizontal: layout.pagePadding, paddingBottom: insets.bottom + SPACE.xl, width: '100%', maxWidth: 1200, alignSelf: 'center' }, IS_HD && { paddingTop: 8 }]}
       >
+        <View style={{ paddingVertical: SPACE.lg, gap: SPACE.sm }}><Text style={{ color: C.text, fontSize: FS.h1, fontWeight: FW.bold }}>所有音乐来源，集中管理</Text><Text style={{ color: C.text2, fontSize: FS.body, lineHeight: 22 }}>个人曲库与外部媒体分区展示。选择来源进入浏览，更多操作在每张卡片的菜单中。</Text></View>
+        <View style={{ flexDirection: layout.width >= 1100 ? 'row' : 'column', gap: SPACE.xl, alignItems: 'stretch' }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
         {/* v3.2(老板 0927):三段式分组重设计——我的曲库(本机+云)/公共曲库/第三方媒体库;原「我的曲库」入口卡与云曲库指向同一服务器空间,撤并 */}
         <Text style={[ml.sectionHead, IS_HD && ml.sectionHeadHD, { marginTop: 4 }]}>我的曲库</Text>
         <View style={[ml.group, IS_WEB && ml.groupWeb]}>
@@ -260,10 +266,11 @@ export function MediaLibsScreen() {
           </View>
           </>
         ) : null}
+        </View><View style={{ flex: 1, minWidth: 0 }}>
         {/* 第三方媒体库组 */}
-        <Text style={[ml.sectionHead, IS_HD && ml.sectionHeadHD]}>第三方媒体库</Text>
+        <Text style={[ml.sectionHead, IS_HD && ml.sectionHeadHD, { marginTop: 4 }]}>第三方媒体库</Text>
         {accts.length === 0 ? (
-          <EmptyState icon="server" title="还没有第三方媒体库" sub="点右上角 ＋ 接入 Plex / 飞牛 / 群晖 / Emby / Navidrome / WebDAV / 听风 等 11 种平台" />
+          <EmptyState icon="server" title="还没有第三方媒体库" sub="接入你的媒体服务器或 WebDAV，在这里统一浏览音乐" />
         ) : (
           /* v3.31 重设计：克制卡片——深色底+细描边+微投影，品牌 icon 左置，类型徽标+名称+地址三级；web hover 浮出 ⋯（原生常驻） */
           <View style={[ml.group, IS_WEB && ml.groupWeb]}>
@@ -286,7 +293,7 @@ export function MediaLibsScreen() {
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm }}>
                       <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.brand }} />
-                      <Text style={[ml.sub, IS_HD && ml.subHD]} numberOfLines={1}>已连接 · {a.base}</Text>
+                      <Text style={[ml.sub, IS_HD && ml.subHD]} numberOfLines={1}>{testId === a.id ? '正在检测连接' : '媒体库地址'} · {a.base}</Text>
                     </View>
                   </View>
                   {testId === a.id ? <ActivityIndicator size="small" color={C.brand} style={ml.spin} /> : null}
@@ -309,6 +316,8 @@ export function MediaLibsScreen() {
           </View>
         )}
         <Text style={st.tip}>点击卡片浏览曲库 · ⋯ 可测试连接 / 编辑 / 删除</Text>
+        <T accessibilityLabel="添加媒体库" onPress={addMenu} style={{ minHeight: 48, padding: SPACE.md, borderRadius: 12, backgroundColor: C.surface, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACE.sm }}><Icon name="add" size={20} color={C.brandText} /><Text style={{ color: C.text, fontSize: FS.body }}>添加媒体库</Text></T>
+        </View></View>
       </ScrollView>
     </View>
   );
@@ -1372,7 +1381,7 @@ const st = StyleSheet.create({
 // v3.31 列表页重设计样式（老板 0921：克制卡——深色底/细描边/微投影/品牌 icon 左置/类型徽标）
 const ml = StyleSheet.create({
   group: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.lg }, // [老板拍板 10-09] hub 网格卡片风:flexWrap 换行,卡宽 flexBasis 48%=两列(1028 space-between 试验致排版混乱已回滚,老板原版为准)
-  sectionHead: { color: C.text3, fontSize: FS.body, fontWeight: FW.bold, letterSpacing: 1.2, marginTop: 26, marginBottom: 10 },
+  sectionHead: { color: C.text, fontSize: FS.h2, fontWeight: FW.bold, letterSpacing: 1.2, marginTop: 26, marginBottom: 10 },
   sectionHeadHD: { fontSize: FS.lg, letterSpacing: 1.6, marginTop: 30 },
   groupWeb: { width: '100%' }, // [老板 1010] 占满整屏(去 maxWidth 860/1160)——定宽卡 375px 自然铺排;列表区 dv.listWrapWeb 维持 860 可读性不动
   card: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: SP.xl, paddingVertical: 14, paddingHorizontal: 14, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke, elevation: 1, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, flexBasis: '40%', flexGrow: 1 }, // 1028 老板令(排满优先):48%+gap 溢出=一行一卡右侧 52% 空(实证)——grow 拉伸行行铺满

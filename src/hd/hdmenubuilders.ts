@@ -18,7 +18,8 @@ const nmIsMac = !IS_WEB_L || String((globalThis as unknown as { nmDesktop?: { pl
 export function webDownloadActionItems(songs: SongItem[], dirHint = '后台·设置·存储备份可查'): { label: string; icon: string; onPress: () => void }[] {
   const n = songs.length;
   return [
-    { label: n > 1 ? `缓存 ${n} 首到服务器` : '缓存到服务器', icon: 'cloud', onPress: async () => {
+    // lx186(老板 0924 06:31 方案1):手动入口不受「缓存歌曲到服务器」开关管(用户意图优先),文案明示去向
+    { label: n > 1 ? `缓存 ${n} 首到服务器(存服务器)` : '缓存到服务器(存服务器)', icon: 'cloud', onPress: async () => {
         try {
           if (n > 1) toast('正在缓存到服务器…');
           const r = await webDownloadToServer(songs);

@@ -106,7 +106,7 @@ export const DEFAULTS: AppSettings = {
   pureBlack: false,
   accent: '#1ED760',
   light: false,
-  uiScale: Platform.OS === 'web' ? '125%' : ((NativeModules.AppVersionInfo as { uiMode?: string } | undefined)?.uiMode === 'car' ? '150%' : '100%'), // 桌面 125%(老板定)/车机 150%(1028 老板令,LEO D 节同批)/其他 100%;直读 NativeModules 避循环依赖
+  uiScale: Platform.OS === 'web' ? '100%' : ((NativeModules.AppVersionInfo as { uiMode?: string } | undefined)?.uiMode === 'car' ? '150%' : '100%'), // 桌面 125%(老板定)/车机 150%(1028 老板令,LEO D 节同批)/其他 100%;直读 NativeModules 避循环依赖
   showTabLabels: true,
   startupPage: 'home',
   restorePlayback: true, // 全端默认开：冷启动恢复队列+当前曲（暂停态），点播放才取链续播——不卡启动、不丢上下文（lx45）

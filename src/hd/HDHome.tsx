@@ -23,11 +23,16 @@ import { hdNav } from './hdnav';
 import { cacheStale, cacheSet } from './hdcache';
 import type { SongItem } from '../services/server';
 import { FS, FW, SP } from '../theme/tokens';
+import { ListeningHero } from '../components/ListeningHero';
+import { SPACE } from '../theme/design-system';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
   const insets = useSafeAreaInsets();
+  const layout = useResponsiveLayout();
+  const [contentWidth, setContentWidth] = useState(0);
   const { playSong } = usePlayer();
-  const { connected, token } = useApp();
+  const { connected, token, username } = useApp();
   const [localPls, setLocalPls] = useState<LocalPlaylist[]>([]);
   const [snap, setSnap] = useState<UserListsSnapshot | null>(null);
   const [recents, setRecents] = useState<SongItem[]>([]);
@@ -85,7 +90,9 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
   // 私人雷达 = 最近播放随机 30 首
   const playRadar = () => {
     if (!recents.length) { toast('还没有播放记录,先去探索几首吧'); onGotoSearch?.(); return; }
-    const shuffled = [...recents].sort(() => Math.random() - 0.5).slice(0, 30);
+    const shuffled = [...recents];
+    for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; }
+    shuffled.splice(30);
     playSong(shuffled[0], shuffled);
     toast(`私人雷达 · ${shuffled.length} 首`);
   };
@@ -105,23 +112,36 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
   return (
     <ScrollView
       style={st.screen}
-      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 26, paddingBottom: 28, gap: SP.section }}
+      onLayout={e => setContentWidth(e.nativeEvent.layout.width)}
+      contentContainerStyle={{ paddingTop: SPACE.xl, paddingHorizontal: layout.pagePadding, paddingBottom: SPACE.xl, gap: layout.sectionGap }}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={st.greet}>Hi,{greet}{connected && snap ? ',Mubey' : ''}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md }}><Text style={[st.greet, { flex: 1 }]}>{greet}{username ? `，${username}` : ''}</Text>{!(IS_WEB && layout.compact) ? <HDTouch accessibilityLabel="搜索音乐" style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' }} onPress={() => hdNav()?.navigate('Search')}><Icon name="search" size={22} color={C.text} /></HDTouch> : null}</View>
 
-      {/* 双大卡 */}
-      {/* v3.30(LEO P1):双大卡间距 12→22(GUTTER) */}
-      {/* v3.32(老板 P1 修复):裸注释曾被渲染为匿名 flex 文本节点占 371px 致双大卡不占满行——JSX 子位置注释必须用花括号包裹形式 */}
-      <View style={{ flexDirection: 'row', gap: SP.big }}>
-        <BigCard colors={['#7C4DFF', '#3F8CFF']} badge="30" title="每日精选" sub="30 首热歌 · 每天更新" busy={dailyBusy} onPress={playDaily} />
-        <BigCard colors={['#0FA3A3', '#1ED760']} badge="雷达" title="私人雷达" sub="你最近循环的歌" onPress={playRadar} />
-      </View>
-
+      <ListeningHero song={recents[0]} onContinue={() => { if (recents[0]) playSong(recents[0], recents); }} onBrowse={() => hdNav()?.navigate('MediaLibs')} />
+      {/* 我的歌单 */}
+      <Section title="我的歌单" hint={`${playlists.length} 个`} more="导入歌单" onMore={() => hdNav()?.navigate('ImportPlaylist')}>
+        {playlists.length ? (
+          <HDGrid min={280} gap={SPACE.lg} maxCols={Math.min(3, playlists.length)}>
+            {playlists.slice(0, 6).map(pl => (
+              <HDTouch key={pl.key} accessibilityLabel={`打开歌单：${pl.name}`} onPress={() => openPl(pl)} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 16 }} style={{ minHeight: 96, padding: SPACE.lg, gap: SPACE.lg, flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface, borderRadius: 16 }}>
+                {pl.img ? <Image source={{ uri: pl.img }} style={{ width: 64, height: 64, borderRadius: 12 }} /> : <View style={{ width: 64, height: 64, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }}><Icon name="music" size={24} color={C.text2} /></View>}
+                <View style={{ flex: 1, minWidth: 0, gap: SPACE.sm }}><Text numberOfLines={1} style={{ color: C.text, fontSize: FS.body, fontWeight: FW.bold }}>{pl.name}</Text><Text style={{ color: C.text2, fontSize: FS.sm }}>{pl.count} 首歌曲</Text></View>
+                <Icon name="chevronright" size={20} color={C.text2} />
+              </HDTouch>
+            ))}
+          </HDGrid>
+        ) : (
+          <HDTouch style={st.empty} onPress={() => onGotoSearch?.()}>
+            <Icon name="search" size={16} color={C.text3} />
+            <Text style={st.emptyText}>还没有歌单 —— 去「探索」搜索,或连接服务器同步</Text>
+          </HDTouch>
+        )}
+      </Section>
       {recents.length ? (
         <Section title="最近播放" more="查看全部" onMore={() => hdNav()?.navigate('PlaylistDetail', { title: '最近播放', songs: recents, meta: `${recents.length} 首` })}>
           {/* 最近播放(lx88:横向 ScrollView 会裁切 zoom 溢出——小卡去 zoom 只留环;lx92:左右 padding 4 留出环的 2px 外溢,首尾卡选中不裁) */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: SP.lg, paddingLeft: 26, paddingRight: 12, paddingTop: IS_WEB ? 10 : 6, paddingBottom: IS_WEB ? 26 : 16 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -layout.pagePadding, marginRight: -layout.pagePadding }} contentContainerStyle={{ gap: SP.lg, paddingLeft: layout.pagePadding, paddingRight: layout.pagePadding, paddingTop: IS_WEB ? 10 : 6, paddingBottom: IS_WEB ? 26 : 16 }}>
             {recents.slice(0, 8).map((s, i) => (
               IS_WEB ? (
                 <PlCardWeb key={`${s.source}_${s.songmid}_${i}`} width={96} compact
@@ -143,15 +163,24 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
         </Section>
       ) : null}
 
+      <View style={{ gap: SPACE.lg }}><Text style={st.greet}>今日发现</Text>
+      {/* v3.30(LEO P1):双大卡间距 12→22(GUTTER) */}
+      {/* v3.32(老板 P1 修复):裸注释曾被渲染为匿名 flex 文本节点占 371px 致双大卡不占满行——JSX 子位置注释必须用花括号包裹形式 */}
+      <View style={{ flexDirection: contentWidth > 0 && contentWidth < 620 ? 'column' : 'row', gap: SPACE.lg }}>
+        <BigCard colors={['#7C4DFF', '#3F8CFF']} badge="30" title="每日精选" sub="30 首热歌 · 每天更新" busy={dailyBusy} onPress={playDaily} />
+        <BigCard colors={['#0FA3A3', '#1ED760']} badge="雷达" title="私人雷达" sub="你最近循环的歌" onPress={playRadar} />
+      </View>
+
+      </View>
       {/* 推荐歌单(五源聚合,单行横滑 lx131) */}
-      <Section title="推荐歌单" hint={recSource ? `五源聚合 · ${recSource}` : '五源聚合'} more="更多" onMore={() => onGotoSearch?.()}>
+      <Section title="推荐歌单" hint={recSource ? '为你发现好音乐' : undefined} more="更多" onMore={() => onGotoSearch?.()}>
         {recPls.length ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: SP.xl, paddingLeft: 26, paddingRight: 12, paddingTop: IS_WEB ? 10 : 6, paddingBottom: IS_WEB ? 26 : 16 }}>
-            {recPls.slice(0, 10).map(pl => (
+          <HDGrid min={layout.cardMin} gap={SPACE.lg} maxCols={6}>
+            {recPls.slice(0, 6).map(pl => (
               IS_WEB ? (
-                <PlCardWeb key={`${pl.source}_${pl.id}`} width={148} pl={pl} onOpen={() => openRecPl(pl)} onPlay={() => openRecPl(pl)} />
+                <PlCardWeb key={`${pl.source}_${pl.id}`} pl={pl} onOpen={() => openRecPl(pl)} onPlay={() => openRecPl(pl)} />
               ) : (
-              <HDTouch key={`${pl.source}_${pl.id}`} style={[st.plCard, { width: 148 }, shadowStyleOf(pl.name)]} zoom={1.06} onPress={() => openRecPl(pl)}>
+              <HDTouch key={`${pl.source}_${pl.id}`} style={[st.plCard, shadowStyleOf(pl.name)]} zoom={1.06} onPress={() => openRecPl(pl)}>
                 {pl.img
                   ? <Image source={{ uri: pl.img }} style={st.plArt} />
                   : <View style={[st.plArt, { backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
@@ -162,7 +191,8 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
               </HDTouch>
               )
             ))}
-          </ScrollView>
+
+          </HDGrid>
         ) : (
           <View style={st.empty}>
             <Text style={st.emptyText}>{recFail ? '推荐歌单加载失败 · 音源无响应' : '推荐歌单加载中…'}</Text>
@@ -173,35 +203,6 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
         )}
       </Section>
 
-      {/* 我的歌单 */}
-      <Section title="我的歌单" hint={`${playlists.length} 个`} more="更多" onMore={() => hdNav()?.navigate('ImportPlaylist')}>
-        {playlists.length ? (
-          <HDGrid min={126 * (H.font.sm / 10)}>
-            {playlists.slice(0, 10).map(pl => (
-              IS_WEB ? (
-                <PlCardWeb key={pl.key} pl={pl} onOpen={() => openPl(pl)} onPlay={() => { if (pl.songs?.length) playSong(pl.songs[0], pl.songs); }} />
-              ) : (
-              <HDTouch key={pl.key} style={[st.plCard, shadowStyleOf(pl.name)]} zoom={1.06} onPress={() => openPl(pl)}>
-                <View style={{ position: 'relative' }}>
-                  {pl.img
-                    ? <Image source={{ uri: pl.img }} style={st.plArt} />
-                    : <View style={[st.plArt, { backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
-                  <View style={st.plCount}><Text style={[st.plCountText, { color: '#FFFFFF' }]}>▶ {pl.count}</Text></View>
-                </View>
-                <View style={st.plTexts}>
-                  <Text style={st.plName} numberOfLines={1}>{pl.name}</Text>
-                </View>
-              </HDTouch>
-              )
-            ))}
-          </HDGrid>
-        ) : (
-          <HDTouch style={st.empty} onPress={() => onGotoSearch?.()}>
-            <Icon name="search" size={16} color={C.text3} />
-            <Text style={st.emptyText}>还没有歌单 —— 去「探索」搜索,或连接服务器同步</Text>
-          </HDTouch>
-        )}
-      </Section>
                        <FocusBridge active />
       </ScrollView>
   );

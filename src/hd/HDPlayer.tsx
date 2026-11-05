@@ -88,7 +88,13 @@ function ParticleRing({ bins, rot }: { bins: Animated.Value[]; rot: Animated.Val
 
 const IS_WEB = Platform.OS === 'web';
 
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
+import { SPACE } from '../theme/design-system';
+
 export function HDPlayer() {
+  const layout = useResponsiveLayout();
+  const narrow = IS_WEB && layout.width < 760;
+  const PlayerContainer = narrow ? ScrollView : View;
   // web: 黑胶尺寸 = min(300, 视口高 40%)(RN StyleSheet 不支持 CSS min,需运行时计算)
   const [winH, setWinH] = useState(() => (typeof window !== 'undefined' && typeof window.innerHeight === 'number' ? window.innerHeight : 800));
   // lx180:可视化开关响应式镜像——settings 变更立即驱动 effect
@@ -105,7 +111,7 @@ export function HDPlayer() {
     window.addEventListener('resize', onR);
     return () => window.removeEventListener('resize', onR);
   }, []);
-  const vinylSize = IS_WEB ? Math.min(320, Math.round(winH * 0.34)) : 228; // 设计稿:黑胶为主视觉
+  const vinylSize = IS_WEB ? Math.min(narrow ? 220 : 320, layout.width - 64, Math.round(winH * 0.34)) : 228; // 设计稿:黑胶为主视觉
   const ringSize = vinylSize + Math.round(vinylSize * 0.06); // 波浪环(黑胶 106%) // 缩小一半(老板)
 
   const insets = useSafeAreaInsets();
@@ -248,7 +254,7 @@ export function HDPlayer() {
 
   if (!current) {
     return (
-      <View style={[st.screen, { alignItems: 'center', justifyContent: 'center', backgroundColor: settings.get().light ? '#F6F7F9' : C.bg }]}>
+      <View style={[st.screen, { alignItems: 'center', justifyContent: 'center', backgroundColor: C.bg }]}>
         <Text style={{ color: C.text2, fontSize: FS.xl }}>没有正在播放的歌曲</Text>
       </View>
     );
@@ -267,7 +273,7 @@ export function HDPlayer() {
   // v3.2: web/TV/HD 统一走下方 st 版布局(web 特化分支移除——设计稿重排已在 st 版,旧 web 分支把改动全挡住了)
   // lx89:TV 播放页全屏独立屏(老板定夺)——头部返回行+左唱片活频谱+右歌词+单行控件
   return (
-    <View style={[st.screen, { backgroundColor: settings.get().light ? '#F6F7F9' : C.bg }]}>
+    <PlayerContainer {...(narrow ? { contentContainerStyle: { flexGrow: 1, paddingBottom: SPACE.lg } } : {})} style={[st.screen, { backgroundColor: C.bg }]}>
       {/* 审计#3:播放页背景三档真实生效(原恒封面虚化)——blur=封面虚化/solid=纯色/dark=深黑压暗 */}
       {current.img && settings.get().playerBackground === 'blur' ? <Image source={{ uri: fixCoverUrl(current.img) }} style={st.bgArt as ImageStyle} blurRadius={60} resizeMode="cover" /> : null}
       <View style={[st.bgVeil, settings.get().playerBackground === 'dark' && { backgroundColor: 'rgba(0,0,0,.82)' }]} />
@@ -280,9 +286,9 @@ export function HDPlayer() {
         </HDTouch>
       </View>
 
-      <View style={[st.main, IS_WEB && st.mainWeb, { paddingBottom: Math.max(insets.bottom + botInset, 16) }]}>
-        <View style={st.rowWrap}>
-        <View style={[st.artCol, IS_WEB && { width: '45%' }]}> {/* v3.19(老板:.r-1vcqxpo→45%):web 唱片列宽 344→45%,TV 保持 344 */}
+      <View style={[st.main, IS_WEB && st.mainWeb, narrow && { flex: undefined, flexGrow: 0, flexShrink: 0, flexBasis: 'auto', width: '100%', paddingHorizontal: SPACE.lg, gap: SPACE.xl, paddingTop: SPACE.lg }, { paddingBottom: Math.max(insets.bottom + botInset, 16) }]}>
+        <View style={[st.rowWrap, narrow && { flex: undefined, flexGrow: 0, flexShrink: 0, flexBasis: 'auto', width: '100%', flexDirection: 'column', gap: SPACE.lg }]}>
+        <View style={[st.artCol, IS_WEB && { width: narrow ? '100%' : '45%', ...(narrow ? { minHeight: ringSize + 48, flexShrink: 0 } : {}) }]}> {/* v3.19(老板:.r-1vcqxpo→45%):web 唱片列宽 344→45%,TV 保持 344 */}
           {/* lx125:粒子环(单圈 48 粒,FFT 分区驱动) */}
           {(<View style={[st.vinylZone, IS_WEB && { width: ringSize, height: ringSize }]}>
             {/* v3.14(老板):删多余的下层方形封面,只留盘内正圆 label;盘回正中 */}
@@ -317,12 +323,12 @@ export function HDPlayer() {
           </View>
         </View>
 
-        <View style={[st.infoCol, IS_WEB && st.infoColWeb]}>
+        <View style={[st.infoCol, IS_WEB && st.infoColWeb, narrow && { flex: undefined, flexGrow: 0, flexShrink: 0, flexBasis: 'auto', width: '100%', minHeight: 160 }]}>
           {/* 1028 老板实测(深色歌名黑):st 启动期锁定防主题切换残留——渲染层动态色双向兜底(浅强制黑/深强制白) */}
           <Text style={[st.title, IS_WEB && st.titleWeb, settings.get().light ? { color: '#26282C' } : { color: '#FFFFFF' }]} numberOfLines={1}>{current.name}</Text>
           <Text style={[st.sub, IS_WEB && st.subWeb, settings.get().light ? { color: 'rgba(38,40,44,.7)' } : { color: 'rgba(255,255,255,.7)' }]} numberOfLines={1}>{current.singer}{current.albumName ? ` · ${current.albumName}` : ''}</Text>
 
-          <View style={[st.lyricsBox, IS_WEB && { maxHeight: Math.round(winH * 0.5), overflow: 'hidden' }]}>
+          <View style={[st.lyricsBox, IS_WEB && { ...(narrow ? { flex: undefined, minHeight: 80 } : {}), maxHeight: narrow ? 150 : Math.round(winH * 0.5), overflow: 'hidden' }]}>
             {lyrics ? (
               lyrics.slice(Math.max(0, activeIdx - (IS_WEB ? 2 : 3)), activeIdx + (IS_WEB ? 3 : 4)).map((l, i) => {
                 const idx = Math.max(0, activeIdx - 3) + i;
@@ -418,7 +424,7 @@ export function HDPlayer() {
               <TouchableOpacity activeOpacity={1} style={st.panelScrim} onPress={() => setPanelOpen(null)} />
             ) : null}
             {panelOpen === 'quality' ? (
-            <View style={[st.panelRow, IS_WEB && st.panelRowWeb]}>
+            <View style={[st.panelRow, IS_WEB && st.panelRowWeb, narrow && { left: 0, right: 0, transform: [], flexWrap: 'wrap' }]}>
               {(['128k', '320k', 'flac'] as const).map(q => (
                 <HDTouch key={q} style={[st.panelPill, settings.get().playQuality === q && st.panelPillOn]} hoverBg="#ffffff1f"
                   onPress={() => { settings.set('playQuality', q); setPanelOpen(null); }}>
@@ -459,7 +465,7 @@ export function HDPlayer() {
       {cardOpen && current ? (IS_WEB
         ? <WebLyricCardModal onClose={() => setCardOpen(false)} song={current} lyrics={lyrics} positionSec={position} />
         : <LyricCardModal visible onClose={() => setCardOpen(false)} song={current} lyrics={lyrics} positionSec={position} />) : null}
-    </View>
+    </PlayerContainer>
   );
 }
 
@@ -504,7 +510,7 @@ const stDark: Record<string, ViewStyle | TextStyle> = {
   lyricsBox: { flex: 1, gap: SP.md, justifyContent: 'center', alignItems: 'flex-start' }, // 设计稿:歌词左对齐
   // 歌词窗 web 限高: 运行时算(50vh), // lx93:垂直居中(顶贴→太靠上),窗口 7 行填满空隙
   lyric: { color: T.light ? 'rgba(38,40,44,.8)' : '#ffffffcc', fontSize: FS.headline, lineHeight: 24, fontWeight: FW.medium }, // 1028 老板规格:浅色更黑/深色更白
-  lyricOn: { color: C.brand, fontSize: FS.display, lineHeight: 31, fontWeight: FW.heavy, textShadowColor: 'transparent', textShadowRadius: 0, textShadowOffset: { width: 0, height: 0 } }, // 1028 老板规格:当前行用主题色+去投影(荧光退役)
+  lyricOn: { color: C.brandText, fontSize: FS.display, lineHeight: 31, fontWeight: FW.heavy, textShadowColor: 'transparent', textShadowRadius: 0, textShadowOffset: { width: 0, height: 0 } }, // 1028 老板规格:当前行用主题色+去投影(荧光退役)
   lyricTr: { color: '#FFFFFF80', fontSize: FS.body, lineHeight: 17, marginTop: 2 },
   lyricTrOn: { color: '#FFFFFFb3' },
   noLyric: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: SP.lg },
@@ -523,12 +529,12 @@ const stDark: Record<string, ViewStyle | TextStyle> = {
   ctrlRowWeb: { justifyContent: 'center', gap: SP.lg, columnGap: 20, marginTop: 0, flexWrap: 'wrap', rowGap: 10 }, // v3.31(老板:窄窗工具按钮被裁):自适应换行保全控件可达;宽屏富余时仍单行
   cMainWeb: { width: 60, height: 60, borderRadius: 30, boxShadow: '0 8px 30px rgba(30,215,96,.4)' }, // Spotify 大播放键
   ctrlDividerWeb: { opacity: .7 },
-  cMode: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' }, // v3.7:去黑底
+  cMode: { width: 44, height: 44, borderRadius: 19, alignItems: 'center', justifyContent: 'center' }, // v3.7:去黑底
   cMain: { width: 66, height: 66, borderRadius: 33, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   cMainFocus: { borderWidth: 3, borderColor: '#FFFFFF', borderRadius: 33 },
   repOne: { position: 'absolute', right: 8, top: 8, color: C.brand, fontSize: FS.xs, fontWeight: FW.bold }, // 手机端同款角标位
   ctrlDivider: { width: 1, height: 26, backgroundColor: 'rgba(255,255,255,.14)', marginHorizontal: 2 },
-  cTool: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }, // v3.7:去黑底·紧凑
+  cTool: { width: 44, height: 44, borderRadius: 17, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }, // v3.7:去黑底·紧凑
   qBadge: { position: 'absolute', top: -5, right: -7, minWidth: 17, height: 17, borderRadius: 9, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: '#0e1310' }, // lx95:队列数量优雅悬浮胶囊
   qBadgeText: { color: C.onBrand, fontSize: FS.xs, fontWeight: FW.heavy },
 };

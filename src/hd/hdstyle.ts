@@ -17,7 +17,7 @@ export const effectiveBottomInset = (): number => {
 };
 
 /** 页面水平栅格(HDPlaylistDetail 基准;手机屏不引,保持各自紧凑值) */
-export const GUTTER = 22;
+export const GUTTER = 24;
 
 /** D-pad/遥控焦点环——半径传容器自身圆角(行 8 / 卡 11 / 胶囊 999) */
 export const focus = (radius: number) => ({ borderWidth: 2, borderColor: C.brand, borderRadius: radius });

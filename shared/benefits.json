@@ -1,0 +1,167 @@
+{
+  "_meta": {
+    "version": "2026.09.27.3",
+    "source": "决策底稿-商业化并稿-momo-v1.md（老板全案拍板 10 项）",
+    "note": "三连调价链（均 09-27）：17:07 ¥38→17:08 终态 **¥19.9/$2.99**（金句适配奶茶版，咖啡版归档）；17:03 家庭转买断 ¥88（升格补差 ¥68）；16:09 商业定档→17:28 上调 **¥99/¥299/¥699**；16:40 容量矩阵（Pro 个人 5GB＋公共库不限/商业管理员自定义）；16:55 免费档 1GB；17:22 稳定窗全链执行→**17:49 拍 A：托管线全集下架，云曲库＝连用户自己的盘（软件能力，无配额；1GB/5GB 容量矩阵作废）**。原 ¥58/$7.99、¥38/$4.99、¥19.9 前旧价与家庭订阅价全部作废。M2 公测 A/B（19.9 vs 29.9）最后免痛定价窗口（MOMO 已记固定议程）。",
+    "author": "MAX",
+    "canonical": true,
+    "sync_rule": "feature id 变更须先知会 KAI 同步 licenseCore（单一 canonical 双向纪律，09-24 定）；pricing/tier 结构变更同步知会 KAI（family 支付模型订阅→买断发码、cloud_family 托管档去留，17:03/17:07）",
+    "terminology": "trial_days=7（新用户体验期）≠ 客户端验签宽限 7 天（已购离线容错）——营销物料严禁混写（KAI 09-24 提醒）"
+  },
+  "pricing": {
+    "pro_onetime_cny": 19.9,
+    "pro_onetime_usd": 2.99,
+    "currency_note": "单档买断·终身·无订阅无广告（17:08 终态）",
+    "family_onetime_cny": 88,
+    "family_note": "家庭版买断·≤6 人终身·成员各 5 台·每人 Pro 全权益（17:03 转买断/17:07 定价）；升格：Pro 补差 ¥68（19.9+68≈88）",
+    "device_limit_per_code": 5,
+    "trial_days": 7,
+    "trial_registration": false
+  },
+  "limits": {
+    "library_connections": {
+      "status": "standby_1911",
+      "note": "数量门控（≤2）全案 standby：19:11 老板终拍「换」类型门控（开源 8 免费×品牌 5 解锁）；本节保留为预留基础设施（未来「某类型免费版限 N 实例」直接用），一键切回零成本",
+      "free_default": 2,
+      "paid": -1
+    }
+  },
+  "hosting": {
+    "status": "deprecated_1749_A",
+    "note": "17:49 老板拍 A：托管线全集下架（纯软件商）——云曲库＝连用户自己的 NAS/网盘（软件能力，无配额概念）",
+    "tiers": [
+      {
+        "id": "cloud_basic",
+        "name": "云端基础",
+        "status": "deprecated_1745",
+        "note": "17:45 纯软件商定位令下架——我们不运行托管服务；云曲库=连接用户自己的网盘/NAS",
+        "monthly_cny": 6,
+        "yearly_cny": 68,
+        "quota_gb": 50
+      },
+      {
+        "id": "cloud_standard",
+        "name": "云端标准",
+        "status": "deprecated_1745",
+        "note": "17:45 纯软件商定位令下架；同上",
+        "monthly_cny": 10,
+        "yearly_cny": 98,
+        "quota_gb": 200,
+        "includes_pro": true
+      },
+      {
+        "id": "cloud_family",
+        "name": "家庭档",
+        "status": "deprecated_1703",
+        "note": "17:03 家庭版转买断（¥88 见 pricing.family_onetime_cny）；本订阅托管档去留待 KAI 确认（容量按库计/加购路径不变）",
+        "members_max": 6,
+        "quota_note": "共享存储池·配额按库计",
+        "includes_pro": true
+      }
+    ],
+    "extra_storage": {
+      "status": "deprecated_1749_A",
+      "note": "随托管线下架，配额加购取消",
+      "per_50gb_monthly_cny": 3
+    }
+  },
+  "free_forever": [
+    "播放/本地音乐/基础歌单",
+    "音源聚合与自定义音源（LX 协议/MusicFree）",
+    "音源治理四件套（回落/检测/禁用/更新）",
+    "自托管服务器基础（Docker/管理台/Web 播放器/多用户/缓存下载·部署者可控）",
+    "入口同步（歌单/收藏/音效预设云同步）",
+    "远程访问自助组网+官方教程（IPv6/Tailscale/frp）",
+    "歌单级共享（isShared）"
+  ],
+  "pro_features": [
+    {
+      "id": "eq_custom",
+      "name": "10 段自定义 EQ + 空间音效",
+      "gate": "client",
+      "status": "ready_gate"
+    },
+    {
+      "id": "lyrics_deep",
+      "name": "逐字/双语/桌面悬浮歌词",
+      "gate": "client",
+      "status": "building",
+      "note": "17:28 承诺审计 A14：逐字本体零实现（yrc/qrc/krc 全仓零命中，仅 gate 锁标），状态 ready_gate→building 对齐现实"
+    },
+    {
+      "id": "webdav_backup",
+      "name": "WebDAV 云备份",
+      "gate": "client",
+      "status": "ready_gate"
+    },
+    {
+      "id": "offline_batch",
+      "name": "批量分级下载+智能离线",
+      "gate": "client",
+      "status": "building"
+    },
+    {
+      "id": "progress_roam",
+      "name": "断点续播/进度漫游",
+      "gate": "server",
+      "status": "building"
+    },
+    {
+      "id": "library_server",
+      "name": "三层曲库+上传链路+自动整理进阶（基础免费直通，gate=整理进阶，18:00 KAI 定案 b）",
+      "gate": "server",
+      "status": "ready_gate"
+    },
+    {
+      "id": "share_group",
+      "name": "曲库级共享池+家庭组体系",
+      "gate": "server",
+      "status": "building"
+    },
+    {
+      "id": "tv_pack",
+      "name": "TV 增强包（海报墙/氛围模式）",
+      "gate": "client",
+      "status": "building"
+    },
+    {
+      "id": "brand_nas_libraries",
+      "name": "品牌 NAS 生态直连（Emby/Plex/群晖/飞牛/道理鱼）",
+      "gate": "client",
+      "status": "ready_gate",
+      "gated_providers": [
+        "provider_emby",
+        "provider_plex",
+        "provider_audiostation",
+        "provider_feiniu",
+        "provider_daoliyu"
+      ],
+      "free_alternatives": {
+        "emby": "jellyfin",
+        "plex": "jellyfin",
+        "audiostation": "webdav",
+        "feiniu": "webdav",
+        "daoliyu": "navidrome"
+      },
+      "note": "19:11 老板终拍类型门控：开源/开放 8 种（jellyfin/navidrome/subsonic/webdav/tingfeng/mstream/songloft/audiobookshelf）永久免费；品牌商业生态 5 种随 Pro/家庭/商业；grandfather 只拦新增；升级提示带免费等价物引导；KAI 落码 features 布尔（类型选择流检查）",
+      "family_included": true
+    },
+    {
+      "id": "carlink",
+      "name": "CarLink 车机增强",
+      "gate": "client",
+      "status": "building"
+    },
+    {
+      "id": "theme_store",
+      "name": "主题商店",
+      "gate": "client",
+      "status": "building"
+    }
+  ],
+  "gate_discipline": {
+    "upstream_escape": "门只建在上游 lxserver 没有的新增价值上",
+    "legacy_apk_escape": "客户端护城河=持续更新非封锁",
+    "post_publish": "发布后的承诺必须兑现；发布前为初始矩阵（09-24 老板澄清）"
+  }
+}

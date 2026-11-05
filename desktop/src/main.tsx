@@ -24,10 +24,12 @@ document.title = 'NextMusic';
 
 // ===== 桌面壳层：页面缩放（settings.uiScale → CSS zoom）+ 无边框窗口控制条 =====
 import { settings, onSettings } from '../../src/services/settings';
+import { C } from '../../src/theme/tokens';
 
 const applyZoom = () => {
-  const z = Math.max(0.75, Math.min(2, Number(String(settings.get().uiScale || '125%').replace('%', '')) / 100));
-  document.documentElement.style.zoom = String(z);
+  const z = Math.max(0.75, Math.min(2, Number(String(settings.get().uiScale || '100%').replace('%', '')) / 100));
+  document.documentElement.style.zoom = String(Number.isFinite(z) ? z : 1);
+  for (const [key, value] of Object.entries(C)) document.documentElement.style.setProperty('--nm-' + key.replace(/[A-Z]/g, m => '-' + m.toLowerCase()), value);
 };
 applyZoom();
 onSettings(applyZoom);
@@ -63,7 +65,7 @@ mountKbNav();
 (function mountInputFocusReset() {
   const css = document.createElement('style');
   css.id = 'nm-input-focus-reset';
-  css.textContent = 'input:focus, textarea:focus { outline: none; }';
+  css.textContent = '[tabindex]:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--nm-brand-text); outline-offset: 2px; } input:focus:not(:focus-visible), textarea:focus:not(:focus-visible) { outline: none; }';
   document.head.appendChild(css);
 })();
 (function mountWindowChrome() {
@@ -90,7 +92,7 @@ mountKbNav();
   // v1.2.5:body/#root/html 底色随主题——顶部轨道(透明)与内容卡上方区域透出的底,浅色下不再是裸 #121212 深条
   // (index.html 给 html/body/#root 三者都烘了 #121212,只改 body 会被 #root 盖住——实测)
   // v1.2.11:补 pureBlack 底色(否则纯黑主题下顶部轨道透出 #121212 灰条)
-  const themeBg = isLight ? '#F6F7F9' : (isPureBlack ? '#000000' : '#121212');
+  const themeBg = C.bg;
   document.body.style.background = themeBg;
   document.documentElement.style.background = themeBg;
   const rootEl = document.getElementById('root');
@@ -116,7 +118,7 @@ mountKbNav();
     // 与侧栏 C.bg 三主题一致(深 #121212/浅 #F6F7F9/纯黑 #000),红绿灯直接浮在侧栏同色底上,无胶囊感
     // v1.2.13(老板:桌面也错位):分割线统一由侧栏自身 border 提供,轨道不再画框——
     // 两条线(轨道框+侧栏框)在 zoom 非 100% 时相差零点几像素,读作双线/错位;rail-side 恒透明
-    '#nm-toprail .rail-side { width:174px; flex:0 0 auto; -webkit-app-region:drag;',
+    '#nm-toprail .rail-side { width:var(--nm-sidebar-width,224px); flex:0 0 auto; -webkit-app-region:drag;',
     '  background:transparent; border-right:none; }',
     '#nm-toprail .rail-main { flex:1; -webkit-app-region:drag; }',
     /* 只对按钮挖 no-drag 孔(rail-side/rail-main 恒为拖拽面——`*` 全 no-drag 会废掉整行拖拽,清单坑②) */
@@ -190,7 +192,7 @@ mountKbNav();
       if (isMain) {
         cd.style.left = '0px'; cd.style.right = '0px'; cd.style.width = 'auto'; cd.style.marginLeft = '';
       } else {
-        cd.style.left = '174px'; cd.style.right = '0px'; cd.style.width = 'auto';
+        cd.style.left = 'var(--nm-sidebar-width,224px)'; cd.style.right = '0px'; cd.style.width = 'auto';
         // v1.2.11 新内页首次出现→push 入场动画(右入+淡入)
         if (!seenViews.has(cd)) { seenViews.add(cd); cd.classList.add('nm-view-in'); }
       }

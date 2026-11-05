@@ -8,6 +8,7 @@ import { C, FW } from '../theme/tokens';
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
 import { GUTTER } from '../hd/hdstyle';
+import { SPACE, TYPE } from '../theme/design-system';
 
 // 统一子页 header：返回 + 居中标题 + 右侧动作槽
 export function PageHeader({ title, right, onBack }: { title: string; right?: React.ReactNode; onBack?: () => void }) {
@@ -17,11 +18,11 @@ export function PageHeader({ title, right, onBack }: { title: string; right?: Re
   return (
     <View style={[h.wrap, { paddingTop: insets.top + 20 }, IS_HD && { paddingHorizontal: GUTTER }]}>
       {IS_HD ? (
-        <HDTouch onPress={back} style={h.sideBtn}>
+        <HDTouch onPress={back} accessibilityLabel="返回" style={h.sideBtn}>
           <Icon name="back" size={22} color={C.text} />
         </HDTouch>
       ) : (
-        <TouchableOpacity onPress={back} hitSlop={6} style={h.sideBtn}>
+        <TouchableOpacity onPress={back} accessibilityRole="button" accessibilityLabel="返回" hitSlop={6} style={h.sideBtn}>
           <Icon name="back" size={22} />
         </TouchableOpacity>
       )}
@@ -43,9 +44,9 @@ export function EmptyState({ icon, title, sub }: { icon?: IconName; title: strin
 }
 
 const h = StyleSheet.create({
-  wrap: { minHeight: 64, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 6 },
-  sideBtn: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, color: C.text, fontSize: 22, lineHeight: 30, fontWeight: FW.bold, marginHorizontal: 4 }, // lx166(老板):全局标题居左统一(原居中)
+  wrap: { minHeight: 64, flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACE.lg, marginBottom: SPACE.sm },
+  sideBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  title: { flex: 1, color: C.text, fontSize: TYPE.title, lineHeight: 34, fontWeight: FW.bold, marginHorizontal: 4 }, // lx166(老板):全局标题居左统一(原居中)
 });
 
 const e = StyleSheet.create({

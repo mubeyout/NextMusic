@@ -2,36 +2,9 @@
 // 映射:桌面 150% zoom 在 1920x1080 TV = 1280x720 CSS 视口;TV dp 视口 960x540 → 系数 0.75
 // 色彩:默认深色(桌面深色主题原值);vc81 起支持浅色+强调色(与手机/桌面同规则,重启生效)
 import { settings } from '../services/settings';
+import { themeColors } from '../theme/design-system';
 
-export const C: Record<string, string> = {
-  brand: '#1ED760',
-  brandSoft: '#6BE88F',
-  brandDim: 'rgba(30,215,96,.14)',
-  onBrand: '#06130B',
-  danger: '#FF6B6B',
-  bg: '#121212',
-  bgDeep: '#06080D',
-  surface: '#1A1A1A',
-  elev: '#1C1C1C',
-  hover: 'rgba(255,255,255,.05)',
-  input: 'rgba(255,255,255,.06)',
-  pop: '#22262E',
-  track: 'rgba(255,255,255,.14)',
-  grad1: 'rgba(255,255,255,.055)',
-  grad2: 'rgba(255,255,255,.018)',
-  border: 'rgba(255,255,255,.08)',
-  stroke: 'rgba(255,255,255,.08)',
-  strokeStrong: 'rgba(255,255,255,.15)', // [LEO 1011 统一令] ghost 按钮描边(与 theme tokens 同语义)
-  knob: '#FFFFFF', // [LEO 1011 统一令] 开关钮恒白(与 theme tokens 同语义)
-  text: '#FFFFFF',
-  text2: '#B3B3B3',
-  text3: '#595959',
-  heart: '#FF5A76', // v3.28:收藏心形全局 token
-  // 玻璃磨砂面(桌面 --nm-glass 同源;浅色覆写)
-  glass: 'rgba(16,18,22,.66)',
-  glassStrong: 'rgba(22,25,30,.8)',
-  glassBar: 'rgba(16,18,22,.9)', // v3.17(老板):playbar 90% 不透明+web 毛玻璃(backdrop-filter 走 desktop main.tsx data 属性 CSS)
-};
+export const C: Record<string, string> = themeColors(settings.get());
 
 export const T = { light: false };
 // TV/车机性能开关:小米电视实测彩色投影+聚焦 glow 重绘掉帧;网格卡投影与 glow 全降级
@@ -46,39 +19,9 @@ function mixHex(a: string, b: string, k: number): string {
 // 启动期主题覆写(与手机 tokens.applyBootTheme 同构:accent 全套派生 + 浅色盘)
 export function applyHdTheme() {
   const s = settings.get();
-  const acc = (s.accent && /^#[0-9A-Fa-f]{6}$/.test(s.accent) && s.accent !== '#1ED760') ? s.accent : null;
-  if (acc) {
-    C.brand = acc;
-    C.brandSoft = acc;
-    C.brandDim = acc + '24'; // ≈14%
-  }
-  if (s.pureBlack) {
-    C.bg = '#000000';
-    C.surface = '#101010'; // 1028 LEO 规范:投影移除后档差补偿(与 theme/tokens 同步)
-  }
+  T.light = !!s.light;
+  Object.assign(C, themeColors(s));
   if (s.light) {
-    T.light = true;
-    C.bg = '#F6F7F9';
-    C.bgDeep = '#FFFFFF';
-    C.surface = '#FFFFFF';
-    C.elev = '#FFFFFF';
-    C.pop = '#FFFFFF';
-    C.text = '#26282C';
-    C.text2 = '#62676E';
-    C.text3 = '#8B9199';
-    C.hover = 'rgba(31,35,41,.045)';
-    C.input = 'rgba(31,35,41,.04)';
-    C.track = 'rgba(31,35,41,.14)';
-    C.grad1 = 'rgba(31,35,41,.045)';
-    C.grad2 = 'rgba(31,35,41,.012)';
-    C.border = 'rgba(31,35,41,.08)';
-    C.stroke = C.border;
-    C.onBrand = acc ? mixHex(acc, '#000000', 0.52) : '#0B3D1F';
-    C.brandSoft = acc ? mixHex(acc, '#000000', 0.22) : '#1DB455';
-    C.glass = 'rgba(255,255,255,.68)';
-    C.glassStrong = 'rgba(255,255,255,.8)';
-    C.glassBar = 'rgba(255,255,255,.9)';
-    // 投影浅色化(桌面 --nm-shadow-* 浅色同源)——v1.2.11 同步再降 50%
     SH.card = '0 12px 36px rgba(31,35,41,.05)';
     SH.pop = '0 18px 52px rgba(31,35,41,.09)';
     SH.brand = '0 6px 22px rgba(29,180,85,.13)';
@@ -94,17 +37,17 @@ const scaleOf = (s: string | undefined): number => (s === '90%' ? 0.9 : s === '1
 
 export const H = {
   // 字号(桌面 px × 0.75 × 缩放)
-  font: { xs: 9, sm: 10, md: 11, lg: 12, xl: 15, hero: 21 },
+  font: { xs: 12, sm: 12, md: 14, lg: 16, xl: 18, hero: 24 },
   // 触点:遥控/车机最低可用
-  touch: 44,
+  touch: 56,
   // 行高(歌曲行)
-  row: 46,
+  row: 56,
   // 侧栏宽(232×0.75)
-  sidebar: 174,
+  sidebar: 208,
   // 播放条高(84×0.75)
-  playbar: 64,
+  playbar: 88,
   // 圆角
-  radius: { card: 11, row: 8, pill: 999 },
+  radius: { card: 16, row: 12, pill: 999 },
 };
 
 // 按 uiScale 重算 H(H 保持同一引用,属性覆写——引用处 import { H } 不变)
@@ -113,13 +56,13 @@ export const H = {
 export function applyHdScale(uiScale?: string) {
   if (Platform.OS === 'web') return;
   const k = scaleOf(uiScale);
-  const f = { xs: 9, sm: 10, md: 11, lg: 12, xl: 15, hero: 21 };
+  const f = { xs: 12, sm: 12, md: 14, lg: 16, xl: 18, hero: 24 };
   (Object.keys(f) as (keyof typeof f)[]).forEach(key => { H.font[key] = f[key] * k; });
-  H.touch = 44 * k;
-  H.row = 46 * k;
-  H.sidebar = 174 * k;
-  H.playbar = 64 * k;
-  H.radius = { card: 11 * k, row: 8 * k, pill: 999 };
+  H.touch = 56 * k;
+  H.row = 56 * k;
+  H.sidebar = 208 * k;
+  H.playbar = 88 * k;
+  H.radius = { card: 16 * k, row: 12 * k, pill: 999 };
 }
 
 export const fmtSec = (s: number) =>

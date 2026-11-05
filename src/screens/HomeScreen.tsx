@@ -1,18 +1,22 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { lxapi } from '../services/lxapi';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
 import { C } from '../theme/tokens';
+import { gridMetrics, RADIUS, SPACE } from '../theme/design-system';
+import { ResponsiveGrid as HDGrid } from '../components/ResponsiveGrid';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
+import { toast } from '../components/Dialog';
+import { ListeningHero } from '../components/ListeningHero';
 import { PillTabs } from '../components/PillTabs';
 import { useApp } from '../state/AppState';
 import { usePlayer } from '../state/PlayerProvider';
 import { getRecents } from '../state/recent';
 import { api, type SongItem, type SongListMeta } from '../services/server';
 import { SongRow } from '../components/SongRow';
-import { StateOverlayCard } from '../components/StateOverlayCard';
 import { sync, lxToApp } from '../services/sync';
 
 import sky from '../assets/art/sky.jpg';
@@ -38,48 +42,31 @@ function greeting(): string {
 
 export function HomeScreen({ visible = true }: { visible?: boolean }) {
   const insets = useSafeAreaInsets();
+  const layout = useResponsiveLayout();
   const [tab, setTab] = useState(0);
-  const { username, connected } = useApp();
+  const { username } = useApp();
   const nav = useNavigation() as { navigate: (s: string, p?: object) => void };
   const hello = username ? `${greeting()}，${username}` : greeting();
   useEffect(() => { if (visible) setTabKey(k => k + 1); }, [visible]); // remount content on tab re-entry
   const [tabKey, setTabKey] = useState(0);
-  const [homeEmpty, setHomeEmpty] = useState(false);
 
   return (
     <LinearGradient colors={[C.bgGradientTop, C.bg, C.bg]} locations={[0, 0.55, 1]} style={[st.screen]}>
       <ScrollView
-        contentContainerStyle={[st.content, { paddingTop: insets.top + 28 }]}
+        contentContainerStyle={[st.content, { paddingTop: insets.top + SPACE.xl, paddingHorizontal: layout.pagePadding }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={st.headerRow}>
           <Text style={st.hello}>{hello}</Text>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="搜索音乐" style={st.searchButton} onPress={() => nav.navigate('Search')}><Icon name="search" size={22} color={C.text} /></TouchableOpacity>
         </View>
 
         <PillTabs tabs={['全部', '音乐', '播客']} active={tab} onChange={setTab} />
-
-        {tab === 0 && <HomeAll key={`a${tabKey}`} setHomeEmpty={setHomeEmpty} />}
+        {tab === 0 && <HomeAll key={`a${tabKey}`} />}
         {tab === 1 && <HomeMusic key={`m${tabKey}`} />}
         {tab === 2 && <HomePodcast key={`p${tabKey}`} />}
       </ScrollView>
 
-      {/* 无音源空态覆盖 (Figma #2071:1988) */}
-      {tab === 0 && homeEmpty && (
-        <View style={st.homeOverlay} pointerEvents="box-none">
-          <View style={st.homeOverlayCard} pointerEvents="auto">
-            <StateOverlayCard
-              icon="music"
-              glyphSize={48}
-              title="从你的音乐开始"
-              body="当前没有可用音源或本地歌曲。你可以先导入音源，也可以直接扫描设备中的音乐。"
-              primary="导入音源"
-              secondary="从本地导入音乐"
-              onPrimary={() => nav.navigate('Sources' as never)}
-              onSecondary={() => nav.navigate('DeviceMusic')}
-            />
-          </View>
-        </View>
-      )}
     </LinearGradient>
   );
 }
@@ -114,7 +101,7 @@ function PlCard({ pl }: { pl: SongListMeta }) {
   const nav = useNavigation() as { navigate: (s: string, p?: object) => void };
   return (
     <TouchableOpacity
-      style={st.plCell} activeOpacity={0.85}
+      style={[st.plCell, { width: '100%' }]} activeOpacity={0.85}
       onPress={() => nav.navigate('PlaylistDetail', {
         remoteId: pl.id, remoteSource: pl.source || 'wy', title: pl.name, cover: pl.img,
         meta: `${pl.total ?? ''} 首 · ${pl.author || '歌单'}`,
@@ -131,11 +118,12 @@ function PlCard({ pl }: { pl: SongListMeta }) {
 
 /* ---------- 全部 tab ---------- */
 
-function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
+function HomeAll() {
   // [carlink v2] 快捷卡宽随窗宽(横屏/投屏/折叠不再写死竖屏列宽)
-  const cardW = (useWindowDimensions().width - 40 - 12) / 2;
+  const layout = useResponsiveLayout();
+  const cardW = gridMetrics(layout.width - layout.pagePadding * 2, 144, SPACE.md, 4).itemWidth;
   const nav = useNavigation() as { navigate: (s: string, p?: object) => void };
-  const { connected, token } = useApp();
+  const { token } = useApp();
   const { playSong } = usePlayer();
   const [recents, setRecents] = useState<SongItem[]>([]);
   const [loveSongs, setLoveSongs] = useState<SongItem[] | null>(null);
@@ -149,16 +137,6 @@ function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
       .then(r => setMixes(r.list.slice(0, 6)))
       .catch(() => setMixFail(true));
   }, []);
-  const [dataLoaded, setDataLoaded] = useState(false);
-  // Report empty state to parent for overlay rendering
-  useEffect(() => {
-    if (dataLoaded && connected && hotBoard.length === 0 && recents.length === 0) {
-      setHomeEmpty(true);
-    } else {
-      setHomeEmpty(false);
-    }
-  }, [dataLoaded, connected, hotBoard.length, recents.length, setHomeEmpty]);
-
   const reload = useCallback(() => { setRecents(getRecents()); }, []);
   useEffect(() => { reload(); }, [reload]);
 
@@ -168,12 +146,17 @@ function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
     if (token) sync.fetchLists().then(s => { if (s) setLoveSongs(s.loveList.map(lxToApp)); });
     lxapi.leaderboardBoards().then(boards => {
       const hot = boards.find(b => /热歌|TOP/i.test(b.name)) || boards[0];
-      if (hot) lxapi.leaderboardList(hot.bangid).then(list => { setHotBoard(list.slice(0, 50)); setDataLoaded(true); });
-      else setDataLoaded(true);
-    }).catch(() => setDataLoaded(true));
+      if (hot) lxapi.leaderboardList(hot.bangid).then(list => { setHotBoard(list.slice(0, 50)); });
+    }).catch(() => {});
   }, [token]);
 
-  const playHot = () => { if (hotBoard.length) playSong(hotBoard[0], hotBoard); };
+  const playHot = () => { if (hotBoard.length) playSong(hotBoard[0], hotBoard); else toast('推荐正在准备，请稍后重试'); };
+  const playRadar = () => {
+    if (!recents.length) { nav.navigate('Explore'); return; }
+    const songs = [...recents];
+    for (let i = songs.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [songs[i], songs[j]] = [songs[j], songs[i]]; }
+    playSong(songs[0], songs.slice(0, 30));
+  };
   const [fetching, setFetching] = useState(false);
   const openSearch = async (q: string) => {
     if (fetching) return;
@@ -181,7 +164,7 @@ function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
     try {
       const songs = await lxapi.search(q, 'kw');
       nav.navigate('PlaylistDetail', { title: q, songs: songs.slice(0, 50), meta: `${songs.length} 首 · 搜索` });
-    } finally { setFetching(false); }
+    } catch { toast('暂时无法获取音乐，请稍后重试'); } finally { setFetching(false); }
   };
   const openRecent = () => nav.navigate('PlaylistDetail', { title: '最近播放', songs: recents, meta: `${recents.length} 首` });
   const openLove = () => {
@@ -191,7 +174,10 @@ function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
 
   return (
     <View style={st.body}>
-      {/* 快捷入口：大卡 2×3（老板要求大气） */}
+      <ListeningHero song={recents[0]} onContinue={() => { if (recents[0]) playSong(recents[0], recents); }} onBrowse={() => nav.navigate('MediaLibs')} />
+      <TouchableOpacity accessibilityRole="button" onPress={() => nav.navigate('DeviceMusic')} style={st.localImport}><Icon name="add" size={18} color={C.text2} /><Text style={st.localImportLabel}>从本地导入音乐</Text></TouchableOpacity>
+      <View style={st.sectionRow}><Text style={st.sectionTitle}>常用入口</Text><Text style={st.sectionMeta}>播放与收藏</Text></View>
+      {/* Compact shortcuts keep common actions within reach. */}
       <View style={st.quickGrid}>
         <TouchableOpacity style={[st.quickCard, { width: cardW }, fetching && st.quickDis]} activeOpacity={0.8} onPress={playHot} disabled={fetching}>
           <Image source={sky} style={st.quickArt} />
@@ -201,24 +187,34 @@ function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
           <Image source={vinyl} style={st.quickArt} />
           <Text style={st.quickLabel}>我的收藏</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[st.quickCard, { width: cardW }, fetching && st.quickDis]} activeOpacity={0.8} onPress={playHot} disabled={fetching}>
+        <TouchableOpacity style={[st.quickCard, { width: cardW }, fetching && st.quickDis]} activeOpacity={0.8} onPress={playRadar} disabled={fetching}>
           <Image source={warm} style={st.quickArt} />
           <Text style={st.quickLabel}>私人雷达</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[st.quickCard, { width: cardW }, fetching && st.quickDis]} activeOpacity={0.8} onPress={() => openSearch('夜深人静')} disabled={fetching}>
-          <Image source={night} style={st.quickArt} />
-          <Text style={st.quickLabel}>夜深人静</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[st.quickCard, { width: cardW }, fetching && st.quickDis]} activeOpacity={0.8} onPress={() => openSearch('华语经典')} disabled={fetching}>
-          <Image source={portrait} style={st.quickArt} />
-          <Text style={st.quickLabel}>华语经典</Text>
-        </TouchableOpacity>
+
+
         <TouchableOpacity style={[st.quickCard, { width: cardW }]} activeOpacity={0.8} onPress={openRecent}>
           <Image source={night} style={st.quickArt} />
           <Text style={st.quickLabel}>最近播放</Text>
         </TouchableOpacity>
       </View>
 
+      <View style={st.sectionRow}>
+        <Text style={st.sectionTitle}>最近播放</Text>
+        <TouchableOpacity onPress={openRecent} hitSlop={4}><Text style={st.sectionMeta}>查看全部</Text></TouchableOpacity>
+      </View>
+      {recents.length ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.recentRow}>
+          {recents.slice(0, 12).map((s, i) => (
+            <TouchableOpacity key={`${s.source}-${s.songmid}-${i}`} style={st.recentCard} activeOpacity={0.85} onPress={() => playSong(s, recents)}>
+              {s.img ? <Image source={{ uri: s.img }} style={st.recentArt} /> : <View style={[st.recentArt, st.recentFallback]}><Icon name="music" size={26} color={C.text2} /></View>}
+              <Text style={st.recentTitle} numberOfLines={1}>{s.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      ) : (
+        <Text style={st.recentEmpty}>还没有播放记录，去探索页找点歌听</Text>
+      )}
       <View style={st.sectionRow}>
         <Text style={st.sectionTitle}>为你打造</Text>
         <Text style={st.sectionMeta}>每日更新</Text>
@@ -240,22 +236,9 @@ function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
           ))}
       </ScrollView>
 
-      <View style={st.sectionRow}>
-        <Text style={st.sectionTitle}>最近播放</Text>
-        <TouchableOpacity onPress={openRecent} hitSlop={4}><Text style={st.sectionMeta}>查看全部</Text></TouchableOpacity>
-      </View>
-      {recents.length ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.recentRow}>
-          {recents.slice(0, 12).map((s, i) => (
-            <TouchableOpacity key={`${s.source}-${s.songmid}-${i}`} style={st.recentCard} activeOpacity={0.85} onPress={() => playSong(s, recents)}>
-              {s.img ? <Image source={{ uri: s.img }} style={st.recentArt} /> : <View style={[st.recentArt, st.recentFallback]}><Icon name="music" size={26} color={C.text2} /></View>}
-              <Text style={st.recentTitle} numberOfLines={1}>{s.name}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      ) : (
-        <Text style={st.recentEmpty}>还没有播放记录，去探索页找点歌听</Text>
-      )}
+
+      <View style={st.sectionRow}><Text style={st.sectionTitle}>按场景发现</Text></View>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.md }}>{['夜深人静', '华语经典'].map(q => <TouchableOpacity key={q} accessibilityRole="button" onPress={() => openSearch(q)} disabled={fetching} style={{ minHeight: 44, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, backgroundColor: C.surface, borderRadius: RADIUS.control }}><Text style={{ color: C.text, fontSize: 14 }}>{q}</Text></TouchableOpacity>)}</View>
     </View>
   );
 }
@@ -373,7 +356,8 @@ function HomePodcast() {
 /* ---------- 音乐 tab：与「全部」同样设计，音乐向真实数据 ---------- */
 
 function HomeMusic() {
-  const cardW = (useWindowDimensions().width - 40 - 12) / 2; // [carlink v2] 横屏/投屏自适应
+  const layout = useResponsiveLayout();
+  const cardW = gridMetrics(layout.width - layout.pagePadding * 2, 144, SPACE.md, 4).itemWidth; // [carlink v2] 横屏/投屏自适应
   const { } = useApp();
   const { playSong } = usePlayer();
   const nav = useNavigation() as { navigate: (s: string, p?: object) => void };
@@ -437,9 +421,9 @@ function HomeMusic() {
         <Text style={st.sectionTitle}>热门歌单</Text>
       </View>
       {playlists.length ? (
-        <View style={st.plGrid}>
+        <HDGrid min={144} gap={SPACE.md}>
           {playlists.slice(0, 9).map(pl => <PlCard key={pl.id} pl={pl} />)}
-        </View>
+        </HDGrid>
       ) : plFail ? (
         <TouchableOpacity style={st.retryRow} activeOpacity={0.8} onPress={() => loadPls(true)}>
           <Text style={st.retryText}>加载失败 · 点击重试</Text>
@@ -451,21 +435,22 @@ function HomeMusic() {
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
-  content: { paddingHorizontal: 20, paddingBottom: 24 },
-  headerRow: { height: 40, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  content: { paddingHorizontal: SPACE.lg, paddingBottom: SPACE.xl, gap: SPACE.md },
+  searchButton: { width: 44, height: 44, borderRadius: RADIUS.control, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
+  headerRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12 },
   hello: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: '700' },
-  body: { gap: 12, paddingTop: 12 },
-  homeOverlay: { position: 'absolute', top: 82, left: 20, right: 20, alignItems: 'center' },
-  homeOverlayCard: { width: 350, maxWidth: '100%' },
+  body: { gap: SPACE.lg, paddingTop: SPACE.sm },
+  localImport: { minHeight: 44, flexDirection: 'row', gap: SPACE.sm, alignItems: 'center', justifyContent: 'center', borderRadius: RADIUS.control, backgroundColor: C.surface2 },
+  localImportLabel: { fontSize: 14, color: C.text2, fontWeight: '600' },
   empty: { color: C.text2, fontSize: 13, lineHeight: 18, paddingTop: 40, textAlign: 'center' },
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   quickDis: { opacity: 0.5 }, // #012②:disabled 态视觉反馈
   quickCard: {
-    height: 128, borderRadius: 14, // [老板 1010] 88→128 与库页英雄卡同高（统合令）
+    minHeight: 88, borderRadius: RADIUS.card, // [老板 1010] 88→128 与库页英雄卡同高（统合令）
     backgroundColor: C.elev, flexDirection: 'row', alignItems: 'center', gap: 12, overflow: 'hidden',
     paddingHorizontal: 12,
   },
-  quickArt: { width: 80, height: 80, borderRadius: 14 },
+  quickArt: { width: 44, height: 44, borderRadius: RADIUS.control },
   quickLabel: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '600', flex: 1, paddingRight: 4 },
   sectionRow: { height: 26, flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
   sectionTitle: { flex: 1, color: C.text, fontSize: 17, lineHeight: 25, fontWeight: '700' },
@@ -490,14 +475,14 @@ const st = StyleSheet.create({
   plArt: { width: '100%', aspectRatio: 1, borderRadius: 10, backgroundColor: C.surface2 },
   plFallback: { alignItems: 'center', justifyContent: 'center' },
   plGlyph: { color: C.text2, fontSize: 24, fontWeight: '700' },
-  plName: { color: C.text, fontSize: 11, lineHeight: 15, fontWeight: '500' },
-  plMeta: { color: C.text2, fontSize: 9, lineHeight: 12 },
+  plName: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '500' },
+  plMeta: { color: C.text2, fontSize: 12, lineHeight: 18 },
   recentRow: { gap: 10 },
-  recentCard: { width: 80, gap: 3 },
-  recentArt: { width: 80, height: 104, borderRadius: 7, backgroundColor: C.surface2 },
+  recentCard: { width: 112, gap: SPACE.sm },
+  recentArt: { width: 112, height: 112, borderRadius: 7, backgroundColor: C.surface2 },
   recentFallback: { alignItems: 'center', justifyContent: 'center' },
   recentGlyph: { color: C.text2, fontSize: 26, fontWeight: '700' },
-  recentTitle: { color: C.text, fontSize: 10, lineHeight: 13, fontWeight: '500' },
+  recentTitle: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '500' },
   recentEmpty: { color: C.text2, fontSize: 12, lineHeight: 17, textAlign: 'center', paddingVertical: 18 },
   podRow: { gap: 10, paddingBottom: 4 },
   podCard: { width: 128, gap: 5 },

@@ -79,16 +79,16 @@ export function MiniPlayer({ standalone }: { standalone?: boolean } = {}) {
             <Text style={st.title} numberOfLines={1}>{current.name}</Text>
             <Text style={st.sub} numberOfLines={1}>{current.singer}{current._types?.flac ? ' · 无损' : ''}</Text>
           </View>
-          <TouchableOpacity style={st.iconBtn} hitSlop={6} onPress={() => nav.navigate('Route')}>
+          <TouchableOpacity style={st.iconBtn} hitSlop={6} accessibilityRole="button" accessibilityLabel="播放设备" onPress={() => nav.navigate('Route')}>
             <Icon name="devices" size={20} color={cast ? C.brand : C.text} />
           </TouchableOpacity>
           {/* lx157:未收藏→面板;仅歌单收录→面板里移除;我喜欢的在→一键取消 */}
-          <TouchableOpacity style={st.iconBtn} hitSlop={6} onPress={() => { popHeart(); if (faved && isFav(current)) { toggleFav(); toast('已取消收藏'); } else setCollect(true); }}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel={faved ? '管理收藏' : '收藏'} style={st.iconBtn} hitSlop={6} onPress={() => { popHeart(); if (faved && isFav(current)) { toggleFav(); toast('已取消收藏'); } else setCollect(true); }}>
             <Animated.Text style={{ transform: [{ scale: pop }] }}>
               <Icon name="heart" size={20} active={faved} color={faved ? C.heart : C.text} />
             </Animated.Text>
           </TouchableOpacity>
-          <TouchableOpacity style={st.playBtn} hitSlop={4} onPress={toggle}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel={playing ? '暂停' : '播放'} style={st.playBtn} hitSlop={4} onPress={toggle}>
             <Icon name={playing ? 'pause' : 'play'} size={24} color={C.onBrand} />
           </TouchableOpacity>
         </View>
@@ -101,18 +101,18 @@ export function MiniPlayer({ standalone }: { standalone?: boolean } = {}) {
 
 const st = StyleSheet.create({
   wrap: { paddingHorizontal: 0 }, // vc78：老板要求沾满整行，左右不留间隙
-  card: { height: 76, borderRadius: 0, backgroundColor: C.elev, overflow: 'hidden' },
-  row: { height: 73, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, gap: 0 }, // 固定高度:进度条恒在底边(v1.1.5 修错位)
-  vinylWrap: { width: 48, height: 48, borderRadius: 999, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', marginHorizontal: 2, shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 5, shadowOffset: { width: 0, height: 2 }, elevation: 3 }, // [老板 1010] 真盘圆卡(基准稿 pvinyl 46px,行高 73 内取 48)
+  card: { height: 72, borderRadius: 0, backgroundColor: C.elev, overflow: 'hidden' },
+  row: { height: 69, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, gap: 0 }, // 固定高度:进度条恒在底边(v1.1.5 修错位)
+  vinylWrap: { width: 40, height: 40, borderRadius: 999, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', marginHorizontal: 2, shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 5, shadowOffset: { width: 0, height: 2 }, elevation: 3 }, // [老板 1010] 真盘圆卡(基准稿 pvinyl 46px,行高 73 内取 48)
   vinylDisc: { width: '100%', height: '100%', borderRadius: 999, position: 'absolute', top: 0, left: 0 },
   vinylLabel: { width: '42%', height: '42%', borderRadius: 999, overflow: 'hidden' }, // 封面嵌盘心(基准稿 mini-label 42%)
   vinylLabelFallback: { backgroundColor: '#2A6E4F' },
-  meta: { flex: 1, marginLeft: 12, gap: 2, minWidth: 0 },
+  meta: { flex: 1, marginLeft: 8, gap: 2, minWidth: 0 },
   title: { color: C.text, fontSize: 14, lineHeight: 17, fontWeight: FW.medium },
-  sub: { color: C.text2, fontSize: 11, lineHeight: 13 },
+  sub: { color: C.text2, fontSize: 12, lineHeight: 18 },
   iconBtn: {
-    width: 32, height: 32, borderRadius: 16, backgroundColor: C.inset,
-    alignItems: 'center', justifyContent: 'center', marginLeft: 8,
+    width: 40, height: 44, borderRadius: 12, backgroundColor: C.inset,
+    alignItems: 'center', justifyContent: 'center', marginLeft: 4,
   },
   playBtn: {
     width: 48, height: 48, borderRadius: 24, backgroundColor: C.brand,

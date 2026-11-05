@@ -25,7 +25,9 @@ export function TabBar({ state, navigation }: {
           <TouchableOpacity
             key={it.name}
             style={st.item}
-            accessibilityRole="button"
+            accessibilityRole="tab"
+            accessibilityLabel={it.label}
+            accessibilityState={{ selected: on }}
             onPress={() => {
               const ev = navigation.emit({ type: 'tabPress', target: state.routes[i].key });
               if (!isTabState(navigation) || !ev.defaultPrevented) {
@@ -51,9 +53,9 @@ const st = StyleSheet.create({
   bar: {
     flexDirection: 'row', backgroundColor: C.surface,
     borderTopWidth: 1, borderTopColor: C.stroke,
-    paddingTop: 8, paddingHorizontal: 24,
+    paddingTop: 8, paddingHorizontal: 16,
   },
-  item: { flex: 1, alignItems: 'center', gap: 4, paddingVertical: 4 },
-  label: { color: C.text2, fontSize: 11, lineHeight: 13, fontWeight: FW.normal },
+  item: { flex: 1, minHeight: 48, alignItems: 'center', gap: 4, paddingVertical: 4 },
+  label: { color: C.text2, fontSize: 12, lineHeight: 18, fontWeight: FW.normal },
   labelOn: { color: C.brandText, fontWeight: FW.medium },
 });

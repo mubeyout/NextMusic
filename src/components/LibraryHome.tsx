@@ -8,6 +8,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'rea
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon, type IconName } from '../theme/Icon';
 import { C, CARD, FW, SP } from '../theme/tokens';
+import { SPACE, RADIUS, TYPE } from '../theme/design-system';
 import { IS_HD } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
 import { GUTTER, focus } from '../hd/hdstyle';
@@ -29,7 +30,7 @@ const KIND_HERO_GRAD: Record<LibKind, HeroGrad> = { local: 'green', cloud: 'blue
 
 // 7.3 P0.5-3 源健康状态点:正常 brand / 延迟(读取中) warn / 断连 danger
 export type LibStatus = 'ok' | 'warn' | 'bad';
-const STATUS_COLOR: Record<LibStatus, string> = { ok: C.brand, warn: '#E8B33D', bad: '#D94D45' };
+const STATUS_COLOR: Record<LibStatus, string> = { ok: C.brand, warn: C.warning, bad: C.danger };
 
 export interface LibQuickAction { icon: IconName; label: string; onPress: () => void; primary?: boolean; disabled?: boolean }
 
@@ -170,14 +171,14 @@ const hv = StyleSheet.create({
   row: { flexDirection: 'row', gap: 14 },
   rowPhone: { flexDirection: 'column', gap: 10 }, // 自适应:phone 堆叠(窄屏统计行放不下双列)
   cell: { flex: 1, minWidth: 0 },
-  hero: { borderRadius: 16, minHeight: 128, overflow: 'hidden' }, // [老板 1010] 170→128 与为我推荐快捷卡同高（统合令）
+  hero: { borderRadius: RADIUS.card, minHeight: 144, overflow: 'hidden' }, // [老板 1010] 170→128 与为我推荐快捷卡同高（统合令）
   heroPhone: { minHeight: 128 },
   heroGrad: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   glow: { position: 'absolute', right: -30, top: -40, width: 180, height: 180, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.10)' },
   heroBody: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 20, paddingHorizontal: 20 },
-  big: { color: '#FFFFFF', fontSize: 19, lineHeight: 24, fontWeight: FW.heavy, textShadowColor: 'rgba(0,0,0,0.25)', textShadowRadius: 6, textShadowOffset: { width: 0, height: 1 } },
-  st: { color: 'rgba(255,255,255,0.92)', fontSize: 12.5, lineHeight: 18, marginTop: 6, fontWeight: FW.medium },
-  mini: { color: 'rgba(255,255,255,0.75)', fontSize: 10.5, lineHeight: 15, marginTop: 4 },
+  big: { color: '#FFFFFF', fontSize: 24, lineHeight: 24, fontWeight: FW.heavy, textShadowColor: 'rgba(0,0,0,0.25)', textShadowRadius: 6, textShadowOffset: { width: 0, height: 1 } },
+  st: { color: '#FFFFFF', fontSize: 14, lineHeight: 20, marginTop: 6, fontWeight: FW.medium },
+  mini: { color: 'rgba(255,255,255,0.75)' , fontSize: 12, lineHeight: 18, marginTop: 4 },
   playBtn: { width: 46, height: 46, borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.42)', alignItems: 'center', justifyContent: 'center' },
   playBtnHD: { width: 54, height: 54 },
   duo: { flexDirection: 'row', gap: 10, marginTop: 12, marginBottom: 2 },
@@ -330,11 +331,11 @@ const lh = StyleSheet.create({
   name: { color: '#F2F7F4', fontSize: 20, lineHeight: 26, fontWeight: FW.bold, flexShrink: 1 },
   nameHD: { fontSize: 23, lineHeight: 30 },
   stats: { color: 'rgba(255,255,255,.85)', fontSize: 12, lineHeight: 17, marginTop: 2 },
-  subAddr: { color: 'rgba(255,255,255,.6)', fontSize: 10.5, lineHeight: 15, marginTop: 1 },
+  subAddr: { color: 'rgba(255,255,255,.6)', fontSize: TYPE.caption, lineHeight: 18, marginTop: 1 },
   statusDot: { width: 8, height: 8, borderRadius: 4, borderWidth: 2, borderColor: 'rgba(255,255,255,.28)', flexShrink: 0 },
   // 快捷动作行
-  actionRow: { flexDirection: 'row', gap: 8 },
-  actBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.surface2, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9 },
+  actionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  actBtn: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.surface2, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9 },
   actBtnPrimary: { backgroundColor: C.brand },
   actBtnOff: { opacity: 0.45 },
   actT: { color: C.text2, fontSize: 11.5, fontWeight: FW.semibold },

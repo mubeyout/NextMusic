@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Activi
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
+import { SPACE, RADIUS } from '../theme/design-system';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { C, CARD, FS, FW, SP } from '../theme/tokens';
 import { useHoverCard } from '../hd/hdweb'; // [LEO 1011 统一令] nm-card 彩色弥散影+hover
 import { DiscCard } from './MyLibraryScreen'; // [老板 1011 15:49] 专辑卡统一件
@@ -37,6 +39,9 @@ type SearchSrc = 'kw' | 'kg' | 'wy' | 'tx' | 'mg';
 
 export function SearchScreen() {
   const insets = useSafeAreaInsets();
+  const layout = useResponsiveLayout();
+  const [focused, setFocused] = useState(false);
+  const [contentWidth, setContentWidth] = useState(0);
   const nav = useNavigation() as { goBack: () => void };
   const { playSong, current } = usePlayer();
   const [kw, setKw] = useState('');
@@ -53,6 +58,10 @@ export function SearchScreen() {
   const [actSong, setActSong] = useState<SongItem | null>(null); // lx163:搜索行 ⋯ 菜单
   const [collect, setCollect] = useState(false);
   const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
+  const changeQuery = (value: string) => {
+    seqRef.current++; setKw(value); setBusy(false); setErr(null); setAllFailed(false);
+    setResults(null); setSingers(null); setAlbums(null); setPvHits([]);
+  };
   const seqRef = useRef(0); // lxfix 0922:搜索代次守卫
 
   useEffect(() => {
@@ -70,13 +79,16 @@ export function SearchScreen() {
       // lx163e:聚合搜索——五源并行取歌曲,交错合并去重(同名同歌手取先到);歌手/专辑服务器智能选源
       // [老板 1011 11:49] 第三方媒体并行检索(听风/emby/jf 有源内搜索端点;失败静默不阻塞在线结果)
       const pvAccounts = providers.all().filter(p => p.type === 'tingfeng' || PROTOCOL[p.type] === 'emby' || PROTOCOL[p.type] === 'jellyfin');
-      const [lists, ar, al, pvSettled] = await Promise.all([
-        Promise.all(SOURCES.map(s => lxapi.search(query, s.id).catch(() => [] as SongItem[]))),
+      const [sourceResults, ar, al, pvSettled] = await Promise.all([
+        Promise.allSettled(SOURCES.map(s => lxapi.search(query, s.id))),
         api.searchSingers(query, 'kw').catch(() => [] as never),
         api.searchAlbums(query, 'kw').catch(() => [] as never),
         Promise.allSettled(pvAccounts.map(p => providerApi.search(p, query).then(songs => ({ name: p.name, label: PROVIDER_META[p.type].label, songs: songs.slice(0, 20) })))),
       ]);
+      const lists = sourceResults.filter((r): r is PromiseFulfilledResult<SongItem[]> => r.status === 'fulfilled').map(r => r.value);
+      const sourceFailure = sourceResults.every(r => r.status === 'rejected');
       const pv = pvSettled.filter(r => r.status === 'fulfilled' && (r as PromiseFulfilledResult<{ songs: SongItem[] }>).value.songs.length).map(r => (r as PromiseFulfilledResult<{ name: string; label: string; songs: SongItem[] }>).value);
+      if (my !== seqRef.current) return;
       setPvHits(pv);
       if (my !== seqRef.current) return; // 过期响应:用户已改词,丢弃(否则旧结果盖新词→「搜的和输入的没关系」)
       // 搜索历史(去重置顶,留 10 条)——只在结果被采纳时写入,半截词不进历史
@@ -89,7 +101,8 @@ export function SearchScreen() {
         if (seen.has(k)) continue; seen.add(k); sg.push(s);
       }
       setResults(sg); setSingers(ar); setAlbums(al);
-      if (!sg.length && !ar.length && !al.length && !pv.length) setAllFailed(true);
+      if (!sg.length && !ar.length && !al.length && !pv.length && sourceFailure) setAllFailed(true);
+      else if (!sg.length && !ar.length && !al.length && !pv.length) setErr('没有找到相关内容，试试其他关键词');
     } catch {
       if (my !== seqRef.current) return;
       setErr('搜索失败：无法连接音源');
@@ -101,9 +114,9 @@ export function SearchScreen() {
   useEffect(() => {
     const t = setTimeout(() => {
       if (!kw.trim()) { setResults(null); setSingers(null); setAlbums(null); setPvHits([]); setAllFailed(false); return; }
-      if (kw.trim().length >= 2) search(kw);
+      if (kw.trim().length >= 1) search(kw);
     }, 600);
-    return () => clearTimeout(t);
+    return () => { clearTimeout(t); seqRef.current++; };
   }, [kw]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // lx163c:锚点导航重构——去模式 tab:一次搜索全量分区,顶栏变锚点 chips(点击滚动),源选择内聚到歌曲区头部
@@ -117,7 +130,7 @@ export function SearchScreen() {
 
   // lx163b:空闲态（搜索历史 + 热搜词）——四态共用：未搜索过/输入已清空时展示
   const idlePane = (
-    <View style={{ gap: SP.xxl, paddingTop: 8 }}>
+    <View onLayout={e => setContentWidth(e.nativeEvent.layout.width)} style={{ gap: SPACE.xl, paddingTop: SPACE.sm }}>
       {history.length ? (
         <View style={{ gap: SP.md }}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -137,34 +150,38 @@ export function SearchScreen() {
         </View>
       ) : null}
       <View style={{ gap: SP.md }}>
-        <Text style={st.allSecTitle}>大家都在搜</Text>
+        <Text style={st.allSecTitle}>快速搜索</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.md }}>
           {HOT_WORDS.map((w, i) => (
             <TouchableOpacity key={w} style={st.chip} onPress={() => { setKw(w); search(w); }}>
-              <Text style={[st.chipIdx, i < 3 && { color: C.brand }]}>{i + 1}</Text>
+
               <Text style={st.chipText} numberOfLines={1}>{w}</Text>
             </TouchableOpacity>
           ))}
         </View>
       </View>
+      <View style={{ gap: SPACE.lg }}><Text style={st.allSecTitle}>按场景发现</Text><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.md }}>{[
+        { label: '专注工作', query: '轻音乐', hint: '轻音乐与纯音乐' }, { label: '通勤路上', query: '流行', hint: '熟悉的流行旋律' },
+        { label: '运动时刻', query: '电子', hint: '有节奏的电子音乐' }, { label: '夜间放松', query: '民谣', hint: '安静听一首民谣' },
+      ].map(x => <TouchableOpacity key={x.label} accessibilityRole="button" onPress={() => { setKw(x.query); search(x.query); }} style={{ width: Math.max(1, (contentWidth - SPACE.md * ((contentWidth >= 800 ? 4 : contentWidth >= 320 ? 2 : 1) - 1)) / (contentWidth >= 800 ? 4 : contentWidth >= 320 ? 2 : 1)), minHeight: 96, backgroundColor: C.surface, borderRadius: RADIUS.card, padding: SPACE.lg, justifyContent: 'center', gap: SPACE.sm }}><Text style={{ color: C.text, fontSize: FS.lg, fontWeight: FW.bold }}>{x.label}</Text><Text style={{ color: C.text2, fontSize: FS.sm, lineHeight: 18 }}>{x.hint}</Text></TouchableOpacity>)}</View></View>
     </View>
   );
 
   return (
     <View style={st.screen}>
-      <View style={[st.searchRow, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => nav.goBack()} hitSlop={6} style={{ width: 24 }}>
-          <Icon name="back" size={22} />
-        </TouchableOpacity>
-        <View style={st.searchBox}>
+      <View style={{ paddingTop: insets.top + SPACE.lg, paddingHorizontal: layout.pagePadding, paddingBottom: SPACE.lg, gap: SPACE.lg, width: '100%', maxWidth: 1100, alignSelf: 'center' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md }}><TouchableOpacity accessibilityRole="button" accessibilityLabel="返回" onPress={() => nav.goBack()} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Icon name="back" size={22} /></TouchableOpacity><View style={{ flex: 1 }}><Text style={{ color: C.text, fontSize: FS.h1, fontWeight: FW.bold }}>搜索</Text><Text style={{ color: C.text2, fontSize: FS.body, lineHeight: 20 }}>歌曲、歌手、专辑，一次查找</Text></View></View>
+        <View style={[st.searchBox, focused && { borderColor: C.brand }]}>
           <Icon name="search" size={18} color={C.text2} />
           <TextInput
             ref={inputRef}
-            style={st.searchInput}
+            style={[st.searchInput, Platform.OS === 'web' && ({ outlineStyle: 'none' } as never)]}
+            onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
             placeholder="搜索歌曲、歌手、专辑"
             placeholderTextColor={C.text2}
             value={kw}
-            onChangeText={setKw}
+            accessibilityLabel="搜索音乐"
+            onChangeText={changeQuery}
             onSubmitEditing={() => search(kw)}
             returnKeyType="search"
             autoCorrect={false}
@@ -193,7 +210,7 @@ export function SearchScreen() {
           ))}
         </ScrollView>
       ) : null}
-      <ScrollView ref={scrollRef} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 140 }}>
+      <ScrollView ref={scrollRef} contentContainerStyle={{ paddingHorizontal: layout.pagePadding, paddingBottom: insets.bottom + 140, width: '100%', maxWidth: 1100, alignSelf: 'center' }}>
         {/* lx168:结果首载淡入(硬切→180ms) */}
         <Animated.View style={{ opacity: fadeA, flex: 1 }}>
         {busy ? (
@@ -332,7 +349,7 @@ function AllAlbumCard({ al, onPress }: { al: { id: string; name: string; singer?
 const st = StyleSheet.create({
   singerRow: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, minHeight: 60 },
   anchorBar: { flexGrow: 0, paddingVertical: 8 },
-  anchorChip: { backgroundColor: C.surface2, borderRadius: 14, paddingHorizontal: 13, height: 30, justifyContent: 'center' },
+  anchorChip: { backgroundColor: C.surface2, borderRadius: 14, paddingHorizontal: 13, minHeight: 44, justifyContent: 'center' },
   anchorText: { color: C.text, fontSize: FS.body, fontWeight: FW.semibold },
   aggBadge: { backgroundColor: C.surface2, borderRadius: 9, paddingHorizontal: 8, paddingVertical: 3 },
   aggText: { color: C.text2, fontSize: FS.xs, fontWeight: FW.bold },
@@ -342,7 +359,7 @@ const st = StyleSheet.create({
   allCardSub: { color: C.text2, fontSize: FS.xs, alignSelf: 'stretch', textAlign: 'center' },
   allMore: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.xs, paddingVertical: 12 },
   allMoreText: { color: C.text2, fontSize: FS.body, fontWeight: FW.semibold },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, backgroundColor: C.surface2, borderRadius: 14, paddingHorizontal: 13, height: 30 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, backgroundColor: C.surface2, borderRadius: 14, paddingHorizontal: 13, minHeight: 44 },
   chipText: { color: C.text, fontSize: FS.body, fontWeight: FW.medium, maxWidth: 160 },
   chipIdx: { color: C.text3, fontSize: FS.sm, fontWeight: FW.heavy },
   round: { width: 44, height: 44, borderRadius: 22 },
@@ -352,7 +369,7 @@ const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: SP.lg, paddingHorizontal: 20, marginBottom: 12 },
   searchBox: {
-    flex: 1, height: 44, borderRadius: 22, backgroundColor: C.elev,
+    height: 52, borderRadius: RADIUS.control, backgroundColor: C.elev, borderWidth: 1, borderColor: C.stroke,
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: SP.md,
   },
   searchInput: { flex: 1, color: C.text, fontSize: FS.md, padding: 0 },

@@ -16,6 +16,8 @@ import { createMMKV } from 'react-native-mmkv';
 import type { SongItem } from '../services/server';
 import { api } from '../services/server';
 import { hdNav } from './hdnav';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
+import { SPACE } from '../theme/design-system';
 import { T,  FS, FW, SP } from '../theme/tokens';
 
 const SOURCES: { id: SearchSrc; label: string }[] = [
@@ -72,9 +74,13 @@ export function HDSearch() {
     return () => { dead = true; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const insets = useSafeAreaInsets();
+  const layout = useResponsiveLayout();
   const { playSong, current, appendQueue, playNextUp } = usePlayer();
   const { connected, token } = useApp(); // #018:歌曲行统一菜单 deps
   const [kw, setKw] = useState('');
+  const changeQuery = (value: string) => {
+    seqRef.current++; setKw(value); setBusy(false); setErr(null); setResults(null); setSingers(null); setAlbums(null);
+  };
   const seqRef = useRef(0); // lxfix 0922:搜索代次守卫
   const [sfocus, setSfocus] = useState(false); // #035b:搜索框整框 focus 激活态
   const [mode, setMode] = useState<'song' | 'singer' | 'album'>('song'); // lx163:搜索类型
@@ -94,7 +100,9 @@ export function HDSearch() {
       if (m === 'singer') { const ar = await api.searchSingers(query, 'kw'); if (my === seqRef.current) setSingers(ar); return; } // lx163:服务器 extendSearch
       if (m === 'album') { const al = await api.searchAlbums(query, 'kw'); if (my === seqRef.current) setAlbums(al); return; }
       // lx163e:五源并行聚合,交错去重(与手机端同策略)
-      const lists = await Promise.all(SOURCES.map(s => lxapi.search(query, s.id).catch(() => [] as SongItem[])));
+      const responses = await Promise.allSettled(SOURCES.map(s => lxapi.search(query, s.id)));
+      const lists = responses.filter((r): r is PromiseFulfilledResult<SongItem[]> => r.status === 'fulfilled').map(r => r.value);
+      if (responses.every(r => r.status === 'rejected')) throw new Error('unavailable');
       if (my !== seqRef.current) return; // 过期响应丢弃
       const seen = new Set<string>(); const merged: SongItem[] = [];
       for (let i = 0; i < 4; i++) for (const list of lists) {
@@ -112,9 +120,9 @@ export function HDSearch() {
 
   // debounce 自动搜索
   useEffect(() => {
-    const t = setTimeout(() => { if (kw.trim().length >= 2) search(kw); }, 600);
-    return () => clearTimeout(t);
-  }, [kw]); // eslint-disable-line react-hooks/exhaustive-deps
+    const t = setTimeout(() => { if (kw.trim()) search(kw, mode); }, 450);
+    return () => { clearTimeout(t); seqRef.current++; };
+  }, [kw, mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // lx164:本周精选 = TOP500 前 8(与手机探索页同源)
   useEffect(() => {
@@ -130,44 +138,46 @@ export function HDSearch() {
     <View style={st.screen}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 22, paddingBottom: 26, gap: SP.xl }}
+        contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: layout.pagePadding, paddingBottom: SPACE.xl, gap: SPACE.lg }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* lx163:类型 pill 歌曲/歌手/专辑 */}
-        <View style={{ flexDirection: 'row', gap: SP.md }}>
-          {([['song', '歌曲'], ['singer', '歌手'], ['album', '专辑']] as const).map(([m, label]) => (
-            <HDTouch
-              key={m}
-              style={[st.pill, mode === m && st.pillOn]}
-              focusStyle={mode === m ? { borderWidth: 2, borderColor: C.brandSoft } : st.pillFocus}
-              onPress={() => { setMode(m); setSingers(null); setAlbums(null); if (kw.trim().length >= 2) search(kw, m); }}
-            >
-              <Text style={[st.pillLabel, mode === m && st.pillLabelOn]}>{label}</Text>
-            </HDTouch>
-          ))}
-        </View>
+        <View style={{ gap: SPACE.xs }}><Text style={{ color: C.text, fontSize: FS.h1, fontWeight: FW.bold }}>搜索</Text><Text style={{ color: C.text2, fontSize: FS.body, lineHeight: 20 }}>找歌曲、歌手与专辑，或浏览下面的音乐分类</Text></View>
         {/* 搜索框 */}
         <View style={[st.searchRow, sfocus && st.searchRowOn]}>
           <Icon name="search" size={15} color={C.text3} />
           <TextInput
             style={st.input}
-            placeholder="搜索歌曲 / 歌手 / 专辑 / 歌单 / 播客…"
+            placeholder="搜索歌曲、歌手或专辑"
             placeholderTextColor={C.text3}
             value={kw}
-            onChangeText={setKw}
+            accessibilityLabel="搜索音乐"
+            onChangeText={changeQuery}
             returnKeyType="search"
             onSubmitEditing={() => search(kw)}
             onFocus={() => setSfocus(true)}
             onBlur={() => setSfocus(false)}
           />
           {kw ? (
-            <HDTouch style={st.clearBtn} focusStyle={false} onPress={() => { setKw(''); setResults(null); setSingers(null); setAlbums(null); }}>
+            <HDTouch style={st.clearBtn} focusStyle={false} onPress={() => { changeQuery(''); setResults(null); setSingers(null); setAlbums(null); }}>
               <Icon name="close" size={13} color={C.text2} />
             </HDTouch>
           ) : null}
         </View>
 
+        {/* lx163:类型 pill 歌曲/歌手/专辑 */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.md }}>
+          {([['song', '歌曲'], ['singer', '歌手'], ['album', '专辑']] as const).map(([m, label]) => (
+            <HDTouch
+              key={m}
+              style={[st.pill, mode === m && st.pillOn]}
+              focusStyle={mode === m ? { borderWidth: 2, borderColor: C.brandSoft } : st.pillFocus}
+              onPress={() => { seqRef.current++; setMode(m); setBusy(false); setResults(null); setSingers(null); setAlbums(null); setErr(null); }}
+            >
+              <Text style={[st.pillLabel, mode === m && st.pillLabelOn]}>{label}</Text>
+            </HDTouch>
+          ))}
+        </View>
         {/* lx134:空闲态内容(老板:探索页太空)——热门歌手卡 + 风格分类 + 热搜词 */}
         {results == null && !kw.trim() ? (
           <View style={{ gap: SP.section, marginTop: 6 }}>
@@ -353,9 +363,9 @@ const st = StyleSheet.create({
   artistAvatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' }, // lx139:真照片(Image 圆形)
   artistGlyph: { color: C.white, fontSize: FS.display, fontWeight: FW.heavy }, // [LEO 1011] 22 档外→display(24)头像兜底
   artistName: { color: C.text, fontSize: FS.sm, fontWeight: FW.semibold },
-  genrePill: { paddingHorizontal: 16, height: 32, borderRadius: 16, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
+  genrePill: { paddingHorizontal: 16, minHeight: 44, borderRadius: 16, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
   genreText: { color: C.text2, fontSize: FS.body, fontWeight: FW.semibold },
-  hotPill: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, paddingHorizontal: 13, height: 34, borderRadius: 12, backgroundColor: C.surface },
+  hotPill: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, paddingHorizontal: 13, minHeight: 44, borderRadius: 12, backgroundColor: C.surface },
   hotIdx: { color: C.text3, fontSize: FS.sm, fontWeight: FW.heavy, fontVariant: ['tabular-nums'] },
   hotText: { color: C.text, fontSize: FS.body, fontWeight: FW.medium },
   resRow: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, minHeight: 54, paddingHorizontal: 8, borderRadius: 10 },

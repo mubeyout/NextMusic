@@ -147,18 +147,9 @@ export function RootNavigator() {
   // v1.1.9 桌面侧栏常驻:内页 contentStyle 让位左侧 174px 侧栏(native-stack 官方 option,web/原生都识别;原生端 {} 空对象无影响)
 // v1.2.7 桌面:phone 桥接屏缩放适配(启动流 Server/Auth 两屏)——与 HDMain.withPhoneScale 同则;
 // phone 原生侧原样返回
-const withPhoneScale = (Cmp: React.ComponentType<Record<string, unknown>>) => {
-  if (Platform.OS !== 'web') return Cmp;
-  const W = (props: Record<string, unknown>) => (
-    <View style={{ flex: 1, transform: [{ scale: 0.75 }], transformOrigin: 'top left', width: '133.3334%', height: '133.3334%' }}>
-      <Cmp {...props} />
-    </View>
-  );
-  W.displayName = 'PhoneScale';
-  return W;
-};
-
-const SIDEBAR_LOCK_CONTENT: { marginLeft?: number; backgroundColor?: string } = Platform.OS === 'web' ? { marginLeft: 174 } : {};
+const withPhoneScale = (Cmp: React.ComponentType<Record<string, unknown>>) => Cmp;
+// Root routes fill the viewport; the nested HD shell owns its sidebar.
+const SIDEBAR_LOCK_CONTENT = {};
 
 // v1.2.15(老板 09-14"进出页面还闪")转场终版：容器恒直切(lx57 一加实测 fade 两页半透明叠加"变亮一下"31→66→35、slide 露底窗口闪白，容器级转场两种预设都不可救)；
 // 动效改内容层——新页 18px 滑入+淡入 220ms cubic-out，不透明底上零中间态=物理无闪(MiniPlayer lx168① 同款已验证模式)。

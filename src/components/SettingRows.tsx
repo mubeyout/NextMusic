@@ -9,11 +9,12 @@ import { Icon } from '../theme/Icon';
 import { PageHeader } from './PageChrome';
 import { ProTag } from './ProTag'; // [1012 收敛令] 备份 ActionRow=webdav_backup gate 位,锁标→ProTag
 import { C, FW } from '../theme/tokens';
+import { RADIUS, SPACE } from '../theme/design-system';
 import { ActionSheet } from './ActionSheet';
 
 export function ToggleRow({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
   return (
-    <TouchableOpacity style={[s.row, s.rowDivide]} activeOpacity={0.7} onPress={() => onChange(!value)}>
+    <TouchableOpacity accessibilityRole="switch" accessibilityLabel={label} accessibilityState={{ checked: value }} style={[s.row, s.rowDivide]} activeOpacity={0.7} onPress={() => onChange(!value)}>
       <Text style={s.rowLabel}>{label}</Text>
       <View style={[s.switch, value && s.switchOn]}>
         <View style={[s.knob, value && s.knobOn]} />
@@ -50,10 +51,10 @@ export function ValueRow({ label, value, options, onPick }: {
 export function ActionRow({ label, value, destructive, locked, onPress }: { label: string; value?: string; destructive?: boolean; locked?: boolean; onPress: () => void }) {
   return (
     <TouchableOpacity style={[s.row, s.rowDivide]} activeOpacity={0.7} onPress={onPress}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+      <View style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}>
         {/* [1012 收敛] gate 位保留,owned 态 locked=false 自动静默(原行注释曾泄漏成可见文本) */}
         {locked ? <ProTag size="compact" /> : null}
-        <Text style={[s.rowLabel, destructive && { color: '#FF6B6B' }]}>{label}</Text>
+        <Text style={[s.rowLabel, destructive && { color: C.danger }]}>{label}</Text>
       </View>
       <View style={s.rowRight}>
         {value ? <Text style={s.rowValue}>{value}</Text> : null}
@@ -80,9 +81,10 @@ export function InputRow({ label, value, placeholder, onChange, secure }: {
   label: string; value: string; placeholder?: string; onChange: (v: string) => void; secure?: boolean;
 }) {
   return (
-    <View style={[s.row, s.rowDivide, { height: 60 }]}>
+    <View style={[s.row, s.rowDivide, { minHeight: 60, flexWrap: 'wrap', gap: SPACE.sm }]}>
       <Text style={s.rowLabel}>{label}</Text>
       <TextInput
+        accessibilityLabel={label}
         style={s.input}
         value={value}
         placeholder={placeholder}
@@ -119,16 +121,16 @@ const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   header: { height: 40, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 10 },
   title: { flex: 1, color: C.text, fontSize: 24, lineHeight: 35, fontWeight: FW.bold, textAlign: 'center' },
-  section: { borderRadius: 14, backgroundColor: C.surface, padding: 16, marginBottom: 14 },
+  section: { borderRadius: RADIUS.card, backgroundColor: C.surface, padding: SPACE.lg, marginBottom: SPACE.lg },
   secTitle: { color: C.text2, fontSize: 12, lineHeight: 16, fontWeight: FW.heavy, marginBottom: 12 }, // v3.30(LEO P1):分组标题退层级(text2+800)间距 8→12
-  row: { minHeight: 44, flexDirection: 'row', alignItems: 'center' },
+  row: { minHeight: 52, gap: SPACE.sm, flexDirection: 'row', alignItems: 'center' },
   rowDivide: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.strokeFaint, paddingTop: 10, marginTop: 10 },
-  rowLabel: { flex: 1, color: C.text, fontSize: 14, lineHeight: 20 },
-  rowRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  rowLabel: { flex: 1, minWidth: 0, flexShrink: 1, color: C.text, fontSize: 14, lineHeight: 20 },
+  rowRight: { flexShrink: 1, maxWidth: '55%', flexDirection: 'row', alignItems: 'center', gap: 4 },
   rowValue: { color: C.text2, fontSize: 12, lineHeight: 16, maxWidth: 180 },
-  input: { width: 190, color: C.text, fontSize: 13, textAlign: 'right', paddingVertical: 4 },
+  input: { flex: 1, minWidth: 120, maxWidth: '60%', color: C.text, fontSize: 13, textAlign: 'right', paddingVertical: 4 },
   switch: { width: 44, height: 26, borderRadius: 13, backgroundColor: C.inset2, padding: 2 },
   switchOn: { backgroundColor: C.brand },
-  knob: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#8E8E8E' },
+  knob: { width: 22, height: 22, borderRadius: 11, backgroundColor: C.knob },
   knobOn: { backgroundColor: C.knobOn, alignSelf: 'flex-end' },
 });

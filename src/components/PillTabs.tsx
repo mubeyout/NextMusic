@@ -13,7 +13,7 @@ export function PillTabs({ tabs, active, onChange }: {
         {tabs.map((t, i) => {
           const on = i === active;
           return (
-            <TouchableOpacity key={t} onPress={() => onChange(i)} style={st.hit}>
+            <TouchableOpacity accessibilityRole="tab" accessibilityLabel={t} accessibilityState={{ selected: on }} key={t} onPress={() => onChange(i)} style={st.hit}>
               <View style={[st.pill, on && st.pillOn]}>
                 <Text style={[st.label, on && st.labelOn]}>{t}</Text>
               </View>
@@ -26,15 +26,15 @@ export function PillTabs({ tabs, active, onChange }: {
 }
 
 const st = StyleSheet.create({
-  wrap: { height: 40, justifyContent: 'center' },
+  wrap: { height: 48, justifyContent: 'center' },
   row: { gap: 8, alignItems: 'center' },
-  hit: { height: 40, justifyContent: 'center' },
+  hit: { height: 44, justifyContent: 'center' },
   pill: {
-    height: 30, borderRadius: 999, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center',
+    height: 36, borderRadius: 999, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center',
     backgroundColor: C.surface2,
   },
   pillOn: { backgroundColor: C.brand },
-  label: { color: C.text2, fontSize: 12, lineHeight: 14, fontWeight: FW.normal },
+  label: { color: C.text2, fontSize: 14, lineHeight: 20, fontWeight: FW.normal },
   labelOn: { color: C.onBrand, fontWeight: FW.medium },
 });
 
@@ -44,8 +44,8 @@ const st = StyleSheet.create({
 import { HDTouch } from '../hd/HDTouch';
 import { FOCUS_PILL } from '../hd/hdstyle';
 const hp = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 10, paddingVertical: 4 },
-  pill: { height: 36, borderRadius: 999, paddingHorizontal: 20, justifyContent: 'center', alignItems: 'center', backgroundColor: C.surface2 },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 4 },
+  pill: { minHeight: 44, borderRadius: 999, paddingHorizontal: 20, justifyContent: 'center', alignItems: 'center', backgroundColor: C.surface2 },
   pillOn: { backgroundColor: C.brand },
   label: { color: C.text2, fontSize: 13, fontWeight: FW.semibold },
   labelOn: { color: C.onBrand, fontWeight: FW.bold },

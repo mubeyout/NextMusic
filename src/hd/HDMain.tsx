@@ -14,6 +14,8 @@ import { useApp } from '../state/AppState';
 import { providers } from '../services/providers';
 import { settings, onSettings } from '../services/settings';
 import { effectiveBottomInset } from './hdstyle';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
+import { SPACE, RADIUS } from '../theme/design-system';
 import { IS_CAR_DEVICE } from '../services/appversion';
 import { library } from '../state/library';
 import { playlistSync } from '../state/playlistSync'; // lx163
@@ -122,21 +124,8 @@ const railNav = (s: string, p?: object) => {
 // 而 HDMain JSX 里内联调用（component={withPhoneScale(X)}）→ HDMain 每次重淄=全部桥接屏
 // 整树重挂(状态/手势/滚动全灭+focus effect 重跑)。缓存后同原组件恒同身份，重淮不重挂。
 const phoneScaleCache = new Map<React.ComponentType<Record<string, unknown>>, React.ComponentType<Record<string, unknown>>>();
-export const withPhoneScale = (Cmp: React.ComponentType<Record<string, unknown>>) => {
-  if (!IS_WEB) return Cmp;
-  const hit = phoneScaleCache.get(Cmp);
-  if (hit) return hit;
-  // web: CSS zoom 替代 transform scale——zoom 参与布局,ScrollView 尺寸/滚轮坐标自动适配
-  // (transform 0.75 下 RNW ScrollView 计算布局尺寸按未缩放值,底部内容不可达=裁切,老板实测)
-  const W = (props: Record<string, unknown>) => (
-    <div style={{ width: '100%', height: '100%', zoom: 0.75, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      <Cmp {...props} />
-    </div>
-  );
-  W.displayName = 'PhoneScale';
-  phoneScaleCache.set(Cmp, W);
-  return W;
-};
+// Shared screens use their natural layout; breakpoints handle density and wrapping.
+export const withPhoneScale = (Cmp: React.ComponentType<Record<string, unknown>>) => Cmp;
 
 // v1.2.5 桌面平台探测(win/linux 品牌行顶入轨道,mac 轨道留给红绿灯)
 const NM_PLAT = IS_WEB ? String((globalThis as unknown as { nmDesktop?: { platform?: string } }).nmDesktop?.platform || '') : '';
@@ -145,11 +134,16 @@ const HAS_DESKTOP_BRIDGE = !!NM_PLAT; // 空串=纯浏览器(服务端部署),El
 
 export function HDMain() {
   const insets = useSafeAreaInsets();
+  const layout = useResponsiveLayout();
+  const compactRail = IS_WEB && layout.compact;
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const sidebarWidth = IS_WEB ? (compactRail ? 224 : layout.sidebar) : H.sidebar;
   const [tab, setTab] = useState<number>(0);
   const [pls, setPls] = useState<{ key: string; localId?: string; name: string; count: number; songs: SongItem[] }[]>([]);
   const [loveCount, setLoveCount] = useState<number | null>(null);
   const [pbCollect, setPbCollect] = useState<import('../services/server').SongItem | null>(null);
-  const [innerRoute, setInnerRoute] = useState<string>('Tabs'); // 常驻 bar 按内页路由显隐(Player 时隐藏)
+  const [innerRoute, setInnerRoute] = useState<string>('Tabs');
+  useEffect(() => { setDrawerOpen(false); }, [innerRoute, tab]); // 常驻 bar 按内页路由显隐(Player 时隐藏)
   // 1028 车机适配:底部安全让位(星愿实测系统栏 112px，设置可覆盖)响应式镜像(设置改即生效;播放条整体抬升)
   // 取 max(运行时 insets.bottom, effectiveBottomInset())——其他品牌车机 insets 真实值更大时跟随(宁多勿压)
   const [botLift, setBotLift] = useState(Math.max(insets.bottom, effectiveBottomInset()));
@@ -286,7 +280,12 @@ export function HDMain() {
     <View style={[st.screen, { paddingLeft: insets.left, paddingTop: Math.max(insets.top, IS_CAR_DEVICE ? 72 : 0) }]}>
       {/* 1028 星愿安全区:左侧只跟运行时 insets(实车实测固定 96 兑底致无左 bar 车型空一大块——老板实测回退);顶部 72 保留(实锤重叠过) */}
       {/* ===== 侧栏(桌面版结构) ===== */}
-      <View style={IS_WEB ? st.sidebarWrapWeb : st.sidebarWrap}>
+      {compactRail && !layout.narrow ? <View style={st.compactRail}>
+        {[['home', '首页', () => { setTab(0); hdInnerPop(); }], ['search', '搜索', () => railNav('Search')], ['server', '媒体库', () => railNav('MediaLibs')], ['heart', '我的收藏', () => railNav('MyFavorites')], ['more', '全部导航', () => setDrawerOpen(true)]].map(([icon, label, action]) => <HDTouch key={String(icon)} accessibilityLabel={String(label)} title={String(label)} style={st.railIcon} onPress={action as () => void}><Icon name={icon as never} size={24} color={C.text2} /></HDTouch>)}
+      </View> : null}
+      {compactRail && drawerOpen ? <HDTouch accessibilityLabel="关闭导航" focusStyle={false} style={st.drawerScrim} onPress={() => setDrawerOpen(false)} /> : null}
+      <View style={[IS_WEB ? st.sidebarWrapWeb : st.sidebarWrap, { width: sidebarWidth }, compactRail && { display: drawerOpen ? 'flex' : 'none', position: 'absolute', top: 0, bottom: 0, left: 0, zIndex: 60 }]}>
+        {compactRail ? <HDTouch accessibilityLabel="关闭导航" style={st.drawerClose} onPress={() => setDrawerOpen(false)}><Icon name="close" size={22} color={C.text} /></HDTouch> : null}
         {IS_WEB ? (
           /* v1.2.5 桌面(老板:brand 在导航占太高):品牌行独立于滚动区——
            * win/linux 负 margin 顶入 36px 顶部轨道(轨道透明,整行仍是拖拽面,品牌不可点无副作用);
@@ -393,7 +392,8 @@ export function HDMain() {
 
       {/* ===== 内容区(lx84:嵌套栈——内页只在此切换,侧栏恒固定) ===== */}
       <View style={st.body}>
-        <NavigationIndependentTree>
+        {compactRail ? <View style={st.compactHeader}><HDTouch accessibilityLabel="打开导航" style={st.railIcon} onPress={() => setDrawerOpen(true)}><Icon name="more" size={22} color={C.text} /></HDTouch><Text style={{ flex: 1, color: C.text, fontSize: 18, fontWeight: '700' }}>NextMusic</Text><HDTouch accessibilityLabel="搜索音乐" style={st.railIcon} onPress={() => railNav('Search')}><Icon name="search" size={22} color={C.text} /></HDTouch></View> : null}
+        <View style={st.contentHost}><NavigationIndependentTree>
         <NavigationContainer ref={hdInnerRef} theme={hdInnerTheme} onStateChange={() => { try { const r = hdInnerRef.getCurrentRoute() as unknown as { name?: string; params?: object } | undefined; setInnerRoute(r?.name || 'Tabs'); setInnerP((r?.params as Record<string, unknown>) || null); } catch { /* ignore */ } }}>
           {/* 坞108:TV 转场必须直切;坞57:fade 有变亮中间态 */}
           {/* [KAI 20261001] freezeOnBlur 关闭——冻结快照层事件死点:匿名态媒体库可见但点击无反应无焦点(老板 12:50 报障,浏览器实证:登录态同环境正常/匿名态 Pressable 零响应);冻结屏量级有限性能可接受 */}
@@ -466,7 +466,7 @@ export function HDMain() {
         </View>
         ) : null}
         {pbCollect ? <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, zIndex: 999 }}><HDCollect song={pbCollect} onClose={() => setPbCollect(null)} /></View> : null}
-        </NavigationIndependentTree>
+        </NavigationIndependentTree></View>
       </View>
     </View>
   );
@@ -535,6 +535,8 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
   const { position, duration } = usePlayerProgress(); // [1011 15:16] 进度独立订阅
   const { faved } = useFav(current); // lx103:收藏态展示(操作走选歌单面板)
   const pct = duration > 0 ? Math.min(1, position / duration) : 0;
+  const [barWidth, setBarWidth] = useState(0);
+  const compact = barWidth > 0 && barWidth < 900;
   // R6 根治:HDPlayBar 底部条是全 app 第 4 处独立 seek 实现(R3 自加坐标层三病:左边距恒0/宽度量错元素/直写 audio 绕过通道)
   // → 统一 useSeekBar hook(pageX+实时 rect+seekTo 通道),全 app seek 只此一处实现
   const pbSeek = useSeekBar((pct) => { if (duration > 0) seekTo(pct * duration); });
@@ -546,8 +548,27 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
     toast('已加入下载队列');
   };
 
+  if (compact) return (
+    <View onLayout={e => setBarWidth(e.nativeEvent.layout.width)} style={[st.playbar, { height: 72, paddingHorizontal: SPACE.sm }]}>
+      <HDTouch accessibilityLabel="展开播放器" style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }} onPress={() => hdNav()?.navigate('Player')}>
+        {current?.img ? <Image source={{ uri: current.img }} style={st.pbArt} /> : <View style={[st.pbArt, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={22} color={C.text2} /></View>}
+        <View style={{ flex: 1, minWidth: 0 }}><Text style={st.pbTitle} numberOfLines={1}>{current?.name || '未在播放'}</Text><Text style={st.pbSub} numberOfLines={1}>{current?.singer || '选择一首音乐开始'}</Text></View>
+      </HDTouch>
+      <HDTouch accessibilityLabel={playing ? '暂停' : '播放'} style={[st.playBtn, { width: 44, height: 44, borderRadius: 22 }]} onPress={toggle}><Icon name={playing ? 'pause' : 'play'} size={22} color={C.onBrand} /></HDTouch>
+      <HDTouch accessibilityLabel="播放队列" style={st.railIcon} onPress={() => hdNav()?.navigate('Queue')}><Icon name="queue" size={22} color={C.text2} /></HDTouch>
+      <HDTouch accessibilityLabel="更多播放操作" style={st.railIcon} onPress={() => hdActions.menu('播放操作', [
+        { label: '上一首', icon: 'previous', onPress: skipPrev }, { label: '下一首', icon: 'next', onPress: skipNext },
+        { label: shuffle ? '关闭随机播放' : '随机播放', icon: 'shuffle', onPress: () => setShuffle(!shuffle) },
+        { label: '切换循环模式', icon: 'repeat', onPress: cycleRepeat },
+        { label: '收藏到歌单', icon: 'heart', onPress: () => current && onCollect?.(current) },
+        { label: '下载', icon: 'download', onPress: dlCurrent }, { label: '音效', icon: 'sliders', onPress: () => hdNav()?.navigate('Fx') },
+        { label: '评论', icon: 'comments', onPress: () => hdNav()?.navigate('Comments') },
+      ])}><Icon name="more" size={22} color={C.text2} /></HDTouch>
+      <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, backgroundColor: C.track }}><View style={{ height: 3, width: String(pct * 100) + '%' as never, backgroundColor: C.brand }} /></View>
+    </View>
+  );
   return (
-    <View style={st.playbar} {...(IS_WEB ? ({ dataSet: { nmPlaybar: '1' } } as never) : {})} /* dataSet RNW 运行时支持,RN 类型未收录 */>
+    <View onLayout={e => setBarWidth(e.nativeEvent.layout.width)} style={st.playbar} {...(IS_WEB ? ({ dataSet: { nmPlaybar: '1' } } as never) : {})} /* dataSet RNW 运行时支持,RN 类型未收录 */>
       {/* 左 */}
       <View style={st.pbLeft}>
         <HDTouch style={st.pbCoverTouch} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 9 }} hoverBg={IS_WEB ? C.hover : false} onPress={() => hdNav()?.navigate('Player')}>
@@ -639,39 +660,45 @@ const st = StyleSheet.create({
   logoMarkMac: { width: 18, height: 19.75 }, // mac 轨道区稍大,仍对齐 nav 槽
   brandNameWeb: { color: C.text, fontSize: 13.5, fontWeight: '800', letterSpacing: 0.2 },
   settingsDock: { paddingHorizontal: 0, paddingVertical: 6 },
-  group: { fontSize: 9, color: C.text2, paddingHorizontal: 12, paddingTop: 5, paddingBottom: 3, letterSpacing: 1, fontWeight: '600' }, // [老板 1011 15:35 浅色] text3→text2:浅色下分组小标太浅
-  navItem: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 8, paddingHorizontal: 10, height: 35, borderRadius: 9 },
+  group: { fontSize: 12, color: C.text2, paddingHorizontal: 12, paddingTop: 5, paddingBottom: 3, letterSpacing: 1, fontWeight: '600' }, // [老板 1011 15:35 浅色] text3→text2:浅色下分组小标太浅
+  navItem: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 8, paddingHorizontal: 10, minHeight: 44, borderRadius: RADIUS.control },
   navItemOn: { backgroundColor: C.brandDim },
   navFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 9 },
   navLabel: { color: C.text, fontSize: H.font.md, fontWeight: '500', flex: 1 }, // [老板 1011 15:35 浅色] text2→text:浅色下侧栏标签太浅;层级靠字重500/700+brandDim底
-  plItem: { flexDirection: 'row', alignItems: 'center', gap: 9, marginHorizontal: 8, paddingHorizontal: 10, height: 35, borderRadius: 9 },
+  plItem: { flexDirection: 'row', alignItems: 'center', gap: 9, marginHorizontal: 8, paddingHorizontal: 10, minHeight: 44, borderRadius: RADIUS.control },
   plChip: { width: 20, height: 20, borderRadius: 6, backgroundColor: C.grad1, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
   plAddChip: { width: 20, height: 20, borderRadius: 6, borderWidth: 1, borderStyle: 'dashed', borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
   plName: { color: C.text, fontSize: H.font.sm, flex: 1 }, // [老板 1011 15:35 浅色] text2→text:与 navLabel 同步
-  body: { flex: 1 },
+  body: { flex: 1, minWidth: 0 },
+  contentHost: { flex: 1, minHeight: 0, position: 'relative', overflow: 'hidden' },
+  compactRail: { width: 72, backgroundColor: C.surface, alignItems: 'center', gap: SPACE.md, paddingTop: SPACE.lg },
+  railIcon: { width: 44, height: 44, borderRadius: RADIUS.control, alignItems: 'center', justifyContent: 'center' },
+  compactHeader: { minHeight: 56, paddingHorizontal: SPACE.sm, flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.stroke },
+  drawerScrim: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: C.scrim, zIndex: 55 },
+  drawerClose: { height: 44, alignItems: 'flex-end', justifyContent: 'center', paddingHorizontal: SPACE.lg },
   tabStack: { flex: 1 },
   tabHost: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   tabOff: { display: 'none' as const, elevation: 0 },
   // 播放条(桌面式 64dp,玻璃磨砂面)
   playbar: {
-    height: H.playbar, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 12,
+    height: H.playbar, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, gap: 8,
     backgroundColor: C.glassBar, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border,
   },
-  pbLeft: { flexDirection: 'row', alignItems: 'center', gap: 9, width: 225 },
+  pbLeft: { flexDirection: 'row', alignItems: 'center', gap: 9, width: '25%', maxWidth: 280, minWidth: 120 },
   // 中列:控件行与进度行同容器同宽对齐(v1.1.6 修错位——原 alignSelf:stretch+maxWidth 导致两行错切)
   pbCenter: { flex: 1, alignItems: 'center', gap: 4 },
-  pbCtrls: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  pbCtrls: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   pbProgRow: { flexDirection: 'row', alignItems: 'center', gap: 7, width: '100%', maxWidth: 460, justifyContent: 'center' },
   pbCoverTouch: { borderRadius: 9 },
   pbArt: { width: 40, height: 40, borderRadius: 9 },
   pbTitle: { color: C.text, fontSize: H.font.md, fontWeight: '600' },
   pbSub: { color: C.text2, fontSize: H.font.sm },
-  tool: { width: 26, height: 26, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
+  tool: { width: 44, height: 44, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
   toolFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 7 },
   toolRepOne: { position: 'absolute', right: -1, top: -1, color: C.brand, fontSize: 8, fontWeight: '800' },
-  playBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
+  playBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   playBtnFocus: { borderWidth: 2, borderColor: '#FFFFFF', borderRadius: 16 },
-  pbTime: { color: C.text2, fontSize: 8, fontVariant: ['tabular-nums'], minWidth: 26 }, // [老板 1011 15:35 浅色] text3→text2
+  pbTime: { color: C.text2, fontSize: 11, fontVariant: ['tabular-nums'], minWidth: 26 }, // [老板 1011 15:35 浅色] text3→text2
   pbTrack: { flex: 1, height: 3, borderRadius: 2, flexDirection: 'row' },
   pbRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   badge: { position: 'absolute', right: -3, bottom: -3, minWidth: 12, height: 12, borderRadius: 6, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 2 },
