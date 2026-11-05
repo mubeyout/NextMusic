@@ -12,7 +12,7 @@ export function CarBigCard({ badge, title, sub, grad, onPress, playing }: {
 }) {
   return (
     <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={[st.bigCard, { backgroundColor: grad[0] }]}>
-      {/* [老板 1105] 车机卡也不吃渐变令?——车机族是新设计,v7 规格双大卡为渐变主视觉,先按规格;老板若统一去渐变再改纯色 */}
+      {/* [LEO 定谳 1105] 去渐变令延伸车机族——纯色深底(取原渐变主色),层级靠明度差+白字;例外:播放页黑胶放射渐变(拟物)+侧栏 tint */}
       <View style={st.bigTexts}>
         <Text style={st.bigBadge}>{badge}</Text>
         <Text style={st.bigTitle}>{title}</Text>
