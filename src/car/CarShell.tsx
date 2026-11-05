@@ -8,6 +8,7 @@ import { CarHome } from './CarHome';
 import { CarPlayerBar } from './CarPlayerBar';
 import { CarPlayer } from './CarPlayer';
 import { CarPlaylist } from './CarPlaylist';
+import { CarExplore, CarBoards, CarPodcast } from './CarPages';
 import type { SongItem } from '../services/server';
 import { C } from '../theme/tokens';
 import { Icon } from '../theme/Icon';
@@ -81,9 +82,9 @@ export function CarShell() {
         ) : (
           <>
             {page === 'home' && <CarHome goExplore={() => setPage('explore')} onOpenPlaylist={setPlaylist} />}
-            {page === 'podcast' && <Placeholder title="播客" />}
-            {page === 'explore' && <Placeholder title="探索" />}
-            {page === 'boards' && <Placeholder title="榜单" />}
+            {page === 'podcast' && <CarPodcast />}
+            {page === 'explore' && <CarExplore onOpenPlaylist={setPlaylist} />}
+            {page === 'boards' && <CarBoards onOpenPlaylist={setPlaylist} />}
           </>
         )}
       </View>
