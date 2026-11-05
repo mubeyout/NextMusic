@@ -53,6 +53,7 @@ import { AlbumDetailScreen } from './screens/AlbumDetailScreen';
 import { RoutePage } from './screens/RouteScreen';
 import { IS_HD, isCarUi } from './services/appversion';
 import { HDMain } from './hd/HDMain';
+import { CarShell } from './car/CarShell'; // [车机专属页面族 1105] v7 规格实施
 import { HDPlayerSafe } from './hd/HDPlayer';
 import { HDBootScreen } from './hd/HDBootScreen';
 import { withPhoneScale } from './hd/HDMain';
@@ -97,6 +98,7 @@ function TabBarManual({ tab, setTab }: { tab: number; setTab: (i: number) => voi
 export function RootNavigator() {
   useSettings(); // carlink:carModeUi 变更即重渲——导航层 IS_HD|carMode 双分流
   const HD = isCarUi();
+  const CAR_UI = !IS_HD && settings.get().carModeUi === true; // [1105] 手机包内嵌车机模式/手动开关→CarShell;TV(IS_HD)仍 HDMain
   const { mode } = useApp();
   // 服务端 web 播放器不需要启动向导:直进主界面(本地模式);原生端保留三卡引导
   const initial = !mode ? (Platform.OS === 'web' ? 'Main' : 'Boot') : 'Main';
@@ -201,7 +203,7 @@ return (
         <Stack.Screen name="Auth" component={withPhoneScale(AuthScreen)} />
         <Stack.Screen name="AuthLogin" component={HD ? HDAuthLoginScreen : withEnter(AuthLoginScreen)} />
         <Stack.Screen name="AuthSignup" component={withEnter(AuthSignupScreen)} />
-        <Stack.Screen name="Main" component={HD ? HDMain : MainTabs} />
+        <Stack.Screen name="Main" component={CAR_UI ? CarShell : HD ? HDMain : MainTabs} /> {/* [1105] carModeUi/真车→CarShell(v7 车机专属);TV/桌面→HDMain */}
         <Stack.Screen name="Player" component={HD ? HDPlayerSafe : PlayerScreen} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />
         <Stack.Screen name="Queue" component={withEnter(QueueScreen)} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="PlayerSettings" component={withEnter(PlayerSettingsScreen, true)} />
