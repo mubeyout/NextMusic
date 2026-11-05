@@ -461,11 +461,12 @@ const st = StyleSheet.create({
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   quickDis: { opacity: 0.5 }, // #012②:disabled 态视觉反馈
   quickCard: {
-    height: 104, borderRadius: 12, // 1105 LEO 终稿:竖排出血图版(图上字下)——padding 厚/文字挤两个问题同时根治
-    backgroundColor: C.elev, flexDirection: 'column', alignItems: 'stretch', overflow: 'hidden', maxWidth: '31%',
+    height: 64, borderRadius: 10, // 1105 老板令(左右结构):图左字右,卡高 64 紧凑(竖排 104 太高占屏)
+    backgroundColor: C.elev, flexDirection: 'row', alignItems: 'center', gap: 8, overflow: 'hidden',
+    paddingHorizontal: 8, maxWidth: '31%',
   },
-  quickArt: { width: '100%', height: 64, borderTopLeftRadius: 12, borderTopRightRadius: 12 }, // 顶格出血图(图区零 padding)
-  quickLabel: { color: C.text, fontSize: 13, lineHeight: 18, fontWeight: '600', paddingHorizontal: 12, paddingTop: 7, paddingBottom: 8, numberOfLines: 1 } as never,
+  quickArt: { width: 40, height: 40, borderRadius: 8 }, // 横排小图(40dp,给文字留位)
+  quickLabel: { color: C.text, fontSize: 12.5, lineHeight: 16, fontWeight: '600', flex: 1, numberOfLines: 2 } as never,
   sectionRow: { height: 26, flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
   sectionTitle: { flex: 1, color: C.text, fontSize: 17, lineHeight: 25, fontWeight: '700' },
   sectionMeta: { color: C.text2, fontSize: 11, lineHeight: 16 },
