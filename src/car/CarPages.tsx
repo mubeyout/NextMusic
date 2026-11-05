@@ -20,7 +20,7 @@ function SecHead({ title, hint }: { title: string; hint?: string }) {
 const SRC_TABS = ['推荐', '网易', '酷狗', 'QQ', '咪咕'];
 
 /** P3 探索: 源 pills + 推荐歌单封面网格(6 列方形卡) */
-export function CarExplore({ onOpenPlaylist }: { onOpenPlaylist: (pl: { name: string; img?: string; songs: SongItem[] }) => void }) {
+export function CarExplore({ onOpenPlaylist }: { onOpenPlaylist: (pl: import('./CarPlaylist').CarPlRef) => void }) {
   const [tab, setTab] = useState(0);
   const [mixes, setMixes] = useState<SongListMeta[]>([]);
   useEffect(() => { lxapi.songListAuto('', String(tab + 1), 1, 18, false).then(d => setMixes(d?.list || [])).catch(() => {}); }, [tab]);
@@ -37,7 +37,7 @@ export function CarExplore({ onOpenPlaylist }: { onOpenPlaylist: (pl: { name: st
       </View>
       <View style={st.exGrid}>
         {mixes.map(pl => (
-          <TouchableOpacity key={pl.id} activeOpacity={0.85} onPress={() => onOpenPlaylist({ name: pl.name, img: pl.img, songs: [] })} style={st.exCard}>
+          <TouchableOpacity key={pl.id} activeOpacity={0.85} onPress={() => onOpenPlaylist({ kind: 'pl', id: pl.id, name: pl.name, img: pl.img })} style={st.exCard}>
             {pl.img ? <Image source={{ uri: pl.img }} style={st.exArt} /> : <View style={[st.exArt, { backgroundColor: C.surface2 }]} />}
             <Text style={st.exName} numberOfLines={2}>{pl.name}</Text>
           </TouchableOpacity>
@@ -50,7 +50,7 @@ export function CarExplore({ onOpenPlaylist }: { onOpenPlaylist: (pl: { name: st
 const BOARD_ACCENTS = ['#AD4714', '#611A2E', '#242E6B', '#1A6B54', '#1F387A', '#66297A', '#7A4D1A', '#145059'];
 
 /** P4 榜单: 4 列卡 210 高(左上源chip+名+副行) */
-export function CarBoards({ onOpenPlaylist }: { onOpenPlaylist: (pl: { name: string; img?: string; songs: SongItem[] }) => void }) {
+export function CarBoards({ onOpenPlaylist }: { onOpenPlaylist: (pl: import('./CarPlaylist').CarPlRef) => void }) {
   const [boards, setBoards] = useState<{ id: string; name: string; bangid: string; image?: string }[]>([]);
   useEffect(() => { lxapi.leaderboardBoards().then(d => setBoards((d || []).slice(0, 8))).catch(() => {}); }, []);
   return (
@@ -58,7 +58,7 @@ export function CarBoards({ onOpenPlaylist }: { onOpenPlaylist: (pl: { name: str
       <SecHead title="榜单" hint="每日 12:00 更新" />
       <View style={st.bGrid}>
         {boards.map((b, i) => (
-          <TouchableOpacity key={b.id} activeOpacity={0.85} onPress={() => onOpenPlaylist({ name: b.name, img: b.image, songs: [] })}
+          <TouchableOpacity key={b.id} activeOpacity={0.85} onPress={() => onOpenPlaylist({ kind: 'board', id: b.bangid, name: b.name, img: b.image })}
             style={[st.bCard, { backgroundColor: BOARD_ACCENTS[i % BOARD_ACCENTS.length] }]}>
             <Text style={st.bChip}>榜单</Text>
             <Text style={st.bName} numberOfLines={2}>{b.name}</Text>

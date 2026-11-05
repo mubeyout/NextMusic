@@ -48,7 +48,7 @@ export function CarShell() {
   const insets = useSafeAreaInsets();
   const [page, setPage] = useState<PageKey>('home');
   const [playerOpen, setPlayerOpen] = useState(false);
-  const [playlist, setPlaylist] = useState<{ name: string; img?: string; songs: SongItem[] } | null>(null);
+  const [playlist, setPlaylist] = useState<import('./CarPlaylist').CarPlRef | null>(null);
   return (
     <View style={{ flex: 1, flexDirection: 'row', backgroundColor: C.bg, paddingTop: Math.max(insets.top, IS_CAR_TOP) }}>
       {/* 侧栏 261 */}
