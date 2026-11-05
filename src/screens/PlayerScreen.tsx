@@ -148,7 +148,7 @@ export function PlayerScreen() {
         <TouchableOpacity style={st.hBtn} onPress={() => nav.goBack()} hitSlop={4}>
           <Icon name="back" size={24} />
         </TouchableOpacity>
-        <Text style={st.hTitle}>正在播放</Text>
+        {/* [老板 1105] 「正在播放」标题删除(与返回按钮太近,播放页自释义) */}
         <TouchableOpacity style={st.hBtn} hitSlop={4} onPress={() => setMore(true)}>
           <Icon name="more" size={24} />
         </TouchableOpacity>
