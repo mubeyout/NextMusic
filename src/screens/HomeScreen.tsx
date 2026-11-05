@@ -133,7 +133,7 @@ function PlCard({ pl }: { pl: SongListMeta }) {
 
 function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
   // [carlink v2] 快捷卡宽随窗宽(横屏/投屏/折叠不再写死竖屏列宽)
-  const cardW = (useWindowDimensions().width - 40 - 24) / 3; // 1104 老板令(卡片太大):两列大卡→三列自适应
+  const cardW = '31%'; // 1105:改百分比列基(相对容器算)——该机 useWindowDimensions 与实际容器宽脱节致只排两列
   const nav = useNavigation() as { navigate: (s: string, p?: object) => void };
   const { connected, token } = useApp();
   const { playSong } = usePlayer();
@@ -373,7 +373,7 @@ function HomePodcast() {
 /* ---------- 音乐 tab：与「全部」同样设计，音乐向真实数据 ---------- */
 
 function HomeMusic() {
-  const cardW = (useWindowDimensions().width - 40 - 24) / 3; // 1104 老板令(卡片太大):两列大卡→三列自适应 // [carlink v2] 横屏/投屏自适应
+  const cardW = '31%'; // 1105:改百分比列基(相对容器算)——该机 useWindowDimensions 与实际容器宽脱节致只排两列 // [carlink v2] 横屏/投屏自适应
   const { } = useApp();
   const { playSong } = usePlayer();
   const nav = useNavigation() as { navigate: (s: string, p?: object) => void };
@@ -462,7 +462,7 @@ const st = StyleSheet.create({
   quickDis: { opacity: 0.5 }, // #012②:disabled 态视觉反馈
   quickCard: {
     height: 104, borderRadius: 12, // 1105 LEO 终稿:竖排出血图版(图上字下)——padding 厚/文字挤两个问题同时根治
-    backgroundColor: C.elev, flexDirection: 'column', alignItems: 'stretch', overflow: 'hidden',
+    backgroundColor: C.elev, flexDirection: 'column', alignItems: 'stretch', overflow: 'hidden', maxWidth: '31%',
   },
   quickArt: { width: '100%', height: 64, borderTopLeftRadius: 12, borderTopRightRadius: 12 }, // 顶格出血图(图区零 padding)
   quickLabel: { color: C.text, fontSize: 13, lineHeight: 18, fontWeight: '600', paddingHorizontal: 12, paddingTop: 7, paddingBottom: 8, numberOfLines: 1 } as never,
