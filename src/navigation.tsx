@@ -203,7 +203,7 @@ return (
         <Stack.Screen name="Auth" component={withPhoneScale(AuthScreen)} />
         <Stack.Screen name="AuthLogin" component={HD ? HDAuthLoginScreen : withEnter(AuthLoginScreen)} />
         <Stack.Screen name="AuthSignup" component={withEnter(AuthSignupScreen)} />
-        <Stack.Screen name="Main" component={CAR_UI ? CarShell : HD ? HDMain : MainTabs} /> {/* [1105] carModeUi/真车→CarShell(v7 车机专属);TV/桌面→HDMain */}
+        <Stack.Screen name="Main" component={CAR_UI ? CarShell : HD ? HDMain : MainTabs} />
         <Stack.Screen name="Player" component={HD ? HDPlayerSafe : PlayerScreen} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />
         <Stack.Screen name="Queue" component={withEnter(QueueScreen)} options={{ contentStyle: SIDEBAR_LOCK_CONTENT, animation: 'none' }} />
         <Stack.Screen options={{ contentStyle: SIDEBAR_LOCK_CONTENT }} name="PlayerSettings" component={withEnter(PlayerSettingsScreen, true)} />
