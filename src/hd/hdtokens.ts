@@ -28,9 +28,9 @@ export const C: Record<string, string> = {
   text3: '#595959',
   heart: '#FF5A76', // v3.28:收藏心形全局 token
   // 玻璃磨砂面(桌面 --nm-glass 同源;浅色覆写)
-  glass: 'rgba(16,18,22,.66)',
-  glassStrong: 'rgba(22,25,30,.8)',
-  glassBar: 'rgba(16,18,22,.9)', // v3.17(老板):playbar 90% 不透明+web 毛玻璃(backdrop-filter 走 desktop main.tsx data 属性 CSS)
+  glass: 'rgba(18,18,18,.75)',
+  glassStrong: 'rgba(26,26,26,.85)',
+  glassBar: 'rgba(26,26,26,.92)', // v3.17(老板):playbar 90% 不透明+web 毛玻璃(backdrop-filter 走 desktop main.tsx data 属性 CSS)
 };
 
 export const T = { light: false };
@@ -198,7 +198,7 @@ export const shadowOfSm = (seed: string) => {
 
 // v1.2.5 桌面:web 卡片彩色弥散投影——shadowStyleOf(elevation+shadowColor)在 RNW 不渲染(桌面卡片变灰块的真因);
 // RNW 会把 iOS 系 shadow* 四件套转成 CSS box-shadow,与 shadowOf 同色公式
-import { Platform } from 'react-native';
+import { Platform, NativeModules } from 'react-native';
 export function webCardShadow(seed: string, lift = false): Record<string, string | number | { width: number; height: number }> | null {
   // 1028 老板令:web 卡片彩色弥散投影移除(hover 上浮由 useHoverCard 的 transform 承担)
   return null;
@@ -221,4 +221,13 @@ export function webCardShadow(seed: string, lift = false): Record<string, string
 export const GLASS_REF = { get face() { return C.glass; }, get strong() { return C.glassStrong; } };
 
 applyHdScale(settings.get().uiScale);
+// 1104 老板令(车机布局债·LEO E.1): applyCarProfile 车机终值覆写——uiScale 缩放之上按车机实测定值(150% 后固定尺寸崩的根治)
+export function applyCarProfile() {
+  if (!IS_CAR) return;
+  const f = { xs: 12, sm: 14, md: 16, lg: 18, xl: 22, hero: 28 };
+  (Object.keys(f) as (keyof typeof f)[]).forEach(k => { H.font[k] = f[k]; });
+  H.touch = 56; H.row = 64; H.playbar = 84; H.sidebar = 232;
+}
+export const IS_CAR = ((NativeModules.AppVersionInfo as { uiMode?: string } | undefined)?.uiMode === 'car');
+applyCarProfile();
 applyHdTheme();

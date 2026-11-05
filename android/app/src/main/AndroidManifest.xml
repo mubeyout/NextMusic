@@ -37,6 +37,11 @@
             <action android:name="ecarx.intent.action.ECARX_VR_APP_OPEN" />
             <category android:name="android.intent.category.DEFAULT" />
         </intent-filter>
+        <!-- 1105 车机:系统音乐应用注册(语音「播放音乐」/默认音乐 App 识别) -->
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.APP_MUSIC" />
+        </intent-filter>
       </activity>
 
       <!-- lxfix(carlink v1 20260920): 车机互联——库 AudioProPlaybackService 提权 exported，Android Auto/车机可绑定同一 MediaSession：

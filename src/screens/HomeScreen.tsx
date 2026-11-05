@@ -133,7 +133,7 @@ function PlCard({ pl }: { pl: SongListMeta }) {
 
 function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
   // [carlink v2] 快捷卡宽随窗宽(横屏/投屏/折叠不再写死竖屏列宽)
-  const cardW = (useWindowDimensions().width - 40 - 12) / 2;
+  const cardW = '48%'; // 1105:改百分比列基(相对容器算)——该机 useWindowDimensions 与实际容器宽脱节致只排两列
   const nav = useNavigation() as { navigate: (s: string, p?: object) => void };
   const { connected, token } = useApp();
   const { playSong } = usePlayer();
@@ -373,7 +373,7 @@ function HomePodcast() {
 /* ---------- 音乐 tab：与「全部」同样设计，音乐向真实数据 ---------- */
 
 function HomeMusic() {
-  const cardW = (useWindowDimensions().width - 40 - 12) / 2; // [carlink v2] 横屏/投屏自适应
+  const cardW = '48%'; // 1105:改百分比列基(相对容器算)——该机 useWindowDimensions 与实际容器宽脱节致只排两列 // [carlink v2] 横屏/投屏自适应
   const { } = useApp();
   const { playSong } = usePlayer();
   const nav = useNavigation() as { navigate: (s: string, p?: object) => void };
@@ -461,24 +461,24 @@ const st = StyleSheet.create({
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   quickDis: { opacity: 0.5 }, // #012②:disabled 态视觉反馈
   quickCard: {
-    height: 128, borderRadius: 14, // [老板 1010] 88→128 与库页英雄卡同高（统合令）
-    backgroundColor: C.elev, flexDirection: 'row', alignItems: 'center', gap: 12, overflow: 'hidden',
-    paddingHorizontal: 12,
+    height: 64, borderRadius: 10, // 1105 老板令(左右结构):图左字右,卡高 64 紧凑(竖排 104 太高占屏)
+    backgroundColor: C.elev, flexDirection: 'row', alignItems: 'center', gap: 8, overflow: 'hidden',
+    paddingHorizontal: 8, maxWidth: '49%',
   },
-  quickArt: { width: 80, height: 80, borderRadius: 14 },
-  quickLabel: { color: C.text, fontSize: 14, lineHeight: 20, fontWeight: '600', flex: 1, paddingRight: 4 },
+  quickArt: { width: 40, height: 40, borderRadius: 8 }, // 横排小图(40dp,给文字留位)
+  quickLabel: { color: C.text, fontSize: 12.5, lineHeight: 16, fontWeight: '600', flex: 1, numberOfLines: 2 } as never,
   sectionRow: { height: 26, flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
   sectionTitle: { flex: 1, color: C.text, fontSize: 17, lineHeight: 25, fontWeight: '700' },
   sectionMeta: { color: C.text2, fontSize: 11, lineHeight: 16 },
   mixRow: { gap: 10 },
-  mixCard: { width: 170, height: 172, borderRadius: 10, overflow: 'hidden' },
+  mixCard: { width: 124, height: 126, borderRadius: 10, overflow: 'hidden' },
   mixArt: { position: 'absolute', width: 170, height: 172 },
   mixOverlay: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 88 },
   mixPlayBtn: {
     position: 'absolute', right: 12, top: 12, width: 46, height: 48, borderRadius: 999,
     backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center',
   },
-  mixTexts: { position: 'absolute', left: 16, right: 16, bottom: 16, gap: 4 },
+  mixTexts: { position: 'absolute', left: 10, right: 10, bottom: 10, gap: 4 },
   mixTitle: { color: C.white, fontSize: 18, lineHeight: 20, fontWeight: '700' },
   mixCaption: { color: '#B3B3B3', fontSize: 10, lineHeight: 13 },
   mixPlaceholder: { backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center' },

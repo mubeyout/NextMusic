@@ -11,7 +11,13 @@ import { SP, GRID } from '../theme/tokens';
 
 export function GridWall({ children, phoneGap = SP.xl }: { children: React.ReactNode; phoneGap?: number }) {
   if (IS_HD || Platform.OS === 'web') return <HDGrid min={GRID.hdMin * (H.font.sm / 10)}>{children}</HDGrid>;
-  return <View style={wallSt.grid}>{children}</View>;
+  // 1105 老板实测(我的页自建歌单一屏一张):phone 分支缺列约束——fill 卡(width 100%)直接占满整行
+  // → 每卡包一层 31% cell(三列,同 plCell 规格)
+  return (
+    <View style={wallSt.grid}>
+      {React.Children.map(children, ch => (ch == null ? null : <View style={{ width: '31%' }}>{ch}</View>))}
+    </View>
+  );
 }
 
 const wallSt = StyleSheet.create({

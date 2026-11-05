@@ -208,7 +208,7 @@ export function HDSettingsScreen() {
     ) : null}
     <ScrollView
       style={st.screen}
-      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 30, paddingBottom: IS_WEB ? 30 + 64 + 20 : 30, gap: SP.xxl, ...(IS_WEB ? { width: '100%', alignSelf: 'stretch' } : {}) }} // #036:web playbar 绝对定位悬浮,底部让位 64+20(原 30 末行被遮)
+      contentContainerStyle={{ paddingTop: (NativeModules.AppVersionInfo as any)?.uiMode === 'car' ? 72 : Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 30, paddingBottom: IS_WEB ? 30 + 64 + 20 : 30, gap: SP.xxl, ...(IS_WEB ? { width: '100%', alignSelf: 'stretch' } : {}) }} // #036:web playbar 绝对定位悬浮,底部让位 64+20(原 30 末行被遮)
       showsVerticalScrollIndicator={false}
     >
       <View style={st.head}>
