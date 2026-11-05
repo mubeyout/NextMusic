@@ -460,8 +460,9 @@ export function HDMain() {
           </InnerStack.Navigator>
         </NavigationContainer>
 
+        {/* 1104:非车机恒贴底(insets 误抬修复) */}
         {innerRoute !== 'Player' ? (
-        <View style={{ position: 'absolute', left: 0, right: 0, bottom: IS_CAR_DEVICE ? botLift : 0, zIndex: 30 }} collapsable={false}> // 1104:非车机恒贴底(insets 误抬修复)
+        <View style={{ position: 'absolute', left: 0, right: 0, bottom: IS_CAR_DEVICE ? botLift : 0, zIndex: 30 }} collapsable={false}>
           <HDPlayBar onCollect={setPbCollect} />
         </View>
         ) : null}
