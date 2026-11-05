@@ -29,7 +29,7 @@ function SecHead({ title, hint, more, onMore }: { title: string; hint?: string; 
   );
 }
 
-export function CarHome({ goExplore }: { goExplore: () => void }) {
+export function CarHome({ goExplore, onOpenPlaylist }: { goExplore: () => void; onOpenPlaylist: (pl: { name: string; img?: string; songs: SongItem[] }) => void }) {
   const player = usePlayer();
   const { username } = useApp();
   const [recents, setRecents] = useState<SongItem[]>([]);
@@ -71,7 +71,7 @@ export function CarHome({ goExplore }: { goExplore: () => void }) {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: CAR.gap }}>
             {mixes.map(pl => (
               <CarRecCard key={pl.id} img={pl.img} name={pl.name} sub={pl.total ? `共 ${pl.total} 首` : undefined}
-                onPress={() => { /* P5 歌单详情下批 */ }} />
+                onPress={() => onOpenPlaylist({ name: pl.name, img: pl.img, songs: [] })} />
             ))}
           </ScrollView>
         </View>

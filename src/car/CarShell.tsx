@@ -6,6 +6,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CAR } from './cartokens';
 import { CarHome } from './CarHome';
 import { CarPlayerBar } from './CarPlayerBar';
+import { CarPlayer } from './CarPlayer';
+import { CarPlaylist } from './CarPlaylist';
+import type { SongItem } from '../services/server';
 import { C } from '../theme/tokens';
 import { Icon } from '../theme/Icon';
 import { settings } from '../services/settings';
@@ -43,6 +46,8 @@ function Placeholder({ title }: { title: string }) {
 export function CarShell() {
   const insets = useSafeAreaInsets();
   const [page, setPage] = useState<PageKey>('home');
+  const [playerOpen, setPlayerOpen] = useState(false);
+  const [playlist, setPlaylist] = useState<{ name: string; img?: string; songs: SongItem[] } | null>(null);
   return (
     <View style={{ flex: 1, flexDirection: 'row', backgroundColor: C.bg, paddingTop: Math.max(insets.top, IS_CAR_TOP) }}>
       {/* 侧栏 261 */}
@@ -71,16 +76,25 @@ export function CarShell() {
 
       {/* 内容区 */}
       <View style={{ flex: 1 }}>
-        {page === 'home' && <CarHome goExplore={() => setPage('explore')} />}
-        {page === 'podcast' && <Placeholder title="播客" />}
-        {page === 'explore' && <Placeholder title="探索" />}
-        {page === 'boards' && <Placeholder title="榜单" />}
+        {playlist ? (
+          <CarPlaylist pl={playlist} onBack={() => setPlaylist(null)} />
+        ) : (
+          <>
+            {page === 'home' && <CarHome goExplore={() => setPage('explore')} onOpenPlaylist={setPlaylist} />}
+            {page === 'podcast' && <Placeholder title="播客" />}
+            {page === 'explore' && <Placeholder title="探索" />}
+            {page === 'boards' && <Placeholder title="榜单" />}
+          </>
+        )}
       </View>
 
-      {/* 播放条: 底部常驻 96 无进度行 */}
-      <View style={{ position: 'absolute', left: CAR.sidebar, right: 0, bottom: 0 }}>
-        <CarPlayerBar />
+      {/* 播放条: 底部常驻 96 无进度行(点击开 CarPlayer 全屏) */}
+      <View style={{ position: 'absolute', left: playlist ? 0 : CAR.sidebar, right: 0, bottom: 0 }}>
+        <TouchableOpacity activeOpacity={0.9} style={{ flex: 1 }} onPress={() => setPlayerOpen(true)}>
+          <CarPlayerBar />
+        </TouchableOpacity>
       </View>
+      <CarPlayer visible={playerOpen} onClose={() => setPlayerOpen(false)} />
     </View>
   );
 }
