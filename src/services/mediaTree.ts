@@ -56,7 +56,7 @@ export async function buildTree(): Promise<{ subtitle: string; children: Record<
   let subtitle = '';
 
   // ── NAS 曲库(myLib 一揽子端点) ──
-  const home = await myLib.home().catch(() => null);
+  const home = await myLib.home().catch((e) => { console.log('[mediaTree] myLib.home failed:', e instanceof Error ? e.message : e); return null; }); // [诊断 1105] 块级日志(电视有账号树仍空排查)
   if (home) {
     const st = home.stats;
     subtitle = `${st.songs} 首 · ${st.artists} 位歌手 · ${st.albums} 张专辑`;
@@ -112,7 +112,7 @@ export async function buildTree(): Promise<{ subtitle: string; children: Record<
   const tf = (providers.all() || []).find((a: ProviderAcct) => a.type === 'tingfeng');
   if (tf) {
     const sess: TfSess = { base: tf.base, token: tf.token, refresh: tf.tfRefresh, user: tf.user, pass: tf.pass };
-    const lib = await tfUserLib(sess).catch(() => null);
+    const lib = await tfUserLib(sess).catch((e) => { console.log('[mediaTree] tfUserLib failed:', e instanceof Error ? e.message : e); return null; });
     if (lib) {
       const pl: TreeNode[] = [];
       if (lib.liked?.length) {
