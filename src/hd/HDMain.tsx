@@ -558,7 +558,7 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
         </HDTouch>
         <View style={{ minWidth: 0, flex: 1, gap: 1 }}>
           <Text style={st.pbTitle} numberOfLines={1}>{current?.name ?? '未在播放'}</Text>
-          <Text style={st.pbSub} numberOfLines={1}>{current ? `${current.singer}${current.albumName ? ` · ${current.albumName}` : ''}` : '从「探索」搜索或点击歌单开始'}</Text>
+          <Text style={st.pbSub} numberOfLines={1}>{current ? `${IS_CAR_DEVICE && duration > 0 ? `${fmtSec(duration)} · ` : ''}${current.singer}${current.albumName ? ` · ${current.albumName}` : ''}` : '从「探索」搜索或点击歌单开始'}</Text>
         </View>
       </View>
 
@@ -583,6 +583,8 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
             {repeat === 'one' ? <Text style={st.toolRepOne}>1</Text> : null}
           </HDTouch>
         </View>
+        {/* [设计令 1105] 车机 playerbar 隐藏进度行——时间码并入歌名副行,进度操作进全屏播放页 */}
+        {!IS_CAR_DEVICE ? (
         <View style={st.pbProgRow}>
           <Text style={st.pbTime}>{fmtSec(position)}</Text>
           <View
@@ -594,6 +596,7 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
           </View>
           <Text style={st.pbTime}>{fmtSec(duration)}</Text>
         </View>
+        ) : null}
       </View>
 
       {/* 右:收藏(点按弹选歌单面板,对齐手机端)·下载 */}
