@@ -47,7 +47,7 @@ export function HomeScreen({ visible = true }: { visible?: boolean }) {
   const [homeEmpty, setHomeEmpty] = useState(false);
 
   return (
-    <LinearGradient colors={[C.bgGradientTop, C.bg, C.bg]} locations={[0, 0.55, 1]} style={[st.screen]}>
+    <View style={[st.screen, { backgroundColor: C.bg }]}> {/* [老板 1105] 屏幕绿色渐变背景去除改纯色 */}
       <ScrollView
         contentContainerStyle={[st.content, { paddingTop: insets.top + 28 }]}
         showsVerticalScrollIndicator={false}
@@ -80,7 +80,7 @@ export function HomeScreen({ visible = true }: { visible?: boolean }) {
           </View>
         </View>
       )}
-    </LinearGradient>
+    </View>
   );
 }
 

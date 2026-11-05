@@ -5,7 +5,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
 import { C, T, softGrad } from '../theme/tokens';
 import { PillTabs } from '../components/PillTabs';
@@ -228,7 +227,7 @@ export function ExploreScreen() {
   }));
 
   return (
-    <LinearGradient colors={[tints[tab], C.bg, C.bg]} locations={[0, 0.55, 1]} style={st.screen}>
+    <View style={[st.screen, { backgroundColor: C.bg }]}> {/* [老板 1105] 屏幕渐变背景去除 */}
       <ScrollView
         contentContainerStyle={[st.content, { paddingTop: insets.top + 28 }]}
         showsVerticalScrollIndicator={false}
@@ -258,7 +257,7 @@ export function ExploreScreen() {
         {tab === 0 && (
           <View style={st.body}>
             {/* 为你发现 hero：Figma 2355:1187 */}
-            <LinearGradient colors={softGrad('#1A6B54', '#1F387A', '#66297A')} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.hero}>
+            <View style={[st.hero, { backgroundColor: '#1A6B54' }]}> {/* [老板 1105] hero 渐变→首色纯色 */}
               <Text style={st.heroKicker}>为你发现</Text>
               <Text style={st.heroTitle}>夜色电台</Text>
               <Text style={st.heroMeta}>
@@ -270,7 +269,7 @@ export function ExploreScreen() {
               >
                 <Icon name="play" size={20} color={C.onBrand} />
               </TouchableOpacity>
-            </LinearGradient>
+            </View>
 
             <Text style={st.sectionTitle}>热门主题</Text>
             <View style={st.catGrid}>
@@ -323,14 +322,10 @@ export function ExploreScreen() {
                   activeOpacity={0.85}
                   onPress={() => selectTag(g.zh)}
                 >
-                  <LinearGradient
-                    colors={softGrad(g.from, g.to)}
-                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                    style={st.genreCard}
-                  >
+                  <View style={[st.genreCard, { backgroundColor: g.from }]}> {/* [老板 1105] 分类卡渐变→纯色 */}
                     <Text style={st.genreZh}>{g.zh}</Text>
                     <Text style={st.genreEn}>{g.en}</Text>
-                  </LinearGradient>
+                  </View>
                 </TouchableOpacity>
               ))}
             </View>
@@ -392,12 +387,12 @@ export function ExploreScreen() {
               const top = boards.find(b => /TOP/i.test(b.name)) || boards[0];
               if (top) openBoard(top);
             }}>
-              <LinearGradient colors={softGrad('#AD4714', '#611A2E', '#242E6B')} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.chartHero}>
+              <View style={[st.chartHero, { backgroundColor: '#AD4714' }]}>
                 <Text style={st.chartHeroKicker}>NEXTMUSIC</Text>
                 <Text style={st.chartHeroTitle}>TOP 50</Text>
                 <Text style={st.chartHeroMeta}>每日 12:00 更新 · 全站热度</Text>
                 <View style={st.rankBadge}><Text style={st.rankBadgeText}>#1</Text></View>
-              </LinearGradient>
+              </View>
             </TouchableOpacity>
 
             {/* 热门榜单 3 子卡：110x92 r12 + 8px 渐变 accent */}
@@ -405,7 +400,7 @@ export function ExploreScreen() {
             <View style={st.chartRow}>
               {chartCards.map((c, i) => c.board ? (
                 <TouchableOpacity key={i} style={st.chartCard} activeOpacity={0.85} onPress={() => openBoard(c.board, 'wy')}>
-                  <LinearGradient colors={c.accent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={st.chartAccent} />
+                  <View style={[st.chartAccent, { backgroundColor: c.accent[0] }]} />
                   <Text style={st.chartName} numberOfLines={1}>{c.board.name}</Text>
                   <Text style={st.chartCaption} numberOfLines={1}>{c.caption}</Text>
                   <Text style={[st.chartTag, { color: c.tagColor }]}>{c.tag}</Text>
@@ -444,14 +439,10 @@ export function ExploreScreen() {
             <View style={st.boardGrid}>
               {boards.slice(0, 6).map((b, i) => (
                 <TouchableOpacity key={b.id} style={st.boardCell} activeOpacity={0.85} onPress={() => openBoard(b)}>
-                  <LinearGradient
-                    colors={[BOARD_ACCENTS[i % BOARD_ACCENTS.length][0], BOARD_ACCENTS[i % BOARD_ACCENTS.length][1]]}
-                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                    style={st.boardCard}
-                  >
+                  <View style={[st.boardCard, { backgroundColor: BOARD_ACCENTS[i % BOARD_ACCENTS.length][0] }]}> {/* [老板 1105] 渐变→纯色 */}
                     <Text style={st.boardCardName} numberOfLines={2}>{b.name}</Text>
                     <Text style={st.boardCardSub}>酷狗榜</Text>
-                  </LinearGradient>
+                  </View>
                 </TouchableOpacity>
               ))}
             </View>
@@ -463,7 +454,7 @@ export function ExploreScreen() {
 
       </ScrollView>
 
-    </LinearGradient>
+    </View>
   );
 }
 

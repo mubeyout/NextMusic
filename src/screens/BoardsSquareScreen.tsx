@@ -3,7 +3,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import LinearGradient from 'react-native-linear-gradient';
 import { C, FS, FW, SP, softGrad } from '../theme/tokens';
 import { PageHeader } from '../components/PageChrome';
 import { lxapi } from '../services/lxapi';
@@ -71,15 +70,13 @@ export function BoardsSquareScreen() {
           <View style={st.grid}>
             {boards.map((b, i) => (
               <TouchableOpacity key={b.id + b.bangid} style={st.cell} activeOpacity={0.85} onPress={() => openBoard(b)}>
-                <LinearGradient
-                  colors={softGrad(ACCENTS[i % ACCENTS.length][0], ACCENTS[i % ACCENTS.length][1])}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                  style={st.card}
+                <View
+                  style={[st.card, { backgroundColor: ACCENTS[i % ACCENTS.length][0] }]} /* [老板 1105] 渐变→首色纯色 */
                 >
                   {/* 1028 老板令(彩色卡恒白·终局修):黑遮罩卡上行内恒白叠加(DOM 实证定位) */}
                   <Text style={[st.name, { color: '#FFFFFF' }]} numberOfLines={2}>{b.name}</Text>
                   <Text style={[st.sub, { color: '#ffffffcc' }]}>{SOURCES.find(s => s.key === src)?.sub ?? '榜单'} ›</Text>
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
             ))}
           </View>
