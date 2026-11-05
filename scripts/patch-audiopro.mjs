@@ -368,3 +368,23 @@ try {
     console.log('[patch-audiopro] audio-session-id: patched');
   } else console.log('[patch-audiopro] audio-session-id: already');
 } catch (e) { console.log('[patch-audiopro] audio-session-id skip:', e.message); }
+
+// 4) [NextMusic-FX:mediatree 1105] 内容树 callback 注入:反射加载 app 的 NMMediaLibraryCallback
+patch(
+  'AudioProPlaybackService.kt',
+  '[NextMusic-FX:mediatree]',
+  '\tprotected open fun createLibrarySessionCallback(): MediaLibrarySession.Callback {\n\t\treturn AudioProMediaLibrarySessionCallback()\n\t}',
+  [
+    '\tprotected open fun createLibrarySessionCallback(): MediaLibrarySession.Callback {',
+    '\t\t// [NextMusic-FX:mediatree] 反射 app 的内容树 callback(媒体中心浏览 NM 曲库);类缺失回退库默认',
+    '\t\ttry {',
+    '\t\t\tval cbClass = Class.forName("com.mubeyworks.nextmusic.NMMediaLibraryCallback")',
+    '\t\t\tval ctor = cbClass.getDeclaredConstructor()',
+    '\t\t\treturn ctor.newInstance() as MediaLibrarySession.Callback',
+    '\t\t} catch (e: Throwable) {',
+    '\t\t\tandroid.util.Log.w("AudioProFx", "mediatree callback fallback: " + e.message)',
+    '\t\t\treturn AudioProMediaLibrarySessionCallback()',
+    '\t\t}',
+    '\t}',
+  ].join('\n')
+);

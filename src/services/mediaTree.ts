@@ -156,11 +156,14 @@ export async function pushMediaTree(force = false): Promise<boolean> {
   try {
     const tree = await buildTree();
     const NMMediaTree = NativeModules.NMMediaTree;
-    if (!NMMediaTree?.setMediaLibraryTree) return false;
+    if (!NMMediaTree?.setMediaLibraryTree) { console.log('[mediaTree] native module missing'); return false; }
     await NMMediaTree.setMediaLibraryTree(JSON.stringify(tree));
+    const n = Object.values(tree.children).reduce((a, b) => a + b.length, 0);
+    console.log(`[mediaTree] pushed: parents=${Object.keys(tree.children).length} nodes=${n}`);
     lastPush = now;
     return true;
-  } catch {
+  } catch (e) {
+    console.log('[mediaTree] build/push failed:', e instanceof Error ? e.message : e); // [诊断 1105] 静默吞改日志(排查 V40 零推树)
     return false; // 树失败不影响 app 主流程
   }
 }

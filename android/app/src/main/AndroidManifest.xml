@@ -48,7 +48,7 @@
            车机控制 play/pause/seek 直达 ExoPlayer，next/prev 走库 emitNext/emitPrev → JS 桥（与通知栏同链路）。
            双 action 兼容 media3 新旧 discovery；v2 内容树(歌单浏览)需 fork 库补 onGetChildren。 -->
       <service
-          android:name=".NMPlaybackService"
+          android:name="dev.rnap.reactnativeaudiopro.AudioProPlaybackService"
           android:exported="true"
           android:foregroundServiceType="mediaPlayback"
           tools:replace="android:exported">
