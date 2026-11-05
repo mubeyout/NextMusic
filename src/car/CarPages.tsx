@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { CAR } from './cartokens';
+import { CarSongRow } from './cards';
 import { C } from '../theme/tokens';
 import { Icon } from '../theme/Icon';
 import { lxapi } from '../services/lxapi';
@@ -70,14 +71,46 @@ export function CarBoards({ onOpenPlaylist }: { onOpenPlaylist: (pl: import('./C
   );
 }
 
-/** P2 播客: LEO 频道数据源待补——骨架接搜索占位(死线循环,补到即换) */
+/** P2 播客: 搜索聚合运营位(LEO 映射 1105——无播客 API,频道绑搜索词调 lxapi.search 零新增) */
+const CHANNELS: { name: string; q: string; accent: string }[] = [
+  { name: '夜驾', q: '深夜电台 助眠', accent: '#3B2F6F' },
+  { name: '新闻', q: '新闻资讯', accent: '#1E5F56' },
+  { name: '故事', q: '有声小说 评书', accent: '#6E4A2F' },
+  { name: '相声', q: '相声 德云社', accent: '#52486B' },
+  { name: '儿童', q: '儿歌 睡前故事', accent: '#2F6B6B' },
+  { name: '音乐台', q: '热歌 歌单', accent: '#1ED760' },
+  { name: '情感', q: '情感电台', accent: '#6B3A4A' },
+  { name: '财经', q: '财经早报', accent: '#3A4A5C' },
+];
+
 export function CarPodcast() {
+  const player = usePlayer();
+  const [active, setActive] = useState(0);
+  const [songs, setSongs] = useState<SongItem[]>([]);
+  useEffect(() => {
+    setSongs([]);
+    lxapi.search(CHANNELS[active].q, 'kw', 1, 20).then(setSongs).catch(() => {});
+  }, [active]);
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: CAR.gutter }}>
-      <Icon name="podcast" size={48} color={C.text3} />
-      <Text style={{ color: C.text2, fontSize: CAR.secTitle, fontWeight: '700', marginTop: 16 }}>播客</Text>
-      <Text style={{ color: C.text3, fontSize: 15, marginTop: 8 }}>频道数据源 LEO 补齐中(死线循环)</Text>
-    </View>
+    <ScrollView contentContainerStyle={{ padding: CAR.gutter, paddingBottom: CAR.playbar.h + 40 }} showsVerticalScrollIndicator={false}>
+      <Text style={{ color: C.text, fontSize: CAR.hero, fontWeight: '800' }}>播客</Text>
+      <Text style={{ color: C.text3, fontSize: 15, marginTop: 4, marginBottom: 18 }}>8 大主题频道 · 搜索聚合 · 自动连播</Text>
+      <View style={st.chGrid}>
+        {CHANNELS.map((c, i) => (
+          <TouchableOpacity key={c.name} activeOpacity={0.85} onPress={() => setActive(i)}
+            style={[st.chCard, { backgroundColor: c.accent }, active === i && { borderWidth: 3, borderColor: '#FFFFFF66' }]}>
+            <Text style={st.chName}>{c.name}</Text>
+            <Text style={st.chSub}>聚合频道</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      <View style={{ marginTop: 24 }}>
+        <SecHead title={`${CHANNELS[active].name} · 热门节目`} hint="搜索聚合 top4" />
+        {songs.slice(0, 4).map((s, i) => (
+          <CarSongRow key={`${i}${s.songmid}`} song={s} onPress={() => void player.playSong(s, songs)} />
+        ))}
+      </View>
+    </ScrollView>
   );
 }
 
@@ -93,4 +126,8 @@ const st = {
   bChip: { position: 'absolute' as const, top: 14, left: 14, color: '#FFFFFF', fontSize: 12, backgroundColor: '#00000055', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   bName: { color: '#FFFFFF', fontSize: 18, fontWeight: '700' as const },
   bSub: { color: '#FFFFFFB3', fontSize: 13 },
+  chGrid: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: CAR.gap },
+  chCard: { width: '23%', height: CAR.chCard.h, borderRadius: CAR.chCard.r, padding: 16, justifyContent: 'flex-end' as const, gap: 3 },
+  chName: { color: '#FFFFFF', fontSize: 18, fontWeight: '700' as const },
+  chSub: { color: '#FFFFFFB3', fontSize: 13 },
 };
