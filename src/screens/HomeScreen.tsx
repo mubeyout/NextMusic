@@ -133,7 +133,7 @@ function PlCard({ pl }: { pl: SongListMeta }) {
 
 function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
   // [carlink v2] 快捷卡宽随窗宽(横屏/投屏/折叠不再写死竖屏列宽)
-  const cardW = '31%'; // 1105:改百分比列基(相对容器算)——该机 useWindowDimensions 与实际容器宽脱节致只排两列
+  const cardW = '48%'; // 1105:改百分比列基(相对容器算)——该机 useWindowDimensions 与实际容器宽脱节致只排两列
   const nav = useNavigation() as { navigate: (s: string, p?: object) => void };
   const { connected, token } = useApp();
   const { playSong } = usePlayer();
@@ -373,7 +373,7 @@ function HomePodcast() {
 /* ---------- 音乐 tab：与「全部」同样设计，音乐向真实数据 ---------- */
 
 function HomeMusic() {
-  const cardW = '31%'; // 1105:改百分比列基(相对容器算)——该机 useWindowDimensions 与实际容器宽脱节致只排两列 // [carlink v2] 横屏/投屏自适应
+  const cardW = '48%'; // 1105:改百分比列基(相对容器算)——该机 useWindowDimensions 与实际容器宽脱节致只排两列 // [carlink v2] 横屏/投屏自适应
   const { } = useApp();
   const { playSong } = usePlayer();
   const nav = useNavigation() as { navigate: (s: string, p?: object) => void };
@@ -463,7 +463,7 @@ const st = StyleSheet.create({
   quickCard: {
     height: 64, borderRadius: 10, // 1105 老板令(左右结构):图左字右,卡高 64 紧凑(竖排 104 太高占屏)
     backgroundColor: C.elev, flexDirection: 'row', alignItems: 'center', gap: 8, overflow: 'hidden',
-    paddingHorizontal: 8, maxWidth: '31%',
+    paddingHorizontal: 8, maxWidth: '49%',
   },
   quickArt: { width: 40, height: 40, borderRadius: 8 }, // 横排小图(40dp,给文字留位)
   quickLabel: { color: C.text, fontSize: 12.5, lineHeight: 16, fontWeight: '600', flex: 1, numberOfLines: 2 } as never,
