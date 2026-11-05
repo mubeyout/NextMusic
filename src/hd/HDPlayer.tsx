@@ -345,7 +345,7 @@ export function HDPlayer() {
         </View>
         </View>
           {/* v1.2.15(老板 09-14"进度和按钮一排贴底"):TV=单行 dock(进度 flex 占满+控件组);web 保持上下两行 */}
-          <View style={IS_WEB || IS_CAR_DEVICE ? st.dockColWeb : st.dockRow}>
+          <View style={st.dockColWeb}>
           <View style={[st.progRow, IS_WEB && st.progRowWeb, !IS_WEB && st.progRowDock]}>
             <Text style={[st.time, IS_WEB && { minWidth: 42 }]}>{fmtSec(position)}</Text>
             <TouchableOpacity
