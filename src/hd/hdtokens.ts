@@ -28,9 +28,9 @@ export const C: Record<string, string> = {
   text3: '#595959',
   heart: '#FF5A76', // v3.28:收藏心形全局 token
   // 玻璃磨砂面(桌面 --nm-glass 同源;浅色覆写)
-  glass: 'rgba(16,18,22,.66)',
-  glassStrong: 'rgba(22,25,30,.8)',
-  glassBar: 'rgba(16,18,22,.9)', // v3.17(老板):playbar 90% 不透明+web 毛玻璃(backdrop-filter 走 desktop main.tsx data 属性 CSS)
+  glass: 'rgba(18,18,18,.75)',
+  glassStrong: 'rgba(26,26,26,.85)',
+  glassBar: 'rgba(26,26,26,.92)', // v3.17(老板):playbar 90% 不透明+web 毛玻璃(backdrop-filter 走 desktop main.tsx data 属性 CSS)
 };
 
 export const T = { light: false };
