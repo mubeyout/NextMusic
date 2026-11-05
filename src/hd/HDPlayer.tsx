@@ -510,7 +510,7 @@ const stDark: Record<string, ViewStyle | TextStyle> = {
   noLyric: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: SP.lg },
   noLyricText: { color: T.light ? '#62676E' : '#ffffff80', fontSize: FS.md }, // [浅色修]
   progRow: { flexDirection: 'row', alignItems: 'center', gap: SP.xl, marginBottom: 4 },
-  progRowDock: { flex: 1, marginBottom: 0 }, // v1.2.15:TV 单行 dock 内进度占满剩余宽
+  progRowDock: { width: '100%', marginBottom: 20 }, // [老板 1105 TV 实测] dockColWeb column 下 flex:1(旧单行遗留)纵向占满挤叠按钮行——改全宽+20 间距
   dockRow: { flexDirection: 'row', alignItems: 'center', gap: 28 }, // v1.2.15(老板:进度条和按钮组挤在一排、页面底部) [LEO 1011] 档外特排:播放器控制区大间距
   dockColWeb: { flexDirection: 'column', width: '100%' }, // web 保持两行堆叠(mainWeb flex-end)
   progRowWeb: { width: '100%', marginBottom: 10 }, // v3.6:全宽(参照 playbar)
@@ -519,7 +519,7 @@ const stDark: Record<string, ViewStyle | TextStyle> = {
   trackFill: { backgroundColor: C.brand, borderRadius: 3 },
   trackRest: { backgroundColor: '#ffffff2e', borderRadius: 3 },
   playhead: { position: 'absolute', top: -4, width: 13, height: 13, borderRadius: 7, backgroundColor: C.brand, borderWidth: 2.5, borderColor: '#ffffff', marginLeft: -7, boxShadow: '0 0 12px rgba(30,215,96,.75)' },
-  ctrlRow: { flexDirection: 'row', alignItems: 'center', gap: SP.xl },
+  ctrlRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.xl }, // [老板 1105] TV 按钮行左右居中(原仅 web 覆写有 center)
   ctrlRowWeb: { justifyContent: 'center', gap: SP.lg, columnGap: 20, marginTop: 0, flexWrap: 'wrap', rowGap: 10 }, // v3.31(老板:窄窗工具按钮被裁):自适应换行保全控件可达;宽屏富余时仍单行
   cMainWeb: { width: 60, height: 60, borderRadius: 30, boxShadow: '0 8px 30px rgba(30,215,96,.4)' }, // Spotify 大播放键
   ctrlDividerWeb: { opacity: .7 },
