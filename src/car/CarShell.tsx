@@ -66,7 +66,12 @@ export function CarShell() {
           <NavItem key={n.key} icon={n.icon} label={n.label} active={page === n.key} onPress={() => setPage(n.key)} />
         ))}
         <Text style={st.groupLabel}>我的乐库</Text>
-        <NavItem icon="heart" label="我的收藏" onPress={() => setPage('home')} />
+        {/* [映射审计 1106] 我的收藏:无独立 route(MainTabs 内屏)——车机专属收藏页 TODO(下迭代 CarPlaylist 泛化) */}
+        <NavItem icon="music" label="本地曲库" onPress={() => nav.navigate('MyLibrary')} />
+        <NavItem icon="cloud" label="云曲库" onPress={() => nav.navigate('CloudLibrary')} />
+        <NavItem icon="users" label="公共曲库" onPress={() => nav.navigate('PublicLibrary')} />
+        <NavItem icon="download" label="下载管理" onPress={() => nav.navigate('Downloads')} />
+        <NavItem icon="clock" label="播放历史" onPress={() => nav.navigate('Queue')} />
         <NavItem icon="server" label="媒体库" onPress={() => nav.navigate('MediaLibs')} /> {/* [1106] 音源/账号管理入口 */}
         {/* 歌单行×n: 骨架期占位,数据接线下批 */}
         <View style={{ flex: 1 }} />
