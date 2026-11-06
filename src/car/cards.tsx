@@ -7,11 +7,11 @@ import { Icon } from '../theme/Icon';
 import type { SongItem } from '../services/server';
 
 /** 双大卡(每日精选/私人雷达): 横条 156 高 r17 + badge/title/sub/play */
-export function CarBigCard({ badge, title, sub, grad, onPress, playing }: {
-  badge: string; title: string; sub: string; grad: [string, string]; onPress: () => void; playing?: boolean;
+export function CarBigCard({ badge, title, sub, accent, onPress, playing }: {
+  badge: string; title: string; sub: string; accent: string; onPress: () => void; playing?: boolean;
 }) {
   return (
-    <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={[st.bigCard, { backgroundColor: grad[0] }]}>
+    <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={[st.bigCard, { backgroundColor: accent }]}>
       {/* [LEO 定谳 1105] 去渐变令延伸车机族——纯色深底(取原渐变主色),层级靠明度差+白字;例外:播放页黑胶放射渐变(拟物)+侧栏 tint */}
       <View style={st.bigTexts}>
         <Text style={st.bigBadge}>{badge}</Text>

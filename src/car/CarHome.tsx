@@ -50,9 +50,9 @@ export function CarHome({ goExplore, onOpenPlaylist }: { goExplore: () => void; 
 
       {/* 双大卡: 每日精选 / 私人雷达 (v7 真版基准组件) */}
       <View style={{ flexDirection: 'row', gap: CAR.gap, marginBottom: CAR.sectionGap }}>
-        <CarBigCard badge="每日精选" title="30 首热歌" sub="每天更新" grad={['#7C4DFF', '#3F8CFF']}
+        <CarBigCard badge="每日精选" title="30 首热歌" sub="每天更新" accent="#3B2F6F"
           onPress={() => { if (recents.length) void player.playSong(recents[0], recents); }} />
-        <CarBigCard badge="私人雷达" title="你最近循环的歌" sub="根据口味生成" grad={['#0FA3A3', '#1ED760']}
+        <CarBigCard badge="私人雷达" title="你最近循环的歌" sub="根据口味生成" accent="#1E5F56"
           onPress={() => { if (recents.length) void player.playSong(recents[0], recents); }} />
       </View>
 
