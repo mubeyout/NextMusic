@@ -10,6 +10,7 @@ import { CarPlayer } from './CarPlayer';
 import { CarPlaylist } from './CarPlaylist';
 import { CarExplore, CarBoards, CarPodcast } from './CarPages';
 import { CarDrawer } from './CarDrawer';
+import { CarFavorites } from './CarFavorites';
 import type { SongItem } from '../services/server';
 import { C } from '../theme/tokens';
 import { Icon } from '../theme/Icon';
@@ -51,6 +52,7 @@ export function CarShell() {
   const [page, setPage] = useState<PageKey>('home');
   const nav = useNavigation() as { navigate: (s: string) => void }; // [老板 1106 抓] 设置/媒体库走 phone navigator 全功能页(账号/音源/服务器)
   const [playerOpen, setPlayerOpen] = useState(false);
+  const [favOpen, setFavOpen] = useState(false); // [1106] 车机收藏页
   const [drawer, setDrawer] = useState<'search' | 'queue' | null>(null);
   const [playlist, setPlaylist] = useState<import('./CarPlaylist').CarPlRef | null>(null);
   return (
@@ -66,12 +68,12 @@ export function CarShell() {
           <NavItem key={n.key} icon={n.icon} label={n.label} active={page === n.key} onPress={() => setPage(n.key)} />
         ))}
         <Text style={st.groupLabel}>我的乐库</Text>
-        {/* [映射审计 1106] 我的收藏:无独立 route(MainTabs 内屏)——车机专属收藏页 TODO(下迭代 CarPlaylist 泛化) */}
+        <NavItem icon="heart" label="我的收藏" onPress={() => setFavOpen(true)} /> {/* [1106 完成] CarFavorites(收藏+最近播放) */}
         <NavItem icon="music" label="本地曲库" onPress={() => nav.navigate('MyLibrary')} />
         <NavItem icon="cloud" label="云曲库" onPress={() => nav.navigate('CloudLibrary')} />
         <NavItem icon="users" label="公共曲库" onPress={() => nav.navigate('PublicLibrary')} />
         <NavItem icon="download" label="下载管理" onPress={() => nav.navigate('Downloads')} />
-        <NavItem icon="clock" label="播放历史" onPress={() => nav.navigate('Queue')} />
+        <NavItem icon="clock" label="播放历史" onPress={() => setFavOpen(true)} /> {/* 最近播放在收藏页首区 */}
         <NavItem icon="server" label="媒体库" onPress={() => nav.navigate('MediaLibs')} /> {/* [1106] 音源/账号管理入口 */}
         {/* 歌单行×n: 骨架期占位,数据接线下批 */}
         <View style={{ flex: 1 }} />
@@ -88,7 +90,9 @@ export function CarShell() {
 
       {/* 内容区 */}
       <View style={{ flex: 1 }}>
-        {playlist ? (
+        {favOpen ? (
+          <CarFavorites />
+        ) : playlist ? (
           <CarPlaylist pl={playlist} onBack={() => setPlaylist(null)} />
         ) : (
           <>
