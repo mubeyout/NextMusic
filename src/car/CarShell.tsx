@@ -14,6 +14,7 @@ import type { SongItem } from '../services/server';
 import { C } from '../theme/tokens';
 import { Icon } from '../theme/Icon';
 import { settings } from '../services/settings';
+import { useNavigation } from '@react-navigation/native';
 
 type PageKey = 'home' | 'podcast' | 'explore' | 'boards';
 
@@ -48,6 +49,7 @@ function Placeholder({ title }: { title: string }) {
 export function CarShell() {
   const insets = useSafeAreaInsets();
   const [page, setPage] = useState<PageKey>('home');
+  const nav = useNavigation() as { navigate: (s: string) => void }; // [老板 1106 抓] 设置/媒体库走 phone navigator 全功能页(账号/音源/服务器)
   const [playerOpen, setPlayerOpen] = useState(false);
   const [drawer, setDrawer] = useState<'search' | 'queue' | null>(null);
   const [playlist, setPlaylist] = useState<import('./CarPlaylist').CarPlRef | null>(null);
@@ -65,6 +67,7 @@ export function CarShell() {
         ))}
         <Text style={st.groupLabel}>我的乐库</Text>
         <NavItem icon="heart" label="我的收藏" onPress={() => setPage('home')} />
+        <NavItem icon="server" label="媒体库" onPress={() => nav.navigate('MediaLibs')} /> {/* [1106] 音源/账号管理入口 */}
         {/* 歌单行×n: 骨架期占位,数据接线下批 */}
         <View style={{ flex: 1 }} />
         {/* Dock: 搜索 + 设置 */}
@@ -72,7 +75,7 @@ export function CarShell() {
           <TouchableOpacity style={st.dockBtn} onPress={() => setDrawer('search')}>
             <Icon name="search" size={20} color={C.text2} />
           </TouchableOpacity>
-          <TouchableOpacity style={st.dockBtn} onPress={() => settings.set('carModeUi', false)}>
+          <TouchableOpacity style={st.dockBtn} onPress={() => nav.navigate('Settings')}>
             <Icon name="settings" size={20} color={C.text2} />
           </TouchableOpacity>
         </View>
