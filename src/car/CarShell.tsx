@@ -26,10 +26,10 @@ const NAV: { key: PageKey; icon: string; label: string }[] = [
   { key: 'boards', icon: 'rank', label: '榜单' },
 ];
 
-function NavItem({ icon, label, active, onPress }: { icon: string; label: string; active?: boolean; onPress: () => void }) {
+function NavItem({ icon, label, active, onPress, size }: { icon: string; label: string; active?: boolean; onPress: () => void; size?: number }) {
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.8}
-      style={[st.navItem, active && { backgroundColor: C.surface2, borderRadius: 14 }]}>
+      style={[st.navItem, size ? { height: size } : null, active && { backgroundColor: C.surface2, borderRadius: 14 }]}>
       {active ? <View style={{ position: 'absolute', left: 0, top: 12, bottom: 12, width: 3, borderRadius: 2, backgroundColor: C.brand }} /> : null}
       <Icon name={icon as never} size={24} color={active ? C.brand : C.text2} />
       <Text style={[st.navLabel, active && { color: C.brand }]}>{label}</Text>
@@ -68,13 +68,13 @@ export function CarShell() {
           <NavItem key={n.key} icon={n.icon} label={n.label} active={page === n.key} onPress={() => setPage(n.key)} />
         ))}
         <Text style={st.groupLabel}>我的乐库</Text>
-        <NavItem icon="heart" label="我的收藏" onPress={() => setFavOpen(true)} /> {/* [1106 完成] CarFavorites(收藏+最近播放) */}
-        <NavItem icon="music" label="本地曲库" onPress={() => nav.navigate('MyLibrary')} />
-        <NavItem icon="cloud" label="云曲库" onPress={() => nav.navigate('CloudLibrary')} />
-        <NavItem icon="users" label="公共曲库" onPress={() => nav.navigate('PublicLibrary')} />
-        <NavItem icon="download" label="下载管理" onPress={() => nav.navigate('Downloads')} />
-        <NavItem icon="clock" label="播放历史" onPress={() => setFavOpen(true)} /> {/* 最近播放在收藏页首区 */}
-        <NavItem icon="server" label="媒体库" onPress={() => nav.navigate('MediaLibs')} /> {/* [1106] 音源/账号管理入口 */}
+        <NavItem icon="heart" label="我的收藏" onPress={() => setFavOpen(true)} size={CAR.navItemSub} /> {/* [1106 完成] CarFavorites(收藏+最近播放) */}
+        <NavItem icon="music" label="本地曲库" onPress={() => nav.navigate('MyLibrary')} size={CAR.navItemSub} />
+        <NavItem icon="cloud" label="云曲库" onPress={() => nav.navigate('CloudLibrary')} size={CAR.navItemSub} />
+        <NavItem icon="users" label="公共曲库" onPress={() => nav.navigate('PublicLibrary')} size={CAR.navItemSub} />
+        <NavItem icon="download" label="下载管理" onPress={() => nav.navigate('Downloads')} size={CAR.navItemSub} />
+        <NavItem icon="clock" label="播放历史" onPress={() => setFavOpen(true)} size={CAR.navItemSub} /> {/* 最近播放在收藏页首区 */}
+        <NavItem icon="server" label="媒体库" onPress={() => nav.navigate('MediaLibs')} size={CAR.navItemSub} /> {/* [1106] 音源/账号管理入口 */}
         {/* 歌单行×n: 骨架期占位,数据接线下批 */}
         <View style={{ flex: 1 }} />
         {/* Dock: 搜索 + 设置 */}
