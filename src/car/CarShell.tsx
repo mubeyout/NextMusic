@@ -27,7 +27,7 @@ const NAV: { key: PageKey; icon: string; label: string }[] = [
 function NavItem({ icon, label, active, onPress }: { icon: string; label: string; active?: boolean; onPress: () => void }) {
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.8}
-      style={[st.navItem, active && { backgroundColor: '#1ED76014', borderRadius: 14 }]}>
+      style={[st.navItem, active && { backgroundColor: C.surface2, borderRadius: 14 }]}>
       {active ? <View style={{ position: 'absolute', left: 0, top: 12, bottom: 12, width: 3, borderRadius: 2, backgroundColor: C.brand }} /> : null}
       <Icon name={icon as never} size={24} color={active ? C.brand : C.text2} />
       <Text style={[st.navLabel, active && { color: C.brand }]}>{label}</Text>
@@ -101,7 +101,7 @@ export function CarShell() {
       <CarPlayer visible={playerOpen} onClose={() => setPlayerOpen(false)} />
       <CarDrawer mode={drawer} onClose={() => setDrawer(null)} />
       {drawer === null && !playerOpen && (
-        <TouchableOpacity style={{ position: 'absolute', right: CAR.gutter, bottom: CAR.playbar.h + 16, width: 52, height: 52, borderRadius: 26, backgroundColor: '#FFFFFF12', alignItems: 'center', justifyContent: 'center' }}
+        <TouchableOpacity style={{ position: 'absolute', right: CAR.gutter, bottom: CAR.playbar.h + 16, width: 52, height: 52, borderRadius: 26, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }}
           onPress={() => setDrawer('queue')}>
           <Icon name="queue" size={22} color={C.text2} />
         </TouchableOpacity>
@@ -114,9 +114,9 @@ export function CarShell() {
 const IS_CAR_TOP = 0;
 
 const st = {
-  sidebar: { width: CAR.sidebar, backgroundColor: '#FFFFFF06', borderRightWidth: 1, borderRightColor: '#FFFFFF0F' },
+  sidebar: { width: CAR.sidebar, backgroundColor: C.surface, borderRightWidth: 1, borderRightColor: C.border },
   navItem: { height: CAR.navItem, flexDirection: 'row' as const, alignItems: 'center' as const, gap: 14, paddingHorizontal: 24, position: 'relative' as const },
   navLabel: { color: C.text2, fontSize: 19, fontWeight: '600' as const },
   groupLabel: { color: C.text3, fontSize: 13, letterSpacing: 2, paddingHorizontal: 24, marginTop: 22, marginBottom: 6 },
-  dockBtn: { width: 46, height: 46, borderRadius: 12, backgroundColor: '#FFFFFF0C', alignItems: 'center' as const, justifyContent: 'center' as const },
+  dockBtn: { width: 46, height: 46, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
 };

@@ -115,7 +115,7 @@ export function CarPodcast() {
 }
 
 const st = {
-  pill: { height: 44, borderRadius: 999, paddingHorizontal: 24, backgroundColor: '#FFFFFF10', alignItems: 'center' as const, justifyContent: 'center' as const },
+  pill: { height: 44, borderRadius: 999, paddingHorizontal: 24, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
   pillText: { color: C.text2, fontSize: 15 },
   exGrid: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: CAR.gap },
   exCard: { width: '15.2%', gap: 8 },

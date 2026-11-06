@@ -55,7 +55,7 @@ export function CarPlayer({ visible, onClose }: { visible: boolean; onClose: () 
               <Text style={st.time}>{fmt(position)}</Text>
               <View style={st.track}>
                 <View style={{ flex: pct, backgroundColor: C.brand, borderRadius: 4 }} />
-                <View style={{ flex: 1 - pct, backgroundColor: '#FFFFFF2E', borderRadius: 4 }} />
+                <View style={{ flex: 1 - pct, backgroundColor: C.track, borderRadius: 4 }} />
               </View>
               <Text style={st.time}>{fmt(duration)}</Text>
             </View>
@@ -67,19 +67,19 @@ export function CarPlayer({ visible, onClose }: { visible: boolean; onClose: () 
 }
 
 const st = {
-  screen: { flex: 1, backgroundColor: '#0C0E0DF8', paddingTop: 40 },
-  closeBtn: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#FFFFFF10', alignItems: 'center' as const, justifyContent: 'center' as const, marginLeft: CAR.gutter },
+  screen: { flex: 1, backgroundColor: C.bg, paddingTop: 40 },
+  closeBtn: { width: 56, height: 56, borderRadius: 28, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const, marginLeft: CAR.gutter },
   body: { flex: 1, flexDirection: 'row' as const, alignItems: 'center' as const, paddingHorizontal: CAR.gutter * 2, gap: CAR.gutter * 2, paddingBottom: 60 },
   discWrap: { alignItems: 'center' as const, justifyContent: 'center' as const },
   disc: { width: CAR.player.disc, height: CAR.player.disc, borderRadius: CAR.player.disc / 2, backgroundColor: '#0d100e', borderWidth: 6, borderColor: '#161a17', alignItems: 'center' as const, justifyContent: 'center' as const },
   discArt: { width: CAR.player.disc * 0.635, height: CAR.player.disc * 0.635, borderRadius: CAR.player.disc * 0.635 / 2 },
-  discHole: { position: 'absolute' as const, width: 26, height: 26, borderRadius: 13, backgroundColor: '#0C0E0D', borderWidth: 4, borderColor: '#C8CDD2' },
+  discHole: { position: 'absolute' as const, width: 26, height: 26, borderRadius: 13, backgroundColor: C.bg, borderWidth: 4, borderColor: '#C8CDD2' },
   info: { flex: 1, gap: 14 },
   title: { color: C.text, fontSize: 34, fontWeight: '800' as const },
   artist: { color: C.text2, fontSize: 18 },
   album: { color: C.text3, fontSize: 15 },
   ctrls: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 34, marginTop: 24 },
-  ctrlBtn: { width: 72, height: 72, borderRadius: 36, backgroundColor: '#FFFFFF10', alignItems: 'center' as const, justifyContent: 'center' as const },
+  ctrlBtn: { width: 72, height: 72, borderRadius: 36, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
   ctrlMain: { width: CAR.player.ctrl, height: CAR.player.ctrl, borderRadius: CAR.player.ctrl / 2, backgroundColor: C.brand, alignItems: 'center' as const, justifyContent: 'center' as const },
   progRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 18, marginTop: 28 },
   track: { flex: 1, height: 8, flexDirection: 'row' as const, borderRadius: 4 },

@@ -45,7 +45,7 @@ export function CarPlayerBar() {
 }
 
 const st = {
-  bar: { height: CAR.playbar.h, flexDirection: 'row' as const, alignItems: 'center' as const, paddingHorizontal: CAR.gutter, backgroundColor: '#0E100FEE', borderTopWidth: 1, borderTopColor: '#FFFFFF14' },
+  bar: { height: CAR.playbar.h, flexDirection: 'row' as const, alignItems: 'center' as const, paddingHorizontal: CAR.gutter, backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.border },
   art: { width: CAR.playbar.art, height: CAR.playbar.art, borderRadius: CAR.playbar.r },
   title: { color: C.text, fontSize: 18, fontWeight: '700' as const },
   sub: { color: C.text3, fontSize: 14 },

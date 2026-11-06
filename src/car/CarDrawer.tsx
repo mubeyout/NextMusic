@@ -57,12 +57,12 @@ export function CarDrawer({ mode, onClose, onOpenPlaylist }: {
 
 const st = {
   scrim: { position: 'absolute' as const, left: 0, top: 0, right: 0, bottom: 0, backgroundColor: '#00000080', justifyContent: 'flex-end' as const, flexDirection: 'row' as const },
-  panel: { width: 420, backgroundColor: '#121413', borderLeftWidth: 1, borderLeftColor: '#FFFFFF14', paddingTop: 24, paddingHorizontal: 22 },
+  panel: { width: 420, backgroundColor: C.surface, borderLeftWidth: 1, borderLeftColor: C.border, paddingTop: 24, paddingHorizontal: 22 },
   head: { flexDirection: 'row' as const, alignItems: 'center' as const, marginBottom: 18 },
   title: { color: C.text, fontSize: 20, fontWeight: '700' as const, flex: 1 },
-  closeBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFFFFF10', alignItems: 'center' as const, justifyContent: 'center' as const },
-  input: { color: C.text, fontSize: 16, backgroundColor: '#FFFFFF0C', borderRadius: 12, height: 52, paddingHorizontal: 16, marginBottom: 14 },
-  hitRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#FFFFFF0A', gap: 3 },
+  closeBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
+  input: { color: C.text, fontSize: 16, backgroundColor: C.surface2, borderRadius: 12, height: 52, paddingHorizontal: 16, marginBottom: 14 },
+  hitRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.border, gap: 3 },
   hitName: { color: C.text, fontSize: 15, fontWeight: '600' as const },
   hitSub: { color: C.text3, fontSize: 13 },
 };
