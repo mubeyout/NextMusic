@@ -18,3 +18,12 @@ export const CAR = {
   sectionGap: 32,
   gap: 22,
 } as const;
+
+// ── 720 高紧凑档(车机 1920×720/TV 横屏)──[MOMO 风险2·1106]
+// 720 竖向空间只有 1080 的 2/3:双大卡/歌曲行/竖卡整体压缩,首屏密度保三行+rail
+export const CAR_COMPACT = 0.84;
+export function carScale(h: number): number {
+  if (h >= 1000) return 1;      // 1080+ 真车/TV 全档
+  if (h >= 800) return 0.94;   // 900 档
+  return CAR_COMPACT;          // ≤799(720 车机横屏)
+}

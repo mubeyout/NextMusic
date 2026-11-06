@@ -1,7 +1,7 @@
 // CarHome.tsx —— [车机 P1 为我推荐 1105] LEO v7 规格 §1: 问候 hero + 双大卡 + 最近播放行 + 推荐歌单 rail
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { CAR } from './cartokens';
+import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { CAR, carScale } from './cartokens';
 import { CarBigCard, CarRecCard, CarSongRow } from './cards';
 import { C } from '../theme/tokens';
 import { lxapi } from '../services/lxapi';
@@ -31,6 +31,9 @@ function SecHead({ title, hint, more, onMore }: { title: string; hint?: string; 
 
 export function CarHome({ goExplore, onOpenPlaylist }: { goExplore: () => void; onOpenPlaylist: (pl: import('./CarPlaylist').CarPlRef) => void }) {
   const player = usePlayer();
+  // [720 紧凑档 1106] 屏高 <800(车机横屏)→卡片压缩,首屏保密度
+  const { height } = useWindowDimensions();
+  const dense = carScale(height) < 0.9;
   const { username } = useApp();
   const [recents, setRecents] = useState<SongItem[]>([]);
   const [mixes, setMixes] = useState<SongListMeta[]>([]);
@@ -50,9 +53,9 @@ export function CarHome({ goExplore, onOpenPlaylist }: { goExplore: () => void; 
 
       {/* 双大卡: 每日精选 / 私人雷达 (v7 真版基准组件) */}
       <View style={{ flexDirection: 'row', gap: CAR.gap, marginBottom: CAR.sectionGap }}>
-        <CarBigCard badge="每日精选" title="30 首热歌" sub="每天更新" accent="#3B2F6F"
+        <CarBigCard dense={dense} badge="每日精选" title="30 首热歌" sub="每天更新" accent="#3B2F6F"
           onPress={() => { if (recents.length) void player.playSong(recents[0], recents); }} />
-        <CarBigCard badge="私人雷达" title="你最近循环的歌" sub="根据口味生成" accent="#1E5F56"
+        <CarBigCard dense={dense} badge="私人雷达" title="你最近循环的歌" sub="根据口味生成" accent="#1E5F56"
           onPress={() => { if (recents.length) void player.playSong(recents[0], recents); }} />
       </View>
 

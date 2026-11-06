@@ -1,7 +1,7 @@
 // CarPages.tsx —— [车机 P2/P3/P4 1105] 探索(源pills+标签+封面网格)/榜单(4列渐变卡210)——LEO 播客频道数据源待补,先占位接现有
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
-import { CAR } from './cartokens';
+import { View, Text, ScrollView, TouchableOpacity, Image, useWindowDimensions } from 'react-native';
+import { CAR, carScale } from './cartokens';
 import { CarSongRow } from './cards';
 import { C } from '../theme/tokens';
 import { Icon } from '../theme/Icon';
@@ -52,6 +52,8 @@ const BOARD_ACCENTS = ['#AD4714', '#611A2E', '#242E6B', '#1A6B54', '#1F387A', '#
 
 /** P4 榜单: 4 列卡 210 高(左上源chip+名+副行) */
 export function CarBoards({ onOpenPlaylist }: { onOpenPlaylist: (pl: import('./CarPlaylist').CarPlRef) => void }) {
+  const { height } = useWindowDimensions();
+  const dense = carScale(height) < 0.9; // [720 紧凑档 1106]
   const [boards, setBoards] = useState<{ id: string; name: string; bangid: string; image?: string }[]>([]);
   useEffect(() => { lxapi.leaderboardBoards().then(d => setBoards((d || []).slice(0, 8))).catch(() => {}); }, []);
   return (
@@ -60,7 +62,7 @@ export function CarBoards({ onOpenPlaylist }: { onOpenPlaylist: (pl: import('./C
       <View style={st.bGrid}>
         {boards.map((b, i) => (
           <TouchableOpacity key={b.id} activeOpacity={0.85} onPress={() => onOpenPlaylist({ kind: 'board', id: b.bangid, name: b.name, img: b.image })}
-            style={[st.bCard, { backgroundColor: BOARD_ACCENTS[i % BOARD_ACCENTS.length] }]}>
+            style={[st.bCard, dense && st.bCardDense, { backgroundColor: BOARD_ACCENTS[i % BOARD_ACCENTS.length] }]}>
             <Text style={st.bChip}>榜单</Text>
             <Text style={st.bName} numberOfLines={2}>{b.name}</Text>
             <Text style={st.bSub}>酷狗榜</Text>
@@ -85,6 +87,8 @@ const CHANNELS: { name: string; q: string; accent: string }[] = [
 
 export function CarPodcast() {
   const player = usePlayer();
+  const { height } = useWindowDimensions();
+  const dense = carScale(height) < 0.9; // [720 紧凑档 1106]
   const [active, setActive] = useState(0);
   const [songs, setSongs] = useState<SongItem[]>([]);
   useEffect(() => {
@@ -98,7 +102,7 @@ export function CarPodcast() {
       <View style={st.chGrid}>
         {CHANNELS.map((c, i) => (
           <TouchableOpacity key={c.name} activeOpacity={0.85} onPress={() => setActive(i)}
-            style={[st.chCard, { backgroundColor: c.accent }, active === i && { borderWidth: 3, borderColor: '#FFFFFF66' }]}>
+            style={[st.chCard, dense && st.chCardDense, { backgroundColor: c.accent }, active === i && { borderWidth: 3, borderColor: '#FFFFFF66' }]}>
             <Text style={st.chName}>{c.name}</Text>
             <Text style={st.chSub}>聚合频道</Text>
           </TouchableOpacity>
@@ -130,4 +134,6 @@ const st = {
   chCard: { width: '23%', height: CAR.chCard.h, borderRadius: CAR.chCard.r, padding: 16, justifyContent: 'flex-end' as const, gap: 3 },
   chName: { color: '#FFFFFF', fontSize: 18, fontWeight: '700' as const },
   chSub: { color: '#FFFFFFB3', fontSize: 13 },
+  chCardDense: { height: 108, padding: 13 },
+  bCardDense: { height: 168, padding: 14 },
 };
