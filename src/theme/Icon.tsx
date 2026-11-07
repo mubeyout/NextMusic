@@ -8,6 +8,20 @@ import { C } from './tokens';
 // v3.26:recolor 结果缓存(xml 字符串引用稳定,SvgXml 不重解析)
 const ICON_XML_CACHE = new Map<string, string>();
 
+// [1107 老板报:HD/web 侧栏图标视觉大小不齐] 光学归一层——
+// 图标库混两种网格: Figma 24vb(实测占幅 15~18.5/24) + iconpark 48vb(占幅 38~40/48),
+// 同 size=16 渲染视觉直径 10.0(heart)~13.3(podcast)px,极差 33%。按 bbox 实测补偿到统一 ≈11.5px。
+// 数据: icon-bbox.py 量化(1107),LEO 可复核系数
+const OPTICAL: Partial<Record<string, number>> = {
+  // 48vb 组(占幅偏大 → 压)
+  podcast: 0.87, ranking: 0.89, library: 0.91, 'folder-music': 0.91, history: 0.87,
+  // 24vb 组占幅偏小 → 放;偏大 → 压;≈中位 → 1.0
+  heart: 1.15, explore: 1.1, search: 1.1, download: 1.1, music: 1.1, user: 1.05,
+  globe: 0.96, cloud: 0.94, server: 0.98, settings: 0.98,
+};
+// 48vb iconpark 组线宽归一: library/folder-music sw=4 → 3(与 podcast/ranking/history 一致;16px 渲染线宽 1.0px)
+const SW48_NORMALIZE = new Set(['podcast', 'ranking', 'library', 'folder-music', 'history']);
+
 export type IconName =
   | 'home' | 'explore' | 'my' | 'search' | 'play' | 'pause' | 'more' | 'back'
   | 'chevronright' | 'download' | 'devices' | 'settings' | 'shuffle' | 'repeat'
@@ -48,12 +62,15 @@ export function Icon({
   let xml = ICON_XML_CACHE.get(cacheKey);
   if (!xml) {
     xml = recolor(raw, tint);
+    if (SW48_NORMALIZE.has(name)) xml = xml.replace(/stroke-width="4"/g, 'stroke-width="3"'); // [1107] 48vb 组线宽统一
     // v1.2.5 桌面:部分图标 xml 烘了 width/height 属性——RNW 下 svg 高度会吃 xml 属性(实测 16×24,
     // 「为我推荐」active 图标下坠 5px 的真因)。web 剥掉,让 props 的 width/height 独占;原生不受影响
     if (Platform.OS === 'web') xml = xml.replace(/<svg\s([^>]*?)\s*(width="\d+"\s+height="\d+")/, '<svg $1');
     ICON_XML_CACHE.set(cacheKey, xml);
   }
-  return <SvgXml xml={xml} width={size} height={size} />;
+  const opt = OPTICAL[name]; // [1107] 光学归一:补偿后的实际渲染尺寸
+  const sz = opt ? size * opt : size;
+  return <SvgXml xml={xml} width={sz} height={sz} />;
 }
 
 // ---- Brand icons (no recolor) ----
