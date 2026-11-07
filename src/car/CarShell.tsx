@@ -31,7 +31,7 @@ const NAV: { key: PageKey; icon: string; label: string }[] = [
   { key: 'home', icon: 'home', label: '为我推荐' },
   { key: 'podcast', icon: 'podcast', label: '播客' },
   { key: 'explore', icon: 'explore', label: '探索' },
-  { key: 'boards', icon: 'rank', label: '榜单' },
+  { key: 'boards', icon: 'ranking', label: '榜单' },
 ];
 
 function NavItem({ icon, label, active, onPress, size, first }: { icon: string; label: string; active?: boolean; onPress: () => void; size?: number; first?: boolean }) {
@@ -109,12 +109,12 @@ export function CarShell() {
         <NavItem icon="server" label="媒体库" onPress={() => nav.navigate('MediaLibs')} size={CAR.navItemSub} /> {/* 枢纽优先;[1106 老板钦点] 跳 phone 全功能页(账号/音源/服务器) */}
         {hasLocalLibs ? <NavItem icon="music" label="本地曲库" onPress={() => nav.navigate('MyLibrary')} size={CAR.navItemSub} /> : null}
         {hasToken ? <NavItem icon="cloud" label="云曲库" onPress={() => nav.navigate('CloudLibrary')} size={CAR.navItemSub} /> : null}
-        {(pub.authorized && pub.showEntry && pubShown) ? <NavItem icon="users" label="公共曲库" onPress={() => nav.navigate('PublicLibrary')} size={CAR.navItemSub} /> : null} {/* 首交互后冻结(LEO 裁定) */}
+        {(pub.authorized && pub.showEntry && pubShown) ? <NavItem icon="globe" label="公共曲库" onPress={() => nav.navigate('PublicLibrary')} size={CAR.navItemSub} /> : null} {/* 首交互后冻结(LEO 裁定);[图标审计 1107] users 库中不存在(渲染空白)→globe */}
         <NavItem icon="heart" label="我的收藏" onPress={() => setFavOpen(true)} size={CAR.navItemSub} /> {/* [1106 完成] CarFavorites(收藏+最近播放) */}
         {/* [LEO 终稿 1107] 管理组 */}
         <Text style={st.groupLabel}>管理</Text>
         <NavItem icon="download" label="下载管理" onPress={() => nav.navigate('Downloads')} size={CAR.navItemSub} />
-        <NavItem icon="clock" label="播放历史" onPress={() => setFavOpen(true)} size={CAR.navItemSub} /> {/* LEO 拍板: 保留独立行,目标沿用收藏页首区复用 */}
+        <NavItem icon="history" label="播放历史" onPress={() => setFavOpen(true)} size={CAR.navItemSub} /> {/* LEO 拍板: 保留独立行,目标沿用收藏页首区复用;[图标审计 1107] clock 库中不存在(渲染空白)→history */}
         <View style={{ flex: 1 }} />
         {/* Dock 撤(老板令 0916)→搜索/设置挪右上角(见内容区 cornerBtn) */}
       </View>
