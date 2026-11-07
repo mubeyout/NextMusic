@@ -69,15 +69,7 @@ export function SettingsScreen() {
           <Icon name="check" size={22} active />
         </View>
 
-        {/* [车机模式入口 1105] v7 重新设计版手动切换(除车载蓝牙自动询问外的显式入口) */}
-        <TouchableOpacity style={st.brandCard} activeOpacity={0.8} onPress={() => settings.set('carModeUi', true)}>
-          <Icon name="fullscreen" size={22} active />
-          <View style={{ flex: 1 }}>
-            <Text style={st.brandTitle}>车机模式</Text>
-            <Text style={st.brandSub}>切换到车机专属大屏界面（v7 重新设计版）</Text>
-          </View>
-          <Icon name="chevronright" size={16} color={C.text3} />
-        </TouchableOpacity>
+        {/* [老板令 1107 10:29] 车机模式手动入口删除——纯环境自动检测(uiMode tv/car 或 ≥1400dp 宽屏),测试走 adb(wm size/density) */}
 
         <View style={st.group}>
           {GROUPS.map((g, i) => (

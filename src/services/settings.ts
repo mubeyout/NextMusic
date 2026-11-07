@@ -181,10 +181,11 @@ function load(): AppSettings {
     const merged = { ...DEFAULTS, ...JSON.parse(kv.getString('settings') || '{}') } as AppSettings;
     if (merged.downloadDir !== 'custom') merged.downloadDir = 'public';
     // 1105 通用 APK:运行时自动检测 TV/car → 切 HD UI(手机包自动适配大屏设备)
+    // [老板令 1107 10:29] 车机模式纯环境自动检测,双向钳制:uiMode∈{tv,car}→true;其余一律 false
+    // (单向只开的年代手机手动开 true 后遗留无法回退——实锤;钳 false 自动纠正所有遗留态)
+    // 测试通道(adb,无需 UI 开关): wm size 1920x720 + wm density 160 → 重启 → 宽屏≥1400dp 自动 car;reset 回 phone
     const _nmUi = (NativeModules.AppVersionInfo as { uiMode?: string } | undefined)?.uiMode;
-    if ((_nmUi === 'tv' || _nmUi === 'car') && !merged.carModeUi) {
-      merged.carModeUi = true;
-    } // vc84：默认公共;历史 private 归一
+    merged.carModeUi = _nmUi === 'tv' || _nmUi === 'car'; // vc84：默认公共;历史 private 归一
     if (kv.getString('lx45m') !== '1') { merged.restorePlayback = true; kv.set('lx45m', '1'); } // lx45：历史用户从未动过此开关也视默认开（老安装存量 false 覆盖新默认）
     // 1104 LEO 定位(实车元素小主因):车机旧存储 uiScale '100%' 压过新默认 150%(任何 settings.set 都固化全字段)——车机一次性迁移(用户后续主动改不受影响,迁移标记后不再触发)
     if ((NativeModules.AppVersionInfo as { uiMode?: string } | undefined)?.uiMode === 'car' && merged.uiScale === '100%' && kv.getString('car150m') !== '1') {

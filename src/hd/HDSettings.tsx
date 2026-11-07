@@ -76,10 +76,7 @@ export function HDSettingsScreen() {
   const [cacheFiles, setCacheFiles] = useState<{ name: string; size: number }[] | null | undefined>(undefined);
   const loadCacheStats = () => { api.cacheStats().then(setCacheStats).catch(() => setCacheStats({ totalSize: 0, fileCount: 0 })); };
 
-  // carlink:phone 包内嵌车机模式时给退出开关;独立 hd 包不显示
-  const carRows: RowDef[] = !IS_HD && s.carModeUi === true ? [
-    { kind: 'toggle', icon: 'fullscreen', title: '车机模式', desc: '当前使用 HD 大屏界面,关闭恢复手机竖版', value: s.carModeUi === true, onToggle: () => settings.set('carModeUi', false) },
-  ] : [];
+  // [老板令 1107] 车机模式手动开关删除——纯环境自动检测(settings.ts 双向钳制),测试走 adb
 
   const rows: Record<Tab, RowDef[]> = {
     '外观与界面': [
@@ -231,7 +228,6 @@ export function HDSettingsScreen() {
 
       {/* 行式设置卡 */}
       <View style={{ gap: SP.md }}>
-        {carRows.map((r, i) => <SettingsRow key={`car_${i}`} row={r} />)}
         {rows[tab].map((r, i) => <SettingsRow key={`${r.title}_${i}`} row={r} />)}
       </View>
     </ScrollView>

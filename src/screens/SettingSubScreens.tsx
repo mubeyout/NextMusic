@@ -82,8 +82,7 @@ export function BasicSettingsScreen() {
       </Section>
       <Section title="界面">
         <ToggleRow label="底栏显示标签" value={s.showTabLabels} onChange={v => settings.set('showTabLabels', v)} />
-        {/* carlink(20260920):CarLink/投屏连车机时切 HD 大屏 UI(参照 hd 版,横屏+大触点+D-pad);重启或再切回 */}
-        <ToggleRow label="车机模式" value={s.carModeUi === true} onChange={v => settings.set('carModeUi', v)} />
+        {/* [老板令 1107] 车机模式开关删除——自动检测,见 settings.ts 钳制 */}
       </Section>
       {/* ④公共曲库个人显示开关(授权账号才渲染;关闭=仅隐藏自己的入口,数据/授权关系保留) */}
       {pub.authorized ? (
