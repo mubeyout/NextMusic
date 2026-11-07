@@ -1,4 +1,5 @@
 // cards.tsx —— [车机专属卡 1105] BigCard/RecCard/SongRow 车机参数版(LEO 规格 §1/§4)
+import { CarTouch } from './CarTouch';
 import React from 'react';
 import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { CAR, CAR_FS } from './cartokens';
@@ -11,7 +12,7 @@ export function CarBigCard({ badge, title, sub, accent, onPress, playing, dense 
   badge: string; title: string; sub: string; accent: string; onPress: () => void; playing?: boolean; dense?: boolean;
 }) {
   return (
-    <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={[st.bigCard, dense && st.bigCardDense, { backgroundColor: accent }]}>
+    <CarTouch onPress={onPress} style={[st.bigCard, dense && st.bigCardDense, { backgroundColor: accent }]}>
       {/* [LEO 定谳 1105] 去渐变令延伸车机族——纯色深底(取原渐变主色),层级靠明度差+白字;例外:播放页黑胶放射渐变(拟物)+侧栏 tint */}
       <View style={st.bigTexts}>
         <Text style={st.bigBadge}>{badge}</Text>
@@ -21,7 +22,7 @@ export function CarBigCard({ badge, title, sub, accent, onPress, playing, dense 
       <View style={st.bigPlay}>
         <Icon name={playing ? 'pause' : 'play'} size={22} active color="#FFFFFF" />
       </View>
-    </TouchableOpacity>
+    </CarTouch>
   );
 }
 
@@ -30,19 +31,19 @@ export function CarRecCard({ img, name, sub, fallback, onPress, dense }: {
   img?: string; name: string; sub?: string; fallback?: any; onPress: () => void; dense?: boolean;
 }) {
   return (
-    <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={st.recCard}>
+    <CarTouch onPress={onPress} style={st.recCard}>
       {img ? <Image source={{ uri: img }} style={dense ? st.recArtDense : st.recArt} /> : fallback ? <Image source={fallback} style={dense ? st.recArtDense : st.recArt} /> : <View style={[dense ? st.recArtDense : st.recArt, { backgroundColor: C.surface2 }]} />}
       <View style={dense ? st.recPlayDense : st.recPlay}><Icon name="play" size={18} active color="#FFFFFF" /></View>
       <Text style={st.recName} numberOfLines={1}>{name}</Text>
       {sub ? <Text style={st.recSub} numberOfLines={1}>{sub}</Text> : null}
-    </TouchableOpacity>
+    </CarTouch>
   );
 }
 
 /** 车机歌曲行: 88 高/封面 72 r12/名 16/副 13/时长 15 */
 export function CarSongRow({ song, onPress, dense }: { song: SongItem; onPress: () => void; dense?: boolean }) {
   return (
-    <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={dense ? st.songRowDense : st.songRow}>
+    <CarTouch onPress={onPress} style={dense ? st.songRowDense : st.songRow}>
       {song.img
         ? <Image source={{ uri: song.img }} style={dense ? st.songArtDense : st.songArt} />
         : <View style={[dense ? st.songArtDense : st.songArt, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={20} color={C.text3} /></View>}
@@ -51,7 +52,7 @@ export function CarSongRow({ song, onPress, dense }: { song: SongItem; onPress: 
         <Text style={st.songSub} numberOfLines={1}>{song.singer}{song.albumName ? ` · ${song.albumName}` : ''}</Text>
       </View>
       {song.interval ? <Text style={st.songTime}>{song.interval}</Text> : null}
-    </TouchableOpacity>
+    </CarTouch>
   );
 }
 

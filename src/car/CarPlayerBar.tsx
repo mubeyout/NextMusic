@@ -1,4 +1,5 @@
 // CarPlayerBar.tsx —— [车机播放条 1105] 96 高无进度行(时间并入副行),封面 60 r12
+import { CarTouch } from './CarTouch';
 import React from 'react';
 import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { CAR, CAR_FS } from './cartokens';
@@ -30,10 +31,10 @@ export function CarPlayerBar({ onFx }: { onFx?: () => void }) {
             </View>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 26 }}>
-            {onFx ? <TouchableOpacity onPress={onFx} style={st.btn}><Icon name="sliders" size={24} color={C.text2} /></TouchableOpacity> : null}
-            <TouchableOpacity onPress={skipPrev} style={st.btn}><Icon name="previous" size={26} color={C.text} /></TouchableOpacity>
-            <TouchableOpacity onPress={toggle} style={st.main}><Icon name={playing ? 'pause' : 'play'} size={24} active color={C.onBrand} /></TouchableOpacity>
-            <TouchableOpacity onPress={skipNext} style={st.btn}><Icon name="next" size={26} color={C.text} /></TouchableOpacity>
+            {onFx ? <CarTouch onPress={onFx} style={st.btn}><Icon name="sliders" size={24} color={C.text2} /></CarTouch> : null}
+            <CarTouch onPress={skipPrev} style={st.btn}><Icon name="previous" size={26} color={C.text} /></CarTouch>
+            <CarTouch onPress={toggle} style={st.main}><Icon name={playing ? 'pause' : 'play'} size={24} active color={C.onBrand} /></CarTouch>
+            <CarTouch onPress={skipNext} style={st.btn}><Icon name="next" size={26} color={C.text} /></CarTouch>
           </View>
         </>
       ) : (

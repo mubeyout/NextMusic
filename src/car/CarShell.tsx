@@ -1,4 +1,5 @@
 // CarShell.tsx —— [车机专属壳 1105] LEO v75 终稿(1107 拍板): 侧栏 261 + 四主页面 + 我的乐库(HD 正序/条件渲染) + 管理组 + 右上角搜索/设置(Dock 撤·老板令 0916) + CarPlayerBar
+import { CarTouch } from './CarTouch';
 // 不复用 HDMain(结构不同——老板令:车机重新设计,不是放大 HD)
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, Image, LayoutAnimation, BackHandler } from 'react-native'; // Image:brand mark
@@ -33,14 +34,14 @@ const NAV: { key: PageKey; icon: string; label: string }[] = [
   { key: 'boards', icon: 'rank', label: '榜单' },
 ];
 
-function NavItem({ icon, label, active, onPress, size }: { icon: string; label: string; active?: boolean; onPress: () => void; size?: number }) {
+function NavItem({ icon, label, active, onPress, size, first }: { icon: string; label: string; active?: boolean; onPress: () => void; size?: number; first?: boolean }) {
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.8}
+    <CarTouch onPress={onPress} {...(first ? { hasTVPreferredFocus: true } : {})}
       style={[st.navItem, size ? { height: size } : null, active && { backgroundColor: C.surface2, borderRadius: 14 }]}>
       {active ? <View style={{ position: 'absolute', left: 0, top: 12, bottom: 12, width: 3, borderRadius: 2, backgroundColor: C.brand }} /> : null}
       <Icon name={icon as never} size={24} color={active ? C.brand : C.text2} />
       <Text style={[st.navLabel, active && { color: C.brand }]}>{label}</Text>
-    </TouchableOpacity>
+    </CarTouch>
   );
 }
 
@@ -100,8 +101,8 @@ export function CarShell() {
           <Image source={require('../assets/brand/mark.png')} style={{ width: 34, height: 34 }} />
           <Text style={{ color: C.text, fontSize: 22, fontWeight: '800' }}>Next<Text style={{ color: C.brand }}>Music</Text></Text>
         </View>
-        {NAV.map(n => (
-          <NavItem key={n.key} icon={n.icon} label={n.label} active={page === n.key && !favOpen && !playlist} onPress={() => goPage(n.key)} />
+        {NAV.map((n, i) => (
+          <NavItem key={n.key} icon={n.icon} label={n.label} active={page === n.key && !favOpen && !playlist} onPress={() => goPage(n.key)} first={i === 0} />
         ))}
         {/* [LEO 终稿 1107] 我的乐库: HD 正序(枢纽优先) */}
         <Text style={st.groupLabel}>我的乐库</Text>
@@ -141,26 +142,26 @@ export function CarShell() {
       {/* 播放条: 底部常驻 96 无进度行(点击开 CarPlayer 全屏) */}
       {/* [真车修复 1107] bottom=insets.bottom:车机系统底部 bar 遮挡 playbar 实锤 */}
       <View style={{ position: 'absolute', left: playlist ? 0 : CAR.sidebar, right: 0, bottom: insets.bottom }}>
-        <TouchableOpacity activeOpacity={0.9} style={{ flex: 1 }} onPress={() => setPlayerOpen(true)}>
+        <CarTouch style={{ flex: 1 }} onPress={() => setPlayerOpen(true)}>
           <CarPlayerBar onFx={() => setPage('fx')} />
-        </TouchableOpacity>
+        </CarTouch>
       </View>
       <CarPlayer visible={playerOpen} onClose={() => setPlayerOpen(false)} />
       {!playerOpen && !playlist && (
-        <TouchableOpacity style={{ position: 'absolute', right: CAR.gutter, bottom: CAR.playbar.h + insets.bottom + 16, width: 52, height: 52, borderRadius: 26, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }}
+        <CarTouch style={{ position: 'absolute', right: CAR.gutter, bottom: CAR.playbar.h + insets.bottom + 16, width: 52, height: 52, borderRadius: 26, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }}
           onPress={() => goPage('queue')}>
           <Icon name="queue" size={22} color={C.text2} />
-        </TouchableOpacity>
+        </CarTouch>
       )}
       {/* [老板令 0916 + LEO 终稿 1107] 右上角: 搜索 + 设置(Dock 撤) */}
       {!playerOpen && !playlist && !favOpen && (
         <View style={{ position: 'absolute', right: CAR.gutter, top: Math.max(insets.top, IS_CAR_TOP) + 16, flexDirection: 'row', gap: 12, zIndex: 30, elevation: 30 }}>
-          <TouchableOpacity style={st.dockBtn} onPress={() => goPage('search')}>
+          <CarTouch style={st.dockBtn} onPress={() => goPage('search')}>
             <Icon name="search" size={22} color={C.text2} />
-          </TouchableOpacity>
-          <TouchableOpacity style={st.dockBtn} onPress={() => goPage('settings')}>
+          </CarTouch>
+          <CarTouch style={st.dockBtn} onPress={() => goPage('settings')}>
             <Icon name="settings" size={22} color={C.text2} />
-          </TouchableOpacity>
+          </CarTouch>
         </View>
       )}
     </View>

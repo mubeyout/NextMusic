@@ -1,4 +1,5 @@
 // CarFx.tsx —— [A3 FX 音效车机形态·LEO v75 缺口包 1107·老板令 0927] 预设优先四卡 > 五段精简 EQ > 深度模式(乘客)降级;3D/变调/混响 chips
+import { CarTouch } from './CarTouch';
 // 车机价值重排:预设>微调(驾驶安全);十段全量 EQ 留给乘客走 phone FxScreen
 // [1107 设计对齐核查] 预设卡 accent 渐变分色(LEO v75 master --ac3/4/7/8)+active 2px brand 描边;文案/分区 label 逐字对稿
 import React, { useEffect, useMemo, useState } from 'react';
@@ -50,7 +51,7 @@ export function CarFx({ onBack }: { onBack: () => void }) {
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: CAR.gutter, paddingBottom: CAR.playbar.h + 40 }} showsVerticalScrollIndicator={false}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 8 }}>
-        <TouchableOpacity style={st.backBtn} onPress={onBack}><Icon name="back" size={20} color={C.text2} /></TouchableOpacity>
+        <CarTouch style={st.backBtn} onPress={onBack}><Icon name="back" size={20} color={C.text2} /></CarTouch>
         <Text style={{ color: C.text, fontSize: CAR_FS.hero, fontWeight: '800', flex: 1 }}>音效</Text>
       </View>
       <Text style={st.subtitle}>预设 · 均衡器 · 空间感</Text>
@@ -62,14 +63,14 @@ export function CarFx({ onBack }: { onBack: () => void }) {
           const on = p.match(fx.eq, fx.reverb.id);
           const grad = PRESET_ACCENTS[p.name];
           return (
-            <TouchableOpacity key={p.name} activeOpacity={0.85} onPress={p.apply}
+            <CarTouch key={p.name} onPress={p.apply}
               style={[st.presetCard, on && { borderWidth: 2, borderColor: C.brand }]}>
               <LinearGradient colors={grad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                 style={{ ...st.presetGrad, paddingVertical: 20 }}>
                 <Text style={st.presetName}>{p.name}</Text>
                 <Text style={st.presetSub}>{p.sub}</Text>
               </LinearGradient>
-            </TouchableOpacity>
+            </CarTouch>
           );
         })}
       </View>
@@ -80,28 +81,28 @@ export function CarFx({ onBack }: { onBack: () => void }) {
         {BANDS.map(b => (
           <View key={b.idx} style={st.eqRow}>
             <Text style={st.eqFreq}>{b.label}</Text>
-            <TouchableOpacity style={st.eqStep} onPress={() => setEQ(b.idx, Math.max(-12, (fx.eq[b.idx] ?? 0) - 1))}><Text style={st.eqStepText}>−</Text></TouchableOpacity>
+            <CarTouch style={st.eqStep} onPress={() => setEQ(b.idx, Math.max(-12, (fx.eq[b.idx] ?? 0) - 1))}><Text style={st.eqStepText}>−</Text></CarTouch>
             <View style={st.eqValueWrap}><Text style={[st.eqValue, (fx.eq[b.idx] ?? 0) !== 0 && { color: C.brand }]}>{(fx.eq[b.idx] ?? 0) > 0 ? '+' : ''}{fx.eq[b.idx] ?? 0}</Text></View>
-            <TouchableOpacity style={st.eqStep} onPress={() => setEQ(b.idx, Math.min(12, (fx.eq[b.idx] ?? 0) + 1))}><Text style={st.eqStepText}>＋</Text></TouchableOpacity>
+            <CarTouch style={st.eqStep} onPress={() => setEQ(b.idx, Math.min(12, (fx.eq[b.idx] ?? 0) + 1))}><Text style={st.eqStepText}>＋</Text></CarTouch>
           </View>
         ))}
-        <TouchableOpacity style={st.deepBtn} onPress={() => nav.navigate('Fx')}>
+        <CarTouch style={st.deepBtn} onPress={() => nav.navigate('Fx')}>
           <Text style={st.deepText}>十段均衡 · 深度模式（乘客）›</Text>
-        </TouchableOpacity>
+        </CarTouch>
       </View>
 
       {/* 空间感 */}
       <Text style={st.secLabel}>空间感</Text>
       <View style={st.chips}>
-        <TouchableOpacity style={[st.chip, fx.panner.enable && st.chipOn]} onPress={() => setPanner({ enable: !fx.panner.enable })}>
+        <CarTouch style={[st.chip, fx.panner.enable && st.chipOn]} onPress={() => setPanner({ enable: !fx.panner.enable })}>
           <Text style={[st.chipText, fx.panner.enable && { color: C.brand }]}>3D 声像 · {fx.panner.enable ? '开' : '关'}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={st.chip} onPress={() => setFxPitch(PITCH_CYCLE[(PITCH_CYCLE.findIndex(v => v === fx.pitch) + 1) % PITCH_CYCLE.length] ?? 1)}>
+        </CarTouch>
+        <CarTouch style={st.chip} onPress={() => setFxPitch(PITCH_CYCLE[(PITCH_CYCLE.findIndex(v => v === fx.pitch) + 1) % PITCH_CYCLE.length] ?? 1)}>
           <Text style={st.chipText}>变调 {fx.pitch.toFixed(2)}×</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[st.chip, revOn && st.chipOn]} onPress={() => setReverb(REVERB_CYCLE[(REVERB_CYCLE.findIndex(r => r.id === fx.reverb.id) + 1) % REVERB_CYCLE.length].id)}>
+        </CarTouch>
+        <CarTouch style={[st.chip, revOn && st.chipOn]} onPress={() => setReverb(REVERB_CYCLE[(REVERB_CYCLE.findIndex(r => r.id === fx.reverb.id) + 1) % REVERB_CYCLE.length].id)}>
           <Text style={[st.chipText, revOn && { color: C.brand }]}>混响 · {revLabel}</Text>
-        </TouchableOpacity>
+        </CarTouch>
       </View>
     </ScrollView>
   );

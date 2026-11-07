@@ -1,4 +1,5 @@
 // CarQueue.tsx —— [A2 队列页·LEO v75 缺口包 1107·老板令 0927] 当前队列/播放历史 pills 合并视图;正在播 brandDim 高亮;排队行 ≡ 把手视觉;播放全部/清空
+import { CarTouch } from './CarTouch';
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { CAR, CAR_FS } from './cartokens';
@@ -18,28 +19,28 @@ export function CarQueue({ onBack }: { onBack: () => void }) {
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: CAR.gutter, paddingBottom: CAR.playbar.h + 40 }} showsVerticalScrollIndicator={false}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-        <TouchableOpacity style={st.backBtn} onPress={onBack}><Icon name="back" size={20} color={C.text2} /></TouchableOpacity>
+        <CarTouch style={st.backBtn} onPress={onBack}><Icon name="back" size={20} color={C.text2} /></CarTouch>
         <Text style={{ color: C.text, fontSize: CAR_FS.hero, fontWeight: '800', flex: 1 }}>播放队列</Text>
         {tab === 'queue' && player.queue.length ? (
-          <TouchableOpacity style={st.actBtn} onPress={() => { player.clearQueue(); toast('队列已清空'); }}>
+          <CarTouch style={st.actBtn} onPress={() => { player.clearQueue(); toast('队列已清空'); }}>
             <Text style={st.actDanger}>清空</Text>
-          </TouchableOpacity>
+          </CarTouch>
         ) : null}
         {tab === 'queue' && player.queue.length > 1 ? (
-          <TouchableOpacity style={st.actBtn} onPress={() => void player.playSong(player.queue[0], player.queue)}>
+          <CarTouch style={st.actBtn} onPress={() => void player.playSong(player.queue[0], player.queue)}>
             <Text style={st.actText}>播放全部</Text>
-          </TouchableOpacity>
+          </CarTouch>
         ) : null}
       </View>
 
       {/* 合并视图 pills */}
       <View style={st.tabs}>
-        <TouchableOpacity style={[st.tab, tab === 'queue' && st.tabOn]} onPress={() => setTab('queue')}>
+        <CarTouch style={[st.tab, tab === 'queue' && st.tabOn]} onPress={() => setTab('queue')}>
           <Text style={[st.tabText, tab === 'queue' && { color: C.brand }]}>当前队列 · {player.queue.length}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[st.tab, tab === 'hist' && st.tabOn]} onPress={() => setTab('hist')}>
+        </CarTouch>
+        <CarTouch style={[st.tab, tab === 'hist' && st.tabOn]} onPress={() => setTab('hist')}>
           <Text style={[st.tabText, tab === 'hist' && { color: C.brand }]}>播放历史 · {recents.length}</Text>
-        </TouchableOpacity>
+        </CarTouch>
       </View>
 
       {list.length ? list.map((s, i) => {

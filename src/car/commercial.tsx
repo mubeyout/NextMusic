@@ -15,7 +15,7 @@ const FSZ = { sec: 22, title: 18, body: 16, sub: 15, mini: 13, tiny: 12 } as con
 export function TrialBar({ daysLeft, onOpen, onClose }: { daysLeft: number; onOpen: () => void; onClose: () => void }) {
   return (
     <View style={st.trial}>
-      <TouchableOpacity style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }} onPress={onOpen} activeOpacity={0.8}>
+      <TouchableOpacity style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }} onPress={onOpen}>
         <Text style={st.trialText}>{CTA.trial}</Text>
         <View style={st.trialBadge}><Text style={st.trialBadgeText}>{`试用剩余 ${daysLeft} 天`}</Text></View>
       </TouchableOpacity>
@@ -64,7 +64,7 @@ export function PaywallCard({ title, desc, bullets, onPrimary, onTrial, onDismis
           ))}
         </View>
       ) : null}
-      <TouchableOpacity style={st.payCta} onPress={onPrimary} activeOpacity={0.85}>
+      <TouchableOpacity style={st.payCta} onPress={onPrimary}>
         <Text style={st.payCtaText}>{CTA.main}</Text>
       </TouchableOpacity>
       {onTrial ? <TouchableOpacity style={{ minHeight: 44, justifyContent: 'center' }} onPress={onTrial}><Text style={st.payTrial}>{CTA.trial}</Text></TouchableOpacity> : null}

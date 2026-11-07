@@ -1,4 +1,5 @@
 // CarPlayer.tsx —— [车机 P6 播放页 1105] LEO 规格§1: 左盘 480(放射渐变+中孔) + 右信息控制 + 完整进度(进度主场在此)
+import { CarTouch } from './CarTouch';
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, Image, useWindowDimensions } from 'react-native';
 import { CAR, CAR_FS } from './cartokens';
@@ -34,9 +35,9 @@ export function CarPlayer({ visible, onClose }: { visible: boolean; onClose: () 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={st.screen}>
-        <TouchableOpacity style={st.closeBtn} onPress={onClose}>
+        <CarTouch style={st.closeBtn} onPress={onClose}>
           <Icon name="back" size={20} color={C.text2} />
-        </TouchableOpacity>
+        </CarTouch>
 
         <View style={st.body}>
           {/* 左:黑胶盘 480 */}
@@ -54,11 +55,11 @@ export function CarPlayer({ visible, onClose }: { visible: boolean; onClose: () 
             {current?.albumName ? <Text style={st.album}>{current.albumName}{queue.length ? ` · 队列 ${queue.length} 首` : ''}</Text> : null}
 
             <View style={st.ctrls}>
-              <TouchableOpacity style={st.ctrlBtn} onPress={skipPrev}><Icon name="previous" size={30} color={C.text} /></TouchableOpacity>
-              <TouchableOpacity style={st.ctrlMain} onPress={toggle}>
+              <CarTouch style={st.ctrlBtn} onPress={skipPrev}><Icon name="previous" size={30} color={C.text} /></CarTouch>
+              <CarTouch style={st.ctrlMain} onPress={toggle}>
                 <Icon name={playing ? 'pause' : 'play'} size={40} active color={C.onBrand} />
-              </TouchableOpacity>
-              <TouchableOpacity style={st.ctrlBtn} onPress={skipNext}><Icon name="next" size={30} color={C.text} /></TouchableOpacity>
+              </CarTouch>
+              <CarTouch style={st.ctrlBtn} onPress={skipNext}><Icon name="next" size={30} color={C.text} /></CarTouch>
             </View>
 
             {/* 完整进度条(8 高 r4)——进度操作主场(播放条无进度行的补偿) */}
@@ -73,19 +74,19 @@ export function CarPlayer({ visible, onClose }: { visible: boolean; onClose: () 
 
             {/* [A4·LEO v75 缺口包 1107] 播放页深度 chips 行: 定时/倍速/音质/投屏 */}
             <View style={st.chipRow}>
-              <TouchableOpacity style={st.chip} onPress={() => enableSleep(sleepRemain ? null : 30)}>
+              <CarTouch style={st.chip} onPress={() => enableSleep(sleepRemain ? null : 30)}>
                 <Text style={st.chipText} numberOfLines={1}>⏱ {sleepRemain ? `${Math.ceil(sleepRemain / 60)} 分钟` : '定时 30 分钟'}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={st.chip} onPress={() => setSpeed(SPEED_CYCLE[(SPEED_CYCLE.indexOf(speed) + 1) % SPEED_CYCLE.length])}>
+              </CarTouch>
+              <CarTouch style={st.chip} onPress={() => setSpeed(SPEED_CYCLE[(SPEED_CYCLE.indexOf(speed) + 1) % SPEED_CYCLE.length])}>
                 <Text style={st.chipText} numberOfLines={1}>⏩ 倍速 {speed}×</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={st.chip} onPress={() => { const next = QUALITY_ORDER[(QUALITY_ORDER.indexOf(qual as typeof QUALITY_ORDER[number]) + 1) % QUALITY_ORDER.length]; settings.set('playQuality', next); setQual(next); }}>
+              </CarTouch>
+              <CarTouch style={st.chip} onPress={() => { const next = QUALITY_ORDER[(QUALITY_ORDER.indexOf(qual as typeof QUALITY_ORDER[number]) + 1) % QUALITY_ORDER.length]; settings.set('playQuality', next); setQual(next); }}>
                 <Text style={st.chipText} numberOfLines={1}>♪ {QUALITY_LABEL[qual]}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[st.chip, { flexDirection: 'row', gap: 8, alignItems: 'center' }]} onPress={() => nav.navigate('Route')}>
+              </CarTouch>
+              <CarTouch style={[st.chip, { flexDirection: 'row', gap: 8, alignItems: 'center' }]} onPress={() => nav.navigate('Route')}>
                 <Icon name="tv" size={18} color={C.text2} />
                 <Text style={st.chipText} numberOfLines={1}>投屏</Text>
-              </TouchableOpacity>
+              </CarTouch>
             </View>
           </View>
         </View>

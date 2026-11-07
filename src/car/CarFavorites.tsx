@@ -1,4 +1,5 @@
 // CarFavorites.tsx —— [车机收藏页 1106] 我的收藏(loveList)+最近播放(recents) 统一车机页(老板令"完成所有"清 TODO)
+import { CarTouch } from './CarTouch';
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { CAR } from './cartokens';
@@ -38,9 +39,9 @@ export function CarFavorites({ onBack }: { onBack: () => void }) {
   return (
     <ScrollView contentContainerStyle={{ padding: CAR.gutter, paddingBottom: CAR.playbar.h + 40 }} showsVerticalScrollIndicator={false}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 14 }}>
-        <TouchableOpacity style={{ width: 46, height: 46, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }} onPress={onBack}>
+        <CarTouch style={{ width: 46, height: 46, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }} onPress={onBack}>
           <Icon name="back" size={20} color={C.text2} />
-        </TouchableOpacity>
+        </CarTouch>
         <Text style={{ color: C.text, fontSize: CAR.hero, fontWeight: '800' }}>我的收藏</Text>
       </View>
 

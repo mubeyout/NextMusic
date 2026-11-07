@@ -1,4 +1,5 @@
 // CarHome.tsx —— [车机 P1 为我推荐 1105] LEO v7 规格 §1: 问候 hero + 双大卡 + 最近播放行 + 推荐歌单 rail
+import { CarTouch } from './CarTouch';
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions, Linking } from 'react-native';
 import { CAR, carScale, CAR_FS } from './cartokens';
@@ -27,7 +28,7 @@ function SecHead({ title, hint, more, onMore }: { title: string; hint?: string; 
     <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 10, marginBottom: 14 }}>
       <Text style={{ color: C.text, fontSize: CAR_FS.sec, fontWeight: '700' }}>{title}</Text>
       {hint ? <Text style={{ color: C.text3, fontSize: CAR_FS.mini, paddingBottom: 2 }}>{hint}</Text> : null}
-      {more ? <TouchableOpacity onPress={onMore} style={{ marginLeft: 'auto' }}><Text style={{ color: C.brand, fontSize: 15 }}>更多 ›</Text></TouchableOpacity> : null}
+      {more ? <CarTouch onPress={onMore} style={{ marginLeft: 'auto' }}><Text style={{ color: C.brand, fontSize: 15 }}>更多 ›</Text></CarTouch> : null}
     </View>
   );
 }

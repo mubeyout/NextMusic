@@ -1,4 +1,5 @@
 // CarSettings.tsx —— [设置页 car 化·LEO v78 1107 深夜·老板令] 车机模式 Hero 置顶 → 音源管理 → 音质下载 → 主题 8 色 accent 圆点快选 → 账号 → 关于 → 更多设置›(现有 HDSettings)
+import { CarTouch } from './CarTouch';
 // 驾驶约束:行高 58、无输入框、无长列表、全 token(LEO spec)
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, NativeModules } from 'react-native';
@@ -28,25 +29,25 @@ export function CarSettings({ onBack }: { onBack: () => void }) {
   const qual = settings.get().playQuality || 'flac';
 
   const Row = ({ icon, title, desc, right, onPress }: { icon: string; title: string; desc?: string; right?: React.ReactNode; onPress?: () => void }) => (
-    <TouchableOpacity style={st.row} activeOpacity={0.85} onPress={onPress} disabled={!onPress}>
+    <CarTouch style={st.row} onPress={onPress} disabled={!onPress}>
       <Icon name={icon as never} size={24} color={C.text2} />
       <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
         <Text style={st.rowTitle} numberOfLines={1}>{title}</Text>
         {desc ? <Text style={st.rowDesc} numberOfLines={1}>{desc}</Text> : null}
       </View>
       {right}
-    </TouchableOpacity>
+    </CarTouch>
   );
 
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: CAR.gutter, paddingBottom: CAR.playbar.h + 40 }} showsVerticalScrollIndicator={false}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 16 }}>
-        <TouchableOpacity style={st.backBtn} onPress={onBack}><Icon name="back" size={20} color={C.text2} /></TouchableOpacity>
+        <CarTouch style={st.backBtn} onPress={onBack}><Icon name="back" size={20} color={C.text2} /></CarTouch>
         <Text style={{ color: C.text, fontSize: CAR_FS.hero, fontWeight: '800' }}>设置</Text>
       </View>
 
       {/* Hero: 车机模式大开关(LEO:它控制整个形态,置顶) */}
-      <TouchableOpacity style={st.hero} activeOpacity={0.85} onPress={() => { settings.set('carModeUi', false); }}>
+      <CarTouch style={st.hero} onPress={() => { settings.set('carModeUi', false); }}>
         <View style={{ flex: 1, gap: 6 }}>
           <Text style={st.heroTitle}>车机模式</Text>
           <Text style={st.heroDesc}>当前为车机专属界面 · 点击关闭恢复手机竖版</Text>
@@ -54,7 +55,7 @@ export function CarSettings({ onBack }: { onBack: () => void }) {
         <View style={[st.heroPill, carOn && { backgroundColor: C.brand }]}>
           <Text style={[st.heroPillText, carOn && { color: C.onBrand }]}>已开启</Text>
         </View>
-      </TouchableOpacity>
+      </CarTouch>
 
       <View style={st.card}>
         <Row icon="server" title="音源管理" desc="LX 音源 · 自定义脚本" onPress={() => nav.navigate('Sources')} />
@@ -69,9 +70,9 @@ export function CarSettings({ onBack }: { onBack: () => void }) {
           {Object.values(CAR_ACCENTS).map(hex => {
             const on = settings.get().accent === hex;
             return (
-              <TouchableOpacity key={hex} style={[st.dot, on && { borderWidth: 3, borderColor: C.text }]} onPress={() => { settings.set('accent', hex); toast('强调色已换 · 重启后全量生效'); carRestart(playing); }}>
+              <CarTouch key={hex} style={[st.dot, on && { borderWidth: 3, borderColor: C.text }]} onPress={() => { settings.set('accent', hex); toast('强调色已换 · 重启后全量生效'); carRestart(playing); }}>
                 <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: hex }} />
-              </TouchableOpacity>
+              </CarTouch>
             );
           })}
         </View>
@@ -84,10 +85,10 @@ export function CarSettings({ onBack }: { onBack: () => void }) {
       </View>
 
       {/* 双层设置:更多进现有 HDSettings(零改动) */}
-      <TouchableOpacity style={st.moreBtn} activeOpacity={0.85} onPress={() => nav.navigate('Settings')}>
+      <CarTouch style={st.moreBtn} onPress={() => nav.navigate('Settings')}>
         <Text style={st.moreText}>更多设置 ›</Text>
         <Text style={st.moreDesc}>播放 · 外观 · 备份 · 帮助（全功能）</Text>
-      </TouchableOpacity>
+      </CarTouch>
     </ScrollView>
   );
 }

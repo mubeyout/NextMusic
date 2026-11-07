@@ -1,4 +1,5 @@
 // CarPages.tsx —— [车机 P2/P3/P4 1105] 探索(源pills+标签+封面网格)/榜单(4列渐变卡210)——LEO 播客频道数据源待补,先占位接现有
+import { CarTouch } from './CarTouch';
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, useWindowDimensions } from 'react-native';
 import { CAR, carScale, CAR_FS, CAR_ACCENTS } from './cartokens';
@@ -30,18 +31,18 @@ export function CarExplore({ onOpenPlaylist }: { onOpenPlaylist: (pl: import('./
       <Text style={{ color: C.text, fontSize: CAR.hero, fontWeight: '800', marginBottom: 18 }}>探索</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: CAR.gutter, marginBottom: 24 }}>
         {SRC_TABS.map((t, i) => (
-          <TouchableOpacity key={t} onPress={() => setTab(i)} activeOpacity={0.85}
+          <CarTouch key={t} onPress={() => setTab(i)}
             style={[st.pill, tab === i && { backgroundColor: C.brand }]}>
             <Text style={[st.pillText, tab === i && { color: C.onBrand, fontWeight: '700' }]}>{t}</Text>
-          </TouchableOpacity>
+          </CarTouch>
         ))}
       </ScrollView>
       <View style={st.exGrid}>
         {mixes.map(pl => (
-          <TouchableOpacity key={pl.id} activeOpacity={0.85} onPress={() => onOpenPlaylist({ kind: 'pl', id: pl.id, name: pl.name, img: pl.img })} style={st.exCard}>
+          <CarTouch key={pl.id} onPress={() => onOpenPlaylist({ kind: 'pl', id: pl.id, name: pl.name, img: pl.img })} style={st.exCard}>
             {pl.img ? <Image source={{ uri: pl.img }} style={st.exArt} /> : <View style={[st.exArt, { backgroundColor: C.surface2 }]} />}
             <Text style={st.exName} numberOfLines={2}>{pl.name}</Text>
-          </TouchableOpacity>
+          </CarTouch>
         ))}
       </View>
     </ScrollView>
@@ -62,12 +63,12 @@ export function CarBoards({ onOpenPlaylist }: { onOpenPlaylist: (pl: import('./C
       <SecHead title="榜单" hint="每日 12:00 更新" />
       <View style={st.bGrid}>
         {boards.map((b, i) => (
-          <TouchableOpacity key={b.id} activeOpacity={0.85} onPress={() => onOpenPlaylist({ kind: 'board', id: b.bangid, name: b.name, img: b.image })}
+          <CarTouch key={b.id} onPress={() => onOpenPlaylist({ kind: 'board', id: b.bangid, name: b.name, img: b.image })}
             style={[st.bCard, dense && st.bCardDense, { backgroundColor: BOARD_ACCENTS[i % BOARD_ACCENTS.length] }]}>
             <Text style={st.bChip}>榜单</Text>
             <Text style={st.bName} numberOfLines={1}>{b.name}</Text>
             <Text style={st.bSub}>酷狗榜</Text>
-          </TouchableOpacity>
+          </CarTouch>
         ))}
       </View>
     </ScrollView>
@@ -102,11 +103,11 @@ export function CarPodcast() {
       <Text style={{ color: C.text3, fontSize: CAR_FS.sub, marginTop: 4, marginBottom: 18 }}>8 大主题频道 · 搜索聚合 · 自动连播</Text>
       <View style={st.chGrid}>
         {CHANNELS.map((c, i) => (
-          <TouchableOpacity key={c.name} activeOpacity={0.85} onPress={() => setActive(i)}
+          <CarTouch key={c.name} onPress={() => setActive(i)}
             style={[st.chCard, dense && st.chCardDense, { backgroundColor: c.accent }, active === i && { borderWidth: 3, borderColor: '#FFFFFF66' }]}>
             <Text style={st.chName}>{c.name}</Text>
             <Text style={st.chSub}>聚合频道</Text>
-          </TouchableOpacity>
+          </CarTouch>
         ))}
       </View>
       <View style={{ marginTop: 24 }}>

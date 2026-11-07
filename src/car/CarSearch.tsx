@@ -1,4 +1,5 @@
 // CarSearch.tsx —— [A1 搜索车机形态·LEO v75 缺口包 1107·老板令 0927] 语音优先(88 麦克风+声波+五源同搜) + 精选词/历史大热区 + 键盘降级「乘客使用」
+import { CarTouch } from './CarTouch';
 // 语音:App 无 ASR 引擎——按钮保留设计形态,点击诚实降级 toast(精选词/乘客键盘可用);接系统语音留待真车联调
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, ScrollView } from 'react-native';
@@ -45,15 +46,15 @@ export function CarSearch({ onBack }: { onBack: () => void }) {
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: CAR.gutter, paddingBottom: CAR.playbar.h + 40 }} showsVerticalScrollIndicator={false}>
       {/* 页头: 返回 + 标题 */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-        <TouchableOpacity style={st.backBtn} onPress={onBack}><Icon name="back" size={20} color={C.text2} /></TouchableOpacity>
+        <CarTouch style={st.backBtn} onPress={onBack}><Icon name="back" size={20} color={C.text2} /></CarTouch>
         <Text style={{ color: C.text, fontSize: CAR_FS.hero, fontWeight: '800' }}>搜索</Text>
       </View>
 
       {/* 语音优先 hero */}
       <View style={st.voiceCard}>
-        <TouchableOpacity style={st.micBtn} activeOpacity={0.85} onPress={() => toast('语音搜索待车机系统语音接入——先用精选词或乘客键盘')}>
+        <CarTouch style={st.micBtn} onPress={() => toast('语音搜索待车机系统语音接入——先用精选词或乘客键盘')}>
           <Icon name="wave" size={38} active color={C.onBrand} />
-        </TouchableOpacity>
+        </CarTouch>
         {/* 5 条声波(静态 V1——动效待 B 批) */}
         <View style={st.waves} pointerEvents="none">
           {[18, 34, 46, 34, 18].map((h, i) => <View key={i} style={[st.waveBar, { height: h }]} />)}
@@ -68,9 +69,9 @@ export function CarSearch({ onBack }: { onBack: () => void }) {
       <Text style={st.secLabel}>精选搜索</Text>
       <View style={st.pills}>
         {CURATED.map(w => (
-          <TouchableOpacity key={w} style={st.pill} onPress={() => doSearch(w)}>
+          <CarTouch key={w} style={st.pill} onPress={() => doSearch(w)}>
             <Text style={st.pillText} numberOfLines={1}>{w}</Text>
-          </TouchableOpacity>
+          </CarTouch>
         ))}
       </View>
 
@@ -80,10 +81,10 @@ export function CarSearch({ onBack }: { onBack: () => void }) {
           <Text style={st.secLabel}>最近搜索</Text>
           {hist.map(w => (
             <View key={w} style={st.histRow}>
-              <TouchableOpacity style={{ flex: 1, height: '100%', justifyContent: 'center' }} onPress={() => doSearch(w)}>
+              <CarTouch style={{ flex: 1, height: '100%', justifyContent: 'center' }} onPress={() => doSearch(w)}>
                 <Text style={st.histText} numberOfLines={1}>{w}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={st.histDel} onPress={() => del(w)}><Icon name="close" size={16} color={C.text3} /></TouchableOpacity>
+              </CarTouch>
+              <CarTouch style={st.histDel} onPress={() => del(w)}><Icon name="close" size={16} color={C.text3} /></CarTouch>
             </View>
           ))}
         </>
@@ -95,12 +96,12 @@ export function CarSearch({ onBack }: { onBack: () => void }) {
           <TextInput style={st.kbInput} placeholder="歌曲 / 歌手 / 专辑" placeholderTextColor={C.text3}
             value={q} onChangeText={setQ} autoFocus returnKeyType="search"
             onSubmitEditing={() => doSearch(q)} />
-          <TouchableOpacity style={st.kbGo} onPress={() => doSearch(q)}><Text style={st.kbGoText}>搜</Text></TouchableOpacity>
+          <CarTouch style={st.kbGo} onPress={() => doSearch(q)}><Text style={st.kbGoText}>搜</Text></CarTouch>
         </View>
       ) : (
-        <TouchableOpacity style={st.kbDegrade} onPress={() => setKbOpen(true)}>
+        <CarTouch style={st.kbDegrade} onPress={() => setKbOpen(true)}>
           <Text style={st.kbDegradeText}>⌨  手动输入（乘客使用）</Text>
-        </TouchableOpacity>
+        </CarTouch>
       )}
 
       {/* 结果 */}
