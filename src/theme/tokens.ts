@@ -60,6 +60,23 @@ function mixHex(a: string, b: string, k: number): string {
   const B = [1, 3, 5].map(i => parseInt(b.slice(i, i + 2), 16));
   return '#' + A.map((v, i) => Math.round(v * (1 - k) + B[i] * k).toString(16).padStart(2, '0')).join('').toUpperCase();
 }
+
+// [LEO 1107·拍板] onBrand 按 accent WCAG 相对亮度派生：候 #FFFFFF/#121212 取对比高者（深 accent→白）
+// 依据：深定谳 accent(如 #3B2F6F L≈0.041)上 #121212 对比仅≈1.6:1（glanceability 红线），白≈11.5:1；断言见 scripts/assert-onbrand.mjs
+function relLum(hex: string): number {
+  const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255);
+  const lin = (v: number) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+export function contrastRatio(a: string, b: string): number {
+  const la = relLum(a), lb = relLum(b);
+  const hi = Math.max(la, lb), lo = Math.min(la, lb);
+  return (hi + 0.05) / (lo + 0.05);
+}
+function deriveOnBrand(acc: string): string {
+  return contrastRatio(acc, '#FFFFFF') >= contrastRatio(acc, '#121212') ? '#FFFFFF' : '#121212';
+}
+
 export function softGrad(...cs: string[]): string[] {
   // vc95:浅色下降级单色渐变(纯色渲染)——低端机 LinearGradient drawable 创建风暴是卡顿主源(老板真机白闪/卡顿/闪退同源);深色保留
   return T.light ? cs.map(() => mixHex(cs[0], '#FFFFFF', 0.88)) : cs;
@@ -75,6 +92,7 @@ export function applyBootTheme() {
     C.brandSoft = acc;
     C.brandText = acc;
     C.bgGradientTop = blend(acc, '#121212', 0.16);
+    C.onBrand = deriveOnBrand(acc); // [LEO 1107 拍板] 深 accent 圆钮/色块上换白图标，对比≥4.5
   }
   if (s.pureBlack) {
     C.bg = '#000000';
@@ -93,7 +111,7 @@ export function applyBootTheme() {
     C.text = '#26282C';
     C.text2 = '#62676E';
     C.text3 = '#8B9199';
-    C.onBrand = acc ? mixHex(acc, '#000000', 0.52) : '#0B3D1F';
+    C.onBrand = deriveOnBrand(acc || '#1ED760'); // [LEO 1107] 统一亮度派生（绿→#121212，深 accent→#FFFFFF，替换原 mixHex 混黑）
     C.brandSoft = acc ? mixHex(acc, '#000000', 0.22) : '#1DB455';   // 浅色下高亮色加深（桌面同款规则）
     C.stroke = '#1F232914';    // rgba(31,35,41,.08)
     C.inset = '#EDEFF3';
