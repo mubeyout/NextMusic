@@ -1,4 +1,4 @@
-// CarShell.tsx —— [车机专属壳 1105] LEO v7 规格: 侧栏 261 + 四主页面切换 + Dock(搜索/设置) + CarPlayerBar
+// CarShell.tsx —— [车机专属壳 1105] LEO v75 终稿(1107 拍板): 侧栏 261 + 四主页面 + 我的乐库(HD 正序/条件渲染) + 管理组 + 右上角搜索/设置(Dock 撤·老板令 0916) + CarPlayerBar
 // 不复用 HDMain(结构不同——老板令:车机重新设计,不是放大 HD)
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native'; // Image:brand mark
@@ -16,6 +16,9 @@ import { C } from '../theme/tokens';
 import { Icon } from '../theme/Icon';
 import { settings } from '../services/settings';
 import { useNavigation } from '@react-navigation/native';
+import { useApp } from '../state/AppState'; // [LEO 终稿 1107] token 响应式(云曲库条件渲染)
+import { usePubEntry } from '../services/publicLibrary'; // [LEO 终稿 1107] 公共曲库条件渲染(=HD)
+import { localLib } from '../services/localLibrary'; // [LEO 终稿 1107] 本地曲库=有库才显示(=HD)
 
 type PageKey = 'home' | 'podcast' | 'explore' | 'boards';
 
@@ -55,6 +58,10 @@ export function CarShell() {
   const [favOpen, setFavOpen] = useState(false); // [1106] 车机收藏页
   const [drawer, setDrawer] = useState<'search' | 'queue' | null>(null);
   const [playlist, setPlaylist] = useState<import('./CarPlaylist').CarPlRef | null>(null);
+  // [LEO 终稿 1107] 条件渲染三规则(继承 HD): 无库无本地行/未登录无云行/未授权无公共行
+  const pub = usePubEntry();
+  const hasToken = !!useApp().token;
+  const hasLocalLibs = localLib.all().length > 0; // 渲染期重读(=HDMain 同法)
   return (
     <View style={{ flex: 1, flexDirection: 'row', backgroundColor: C.bg, paddingTop: Math.max(insets.top, IS_CAR_TOP) }}>
       {/* 侧栏 261 */}
@@ -67,25 +74,19 @@ export function CarShell() {
         {NAV.map(n => (
           <NavItem key={n.key} icon={n.icon} label={n.label} active={page === n.key} onPress={() => setPage(n.key)} />
         ))}
+        {/* [LEO 终稿 1107] 我的乐库: HD 正序(枢纽优先) */}
         <Text style={st.groupLabel}>我的乐库</Text>
+        <NavItem icon="server" label="媒体库" onPress={() => nav.navigate('MediaLibs')} size={CAR.navItemSub} /> {/* 枢纽优先;[1106 老板钦点] 跳 phone 全功能页(账号/音源/服务器) */}
+        {hasLocalLibs ? <NavItem icon="music" label="本地曲库" onPress={() => nav.navigate('MyLibrary')} size={CAR.navItemSub} /> : null}
+        {hasToken ? <NavItem icon="cloud" label="云曲库" onPress={() => nav.navigate('CloudLibrary')} size={CAR.navItemSub} /> : null}
+        {pub.authorized && pub.showEntry ? <NavItem icon="users" label="公共曲库" onPress={() => nav.navigate('PublicLibrary')} size={CAR.navItemSub} /> : null}
         <NavItem icon="heart" label="我的收藏" onPress={() => setFavOpen(true)} size={CAR.navItemSub} /> {/* [1106 完成] CarFavorites(收藏+最近播放) */}
-        <NavItem icon="music" label="本地曲库" onPress={() => nav.navigate('MyLibrary')} size={CAR.navItemSub} />
-        <NavItem icon="cloud" label="云曲库" onPress={() => nav.navigate('CloudLibrary')} size={CAR.navItemSub} />
-        <NavItem icon="users" label="公共曲库" onPress={() => nav.navigate('PublicLibrary')} size={CAR.navItemSub} />
+        {/* [LEO 终稿 1107] 管理组 */}
+        <Text style={st.groupLabel}>管理</Text>
         <NavItem icon="download" label="下载管理" onPress={() => nav.navigate('Downloads')} size={CAR.navItemSub} />
-        <NavItem icon="clock" label="播放历史" onPress={() => setFavOpen(true)} size={CAR.navItemSub} /> {/* 最近播放在收藏页首区 */}
-        <NavItem icon="server" label="媒体库" onPress={() => nav.navigate('MediaLibs')} size={CAR.navItemSub} /> {/* [1106] 音源/账号管理入口 */}
-        {/* 歌单行×n: 骨架期占位,数据接线下批 */}
+        <NavItem icon="clock" label="播放历史" onPress={() => setFavOpen(true)} size={CAR.navItemSub} /> {/* LEO 拍板: 保留独立行,目标沿用收藏页首区复用 */}
         <View style={{ flex: 1 }} />
-        {/* Dock: 搜索 + 设置 */}
-        <View style={{ flexDirection: 'row', gap: 12, paddingHorizontal: 24 }}>
-          <TouchableOpacity style={st.dockBtn} onPress={() => setDrawer('search')}>
-            <Icon name="search" size={20} color={C.text2} />
-          </TouchableOpacity>
-          <TouchableOpacity style={st.dockBtn} onPress={() => nav.navigate('Settings')}>
-            <Icon name="settings" size={20} color={C.text2} />
-          </TouchableOpacity>
-        </View>
+        {/* Dock 撤(老板令 0916)→搜索/设置挪右上角(见内容区 cornerBtn) */}
       </View>
 
       {/* 内容区 */}
@@ -117,6 +118,17 @@ export function CarShell() {
           onPress={() => setDrawer('queue')}>
           <Icon name="queue" size={22} color={C.text2} />
         </TouchableOpacity>
+      )}
+      {/* [老板令 0916 + LEO 终稿 1107] 右上角: 搜索 + 设置(Dock 撤) */}
+      {drawer === null && !playerOpen && (
+        <View style={{ position: 'absolute', right: CAR.gutter, top: Math.max(insets.top, IS_CAR_TOP) + 16, flexDirection: 'row', gap: 12, zIndex: 30, elevation: 30 }}>
+          <TouchableOpacity style={st.dockBtn} onPress={() => setDrawer('search')}>
+            <Icon name="search" size={22} color={C.text2} />
+          </TouchableOpacity>
+          <TouchableOpacity style={st.dockBtn} onPress={() => nav.navigate('Settings')}>
+            <Icon name="settings" size={22} color={C.text2} />
+          </TouchableOpacity>
+        </View>
       )}
     </View>
   );
