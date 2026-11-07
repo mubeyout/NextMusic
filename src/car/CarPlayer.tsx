@@ -1,7 +1,7 @@
 // CarPlayer.tsx —— [车机 P6 播放页 1105] LEO 规格§1: 左盘 480(放射渐变+中孔) + 右信息控制 + 完整进度(进度主场在此)
 import React from 'react';
-import { View, Text, TouchableOpacity, Modal, Image } from 'react-native';
-import { CAR } from './cartokens';
+import { View, Text, TouchableOpacity, Modal, Image, useWindowDimensions } from 'react-native';
+import { CAR, CAR_FS } from './cartokens';
 import { C } from '../theme/tokens';
 import { Icon } from '../theme/Icon';
 import { usePlayer, usePlayerProgress } from '../state/PlayerProvider';
@@ -17,6 +17,9 @@ export function CarPlayer({ visible, onClose }: { visible: boolean; onClose: () 
   const { current, playing, toggle, skipNext, skipPrev, queue } = usePlayer();
   const { position, duration } = usePlayerProgress();
   const { handlers } = useSeekBar((pct: number) => { /* seekTo 由 usePlayer 提供——进度拖动主场 */ });
+  // [LEO 1107] 盘径 = min(480, 内容宽 - 2×gutter);中孔(中心标签)36.5%
+  const { width: winW } = useWindowDimensions();
+  const discSize = Math.min(CAR.player.disc, Math.max(200, winW - CAR.sidebar - CAR.gutter * 4));
   const pct = duration > 0 ? Math.min(1, Math.max(0, position / duration)) : 0;
   const img = current ? fixCoverUrl(current.img) : undefined;
 
@@ -30,9 +33,9 @@ export function CarPlayer({ visible, onClose }: { visible: boolean; onClose: () 
         <View style={st.body}>
           {/* 左:黑胶盘 480 */}
           <View style={st.discWrap}>
-            <View style={st.disc}>
-              {img ? <Image source={{ uri: img }} style={st.discArt} /> : <View style={[st.discArt, { backgroundColor: '#1A1E1C' }]} />}
-              <View style={st.discHole} />
+            <View style={[st.disc, { width: discSize, height: discSize, borderRadius: discSize / 2 }]}>
+              {img ? <Image source={{ uri: img }} style={[st.discArt, { width: discSize * 0.365, height: discSize * 0.365, borderRadius: discSize * 0.1825 }]} /> : <View style={[st.discArt, { width: discSize * 0.365, height: discSize * 0.365, borderRadius: discSize * 0.1825, backgroundColor: C.surface2 }]} />}
+              <View style={[st.discHole, { width: discSize * 0.365, height: discSize * 0.365, borderRadius: discSize * 0.1825 }]} />
             </View>
           </View>
 
@@ -72,16 +75,16 @@ const st = {
   body: { flex: 1, flexDirection: 'row' as const, alignItems: 'center' as const, paddingHorizontal: CAR.gutter * 2, gap: CAR.gutter * 2, paddingBottom: 60 },
   discWrap: { alignItems: 'center' as const, justifyContent: 'center' as const },
   disc: { width: CAR.player.disc, height: CAR.player.disc, borderRadius: CAR.player.disc / 2, backgroundColor: '#0d100e', borderWidth: 6, borderColor: '#161a17', alignItems: 'center' as const, justifyContent: 'center' as const },
-  discArt: { width: CAR.player.disc * 0.635, height: CAR.player.disc * 0.635, borderRadius: CAR.player.disc * 0.635 / 2 },
-  discHole: { position: 'absolute' as const, width: 26, height: 26, borderRadius: 13, backgroundColor: C.bg, borderWidth: 4, borderColor: '#C8CDD2' },
+  discArt: { width: CAR.player.disc * 0.365, height: CAR.player.disc * 0.365, borderRadius: CAR.player.disc * 0.1825 },
+  discHole: { position: 'absolute' as const, backgroundColor: C.bg, borderWidth: 3, borderColor: '#8A8F94' }, // [LEO 1107] 中孔 36.5%·去纯白三角感
   info: { flex: 1, gap: 14 },
-  title: { color: C.text, fontSize: 34, fontWeight: '800' as const },
-  artist: { color: C.text2, fontSize: 18 },
-  album: { color: C.text3, fontSize: 15 },
+  title: { color: C.text, fontSize: CAR_FS.hero, fontWeight: '800' as const },
+  artist: { color: C.text2, fontSize: CAR_FS.title },
+  album: { color: C.text3, fontSize: CAR_FS.sub },
   ctrls: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 34, marginTop: 24 },
   ctrlBtn: { width: 72, height: 72, borderRadius: 36, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
   ctrlMain: { width: CAR.player.ctrl, height: CAR.player.ctrl, borderRadius: CAR.player.ctrl / 2, backgroundColor: C.brand, alignItems: 'center' as const, justifyContent: 'center' as const },
   progRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 18, marginTop: 28 },
   track: { flex: 1, height: 8, flexDirection: 'row' as const, borderRadius: 4 },
-  time: { color: C.text3, fontSize: 13, fontVariant: ['tabular-nums' as never] },
+  time: { color: C.text3, fontSize: CAR_FS.mini, fontVariant: ['tabular-nums' as never] },
 };
