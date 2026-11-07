@@ -12,7 +12,7 @@ function fmtSec(ms: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
-export function CarPlayerBar() {
+export function CarPlayerBar({ onFx }: { onFx?: () => void }) {
   const { current, playing, toggle, skipNext, skipPrev } = usePlayer();
   const { duration } = usePlayerProgress();
   const img = current ? fixCoverUrl(current.img) : undefined;
@@ -30,6 +30,7 @@ export function CarPlayerBar() {
             </View>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 26 }}>
+            {onFx ? <TouchableOpacity onPress={onFx} style={st.btn}><Icon name="sliders" size={24} color={C.text2} /></TouchableOpacity> : null}
             <TouchableOpacity onPress={skipPrev} style={st.btn}><Icon name="previous" size={26} color={C.text} /></TouchableOpacity>
             <TouchableOpacity onPress={toggle} style={st.main}><Icon name={playing ? 'pause' : 'play'} size={24} active color={C.onBrand} /></TouchableOpacity>
             <TouchableOpacity onPress={skipNext} style={st.btn}><Icon name="next" size={26} color={C.text} /></TouchableOpacity>

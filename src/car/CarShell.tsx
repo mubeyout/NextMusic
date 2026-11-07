@@ -9,8 +9,10 @@ import { CarPlayerBar } from './CarPlayerBar';
 import { CarPlayer } from './CarPlayer';
 import { CarPlaylist } from './CarPlaylist';
 import { CarExplore, CarBoards, CarPodcast } from './CarPages';
-import { CarDrawer } from './CarDrawer';
 import { CarFavorites } from './CarFavorites';
+import { CarSearch } from './CarSearch';
+import { CarQueue } from './CarQueue';
+import { CarFx } from './CarFx';
 import type { SongItem } from '../services/server';
 import { C } from '../theme/tokens';
 import { Icon } from '../theme/Icon';
@@ -20,7 +22,8 @@ import { useApp } from '../state/AppState'; // [LEO 终稿 1107] token 响应式
 import { usePubEntry } from '../services/publicLibrary'; // [LEO 终稿 1107] 公共曲库条件渲染(=HD)
 import { localLib } from '../services/localLibrary'; // [LEO 终稿 1107] 本地曲库=有库才显示(=HD)
 
-type PageKey = 'home' | 'podcast' | 'explore' | 'boards';
+// [LEO v75 缺口包 1107] PageKey 扩 search/queue/fx(右上角搜索/fab 队列/播放条 FX);CarDrawer 撤——搜索/队列升全页
+type PageKey = 'home' | 'podcast' | 'explore' | 'boards' | 'search' | 'queue' | 'fx';
 
 const NAV: { key: PageKey; icon: string; label: string }[] = [
   { key: 'home', icon: 'home', label: '为我推荐' },
@@ -56,7 +59,6 @@ export function CarShell() {
   const nav = useNavigation() as { navigate: (s: string) => void }; // [老板 1106 抓] 设置/媒体库走 phone navigator 全功能页(账号/音源/服务器)
   const [playerOpen, setPlayerOpen] = useState(false);
   const [favOpen, setFavOpen] = useState(false); // [1106] 车机收藏页
-  const [drawer, setDrawer] = useState<'search' | 'queue' | null>(null);
   const [playlist, setPlaylist] = useState<import('./CarPlaylist').CarPlRef | null>(null);
   // [LEO 终稿 1107] 条件渲染三规则(继承 HD): 无库无本地行/未登录无云行/未授权无公共行
   const pub = usePubEntry();
@@ -101,6 +103,9 @@ export function CarShell() {
             {page === 'podcast' && <CarPodcast />}
             {page === 'explore' && <CarExplore onOpenPlaylist={setPlaylist} />}
             {page === 'boards' && <CarBoards onOpenPlaylist={setPlaylist} />}
+            {page === 'search' && <CarSearch onBack={() => setPage('home')} />}
+            {page === 'queue' && <CarQueue onBack={() => setPage('home')} />}
+            {page === 'fx' && <CarFx onBack={() => setPage('home')} />}
           </>
         )}
       </View>
@@ -108,21 +113,20 @@ export function CarShell() {
       {/* 播放条: 底部常驻 96 无进度行(点击开 CarPlayer 全屏) */}
       <View style={{ position: 'absolute', left: playlist ? 0 : CAR.sidebar, right: 0, bottom: 0 }}>
         <TouchableOpacity activeOpacity={0.9} style={{ flex: 1 }} onPress={() => setPlayerOpen(true)}>
-          <CarPlayerBar />
+          <CarPlayerBar onFx={() => setPage('fx')} />
         </TouchableOpacity>
       </View>
       <CarPlayer visible={playerOpen} onClose={() => setPlayerOpen(false)} />
-      <CarDrawer mode={drawer} onClose={() => setDrawer(null)} />
-      {drawer === null && !playerOpen && (
+      {!playerOpen && !playlist && (
         <TouchableOpacity style={{ position: 'absolute', right: CAR.gutter, bottom: CAR.playbar.h + 16, width: 52, height: 52, borderRadius: 26, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }}
-          onPress={() => setDrawer('queue')}>
+          onPress={() => setPage('queue')}>
           <Icon name="queue" size={22} color={C.text2} />
         </TouchableOpacity>
       )}
       {/* [老板令 0916 + LEO 终稿 1107] 右上角: 搜索 + 设置(Dock 撤) */}
-      {drawer === null && !playerOpen && (
+      {!playerOpen && !playlist && !favOpen && (
         <View style={{ position: 'absolute', right: CAR.gutter, top: Math.max(insets.top, IS_CAR_TOP) + 16, flexDirection: 'row', gap: 12, zIndex: 30, elevation: 30 }}>
-          <TouchableOpacity style={st.dockBtn} onPress={() => setDrawer('search')}>
+          <TouchableOpacity style={st.dockBtn} onPress={() => setPage('search')}>
             <Icon name="search" size={22} color={C.text2} />
           </TouchableOpacity>
           <TouchableOpacity style={st.dockBtn} onPress={() => nav.navigate('Settings')}>

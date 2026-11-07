@@ -1,5 +1,5 @@
 // CarPlayer.tsx —— [车机 P6 播放页 1105] LEO 规格§1: 左盘 480(放射渐变+中孔) + 右信息控制 + 完整进度(进度主场在此)
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, Image, useWindowDimensions } from 'react-native';
 import { CAR, CAR_FS } from './cartokens';
 import { C } from '../theme/tokens';
@@ -7,14 +7,22 @@ import { Icon } from '../theme/Icon';
 import { usePlayer, usePlayerProgress } from '../state/PlayerProvider';
 import { useSeekBar } from '../hooks/useSeekBar';
 import { fixCoverUrl } from '../utils/cover';
+import { settings } from '../services/settings';
+import { useNavigation } from '@react-navigation/native';
 
 function fmt(ms: number): string {
   const s = Math.floor(ms / 1000);
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
+const SPEED_CYCLE = [1, 1.25, 1.5, 2, 0.75];
+const QUALITY_ORDER = ['flac', '320k', '128k'] as const;
+const QUALITY_LABEL: Record<string, string> = { flac: '无损', '320k': '320k', '128k': '128k' };
+
 export function CarPlayer({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  const { current, playing, toggle, skipNext, skipPrev, queue } = usePlayer();
+  const { current, playing, toggle, skipNext, skipPrev, queue, speed, setSpeed, sleepRemain, enableSleep } = usePlayer();
+  const nav = useNavigation() as { navigate: (s: string) => void };
+  const [qual, setQual] = useState(settings.get().playQuality || 'flac');
   const { position, duration } = usePlayerProgress();
   const { handlers } = useSeekBar((pct: number) => { /* seekTo 由 usePlayer 提供——进度拖动主场 */ });
   // [LEO 1107] 盘径 = min(480, 内容宽 - 2×gutter);中孔(中心标签)36.5%
@@ -62,6 +70,23 @@ export function CarPlayer({ visible, onClose }: { visible: boolean; onClose: () 
               </View>
               <Text style={st.time}>{fmt(duration)}</Text>
             </View>
+
+            {/* [A4·LEO v75 缺口包 1107] 播放页深度 chips 行: 定时/倍速/音质/投屏 */}
+            <View style={st.chipRow}>
+              <TouchableOpacity style={st.chip} onPress={() => enableSleep(sleepRemain ? null : 30)}>
+                <Text style={st.chipText} numberOfLines={1}>⏱ {sleepRemain ? `${Math.ceil(sleepRemain / 60)} 分钟` : '定时 30 分钟'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={st.chip} onPress={() => setSpeed(SPEED_CYCLE[(SPEED_CYCLE.indexOf(speed) + 1) % SPEED_CYCLE.length])}>
+                <Text style={st.chipText} numberOfLines={1}>⏩ 倍速 {speed}×</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={st.chip} onPress={() => { const next = QUALITY_ORDER[(QUALITY_ORDER.indexOf(qual as typeof QUALITY_ORDER[number]) + 1) % QUALITY_ORDER.length]; settings.set('playQuality', next); setQual(next); }}>
+                <Text style={st.chipText} numberOfLines={1}>♪ {QUALITY_LABEL[qual]}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[st.chip, { flexDirection: 'row', gap: 8, alignItems: 'center' }]} onPress={() => nav.navigate('Route')}>
+                <Icon name="tv" size={18} color={C.text2} />
+                <Text style={st.chipText} numberOfLines={1}>投屏</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </View>
@@ -85,6 +110,9 @@ const st = {
   ctrlBtn: { width: 72, height: 72, borderRadius: 36, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
   ctrlMain: { width: CAR.player.ctrl, height: CAR.player.ctrl, borderRadius: CAR.player.ctrl / 2, backgroundColor: C.brand, alignItems: 'center' as const, justifyContent: 'center' as const },
   progRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 18, marginTop: 28 },
+  chipRow: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 14, marginTop: 30 },
+  chip: { height: 48, paddingHorizontal: 22, borderRadius: 24, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
+  chipText: { color: C.text, fontSize: CAR_FS.sub, fontWeight: '600' as const },
   track: { flex: 1, height: 8, flexDirection: 'row' as const, borderRadius: 4 },
   time: { color: C.text3, fontSize: CAR_FS.mini, fontVariant: ['tabular-nums' as never] },
 };
