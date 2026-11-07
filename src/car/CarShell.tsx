@@ -13,6 +13,7 @@ import { CarFavorites } from './CarFavorites';
 import { CarSearch } from './CarSearch';
 import { CarQueue } from './CarQueue';
 import { CarFx } from './CarFx';
+import { CarSettings } from './CarSettings';
 import type { SongItem } from '../services/server';
 import { C } from '../theme/tokens';
 import { Icon } from '../theme/Icon';
@@ -23,7 +24,7 @@ import { usePubEntry } from '../services/publicLibrary'; // [LEO 终稿 1107] �
 import { localLib } from '../services/localLibrary'; // [LEO 终稿 1107] 本地曲库=有库才显示(=HD)
 
 // [LEO v75 缺口包 1107] PageKey 扩 search/queue/fx(右上角搜索/fab 队列/播放条 FX);CarDrawer 撤——搜索/队列升全页
-type PageKey = 'home' | 'podcast' | 'explore' | 'boards' | 'search' | 'queue' | 'fx';
+type PageKey = 'home' | 'podcast' | 'explore' | 'boards' | 'search' | 'queue' | 'fx' | 'settings'; // [LEO v78] 设置 car 化:角钮进 CarSettings,更多设置› 深链 HDSettings
 
 const NAV: { key: PageKey; icon: string; label: string }[] = [
   { key: 'home', icon: 'home', label: '为我推荐' },
@@ -132,6 +133,7 @@ export function CarShell() {
             {page === 'search' && <CarSearch onBack={() => setPage('home')} />}
             {page === 'queue' && <CarQueue onBack={() => setPage('home')} />}
             {page === 'fx' && <CarFx onBack={() => setPage('home')} />}
+            {page === 'settings' && <CarSettings onBack={() => setPage('home')} />}
           </>
         )}
       </View>
@@ -156,7 +158,7 @@ export function CarShell() {
           <TouchableOpacity style={st.dockBtn} onPress={() => goPage('search')}>
             <Icon name="search" size={22} color={C.text2} />
           </TouchableOpacity>
-          <TouchableOpacity style={st.dockBtn} onPress={() => nav.navigate('Settings')}>
+          <TouchableOpacity style={st.dockBtn} onPress={() => goPage('settings')}>
             <Icon name="settings" size={22} color={C.text2} />
           </TouchableOpacity>
         </View>
