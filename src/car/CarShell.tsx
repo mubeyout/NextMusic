@@ -1,7 +1,7 @@
 // CarShell.tsx —— [车机专属壳 1105] LEO v75 终稿(1107 拍板): 侧栏 261 + 四主页面 + 我的乐库(HD 正序/条件渲染) + 管理组 + 右上角搜索/设置(Dock 撤·老板令 0916) + CarPlayerBar
 // 不复用 HDMain(结构不同——老板令:车机重新设计,不是放大 HD)
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native'; // Image:brand mark
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, TouchableOpacity, Image, LayoutAnimation } from 'react-native'; // Image:brand mark
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CAR } from './cartokens';
 import { CarHome } from './CarHome';
@@ -64,8 +64,23 @@ export function CarShell() {
   const pub = usePubEntry();
   const hasToken = !!useApp().token;
   const hasLocalLibs = localLib.all().length > 0; // 渲染期重读(=HDMain 同法)
+  // [LEO 裁定 1107·活态插入] 首次用户交互后侧栏条目集冻结;首交互前 pubCheck 就绪才插入(200ms 滑入);
+  // 跨启动由 MMKV 缓存先行(publicLibrary cacheRead)——二次启动 authorized=true 启动即在,无插入动画
+  const firstInteraction = useRef(false);
+  const [pubShown, setPubShown] = useState(pub.authorized && pub.showEntry); // 缓存命中:启动即有行
+  useEffect(() => {
+    if (pub.authorized && pub.showEntry && !pubShown && !firstInteraction.current) {
+      LayoutAnimation.configureNext({ // [LEO 裁定] 200ms 滑入
+        duration: 200,
+        update: { type: LayoutAnimation.Types.easeInEaseOut },
+        create: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
+      });
+      setPubShown(true);
+    }
+  }, [pub.authorized, pub.showEntry, pubShown]);
   return (
-    <View style={{ flex: 1, flexDirection: 'row', backgroundColor: C.bg, paddingTop: Math.max(insets.top, IS_CAR_TOP) }}>
+    <View style={{ flex: 1, flexDirection: 'row', backgroundColor: C.bg, paddingTop: Math.max(insets.top, IS_CAR_TOP) }}
+      onStartShouldSetResponder={() => { firstInteraction.current = true; return false; }}> {/* 不拦截,只标记首交互(冻结侧栏条目集) */}
       {/* 侧栏 261 */}
       <View style={[st.sidebar, { paddingTop: 26, paddingBottom: 18 }]}>
         {/* [老板 1105 抓] brand 对齐真版:官方 mark.png + NextMusic 双色拼(与 HDMain 同源,不臆造) */}
@@ -81,7 +96,7 @@ export function CarShell() {
         <NavItem icon="server" label="媒体库" onPress={() => nav.navigate('MediaLibs')} size={CAR.navItemSub} /> {/* 枢纽优先;[1106 老板钦点] 跳 phone 全功能页(账号/音源/服务器) */}
         {hasLocalLibs ? <NavItem icon="music" label="本地曲库" onPress={() => nav.navigate('MyLibrary')} size={CAR.navItemSub} /> : null}
         {hasToken ? <NavItem icon="cloud" label="云曲库" onPress={() => nav.navigate('CloudLibrary')} size={CAR.navItemSub} /> : null}
-        {pub.authorized && pub.showEntry ? <NavItem icon="users" label="公共曲库" onPress={() => nav.navigate('PublicLibrary')} size={CAR.navItemSub} /> : null}
+        {(pub.authorized && pub.showEntry && pubShown) ? <NavItem icon="users" label="公共曲库" onPress={() => nav.navigate('PublicLibrary')} size={CAR.navItemSub} /> : null} {/* 首交互后冻结(LEO 裁定) */}
         <NavItem icon="heart" label="我的收藏" onPress={() => setFavOpen(true)} size={CAR.navItemSub} /> {/* [1106 完成] CarFavorites(收藏+最近播放) */}
         {/* [LEO 终稿 1107] 管理组 */}
         <Text style={st.groupLabel}>管理</Text>
