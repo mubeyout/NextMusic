@@ -19,7 +19,7 @@ function SecHead({ title, count }: { title: string; count: number }) {
   );
 }
 
-export function CarFavorites() {
+export function CarFavorites({ onBack }: { onBack: () => void }) {
   const player = usePlayer();
   const [loved, setLoved] = useState<SongItem[]>([]);
   const [recents, setRecents] = useState<SongItem[]>([]);
@@ -37,7 +37,12 @@ export function CarFavorites() {
 
   return (
     <ScrollView contentContainerStyle={{ padding: CAR.gutter, paddingBottom: CAR.playbar.h + 40 }} showsVerticalScrollIndicator={false}>
-      <Text style={{ color: C.text, fontSize: CAR.hero, fontWeight: '800' }}>我的收藏</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 14 }}>
+        <TouchableOpacity style={{ width: 46, height: 46, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }} onPress={onBack}>
+          <Icon name="back" size={20} color={C.text2} />
+        </TouchableOpacity>
+        <Text style={{ color: C.text, fontSize: CAR.hero, fontWeight: '800' }}>我的收藏</Text>
+      </View>
 
       <SecHead title="最近播放" count={recents.length} />
       {recents.length ? recents.map((s, i) => (

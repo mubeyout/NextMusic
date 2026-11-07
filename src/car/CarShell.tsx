@@ -1,7 +1,7 @@
 // CarShell.tsx —— [车机专属壳 1105] LEO v75 终稿(1107 拍板): 侧栏 261 + 四主页面 + 我的乐库(HD 正序/条件渲染) + 管理组 + 右上角搜索/设置(Dock 撤·老板令 0916) + CarPlayerBar
 // 不复用 HDMain(结构不同——老板令:车机重新设计,不是放大 HD)
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, Image, LayoutAnimation } from 'react-native'; // Image:brand mark
+import { View, Text, TouchableOpacity, Image, LayoutAnimation, BackHandler } from 'react-native'; // Image:brand mark
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CAR } from './cartokens';
 import { CarHome } from './CarHome';
@@ -60,6 +60,17 @@ export function CarShell() {
   const [playerOpen, setPlayerOpen] = useState(false);
   const [favOpen, setFavOpen] = useState(false); // [1106] 车机收藏页
   const [playlist, setPlaylist] = useState<import('./CarPlaylist').CarPlRef | null>(null);
+  // [真车修复 1107] 覆盖态单向门:收藏/歌单页无关闭路径(侧栏 setPage 不清/无返回/back=退出确认)——老板车上「大量功能异常」主因;back 先关覆盖层再进退出确认
+  useEffect(() => {
+    const h = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (playerOpen) { setPlayerOpen(false); return true; }
+      if (favOpen) { setFavOpen(false); return true; }
+      if (playlist) { setPlaylist(null); return true; }
+      return false;
+    });
+    return () => h.remove();
+  }, [playerOpen, favOpen, playlist]);
+  const goPage = (k: PageKey) => { setFavOpen(false); setPlaylist(null); setPage(k); }; // 侧栏导航一键清覆盖态
   // [LEO 终稿 1107] 条件渲染三规则(继承 HD): 无库无本地行/未登录无云行/未授权无公共行
   const pub = usePubEntry();
   const hasToken = !!useApp().token;
@@ -89,7 +100,7 @@ export function CarShell() {
           <Text style={{ color: C.text, fontSize: 22, fontWeight: '800' }}>Next<Text style={{ color: C.brand }}>Music</Text></Text>
         </View>
         {NAV.map(n => (
-          <NavItem key={n.key} icon={n.icon} label={n.label} active={page === n.key} onPress={() => setPage(n.key)} />
+          <NavItem key={n.key} icon={n.icon} label={n.label} active={page === n.key && !favOpen && !playlist} onPress={() => goPage(n.key)} />
         ))}
         {/* [LEO 终稿 1107] 我的乐库: HD 正序(枢纽优先) */}
         <Text style={st.groupLabel}>我的乐库</Text>
@@ -109,7 +120,7 @@ export function CarShell() {
       {/* 内容区 */}
       <View style={{ flex: 1 }}>
         {favOpen ? (
-          <CarFavorites />
+          <CarFavorites onBack={() => setFavOpen(false)} />
         ) : playlist ? (
           <CarPlaylist pl={playlist} onBack={() => setPlaylist(null)} />
         ) : (
@@ -126,22 +137,23 @@ export function CarShell() {
       </View>
 
       {/* 播放条: 底部常驻 96 无进度行(点击开 CarPlayer 全屏) */}
-      <View style={{ position: 'absolute', left: playlist ? 0 : CAR.sidebar, right: 0, bottom: 0 }}>
+      {/* [真车修复 1107] bottom=insets.bottom:车机系统底部 bar 遮挡 playbar 实锤 */}
+      <View style={{ position: 'absolute', left: playlist ? 0 : CAR.sidebar, right: 0, bottom: insets.bottom }}>
         <TouchableOpacity activeOpacity={0.9} style={{ flex: 1 }} onPress={() => setPlayerOpen(true)}>
           <CarPlayerBar onFx={() => setPage('fx')} />
         </TouchableOpacity>
       </View>
       <CarPlayer visible={playerOpen} onClose={() => setPlayerOpen(false)} />
       {!playerOpen && !playlist && (
-        <TouchableOpacity style={{ position: 'absolute', right: CAR.gutter, bottom: CAR.playbar.h + 16, width: 52, height: 52, borderRadius: 26, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }}
-          onPress={() => setPage('queue')}>
+        <TouchableOpacity style={{ position: 'absolute', right: CAR.gutter, bottom: CAR.playbar.h + insets.bottom + 16, width: 52, height: 52, borderRadius: 26, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }}
+          onPress={() => goPage('queue')}>
           <Icon name="queue" size={22} color={C.text2} />
         </TouchableOpacity>
       )}
       {/* [老板令 0916 + LEO 终稿 1107] 右上角: 搜索 + 设置(Dock 撤) */}
       {!playerOpen && !playlist && !favOpen && (
         <View style={{ position: 'absolute', right: CAR.gutter, top: Math.max(insets.top, IS_CAR_TOP) + 16, flexDirection: 'row', gap: 12, zIndex: 30, elevation: 30 }}>
-          <TouchableOpacity style={st.dockBtn} onPress={() => setPage('search')}>
+          <TouchableOpacity style={st.dockBtn} onPress={() => goPage('search')}>
             <Icon name="search" size={22} color={C.text2} />
           </TouchableOpacity>
           <TouchableOpacity style={st.dockBtn} onPress={() => nav.navigate('Settings')}>
