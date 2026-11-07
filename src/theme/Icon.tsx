@@ -13,11 +13,16 @@ const ICON_XML_CACHE = new Map<string, string>();
 // 同 size=16 渲染视觉直径 10.0(heart)~13.3(podcast)px,极差 33%。按 bbox 实测补偿到统一 ≈11.5px。
 // 数据: icon-bbox.py 量化(1107),LEO 可复核系数
 const OPTICAL: Partial<Record<string, number>> = {
-  // 48vb 组(占幅偏大 → 压)
-  podcast: 0.87, ranking: 0.89, library: 0.91, 'folder-music': 0.91, history: 0.87,
+  // 48vb 组(占幅偏大 → 压) [KAI 1107 修:LEO 行尾注释吞键——history/user 被注释吃掉致运行时无补偿,按 LEO 意图恢复独立行]
+  podcast: 0.87, ranking: 0.89, library: 0.91, 'folder-music': 0.85, // [LEO 1107 实测13px->12]
+  history: 0.87,
   // 24vb 组占幅偏小 → 放;偏大 → 压;≈中位 → 1.0
-  heart: 1.15, explore: 1.1, search: 1.1, download: 1.1, music: 1.1, user: 1.05,
-  globe: 0.96, cloud: 0.94, server: 0.98, settings: 0.98,
+  heart: 1.15, explore: 1.1, search: 1.1, download: 1.1,
+  music: 1.0, // [LEO 1107 实测13px->12]
+  user: 0.97, // [LEO 1107 实测13px->12]
+  globe: 0.89, // [LEO 1107 实测13px->12]
+  cloud: 0.94, server: 0.91, // [LEO 1107 实测13px->12]
+  settings: 0.98,
 };
 // 48vb iconpark 组线宽归一: library/folder-music sw=4 → 3(与 podcast/ranking/history 一致;16px 渲染线宽 1.0px)
 const SW48_NORMALIZE = new Set(['podcast', 'ranking', 'library', 'folder-music', 'history']);
