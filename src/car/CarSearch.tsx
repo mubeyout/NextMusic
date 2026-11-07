@@ -60,12 +60,12 @@ export function CarSearch({ onBack }: { onBack: () => void }) {
         </View>
         <View style={{ gap: 6, flex: 1, minWidth: 0 }}>
           <Text style={st.voiceTitle}>说出歌名 · 歌手 · 歌词片段</Text>
-          <Text style={st.voiceSub}>五源同搜 · kw / kg / wy / tx / mg</Text>
+          <Text style={st.voiceSub}>五源同时搜索 · 说完自动出结果</Text>
         </View>
       </View>
 
       {/* 精选词 pills(44 热区) */}
-      <Text style={st.secLabel}>精选词</Text>
+      <Text style={st.secLabel}>精选搜索</Text>
       <View style={st.pills}>
         {CURATED.map(w => (
           <TouchableOpacity key={w} style={st.pill} onPress={() => doSearch(w)}>
