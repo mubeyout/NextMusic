@@ -1,7 +1,10 @@
 // CarHome.tsx —— [车机 P1 为我推荐 1105] LEO v7 规格 §1: 问候 hero + 双大卡 + 最近播放行 + 推荐歌单 rail
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions, Linking } from 'react-native';
 import { CAR, carScale, CAR_FS } from './cartokens';
+import { TrialBar, QuotaBar, PaywallCard } from './commercial';
+import { useLicense } from '../services/license';
+import { GATE_COPY, BUY_LINKS } from '../services/benefits';
 import { CarBigCard, CarRecCard, CarSongRow } from './cards';
 import { C } from '../theme/tokens';
 import { lxapi } from '../services/lxapi';
@@ -35,6 +38,13 @@ export function CarHome({ goExplore, onOpenPlaylist }: { goExplore: () => void; 
   const { height } = useWindowDimensions();
   const dense = carScale(height) < 0.9;
   const { username } = useApp();
+  const lic = useLicense(); // [1107] 商业化三件接线:试用条/配额条/付费墙
+  const openBuy = () => {
+    // CTA 金钮 → 爱发电商品页(与 BenefitsSheet/GateSheet 同链)
+    if (typeof window !== 'undefined') window.open(BUY_LINKS.pro, '_blank', 'noopener');
+    else Linking.openURL(BUY_LINKS.pro);
+  };
+  const openTrial = () => { /* 试用入口:走授权页 activate(见 LicenseScreen) */ };
   const [recents, setRecents] = useState<SongItem[]>([]);
   const [mixes, setMixes] = useState<SongListMeta[]>([]);
 
