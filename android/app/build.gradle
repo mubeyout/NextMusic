@@ -100,8 +100,8 @@ android {
         applicationId "com.mubeyworks.nextmusic"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 162
-        versionName "1.4.1" // v1.4.1-vc162(1107:onBrand 按 accent 亮度派生——深accent白图标,对比≥4.5 构建断言)
+        versionCode 163
+        versionName "1.4.1" // v1.4.1-vc163(1107:播放页头部删标题后返回/更多贴一起——补 space-between 两端布局)
     }
     // 多架构分发：GitHub Release 只放编译产物（armeabi-v7a/arm64-v8a/x86/x86_64 + universal 兑底）
     splits {

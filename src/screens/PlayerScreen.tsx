@@ -320,7 +320,8 @@ function SeekBar({ pct, duration, onSeek, onDrag }: {
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bgDeep },
-  header: { height: 72, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20 },
+  // [老板 1107] 删标题后返回/更多贴一起——补 space-between 恢复两端布局(回滚点: ec75ff5 删 hTitle 占位)
+  header: { height: 72, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 },
   hBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center' },
   hTitle: { flex: 1, color: C.text, fontSize: FS.title, lineHeight: 19, fontWeight: FW.medium }, // lx166 居左(播放页返回头行)
   // draft-2 容器层外阴影:0 24px 70px 黑55%@230 设计稿,按 270/230 等比;
