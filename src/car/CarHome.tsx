@@ -67,9 +67,18 @@ export function CarHome({ goExplore, onOpenPlaylist }: { goExplore: () => void; 
       {/* 双大卡: 每日精选 / 私人雷达 (v7 真版基准组件) */}
       <View style={{ flexDirection: 'row', gap: CAR.gap, marginBottom: CAR.sectionGap }}>
         <CarBigCard dense={dense} badge="每日精选" title="30 首热歌" sub="每天更新" accent="#3B2F6F"
-          onPress={() => { if (recents.length) void player.playSong(recents[0], recents); }} />
+          onPress={() => {
+            // [1107 真机实锤] 新用户无播放史时大卡点击无反应——fallback 推荐歌单第一首
+            if (recents.length) { void player.playSong(recents[0], recents); return; }
+            const m = mixes[0];
+            if (m) void lxapi.songListDetail(m.id).then(d => { const l = d?.list || []; if (l.length) void player.playSong(l[0], l); }).catch(() => {});
+          }} />
         <CarBigCard dense={dense} badge="私人雷达" title="你最近循环的歌" sub="根据口味生成" accent="#1E5F56"
-          onPress={() => { if (recents.length) void player.playSong(recents[0], recents); }} />
+          onPress={() => {
+            if (recents.length) { void player.playSong(recents[0], recents); return; }
+            const m = mixes[Math.min(1, mixes.length - 1)];
+            if (m) void lxapi.songListDetail(m.id).then(d => { const l = d?.list || []; if (l.length) void player.playSong(l[Math.floor(l.length / 2)], l); }).catch(() => {});
+          }} />
       </View>
 
       {recents.length > 0 && (
