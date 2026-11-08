@@ -21,7 +21,7 @@ const QUALITY_ORDER = ['flac', '320k', '128k'] as const;
 const QUALITY_LABEL: Record<string, string> = { flac: '无损', '320k': '320k', '128k': '128k' };
 
 export function CarPlayer({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  const { current, playing, toggle, skipNext, skipPrev, queue, speed, setSpeed, sleepRemain, enableSleep } = usePlayer();
+  const { current, playing, toggle, skipNext, skipPrev, queue, speed, setSpeed, sleepRemain, enableSleep, shuffle, setShuffle, repeat, cycleRepeat } = usePlayer(); // [老板报 1108] 随机/循环上车机播放页
   const nav = useNavigation() as { navigate: (s: string) => void };
   const [qual, setQual] = useState(settings.get().playQuality || 'flac');
   const { position, duration } = usePlayerProgress();
@@ -55,11 +55,18 @@ export function CarPlayer({ visible, onClose }: { visible: boolean; onClose: () 
             {current?.albumName ? <Text style={st.album}>{current.albumName}{queue.length ? ` · 队列 ${queue.length} 首` : ''}</Text> : null}
 
             <View style={st.ctrls}>
+              {/* [老板报 1108] 随机/循环播放上车机:shuffle 开关+repeat off→all→one 循环,激活=品牌绿 */}
+              <CarTouch style={st.ctrlBtn} onPress={() => setShuffle(!shuffle)}>
+                <Icon name="shuffle" size={26} active={shuffle} color={shuffle ? C.brand : C.text} />
+              </CarTouch>
               <CarTouch style={st.ctrlBtn} onPress={skipPrev}><Icon name="previous" size={30} color={C.text} /></CarTouch>
               <CarTouch style={st.ctrlMain} onPress={toggle}>
                 <Icon name={playing ? 'pause' : 'play'} size={40} active color={C.onBrand} />
               </CarTouch>
               <CarTouch style={st.ctrlBtn} onPress={skipNext}><Icon name="next" size={30} color={C.text} /></CarTouch>
+              <CarTouch style={st.ctrlBtn} onPress={cycleRepeat}>
+                <Icon name="repeat" size={26} active={repeat !== 'off'} color={repeat !== 'off' ? C.brand : C.text} />
+              </CarTouch>
             </View>
 
             {/* 完整进度条(8 高 r4)——进度操作主场(播放条无进度行的补偿) */}

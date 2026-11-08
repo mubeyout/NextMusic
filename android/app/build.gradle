@@ -100,7 +100,7 @@ android {
         applicationId "com.mubeyworks.nextmusic"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 169
+        versionCode 170
         versionName "1.4.1" // v1.4.1-vc165(1107:车机模式开关删除·纯环境自动检测双向钳制+图标光学归一+CAR缺口包A1-A5+活态插入裁定)
     }
     // 多架构分发：GitHub Release 只放编译产物（armeabi-v7a/arm64-v8a/x86/x86_64 + universal 兑底）
