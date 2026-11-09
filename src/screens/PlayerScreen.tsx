@@ -161,11 +161,15 @@ export function PlayerScreen() {
             <VinylDisc size={270} img={current.img ? fixCoverUrl(current.img) : undefined} />
           </Animated.View>
         </View>
-        <View style={st.modeRow}>
-          <View style={st.modeMarker} />
-          <View>
-            <Text style={st.modeTitle}>黑胶歌词</Text>
-            <Text style={st.modeCaption}>唱片与歌词同步</Text>
+        {/* [老板 1109] 「黑胶歌词」标识块换成歌曲名+歌手(随歌曲同步,去竖线,加icon) */}
+        <View style={st.trackHead}>
+          <View style={st.trackNameRow}>
+            <Icon name="music" size={17} color={C.brand} />
+            <Text style={st.trackName} numberOfLines={1}>{current.name}</Text>
+          </View>
+          <View style={st.trackArtistRow}>
+            <Icon name="user" size={14} color={C.text2} />
+            <Text style={st.trackArtist} numberOfLines={1}>{current.singer}{current.albumName ? ` · ${current.albumName}` : ''}</Text>
           </View>
         </View>
 
@@ -331,10 +335,12 @@ const st = StyleSheet.create({
     shadowColor: '#000000', shadowOpacity: 0.55, shadowOffset: { width: 0, height: 28 }, shadowRadius: 82, elevation: 28,
   },
   vinylSpin: { width: 270, height: 270 },
-  modeRow: { flexDirection: 'row', alignItems: 'center', gap: SP.md, paddingLeft: 20, marginTop: 8 },
-  modeMarker: { width: 3, height: 38, borderRadius: 2, backgroundColor: C.brand },
-  modeTitle: { color: C.text, fontSize: FS.xl, lineHeight: 18, fontWeight: FW.medium },
-  modeCaption: { color: C.text2, fontSize: FS.sm, lineHeight: 13 },
+  // [老板 1109] 歌曲名/歌手头块(居中双行,icon 前缀,去旧竖线)
+  trackHead: { alignItems: 'center', gap: 6, marginTop: 14, paddingHorizontal: 20 },
+  trackNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, maxWidth: '100%' },
+  trackName: { color: C.text, fontSize: FS.xl, lineHeight: 22, fontWeight: FW.bold, flexShrink: 1 },
+  trackArtistRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  trackArtist: { color: C.text2, fontSize: FS.sm, lineHeight: 14 },
   lyrics: { paddingHorizontal: 30, paddingTop: 10, gap: SP.sm, minHeight: 158 },
   lActive: { color: C.brandSoft, fontSize: FS.display, lineHeight: 29, fontWeight: FW.bold }, // [LEO 1011] 26 档外→display(24)
   lTrans: { color: C.text2, fontSize: FS.lg, lineHeight: 18, marginTop: 2 },

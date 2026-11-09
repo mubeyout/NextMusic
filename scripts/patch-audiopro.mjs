@@ -388,3 +388,77 @@ patch(
     '\t}',
   ].join('\n')
 );
+
+
+// ---- [NextMusic-AutoNext 1109·老板令] 锁屏/后台自动下一曲:JS 冻结时原生接管连播 ----
+// 4) Controller: 连播队列字段 + play() 快照 options + STATE_ENDED 原生接管
+const AN_FIELDS_FROM = '\tsuspend fun play(track: ReadableMap, options: ReadableMap) {';
+const AN_FIELDS_TO = [
+  '\t// [NextMusic-AutoNext:fields] JS 预下发的取好链曲目队列 + play options 快照(锁屏后台原生接管连播)',
+  '\tvar autoNextQueue: ArrayList<ReadableMap> = arrayListOf()',
+  '\tvar autoNextRepeatOne = false',
+  '\tinternal var lastPlayOptions: ReadableMap? = null',
+  '\tsuspend fun play(track: ReadableMap, options: ReadableMap) {',
+  '\t\tlastPlayOptions = options',
+  '\t\tautoNextRepeatOne = false',
+].join('\n');
+patch('AudioProController.kt', '[NextMusic-AutoNext:fields]', AN_FIELDS_FROM, AN_FIELDS_TO);
+
+const AN_END_FROM = '\t\t\t\t\tPlayer.STATE_ENDED -> {\n\t\t\t\t\t\tstopProgressTimer()';
+const AN_END_TO = [
+  '\t\t\t\t\tPlayer.STATE_ENDED -> {',
+  '\t\t\t\t\t\t// [NextMusic-AutoNext:native] JS 冻结时原生接管:队列连播/单曲循环原生重播',
+  '\t\t\t\t\t\tif (autoNextRepeatOne) {',
+  '\t\t\t\t\t\t\tautoNextRepeatOne = false',
+  '\t\t\t\t\t\t\tenginerBrowser?.seekTo(0)',
+  '\t\t\t\t\t\t\tenginerBrowser?.play()',
+  '\t\t\t\t\t\t\treturn',
+  '\t\t\t\t\t\t}',
+  '\t\t\t\t\t\tif (autoNextQueue.isNotEmpty()) {',
+  '\t\t\t\t\t\t\tval nt = autoNextQueue.removeAt(0)',
+  '\t\t\t\t\t\t\tval opts = lastPlayOptions',
+  '\t\t\t\t\t\t\tif (opts != null) {',
+  '\t\t\t\t\t\t\t\temitNotice(AudioProModule.EVENT_TYPE_NATIVE_AUTO_NEXT, 0L, 0L, "autoNext")',
+  '\t\t\t\t\t\t\t\tCoroutineScope(Dispatchers.Main).launch { play(nt, opts) }',
+  '\t\t\t\t\t\t\t\treturn',
+  '\t\t\t\t\t\t\t}',
+  '\t\t\t\t\t\t}',
+  '\t\t\t\t\t\tstopProgressTimer()',
+].join('\n');
+patch('AudioProController.kt', '[NextMusic-AutoNext:native]', AN_END_FROM, AN_END_TO);
+
+patch(
+  'AudioProModule.kt',
+  '[NextMusic-AutoNext:const]',
+  'const val EVENT_TYPE_TRACK_ENDED = "TRACK_ENDED"',
+  'const val EVENT_TYPE_TRACK_ENDED = "TRACK_ENDED"\n\t\tconst val EVENT_TYPE_NATIVE_AUTO_NEXT = "NATIVE_AUTO_NEXT"'
+);
+
+const AN_M_FROM = '\t@ReactMethod\n\tfun pause() {';
+const AN_M_TO = [
+  '\t// [NextMusic-AutoNext:methods] JS 预下发连播队列(取好链)/单曲循环标记',
+  '\t@ReactMethod',
+  '\tfun setAutoNextQueue(tracks: ReadableArray?) {',
+  '\t\tval list = ArrayList<ReadableMap>()',
+  '\t\tif (tracks != null) {',
+  '\t\t\tfor (i in 0 until tracks.size()) tracks.getMap(i)?.let { list.add(it) }',
+  '\t\t}',
+  '\t\tAudioProController.autoNextQueue = list',
+  '\t}',
+  '',
+  '\t@ReactMethod',
+  '\tfun setRepeatOne(on: Boolean) {',
+  '\t\tAudioProController.autoNextRepeatOne = on',
+  '\t}',
+  '',
+  '\t@ReactMethod',
+  '\tfun pause() {',
+].join('\n');
+patch('AudioProModule.kt', '[NextMusic-AutoNext:methods]', AN_M_FROM, AN_M_TO);
+
+patch(
+  'AudioProModule.kt',
+  '[NextMusic-AutoNext:import]',
+  'import com.facebook.react.bridge.ReadableMap',
+  'import com.facebook.react.bridge.ReadableArray\nimport com.facebook.react.bridge.ReadableMap'
+);

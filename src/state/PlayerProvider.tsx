@@ -31,6 +31,9 @@ const castKv = createMMKV({ id: 'nextmusic-cast' }); // lx39: 投屏会话持久
 // 原生真状态桥（[NextMusic-FX:state-bridge]）：JS 重建后 lib internalStore 归零，需以进程级原生状态为准
 const NativeAudioPro = NativeModules.AudioPro as {
   getNativeState?: () => Promise<{ state: string; trackId?: string; trackTitle?: string; trackArtist?: string }>;
+  // [NextMusic-AutoNext 1109] 锁屏/后台 JS 冻结时原生接管连播:预下发取好链队列/单曲循环标记
+  setAutoNextQueue?: (tracks: unknown[]) => void;
+  setRepeatOne?: (on: boolean) => void;
 } | undefined;
 
 export interface QueueTrack extends SongItem {
@@ -260,9 +263,52 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   /** 统一播放入口：dlna/cast 投屏中且是可投屏的 http(s) 流 → 推给设备；否则本机播放 */
   // lx43：记录最近一次本机播放上下文（设备切换后无感重建用）
   const lastLocalPlayRef = useRef<{ t: QueueTrack; url: string; opts?: { headers: { audio: Record<string, string>; artwork?: Record<string, string> } } } | null>(null);
+  /** [AutoNext 1109] 轻量取链:URL缓存→自定义音源→服务器取链(降质)。命中即预下发原生;失败跳过该首(JS 醒着时兜底) */
+  const primeIdxRef = useRef<number[]>([]); // 与原生队列同序的队列下标(事件回放时同步 JS 状态)
+  const resolveNativeUrl = useCallback(async (t: QueueTrack): Promise<string | null> => {
+    const quality = pickQuality(t);
+    try { const u = await customGetMusicUrl(t, quality); if (u) return u; } catch { /* 下一步 */ }
+    const lcKey = `nm-urlc:${t.source}:${t.songmid}:${quality}`;
+    try {
+      const raw = localStorage.getItem(lcKey);
+      if (raw) { const c = JSON.parse(raw); if (Date.now() - c.at < 30 * 60_000) return c.url as string; }
+    } catch { /* ignore */ }
+    if (tokenRef.current) {
+      try {
+        let u = (await api.musicUrl(t, quality)).url || null;
+        if (!u && quality !== '128k') u = (await api.musicUrl(t, '128k')).url || null;
+        if (u) { try { localStorage.setItem(lcKey, JSON.stringify({ url: u, at: Date.now() })); } catch { /* ignore */ } return u; }
+      } catch { /* ignore */ }
+    }
+    return null;
+  }, []);
+  const primeNativeNext = useCallback(async () => {
+    if (Platform.OS !== 'android' || !NativeAudioPro?.setAutoNextQueue) return;
+    primeIdxRef.current = [];
+    if (shuffleRef.current || repeatRef.current === 'one') { NativeAudioPro?.setRepeatOne?.(repeatRef.current === 'one'); NativeAudioPro.setAutoNextQueue([]); return; }
+    NativeAudioPro?.setRepeatOne?.(false);
+    const q = queueRef.current;
+    const tracks: unknown[] = [];
+    const idxs: number[] = []
+    let i = idxRef.current + 1;
+    let guard = 0;
+    while (tracks.length < 5 && guard++ < 12 && i < q.length) {
+      const t = q[i];
+      if (t) { const u = await resolveNativeUrl(t); if (u) { tracks.push(trackToAudioPro(t, u)); idxs.push(i); } }
+      i++;
+    }
+    primeIdxRef.current = idxs;
+    NativeAudioPro.setAutoNextQueue(tracks);
+  }, [resolveNativeUrl]);
+  const primeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const schedulePrimeNativeNext = useCallback(() => {
+    if (primeTimerRef.current) clearTimeout(primeTimerRef.current);
+    primeTimerRef.current = setTimeout(() => { void primeNativeNext(); }, 1500); // 起播 1.5s 后预取,不抢起播带宽
+  }, [primeNativeNext]);
   const playOrCast = useCallback((t: QueueTrack, url: string, opts?: { headers: { audio: Record<string, string>; artwork?: Record<string, string> } }) => {
     const cs = castRef.current;
     if (cs && /^https?:\/\//i.test(url)) {
+      NativeAudioPro?.setAutoNextQueue?.([]); // [AutoNext] 投屏中连播由 cast 状态机管,清原生队列
       AudioPro.pause();
       setPosition(0);
       const dev = cs.dev as DlnaDevice & CastDevice;
@@ -283,6 +329,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
     lastLocalPlayRef.current = { t, url, opts };
     AudioPro.play(trackToAudioPro(t, url), opts);
+    schedulePrimeNativeNext(); // [AutoNext 1109] 起播后预下发连播队列(锁屏后台原生接管)
   }, []);
 
   /** lx43：设备切换后无感重建音频管线——DefaultAudioSink.setPreferredDevice 只在
@@ -707,7 +754,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   // Global event wiring
   useEffect(() => {
     const sub = AudioPro.addEventListener(ev => {
-      switch (ev.type) {
+      switch (ev.type as AudioProEventType | 'NATIVE_AUTO_NEXT') { // [AutoNext] 补丁库新增事件字符串
         case AudioProEventType.STATE_CHANGED:
           setPlaying(ev.payload?.state === AudioProState.PLAYING);
           if (ev.payload?.state === AudioProState.PLAYING) syncWakeLock(true); else if (ev.payload?.state === AudioProState.PAUSED) syncWakeLock(false);
@@ -722,6 +769,19 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           const d = ev.payload?.duration ?? 0;
           setPosition(p / 1000);
           if (d > 0) setDuration(d / 1000);
+          break;
+        }
+        case 'NATIVE_AUTO_NEXT': {
+          // [AutoNext 1109] 原生已连播(锁屏后台 JS 冻结期间):同步 JS 队列下标/UI,并链式预下发下一批
+          const ni = primeIdxRef.current.shift();
+          if (ni != null && ni < queueRef.current.length) {
+            idxRef.current = ni;
+            const t = queueRef.current[ni];
+            setCurrent(t);
+            void pushRecent(t);
+            if (t.source === TF_SOURCE) void tfNoteRecent(t);
+          }
+          schedulePrimeNativeNext();
           break;
         }
         case AudioProEventType.TRACK_ENDED:
@@ -774,17 +834,21 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     return () => sub.remove();
   }, [goTo]);
 
+  // [AutoNext 1109] 播放模式切换即重算原生连播队列(shuffle 清空/repeat-one 原生单曲循环)
+  const resyncNativeNext = useCallback(() => { void primeNativeNext(); }, [primeNativeNext]);
   const setShuffle = useCallback((on: boolean) => {
     setShuffleState(on);
     modeKv.set('shuffle', JSON.stringify(on));
-  }, []);
+    resyncNativeNext(); // [AutoNext] 模式切换重算原生连播队列
+  }, [resyncNativeNext]);
   const cycleRepeat = useCallback(() => {
     setRepeat(r => {
       const next = r === 'off' ? 'all' : r === 'all' ? 'one' : 'off';
       modeKv.set('repeat', next);
+      resyncNativeNext(); // [AutoNext] repeat-one 走原生单曲循环,all 重排队列
       return next;
     });
-  }, []);
+  }, [resyncNativeNext]);
 
   const toggle = useCallback(async () => {
     // dlna/cast 投屏中：控制远端设备
