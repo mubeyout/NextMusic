@@ -27,47 +27,60 @@ import { BackHandler } from 'react-native';
 
 type PageKey = 'home' | 'podcast' | 'explore' | 'boards' | 'search' | 'queue' | 'fx' | 'settings' | 'medialibs';
 
-// [v8.0] 顶部 tab 主组(QQ 车机 tab 流; 乐库族入口收进「乐库」下拉或直接放次级)
+// [v8.1 LEO spec] 顶 tab 5 组:首页/探索/榜单/播客/我的(队列进面板工具排;乐库进「我的」)
 const NAV: { key: PageKey; icon: string; label: string }[] = [
-  { key: 'home', icon: 'home', label: '推荐' },
-  { key: 'podcast', icon: 'podcast', label: '播客' },
+  { key: 'home', icon: 'home', label: '首页' },
   { key: 'explore', icon: 'explore', label: '探索' },
   { key: 'boards', icon: 'ranking', label: '榜单' },
-  { key: 'medialibs', icon: 'server', label: '乐库' },
-  { key: 'queue', icon: 'queue', label: '队列' },
+  { key: 'podcast', icon: 'podcast', label: '播客' },
+  { key: 'medialibs', icon: 'user', label: '我的' },
 ];
 
 function TabItem({ icon, label, active, onPress }: { icon: string; label: string; active?: boolean; onPress: () => void }) {
   return (
-    <CarTouch onPress={onPress} style={st2.tab}>
-      <Icon name={icon as never} size={20} color={active ? C.brand : C.text2} />
-      <Text style={[st2.tabLabel, active && { color: C.brand }]}>{label}</Text>
+    <CarTouch onPress={onPress} style={[st2.tab, active && st2.tabOn]}>
+      <Text style={[st2.tabLabel, active && { color: C.brand, fontWeight: '800' }]}>{label}</Text>
+      {active ? <View style={st2.tabUnder} /> : null}
     </CarTouch>
   );
 }
 
 /** [v8.0] 左侧播放信息面板(QQ 律: 播放信息在左面,替代底部 playerbar) */
-function PlayPanel({ onOpen, onFx }: { onOpen: () => void; onFx: () => void }) {
-  const { current, playing, toggle, skipNext, skipPrev } = usePlayer();
+/** [v8.1 LEO spec] 左侧播放面板 300dp 八件套:封面260/歌名/歌手/进度+时间/三控(56绿主钮)/工具排(收藏下载队列音效)/徽标行/队列底锚 */
+function PlayPanel({ onOpen, onFx, onQueue, onFav, onLike, onDownload }: { onOpen: () => void; onFx: () => void; onQueue: () => void; onFav: () => void; onLike: () => void; onDownload: () => void }) {
+  const { current, playing, toggle, skipNext, skipPrev, queue } = usePlayer();
   const { position, duration } = usePlayerProgress();
   const pct = duration > 0 ? Math.min(1, Math.max(0, position / duration)) : 0;
   const img = current ? fixCoverUrl(current.img) : undefined;
+  const fmt = (ms: number) => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
   return (
     <View style={st2.panel}>
-      <CarTouch style={{ flex: 1, minWidth: '100%' }} onPress={onOpen}>
-        {img ? <Image source={{ uri: img }} style={st2.panelArt} /> : <View style={[st2.panelArt, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={30} color={C.text3} /></View>}
-        <Text style={st2.panelTitle} numberOfLines={2}>{current?.name ?? '未在播放'}</Text>
-        <Text style={st2.panelArtist} numberOfLines={1}>{current?.singer ?? '点击选歌'}</Text>
+      <CarTouch style={{ width: '100%', alignItems: 'center' }} onPress={onOpen}>
+        {img ? <Image source={{ uri: img }} style={st2.panelArt} /> : <View style={[st2.panelArt, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={44} color={C.text3} /></View>}
       </CarTouch>
-      {current ? (
-        <View style={st2.panelCtrls}>
-          <CarTouch style={st2.pBtn} onPress={skipPrev}><Icon name="previous" size={22} color={C.text} /></CarTouch>
-          <CarTouch style={st2.pMain} onPress={toggle}><Icon name={playing ? 'pause' : 'play'} size={24} active color={C.onBrand} /></CarTouch>
-          <CarTouch style={st2.pBtn} onPress={skipNext}><Icon name="next" size={22} color={C.text} /></CarTouch>
-        </View>
-      ) : null}
+      <Text style={st2.panelTitle} numberOfLines={1}>{current?.name ?? '未在播放'}</Text>
+      <Text style={st2.panelArtist} numberOfLines={1}>{current?.singer ?? '从首页选一首开始'}</Text>
       <View style={st2.panelProg}><View style={{ flex: pct, backgroundColor: C.brand, borderRadius: 2 }} /><View style={{ flex: 1 - pct, backgroundColor: C.track, borderRadius: 2 }} /></View>
-      <CarTouch style={st2.pFx} onPress={onFx}><Icon name="sliders" size={18} color={C.text2} /><Text style={st2.pFxText}>音效</Text></CarTouch>
+      <View style={st2.panelTimes}><Text style={st2.panelTime}>{fmt(position)}</Text><Text style={st2.panelTime}>{fmt(duration)}</Text></View>
+      <View style={st2.panelCtrls}>
+        <CarTouch style={st2.pBtn} onPress={skipPrev}><Icon name="previous" size={20} color={C.text} /></CarTouch>
+        <CarTouch style={st2.pMain} onPress={toggle}><Icon name={playing ? 'pause' : 'play'} size={26} active color={C.onBrand} /></CarTouch>
+        <CarTouch style={st2.pBtn} onPress={skipNext}><Icon name="next" size={20} color={C.text} /></CarTouch>
+      </View>
+      <View style={st2.panelTools}>
+        <CarTouch style={st2.pTool} onPress={onLike}><Icon name="heart" size={16} color={C.text2} /></CarTouch>
+        <CarTouch style={st2.pTool} onPress={onDownload}><Icon name="download" size={16} color={C.text2} /></CarTouch>
+        <CarTouch style={st2.pTool} onPress={onQueue}><Icon name="queue" size={16} color={C.text2} /></CarTouch>
+        <CarTouch style={st2.pTool} onPress={onFx}><Icon name="sliders" size={16} color={C.text2} /></CarTouch>
+      </View>
+      <View style={st2.panelBadges}>
+        <Text style={st2.pBadge}>{current?.source || '—'}</Text>
+        <Text style={st2.pBadge}>320k</Text>
+      </View>
+      <View style={{ flex: 1 }} />
+      <CarTouch style={st2.panelQueue} onPress={onQueue}>
+        <Text style={st2.panelQueueText} numberOfLines={1}>正在播放 · 队列 {queue.length} 首 ›</Text>
+      </CarTouch>
     </View>
   );
 }
@@ -117,7 +130,7 @@ export function CarShell() {
       {/* 主区: 左播放信息面板 + 右内容 */}
       <View style={{ flex: 1, flexDirection: 'row' }}>
         <View style={st2.panelWrap}>
-          <PlayPanel onOpen={() => setPlayerOpen(true)} onFx={() => goPage('fx')} />
+          <PlayPanel onOpen={() => setPlayerOpen(true)} onFx={() => goPage('fx')} onQueue={() => goPage('queue')} onFav={() => setFavOpen(true)} onLike={() => {}} onDownload={() => nav.navigate('Downloads')} />
         </View>
         <View style={{ flex: 1 }}>
           {favOpen ? (
@@ -145,19 +158,27 @@ export function CarShell() {
 }
 
 const st2 = {
-  topBar: { flexDirection: 'row' as const, alignItems: 'center' as const, height: 64, paddingHorizontal: CAR.gutter, backgroundColor: C.surface, borderBottomWidth: 1, borderBottomColor: C.border, gap: 8 },
-  tab: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 7, height: 44, paddingHorizontal: 16, borderRadius: 22 },
-  tabLabel: { color: C.text2, fontSize: 15, fontWeight: '600' as const },
+  topBar: { flexDirection: 'row' as const, alignItems: 'center' as const, height: 52, paddingHorizontal: CAR.gutter, backgroundColor: C.bg, borderBottomWidth: 1, borderBottomColor: C.border, gap: 8 },
+  tab: { alignItems: 'center' as const, justifyContent: 'center' as const, height: 52, paddingHorizontal: 18 },
+  tabOn: {},
+  tabUnder: { width: 20, height: 3, borderRadius: 2, backgroundColor: C.brand, marginTop: 4 },
+  tabLabel: { color: C.text2, fontSize: 17, fontWeight: '600' as const },
   iconBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
-  panelWrap: { width: 264, borderRightWidth: 1, borderRightColor: C.border, backgroundColor: C.surface },
-  panel: { flex: 1, padding: 18, gap: 10, alignItems: 'center' as const },
-  panelArt: { width: 150, height: 150, borderRadius: 14 },
-  panelTitle: { color: C.text, fontSize: CAR_FS.body, fontWeight: '700' as const, textAlign: 'center' as const, width: '100%' },
-  panelArtist: { color: C.text3, fontSize: CAR_FS.mini, textAlign: 'center' as const, width: '100%' },
-  panelCtrls: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 18 },
-  pBtn: { width: 52, height: 52, borderRadius: 26, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
-  pMain: { width: 64, height: 64, borderRadius: 32, backgroundColor: C.brand, alignItems: 'center' as const, justifyContent: 'center' as const },
+  panelWrap: { width: 300, borderRightWidth: 1, borderRightColor: C.border, backgroundColor: C.surface },
+  panel: { flex: 1, padding: 20, gap: 10, alignItems: 'center' as const },
+  panelArt: { width: 260, height: 260, borderRadius: 16 },
+  panelTitle: { color: C.text, fontSize: 18, fontWeight: '700' as const, textAlign: 'center' as const, width: '100%' },
+  panelArtist: { color: C.text2, fontSize: 14, textAlign: 'center' as const, width: '100%' },
   panelProg: { flexDirection: 'row' as const, height: 4, width: '100%', borderRadius: 2, overflow: 'hidden' as const },
-  pFx: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6, height: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: C.surface2 },
-  pFxText: { color: C.text2, fontSize: CAR_FS.tiny },
+  panelTimes: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, width: '100%' },
+  panelTime: { color: C.text3, fontSize: 11, fontVariant: ['tabular-nums' as never] },
+  panelCtrls: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 18, marginTop: 6 },
+  pBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
+  pMain: { width: 56, height: 56, borderRadius: 28, backgroundColor: C.brand, alignItems: 'center' as const, justifyContent: 'center' as const },
+  panelTools: { flexDirection: 'row' as const, gap: 12, marginTop: 8 },
+  pTool: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: C.border, alignItems: 'center' as const, justifyContent: 'center' as const },
+  panelBadges: { flexDirection: 'row' as const, gap: 8 },
+  pBadge: { color: C.text3, fontSize: 11, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10, backgroundColor: C.surface2 },
+  panelQueue: { width: '100%', paddingVertical: 8, alignItems: 'center' as const },
+  panelQueueText: { color: C.text3, fontSize: CAR_FS.tiny },
 };
