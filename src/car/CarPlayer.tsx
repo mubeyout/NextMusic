@@ -29,9 +29,10 @@ export function CarPlayer({ visible, onClose }: { visible: boolean; onClose: () 
   const { width: winW, height: winH } = useWindowDimensions();
   const pct = duration > 0 ? Math.min(1, Math.max(0, position / duration)) : 0;
   const img = current ? fixCoverUrl(current.img) : undefined;
-  // [老板 1110] 唱片右置、加大: 取内容区高度与宽的较大约束(去底部 chips 让位)
+  // [v7.9 1110 LEO] 唱片 56%h 比例驱动(QQ grandland 纯比例律);主钮 9%h
   const bodyH = winH - 80;
-  const discSize = Math.max(240, Math.min(CAR.player.disc, bodyH - 48, Math.round((winW - CAR.sidebar) * 0.38)));
+  const discSize = Math.max(240, Math.round(bodyH * 0.56));
+  const mainBtn = Math.round(bodyH * 0.09);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -54,11 +55,11 @@ export function CarPlayer({ visible, onClose }: { visible: boolean; onClose: () 
               <CarTouch style={st.ctrlBtn} onPress={() => setShuffle(!shuffle)}>
                 <Icon name="shuffle" size={28} active={shuffle} color={shuffle ? C.brand : C.text} />
               </CarTouch>
-              <CarTouch style={st.ctrlBtn} onPress={skipPrev}><Icon name="previous" size={34} color={C.text} /></CarTouch>
-              <CarTouch style={st.ctrlMain} onPress={toggle}>
-                <Icon name={playing ? 'pause' : 'play'} size={44} active color={C.onBrand} />
+              <CarTouch style={[st.ctrlBtn, { width: mainBtn + 16, height: mainBtn + 16, borderRadius: (mainBtn + 16) / 2 }]} onPress={skipPrev}><Icon name="previous" size={Math.round(mainBtn * 0.34)} color={C.text} /></CarTouch>
+              <CarTouch style={[st.ctrlMain, { width: mainBtn, height: mainBtn, borderRadius: mainBtn / 2 }]} onPress={toggle}>
+                <Icon name={playing ? 'pause' : 'play'} size={Math.round(mainBtn * 0.42)} active color={C.onBrand} />
               </CarTouch>
-              <CarTouch style={st.ctrlBtn} onPress={skipNext}><Icon name="next" size={34} color={C.text} /></CarTouch>
+              <CarTouch style={[st.ctrlBtn, { width: mainBtn + 16, height: mainBtn + 16, borderRadius: (mainBtn + 16) / 2 }]} onPress={skipNext}><Icon name="next" size={Math.round(mainBtn * 0.34)} color={C.text} /></CarTouch>
               <CarTouch style={st.ctrlBtn} onPress={cycleRepeat}>
                 <Icon name="repeat" size={28} active={repeat !== 'off'} color={repeat !== 'off' ? C.brand : C.text} />
               </CarTouch>
@@ -121,7 +122,7 @@ const st = StyleSheet.create({
   ctrls: { flexDirection: 'row', alignItems: 'center', gap: 30, marginTop: 16 },
   ctrlBtn: { width: 84, height: 84, borderRadius: 42, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
   ctrlMain: { width: 110, height: 110, borderRadius: 55, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
-  progRow: { flexDirection: 'row', alignItems: 'center', gap: 18, marginTop: 20 },
+  progRow: { flexDirection: 'row', alignItems: 'center', gap: 18, marginTop: 20, maxWidth: 320 }, // [v7.9] QQ 91.5×7dp 窄条律→随左列限宽
   track: { flex: 1, height: 10, flexDirection: 'row', borderRadius: 5 },
   time: { color: 'rgba(255,255,255,0.65)', fontSize: CAR_FS.sub, fontVariant: ['tabular-nums' as never] },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 24 },

@@ -124,8 +124,8 @@ const st = {
   pill: { height: 44, borderRadius: 999, paddingHorizontal: 24, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
   pillText: { color: C.text2, fontSize: CAR_FS.sub },
   exGrid: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: CAR.gap },
-  exCard: { width: '15.2%', gap: 8 },
-  exCard6: { width: '15.2%', gap: 6 },
+  exCard: { width: '18.6%', gap: 8 }, // [v7.9 1110] 5 列定列(QQ 160.25卡+12.5gap 整除对齐),弃 auto-fill 漂移
+  exCard6: { width: '18.6%', gap: 6 }, // [v7.9 1110] 6列变体也归 5 列主律
   exArt: { width: '100%', aspectRatio: 1, borderRadius: 14 },
   exName: { color: C.text, fontSize: CAR_FS.mini, fontWeight: '600' as const },
   bGrid: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: CAR.gap },

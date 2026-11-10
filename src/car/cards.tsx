@@ -68,15 +68,15 @@ const st = {
   recPlay: { position: 'absolute' as const, right: 4, top: CAR.recCard.w - 46, width: 38, height: 38, borderRadius: 19, backgroundColor: '#00000066', alignItems: 'center' as const, justifyContent: 'center' as const },
   recName: { color: C.text, fontSize: CAR_FS.mini, fontWeight: '500' as const },
   recSub: { color: C.text3, fontSize: CAR_FS.mini },
-  songRow: { height: CAR.songRow.h, flexDirection: 'row' as const, alignItems: 'center' as const, gap: 18, borderBottomWidth: 1, borderBottomColor: C.border },
+  songRow: { height: CAR.songRow.h, flexDirection: 'row' as const, alignItems: 'center' as const, gap: 14, borderBottomWidth: 1, borderBottomColor: C.border }, // [v7.9] 64 密度行
   songArt: { width: CAR.songRow.art, height: CAR.songRow.art, borderRadius: CAR.songRow.r },
   songName: { color: C.text, fontSize: CAR_FS.body, fontWeight: '600' as const },
   songSub: { color: C.text3, fontSize: CAR_FS.mini },
   songTime: { color: C.text3, fontSize: CAR_FS.sub },
-  // [720 紧凑档 1106] 纵向压缩:大卡 156→132/歌曲行 88→72(封面72→60)/竖卡 138→118
+  // [v7.9 QQ对齐 1110] 紧凑档并入 64 密度行/148 竖卡
   bigCardDense: { height: 132, paddingHorizontal: 20, gap: 13 },
-  songRowDense: { height: 72, gap: 15, borderBottomColor: C.border },
-  songArtDense: { width: 60, height: 60, borderRadius: 10 },
-  recArtDense: { width: 118, height: 118, borderRadius: 12 },
+  songRowDense: { height: 60, gap: 12, borderBottomColor: C.border },
+  songArtDense: { width: 48, height: 48, borderRadius: 8 },
+  recArtDense: { width: 148, height: 148, borderRadius: 12 },
   recPlayDense: { position: 'absolute' as const, right: 4, top: 78, width: 34, height: 34, borderRadius: 17, backgroundColor: '#00000066', alignItems: 'center' as const, justifyContent: 'center' as const },
 };

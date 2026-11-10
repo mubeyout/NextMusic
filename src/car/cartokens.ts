@@ -9,10 +9,10 @@ export const CAR = {
   body: 16,            // 行主字
   sub: 13,             // 最小副行
   bigCard: { h: 156, r: 17 },   // 双大卡
-  recCard: { w: 138, r: 14 },   // 歌单竖卡
+  recCard: { w: 181, r: 14 },   // 歌单竖卡 [v7.9 QQ对齐 1110] 138→181(5列整除:内容宽953=(181×5+12×4)+余)方卡+薄文字
   chCard: { h: 132, r: 16 },    // 播客频道卡
   bCard: { h: 210, r: 16 },     // 榜单卡
-  songRow: { h: 88, art: 72, r: 12 }, // 歌曲行
+  songRow: { h: 64, art: 52, r: 10 }, // 歌曲行 [v7.9 1110] 88→64 QQ 密度行,封面 72→52
   playbar: { h: 96, art: 60, r: 12 }, // 播放条(无进度行)
   player: { disc: 480, ctrl: 88 },    // 播放页盘+主控
   sectionGap: 32,
