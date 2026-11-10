@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, BrandIcon } from '../theme/Icon';
 import { C, H, SH, fmtSec } from './hdtokens';
 import { HDTouch } from './HDTouch';
+import { subSearchSeed } from '../state/searchSeed'; // [老板 1110] 播放页点歌手→切搜索 tab
 import { useSeekBar } from '../hooks/useSeekBar'; // R6 全 app 统一 seek
 import { usePlayer, usePlayerProgress } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
@@ -146,6 +147,8 @@ const HAS_DESKTOP_BRIDGE = !!NM_PLAT; // 空串=纯浏览器(服务端部署),El
 export function HDMain() {
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<number>(0);
+  // [老板 1110] 播放页点歌手:种词即切搜索 tab(词由 HDSearch 订阅消费)
+  useEffect(() => subSearchSeed(() => setTab(2)), []);
   const [pls, setPls] = useState<{ key: string; localId?: string; name: string; count: number; songs: SongItem[] }[]>([]);
   const [loveCount, setLoveCount] = useState<number | null>(null);
   const [pbCollect, setPbCollect] = useState<import('../services/server').SongItem | null>(null);

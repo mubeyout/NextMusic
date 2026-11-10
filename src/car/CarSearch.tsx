@@ -18,7 +18,7 @@ function saveHist(list: string[]) { kv.set('hist', JSON.stringify(list)); }
 
 const CURATED = ['周杰伦', '晚安电台', '郭德纲相声', '华语经典', '白噪音', '80年代'];
 
-export function CarSearch({ onBack }: { onBack: () => void }) {
+export function CarSearch({ onBack, seed }: { onBack: () => void; seed?: string }) {
   const player = usePlayer();
   const [q, setQ] = useState('');
   const [kbOpen, setKbOpen] = useState(false);
@@ -27,6 +27,8 @@ export function CarSearch({ onBack }: { onBack: () => void }) {
   const [hist, setHist] = useState<string[]>([]);
 
   useEffect(() => { setHist(loadHist()); }, []);
+  // [老板 1110] 播放页/左面板点歌手跳入:带词直达结果
+  useEffect(() => { if (seed && seed.trim()) doSearch(seed); }, [seed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const doSearch = (word: string) => {
     const w = word.trim();

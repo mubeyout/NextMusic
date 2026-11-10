@@ -20,7 +20,7 @@ const SPEED_CYCLE = [1, 1.25, 1.5, 2, 0.75];
 const QUALITY_ORDER = ['flac', '320k', '128k'] as const;
 const QUALITY_LABEL: Record<string, string> = { flac: '无损', '320k': '320k', '128k': '128k' };
 
-export function CarPlayer({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+export function CarPlayer({ visible, onClose, onArtistTap }: { visible: boolean; onClose: () => void; onArtistTap: (singer: string) => void }) {
   const { current, playing, toggle, skipNext, skipPrev, queue, speed, setSpeed, sleepRemain, enableSleep, shuffle, setShuffle, repeat, cycleRepeat } = usePlayer();
   const nav = useNavigation() as { navigate: (s: string) => void };
   const [qual, setQual] = useState(settings.get().playQuality || 'flac');
@@ -49,7 +49,10 @@ export function CarPlayer({ visible, onClose }: { visible: boolean; onClose: () 
           {/* 左:信息+控制(驾驶位操作区) */}
           <View style={st.info}>
             <Text style={st.title} numberOfLines={2}>{current?.name ?? '未在播放'}</Text>
-            <Text style={st.artist} numberOfLines={1}>{current?.singer ?? '从「为我推荐」选一首开始'}</Text>
+            {/* [老板 1110] 点歌手→关播放页跳搜索检出同歌手的歌 */}
+            <CarTouch style={{ width: '100%' }} onPress={() => { if (current?.singer) onArtistTap(current.singer); }}>
+              <Text style={st.artist} numberOfLines={1}>{current?.singer ?? '从「为我推荐」选一首开始'}</Text>
+            </CarTouch>
 
             <View style={st.ctrls}>
               <CarTouch style={st.ctrlBtn} onPress={() => setShuffle(!shuffle)}>

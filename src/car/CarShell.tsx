@@ -47,7 +47,7 @@ function TabItem({ icon, label, active, onPress }: { icon: string; label: string
 
 /** [v8.0] 左侧播放信息面板(QQ 律: 播放信息在左面,替代底部 playerbar) */
 /** [v8.1 LEO spec] 左侧播放面板 300dp 八件套:封面260/歌名/歌手/进度+时间/三控(56绿主钮)/工具排(收藏下载队列音效)/徽标行/队列底锚 */
-function PlayPanel({ onOpen, onFx, onQueue, onFav, onDownload }: { onOpen: () => void; onFx: () => void; onQueue: () => void; onFav: () => void; onDownload: () => void }) {
+function PlayPanel({ onOpen, onFx, onQueue, onFav, onDownload, onArtistTap }: { onOpen: () => void; onFx: () => void; onQueue: () => void; onFav: () => void; onDownload: () => void; onArtistTap: (singer: string) => void }) {
   const { current, playing, toggle, skipNext, skipPrev, queue } = usePlayer();
   const { position, duration } = usePlayerProgress();
   const pct = duration > 0 ? Math.min(1, Math.max(0, position / duration)) : 0;
@@ -59,7 +59,10 @@ function PlayPanel({ onOpen, onFx, onQueue, onFav, onDownload }: { onOpen: () =>
         {img ? <Image source={{ uri: img }} style={st2.panelArt} /> : <View style={[st2.panelArt, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={44} color={C.text3} /></View>}
       </CarTouch>
       <Text style={st2.panelTitle} numberOfLines={1}>{current?.name ?? '未在播放'}</Text>
-      <Text style={st2.panelArtist} numberOfLines={1}>{current?.singer ?? '从首页选一首开始'}</Text>
+      {/* [老板 1110] 点歌手→跳搜索检出同歌手的歌 */}
+      <CarTouch style={{ width: '100%', alignItems: 'center' }} onPress={() => { if (current?.singer) onArtistTap(current.singer); }}>
+        <Text style={st2.panelArtist} numberOfLines={1}>{current?.singer ?? '从首页选一首开始'}</Text>
+      </CarTouch>
       <View style={st2.panelProg}><View style={{ flex: pct, backgroundColor: C.brand, borderRadius: 2 }} /><View style={{ flex: 1 - pct, backgroundColor: C.track, borderRadius: 2 }} /></View>
       <View style={st2.panelTimes}><Text style={st2.panelTime}>{fmt(position)}</Text><Text style={st2.panelTime}>{fmt(duration)}</Text></View>
       <View style={st2.panelCtrls}>
@@ -90,6 +93,7 @@ export function CarShell() {
   const [page, setPage] = useState<PageKey>('home');
   const nav = useNavigation() as { navigate: (s: string) => void };
   const [playerOpen, setPlayerOpen] = useState(false);
+  const [seedQ, setSeedQ] = useState(''); // [老板 1110] 点歌手→种词进 CarSearch
   const [favOpen, setFavOpen] = useState(false);
   const [playlist, setPlaylist] = useState<import('./CarPlaylist').CarPlRef | null>(null);
   useEffect(() => {
@@ -129,7 +133,7 @@ export function CarShell() {
       {/* 主区: 左播放信息面板 + 右内容 */}
       <View style={{ flex: 1, flexDirection: 'row' }}>
         <View style={st2.panelWrap}>
-          <PlayPanel onOpen={() => setPlayerOpen(true)} onFx={() => goPage('fx')} onQueue={() => goPage('queue')} onFav={() => setFavOpen(true)} onDownload={() => nav.navigate('Downloads')} />
+          <PlayPanel onOpen={() => setPlayerOpen(true)} onFx={() => goPage('fx')} onQueue={() => goPage('queue')} onFav={() => setFavOpen(true)} onDownload={() => nav.navigate('Downloads')} onArtistTap={(s) => { setSeedQ(s); goPage('search'); }} />
         </View>
         <View style={{ flex: 1 }}>
           {favOpen ? (
@@ -142,7 +146,7 @@ export function CarShell() {
               {page === 'podcast' && <CarPodcast />}
               {page === 'explore' && <CarExplore onOpenPlaylist={setPlaylist} />}
               {page === 'boards' && <CarBoards onOpenPlaylist={setPlaylist} />}
-              {page === 'search' && <CarSearch onBack={() => setPage('home')} />}
+              {page === 'search' && <CarSearch onBack={() => setPage('home')} seed={seedQ} />}
               {page === 'queue' && <CarQueue onBack={() => setPage('home')} />}
               {page === 'fx' && <CarFx onBack={() => setPage('home')} />}
               {page === 'settings' && <CarSettings onBack={() => setPage('home')} />}
@@ -151,7 +155,7 @@ export function CarShell() {
           )}
         </View>
       </View>
-      <CarPlayer visible={playerOpen} onClose={() => setPlayerOpen(false)} />
+      <CarPlayer visible={playerOpen} onClose={() => setPlayerOpen(false)} onArtistTap={(s) => { setPlayerOpen(false); setSeedQ(s); goPage('search'); }} />
     </View>
   );
 }

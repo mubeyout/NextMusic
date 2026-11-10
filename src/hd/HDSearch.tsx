@@ -4,6 +4,7 @@ import { FocusBridge } from './HDMain';
 import { View, Text, StyleSheet, ScrollView, TextInput, Image, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../theme/Icon';
+import { subSearchSeed } from '../state/searchSeed'; // [老板 1110] 播放页点歌手种词直达
 import LinearGradient from 'react-native-linear-gradient';
 import { C, H, shadowStyleOf } from './hdtokens';
 import { HDTouch } from './HDTouch';
@@ -115,6 +116,9 @@ export function HDSearch() {
     const t = setTimeout(() => { if (kw.trim().length >= 2) search(kw); }, 600);
     return () => clearTimeout(t);
   }, [kw]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // [老板 1110] 外部种词(播放页点歌手):立即搜索
+  useEffect(() => subSearchSeed(q => { setKw(q); search(q); }), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // lx164:本周精选 = TOP500 前 8(与手机探索页同源)
   useEffect(() => {

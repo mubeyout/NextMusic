@@ -1,7 +1,7 @@
 import React, { ComponentRef, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Image, Animated, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
 import { C, CARD, FS, FW, SP } from '../theme/tokens';
 import { useHoverCard } from '../hd/hdweb'; // [LEO 1011 统一令] nm-card 彩色弥散影+hover
@@ -38,8 +38,10 @@ type SearchSrc = 'kw' | 'kg' | 'wy' | 'tx' | 'mg';
 export function SearchScreen() {
   const insets = useSafeAreaInsets();
   const nav = useNavigation() as { goBack: () => void };
+  // [老板 1110] 播放页点歌手跳入:带词初始化,debounce 自动搜
+  const route = useRoute() as { params?: { q?: string } };
   const { playSong, current } = usePlayer();
-  const [kw, setKw] = useState('');
+  const [kw, setKw] = useState((route.params?.q || '').trim());
   const [results, setResults] = useState<SongItem[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -55,11 +57,17 @@ export function SearchScreen() {
   const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
   const seqRef = useRef(0); // lxfix 0922:搜索代次守卫
 
+  const seededRef = useRef(!!(route.params?.q || '').trim());
   useEffect(() => {
-    // 进入页面自动聚焦键盘
-    const t = setTimeout(() => inputRef.current?.focus(), 250);
+    // 进入页面自动聚焦键盘(带词跳入不抢焦点,直接看结果)
+    const t = setTimeout(() => { if (!seededRef.current) inputRef.current?.focus(); }, 250);
     return () => clearTimeout(t);
   }, []);
+  // [老板 1110] 搜索页常驻时再点歌手:参数更新即换词重搜
+  useEffect(() => {
+    const q = (route.params?.q || '').trim();
+    if (q && q !== kw) setKw(q);
+  }, [route.params]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const search = async (q: string) => {
     const query = q.trim();

@@ -28,7 +28,7 @@ import { dialog, toast } from '../components/Dialog';
 // Figma 04·播放页: vinyl hero + synced lyrics + secondary tools + playback panel
 export function PlayerScreen() {
   const insets = useSafeAreaInsets();
-  const nav = useNavigation() as { goBack: () => void; navigate: (s: string) => void };
+  const nav = useNavigation() as { goBack: () => void; navigate: (s: string, p?: object) => void };
   const { current, playing, toggle, skipNext, skipPrev, seekTo, shuffle, repeat, setShuffle, cycleRepeat } = usePlayer();
   const { position, duration } = usePlayerProgress(); // [1011 15:16] 进度独立订阅
   const { connected, token } = useApp();
@@ -161,21 +161,17 @@ export function PlayerScreen() {
             <VinylDisc size={270} img={current.img ? fixCoverUrl(current.img) : undefined} />
           </Animated.View>
         </View>
-        {/* [老板 1109] 「黑胶歌词」标识块换成歌曲名+歌手(随歌曲同步,去竖线,加icon) */}
+        {/* [老板 1110] 歌名/歌手回左对齐(与歌词同轴),去 icon,字号加大;点歌手→搜同歌手的歌 */}
         <View style={st.trackHead}>
-          <View style={st.trackNameRow}>
-            <Icon name="music" size={17} color={C.brand} />
-            <Text style={st.trackName} numberOfLines={1}>{current.name}</Text>
-          </View>
-          <View style={st.trackArtistRow}>
-            <Icon name="user" size={14} color={C.text2} />
+          <Text style={st.trackName} numberOfLines={1}>{current.name}</Text>
+          <TouchableOpacity hitSlop={8} activeOpacity={0.7} onPress={() => { if (current.singer) nav.navigate('Search', { q: current.singer }); }}>
             <Text style={st.trackArtist} numberOfLines={1}>{current.singer}{current.albumName ? ` · ${current.albumName}` : ''}</Text>
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* Lyrics */}
         <View style={st.lyrics}>
-          {lyrics ? lyrics.slice(Math.max(0, activeIdx - 2), activeIdx + 3).map((l, i) => {
+          {lyrics ? lyrics.slice(Math.max(0, activeIdx - 1), activeIdx + 2).map((l, i) => { // [老板 1110] 名/歌手加大占位,歌词 5 行→3 行让位
             const real = Math.max(0, activeIdx - 2) + i;
             const state = real === activeIdx ? 'active' : real === activeIdx - 1 ? 'lead' : 'far';
             return (
@@ -335,13 +331,11 @@ const st = StyleSheet.create({
     shadowColor: '#000000', shadowOpacity: 0.55, shadowOffset: { width: 0, height: 28 }, shadowRadius: 82, elevation: 28,
   },
   vinylSpin: { width: 270, height: 270 },
-  // [老板 1109] 歌曲名/歌手头块(居中双行,icon 前缀,去旧竖线)
-  trackHead: { alignItems: 'center', gap: 6, marginTop: 14, paddingHorizontal: 20 },
-  trackNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, maxWidth: '100%' },
-  trackName: { color: C.text, fontSize: FS.xl, lineHeight: 22, fontWeight: FW.bold, flexShrink: 1 },
-  trackArtistRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  trackArtist: { color: C.text2, fontSize: FS.sm, lineHeight: 14 },
-  lyrics: { paddingHorizontal: 30, paddingTop: 10, gap: SP.sm, minHeight: 158 },
+  // [老板 1110] 歌名/歌手头块:左对齐(与歌词同轴 30),去 icon,字号加大(display/h2)
+  trackHead: { alignItems: 'flex-start', gap: 5, marginTop: 14, paddingHorizontal: 30, width: '100%' },
+  trackName: { color: C.text, fontSize: FS.display, lineHeight: 30, fontWeight: FW.bold },
+  trackArtist: { color: C.text2, fontSize: FS.h2, lineHeight: 24 },
+  lyrics: { paddingHorizontal: 30, paddingTop: 10, gap: SP.sm, minHeight: 120 },
   lActive: { color: C.brandSoft, fontSize: FS.display, lineHeight: 29, fontWeight: FW.bold }, // [LEO 1011] 26 档外→display(24)
   lTrans: { color: C.text2, fontSize: FS.lg, lineHeight: 18, marginTop: 2 },
   lLead: { color: C.text, fontSize: FS.h2, lineHeight: 22, opacity: 0.86 },
