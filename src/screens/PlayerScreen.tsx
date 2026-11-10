@@ -167,7 +167,7 @@ export function PlayerScreen() {
           {/* [老板 1110 补] 歌手行加 user icon 与歌词区分 */}
           <TouchableOpacity hitSlop={8} activeOpacity={0.7} onPress={() => { if (current.singer) nav.navigate('Search', { q: current.singer }); }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Icon name="user" size={15} color={C.text2} />
+              <Icon name="artist" size={16} color={C.text2} />
               <Text style={st.trackArtist} numberOfLines={1}>{current.singer}{current.albumName ? ` · ${current.albumName}` : ''}</Text>
             </View>
           </TouchableOpacity>
