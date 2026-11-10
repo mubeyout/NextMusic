@@ -27,7 +27,7 @@ export function CarExplore({ onOpenPlaylist }: { onOpenPlaylist: (pl: import('./
   const [mixes, setMixes] = useState<SongListMeta[]>([]);
   useEffect(() => { lxapi.songListAuto('', String(tab + 1), 1, 18, false).then(d => setMixes(d?.list || [])).catch(() => {}); }, [tab]);
   return (
-    <ScrollView contentContainerStyle={{ padding: CAR.gutter, paddingBottom: CAR.playbar.h + 40 }} showsVerticalScrollIndicator={false}>
+    <ScrollView contentContainerStyle={{ padding: CAR.gutter, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
       <Text style={{ color: C.text, fontSize: CAR.hero, fontWeight: '800', marginBottom: 18 }}>探索</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: CAR.gutter, marginBottom: 24 }}>
         {SRC_TABS.map((t, i) => (
@@ -59,7 +59,7 @@ export function CarBoards({ onOpenPlaylist }: { onOpenPlaylist: (pl: import('./C
   const [boards, setBoards] = useState<{ id: string; name: string; bangid: string; image?: string }[]>([]);
   useEffect(() => { lxapi.leaderboardBoards().then(d => setBoards((d || []).slice(0, 8))).catch(() => {}); }, []);
   return (
-    <ScrollView contentContainerStyle={{ padding: CAR.gutter, paddingBottom: CAR.playbar.h + 40 }} showsVerticalScrollIndicator={false}>
+    <ScrollView contentContainerStyle={{ padding: CAR.gutter, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
       <SecHead title="榜单" hint="每日 12:00 更新" />
       <View style={st.bGrid}>
         {boards.map((b, i) => (
@@ -98,7 +98,7 @@ export function CarPodcast() {
     lxapi.search(CHANNELS[active].q, 'kw', 1, 20).then(setSongs).catch(() => {});
   }, [active]);
   return (
-    <ScrollView contentContainerStyle={{ padding: CAR.gutter, paddingBottom: CAR.playbar.h + 40 }} showsVerticalScrollIndicator={false}>
+    <ScrollView contentContainerStyle={{ padding: CAR.gutter, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
       <Text style={{ color: C.text, fontSize: CAR_FS.hero, fontWeight: '800' }}>播客</Text>
       <Text style={{ color: C.text3, fontSize: CAR_FS.sub, marginTop: 4, marginBottom: 18 }}>8 大主题频道 · 搜索聚合 · 自动连播</Text>
       <View style={st.chGrid}>

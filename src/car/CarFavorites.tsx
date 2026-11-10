@@ -37,7 +37,7 @@ export function CarFavorites({ onBack }: { onBack: () => void }) {
   useEffect(() => { load(); }, []);
 
   return (
-    <ScrollView contentContainerStyle={{ padding: CAR.gutter, paddingBottom: CAR.playbar.h + 40 }} showsVerticalScrollIndicator={false}>
+    <ScrollView contentContainerStyle={{ padding: CAR.gutter, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 14 }}>
         <CarTouch style={{ width: 46, height: 46, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }} onPress={onBack}>
           <Icon name="back" size={20} color={C.text2} />

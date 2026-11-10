@@ -28,7 +28,7 @@ export function CarPlaylist({ pl, onBack }: { pl: CarPlRef; onBack: () => void }
         <Icon name="back" size={18} color={C.text2} />
         <Text style={st.backLabel}>返回</Text>
       </CarTouch>
-      <ScrollView contentContainerStyle={{ padding: CAR.gutter, paddingBottom: CAR.playbar.h + 40 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ padding: CAR.gutter, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         <View style={st.head}>
           {img ? <Image source={{ uri: img }} style={st.cover} /> : <View style={[st.cover, { backgroundColor: C.surface2 }]} />}
           <View style={{ flex: 1, gap: 10 }}>

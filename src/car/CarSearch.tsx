@@ -43,7 +43,7 @@ export function CarSearch({ onBack }: { onBack: () => void }) {
   const del = (w: string) => { const next = loadHist().filter(h => h !== w); saveHist(next); setHist(next); };
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: CAR.gutter, paddingBottom: CAR.playbar.h + 40 }} showsVerticalScrollIndicator={false}>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: CAR.gutter, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
       {/* 页头: 返回 + 标题 */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 20 }}>
         <CarTouch style={st.backBtn} onPress={onBack}><Icon name="back" size={20} color={C.text2} /></CarTouch>

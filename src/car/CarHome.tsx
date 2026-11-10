@@ -80,7 +80,7 @@ export function CarHome({ goExplore, onOpenPlaylist }: { goExplore: () => void; 
   // 歌单卡点击→P5 详情页(下批实施;骨架期 noop)
 
   return (
-    <ScrollView contentContainerStyle={{ padding: CAR.gutter, paddingBottom: CAR.playbar.h + 40 }} showsVerticalScrollIndicator={false}>
+    <ScrollView contentContainerStyle={{ padding: CAR.gutter, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
       <Text style={{ color: C.text, fontSize: CAR_FS.hero, fontWeight: '800', marginBottom: 20 }}>
         {username ? `${greeting()}，${username}` : greeting()}
       </Text>
