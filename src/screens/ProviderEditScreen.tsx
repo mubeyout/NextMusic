@@ -217,8 +217,8 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
     } catch (e) {
       if (timer) clearTimeout(timer);
       const msg = (e as Error).message || '连接失败';
-      if (msg.includes('超时')) dialog.alert('连接失败', msg);
-      else dialog.alert('连接失败', msg + '\n\n请检查地址、账号密码，以及服务器是否已在同一网络');
+      if (msg.includes('超时')) dialog.alert('连接失败', msg + `\n\n目标：${a.base.trim()}`);
+      else dialog.alert('连接失败', msg + `\n\n目标：${a.base.trim()}\n\n请检查地址、账号密码；手机浏览器能否打开 ${a.base.trim()}；当前网络是否限制非常用端口`);
     } finally { setBusy(null); }
   };
 
