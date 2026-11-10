@@ -147,8 +147,8 @@ const HAS_DESKTOP_BRIDGE = !!NM_PLAT; // 空串=纯浏览器(服务端部署),El
 export function HDMain() {
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<number>(0);
-  // [老板 1110] 播放页点歌手:种词即切搜索 tab(词由 HDSearch 订阅消费)
-  useEffect(() => subSearchSeed(() => setTab(2)), []);
+  // [老板 1110] 播放页点歌手:种词即切搜索 tab + inner 栈收回首屏(否则停在歌单页=「跳回歌单」);词由 HDSearch 订阅/晚挂载取词消费
+  useEffect(() => subSearchSeed(() => { setTab(2); hdInnerPop(); }), []);
   const [pls, setPls] = useState<{ key: string; localId?: string; name: string; count: number; songs: SongItem[] }[]>([]);
   const [loveCount, setLoveCount] = useState<number | null>(null);
   const [pbCollect, setPbCollect] = useState<import('../services/server').SongItem | null>(null);

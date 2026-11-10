@@ -321,9 +321,12 @@ export function HDPlayer() {
         <View style={[st.infoCol, IS_WEB && st.infoColWeb]}>
           {/* 1028 老板实测(深色歌名黑):st 启动期锁定防主题切换残留——渲染层动态色双向兜底(浅强制黑/深强制白) */}
           <Text style={[st.title, IS_WEB && st.titleWeb, settings.get().light ? { color: '#26282C' } : { color: '#FFFFFF' }]} numberOfLines={1}>{current.name}</Text>
-          {/* [老板 1110] 点歌手→退播放页种词,Main 切搜索 tab 检出同歌手的歌 */}
+          {/* [老板 1110] 点歌手→退播放页种词,Main 切搜索 tab 检出同歌手的歌;[1110 补] 歌手行加 user icon 与歌词区分 */}
           <TouchableOpacity activeOpacity={0.7} hitSlop={8} onPress={() => { if (!current.singer) return; hdNav()?.goBack(); plantSearchSeed(current.singer); }}>
-            <Text style={[st.sub, IS_WEB && st.subWeb, settings.get().light ? { color: 'rgba(38,40,44,.7)' } : { color: 'rgba(255,255,255,.7)' }]} numberOfLines={1}>{current.singer}{current.albumName ? ` · ${current.albumName}` : ''}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Icon name="user" size={15} color={settings.get().light ? 'rgba(38,40,44,.7)' : 'rgba(255,255,255,.7)'} />
+              <Text style={[st.sub, IS_WEB && st.subWeb, settings.get().light ? { color: 'rgba(38,40,44,.7)' } : { color: 'rgba(255,255,255,.7)' }]} numberOfLines={1}>{current.singer}{current.albumName ? ` · ${current.albumName}` : ''}</Text>
+            </View>
           </TouchableOpacity>
 
           <View style={[st.lyricsBox, IS_WEB && { maxHeight: Math.round(winH * 0.5), overflow: 'hidden' }]}>

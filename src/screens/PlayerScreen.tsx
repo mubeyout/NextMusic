@@ -164,14 +164,18 @@ export function PlayerScreen() {
         {/* [老板 1110] 歌名/歌手回左对齐(与歌词同轴),去 icon,字号加大;点歌手→搜同歌手的歌 */}
         <View style={st.trackHead}>
           <Text style={st.trackName} numberOfLines={1}>{current.name}</Text>
+          {/* [老板 1110 补] 歌手行加 user icon 与歌词区分 */}
           <TouchableOpacity hitSlop={8} activeOpacity={0.7} onPress={() => { if (current.singer) nav.navigate('Search', { q: current.singer }); }}>
-            <Text style={st.trackArtist} numberOfLines={1}>{current.singer}{current.albumName ? ` · ${current.albumName}` : ''}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Icon name="user" size={15} color={C.text2} />
+              <Text style={st.trackArtist} numberOfLines={1}>{current.singer}{current.albumName ? ` · ${current.albumName}` : ''}</Text>
+            </View>
           </TouchableOpacity>
         </View>
 
         {/* Lyrics */}
         <View style={st.lyrics}>
-          {lyrics ? lyrics.slice(Math.max(0, activeIdx - 1), activeIdx + 2).map((l, i) => { // [老板 1110] 名/歌手加大占位,歌词 5 行→3 行让位
+          {lyrics ? lyrics.slice(Math.max(0, activeIdx - 2), activeIdx + 3).map((l, i) => { // [老板 1110 补] 回滚 5 行窗口(3 行版感知慢一句)
             const real = Math.max(0, activeIdx - 2) + i;
             const state = real === activeIdx ? 'active' : real === activeIdx - 1 ? 'lead' : 'far';
             return (
@@ -335,7 +339,7 @@ const st = StyleSheet.create({
   trackHead: { alignItems: 'flex-start', gap: 5, marginTop: 14, paddingHorizontal: 30, width: '100%' },
   trackName: { color: C.text, fontSize: FS.display, lineHeight: 30, fontWeight: FW.bold },
   trackArtist: { color: C.text2, fontSize: FS.h2, lineHeight: 24 },
-  lyrics: { paddingHorizontal: 30, paddingTop: 10, gap: SP.sm, minHeight: 120 },
+  lyrics: { paddingHorizontal: 30, paddingTop: 10, gap: SP.sm, minHeight: 158 },
   lActive: { color: C.brandSoft, fontSize: FS.display, lineHeight: 29, fontWeight: FW.bold }, // [LEO 1011] 26 档外→display(24)
   lTrans: { color: C.text2, fontSize: FS.lg, lineHeight: 18, marginTop: 2 },
   lLead: { color: C.text, fontSize: FS.h2, lineHeight: 22, opacity: 0.86 },
