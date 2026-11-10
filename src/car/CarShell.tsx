@@ -15,6 +15,7 @@ import { CarSearch } from './CarSearch';
 import { CarQueue } from './CarQueue';
 import { CarFx } from './CarFx';
 import { CarSettings } from './CarSettings';
+import { CarMediaLibs } from './CarMediaLibs';
 import type { SongItem } from '../services/server';
 import { C } from '../theme/tokens';
 import { Icon } from '../theme/Icon';
@@ -25,7 +26,7 @@ import { usePubEntry } from '../services/publicLibrary'; // [LEO 终稿 1107] �
 import { localLib } from '../services/localLibrary'; // [LEO 终稿 1107] 本地曲库=有库才显示(=HD)
 
 // [LEO v75 缺口包 1107] PageKey 扩 search/queue/fx(右上角搜索/fab 队列/播放条 FX);CarDrawer 撤——搜索/队列升全页
-type PageKey = 'home' | 'podcast' | 'explore' | 'boards' | 'search' | 'queue' | 'fx' | 'settings'; // [LEO v78] 设置 car 化:角钮进 CarSettings,更多设置› 深链 HDSettings
+type PageKey = 'home' | 'podcast' | 'explore' | 'boards' | 'search' | 'queue' | 'fx' | 'settings' | 'medialibs'; // [老板 1110] 媒体库车机页
 
 const NAV: { key: PageKey; icon: string; label: string }[] = [
   { key: 'home', icon: 'home', label: '为我推荐' },
@@ -106,7 +107,7 @@ export function CarShell() {
         ))}
         {/* [LEO 终稿 1107] 我的乐库: HD 正序(枢纽优先) */}
         <Text style={st.groupLabel}>我的乐库</Text>
-        <NavItem icon="server" label="媒体库" onPress={() => nav.navigate('MediaLibs')} size={CAR.navItemSub} /> {/* 枢纽优先;[1106 老板钦点] 跳 phone 全功能页(账号/音源/服务器) */}
+        <NavItem icon="server" label="媒体库" onPress={() => goPage('medialibs')} size={CAR.navItemSub} /> {/* [老板 1110] 车机专属媒体库页(大卡);完整管理走页内深链 */}
         {hasLocalLibs ? <NavItem icon="music" label="本地曲库" onPress={() => nav.navigate('MyLibrary')} size={CAR.navItemSub} /> : null}
         {hasToken ? <NavItem icon="cloud" label="云曲库" onPress={() => nav.navigate('CloudLibrary')} size={CAR.navItemSub} /> : null}
         {(pub.authorized && pub.showEntry && pubShown) ? <NavItem icon="globe" label="公共曲库" onPress={() => nav.navigate('PublicLibrary')} size={CAR.navItemSub} /> : null} {/* 首交互后冻结(LEO 裁定);[图标审计 1107] users 库中不存在(渲染空白)→globe */}
@@ -135,6 +136,7 @@ export function CarShell() {
             {page === 'queue' && <CarQueue onBack={() => setPage('home')} />}
             {page === 'fx' && <CarFx onBack={() => setPage('home')} />}
             {page === 'settings' && <CarSettings onBack={() => setPage('home')} />}
+            {page === 'medialibs' && <CarMediaLibs onBack={() => setPage('home')} />}
           </>
         )}
       </View>

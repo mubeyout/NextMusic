@@ -1,8 +1,8 @@
 // cartokens.ts —— [车机专属页面族 1105] 尺寸 token(LEO v7 实施规格 §2 直抄)
 export const CAR = {
   sidebar: 261,        // 侧栏宽
-  navItem: 54,         // 主导航项高
-  navItemSub: 44,      // 歌单子项高
+  navItem: 64,         // 主导航项高 [老板 1110] 54→64 车机触控加大
+  navItemSub: 56,      // 歌单子项高 [老板 1110] 44→56
   gutter: 33,          // 页边距
   hero: 31,            // 问候/页标题
   secTitle: 22,        // 区头

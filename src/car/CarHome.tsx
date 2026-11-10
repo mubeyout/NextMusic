@@ -52,9 +52,29 @@ export function CarHome({ goExplore, onOpenPlaylist }: { goExplore: () => void; 
   const [mine, setMine] = useState<SongListMeta[]>([]);
   useEffect(() => {
     setRecents(getRecents().slice(0, 3));
-    lxapi.songListAuto('', '5', 1, 12, false).then(d => setMixes((d?.list || []).slice(0, 6))).catch(() => {});
-    // [LEO 1107] 我的歌单区(自建歌单;songListList 空则回退推荐)
-    lxapi.songListList('', '5', 1, 12, 'wy').then(d => setMine((d?.list || []).slice(0, 6))).catch(() => {});
+    // [老板 1110] 推荐歌单与自建歌单双区重复——同区合并: 自建优先,推荐按 name 去重后补位(对齐 HD 内容口径)
+    const seen = new Set<string>();
+    const dedup = (list: SongListMeta[], limit: number) => {
+      const out: SongListMeta[] = [];
+      for (const pl of list) {
+        const key = `${pl.name}|${pl.id ?? ''}`;
+        if (!seen.has(key)) { seen.add(key); out.push(pl); }
+        if (out.length >= limit) break;
+      }
+      return out;
+    };
+    Promise.all([
+      lxapi.songListList('', '5', 1, 12, 'wy').catch(() => ({ list: [] as SongListMeta[] })),
+      lxapi.songListAuto('', '5', 1, 12, false).catch(() => ({ list: [] as SongListMeta[] })),
+    ]).then(([mineRes, mixRes]) => {
+      const mineList = (mineRes?.list || []).slice(0, 6);
+      setMine(mineList);
+      const mixPool = (mixRes?.list || []).filter((pl: SongListMeta) => {
+        const key = `${pl.name}|${pl.id ?? ''}`;
+        return !mineList.some(m => `${m.name}|${m.id ?? ''}` === key);
+      });
+      setMixes(dedup(mixPool, 6 - Math.min(mineList.length, 3)));
+    });
   }, []);
 
   // 歌单卡点击→P5 详情页(下批实施;骨架期 noop)
