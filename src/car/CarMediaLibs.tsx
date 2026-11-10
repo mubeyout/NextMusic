@@ -18,7 +18,7 @@ const TYPE_META: Record<string, { icon: string; name: string; desc: string }> = 
   plex: { icon: 'server', name: 'Plex', desc: 'Plex 媒体库' },
 };
 
-export function CarMediaLibs({ onBack }: { onBack: () => void }) {
+export function CarMediaLibs({ onBack, onFav }: { onBack: () => void; onFav: () => void }) {
   const nav = useNavigation() as { navigate: (s: string, params?: unknown) => void };
   const [list] = useState(() => providers.all());
 
@@ -32,6 +32,16 @@ export function CarMediaLibs({ onBack }: { onBack: () => void }) {
           <Text style={st.addText}>添加</Text>
         </CarTouch>
       </View>
+
+      {/* [LEO 1110] 收藏入口进乐库首行(顶栏 heart 图标撤) */}
+      <CarTouch style={st.card} onPress={onFav}>
+        <View style={st.iconWrap}><Icon name="heart" size={30} color={C.brand} /></View>
+        <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+          <Text style={st.cardTitle} numberOfLines={1}>我的收藏</Text>
+          <Text style={st.cardSub} numberOfLines={1}>收藏的歌曲 · 点击查看</Text>
+        </View>
+        <Icon name="chevronright" size={22} color={C.text3} />
+      </CarTouch>
 
       {list.length ? list.map(p => {
         const meta = TYPE_META[p.type] || { icon: 'server', name: p.type, desc: '' };

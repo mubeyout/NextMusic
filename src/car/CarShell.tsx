@@ -33,7 +33,7 @@ const NAV: { key: PageKey; icon: string; label: string }[] = [
   { key: 'explore', icon: 'explore', label: '探索' },
   { key: 'boards', icon: 'ranking', label: '榜单' },
   { key: 'podcast', icon: 'podcast', label: '播客' },
-  { key: 'medialibs', icon: 'user', label: '我的' },
+  { key: 'medialibs', icon: 'server', label: '乐库' },
 ];
 
 function TabItem({ icon, label, active, onPress }: { icon: string; label: string; active?: boolean; onPress: () => void }) {
@@ -47,7 +47,7 @@ function TabItem({ icon, label, active, onPress }: { icon: string; label: string
 
 /** [v8.0] 左侧播放信息面板(QQ 律: 播放信息在左面,替代底部 playerbar) */
 /** [v8.1 LEO spec] 左侧播放面板 300dp 八件套:封面260/歌名/歌手/进度+时间/三控(56绿主钮)/工具排(收藏下载队列音效)/徽标行/队列底锚 */
-function PlayPanel({ onOpen, onFx, onQueue, onFav, onLike, onDownload }: { onOpen: () => void; onFx: () => void; onQueue: () => void; onFav: () => void; onLike: () => void; onDownload: () => void }) {
+function PlayPanel({ onOpen, onFx, onQueue, onFav, onDownload }: { onOpen: () => void; onFx: () => void; onQueue: () => void; onFav: () => void; onDownload: () => void }) {
   const { current, playing, toggle, skipNext, skipPrev, queue } = usePlayer();
   const { position, duration } = usePlayerProgress();
   const pct = duration > 0 ? Math.min(1, Math.max(0, position / duration)) : 0;
@@ -68,7 +68,7 @@ function PlayPanel({ onOpen, onFx, onQueue, onFav, onLike, onDownload }: { onOpe
         <CarTouch style={st2.pBtn} onPress={skipNext}><Icon name="next" size={20} color={C.text} /></CarTouch>
       </View>
       <View style={st2.panelTools}>
-        <CarTouch style={st2.pTool} onPress={onLike}><Icon name="heart" size={16} color={C.text2} /></CarTouch>
+        <CarTouch style={st2.pTool} onPress={onFav}><Icon name="heart" size={16} color={C.text2} /></CarTouch>
         <CarTouch style={st2.pTool} onPress={onDownload}><Icon name="download" size={16} color={C.text2} /></CarTouch>
         <CarTouch style={st2.pTool} onPress={onQueue}><Icon name="queue" size={16} color={C.text2} /></CarTouch>
         <CarTouch style={st2.pTool} onPress={onFx}><Icon name="sliders" size={16} color={C.text2} /></CarTouch>
@@ -122,7 +122,6 @@ export function CarShell() {
         </View>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <CarTouch style={st2.iconBtn} onPress={() => goPage('search')}><Icon name="search" size={20} color={C.text2} /></CarTouch>
-          <CarTouch style={st2.iconBtn} onPress={() => setFavOpen(true)}><Icon name="heart" size={20} color={C.text2} /></CarTouch>
           <CarTouch style={st2.iconBtn} onPress={() => goPage('settings')}><Icon name="settings" size={20} color={C.text2} /></CarTouch>
         </View>
       </View>
@@ -130,7 +129,7 @@ export function CarShell() {
       {/* 主区: 左播放信息面板 + 右内容 */}
       <View style={{ flex: 1, flexDirection: 'row' }}>
         <View style={st2.panelWrap}>
-          <PlayPanel onOpen={() => setPlayerOpen(true)} onFx={() => goPage('fx')} onQueue={() => goPage('queue')} onFav={() => setFavOpen(true)} onLike={() => {}} onDownload={() => nav.navigate('Downloads')} />
+          <PlayPanel onOpen={() => setPlayerOpen(true)} onFx={() => goPage('fx')} onQueue={() => goPage('queue')} onFav={() => setFavOpen(true)} onDownload={() => nav.navigate('Downloads')} />
         </View>
         <View style={{ flex: 1 }}>
           {favOpen ? (
@@ -147,7 +146,7 @@ export function CarShell() {
               {page === 'queue' && <CarQueue onBack={() => setPage('home')} />}
               {page === 'fx' && <CarFx onBack={() => setPage('home')} />}
               {page === 'settings' && <CarSettings onBack={() => setPage('home')} />}
-              {page === 'medialibs' && <CarMediaLibs onBack={() => setPage('home')} />}
+              {page === 'medialibs' && <CarMediaLibs onBack={() => setPage('home')} onFav={() => setFavOpen(true)} />}
             </>
           )}
         </View>
