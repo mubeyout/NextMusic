@@ -19,7 +19,7 @@ class VersionModule(reactContext: ReactApplicationContext) : ReactContextBaseJav
             Configuration.UI_MODE_TYPE_TELEVISION -> "tv"
             else -> {
                 val cfg = reactApplicationContext.resources.configuration
-                if (cfg.screenWidthDp >= 1400 && (cfg.uiMode and Configuration.UI_MODE_TYPE_MASK) == Configuration.UI_MODE_TYPE_NORMAL) "car" else "normal"
+                if (cfg.screenWidthDp >= 900 && cfg.orientation == Configuration.ORIENTATION_LANDSCAPE && (cfg.uiMode and Configuration.UI_MODE_TYPE_MASK) == Configuration.UI_MODE_TYPE_NORMAL) "car" else "normal" // [实车实锤 1110] 星愿1920x1080@240density=1280dp<1400漏判→降阈900+横屏(手机横屏≤840dp,车机/平板≥960dp)
             }
         },
     )
