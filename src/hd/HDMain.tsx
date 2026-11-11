@@ -11,6 +11,9 @@ import { HDTouch } from './HDTouch';
 import { subSearchSeed } from '../state/searchSeed'; // [老板 1110] 播放页点歌手→切搜索 tab
 import { useSeekBar } from '../hooks/useSeekBar'; // R6 全 app 统一 seek
 import { usePlayer, usePlayerProgress } from '../state/PlayerProvider';
+import { fixCoverUrl } from '../utils/cover';
+import { sourceLabel } from '../components/SongRow';
+import { plantSearchSeed } from '../state/searchSeed';
 import { useApp } from '../state/AppState';
 import { providers } from '../services/providers';
 import { settings, onSettings } from '../services/settings';
@@ -153,6 +156,7 @@ export function HDMain() {
   const [loveCount, setLoveCount] = useState<number | null>(null);
   const [pbCollect, setPbCollect] = useState<import('../services/server').SongItem | null>(null);
   const [innerRoute, setInnerRoute] = useState<string>('Tabs'); // 常驻 bar 按内页路由显隐(Player 时隐藏)
+  const [drawer, setDrawer] = useState(false); // [1111 demo 基准迁移] web ☰ 抽屉(legacy 侧栏全部入口收纳)
   // 1028 车机适配:底部安全让位(星愿实测系统栏 112px，设置可覆盖)响应式镜像(设置改即生效;播放条整体抬升)
   // 取 max(运行时 insets.bottom, effectiveBottomInset())——其他品牌车机 insets 真实值更大时跟随(宁多勿压)
   const [botLift, setBotLift] = useState(Math.max(insets.bottom, effectiveBottomInset()));
@@ -286,10 +290,48 @@ export function HDMain() {
   };
 
   return (
-    <View style={[st.screen, { paddingLeft: insets.left, paddingTop: Math.max(insets.top, IS_CAR_DEVICE ? 72 : 0) }]}>
+    <View style={[st.screen, { flexDirection: 'column' as const, paddingLeft: insets.left, paddingTop: Math.max(insets.top, IS_CAR_DEVICE ? 72 : 0) }]}>
       {/* 1028 星愿安全区:左侧只跟运行时 insets(实车实测固定 96 兑底致无左 bar 车型空一大块——老板实测回退);顶部 72 保留(实锤重叠过) */}
-      {/* ===== 侧栏(桌面版结构) ===== */}
-      <View style={IS_WEB ? st.sidebarWrapWeb : st.sidebarWrap}>
+      {/* [1111 demo 基准迁移] web:顶 tab 条 52(brand+首页/榜单/播客/探索/乐库+☰⌕⚙)——对齐 car v8.1/HTML demo */}
+      {IS_WEB ? (
+        <View style={st.topBar}>
+          <Text style={{ color: C.text, fontSize: 17, fontWeight: '800', marginRight: 16 }}>Next<Text style={{ color: C.brand }}>Music</Text></Text>
+          <View style={{ flexDirection: 'row', flex: 1 }}>
+            {([['首页', 0], ['榜单', 3], ['播客', 1]] as [string, number][]).map(([label, idx]) => {
+              const on = innerRoute === 'Tabs' && tab === idx;
+              return (
+                <HDTouch key={label} style={st.topTab} focusStyle={false} hoverBg={false} onPress={() => { setTab(idx); hdInnerPop(); }}>
+                  <View style={{ alignItems: 'center' }}>
+                    <Text style={[st.topTabLabel, on && { color: C.text, fontWeight: '800' }]}>{label}</Text>
+                    {on ? <View style={st.topTabUnder} /> : null}
+                  </View>
+                </HDTouch>
+              );
+            })}
+            {(() => { const on = innerRoute === 'Discover'; return (
+              <HDTouch style={st.topTab} focusStyle={false} hoverBg={false} onPress={() => railNav('Discover')}>
+                <View style={{ alignItems: 'center' }}>
+                  <Text style={[st.topTabLabel, on && { color: C.text, fontWeight: '800' }]}>探索</Text>
+                  {on ? <View style={st.topTabUnder} /> : null}
+                </View>
+              </HDTouch>); })()}
+            {(() => { const on = innerRoute === 'MediaLibs'; return (
+              <HDTouch style={st.topTab} focusStyle={false} hoverBg={false} onPress={() => railNav('MediaLibs')}>
+                <View style={{ alignItems: 'center' }}>
+                  <Text style={[st.topTabLabel, on && { color: C.text, fontWeight: '800' }]}>乐库</Text>
+                  {on ? <View style={st.topTabUnder} /> : null}
+                </View>
+              </HDTouch>); })()}
+          </View>
+          <HDTouch style={st.topIcon} focusStyle={false} hoverBg={false} onPress={() => setDrawer(d => !d)}><Text style={{ color: C.text2, fontSize: 15 }}>☰</Text></HDTouch>
+          <HDTouch style={st.topIcon} focusStyle={false} hoverBg={false} onPress={() => { setTab(2); hdInnerPop(); }}><Icon name="search" size={17} color={C.text2} /></HDTouch>
+          <HDTouch style={st.topIcon} focusStyle={false} hoverBg={false} onPress={() => railNav('Settings')}><Icon name="settings" size={17} color={C.text2} /></HDTouch>
+        </View>
+      ) : null}
+      <View style={{ flex: 1, flexDirection: 'row' as const }}>
+      {IS_WEB ? (drawer ? <View style={st.drawerScrim} onTouchEnd={() => setDrawer(false)} /> : null) : null}
+      {/* ===== 侧栏(TV 原生常驻;web 收进 ☰ 抽屉——legacy 全入口保留) ===== */}
+      <View style={IS_WEB ? [st.sidebarWrapWeb, !drawer && { display: 'none' as const }] : st.sidebarWrap}>
         {IS_WEB ? (
           /* v1.2.5 桌面(老板:brand 在导航占太高):品牌行独立于滚动区——
            * win/linux 负 margin 顶入 36px 顶部轨道(轨道透明,整行仍是拖拽面,品牌不可点无副作用);
@@ -394,6 +436,8 @@ export function HDMain() {
         </View>
       </View>
 
+      {/* [1111 demo 基准迁移] web:左播放面板 300 八件常驻(对齐 car v8.1) */}
+      {IS_WEB ? <HDPlayPanel /> : null}
       {/* ===== 内容区(lx84:嵌套栈——内页只在此切换,侧栏恒固定) ===== */}
       <View style={st.body}>
         <NavigationIndependentTree>
@@ -463,14 +507,15 @@ export function HDMain() {
           </InnerStack.Navigator>
         </NavigationContainer>
 
-        {/* 1104:非车机恒贴底(insets 误抬修复) */}
-        {innerRoute !== 'Player' ? (
+        {/* 1104:非车机恒贴底(insets 误抬修复);[1111 demo 迁移] web 底 bar 撤——左面板接管 */}
+        {!IS_WEB && innerRoute !== 'Player' ? (
         <View style={{ position: 'absolute', left: 0, right: 0, bottom: IS_CAR_DEVICE ? botLift : 0, zIndex: 30 }} collapsable={false}>
           <HDPlayBar onCollect={setPbCollect} />
         </View>
         ) : null}
         {pbCollect ? <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, zIndex: 999 }}><HDCollect song={pbCollect} onClose={() => setPbCollect(null)} /></View> : null}
         </NavigationIndependentTree>
+      </View>
       </View>
     </View>
   );
@@ -534,6 +579,54 @@ function PlItem({ name, count, add, active, onPress, onLongPress }: { name: stri
 }
 
 // 桌面式播放条:左(封面+曲目+收藏) 中(控件+进度) 右(队列/音效/详情)——投屏入口已删(老板 09-14)
+/** [1111 demo 基准迁移·老板令] web 左播放面板 300dp 八件套(对齐 car v8.1 PlayPanel / HTML demo):
+ * 封面260/歌名18粗/歌手14(点→搜索歌手)/进度4+时间/三控40-56绿-40/工具排36×4描边/徽标行/队列底锚;未播放占位态 */
+function HDPlayPanel() {
+  const { current, playing, toggle, skipNext, skipPrev, queue } = usePlayer();
+  const { position, duration } = usePlayerProgress();
+  const pct = duration > 0 ? Math.min(1, Math.max(0, position / duration)) : 0;
+  const img = current ? fixCoverUrl(current.img) : undefined;
+  const fmt = (ms: number) => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+  const nav = hdNav();
+  return (
+    <View style={st.ppWrap}>
+      <HDTouch style={{ width: '100%', alignItems: 'center' }} onPress={() => hdNav()?.navigate('Player')} focusStyle={false}>
+        {img ? <Image source={{ uri: img }} style={st.ppArt} /> : (
+          <View style={[st.ppArt, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}>
+            <Icon name="music" size={44} color={C.text3} />
+          </View>
+        )}
+      </HDTouch>
+      <Text style={st.ppTitle} numberOfLines={1}>{current?.name ?? '未在播放'}</Text>
+      <HDTouch style={{ width: '100%', alignItems: 'center' }} focusStyle={false}
+        onPress={() => { if (current?.singer) { hdNav()?.goBack(); plantSearchSeed(current.singer); } }}>
+        <Text style={st.ppArtist} numberOfLines={1}>{current?.singer ?? '从首页选一首开始'}</Text>
+      </HDTouch>
+      <View style={st.ppProg}><View style={{ flex: pct, backgroundColor: C.brand, borderRadius: 2 }} /><View style={{ flex: 1 - pct, backgroundColor: C.track, borderRadius: 2 }} /></View>
+      <View style={st.ppTimes}><Text style={st.ppTime}>{fmt(position)}</Text><Text style={st.ppTime}>{fmt(duration)}</Text></View>
+      <View style={st.ppCtrls}>
+        <HDTouch style={st.ppBtn} onPress={skipPrev} focusStyle={st.ppFocus}><Icon name="previous" size={18} color={C.text} /></HDTouch>
+        <HDTouch style={st.ppMain} onPress={toggle} focusStyle={st.ppFocus}><Icon name={playing ? 'pause' : 'play'} size={24} active color={C.onBrand} /></HDTouch>
+        <HDTouch style={st.ppBtn} onPress={skipNext} focusStyle={st.ppFocus}><Icon name="next" size={18} color={C.text} /></HDTouch>
+      </View>
+      <View style={st.ppTools}>
+        <HDTouch style={st.ppTool} onPress={() => railNav('MyFavorites')} focusStyle={st.ppFocus}><Icon name="heart" size={15} color={C.text2} /></HDTouch>
+        <HDTouch style={st.ppTool} onPress={() => railNav('Downloads')} focusStyle={st.ppFocus}><Icon name="download" size={15} color={C.text2} /></HDTouch>
+        <HDTouch style={st.ppTool} onPress={() => hdNav()?.navigate('Queue')} focusStyle={st.ppFocus}><Icon name="queue" size={15} color={C.text2} /></HDTouch>
+        <HDTouch style={st.ppTool} onPress={() => railNav('Fx')} focusStyle={st.ppFocus}><Icon name="sliders" size={15} color={C.text2} /></HDTouch>
+      </View>
+      <View style={st.ppBadges}>
+        <Text style={st.ppBadge}>{current ? (sourceLabel(current.source) || '本地') : '—'}</Text>
+        <Text style={st.ppBadge}>{current?._types?.flac ? '无损' : '320k'}</Text>
+      </View>
+      <View style={{ flex: 1 }} />
+      <HDTouch style={{ paddingVertical: 8, alignItems: 'center' }} focusStyle={false} onPress={() => hdNav()?.navigate('Queue')}>
+        <Text style={st.ppQueue} numberOfLines={1}>正在播放 · 队列 {queue.length} 首 ›</Text>
+      </HDTouch>
+    </View>
+  );
+}
+
 function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server').SongItem) => void }) {
   const { current, playing, toggle, skipNext, skipPrev, queue, shuffle, repeat, setShuffle, cycleRepeat, seekTo } = usePlayer();
   const { position, duration } = usePlayerProgress(); // [1011 15:16] 进度独立订阅
@@ -631,9 +724,33 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
 const st = StyleSheet.create({
   navItemChild: { paddingLeft: 34 }, // [库族重设计v1 PartA] 子行统一缩进(与第三方现行 34 一致,不发明新值)
   screen: { flex: 1, flexDirection: 'row', backgroundColor: C.bg },
+  // [1111 demo 基准迁移] web 顶 tab 条(52)+左面板(300)+抽屉
+  topBar: { height: 52, flexDirection: 'row' as const, alignItems: 'center' as const, paddingHorizontal: 24, backgroundColor: C.bg, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border, gap: 6 },
+  topTab: { height: 52, paddingHorizontal: 16, alignItems: 'center' as const, justifyContent: 'center' as const },
+  topTabLabel: { color: C.text2, fontSize: 16, fontWeight: '600' as const },
+  topTabUnder: { width: 20, height: 3, borderRadius: 2, backgroundColor: C.brand, marginTop: 3 },
+  topIcon: { width: 40, height: 40, borderRadius: 10, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
+  ppWrap: { width: 300, backgroundColor: C.surface, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border, padding: 20, alignItems: 'center' as const, gap: 9 },
+  ppArt: { width: 260, height: 260, borderRadius: 16 },
+  ppTitle: { color: C.text, fontSize: 18, fontWeight: '800' as const, textAlign: 'center' as const, width: '100%' as const },
+  ppArtist: { color: C.text2, fontSize: 14, textAlign: 'center' as const, width: '100%' as const },
+  ppProg: { flexDirection: 'row' as const, height: 4, width: '100%' as const, borderRadius: 2, overflow: 'hidden' as const },
+  ppTimes: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, width: '100%' as const },
+  ppTime: { color: C.text3, fontSize: 11, fontVariant: ['tabular-nums' as never] },
+  ppCtrls: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 18, marginTop: 4 },
+  ppBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
+  ppMain: { width: 56, height: 56, borderRadius: 28, backgroundColor: C.brand, alignItems: 'center' as const, justifyContent: 'center' as const },
+  ppTools: { flexDirection: 'row' as const, gap: 12, marginTop: 4 },
+  ppTool: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: C.border, alignItems: 'center' as const, justifyContent: 'center' as const },
+  ppFocus: { borderWidth: 2, borderColor: C.brand },
+  ppBadges: { flexDirection: 'row' as const, gap: 8 },
+  ppBadge: { color: C.text3, fontSize: 11, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10, backgroundColor: C.surface2 },
+  ppQueue: { color: C.text3, fontSize: 12 },
+  drawerScrim: { position: 'absolute' as const, left: 0, top: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,.5)', zIndex: 70 },
+  drawerWrap: { position: 'absolute' as const, left: 0, top: 0, bottom: 0, width: H.sidebar, zIndex: 80, backgroundColor: C.bg, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border },
   sidebarWrap: { width: H.sidebar, backgroundColor: C.glass, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border },
   // v1.1.9 web:侧栏常驻最顶层(内页卡片 marginLeft 让位,zIndex 保证转场时侧栏不被卡片盖住)
-  sidebarWrapWeb: { position: 'relative', zIndex: 50, backgroundColor: C.bg, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border },
+  sidebarWrapWeb: { position: 'absolute' as const, left: 0, top: 0, bottom: 0, width: H.sidebar, zIndex: 80, backgroundColor: C.bg, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingTop: 6, paddingBottom: 12 },
   logoMark: { width: 38, height: 41 },
   logoText: { color: C.onBrand, fontSize: 13, fontWeight: '800' },
