@@ -725,23 +725,23 @@ const st = StyleSheet.create({
   navItemChild: { paddingLeft: 34 }, // [库族重设计v1 PartA] 子行统一缩进(与第三方现行 34 一致,不发明新值)
   screen: { flex: 1, flexDirection: 'row', backgroundColor: C.bg },
   // [1111 demo 基准迁移] web 顶 tab 条(52)+左面板(300)+抽屉
-  topBar: { height: 52, flexDirection: 'row' as const, alignItems: 'center' as const, paddingHorizontal: 24, backgroundColor: C.bg, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border, gap: 6 },
-  topTab: { height: 52, paddingHorizontal: 16, alignItems: 'center' as const, justifyContent: 'center' as const },
-  topTabLabel: { color: C.text2, fontSize: 16, fontWeight: '600' as const },
+  topBar: { height: 88, flexDirection: 'row' as const, alignItems: 'center' as const, paddingHorizontal: 28, backgroundColor: C.bg, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border, gap: 8 }, // [产品包] header 88px
+  topTab: { height: 88, paddingHorizontal: 22, alignItems: 'center' as const, justifyContent: 'center' as const },
+  topTabLabel: { color: C.text2, fontSize: 20, fontWeight: '600' as const }, // [产品包] tab 20px
   topTabUnder: { width: 20, height: 3, borderRadius: 2, backgroundColor: C.brand, marginTop: 3 },
-  topIcon: { width: 40, height: 40, borderRadius: 10, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
-  ppWrap: { width: 300, backgroundColor: C.surface, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border, padding: 20, alignItems: 'center' as const, gap: 9 },
-  ppArt: { width: 260, height: 260, borderRadius: 16 },
-  ppTitle: { color: C.text, fontSize: 18, fontWeight: '800' as const, textAlign: 'center' as const, width: '100%' as const },
-  ppArtist: { color: C.text2, fontSize: 14, textAlign: 'center' as const, width: '100%' as const },
+  topIcon: { width: 56, height: 56, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const }, // [产品包] header-action 56
+  ppWrap: { width: 320, backgroundColor: C.surface, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border, padding: 26, alignItems: 'center' as const, gap: 10 }, // [产品包] side 320
+  ppArt: { width: 268, height: 268, borderRadius: 12 },
+  ppTitle: { color: C.text, fontSize: 22, fontWeight: '700' as const, textAlign: 'center' as const, width: '100%' as const },
+  ppArtist: { color: C.text2, fontSize: 17, textAlign: 'center' as const, width: '100%' as const },
   ppProg: { flexDirection: 'row' as const, height: 4, width: '100%' as const, borderRadius: 2, overflow: 'hidden' as const },
   ppTimes: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, width: '100%' as const },
   ppTime: { color: C.text3, fontSize: 11, fontVariant: ['tabular-nums' as never] },
-  ppCtrls: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 18, marginTop: 4 },
-  ppBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
-  ppMain: { width: 56, height: 56, borderRadius: 28, backgroundColor: C.brand, alignItems: 'center' as const, justifyContent: 'center' as const },
-  ppTools: { flexDirection: 'row' as const, gap: 12, marginTop: 4 },
-  ppTool: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: C.border, alignItems: 'center' as const, justifyContent: 'center' as const },
+  ppCtrls: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 20, marginTop: 6 },
+  ppBtn: { width: 64, height: 64, borderRadius: 32, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const }, // [产品包] transport 64
+  ppMain: { width: 76, height: 76, borderRadius: 38, backgroundColor: C.brand, alignItems: 'center' as const, justifyContent: 'center' as const }, // [产品包] play-primary 76
+  ppTools: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 6, marginTop: 8, width: '100%' as const },
+  ppTool: { width: 85, height: 62, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const }, // [产品包] panel-tools 3列×62(268=3×85+2×6)
   ppFocus: { borderWidth: 2, borderColor: C.brand },
   ppBadges: { flexDirection: 'row' as const, gap: 8 },
   ppBadge: { color: C.text3, fontSize: 11, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10, backgroundColor: C.surface2 },

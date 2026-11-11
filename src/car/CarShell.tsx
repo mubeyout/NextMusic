@@ -161,27 +161,27 @@ export function CarShell() {
 }
 
 const st2 = {
-  topBar: { flexDirection: 'row' as const, alignItems: 'center' as const, height: 52, paddingHorizontal: CAR.gutter, backgroundColor: C.bg, borderBottomWidth: 1, borderBottomColor: C.border, gap: 8 },
-  tab: { alignItems: 'center' as const, justifyContent: 'center' as const, height: 52, paddingHorizontal: 18 },
+  topBar: { flexDirection: 'row' as const, alignItems: 'center' as const, height: 59, paddingHorizontal: 19, backgroundColor: C.bg, borderBottomWidth: 1, borderBottomColor: C.border, gap: 8 }, // [产品包] header 88px ÷1.5
+  tab: { alignItems: 'center' as const, justifyContent: 'center' as const, height: 59, paddingHorizontal: 15 },
   tabOn: {},
-  tabUnder: { width: 20, height: 3, borderRadius: 2, backgroundColor: C.brand, marginTop: 4 },
-  tabLabel: { color: C.text2, fontSize: 17, fontWeight: '600' as const },
+  tabUnder: { width: 15, height: 3, borderRadius: 2, backgroundColor: C.brand, marginTop: 3 }, // [产品包] 22×4 ÷1.5
+  tabLabel: { color: C.text2, fontSize: 13.5, fontWeight: '600' as const }, // [产品包] 20px ÷1.5
   iconBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
-  panelWrap: { width: 300, borderRightWidth: 1, borderRightColor: C.border, backgroundColor: C.surface },
-  panel: { flex: 1, padding: 20, gap: 10, alignItems: 'center' as const },
-  panelArt: { width: 260, height: 260, borderRadius: 16 },
-  panelTitle: { color: C.text, fontSize: 18, fontWeight: '700' as const, textAlign: 'center' as const, width: '100%' },
-  panelArtist: { color: C.text2, fontSize: 14, textAlign: 'center' as const, width: '100%' },
+  panelWrap: { width: 213, borderRightWidth: 1, borderRightColor: C.border, backgroundColor: '#181818' }, // [产品包] side 320 ÷1.5
+  panel: { flex: 1, padding: 15, gap: 7, alignItems: 'center' as const },
+  panelArt: { width: 173, height: 173, borderRadius: 8 },
+  panelTitle: { color: C.text, fontSize: 15, fontWeight: '700' as const, textAlign: 'center' as const, width: '100%' },
+  panelArtist: { color: C.text2, fontSize: 11.5, textAlign: 'center' as const, width: '100%' },
   panelProg: { flexDirection: 'row' as const, height: 4, width: '100%', borderRadius: 2, overflow: 'hidden' as const },
   panelTimes: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, width: '100%' },
   panelTime: { color: C.text3, fontSize: 11, fontVariant: ['tabular-nums' as never] },
-  panelCtrls: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 18, marginTop: 6 },
-  pBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
-  pMain: { width: 56, height: 56, borderRadius: 28, backgroundColor: C.brand, alignItems: 'center' as const, justifyContent: 'center' as const },
-  panelTools: { flexDirection: 'row' as const, gap: 12, marginTop: 8 },
-  pTool: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: C.border, alignItems: 'center' as const, justifyContent: 'center' as const },
+  panelCtrls: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 12, marginTop: 4 },
+  pBtn: { width: 43, height: 43, borderRadius: 22, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const }, // 64 ÷1.5
+  pMain: { width: 51, height: 51, borderRadius: 26, backgroundColor: C.brand, alignItems: 'center' as const, justifyContent: 'center' as const }, // 76 ÷1.5
+  panelTools: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 4, marginTop: 6, width: '100%' as const },
+  pTool: { width: 57, height: 41, borderRadius: 8, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const }, // 3列×62 ÷1.5(183=3×57+2×4)
   panelBadges: { flexDirection: 'row' as const, gap: 8 },
   pBadge: { color: C.text3, fontSize: 11, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10, backgroundColor: C.surface2 },
   panelQueue: { width: '100%', paddingVertical: 8, alignItems: 'center' as const },
-  panelQueueText: { color: C.text3, fontSize: CAR_FS.tiny },
+  panelQueueText: { color: C.text3, fontSize: 9 },
 };
