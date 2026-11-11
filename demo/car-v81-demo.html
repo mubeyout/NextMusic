@@ -219,7 +219,7 @@ html,body{height:100%;background:#000;overflow:hidden;font-family:-apple-system,
       <div class="page" id="pg-libdetail"></div><div class="page" id="pg-artist"></div><div class="page" id="pg-album"></div>
       <div class="page" id="pg-pldetail"></div><div class="page" id="pg-queue"></div><div class="page" id="pg-search"></div>
       <div class="page" id="pg-settings"></div><div class="page" id="pg-setdl"></div><div class="page" id="pg-setsrc"></div><div class="page" id="pg-setq"></div>
-      <div class="page" id="pg-fx"></div><div class="page" id="pg-about"></div><div class="page" id="pg-dlset"></div><div class="page" id="pg-tfsrc"></div><div class="page" id="pg-importsrc"></div><div class="page" id="pg-episode"></div><div class="page" id="pg-phone"></div>
+      <div class="page" id="pg-importpl"></div><div class="page" id="pg-server"></div><div class="page" id="pg-login"></div><div class="page" id="pg-fx"></div><div class="page" id="pg-about"></div><div class="page" id="pg-dlset"></div><div class="page" id="pg-tfsrc"></div><div class="page" id="pg-importsrc"></div><div class="page" id="pg-episode"></div><div class="page" id="pg-phone"></div>
     </div>
   </div>
   <div class="ov" id="fav"><div class="ovhead"><div class="back" onclick="favOverlay(false)">‹</div><b>我的收藏</b></div><div class="ovbody" id="favbody"></div></div>
@@ -318,7 +318,7 @@ function pgHome(){
  h+='<div class="bigcard" style="background:linear-gradient(135deg,#3B2F6F,#1d1642)" onclick="openPlay(0)"><div class="bdg">每日精选</div><div class="t">30 首热歌</div><div class="s">每天更新</div><div class="disk"></div></div>';
  h+='<div class="bigcard" style="background:linear-gradient(135deg,#24483F,#0f291f)" onclick="openPlay(5)"><div class="bdg">私人雷达</div><div class="t">懂你的 30 首</div><div class="s">根据口味每日生成</div><div class="disk"></div></div></div>';
  h+='<div class="sechead"><b>最近播放</b><span>继续昨天的歌</span></div><div class="rail">'+card(0,"晴天","周杰伦")+card(6,"十年","陈奕迅")+card(8,"海阔天空","Beyond")+card(10,"7 Years","Lukas Graham")+card(4,"光年之外","邓紫棋")+card(2,"江南","林俊杰")+'</div>';
- h+='<div class="sechead"><b>我的歌单</b><span>自建 / 同步</span></div><div class="grid">';
+ h+='<div class="sechead"><b>我的歌单</b><span>自建 / 同步</span><span class="more" style="color:var(--brand)" onclick="go(\'importpl\')">导入歌单 ›</span></div><div class="grid">';
  PLAYS.filter(function(p){return p.src==="同步"||p.src==="自建"}).forEach(function(p,i){h+='<div class="card" onclick="openPlay('+p.id+')"><div class="cv" style="background:'+grad(p.id+2)+'"><div class="sq">♫</div>'+(p.src==="同步"?'<div class="pinsync">已同步</div>':'')+'</div><div class="nm">'+p.n+'</div><div class="ar">'+p.count+' 首 · '+p.src+'</div></div>'});
  h+='</div>';
  h+='<div class="sechead"><b>推荐歌单</b><span>五源聚合</span><span class="more" onclick="go(\'explore\')">更多 ›</span></div><div class="grid">';
@@ -388,6 +388,7 @@ function pgAlbum(){var ab=curLib.albums[curAlbum];
 function pgQueue(){var h='<div class="ptitle">播放队列<span style="margin-left:auto;font-size:13px;border:1px solid var(--border);padding:8px 20px;border-radius:16px;cursor:pointer" onclick="clearQueue()">清空</span></div>';if(!queue.length)h+='<div style="text-align:center;color:#77777d;padding:40px 0">队列为空 · 从首页选歌开始</div>';queue.forEach(function(si){h+=songRow(si)});return h}
 function pgSearch(){return '<div class="ptitle">搜索</div><input id="sq" placeholder="搜索歌曲 / 歌手 / 专辑…" oninput="doSearch(this.value)"><div class="sechead"><b>热门搜索</b></div><div class="hot">'+HOT.map(function(w,i){return '<span onclick="searchForIdx('+i+')">'+w+'</span>'}).join("")+'</div><div id="sres"></div>'}
 function pgSettings(){var h='<div class="ptitle">设置</div>';
+ h+='<div class="set" onclick="go(\'server\')"><div class="k">服务器与账号</div><div class="v">'+(loggedIn?'已连接 op.mubey.top:9527 · mubey':'未登录 · 访客模式')+' ›</div></div>';
  h+='<div class="set" onclick="go(\'setdl\')"><div class="k">下载管理</div><div class="v">'+DLQ.length+' 首 · 1 首进行中 ›</div></div>';
  h+='<div class="set" onclick="toastCarMode()"><div class="k">车机模式</div><div class="v">当前为车机专属界面 · 点击关闭恢复手机竖版 ›</div></div>';
  h+='<div class="set" onclick="go(\'setsrc\')"><div class="k">音源管理</div><div class="v">LX 音源 · 自定义脚本 ›</div></div>';
@@ -399,9 +400,24 @@ function pgSetdl(){var h='<div class="ptitle">'+bk("go('settings')")+'下载管�
  DLQ.forEach(function(d,k){var s=songs[d.i];var st=d.p>=100?'已完成 · 无损':(dlPaused?'已暂停 · '+d.p+'%':d.p+'% · 无损');
  h+='<div class="dlrow"><div class="cv" style="background:'+grad(d.i)+'"></div><div class="m"><b>'+s.n+'</b><span>'+s.a+' · '+st+'</span><div class="bar"><i style="width:'+d.p+'%"></i></div></div>'+(d.p>=100?'<span style="color:var(--brand)">✓</span>':(dlPaused?'<span style="color:#77777d;font-size:12px">⏸</span>':'<span style="color:var(--text3);font-size:12px">'+d.p+'%</span>'))+'</div>'});
  return h+'<div style="display:flex;gap:14px;margin-top:14px"><div class="btn" onclick="toggleDlPause()">'+(dlPaused?'继续下载':'全部暂停')+'</div><div class="btn danger" onclick="clearDone()">清空已完成</div></div>'}
-function pgSetsrc(){var h='<div class="ptitle">'+bk("go('settings')")+'音源管理</div><div class="sechead"><b>在线音源（LX 引擎）</b></div>';
- ["kw 酷我","kg 酷狗","wy 网易","tx QQ音乐","mg 咪咕"].forEach(function(x,i){h+='<div class="set"><div class="k">'+x+'</div><div class="v">'+(i<4?'已启用':'备用')+'</div></div>'});
- h+='<div class="sechead"><b>自定义脚本</b></div><div class="set" onclick="go(\'importsrc\')"><div class="k">导入脚本</div><div class="v">2 个已装 ›</div></div><div class="set" onclick="go(\'tfsrc\')"><div class="k">听风源</div><div class="v">已连接 · 账号 mubey ›</div></div>';return h}
+var CSSRC=[{n:"kw_plus_v3.js",on:true,st:"ok"},{n:"music_unlock.lxsc",on:false,st:"ok"}];
+var LOCSRC=[{n:"my_custom_v2.js",on:true,st:"ok"},{n:"migu_hq.js",on:true,st:"fail"}];
+function stBadge(s){return s==="ok"?'<span style="color:var(--brand)">✓ 正常</span>':s==="testing"?'<span style="color:#ff9f0a">◌ 检测中</span>':'<span style="color:#ff6b6b">✕ 失效</span>'}
+function pgSetsrc(){var h='<div class="ptitle">'+bk("go('settings')")+'音源管理</div>';
+ h+='<div class="sechead"><b>服务器音源</b><span>'+(loggedIn?'账号同步 · 只读启停':'未登录不可见')+'</span></div>';
+ if(loggedIn){CSSRC.forEach(function(s,i){h+='<div class="set"><div class="k">'+s.n+'</div><div style="display:flex;align-items:center;gap:12px">'+stBadge(s.st)+'<span onclick="toggleCs('+i+')" style="width:44px;height:24px;border-radius:12px;background:'+(s.on?"var(--brand)":"var(--track)")+';position:relative;display:inline-block;cursor:pointer"><i style="position:absolute;top:2px;left:'+(s.on?"22px":"2px")+';width:20px;height:20px;border-radius:10px;background:#fff"></i></span></div></div>'});
+  h+='<div style="color:var(--text3);font-size:11px;margin:4px 0 6px">上传/删除在服务器后台 /admin 管理；本机开关同步账号</div>'}
+ else h+='<div style="color:var(--text3);font-size:13px;padding:10px 4px 4px">登录服务器账号后，这里会显示服务器端配置的音源。<span style="color:var(--brand);cursor:pointer" onclick="go(\'login\')">去登录 ›</span></div>';
+ h+='<div class="sechead"><b>本地音源</b><span>沙箱运行 · 免登录可播</span></div>';
+ LOCSRC.forEach(function(s,i){h+='<div class="set"><div class="k">'+s.n+'</div><div style="display:flex;align-items:center;gap:12px">'+stBadge(s.st)+'<span onclick="toggleLs('+i+')" style="width:44px;height:24px;border-radius:12px;background:'+(s.on?"var(--brand)":"var(--track)")+';position:relative;display:inline-block;cursor:pointer"><i style="position:absolute;top:2px;left:'+(s.on?"22px":"2px")+';width:20px;height:20px;border-radius:10px;background:#fff"></i></span><span style="color:#ff6b6b;cursor:pointer;font-size:13px" onclick="rmLs('+i+')">删除</span></div></div>'});
+ h+='<div class="fld" style="margin-top:12px"><label>添加音源脚本 URL</label><input id="srcurl" placeholder="https://…/xxx.js"></div><div style="display:flex;gap:14px"><div class="btn pri" onclick="addSrcUrl()">添加</div><div class="btn" onclick="impFile()">导入 .js 文件</div><div class="btn" onclick="healthChk()">健康检查</div></div>';
+ return h}
+function toggleCs(i){CSSRC[i].on=!CSSRC[i].on;rebuild("setsrc");render();toast((CSSRC[i].on?"启用":"停用")+" · "+CSSRC[i].n)}
+function toggleLs(i){LOCSRC[i].on=!LOCSRC[i].on;rebuild("setsrc");render();toast((LOCSRC[i].on?"启用":"停用")+" · "+LOCSRC[i].n)}
+function rmLs(i){var n=LOCSRC[i].n;LOCSRC.splice(i,1);rebuild("setsrc");render();toast("已删除 "+n)}
+function addSrcUrl(){var v=byId("srcurl").value.trim();if(!v){toast("请填脚本 URL");return}LOCSRC.push({n:v.split("/").pop(),on:true,st:"testing"});rebuild("setsrc");render();setTimeout(function(){LOCSRC.forEach(function(s){if(s.st==="testing")s.st="ok"});rebuild("setsrc");render()},900);toast("已添加 · 检测中")}
+function impFile(){LOCSRC.push({n:"imported_"+(LOCSRC.length+1)+".js",on:true,st:"testing"});rebuild("setsrc");render();setTimeout(function(){LOCSRC.forEach(function(s){if(s.st==="testing")s.st="ok"});rebuild("setsrc");render()},900);toast("已导入（demo 文件选择）")}
+function healthChk(){LOCSRC.forEach(function(s){s.st="testing"});rebuild("setsrc");render();setTimeout(function(){LOCSRC[LOCSRC.length-1].st="ok";rebuild("setsrc");render()},800);toast("健康检查完成")}
 function pgSetq(){var h='<div class="ptitle">'+bk("go('settings')")+'音质与下载</div><div class="sechead"><b>在线播放音质</b></div><div class="pillbar">';
  ["无损","320k","128k"].forEach(function(q){h+='<div class="pill'+(quality===q?' on':'')+'" onclick="setQ(\''+q+'\')">'+q+'</div>'});
  h+='</div><div class="sechead"><b>下载音质</b></div><div class="pillbar">';
@@ -422,7 +438,28 @@ function doImport(){var v=byId("imp").value.trim();if(!v){toast("请填写脚本
 var EP_META={};function pgEpisode(){var p=CH_PODS[curPod];var e=EP_META[curEp]||{t:"Vol.365 夜晚的声音地图",d:"42 分钟"};var base=curPod*4;
  return '<div class="ptitle">'+bk("go('pcdetail')")+e.t+'</div><div style="display:flex;gap:20px;align-items:flex-end;margin-bottom:6px"><div style="width:190px;height:190px;border-radius:16px;background:'+grad(base)+';flex:none;display:flex;align-items:center;justify-content:center;font-size:56px">🎙</div><div><div class="tag" style="font-size:11px;color:var(--text3)">'+p[0]+' · 单集</div><h2 style="font-size:24px;margin:8px 0">'+e.t+'</h2><div style="font-size:12px;color:var(--text3);margin-bottom:12px">'+e.d+' · 今天更新</div><div class="playall" onclick="playEpisode()">▶ 播放本集</div></div></div><p style="color:var(--text2);font-size:14px;line-height:1.8">本期节目里，我们收集了十二座城市凌晨两点仍在营业的声音：便利店的冰柜嗡鸣、末班地铁进站的气流、电台里循环的温柔节目单……适合睡前佩戴耳机收听。（demo 文案）</p>'}
 function pgPhone(){var cs=cur();var gi2=queue.length?queue[qi]:0;return '<div class="phone-wrap"><div><div style="font-size:26px;font-weight:800;margin-bottom:8px">手机竖版形态</div><div style="color:var(--text3);font-size:13px;max-width:360px;line-height:1.7">已关闭车机专属界面。手机端恢复竖版布局：黑胶播放页 + 底部标签。demo 中以预览呈现——点下方按钮回到车机形态。</div><div class="btn pri" style="display:inline-flex;margin-top:18px" onclick="go(\'settings\')">← 回到车机模式</div></div><div class="phone"><div class="notch"></div><div class="pbody"><div class="pcover" style="background:'+grad(gi2)+'"></div><div class="pname2">'+cs.n+'</div><div class="part2">'+cs.a+(cs.al?' · '+cs.al:'')+'</div><div class="pctl"><span style="font-size:20px">⏮</span><span style="font-size:26px;color:var(--brand)">'+(playing?"⏸":"▶")+'</span><span style="font-size:20px">⏭</span></div><div style="height:3px;background:var(--track);border-radius:2px;overflow:hidden;margin-top:4px"><i style="display:block;height:100%;width:'+(cs.d>0?Math.min(100,pos/cs.d*100):0)+'%;background:var(--brand)"></i></div><div class="pmini"><div style="width:34px;height:34px;border-radius:8px;background:'+grad(gi2+1)+'"></div><div style="flex:1;font-size:12px">首页 · 发现 · 我的</div></div></div></div></div>'}
-var PAGES={home:pgHome,explore:pgExplore,boards:pgBoards,boarddetail:pgBoarddetail,podcast:pgPodcast,pcdetail:pgPcdetail,episode:pgEpisode,medialibs:pgLibs,libadd:pgLibadd,libform:pgLibform,libdetail:pgLibdetail,artist:pgArtist,album:pgAlbum,pldetail:pgPldetail,queue:pgQueue,search:pgSearch,settings:pgSettings,setdl:pgSetdl,setsrc:pgSetsrc,setq:pgSetq,fx:pgFx,about:pgAbout,dlset:pgDlset,tfsrc:pgTfsrc,importsrc:pgImportsrc,phone:pgPhone};
+var loggedIn=true;
+function pgServer(){var h='<div class="ptitle">'+bk("go('settings')")+'服务器与账号</div>';
+ if(loggedIn){h+='<div class="set"><div class="k">连接状态</div><div class="v" style="color:var(--brand)">✓ 已连接到 op.mubey.top:9527</div></div><div class="set"><div class="k">当前账号</div><div class="v">mubey · 高级会员</div></div><div class="set"><div class="k">同步范围</div><div class="v">收藏 · 歌单 · 播放设置</div></div><div style="display:flex;gap:14px;margin-top:16px"><div class="btn" onclick="go(\'login\')">切换服务器</div><div class="btn danger" onclick="openConfirm(\'退出登录\',\'退出后收藏与歌单不再同步，可继续以访客使用。\',\'doLogout\')">退出登录</div></div>'}
+ else{h+='<div class="set"><div class="k">连接状态</div><div class="v">✓ 服务器可达</div></div><div class="set"><div class="k">账号</div><div class="v">未登录 · 访客模式</div></div><div style="display:flex;gap:14px;margin-top:16px"><div class="btn pri" onclick="go(\'login\')">登录账号</div></div><div style="color:var(--text3);font-size:12px;margin-top:14px;line-height:1.7">账号与服务器绑定：切换服务器后，需要重新选择或登录该服务器上的账号。</div>'}
+ return h}
+function doLogout(){loggedIn=false;rebuild("server");rebuild("settings");rebuild("setsrc");go("server");toast("已退出 · 访客模式")}
+function pgLogin(){return '<div class="ptitle">'+bk("go('server')")+'登录账号</div><div style="color:var(--text3);font-size:13px;margin:-6px 0 16px;line-height:1.7">账号保存在服务器上：先填服务器地址，再输入该服务器上的账号密码。</div><div class="fld"><label>第一步 · 服务器地址</label><input id="lg_host" value="op.mubey.top:9527"></div><div class="fld"><label>用户名</label><input id="lg_user" placeholder="用户名"></div><div class="fld"><label>密码</label><input id="lg_pass" type="password" placeholder="密码"></div><div style="display:flex;gap:14px;margin-top:16px"><div class="btn pri" id="lgbtn" onclick="doLogin()">登录</div><div class="btn" onclick="guestIn()">暂不登录，继续使用</div></div><div style="color:var(--text3);font-size:12px;margin-top:16px">没有账号？在服务器后台创建用户后即可登录。</div>'}
+function doLogin(){var b=byId("lgbtn");var u=byId("lg_user").value.trim();if(!u){toast("请输入用户名和密码");return}b.textContent="连接中…";setTimeout(function(){b.textContent="登录";loggedIn=true;rebuild("server");rebuild("settings");rebuild("setsrc");go("server");toast("✓ 已登录 · "+u)},900)}
+function guestIn(){loggedIn=false;rebuild("server");rebuild("settings");go("server");toast("访客模式")}
+var IMPP={wy:{n:"网易云音乐",c:"#C20C0C"},tx:{n:"QQ音乐",c:"#31C27C"},kg:{n:"酷狗音乐",c:"#0C8ED9"},kw:{n:"酷我音乐",c:"#FFA200"},mg:{n:"咪咕音乐",c:"#00A0E9"}};
+var impStep=0,impPlat=null,impParsed=null;
+function pgImportpl(){var h='<div class="ptitle">'+bk(impStep?"pgImpBack()":"go('home')")+'导入歌单</div>';
+ h+='<div class="pillbar" style="margin-bottom:16px">';["选择平台","填写链接","预览导入"].forEach(function(s,i){h+='<div class="pill'+(impStep===i?' on':'')+'" style="cursor:default">'+(i+1)+' · '+s+'</div>'});h+='</div>';
+ if(impStep===0){h+='<div class="sechead"><b>选择歌单所在平台</b></div><div class="grid">';var ks=Object.keys(IMPP);ks.forEach(function(k,i){var p=IMPP[k];h+='<div class="card" onclick="impPick(\''+k+'\')"><div class="cv" style="background:'+p.c+'"><div class="sq">'+p.n[0]+'</div></div><div class="nm">'+p.n+'</div><div class="ar">歌单链接导入</div></div>'});h+='</div>'}
+ if(impStep===1){var p=IMPP[impPlat];h+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px"><div style="width:40px;height:40px;border-radius:12px;background:'+p.c+';display:flex;align-items:center;justify-content:center;font-weight:800">'+p.n[0]+'</div><b>'+p.n+' · 粘贴歌单分享链接或 ID</b></div><div class="fld"><label>歌单链接 / ID</label><input id="impurl" placeholder="https://music.163.com/playlist?id=xxxxxx"></div><div class="btn pri" id="parsebtn" onclick="impParse()">解析歌单</div>'}
+ if(impStep===2){var pl=impParsed;h+='<div class="plhero" style="margin-bottom:6px"><div class="cv" style="background:'+grad(pl.idx[0]+3)+'"></div><div class="m"><div class="tag">从 '+IMPP[impPlat].n+' 导入 · '+pl.idx.length+' 首</div><h2>'+pl.n+'</h2><div class="meta">解析成功 · 预览前 '+pl.idx.length+' 首</div><div class="playall" onclick="impConfirm()">确认导入</div></div></div>';pl.idx.forEach(function(i){h+=songRow(i)})}
+ return h}
+function pgImpBack(){impStep=impStep>0?impStep-1:0;rebuild("importpl");render()}
+function impPick(k){impPlat=k;impStep=1;rebuild("importpl");render()}
+function impParse(){var v=(byId("impurl")?byId("impurl").value:"").trim();var b=byId("parsebtn");if(!v){toast("请粘贴歌单链接或 ID");return}b.textContent="解析中…";setTimeout(function(){b.textContent="解析歌单";impParsed={n:v.indexOf("id=")>0?("导入歌单 "+v.split("id=")[1].slice(0,6)):(IMPP[impPlat].n+" 精选歌单"),idx:[0,2,4,6,8,10,1].slice(0,4+Math.floor(Math.random()*4))};impStep=2;rebuild("importpl");render();toast("解析成功 · "+impParsed.idx.length+" 首")},900)}
+function impConfirm(){PLAYS.unshift({id:PLAYS.length,n:impParsed.n,src:"同步",count:impParsed.idx.length,idx:impParsed.idx.slice()});rebuild("home");impStep=0;impParsed=null;go("home");toast("已导入 · "+PLAYS[0].n)}
+var PAGES={home:pgHome,explore:pgExplore,boards:pgBoards,boarddetail:pgBoarddetail,podcast:pgPodcast,pcdetail:pgPcdetail,episode:pgEpisode,medialibs:pgLibs,libadd:pgLibadd,libform:pgLibform,libdetail:pgLibdetail,artist:pgArtist,album:pgAlbum,pldetail:pgPldetail,queue:pgQueue,search:pgSearch,settings:pgSettings,setdl:pgSetdl,setsrc:pgSetsrc,setq:pgSetq,fx:pgFx,about:pgAbout,dlset:pgDlset,tfsrc:pgTfsrc,importsrc:pgImportsrc,phone:pgPhone,server:pgServer,login:pgLogin,importpl:pgImportpl};
 var page="home";
 function go(p){page=p;render()}
 function goBackHome(){if(PLAYS[curPlay]&&(PLAYS[curPlay].src==="自建"||PLAYS[curPlay].src==="同步")){go("home")}else{go("home")}}
@@ -463,8 +500,15 @@ function seekAt(e){var r=e.currentTarget.getBoundingClientRect();pos=Math.round(
 function startTimer(){clearInterval(timer);if(playing&&queue.length)timer=setInterval(function(){pos++;if(pos>=cur().d){next()}else tickUI()},1000)}
 function artistSearch(){var a=cur().a;go("search");setTimeout(function(){var q=byId("sq");if(q){q.value=a;doSearch(a)}},60)}
 function doSearch(w){var el=byId("sres");if(!el)return;if(!w||!w.trim()){el.innerHTML="";return}
- var hit=songs.filter(function(s){return (s.n+s.a+s.al).toLowerCase().indexOf(w.trim().toLowerCase())>=0});
- el.innerHTML='<div class="sechead"><b>"'+w+'" 的结果</b><span>'+hit.length+' 首</span></div>'+(hit.map(function(s){return songRow(songs.indexOf(s))}).join("")||'<div style="color:#77777d;padding:20px 0">无结果</div>')}
+ var q=w.trim().toLowerCase();var hit=songs.filter(function(s){return (s.n+s.a+s.al).toLowerCase().indexOf(q)>=0});
+ var h='<div class="sechead"><b>"'+w+'" 的结果</b><span>五源聚合 '+(hit.length?'· '+hit.length+' 首':'')+'</span></div>'+(hit.map(function(s){return songRow(songs.indexOf(s))}).join("")||'');
+ // 第三方媒体命中(按账号分区): 仅 emby/jellyfin/听风 有源内搜索(真机口径),接入后才出现
+ var searchable=LIBS.filter(function(L){return ["emby","jellyfin","tingfeng"].indexOf(L.type)>=0});
+ searchable.forEach(function(L){var t=TYPES[L.type];var ph=L.songsIdx.filter(function(i){return (songs[i].n+songs[i].a+songs[i].al).toLowerCase().indexOf(q)>=0});if(!ph.length)return;
+  h+='<div class="sechead"><b>'+L.name+'</b><span style="color:'+t.c+'">'+t.n+' · 源内命中 '+ph.length+' 首</span></div>';
+  ph.forEach(function(i){h+='<div class="srow" onclick="play('+i+')"><div class="cv" style="background:'+grad(i)+'"></div><div class="m"><b>'+songs[i].n+'</b><span>'+songs[i].a+' · '+songs[i].al+'</span></div><span style="font-size:10px;color:'+t.c+';border:1px solid '+t.c+'55;padding:1px 7px;border-radius:6px">'+t.n+'</span></div>'})});
+ if(!hit.length&&!searchable.some(function(L){return L.songsIdx.some(function(i){return (songs[i].n+songs[i].a+songs[i].al).toLowerCase().indexOf(q)>=0})}))h+='<div style="color:#77777d;padding:20px 0">无结果</div>';
+ el.innerHTML=h}
 function searchForIdx(i){go("search");setTimeout(function(){var q=byId("sq");q.value=HOT[i];doSearch(HOT[i])},60)}
 function openPlayer(){byId("player").classList.add("on")}
 function closePlayer(){byId("player").classList.remove("on")}
