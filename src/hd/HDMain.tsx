@@ -75,6 +75,8 @@ import { ManualScreen, DeployGuideScreen, FaqScreen, ChangelogScreen } from '../
 import type { SongItem } from '../services/server';
 
 // 对齐桌面版侧栏:发现 = 为我推荐/播客/探索/榜单
+/* [产品包HD] 顶条面包屑页名映射 */
+const TOPBAR_NAMES: Record<string, string> = { Tabs: '为我推荐', Player: '正在播放', Queue: '播放队列', PlaylistDetail: '歌单', Discover: '歌单广场', MediaLibs: '媒体库', MyFavorites: '我的收藏', Downloads: '下载管理', Settings: '设置', Search: '搜索', ImportPlaylist: '导入歌单', Fx: '音效', Sources: '音源管理', Account: '账号', CloudLibrary: '云曲库', PublicLibrary: '公共曲库', MyLibrary: '我的音乐' };
 const TABS = [
   { key: 'home', icon: 'home', label: '为我推荐' },
   { key: 'podcast', icon: 'podcast', label: '播客' },
@@ -153,6 +155,8 @@ export function HDMain() {
   const [loveCount, setLoveCount] = useState<number | null>(null);
   const [pbCollect, setPbCollect] = useState<import('../services/server').SongItem | null>(null);
   const [innerRoute, setInnerRoute] = useState<string>('Tabs'); // 常驻 bar 按内页路由显隐(Player 时隐藏)
+  const [clock, setClock] = useState(''); // [产品包HD] 顶条时钟
+  useEffect(() => { const f = () => { const d = new Date(); setClock(String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0')); }; f(); const t = setInterval(f, 30000); return () => clearInterval(t); }, []);
   // 1028 车机适配:底部安全让位(星愿实测系统栏 112px，设置可覆盖)响应式镜像(设置改即生效;播放条整体抬升)
   // 取 max(运行时 insets.bottom, effectiveBottomInset())——其他品牌车机 insets 真实值更大时跟随(宁多勿压)
   const [botLift, setBotLift] = useState(Math.max(insets.bottom, effectiveBottomInset()));
@@ -326,8 +330,8 @@ export function HDMain() {
           <NavItem icon="explore" label="歌单广场" active={innerRoute === 'Discover'} onPress={() => railNav('Discover')} />
 
 
-          {/* 我的乐库 */}
-          <Group label="我的乐库" top={8} />
+          {/* [产品包HD] 组名对包: 我的乐库→曲库 */}
+          <Group label="曲库" top={8} />
           <NavItem icon="server" label="媒体库" active={innerRoute === 'MediaLibs'} onPress={() => railNav('MediaLibs')} />
           {/* 定稿v3.0细则1 四库总序:本机曲库→云曲库→公共曲库→(分隔)→第三方库们;本机行有库才显示(细则1),云端=登录可见 */}
           {locLibsRail.map(l => (
@@ -396,6 +400,22 @@ export function HDMain() {
 
       {/* ===== 内容区(lx84:嵌套栈——内页只在此切换,侧栏恒固定) ===== */}
       <View style={st.body}>
+      {/* [产品包HD] #topbar 84: 面包屑(返回+页名) + 全局搜索 420 + 时钟 */}
+      {IS_WEB ? (
+        <View style={st.hdTop}>
+          <HDTouch style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }}
+            focusStyle={false} hoverBg={false} onPress={() => hdInnerPop()}>
+            <Icon name="back" size={18} color={C.text2} />
+          </HDTouch>
+          <Text style={{ color: C.text, fontSize: 17, fontWeight: '700', marginLeft: 10 }} numberOfLines={1}>{TOPBAR_NAMES[innerRoute] || '为我推荐'}</Text>
+          <View style={{ flex: 1 }} />
+          <HDTouch style={st.hdSearch} focusStyle={false} hoverBg={false} onPress={() => { setTab(2); hdInnerPop(); }}>
+            <Icon name="search" size={16} color={C.text3} />
+            <Text style={{ color: C.text3, fontSize: 13.5, marginLeft: 8 }}>搜索歌曲、歌手、专辑</Text>
+          </HDTouch>
+          <Text style={{ color: C.text2, fontSize: 13, fontVariant: ['tabular-nums' as never], marginLeft: 16 }}>{clock}</Text>
+        </View>
+      ) : null}
         <NavigationIndependentTree>
         <NavigationContainer ref={hdInnerRef} theme={hdInnerTheme} onStateChange={() => { try { const r = hdInnerRef.getCurrentRoute() as unknown as { name?: string; params?: object } | undefined; setInnerRoute(r?.name || 'Tabs'); setInnerP((r?.params as Record<string, unknown>) || null); } catch { /* ignore */ } }}>
           {/* 坞108:TV 转场必须直切;坞57:fade 有变亮中间态 */}
@@ -633,7 +653,7 @@ const st = StyleSheet.create({
   screen: { flex: 1, flexDirection: 'row', backgroundColor: C.bg },
   sidebarWrap: { width: H.sidebar, backgroundColor: C.glass, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border },
   // v1.1.9 web:侧栏常驻最顶层(内页卡片 marginLeft 让位,zIndex 保证转场时侧栏不被卡片盖住)
-  sidebarWrapWeb: { position: 'relative', zIndex: 50, backgroundColor: C.bg, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border },
+  sidebarWrapWeb: { position: 'relative', zIndex: 50, width: 238, backgroundColor: C.bg, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border }, // [产品包HD] #hdSidebar 238
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingTop: 6, paddingBottom: 12 },
   logoMark: { width: 38, height: 41 },
   logoText: { color: C.onBrand, fontSize: 13, fontWeight: '800' },
@@ -646,7 +666,7 @@ const st = StyleSheet.create({
   logoMarkMac: { width: 18, height: 19.75 }, // mac 轨道区稍大,仍对齐 nav 槽
   brandNameWeb: { color: C.text, fontSize: 13.5, fontWeight: '800', letterSpacing: 0.2 },
   settingsDock: { paddingHorizontal: 0, paddingVertical: 6 },
-  group: { fontSize: 9, color: C.text2, paddingHorizontal: 12, paddingTop: 5, paddingBottom: 3, letterSpacing: 1, fontWeight: '600' }, // [老板 1011 15:35 浅色] text3→text2:浅色下分组小标太浅
+  group: { fontSize: 10, color: C.text3, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4, letterSpacing: 1.5, fontWeight: '700' }, // [产品包HD] product-nav-group
   navItem: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 8, paddingHorizontal: 10, height: IS_CAR_DEVICE ? 48 : 35, borderRadius: 9 }, // 1104 E.2:车机触控行 48
   navItemOn: { backgroundColor: C.brandDim },
   navFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 9 },
@@ -656,6 +676,8 @@ const st = StyleSheet.create({
   plAddChip: { width: 20, height: 20, borderRadius: 6, borderWidth: 1, borderStyle: 'dashed', borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
   plName: { color: C.text, fontSize: H.font.sm, flex: 1 }, // [老板 1011 15:35 浅色] text2→text:与 navLabel 同步
   body: { flex: 1 },
+  hdTop: { height: 84, flexDirection: 'row' as const, alignItems: 'center' as const, paddingHorizontal: 24, backgroundColor: C.bg, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border }, // [产品包HD] #topbar 84
+  hdSearch: { flexDirection: 'row' as const, alignItems: 'center' as const, width: 420, height: 44, borderRadius: 10, backgroundColor: C.surface2, paddingHorizontal: 14 }, // [产品包HD] global-search 420x44
   tabStack: { flex: 1 },
   tabHost: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   tabOff: { display: 'none' as const, elevation: 0 },
