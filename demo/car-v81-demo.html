@@ -160,6 +160,33 @@ html,body{height:100%;background:#000;overflow:hidden;font-family:-apple-system,
 #toast{position:absolute;left:50%;bottom:96px;transform:translateX(-50%);background:rgba(30,30,32,.96);border:1px solid var(--border);font-size:14px;padding:12px 26px;border-radius:22px;z-index:99;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
 #toast.on{opacity:1}
 .scale-note{position:fixed;right:14px;bottom:10px;color:#3c3c40;font-size:12px;font-family:monospace}
+/* 底部选择器 */
+#chooser{position:absolute;left:0;right:0;bottom:0;background:#17171a;border-top:1px solid var(--border);border-radius:18px 18px 0 0;padding:20px 33px 24px;z-index:90;display:none}
+#chooser.on{display:block}
+#chooser b{font-size:16px;display:block;margin-bottom:14px}
+/* 确认弹层 */
+#confirm{position:absolute;inset:0;background:rgba(0,0,0,.6);z-index:95;display:none;align-items:center;justify-content:center}
+#confirm.on{display:flex}
+#confirm .box{background:#1b1b1e;border:1px solid var(--border);border-radius:16px;padding:26px 30px;width:420px}
+#confirm .box p{font-size:14px;color:var(--text2);margin:10px 0 20px;line-height:1.6}
+/* 手机形态预览 */
+.phone-wrap{display:flex;align-items:center;justify-content:center;gap:60px;height:100%}
+.phone{width:300px;height:620px;border-radius:36px;border:3px solid #2a2a2e;background:var(--bg);position:relative;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.phone .notch{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:90px;height:20px;border-radius:10px;background:#000;z-index:2}
+.phone .pbody{position:absolute;inset:0;padding:48px 18px 18px;display:flex;flex-direction:column;gap:10px}
+.phone .pcover{width:100%;aspect-ratio:1;border-radius:14px}
+.phone .pname2{font-size:18px;font-weight:800;text-align:center}
+.phone .part2{font-size:12px;color:var(--text2);text-align:center}
+.phone .pctl{display:flex;justify-content:center;gap:26px;margin-top:6px}
+.phone .pmini{margin-top:auto;background:var(--surface2);border-radius:14px;padding:10px;display:flex;align-items:center;gap:10px}
+/* EQ */
+.eqrow{display:flex;align-items:center;gap:14px;padding:14px;border-radius:12px;background:var(--surface);margin-bottom:10px;cursor:pointer}
+.eqrow:hover{background:var(--surface2)}
+.eqrow.on{border:1px solid var(--brand)}
+.eqrow b{font-size:15px}.eqrow span{font-size:11px;color:var(--text3);display:block}
+.bars{display:flex;gap:5px;align-items:flex-end;height:34px;margin-left:auto}
+.bars i{width:5px;background:var(--text3);border-radius:2px;display:block}
+.eqrow.on .bars i{background:var(--brand)}
 </style>
 </head>
 <body>
@@ -181,7 +208,7 @@ html,body{height:100%;background:#000;overflow:hidden;font-family:-apple-system,
       <div class="prow" onclick="seekAt(event)"><i id="pfill" style="width:0%"></i></div>
       <div id="times"><span id="t1">0:00</span><span id="t2">0:00</span></div>
       <div id="ctrls"><div class="cbtn" onclick="prev()">⏮</div><div class="cbtn" id="play" onclick="toggle()">▶</div><div class="cbtn" onclick="next()">⏭</div></div>
-      <div id="tools"><div class="tool" onclick="favOverlay(true)">♥</div><div class="tool" onclick="toast('已加入下载队列（demo）')">⬇</div><div class="tool" onclick="go('queue')">☰</div><div class="tool" onclick="toast('音效设置（demo）')">🎚</div></div>
+      <div id="tools"><div class="tool" onclick="favOverlay(true)">♥</div><div class="tool" onclick="addDlCurrent()">⬇</div><div class="tool" onclick="go('queue')">☰</div><div class="tool" onclick="go('fx')">🎚</div></div>
       <div id="badges"><span class="badge" id="bsrc">—</span><span class="badge">320k</span></div>
       <div id="qanchor" onclick="go('queue')">正在播放 · 队列 <b id="qn">0</b> 首 ›</div>
     </div>
@@ -192,6 +219,7 @@ html,body{height:100%;background:#000;overflow:hidden;font-family:-apple-system,
       <div class="page" id="pg-libdetail"></div><div class="page" id="pg-artist"></div><div class="page" id="pg-album"></div>
       <div class="page" id="pg-pldetail"></div><div class="page" id="pg-queue"></div><div class="page" id="pg-search"></div>
       <div class="page" id="pg-settings"></div><div class="page" id="pg-setdl"></div><div class="page" id="pg-setsrc"></div><div class="page" id="pg-setq"></div>
+      <div class="page" id="pg-fx"></div><div class="page" id="pg-about"></div><div class="page" id="pg-dlset"></div><div class="page" id="pg-tfsrc"></div><div class="page" id="pg-importsrc"></div><div class="page" id="pg-episode"></div><div class="page" id="pg-phone"></div>
     </div>
   </div>
   <div class="ov" id="fav"><div class="ovhead"><div class="back" onclick="favOverlay(false)">‹</div><b>我的收藏</b></div><div class="ovbody" id="favbody"></div></div>
@@ -204,13 +232,15 @@ html,body{height:100%;background:#000;overflow:hidden;font-family:-apple-system,
           <svg width="16" height="16" viewBox="0 0 1024 1024" fill="rgba(179,179,184,.9)"><path d="M518.912 79.616a426.666667 426.666667 0 1 0 426.666667 426.666667 426.666667 426.666667 0 0 0-426.666667-426.666667z m0 640a213.333333 213.333333 0 1 1 213.333333-213.333333 213.333333 213.333333 0 0 1-213.333333 213.333333z"/><path d="M518.912 514.816m-85.333333 0a85.333333 85.333333 0 1 0 170.666666 0 85.333333 85.333333 0 1 0-170.666666 0Z"/><path d="M942.592 546.133333L687.786667 800.682667H518.144c-2.133333-12.288-8.533333-21.333333-16.298667-21.333334s-14.165333 9.045333-16.298666 21.333334h-17.834667v8.533333h17.066667c0 16.469333 7.68 29.866667 17.066666 29.866667s17.066667-13.397333 17.066667-29.866667H691.2l257.194667-257.28z"/></svg>
           <span id="paName">—</span>
         </div>
-        <div id="pchips"><span onclick="toast('音质：无损 FLAC')">无损</span><span onclick="toast('倍速 1.0×')">1.0×</span><span onclick="toast('定时关闭（demo）')">定时</span><span onclick="toast('已收藏')">♥</span></div>
+        <div id="pchips"><span onclick="openChooser('q')" id="chipQ">无损</span><span onclick="openChooser('speed')" id="chipSp">1.0×</span><span onclick="openChooser('sleep')" id="chipSl">定时</span><span onclick="toggleFavChip()" id="chipFav">♡</span></div>
         <div id="pctrls"><div class="cbtn" onclick="prev()">⏮</div><div class="cbtn" id="play2" onclick="toggle()" style="width:58px;height:58px;border-radius:29px;background:var(--brand);color:var(--on)">▶</div><div class="cbtn" onclick="next()">⏭</div></div>
       </div>
       <div id="vinyl"><div class="disc"></div><div class="lab" id="vlab"></div><div class="hole"></div></div>
     </div>
     <div id="pbar"><div class="prow" onclick="seekAt(event)"><i id="pfill2" style="width:0%"></i></div><div id="times" style="margin-top:6px"><span id="t3">0:00</span><span id="t4">0:00</span></div></div>
   </div>
+  <div id="chooser"></div>
+  <div id="confirm"><div class="box"><b id="cfTitle">确认</b><p id="cfText"></p><div style="display:flex;gap:14px;justify-content:flex-end"><div class="btn" onclick="closeConfirm()">取消</div><div class="btn pri" id="cfOk">确定</div></div></div></div>
   <div id="toast"></div>
 </div></div>
 <div class="scale-note" id="note"></div>
@@ -321,7 +351,7 @@ function pgPodcast(){var h='<div class="sechead" style="margin-top:2px"><b style
 function pgPcdetail(){var p=CH_PODS[curPod];var base=curPod*4;
  var eps=["Vol.365 夜晚的声音地图 · 42 分钟","Vol.364 失眠者指南 · 38 分钟","Vol.363 深夜书单 · 51 分钟","Vol.362 城市夜归人 · 45 分钟"];
  var h='<div class="ptitle">'+bk("go('podcast')")+p[0]+'</div><div style="color:var(--text3);font-size:12px;margin:-6px 0 12px">'+p[1]+'</div>';
- eps.forEach(function(e){h+='<div class="srow" onclick="toast(\'播放单集（demo）\')"><div class="cv" style="background:'+grad(base)+';display:flex;align-items:center;justify-content:center;font-size:20px">🎙</div><div class="m"><b>'+e.split(" · ")[0]+'</b><span>'+e.split(" · ")[1]+'</span></div><span style="color:var(--text3)">▶</span></div>'});return h}
+ eps.forEach(function(e,k){h+='<div class="srow" onclick="openEpisode('+k+')"><div class="cv" style="background:'+grad(base)+';display:flex;align-items:center;justify-content:center;font-size:20px">🎙</div><div class="m"><b>'+e.split(" · ")[0]+'</b><span>'+e.split(" · ")[1]+'</span></div><span style="color:var(--text3)">›</span></div>'});return h}
 /* P1.5 乐库: 收藏首行+音源+添加 */
 function pgLibs(){var h='<div class="ptitle">媒体库<span style="margin-left:auto;font-size:13px;background:var(--brand);color:var(--on);padding:8px 20px;border-radius:16px;cursor:pointer" onclick="go(\'libadd\')">＋ 添加</span></div>';
  h+='<div class="lib" onclick="favOverlay(true)"><div class="ic" style="background:rgba(30,215,96,.15);color:var(--brand)">♥</div><div style="flex:1"><b>我的收藏</b><span>收藏的歌曲 · 点击查看</span></div><span class="chev">›</span></div>';
@@ -355,27 +385,44 @@ function pgArtist(){var a=curLib.artists[curArtist];var als=curLib.albums.filter
 function pgAlbum(){var ab=curLib.albums[curAlbum];
  var h='<div class="ptitle">'+bk("openLib("+curLib.id+")")+ab.n+'<span style="font-size:12px;color:var(--text3);font-weight:400;margin-left:8px">'+ab.a+' · '+ab.y+'</span><span style="margin-left:auto;font-size:13px;background:var(--brand);color:var(--on);padding:8px 20px;border-radius:16px;cursor:pointer" onclick="playPlayAllIdx()">▶ 播放专辑</span></div>';
  curLib.songsIdx.forEach(function(i){h+=songRow(i)});return h}
-function pgQueue(){var h='<div class="ptitle">播放队列<span style="margin-left:auto;font-size:13px;border:1px solid var(--border);padding:8px 20px;border-radius:16px;cursor:pointer" onclick="toast(\'队列已清空（demo）\')">清空</span></div>';queue.forEach(function(si){h+=songRow(si)});return h}
+function pgQueue(){var h='<div class="ptitle">播放队列<span style="margin-left:auto;font-size:13px;border:1px solid var(--border);padding:8px 20px;border-radius:16px;cursor:pointer" onclick="clearQueue()">清空</span></div>';if(!queue.length)h+='<div style="text-align:center;color:#77777d;padding:40px 0">队列为空 · 从首页选歌开始</div>';queue.forEach(function(si){h+=songRow(si)});return h}
 function pgSearch(){return '<div class="ptitle">搜索</div><input id="sq" placeholder="搜索歌曲 / 歌手 / 专辑…" oninput="doSearch(this.value)"><div class="sechead"><b>热门搜索</b></div><div class="hot">'+HOT.map(function(w,i){return '<span onclick="searchForIdx('+i+')">'+w+'</span>'}).join("")+'</div><div id="sres"></div>'}
 function pgSettings(){var h='<div class="ptitle">设置</div>';
  h+='<div class="set" onclick="go(\'setdl\')"><div class="k">下载管理</div><div class="v">'+DLQ.length+' 首 · 1 首进行中 ›</div></div>';
  h+='<div class="set" onclick="toastCarMode()"><div class="k">车机模式</div><div class="v">当前为车机专属界面 · 点击关闭恢复手机竖版 ›</div></div>';
  h+='<div class="set" onclick="go(\'setsrc\')"><div class="k">音源管理</div><div class="v">LX 音源 · 自定义脚本 ›</div></div>';
  h+='<div class="set" onclick="go(\'setq\')"><div class="k">音质与下载</div><div class="v">在线播放 '+quality+' · 点击切换 ›</div></div>';
- h+='<div class="set" onclick="go(\'setdl\')"><div class="k">下载设置</div><div class="v">仅 Wi-Fi 下载 ›</div></div>';
- return h+'<div class="set" style="opacity:.6"><div class="k">关于</div><div class="v">车机 v8.1 · vc181 · 1:1 demo</div></div>'}
-function pgSetdl(){var h='<div class="ptitle">'+bk("go('settings')")+'下载管理</div>';DLQ.forEach(function(d){var s=songs[d.i];
- h+='<div class="dlrow"><div class="cv" style="background:'+grad(d.i)+'"></div><div class="m"><b>'+s.n+'</b><span>'+s.a+' · '+(d.p>=100?'已完成 · 无损':d.p+'% · 无损')+'</span><div class="bar"><i style="width:'+d.p+'%"></i></div></div>'+(d.p>=100?'<span style="color:var(--brand)">✓</span>':'<span style="color:var(--text3);font-size:12px">'+d.p+'%</span>')+'</div>'});return h+'<div style="display:flex;gap:14px;margin-top:14px"><div class="btn" onclick="toast(\'全部暂停（demo）\')">全部暂停</div><div class="btn danger" onclick="toast(\'清空已完成（demo）\')">清空已完成</div></div>'}
+ h+='<div class="set" onclick="go(\'dlset\')"><div class="k">下载设置</div><div class="v">仅 Wi-Fi · 2 路并行 ›</div></div>';
+ h+='<div class="set" onclick="go(\'about\')"><div class="k">关于</div><div class="v">车机 v8.1 · vc181 ›</div></div>';
+ return h}
+function pgSetdl(){var h='<div class="ptitle">'+bk("go('settings')")+'下载管理</div>';if(!DLQ.length)h+='<div style="text-align:center;color:#77777d;padding:40px 0">暂无下载 · 播放页/面板点 ⬇ 加队</div>';
+ DLQ.forEach(function(d,k){var s=songs[d.i];var st=d.p>=100?'已完成 · 无损':(dlPaused?'已暂停 · '+d.p+'%':d.p+'% · 无损');
+ h+='<div class="dlrow"><div class="cv" style="background:'+grad(d.i)+'"></div><div class="m"><b>'+s.n+'</b><span>'+s.a+' · '+st+'</span><div class="bar"><i style="width:'+d.p+'%"></i></div></div>'+(d.p>=100?'<span style="color:var(--brand)">✓</span>':(dlPaused?'<span style="color:#77777d;font-size:12px">⏸</span>':'<span style="color:var(--text3);font-size:12px">'+d.p+'%</span>'))+'</div>'});
+ return h+'<div style="display:flex;gap:14px;margin-top:14px"><div class="btn" onclick="toggleDlPause()">'+(dlPaused?'继续下载':'全部暂停')+'</div><div class="btn danger" onclick="clearDone()">清空已完成</div></div>'}
 function pgSetsrc(){var h='<div class="ptitle">'+bk("go('settings')")+'音源管理</div><div class="sechead"><b>在线音源（LX 引擎）</b></div>';
  ["kw 酷我","kg 酷狗","wy 网易","tx QQ音乐","mg 咪咕"].forEach(function(x,i){h+='<div class="set"><div class="k">'+x+'</div><div class="v">'+(i<4?'已启用':'备用')+'</div></div>'});
- h+='<div class="sechead"><b>自定义脚本</b></div><div class="set" onclick="toast(\'导入自定义音源脚本（demo）\')"><div class="k">导入脚本</div><div class="v">.js / .lxsc ›</div></div><div class="set" onclick="toast(\'听风源已连接（demo）\')"><div class="k">听风源</div><div class="v">已连接 ›</div></div>';return h}
+ h+='<div class="sechead"><b>自定义脚本</b></div><div class="set" onclick="go(\'importsrc\')"><div class="k">导入脚本</div><div class="v">2 个已装 ›</div></div><div class="set" onclick="go(\'tfsrc\')"><div class="k">听风源</div><div class="v">已连接 · 账号 mubey ›</div></div>';return h}
 function pgSetq(){var h='<div class="ptitle">'+bk("go('settings')")+'音质与下载</div><div class="sechead"><b>在线播放音质</b></div><div class="pillbar">';
  ["无损","320k","128k"].forEach(function(q){h+='<div class="pill'+(quality===q?' on':'')+'" onclick="setQ(\''+q+'\')">'+q+'</div>'});
  h+='</div><div class="sechead"><b>下载音质</b></div><div class="pillbar">';
  ["无损","320k","128k"].forEach(function(q){h+='<div class="pill'+(dlq===q?' on':'')+'" onclick="dlQ(\''+q+'\')">'+q+'</div>'});
  return h+'</div><div class="sechead"><b>下载网络</b></div><div class="set" onclick="toast(\'切换下载网络（demo）\')"><div class="k">仅 Wi-Fi 下载</div><div class="v">已开启 ›</div></div>'}
 /* ============ 引擎（惰性构建+隔离容错） ============ */
-var PAGES={home:pgHome,explore:pgExplore,boards:pgBoards,boarddetail:pgBoarddetail,podcast:pgPodcast,pcdetail:pgPcdetail,medialibs:pgLibs,libadd:pgLibadd,libform:pgLibform,libdetail:pgLibdetail,artist:pgArtist,album:pgAlbum,pldetail:pgPldetail,queue:pgQueue,search:pgSearch,settings:pgSettings,setdl:pgSetdl,setsrc:pgSetsrc,setq:pgSetq};
+/* ---- 新增目的页 ---- */
+var FX=[{n:"原声",d:"关闭所有音效"},{n:"超重低音",d:"适合电子/嘻哈"},{n:"人声增强",d:"播客/民谣"},{n:"车内空间",d:"补偿车内声学"},{n:"古典",d:"宽声场"}];var fxDone=1;
+function pgFx(){var h='<div class="ptitle">'+bk("goHomeFromFx()")+'音效</div><div class="sechead"><b>预设</b><span>点选即生效</span></div>';
+ FX.forEach(function(f,i){h+='<div class="eqrow'+(fxDone===i?' on':'')+'" onclick="setFx('+i+')"><div><b>'+f.n+'</b><span>'+f.d+'</span></div><div class="bars"><i style="height:'+(8+i*6)+'px"></i><i style="height:'+(16+i*4)+'px"></i><i style="height:'+(10+i*7)+'px"></i><i style="height:'+(20+i*3)+'px"></i><i style="height:'+(14+i*5)+'px"></i></div></div>'});
+ return h+'<div class="set" style="margin-top:14px" onclick="toggleFxOn()"><div class="k">音效总开关</div><div class="v">'+(fxOn?'已开启':'已关闭')+' ›</div></div>'}
+function pgAbout(){return '<div class="ptitle">'+bk("go('settings')")+'关于</div><div class="set" style="opacity:.7"><div class="k">版本</div><div class="v">车机 v8.1 · vc181</div></div><div class="set" style="opacity:.7"><div class="k">结构规格</div><div class="v">LEO v8.1 spec · QQ 布局</div></div><div class="set" style="opacity:.7"><div class="k">网格</div><div class="v">5 列 162.8dp · 自洽 980</div></div><div class="set" style="opacity:.7"><div class="k">引擎</div><div class="v">React Native · 本页为 1:1 HTML demo</div></div><div class="set" style="opacity:.7"><div class="k">检查更新</div><div class="v">已是最新 ›</div></div>'}
+function pgDlset(){return '<div class="ptitle">'+bk("go('settings')")+'下载设置</div><div class="set" onclick="toggleWifiOnly()"><div class="k">仅 Wi-Fi 下载</div><div class="v">'+(wifiOnly?'已开启':'已关闭')+' ›</div></div><div class="set" onclick="toggleParallel()"><div class="k">同时下载</div><div class="v">'+parallel+' 路 ›</div></div><div class="set" onclick="go(\'setq\')"><div class="k">下载音质</div><div class="v">'+dlq+' ›</div></div><div class="set" onclick="go(\'setdl\')"><div class="k">下载管理</div><div class="v">'+DLQ.length+' 条 ›</div></div>'}
+function pgTfsrc(){return '<div class="ptitle">'+bk("go('setsrc')")+'听风源</div><div class="set"><div class="k">状态</div><div class="v" style="color:var(--brand)">已连接</div></div><div class="set"><div class="k">账号</div><div class="v">mubey</div></div><div class="set"><div class="k">套餐</div><div class="v">高级版 · 2027-03 到期</div></div><div class="set" onclick="toast(\'已同步曲库（demo 数据）\')"><div class="k">同步曲库</div><div class="v">立即同步 ›</div></div><div style="display:flex;gap:14px;margin-top:16px"><div class="btn danger" onclick="openConfirm(\'断开听风源\',\'断开后在线搜索将回退到免费源。\',\'tfOff()\')">断开连接</div></div>'}
+function tfOff(){toast("已断开（demo）");go("setsrc")}
+function pgImportsrc(){return '<div class="ptitle">'+bk("go('setsrc')")+'导入脚本</div><div class="sechead"><b>已装脚本</b><span>2 个</span></div><div class="set"><div class="k">kw_script_v3.js</div><div class="v">酷我定制 · 已启用</div></div><div class="set"><div class="k">migu_hq.lxsc</div><div class="v">咪咕无损 · 已启用</div></div><div class="sechead"><b>导入</b></div><div class="fld"><label>粘贴脚本内容或路径</label><input id="imp" placeholder="/sdcard/Download/new_source.js"></div><div class="btn pri" onclick="doImport()">导入并启用</div>'}
+function doImport(){var v=byId("imp").value.trim();if(!v){toast("请填写脚本路径");return}toast("已导入启用 · "+v.split("/").pop()+"（demo）");go("setsrc")}
+var EP_META={};function pgEpisode(){var p=CH_PODS[curPod];var e=EP_META[curEp]||{t:"Vol.365 夜晚的声音地图",d:"42 分钟"};var base=curPod*4;
+ return '<div class="ptitle">'+bk("go('pcdetail')")+e.t+'</div><div style="display:flex;gap:20px;align-items:flex-end;margin-bottom:6px"><div style="width:190px;height:190px;border-radius:16px;background:'+grad(base)+';flex:none;display:flex;align-items:center;justify-content:center;font-size:56px">🎙</div><div><div class="tag" style="font-size:11px;color:var(--text3)">'+p[0]+' · 单集</div><h2 style="font-size:24px;margin:8px 0">'+e.t+'</h2><div style="font-size:12px;color:var(--text3);margin-bottom:12px">'+e.d+' · 今天更新</div><div class="playall" onclick="playEpisode()">▶ 播放本集</div></div></div><p style="color:var(--text2);font-size:14px;line-height:1.8">本期节目里，我们收集了十二座城市凌晨两点仍在营业的声音：便利店的冰柜嗡鸣、末班地铁进站的气流、电台里循环的温柔节目单……适合睡前佩戴耳机收听。（demo 文案）</p>'}
+function pgPhone(){var cs=cur();var gi2=queue.length?queue[qi]:0;return '<div class="phone-wrap"><div><div style="font-size:26px;font-weight:800;margin-bottom:8px">手机竖版形态</div><div style="color:var(--text3);font-size:13px;max-width:360px;line-height:1.7">已关闭车机专属界面。手机端恢复竖版布局：黑胶播放页 + 底部标签。demo 中以预览呈现——点下方按钮回到车机形态。</div><div class="btn pri" style="display:inline-flex;margin-top:18px" onclick="go(\'settings\')">← 回到车机模式</div></div><div class="phone"><div class="notch"></div><div class="pbody"><div class="pcover" style="background:'+grad(gi2)+'"></div><div class="pname2">'+cs.n+'</div><div class="part2">'+cs.a+(cs.al?' · '+cs.al:'')+'</div><div class="pctl"><span style="font-size:20px">⏮</span><span style="font-size:26px;color:var(--brand)">'+(playing?"⏸":"▶")+'</span><span style="font-size:20px">⏭</span></div><div style="height:3px;background:var(--track);border-radius:2px;overflow:hidden;margin-top:4px"><i style="display:block;height:100%;width:'+(cs.d>0?Math.min(100,pos/cs.d*100):0)+'%;background:var(--brand)"></i></div><div class="pmini"><div style="width:34px;height:34px;border-radius:8px;background:'+grad(gi2+1)+'"></div><div style="flex:1;font-size:12px">首页 · 发现 · 我的</div></div></div></div></div>'}
+var PAGES={home:pgHome,explore:pgExplore,boards:pgBoards,boarddetail:pgBoarddetail,podcast:pgPodcast,pcdetail:pgPcdetail,episode:pgEpisode,medialibs:pgLibs,libadd:pgLibadd,libform:pgLibform,libdetail:pgLibdetail,artist:pgArtist,album:pgAlbum,pldetail:pgPldetail,queue:pgQueue,search:pgSearch,settings:pgSettings,setdl:pgSetdl,setsrc:pgSetsrc,setq:pgSetq,fx:pgFx,about:pgAbout,dlset:pgDlset,tfsrc:pgTfsrc,importsrc:pgImportsrc,phone:pgPhone};
 var page="home";
 function go(p){page=p;render()}
 function goBackHome(){if(PLAYS[curPlay]&&(PLAYS[curPlay].src==="自建"||PLAYS[curPlay].src==="同步")){go("home")}else{go("home")}}
@@ -393,26 +440,27 @@ function render(){
 function rebuild(p){var el=document.getElementById("pg-"+p);if(el){el.removeAttribute("data-built")}}
 document.getElementById("tabs").innerHTML=TABS.map(function(t){return '<div class="tab" data-k="'+t[0]+'" onclick="go(\''+t[0]+'\')">'+t[1]+'<div class="u"></div></div>'}).join("");
 /* 播放引擎 */
-function cur(){return songs[queue[qi]]}
+function cur(){return songs[queue[qi]]||{n:"未在播放",a:"从首页选一首开始",al:"",d:0}}
 function byId(id){return document.getElementById(id)}
-function syncPanel(){var s=cur();
- byId("cover").style.background=grad(queue[qi]);byId("cover").textContent=s.n.slice(0,1);
+function syncPanel(){var s=cur();var gi=queue.length?queue[qi]:0;
+ byId("cover").style.background=grad(gi);byId("cover").textContent=s.n.slice(0,1);
  byId("pname").textContent=s.n;byId("partist").querySelector("span").textContent=s.a+" · "+s.al;
  byId("bsrc").textContent=qi%2?"酷我":"网易云";byId("qn").textContent=queue.length;
  byId("play").textContent=playing?"⏸":"▶";byId("play2").textContent=playing?"⏸":"▶";
  byId("vinyl").classList.toggle("spin",playing);
  byId("pt").textContent=s.n;byId("paName").textContent=s.a+" · "+s.al;
- byId("vlab").style.background=grad(queue[qi]);byId("pbg").style.background=grad(queue[qi]);
+ if(byId("chipFav"))byId("chipFav").textContent=fav.indexOf(queue[qi])>=0?"♥":"♡";
+ byId("vlab").style.background=grad(gi);byId("pbg").style.background=grad(gi);
  tickUI()}
-function tickUI(){var s=cur();
+function tickUI(){var s=cur();var pct=s.d>0?Math.min(100,pos/s.d*100):0;
  byId("t2").textContent=fmt(s.d);byId("t4").textContent=fmt(s.d);byId("t1").textContent=fmt(pos);byId("t3").textContent=fmt(pos);
- byId("pfill").style.width=(pos/s.d*100)+"%";byId("pfill2").style.width=(pos/s.d*100)+"%"}
+ byId("pfill").style.width=pct+"%";byId("pfill2").style.width=pct+"%"}
 function play(i){var at=queue.indexOf(i);if(at<0){queue.push(i);at=queue.length-1}qi=at;pos=0;playing=true;startTimer();rebuild("queue");render();syncPanel();toast("正在播放 · "+songs[i].n)}
 function toggle(){playing=!playing;startTimer();syncPanel();render()}
 function next(){qi=(qi+1)%queue.length;pos=0;rebuild("queue");render();syncPanel()}
 function prev(){qi=(qi-1+queue.length)%queue.length;pos=0;rebuild("queue");render();syncPanel()}
 function seekAt(e){var r=e.currentTarget.getBoundingClientRect();pos=Math.round(cur().d*(e.clientX-r.left)/r.width);tickUI()}
-function startTimer(){clearInterval(timer);if(playing)timer=setInterval(function(){pos++;if(pos>=cur().d){next()}else tickUI()},1000)}
+function startTimer(){clearInterval(timer);if(playing&&queue.length)timer=setInterval(function(){pos++;if(pos>=cur().d){next()}else tickUI()},1000)}
 function artistSearch(){var a=cur().a;go("search");setTimeout(function(){var q=byId("sq");if(q){q.value=a;doSearch(a)}},60)}
 function doSearch(w){var el=byId("sres");if(!el)return;if(!w||!w.trim()){el.innerHTML="";return}
  var hit=songs.filter(function(s){return (s.n+s.a+s.al).toLowerCase().indexOf(w.trim().toLowerCase())>=0});
@@ -444,12 +492,33 @@ function saveLib(){var host=byId("f_host").value.trim()||TYPES[formType].hint.sp
   albums:[{n:"叶惠美",a:"周杰伦",y:2003},{n:"光年之外",a:"邓紫棋",y:2016},{n:"乐与怒",a:"Beyond",y:1993}],
   songsIdx:[0,4,8,6]};LIBS.push(L);toast("已连接 · "+L.name);rebuild("medialibs");openLib(L.id)}}
 function delLib(){var id=editLib.id;LIBS=LIBS.filter(function(L){return L.id!==id});editLib=null;toast("已删除音源");rebuild("medialibs");go("medialibs")}
-function toastCarMode(){toast("车机模式（demo 保持车机形态）")}
+function toastCarMode(){openConfirm("关闭车机模式","将恢复手机竖版界面（demo 中以预览形态展示）。","go('phone')")}
 function setQ(q){quality=q;rebuild("setq");render();toast("在线播放音质 · "+q)}
 function dlQ(q){dlq=q;rebuild("setq");render();toast("下载音质 · "+q)}
+/* ---- 真行为函数 ---- */
+var dlPaused=false,wifiOnly=true,parallel=2,fxOn=true,curEp=0,chipQv="无损",chipSpv="1.0×",chipSlv="关闭";
+function addDlCurrent(){var i=queue[qi];if(DLQ.filter(function(d){return d.i===i}).length){toast("已在下载列表");go("setdl");return}DLQ.unshift({i:i,p:0});dlPaused=false;toast("已加入下载 · "+songs[i].n);go("setdl")}
+function toggleDlPause(){dlPaused=!dlPaused;rebuild("setdl");render();toast(dlPaused?"已暂停全部下载":"继续下载")}
+function clearDone(){var n=DLQ.filter(function(d){return d.p>=100}).length;DLQ=DLQ.filter(function(d){return d.p<100});rebuild("setdl");render();toast("已清空 "+n+" 条")}
+function clearQueue(){queue=[];qi=0;pos=0;playing=false;clearInterval(timer);rebuild("queue");render();syncPanel();toast("队列已清空")}
+function setFx(i){fxDone=i;rebuild("fx");render();toast("音效 · "+FX[i].n)}
+function toggleFxOn(){fxOn=!fxOn;rebuild("fx");render();toast(fxOn?"音效已开启":"音效已关闭")}
+function goHomeFromFx(){go("home")}
+function toggleWifiOnly(){wifiOnly=!wifiOnly;rebuild("dlset");render();toast(wifiOnly?"仅 Wi-Fi 下载":"允许流量下载")}
+function toggleParallel(){parallel=parallel===2?3:2;rebuild("dlset");render();toast("同时下载 "+parallel+" 路")}
+function openEpisode(k){curEp=k;var p=CH_PODS[curPod];var eps=["Vol.365 夜晚的声音地图 · 42 分钟","Vol.364 失眠者指南 · 38 分钟","Vol.363 深夜书单 · 51 分钟","Vol.362 城市夜归人 · 45 分钟"];EP_META[curEp]={t:eps[k].split(" · ")[0],d:eps[k].split(" · ")[1]};rebuild("episode");go("episode")}
+function playEpisode(){queue=[curPod%12];qi=0;pos=0;playing=true;startTimer();rebuild("queue");render();syncPanel();openPlayer();toast("播放单集（demo 音轨）")}
+function toggleFavChip(){var i=queue[qi];var at=fav.indexOf(i);if(at>=0){fav.splice(at,1);toast("已取消收藏")}else{fav.push(i);toast("已收藏 · "+songs[i].n)}byId("chipFav").textContent=fav.indexOf(queue[qi])>=0?"♥":"♡"}
+var CHOOSERS={q:{t:"播放音质",opts:["无损","320k","128k"],cur:function(){return chipQv},set:function(v){chipQv=v;byId("chipQ").textContent=v}},speed:{t:"倍速",opts:["0.75×","1.0×","1.25×","1.5×","2.0×"],cur:function(){return chipSpv},set:function(v){chipSpv=v;byId("chipSp").textContent=v}},sleep:{t:"定时关闭",opts:["不开启","播完本曲","30 分钟","60 分钟"],cur:function(){return chipSlv==="关闭"?"不开启":chipSlv},set:function(v){chipSlv=v==="不开启"?"关闭":v;byId("chipSl").textContent=v==="不开启"?"定时":v}}};
+function openChooser(kind){var c=CHOOSERS[kind];var h='<b>'+c.t+'</b><div class="pillbar">';c.opts.forEach(function(o){h+='<div class="pill'+(c.cur()===o?" on":"")+'" onclick="pickChooser(\''+kind+'\',\''+o+'\')">'+o+'</div>'});byId("chooser").innerHTML=h+'</div>';byId("chooser").classList.add("on")}
+function pickChooser(kind,v){CHOOSERS[kind].set(v);byId("chooser").classList.remove("on");toast(CHOOSERS[kind].t+" · "+v)}
+var cfCb=null;function openConfirm(t,txt,cb){byId("cfTitle").textContent=t;byId("cfText").textContent=txt;cfCb=cb;byId("cfOk").setAttribute("onclick","cfGo()");byId("confirm").classList.add("on")}
+function cfGo(){closeConfirm();if(cfCb)eval(cfCb+"()")}
+function closeConfirm(){byId("confirm").classList.remove("on")}
 var tt;function toast(m){var t=byId("toast");t.textContent=m;t.classList.add("on");clearTimeout(tt);tt=setTimeout(function(){t.classList.remove("on")},1800)}
 function fit(){var s=Math.min(innerWidth/1300,innerHeight/740,1);byId("stage").style.transform="scale("+s+")";byId("note").textContent="1280×720 · scale "+s.toFixed(2)}
 addEventListener("resize",fit);fit();
+document.getElementById("stage").addEventListener("click",function(e){if(e.target.id==="stage"||e.target.id==="pveil"||e.target.id==="pin"){byId("chooser").classList.remove("on")}});
 render();syncPanel();
 </script>
 </body>
