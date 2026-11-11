@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CAR, CAR_FS } from './cartokens';
 import { CarHome } from './CarHome';
 import { CarPlayer } from './CarPlayer';
+import { toast } from '../components/Dialog';
 import { CarPlaylist } from './CarPlaylist';
 import { CarExplore, CarBoards, CarPodcast } from './CarPages';
 import { CarFavorites } from './CarFavorites';
@@ -52,9 +53,19 @@ function PlayPanel({ onOpen, onFx, onQueue, onFav, onDownload, onArtistTap }: { 
   const { position, duration } = usePlayerProgress();
   const pct = duration > 0 ? Math.min(1, Math.max(0, position / duration)) : 0;
   const img = current ? fixCoverUrl(current.img) : undefined;
+  const curIdx = queue.findIndex(q => current && q.songmid === current.songmid);
+  const nextName = queue.length > 1 ? (queue[(curIdx + 1) % queue.length]?.name ?? '') : '';
   const fmt = (ms: number) => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
   return (
     <View style={st2.panel}>
+      {/* [产品包CAR] nowhead: 正在播放 eyebrow + SQ 无损标 */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: C.brand, marginRight: 5 }} />
+          <Text style={{ color: C.text2, fontSize: 9 }}>正在播放</Text>
+        </View>
+        <Text style={{ color: C.text2, fontSize: 8, borderWidth: 1, borderColor: C.border, borderRadius: 3, paddingHorizontal: 4 }}>SQ 无损</Text>
+      </View>
       <CarTouch style={{ width: '100%', alignItems: 'center' }} onPress={onOpen}>
         {img ? <Image source={{ uri: img }} style={st2.panelArt} /> : <View style={[st2.panelArt, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={44} color={C.text3} /></View>}
       </CarTouch>
@@ -82,7 +93,8 @@ function PlayPanel({ onOpen, onFx, onQueue, onFav, onDownload, onArtistTap }: { 
       </View>
       <View style={{ flex: 1 }} />
       <CarTouch style={st2.panelQueue} onPress={onQueue}>
-        <Text style={st2.panelQueueText} numberOfLines={1}>正在播放 · 队列 {queue.length} 首 ›</Text>
+        {/* [产品包CAR] next-up: 接下来 · 下一首 */}
+        <Text style={st2.panelQueueText} numberOfLines={1}>接下来 · {nextName} ›</Text>
       </CarTouch>
     </View>
   );
@@ -94,6 +106,8 @@ export function CarShell() {
   const nav = useNavigation() as { navigate: (s: string) => void };
   const [playerOpen, setPlayerOpen] = useState(false);
   const [seedQ, setSeedQ] = useState(''); // [老板 1110] 点歌手→种词进 CarSearch
+  const [clock, setClock] = useState(''); // [产品包CAR] 顶栏时钟
+  useEffect(() => { const f = () => { const d = new Date(); setClock(String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0')); }; f(); const t = setInterval(f, 30000); return () => clearInterval(t); }, []);
   const [favOpen, setFavOpen] = useState(false);
   const [playlist, setPlaylist] = useState<import('./CarPlaylist').CarPlRef | null>(null);
   useEffect(() => {
@@ -125,8 +139,10 @@ export function CarShell() {
           ))}
         </View>
         <View style={{ flexDirection: 'row', gap: 10 }}>
+          <CarTouch style={st2.iconBtn} onPress={() => { toast('语音搜索（即将上线）'); }}><Icon name="wave" size={20} color={C.text2} /></CarTouch>
           <CarTouch style={st2.iconBtn} onPress={() => goPage('search')}><Icon name="search" size={20} color={C.text2} /></CarTouch>
           <CarTouch style={st2.iconBtn} onPress={() => goPage('settings')}><Icon name="settings" size={20} color={C.text2} /></CarTouch>
+          <Text style={{ color: C.text2, fontSize: 10, fontVariant: ['tabular-nums' as never], marginLeft: 4 }}>{clock}</Text>
         </View>
       </View>
 

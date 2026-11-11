@@ -81,9 +81,19 @@ export function CarHome({ goExplore, onOpenPlaylist }: { goExplore: () => void; 
 
   return (
     <ScrollView contentContainerStyle={{ padding: CAR.gutter, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-      <Text style={{ color: C.text, fontSize: CAR_FS.hero, fontWeight: '800', marginBottom: 20 }}>
+      {/* [产品包CAR] hero: 问候+副句+MADE FOR YOU pills */}
+      <Text style={{ color: C.text, fontSize: CAR_FS.hero, fontWeight: '800' }}>
         {username ? `${greeting()}，${username}` : greeting()}
       </Text>
+      <Text style={{ color: C.text2, fontSize: CAR_FS.body, marginTop: -12, marginBottom: 8 }}>从熟悉的旋律，开始今天</Text>
+      {/* [产品包CAR] MADE FOR YOU pills(全部/音乐) */}
+      <View style={{ flexDirection: 'row', gap: CAR.gap, marginBottom: CAR.sectionGap }}>
+        {(['全部', '音乐'] as const).map((label, i) => (
+          <CarTouch key={label} style={{ paddingHorizontal: 16, height: 34, borderRadius: 18, backgroundColor: i === 0 ? C.text : C.surface2, alignItems: 'center', justifyContent: 'center' }} onPress={() => {}}>
+            <Text style={{ color: i === 0 ? C.bg : C.text2, fontSize: CAR_FS.body, fontWeight: i === 0 ? '700' : '500' }}>{label}</Text>
+          </CarTouch>
+        ))}
+      </View>
 
       {/* 双大卡: 每日精选 / 私人雷达 (v7 真版基准组件) */}
       <View style={{ flexDirection: 'row', gap: CAR.gap, marginBottom: CAR.sectionGap }}>
