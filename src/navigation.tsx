@@ -51,7 +51,7 @@ import { SearchScreen } from './screens/SearchScreen';
 import { ArtistDetailScreen } from './screens/ArtistDetailScreen';
 import { AlbumDetailScreen } from './screens/AlbumDetailScreen';
 import { RoutePage } from './screens/RouteScreen';
-import { IS_HD, isCarUi } from './services/appversion';
+import { IS_HD_UI, isCarUi } from './services/appversion';
 import { HDMain } from './hd/HDMain';
 import { CarShell } from './car/CarShell'; // [车机专属页面族 1105] v7 规格实施
 import { HDPlayerSafe } from './hd/HDPlayer';
@@ -98,7 +98,7 @@ function TabBarManual({ tab, setTab }: { tab: number; setTab: (i: number) => voi
 export function RootNavigator() {
   useSettings(); // carlink:carModeUi 变更即重渲——导航层 IS_HD|carMode 双分流
   const HD = isCarUi();
-  const CAR_UI = !IS_HD && settings.get().carModeUi === true; // [1105] 手机包内嵌车机模式/手动开关→CarShell;TV(IS_HD)仍 HDMain
+  const CAR_UI = !IS_HD_UI && settings.get().carModeUi === true; // [1105+1111 三版合一] TV 设备恒 HDMain(IS_HD_UI)——蓝牙误切 carModeUi 也不再劫持电视
   const { mode } = useApp();
   // 服务端 web 播放器不需要启动向导:直进主界面(本地模式);原生端保留三卡引导
   const initial = !mode ? (Platform.OS === 'web' ? 'Main' : 'Boot') : 'Main';
@@ -168,7 +168,7 @@ const SIDEBAR_LOCK_CONTENT: { marginLeft?: number; backgroundColor?: string } = 
 const PAGE_ENTER_MS = 220, PAGE_ENTER_DX = 18;
 const enterMemo = new Map<unknown, unknown>();
 function withEnter<P extends object>(Cmp: React.ComponentType<P>, bare = false): React.ComponentType<P> {
-  if (IS_HD || Platform.OS === 'web') return Cmp;
+  if (IS_HD_UI || Platform.OS === 'web') return Cmp; // [1111] TV 同 HD 不缩放
   const hit = enterMemo.get(Cmp) as React.ComponentType<P> | undefined;
   if (hit && !bare) return hit;
   const W = (props: P) => {

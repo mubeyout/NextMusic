@@ -19,6 +19,9 @@ export const IS_HD = APP_FLAVOR === 'hd';
 export const IS_CAR_DEVICE = native?.uiMode === 'car';
 export const IS_TV_DEVICE = native?.uiMode === 'tv' || Platform.isTV === true;
 
+// [老板令 1111 三版合一] phone 包自适应:TV 设备直接走 HD 大屏 UI(与 hd flavor 同形态)——单 APK 三态:phone/CarShell(TV 除外)/TV→HDMain
+export const IS_HD_UI = IS_HD || (!IS_CAR_DEVICE && IS_TV_DEVICE);
+
 // carlink(20260920 老板):手机包内嵌车机模式——CarLink/投屏/外接大屏时切 HD 大屏 UI(参照 hd 版)。
 // 独立 hd 包恒 true;phone 包读设置(手动开关,v2 蓝牙车机自动检测)。闭包内即时读用 settings.get()。
 import { settings } from './settings';

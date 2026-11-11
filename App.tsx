@@ -14,7 +14,7 @@ import { RootNavigator } from './src/navigation';
 import { DialogHost } from './src/components/Dialog';
 import { DropdownHost } from './src/components/DropdownMenu';
 import { MediaTreeBridge } from './src/components/MediaTreeBridge'; // [NM 内容树 1105]媒体中心浏览/点播桥
-import { IS_HD, isCarUi } from './src/services/appversion';
+import { IS_HD_UI, isCarUi } from './src/services/appversion';
 import { useSettings, settings } from './src/services/settings';
 import { HDActionHost } from './src/hd/HDActions';
 import { refetchAndBump } from './src/services/sync';
@@ -26,7 +26,7 @@ let carAskDone = false; // 同一次车载连接只问一次;断开重置
 function App() {
   useEffect(() => {
     // [carlink v2] 连上车载蓝牙且未开车机模式 → 弹确认一键切 HD 大屏 UI(hd 包不需要)
-    if (!IS_HD) {
+    if (!IS_HD_UI) { // [1111 三版合一] TV 设备不弹车机切换(电视蓝牙音响误判根修)
       const sub = onCarAudio(connected => {
         if (!connected) { carAskDone = false; return; }
         if (carAskDone || settings.get().carModeUi === true) return;
