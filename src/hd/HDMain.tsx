@@ -369,8 +369,8 @@ export function HDMain() {
           {/* v3.21(老板:下载管理上菜单):侧栏直入,下载/缓存记录一处可见 */}
           <NavItem icon="download" label="下载管理" active={innerRoute === 'Downloads'} onPress={() => railNav('Downloads')} />
 
-          {/* 歌单 */}
-          <Group label="歌单" top={8} />
+          {/* [产品包HD] 组名对包: 歌单→我的音乐 */}
+          <Group label="我的音乐" top={8} />
           {pls.slice(0, 5).map(pl => (
             <PlItem key={pl.key} name={pl.name} count={pl.count}
               active={innerRoute === 'PlaylistDetail' && (innerP?.localId != null ? innerP?.localId === pl.localId : innerP?.plKey === pl.key)}
