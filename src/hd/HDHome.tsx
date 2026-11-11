@@ -108,7 +108,21 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
       contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 26, paddingBottom: 28, gap: SP.section }}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={st.greet}>Hi,{greet}{connected && snap ? ',Mubey' : ''}</Text>
+      {/* [产品包HD 1111 对齐] hero:问候+副句 */}
+      <View>
+        <Text style={st.greet}>{greet}{connected && snap ? ', Mubey' : ''}</Text>
+        <Text style={{ color: C.text2, fontSize: H.font.md, marginTop: 6 }}>从熟悉的旋律，开始今天</Text>
+      </View>
+      {/* MADE FOR YOU 内容筛选 pills(设计:全部/音乐/播客) */}
+      <View style={{ flexDirection: 'row', gap: SP.md, marginTop: -6 }}>
+        {([['全部', true], ['音乐', false], ['播客', false]] as [string, boolean][]).map(([label, on], i) => (
+          <HDTouch key={label} style={{ paddingHorizontal: 22, height: 44, borderRadius: 24, backgroundColor: on ? C.text : C.surface2, alignItems: 'center', justifyContent: 'center' }}
+            focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 24 }}
+            onPress={() => { if (label === '播客') hdNav()?.navigate('Tabs' as never) || hdNav()?.navigate('PodcastTab' as never); }}>
+            <Text style={{ color: on ? C.bg : C.text2, fontSize: H.font.md, fontWeight: on ? '700' : '500' }}>{label}</Text>
+          </HDTouch>
+        ))}
+      </View>
 
       {/* 双大卡 */}
       {/* v3.30(LEO P1):双大卡间距 12→22(GUTTER) */}
@@ -118,8 +132,9 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
         <BigCard colors={['#0FA3A3', '#1ED760']} badge="雷达" title="私人雷达" sub="你最近循环的歌" onPress={playRadar} />
       </View>
 
+      {/* [产品包HD] 段序对齐:双大卡→推荐歌单→最近播放(接着上次的旋律)→SELECT */}
       {recents.length ? (
-        <Section title="最近播放" more="查看全部" onMore={() => hdNav()?.navigate('PlaylistDetail', { title: '最近播放', songs: recents, meta: `${recents.length} 首` })}>
+        <Section title="最近播放" hint="接着上次的旋律 · 为你打造" more="查看全部" onMore={() => hdNav()?.navigate('PlaylistDetail', { title: '最近播放', songs: recents, meta: `${recents.length} 首` })}>
           {/* 最近播放(lx88:横向 ScrollView 会裁切 zoom 溢出——小卡去 zoom 只留环;lx92:左右 padding 4 留出环的 2px 外溢,首尾卡选中不裁) */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: SP.lg, paddingLeft: 26, paddingRight: 12, paddingTop: IS_WEB ? 10 : 6, paddingBottom: IS_WEB ? 26 : 16 }}>
             {recents.slice(0, 8).map((s, i) => (
@@ -173,6 +188,11 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
         )}
       </Section>
 
+      {/* [产品包HD] NEXTMUSIC SELECT:全宽大推荐(私人雷达文案对设计) */}
+      <Section title="NEXTMUSIC SELECT" hint="根据你的收听偏好推荐">
+        <BigCard colors={['#0FA3A3', '#1ED760']} badge="SELECT" title="私人雷达" sub="放慢节奏，听见好音乐" wide onPress={playRadar} />
+      </Section>
+
       {/* 我的歌单 */}
       <Section title="我的歌单" hint={`${playlists.length} 个`} more="更多" onMore={() => hdNav()?.navigate('ImportPlaylist')}>
         {playlists.length ? (
@@ -210,7 +230,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
 // 桌面 BigCard:渐变 + 左徽标 + 标题/副标题 + 右圆钮
 // v6(老板反馈):选中环圆角要比卡片圆角大(卡片 R=11,环=13)——描边画在卡边界外 2px,圆角同步 +2 才贴着弯过去
 // v1.2.5 桌面:web 加高(104)+彩色弥散投影+hover 上浮(主题/投影跟色系);TV 分支尺寸不变
-function BigCard({ colors, badge, title, sub, onPress, busy }: { colors: [string, string]; badge: string; title: string; sub: string; onPress: () => void; busy?: boolean }) {
+function BigCard({ colors, badge, title, sub, onPress, busy, wide }: { colors: [string, string]; badge: string; title: string; sub: string; onPress: () => void; busy?: boolean; wide?: boolean }) { // [产品包HD] wide=SELECT 全宽款
   const [hov, setHov] = useState(false);
   const t = useRef<ReturnType<typeof setTimeout> | null>(null);
   const elRef = useRef<React.ComponentRef<typeof View> | null>(null); // v3.28:ref 实例类型

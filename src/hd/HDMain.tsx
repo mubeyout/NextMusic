@@ -300,8 +300,9 @@ export function HDMain() {
            * mac 轨道留给红绿灯,品牌行紧在轨道下方 */
           <View style={(NM_MAC || !HAS_DESKTOP_BRIDGE) ? st.brandRowMac : st.brandRowRail}>
             <Image source={require('../assets/brand/mark.png')} style={NM_MAC ? st.logoMarkMac : st.logoMarkRail} />
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-end' }}>
               <Text style={st.brandNameWeb}>Next<Text style={{ color: C.brand }}>Music</Text></Text>
+              <Text style={{ fontSize: 8, letterSpacing: 2, color: C.text3, marginLeft: 5, marginBottom: 1 }}>HD</Text>
             </View>
           </View>
         ) : null}
@@ -369,7 +370,11 @@ export function HDMain() {
           <View style={{ flex: 1 }} />
           <HDTouch style={st.hdSearch} focusStyle={false} hoverBg={false} onPress={() => { setTab(2); hdInnerPop(); }}>
             <Icon name="search" size={16} color={C.text3} />
-            <Text style={{ color: C.text3, fontSize: 13.5, marginLeft: 8 }}>搜索歌曲、歌手、专辑</Text>
+            <Text style={{ color: C.text3, fontSize: 13.5, marginLeft: 8, flex: 1 }}>搜索歌曲、歌手、专辑</Text>
+            <Text style={{ color: C.text3, fontSize: 10, borderWidth: 1, borderColor: C.border, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>⌘K</Text>
+          </HDTouch>
+          <HDTouch style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', marginLeft: 10 }} focusStyle={false} hoverBg={false} onPress={() => toast('语音搜索（即将上线）')}>
+            <Icon name="wave" size={18} color={C.text2} />
           </HDTouch>
           <Text style={{ color: C.text2, fontSize: 13, fontVariant: ['tabular-nums' as never], marginLeft: 16 }}>{clock}</Text>
         </View>
