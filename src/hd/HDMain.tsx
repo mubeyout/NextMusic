@@ -320,57 +320,20 @@ export function HDMain() {
           ) : null}
 
           {/* 发现 */}
+          {/* [产品包HD 1111·老板令全量对齐] 三组导航+sidebar-bottom——条目安排=NextMusic-HD.html 实测 */}
           <Group label="发现" />
-          {TABS.map((t, i) => (
-            <NavItem key={t.key} icon={t.icon} label={t.label} active={innerRoute === 'Tabs' && tab === i} first={i === 0}
-              onPress={() => { setTab(i); hdInnerPop(); }} />
-          ))}
+          <NavItem icon="home" label="为我推荐" active={innerRoute === 'Tabs' && tab === 0} first onPress={() => { setTab(0); hdInnerPop(); }} />
+          <NavItem icon="explore" label="探索" active={innerRoute === 'Discover'} onPress={() => railNav('Discover')} />
+          <NavItem icon="ranking" label="榜单" active={innerRoute === 'Tabs' && tab === 3} onPress={() => { setTab(3); hdInnerPop(); }} />
+          <NavItem icon="podcast" label="播客" active={innerRoute === 'Tabs' && tab === 1} onPress={() => { setTab(1); hdInnerPop(); }} />
 
-          {/* 歌单广场(v2 对齐):发现族入口 */}
-          <NavItem icon="explore" label="歌单广场" active={innerRoute === 'Discover'} onPress={() => railNav('Discover')} />
-
-
-          {/* [产品包HD] 组名对包: 我的乐库→曲库 */}
-          <Group label="曲库" top={8} />
-          <NavItem icon="server" label="媒体库" active={innerRoute === 'MediaLibs'} onPress={() => railNav('MediaLibs')} />
-          {/* 定稿v3.0细则1 四库总序:本机曲库→云曲库→公共曲库→(分隔)→第三方库们;本机行有库才显示(细则1),云端=登录可见 */}
-          {locLibsRail.map(l => (
-            <NavItem key={'loc-' + l.id} icon="folder-music" label={l.name} active={innerRoute === 'LocalLibBrowse' && innerP?.libId === l.id} child onPress={() => railNav('LocalLibBrowse', { libId: l.id })} />
-          ))}
-          {/* [web] 本地曲库行(服务器侧目录;有库才显示,同 APK 模式)——浏览进 ServerLocalLib */}
-          {IS_WEB && slbRail.map(l => (
-            <NavItem key={'slb-' + l.id} icon="folder-music" label={l.name} active={innerRoute === 'ServerLocalLib' && innerP?.libId === l.id} child onPress={() => railNav('ServerLocalLib', { libId: l.id })} />
-          ))}
-          {token ? (
-            <NavItem icon="cloud" label="云曲库" active={innerRoute === 'CloudLibrary'} child onPress={() => railNav('CloudLibrary')} />
-          ) : null}
-          {/* ④公共曲库:媒体库组固定行(library 图标;未授权/开关关→不渲染;官方共享库非个人连接) */}
-          {pub.authorized && pub.showEntry ? (
-            <NavItem icon="library" label="公共曲库" active={innerRoute === 'PublicLibrary'} child onPress={() => railNav('PublicLibrary')} />
-          ) : null}
-          {/* [库族重设计v1 PartA] navSep 已删:组内统一缩进树,零分割线 */}
-          {/* v3:已连接媒体库账号直入口(Emby/Jellyfin/Navidrome/WebDAV/道理鱼) */}
-          {providerAccts.map(pa => {
-            const on = innerRoute === 'ProviderBrowse' && innerP?.acctId === pa.id; // v3.27 账号选中态
-            return (
-            <HDTouch key={pa.id} style={[st.navItem, st.navItemChild, on && st.navItemOn]} focusStyle={st.navFocus} hoverBg={IS_WEB && !on ? C.hover : false}
-              onPress={() => railNav('ProviderBrowse', { acctId: pa.id })}>
-              <BrandIcon name={pa.type as never} size={16} />
-              <Text style={[st.navLabel, on && { fontWeight: '700', color: C.text }]} numberOfLines={1}>{pa.name}</Text>
-            </HDTouch>
-            );
-          })}
-          {/* lx165(老板):我喜欢的+收藏歌手+收藏专辑 三入口并一——内页三 tab,行内 ♥ 即管理 */}
+          {/* 我的音乐: 我喜欢的/最近播放/歌单(包「我的音乐」项=歌单列表) */}
+          <Group label="我的音乐" top={8} />
           <HDTouch style={[st.navItem, innerRoute === 'MyFavorites' && st.navItemOn]} focusStyle={st.navFocus} hoverBg={IS_WEB && innerRoute !== 'MyFavorites' ? C.hover : false} onPress={() => railNav('MyFavorites')}>
             <Icon name="heart" size={16} color={innerRoute === 'MyFavorites' ? C.text : C.text2} />
-            <Text style={[st.navLabel, innerRoute === 'MyFavorites' && { fontWeight: '700', color: C.text }]} numberOfLines={1}>我的收藏{loveCount != null ? ` · ${loveCount}` : ''}</Text>
+            <Text style={[st.navLabel, innerRoute === 'MyFavorites' && { fontWeight: '700', color: C.text }]} numberOfLines={1}>我喜欢的{loveCount != null ? ` · ${loveCount}` : ''}</Text>
           </HDTouch>
-          <NavItem icon="history" label="播放历史" active={innerRoute === 'PlaylistDetail' && innerP?.title === '播放历史'} onPress={openHistory} />
-          {/* v3.21(老板:下载管理上菜单):侧栏直入,下载/缓存记录一处可见 */}
-          <NavItem icon="download" label="下载管理" active={innerRoute === 'Downloads'} onPress={() => railNav('Downloads')} />
-
-          {/* [产品包HD] 组名对包: 歌单→我的音乐 */}
-          <Group label="我的音乐" top={8} />
+          <NavItem icon="history" label="最近播放" active={innerRoute === 'PlaylistDetail' && innerP?.title === '播放历史'} onPress={openHistory} />
           {pls.slice(0, 5).map(pl => (
             <PlItem key={pl.key} name={pl.name} count={pl.count}
               active={innerRoute === 'PlaylistDetail' && (innerP?.localId != null ? innerP?.localId === pl.localId : innerP?.plKey === pl.key)}
@@ -382,11 +345,48 @@ export function HDMain() {
               } },
               { label: '导入平台歌单', icon: 'download', onPress: () => railNav('ImportPlaylist') },
             ])} />
+
+          {/* 曲库: 媒体库主行+库族子行(包曲库组的展开;功能入口不丢) */}
+          <Group label="曲库" top={8} />
+          <NavItem icon="server" label="媒体库" active={innerRoute === 'MediaLibs'} onPress={() => railNav('MediaLibs')} />
+          {locLibsRail.map(l => (
+            <NavItem key={'loc-' + l.id} icon="folder-music" label={l.name} active={innerRoute === 'LocalLibBrowse' && innerP?.libId === l.id} child onPress={() => railNav('LocalLibBrowse', { libId: l.id })} />
+          ))}
+          {IS_WEB && slbRail.map(l => (
+            <NavItem key={'slb-' + l.id} icon="folder-music" label={l.name} active={innerRoute === 'ServerLocalLib' && innerP?.libId === l.id} child onPress={() => railNav('ServerLocalLib', { libId: l.id })} />
+          ))}
+          {token ? (
+            <NavItem icon="cloud" label="云曲库" active={innerRoute === 'CloudLibrary'} child onPress={() => railNav('CloudLibrary')} />
+          ) : null}
+          {pub.authorized && pub.showEntry ? (
+            <NavItem icon="library" label="公共曲库" active={innerRoute === 'PublicLibrary'} child onPress={() => railNav('PublicLibrary')} />
+          ) : null}
+          {providerAccts.map(pa => {
+            const on = innerRoute === 'ProviderBrowse' && innerP?.acctId === pa.id;
+            return (
+            <HDTouch key={pa.id} style={[st.navItem, st.navItemChild, on && st.navItemOn]} focusStyle={st.navFocus} hoverBg={IS_WEB && !on ? C.hover : false}
+              onPress={() => railNav('ProviderBrowse', { acctId: pa.id })}>
+              <BrandIcon name={pa.type as never} size={16} />
+              <Text style={[st.navLabel, on && { fontWeight: '700', color: C.text }]} numberOfLines={1}>{pa.name}</Text>
+            </HDTouch>
+            );
+          })}
+          <NavItem icon="download" label="下载管理" active={innerRoute === 'Downloads'} onPress={() => railNav('Downloads')} />
         </ScrollView>
         {/* lx85:设置项不贴底——留出焦点环完整显示空间(老板:太靠底被裁切) */}
         {/* v1.2.5:web 设置也走 railNav(内页化,侧栏恒固定);TV 保持原 navigate——零行为差异 */}
         <View style={[st.settingsDock, { paddingBottom: Math.max(botLift, 8) }]}>
-          {/* 1028 车机适配:settingsDock 随播放条同抬(botLift)——车机底部 bar 不再盖设置入口(老板实测⑥) */}
+          {/* 1028 车机适配:settingsDock 随播放条同抬(botLift)——车机底部 bar 不再盖设置入口(老板实测⑥) */}        {/* [产品包HD] sidebar-bottom: 账号行+设置+后台 */}
+        <HDTouch style={[st.navItem, { marginBottom: 2 }]} focusStyle={st.navFocus} hoverBg={IS_WEB ? C.hover : false} onPress={() => railNav('Account')}>
+          <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ color: C.onBrand, fontWeight: '800', fontSize: 13 }}>M</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[st.navLabel, { flex: 0 }]} numberOfLines={1}>我的账号</Text>
+            <Text style={{ color: C.text3, fontSize: 9, marginTop: 1 }}>NextMusic</Text>
+          </View>
+        </HDTouch>
+
           <NavItem icon="settings" label="设置" active={innerRoute === 'Settings'} onPress={() => (IS_WEB ? railNav('Settings') : hdNav()?.navigate('Settings'))} />
           {IS_WEB ? (
             <NavItem icon="server" label="后台管理" onPress={() => {
