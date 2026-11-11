@@ -321,57 +321,22 @@ export function HDMain() {
 
           {/* 发现 */}
           {/* [产品包HD 1111·老板令全量对齐] 三组导航+sidebar-bottom——条目安排=NextMusic-HD.html 实测 */}
+          {/* [产品包HD 全量对齐·1111] 侧栏=11 个一级条目,零二级展开——库/歌单/下载全在页面里 */}
           <Group label="发现" />
           <NavItem icon="home" label="为我推荐" active={innerRoute === 'Tabs' && tab === 0} first onPress={() => { setTab(0); hdInnerPop(); }} />
           <NavItem icon="explore" label="探索" active={innerRoute === 'Discover'} onPress={() => railNav('Discover')} />
           <NavItem icon="ranking" label="榜单" active={innerRoute === 'Tabs' && tab === 3} onPress={() => { setTab(3); hdInnerPop(); }} />
           <NavItem icon="podcast" label="播客" active={innerRoute === 'Tabs' && tab === 1} onPress={() => { setTab(1); hdInnerPop(); }} />
-
-          {/* 我的音乐: 我喜欢的/最近播放/歌单(包「我的音乐」项=歌单列表) */}
           <Group label="我的音乐" top={8} />
           <HDTouch style={[st.navItem, innerRoute === 'MyFavorites' && st.navItemOn]} focusStyle={st.navFocus} hoverBg={IS_WEB && innerRoute !== 'MyFavorites' ? C.hover : false} onPress={() => railNav('MyFavorites')}>
             <Icon name="heart" size={16} color={innerRoute === 'MyFavorites' ? C.text : C.text2} />
             <Text style={[st.navLabel, innerRoute === 'MyFavorites' && { fontWeight: '700', color: C.text }]} numberOfLines={1}>我喜欢的{loveCount != null ? ` · ${loveCount}` : ''}</Text>
           </HDTouch>
           <NavItem icon="history" label="最近播放" active={innerRoute === 'PlaylistDetail' && innerP?.title === '播放历史'} onPress={openHistory} />
-          {pls.slice(0, 5).map(pl => (
-            <PlItem key={pl.key} name={pl.name} count={pl.count}
-              active={innerRoute === 'PlaylistDetail' && (innerP?.localId != null ? innerP?.localId === pl.localId : innerP?.plKey === pl.key)}
-              onPress={() => openPl(pl)} onLongPress={() => managePl(pl)} />
-          ))}
-          <PlItem name="新建歌单" add onPress={() => hdActions.menu('新建歌单', [
-              { label: '空白歌单', icon: 'add', onPress: () => {
-                hdActions.prompt('新建歌单', { defaultValue: '', onSubmit: (v) => { const n = (v || '').trim(); if (n) { library.create(n); toast('已创建'); } } });
-              } },
-              { label: '导入平台歌单', icon: 'download', onPress: () => railNav('ImportPlaylist') },
-            ])} />
-
-          {/* 曲库: 媒体库主行+库族子行(包曲库组的展开;功能入口不丢) */}
+          <NavItem icon="queue" label="我的音乐" active={innerRoute === 'MyLibrary' || innerRoute === 'PlaylistDetail'} onPress={() => railNav('MyLibrary')} />
           <Group label="曲库" top={8} />
-          <NavItem icon="server" label="媒体库" active={innerRoute === 'MediaLibs'} onPress={() => railNav('MediaLibs')} />
-          {locLibsRail.map(l => (
-            <NavItem key={'loc-' + l.id} icon="folder-music" label={l.name} active={innerRoute === 'LocalLibBrowse' && innerP?.libId === l.id} child onPress={() => railNav('LocalLibBrowse', { libId: l.id })} />
-          ))}
-          {IS_WEB && slbRail.map(l => (
-            <NavItem key={'slb-' + l.id} icon="folder-music" label={l.name} active={innerRoute === 'ServerLocalLib' && innerP?.libId === l.id} child onPress={() => railNav('ServerLocalLib', { libId: l.id })} />
-          ))}
-          {token ? (
-            <NavItem icon="cloud" label="云曲库" active={innerRoute === 'CloudLibrary'} child onPress={() => railNav('CloudLibrary')} />
-          ) : null}
-          {pub.authorized && pub.showEntry ? (
-            <NavItem icon="library" label="公共曲库" active={innerRoute === 'PublicLibrary'} child onPress={() => railNav('PublicLibrary')} />
-          ) : null}
-          {providerAccts.map(pa => {
-            const on = innerRoute === 'ProviderBrowse' && innerP?.acctId === pa.id;
-            return (
-            <HDTouch key={pa.id} style={[st.navItem, st.navItemChild, on && st.navItemOn]} focusStyle={st.navFocus} hoverBg={IS_WEB && !on ? C.hover : false}
-              onPress={() => railNav('ProviderBrowse', { acctId: pa.id })}>
-              <BrandIcon name={pa.type as never} size={16} />
-              <Text style={[st.navLabel, on && { fontWeight: '700', color: C.text }]} numberOfLines={1}>{pa.name}</Text>
-            </HDTouch>
-            );
-          })}
-          <NavItem icon="download" label="下载管理" active={innerRoute === 'Downloads'} onPress={() => railNav('Downloads')} />
+          <NavItem icon="server" label="媒体库" active={innerRoute === 'MediaLibs' || innerRoute === 'ProviderBrowse' || innerRoute === 'CloudLibrary' || innerRoute === 'PublicLibrary' || innerRoute === 'LocalLibBrowse' || innerRoute === 'ServerLocalLib'} onPress={() => railNav('MediaLibs')} />
+
         </ScrollView>
         {/* lx85:设置项不贴底——留出焦点环完整显示空间(老板:太靠底被裁切) */}
         {/* v1.2.5:web 设置也走 railNav(内页化,侧栏恒固定);TV 保持原 navigate——零行为差异 */}
@@ -388,13 +353,6 @@ export function HDMain() {
         </HDTouch>
 
           <NavItem icon="settings" label="设置" active={innerRoute === 'Settings'} onPress={() => (IS_WEB ? railNav('Settings') : hdNav()?.navigate('Settings'))} />
-          {IS_WEB ? (
-            <NavItem icon="server" label="后台管理" onPress={() => {
-              // 0922 mac 实锤修复:相对路径在桌面端解析成 nmapp://local/admin/ 被丢给 OS(无处理器弹窗)
-              const b = normalizeBase(httpStore.base);
-              window.open(b ? `${b}/admin/` : '/admin/', '_blank');
-            }} />
-          ) : null}
         </View>
       </View>
 
@@ -667,7 +625,7 @@ const st = StyleSheet.create({
   brandNameWeb: { color: C.text, fontSize: 13.5, fontWeight: '800', letterSpacing: 0.2 },
   settingsDock: { paddingHorizontal: 0, paddingVertical: 6 },
   group: { fontSize: 10, color: C.text3, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4, letterSpacing: 1.5, fontWeight: '700' }, // [产品包HD] product-nav-group
-  navItem: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 8, paddingHorizontal: 10, height: IS_CAR_DEVICE ? 48 : 35, borderRadius: 9 }, // 1104 E.2:车机触控行 48
+  navItem: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 16, paddingHorizontal: 12, height: 48, borderRadius: 10 }, // [产品包HD] tab 行 48/边距 16(1104 车机 48 同律)
   navItemOn: { backgroundColor: C.brandDim },
   navFocus: { borderWidth: 2, borderColor: C.brand, borderRadius: 9 },
   navLabel: { color: C.text, fontSize: H.font.md, fontWeight: '500', flex: 1 }, // [老板 1011 15:35 浅色] text2→text:浅色下侧栏标签太浅;层级靠字重500/700+brandDim底
