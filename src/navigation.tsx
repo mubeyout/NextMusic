@@ -53,7 +53,8 @@ import { AlbumDetailScreen } from './screens/AlbumDetailScreen';
 import { RoutePage } from './screens/RouteScreen';
 import { IS_HD_UI, isCarUi } from './services/appversion';
 import { HDMain } from './hd/HDMain';
-import { CarShell } from './car/CarShell'; // [车机专属页面族 1105] v7 规格实施
+import { CarShell } from './car/CarShell'; // [车机专属页面族 1105] v7 规格实施 → [1112 三版合一]WebView 壳载 car.html
+import { webBackActive } from './web/WebShell'; // [1112 三版合一]web 壳挂载期返回键让渡(仅 car/HD 形态,phone 路径零改动)
 import { HDPlayerSafe } from './hd/HDPlayer';
 import { HDBootScreen } from './hd/HDBootScreen';
 import { withPhoneScale } from './hd/HDMain';
@@ -120,6 +121,9 @@ export function RootNavigator() {
   useEffect(() => {
     let exitArmed = false;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      // [1112 三版合一]web 壳(car/HD 形态)挂载期返回键全权归壳——SPA 栈出栈/ROOT 双击退出在 WebShell 桥;
+      // 壳未挂载(Boot 流/phone 原生)本守卫恒 false=原行为零改动。
+      if (webBackActive()) return true;
       // lx84:HD 嵌套内容栈优先出栈(内页在内容区,根栈底就是 Main)
       if (hdInnerRef.isReady() && hdInnerRef.canGoBack()) {
         hdInnerRef.goBack();
