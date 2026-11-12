@@ -6030,4 +6030,309 @@ applyProductTheme(document.body.dataset.theme || document.documentElement.datase
     PAGES.importpl = window.pgImportpl;
   } catch (e) {}
 })();
+(function () {
+  'use strict';
+
+  if (!window.REAL) return;
+  var R = REAL;
+  if (!CSS || !CSS.supports || !CSS.supports('gap', '10px') || !CSS.supports('display', 'flex', 'gap', '10px')) {
+    var css = document.createElement('style');
+    css.textContent = '.quick-grid{margin:-6px}.quick-grid>*{margin:6px}' + '.mix-grid{margin:-9px}.mix-grid>*{margin:9px}' + '.grid{margin:-9px}.grid>*{margin:9px}' + '.product-wall{margin:-9px}.product-wall>*{margin:9px}' + '.media-group-grid{margin:-6px}.media-group-grid>*{margin:6px}' + '.tile-shortcuts{margin:-7px}.tile-shortcuts>*{margin:7px}' + '.recent-rail{margin:-6px}.recent-rail>*{margin:6px}' + '.pillbar{margin:-5px}.pillbar>*{margin:5px}' + '.home-filters{margin:-4px}.home-filters>*{margin:4px}' + '.result-type-tabs{margin:-5px}.result-type-tabs>*{margin:5px}' + '.bgrid{margin:-8px}.bgrid>*{margin:8px}' + '.genre-grid{margin:-8px}.genre-grid>*{margin:8px}' + '.search-history{margin:-5px}.search-history>*{margin:5px}' + '.artist-grid{margin:-8px}.artist-grid>*{margin:8px}' + '.hd-playback{margin:-12px}.hd-playback>*{margin:12px}' + '.transport{margin:-7px}.transport>*{margin:7px}' + '.hd-breadcrumb{margin:-12px}.hd-breadcrumb>*{margin:12px}' + '.form-actions{margin:-6px}.form-actions>*{margin:6px}' + 'section.product-section{gap:0}' + '.product-section h2{margin-right:12px}.product-section .section-note{margin-right:12px}';
+    document.head.appendChild(css);
+    document.addEventListener('DOMContentLoaded', function () {});
+  }
+  function fixAspectRatio() {
+    document.querySelectorAll('[style*="aspect-ratio"]').forEach(function (el) {
+      var st = getComputedStyle(el);
+      var ar = st.aspectRatio;
+      if (!ar || ar === 'auto') {
+        var m = (el.getAttribute('style') || '').match(/aspect-ratio\s*:\s*([\d.]+)\s*\/\s*([\d.]+)/);
+        if (m && Number(m[2]) > 0) {
+          var ratio = Number(m[1]) / Number(m[2]);
+          el.style.height = Math.round(el.offsetWidth / ratio) + 'px';
+        }
+      }
+    });
+    document.querySelectorAll('.cv:not([style])').forEach(function (el) {
+      var st = getComputedStyle(el);
+      if (!st.aspectRatio || st.aspectRatio === 'auto') {
+        el.style.height = el.offsetWidth + 'px';
+      }
+    });
+  }
+  fixAspectRatio();
+  setInterval(fixAspectRatio, 2000);
+  var render14 = window.render;
+  window.render = function () {
+    render14();
+    try {
+      fixAspectRatio();
+    } catch (e) {}
+  };
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar' || e.keyCode === 13 || e.keyCode === 32) {
+      var t = e.target;
+      if (t && (t.tagName === 'BUTTON' || t.getAttribute('role') === 'button')) {
+        e.preventDefault();
+        e.stopPropagation();
+        t.click();
+        return;
+      }
+    }
+  }, true);
+  if (!CSS || !CSS.supports || !CSS.supports('gap', '10px')) {
+    var css2 = document.createElement('style');
+    css2.textContent = 'body{padding:0 10px 0 0}' + '#hdPlaybar{padding-left:24px;padding-right:24px}';
+    document.head.appendChild(css2);
+  }
+})();
+(function () {
+  'use strict';
+
+  if (!window.REAL) return;
+  function handleClick(e) {
+    var t = e.target || document.activeElement;
+    if (t && t.tagName !== 'INPUT' && t.tagName !== 'TEXTAREA') {
+      var el = document.activeElement;
+      if (el && (el.tagName === 'BUTTON' || el.getAttribute('role') === 'button' || el.tagName === 'A' || el.onclick)) {
+        try {
+          el.click();
+        } catch (e2) {}
+      }
+    }
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.keyCode === 23 || e.key === 'Enter' || e.key === ' ') {
+      if (e.target && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        handleClick(e);
+      }
+    }
+  }, true);
+  document.addEventListener('keyup', function (e) {
+    if (e.keyCode === 23 || e.key === 'Enter' || e.key === ' ') {
+      if (e.target && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        handleClick(e);
+      }
+    }
+  }, true);
+  document.addEventListener('click', function (e) {}, true);
+  var pendingConfirm = false;
+  var lastFocus = null;
+  document.addEventListener('keydown', function (e) {
+    if (e.keyCode === 23) pendingConfirm = true;
+  }, true);
+  document.addEventListener('keyup', function (e) {
+    if (e.keyCode === 23) {
+      pendingConfirm = true;
+      setTimeout(function () {
+        pendingConfirm = false;
+      }, 500);
+    }
+  }, true);
+  setInterval(function () {
+    var el = document.activeElement;
+    if (el !== lastFocus) {
+      lastFocus = el;
+    }
+  }, 300);
+  var focusedEl = null;
+  document.addEventListener('focus', function (e) {
+    focusedEl = e.target;
+  }, true);
+  document.addEventListener('focusin', function (e) {
+    focusedEl = e.target;
+  }, true);
+  var origFocus = HTMLElement.prototype.focus;
+  HTMLElement.prototype.focus = function () {
+    var result = origFocus.apply(this, arguments);
+    var self = this;
+    if (!self.__nmEnterBound) {
+      self.__nmEnterBound = 1;
+      self.addEventListener('keyup', function (ev) {
+        if (ev.key === 'Enter' || ev.key === ' ' || ev.keyCode === 13 || ev.keyCode === 32 || ev.keyCode === 23) {
+          ev.preventDefault();
+          self.click();
+        }
+      });
+    }
+    return result;
+  };
+})();
+(function () {
+  'use strict';
+
+  if (!window.REAL) return;
+  var R = REAL;
+  R.tvMode = true;
+  var css = document.createElement('style');
+  css.textContent = 'button:focus, [role=button]:focus { outline: 3px solid #1ED760 !important; outline-offset: 2px !important; ' + '  box-shadow: 0 0 12px rgba(30,215,96,.4), 0 0 4px rgba(30,215,96,.6) !important; ' + '  transform: scale(1.05); transition: transform .15s ease, box-shadow .15s ease; }' + 'input:focus { outline: 3px solid #1ED760 !important; outline-offset: 2px; }' + '.tv-initial-focus { outline: 3px solid #1ED760 !important; outline-offset: 2px; box-shadow: 0 0 12px rgba(30,215,96,.4); }';
+  document.head.appendChild(css);
+  function getZone(el) {
+    if (!el) return 'unknown';
+    var sidebar = document.getElementById('hdSidebar');
+    var playbar = document.getElementById('hdPlaybar');
+    if (sidebar && sidebar.contains(el)) return 'sidebar';
+    if (playbar && playbar.contains(el)) return 'playbar';
+    return 'content';
+  }
+  function getZoneElements(zone) {
+    var root;
+    if (zone === 'sidebar') root = document.getElementById('hdSidebar');else if (zone === 'playbar') root = document.getElementById('hdPlaybar');else root = document.getElementById('content') || document.getElementById('main');
+    if (!root) return [];
+    return Array.from(root.querySelectorAll('button:not([disabled]), [role=button]:not([disabled]), input:not([disabled])')).filter(function (el) {
+      var r = el.getBoundingClientRect();
+      return r.width > 4 && r.height > 4 && r.y > -20 && r.y < 1100 && !el.closest('[hidden]') && el.offsetParent !== null;
+    });
+  }
+  R.tvNavigate = function (key) {
+    var curr = document.activeElement;
+    var zone = getZone(curr);
+    var all = getZoneElements(zone);
+    var currIdx = all.indexOf(curr);
+    if (currIdx < 0) {
+      var sidebarBtns = getZoneElements('sidebar');
+      if (sidebarBtns.length) {
+        sidebarBtns[0].focus();
+        return;
+      }
+      var contentBtns = getZoneElements('content');
+      if (contentBtns.length) {
+        contentBtns[0].focus();
+        return;
+      }
+      return;
+    }
+    if (key === 'ArrowLeft' || key === 'ArrowRight') {
+      var dir = key === 'ArrowRight' ? 1 : -1;
+      var curRect = curr.getBoundingClientRect();
+      var cx = curRect.x + curRect.width / 2;
+      var cy = curRect.y + curRect.height / 2;
+      var sameRow = all.filter(function (el) {
+        if (el === curr) return false;
+        var r = el.getBoundingClientRect();
+        var ey = r.y + r.height / 2;
+        return Math.abs(ey - cy) < curRect.height * 0.8;
+      });
+      var horizontal = sameRow.filter(function (el) {
+        var r = el.getBoundingClientRect();
+        var ex = r.x + r.width / 2;
+        return (ex - cx) * dir > 4;
+      }).sort(function (a, b) {
+        var ra = a.getBoundingClientRect(),
+          rb = b.getBoundingClientRect();
+        return Math.abs(ra.x - cx) - Math.abs(rb.x - cx);
+      });
+      if (horizontal.length) {
+        horizontal[0].focus();
+        return;
+      }
+      var zoneOrder = ['sidebar', 'content', 'playbar'];
+      var curZoneIdx = zoneOrder.indexOf(zone);
+      var nextZone = zoneOrder[curZoneIdx + dir];
+      if (nextZone) {
+        var nextZoneBtns = getZoneElements(nextZone);
+        if (nextZoneBtns.length) {
+          var nearest = nextZoneBtns.sort(function (a, b) {
+            var ra = a.getBoundingClientRect(),
+              rb = b.getBoundingClientRect();
+            return Math.abs(ra.y + ra.height / 2 - cy) - Math.abs(rb.y + rb.height / 2 - cy);
+          });
+          nearest[0].focus();
+          return;
+        }
+      }
+      return;
+    }
+    if (key === 'ArrowUp' || key === 'ArrowDown') {
+      var vdir = key === 'ArrowDown' ? 1 : -1;
+      var curR = curr.getBoundingClientRect();
+      var cx2 = curR.x + curR.width / 2;
+      var cy2 = curR.y + curR.height / 2;
+      if (zone === 'sidebar' && vdir === 1) {
+        var isLast = true;
+        for (var i = 0; i < all.length; i++) {
+          if (all[i] === curr) {
+            isLast = i === all.length - 1;
+            break;
+          }
+        }
+        var contentBtns2 = getZoneElements('content');
+        if (contentBtns2.length) {
+          var nearest2 = contentBtns2.sort(function (a, b) {
+            var ra = a.getBoundingClientRect(),
+              rb = b.getBoundingClientRect();
+            return Math.abs(ra.x + ra.width / 2 - cx2) - Math.abs(rb.x + rb.width / 2 - cx2);
+          });
+          nearest2[0].focus();
+          return;
+        }
+      }
+      if (zone === 'sidebar' && vdir === -1 && currIdx === 0) return;
+      if (zone === 'content' && vdir === -1) {
+        var contentZone = getZoneElements('content');
+        var isFirst = contentZone.indexOf(curr) === 0 || contentZone.every(function (el) {
+          var r = el.getBoundingClientRect();
+          return curr.getBoundingClientRect().y <= r.y;
+        });
+        if (isFirst) {
+          var sidebarBtns2 = getZoneElements('sidebar');
+          if (sidebarBtns2.length) {
+            var nearest3 = sidebarBtns2.sort(function (a, b) {
+              var ra = a.getBoundingClientRect(),
+                rb = b.getBoundingClientRect();
+              return Math.abs(ra.y + ra.height / 2 - cy2) - Math.abs(rb.y + rb.height / 2 - cy2);
+            });
+            nearest3[0].focus();
+            return;
+          }
+        }
+      }
+      if (zone === 'playbar' && vdir === -1) {
+        var contentBtns3 = getZoneElements('content');
+        if (contentBtns3.length) {
+          var bottom = contentBtns3.sort(function (a, b) {
+            var ra = a.getBoundingClientRect(),
+              rb = b.getBoundingClientRect();
+            return rb.y - ra.y;
+          });
+          bottom[0].focus();
+          return;
+        }
+      }
+      var vertical = all.filter(function (el) {
+        if (el === curr) return false;
+        var r = el.getBoundingClientRect();
+        var ey = r.y + r.height / 2;
+        return (ey - cy2) * vdir > 4;
+      }).sort(function (a, b) {
+        var ra = a.getBoundingClientRect(),
+          rb = b.getBoundingClientRect();
+        var da = Math.abs(ra.x + ra.width / 2 - cx2) * 2 + Math.abs(ra.y + ra.height / 2 - cy2);
+        var db = Math.abs(rb.x + rb.width / 2 - cx2) * 2 + Math.abs(rb.y + rb.height / 2 - cy2);
+        return da - db;
+      });
+      if (vertical.length) {
+        vertical[0].focus();
+        return;
+      }
+      return;
+    }
+  };
+  window.spatialFocus = function (key) {
+    R.tvNavigate(key);
+  };
+  setTimeout(function () {
+    try {
+      var sidebarBtns = getZoneElements('sidebar');
+      for (var i = 0; i < sidebarBtns.length; i++) {
+        if (sidebarBtns[i].classList.contains('tab') || sidebarBtns[i].closest('#tabs')) {
+          sidebarBtns[i].focus();
+          break;
+        }
+      }
+    } catch (e) {}
+  }, 1500);
+})();
 window.realHdBoot && realHdBoot();</script></body></html>

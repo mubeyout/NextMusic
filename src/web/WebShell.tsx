@@ -8,13 +8,27 @@
 // 返回键:web 是 SPA 自有 historyStack(非浏览器栈)——evaluateJS 探测(播放页/弹窗/内栈依次出)
 // 经 onMessage 回传,ROOT 才走原生双击退出;恒拦截防根栈 pop 回 Boot。
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, BackHandler, Platform, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, BackHandler, NativeEventEmitter, Platform, StyleSheet, Text, View } from 'react-native';
 import { WebView as WebViewBase, type WebViewMessageEvent, type WebViewProps } from 'react-native-webview';
 import { toast } from '../components/Dialog';
 import { C } from '../theme/tokens';
 import { store } from '../services/server';
 
 // RN0.87 新架构 codegen 类型与本包 NativeComponent 声明不合(props 退化 never)——一次性类型级转换,运行时原样
+  // 批14d:TV 遥控器 DPAD_CENTER 确认键——Android Activity 层拦截后经 RN bridge 转发到这里,
+  // 再 evaluateJS 触发 WebView 内焦点元素的 click()
+  useEffect(() => {
+    const emitter = new NativeEventEmitter();
+    const sub = emitter.addListener('onDPADCenter', () => {
+      try {
+        wv.current?.injectJavaScript(
+          "(function(){var t=document.activeElement;if(t&&(t.tagName==='BUTTON'||t.getAttribute('role')==='button')){t.click()}else{t=document.querySelector('#content button:not([disabled])');if(t)t.click()}})();true;"
+        );
+      } catch (e) { /* ignore */ }
+    });
+    return () => sub.remove();
+  }, []);
+
 // 批14:开 WebView chrome inspect(电视排障——chrome://inspect 看真实 console)
 try { (WebViewBase as unknown as { setWebContentsDebuggingEnabled?: (v: boolean) => void }).setWebContentsDebuggingEnabled?.(true); } catch (e) { /* 旧版本忽略 */ }
 type WVHandle = { injectJavaScript: (js: string) => unknown; reload: () => void };
