@@ -128,37 +128,30 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
       {/* v3.30(LEO P1):双大卡间距 12→22(GUTTER) */}
       {/* v3.32(老板 P1 修复):裸注释曾被渲染为匿名 flex 文本节点占 371px 致双大卡不占满行——JSX 子位置注释必须用花括号包裹形式 */}
       <View style={{ flexDirection: 'row', gap: SP.big }}>
-        <BigCard colors={['#7C4DFF', '#3F8CFF']} badge="30" title="每日精选" sub="30 首热歌 · 每天更新" busy={dailyBusy} onPress={playDaily} />
-        <BigCard colors={['#0FA3A3', '#1ED760']} badge="雷达" title="私人雷达" sub="你最近循环的歌" onPress={playRadar} />
+        <PhotoCard img={recPls[0]?.img} badge="每日精选" title="今日精选" sub="今天的好音乐" busy={dailyBusy} onPress={playDaily} />
+        <PhotoCard img={recPls[1]?.img} badge="MADE FOR YOU" title="私人雷达" sub="发现新的心动" onPress={playRadar} />
       </View>
 
-      {/* [产品包HD] 段序对齐:双大卡→推荐歌单→最近播放(接着上次的旋律)→SELECT */}
+      {/* [产品包HD] 段序对齐:双大卡→最近播放→推荐歌单→SELECT */}
       {recents.length ? (
         <Section title="最近播放" hint="接着上次的旋律 · 为你打造" more="查看全部" onMore={() => hdNav()?.navigate('PlaylistDetail', { title: '最近播放', songs: recents, meta: `${recents.length} 首` })}>
-          {/* 最近播放(lx88:横向 ScrollView 会裁切 zoom 溢出——小卡去 zoom 只留环;lx92:左右 padding 4 留出环的 2px 外溢,首尾卡选中不裁) */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: SP.lg, paddingLeft: 26, paddingRight: 12, paddingTop: IS_WEB ? 10 : 6, paddingBottom: IS_WEB ? 26 : 16 }}>
-            {recents.slice(0, 8).map((s, i) => (
-              IS_WEB ? (
-                <PlCardWeb key={`${s.source}_${s.songmid}_${i}`} width={96} compact
-                  pl={{ name: s.name, img: s.img, author: s.singer }}
-                  onOpen={() => playSong(s, recents)} onPlay={() => playSong(s, recents)} />
-              ) : (
-              <HDTouch key={`${s.source}_${s.songmid}_${i}`} style={[st.recCard, shadowStyleOf(s.name)]} onPress={() => playSong(s, recents)}
-                focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 11 }}>
-                {s.img ? <Image source={{ uri: s.img }} style={st.recArt} />
-                  : <View style={[st.recArt, { backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={14} color={C.text3} /></View>}
-                <View style={st.plTexts}>
-                  <Text style={st.recName} numberOfLines={1}>{s.name}</Text>
-                  <Text style={st.recSub} numberOfLines={1}>{s.singer}</Text>
+          {/* [产品包HD 批2] recent 3 列网格(设计 recent-grid: 横图+信息区) */}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.big }}>
+            {recents.slice(0, 6).map((s, i) => (
+              <HDTouch key={`${s.source}_${s.songmid}_${i}`} style={{ width: '31%', borderRadius: 12, overflow: 'hidden', backgroundColor: C.surface }} zoom={1.03}
+                focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12 }} onPress={() => playSong(s, recents)}>
+                <View style={{ height: IS_WEB ? 113 : 88, backgroundColor: C.inset }}>
+                  {s.img ? <Image source={{ uri: s.img }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Icon name="music" size={20} color={C.text3} /></View>}
+                </View>
+                <View style={{ padding: 13, minHeight: 60 }}>
+                  <Text style={{ color: C.text, fontSize: IS_WEB ? 17 : H.font.sm, fontWeight: FW.semibold }} numberOfLines={1}>{s.name}</Text>
+                  <Text style={{ color: C.text3, fontSize: IS_WEB ? 13 : H.font.xs, marginTop: 5 }} numberOfLines={1}>{s.singer}</Text>
                 </View>
               </HDTouch>
-              )
             ))}
-          </ScrollView>
+          </View>
         </Section>
-      ) : null}
-
-      {/* 推荐歌单(五源聚合,单行横滑 lx131) */}
+        ) : null}
       <Section title="推荐歌单" hint={recSource ? `五源聚合 · ${recSource}` : '五源聚合'} more="更多" onMore={() => onGotoSearch?.()}>
         {recPls.length ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: SP.xl, paddingLeft: 26, paddingRight: 12, paddingTop: IS_WEB ? 10 : 6, paddingBottom: IS_WEB ? 26 : 16 }}>
@@ -190,7 +183,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
 
       {/* [产品包HD] NEXTMUSIC SELECT:全宽大推荐(私人雷达文案对设计) */}
       <Section title="NEXTMUSIC SELECT" hint="根据你的收听偏好推荐">
-        <BigCard colors={['#0FA3A3', '#1ED760']} badge="SELECT" title="私人雷达" sub="放慢节奏，听见好音乐" wide onPress={playRadar} />
+        <PhotoCard img={recPls[2]?.img || recPls[1]?.img} badge="NEXTMUSIC SELECT" title="夜深人静" sub="放慢一点节奏" wide onPress={playRadar} />
       </Section>
 
       {/* 我的歌单 */}
@@ -230,7 +223,35 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
 // 桌面 BigCard:渐变 + 左徽标 + 标题/副标题 + 右圆钮
 // v6(老板反馈):选中环圆角要比卡片圆角大(卡片 R=11,环=13)——描边画在卡边界外 2px,圆角同步 +2 才贴着弯过去
 // v1.2.5 桌面:web 加高(104)+彩色弥散投影+hover 上浮(主题/投影跟色系);TV 分支尺寸不变
-function BigCard({ colors, badge, title, sub, onPress, busy, wide }: { colors: [string, string]; badge: string; title: string; sub: string; onPress: () => void; busy?: boolean; wide?: boolean }) { // [产品包HD] wide=SELECT 全宽款
+/** [产品包HD 批2] PhotoCard: 照片大卡——228 高+亮度滤镜+底部渐变+左上 pill+30px 标题+右下 52 绿播放钮(设计 feature-card 1:1) */
+function PhotoCard({ img, badge, title, sub, onPress, busy, wide }: { img?: string; badge: string; title: string; sub: string; onPress: () => void; busy?: boolean; wide?: boolean }) {
+  const fallback = ['#3B2F6F', '#24483F'] as [string, string];
+  return (
+    <HDTouch activeOpacity={0.9} onPress={onPress} zoom={1.02}
+      focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 18 }}
+      style={[{ height: IS_WEB ? 228 : 170, borderRadius: 18, overflow: 'hidden' }, wide ? { width: '100%' as const } : { flex: 1 }]}>
+      {img ? (
+        <Image source={{ uri: img }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} resizeMode="cover" />
+      ) : (
+        <LinearGradient colors={fallback} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+      )}
+      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,.22)' }} />
+      <LinearGradient colors={['rgba(0,0,0,0.03)', 'rgba(0,0,0,0.13)', 'rgba(0,0,0,0.79)']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+      <View style={{ position: 'absolute', top: 20, left: 23, borderWidth: 1, borderColor: 'rgba(255,255,255,.26)', borderRadius: 5, paddingHorizontal: 7, paddingVertical: 4, backgroundColor: 'rgba(0,0,0,.28)' }}>
+        <Text style={{ color: 'rgba(255,255,255,.88)', fontSize: 12 }}>{badge}</Text>
+      </View>
+      <View style={{ position: 'absolute', bottom: 25, left: 25, right: 78 }}>
+        <Text style={{ color: '#FFFFFF', fontSize: IS_WEB ? 30 : 22, fontWeight: FW.heavy, lineHeight: 38 }} numberOfLines={1}>{title}</Text>
+        <Text style={{ color: 'rgba(255,255,255,.72)', fontSize: 15, marginTop: 8 }} numberOfLines={1}>{sub}</Text>
+      </View>
+      <View style={{ position: 'absolute', right: 20, bottom: 24, width: 52, height: 52, borderRadius: 26, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }}>
+        {busy ? <ActivityIndicator size="small" color="#fff" /> : <Icon name="play" size={22} active color={C.onBrand} />}
+      </View>
+    </HDTouch>
+  );
+}
+
+function BigCard({ colors, badge, title, sub, onPress, busy, wide }: { colors: [string, string]; badge: string; title: string; sub: string; onPress: () => void; busy?: boolean; wide?: boolean }) { // [产品包HD] wide=SELECT 全宽款(批2 起被 PhotoCard 替代调用)
   const [hov, setHov] = useState(false);
   const t = useRef<ReturnType<typeof setTimeout> | null>(null);
   const elRef = useRef<React.ComponentRef<typeof View> | null>(null); // v3.28:ref 实例类型
@@ -280,7 +301,7 @@ const st = StyleSheet.create({
   retryBtn: { marginTop: 10, borderRadius: 999, paddingHorizontal: 20, height: 30, backgroundColor: C.elev, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
   retryText: { color: C.text2, fontSize: H.font.sm },
   screen: { flex: 1, backgroundColor: C.bg },
-  greet: { color: C.text, fontSize: H.font.hero, fontWeight: FW.heavy },
+  greet: { color: C.text, fontSize: IS_WEB ? 34 : H.font.hero, fontWeight: FW.heavy },
   bigBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: H.radius.card },
   // v1.2.6:web 圆角真修——react-native-linear-gradient 在 RNW 不吃 borderRadius(实测卡角方形),
   // 卡根 overflow hidden 直接裁(老板:每日推荐/私人雷达圆角没有了);TV 不动(原生正常)
@@ -290,7 +311,7 @@ const st = StyleSheet.create({
   bigTitle: { color: C.white, fontSize: H.font.xl, fontWeight: FW.heavy, letterSpacing: -.3 },
   bigSub: { color: '#ffffffa8', fontSize: H.font.sm, marginTop: 2 }, // [1012 回滚] 同上
   bigPlay: { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,.22)', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(0,0,0,.35)' },
-  secTitle: { color: C.text, fontSize: H.font.xl, fontWeight: FW.bold },
+  secTitle: { color: C.text, fontSize: IS_WEB ? 23 : H.font.xl, fontWeight: FW.bold },
   secHint: { color: C.text3, fontSize: H.font.xs },
   secMore: { color: C.brand, fontSize: H.font.sm },
   // v6(老板反馈):环必须贴附卡片几何——环宽=封面宽(去水平 padding),环圆角=封面圆角+2(描边外扩 2px,圆角同步外放才不显小)
