@@ -100,8 +100,8 @@ android {
         applicationId "com.mubeyworks.nextmusic"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 185
-        versionName "1.4.1" // v1.4.1-vc165(1107:车机模式开关删除·纯环境自动检测双向钳制+图标光学归一+CAR缺口包A1-A5+活态插入裁定)
+        versionCode 186
+        versionName "1.4.1" // v1.4.1-vc186(批18:TV 真遥控器 DPAD/OK 全链路——MainActivity 拦键族 19-23/66/96/160 DOWN+UP→onTVKey→WebShell 合成 Chrome74 KeyboardEvent 注入页面;考古实锤 v185 竞态坏包:批14d 两侧坏代码从未进包,真遥控器发的就是标准 DPAD 码)
     }
     // 多架构分发：GitHub Release 只放编译产物（armeabi-v7a/arm64-v8a/x86/x86_64 + universal 兑底）
     splits {

@@ -16,19 +16,28 @@ import { store } from '../services/server';
 import { settings } from '../services/settings';
 
 // RN0.87 新架构 codegen 类型与本包 NativeComponent 声明不合(props 退化 never)——一次性类型级转换,运行时原样
-  // 批14d:TV 遥控器 DPAD_CENTER 确认键——Android Activity 层拦截后经 RN bridge 转发到这里,
-  // 再 evaluateJS 触发 WebView 内焦点元素的 click()
-  useEffect(() => {
-    const emitter = new NativeEventEmitter();
-    const sub = emitter.addListener('onDPADCenter', () => {
-      try {
-        wv.current?.injectJavaScript(
-          "(function(){var t=document.activeElement;if(t&&(t.tagName==='BUTTON'||t.getAttribute('role')==='button')){t.click()}else{t=document.querySelector('#content button:not([disabled])');if(t)t.click()}})();true;"
-        );
-      } catch (e) { /* ignore */ }
-    });
-    return () => sub.remove();
-  }, []);
+// 批18(1112 老板令 1554):真遥控器 DPAD/OK 全链路——原生 MainActivity 拦截 keycode
+// {19-23,66,96,160} 的 DOWN+UP(含 repeat)emit onTVKey → 组件内 listener 合成 Chrome 74
+// 可用的 KeyboardEvent 注入页面 document(方向键 keydown+keyup;确认键只发 keydown——页面
+// real15 对 Enter 族 keydown/keyup 双监听都 click activeElement,两发=双击=toggle 抵消)。
+// 合成事件 target=document + Object.defineProperty 覆写 keyCode/which(Chrome 的
+// KeyboardEvent 构造器 init 字典不认这两个字段,不覆写恒 0——real15/real14 只看 e.keyCode
+// 的 handler 全收不到)。页面消费端:real16 分区导航(接管 spatialFocus)+real15/14 确认键
+// 栈+app.js keyboard()——dist 全文 0 处 isTrusted 检查,合成事件畅通。
+// (考古注:批14d 原实现把 useEffect 放在了模块顶层引用组件内 wv——TS 编译从未通过,且
+// MainActivity 侧 reactHost 取值链与 RN 0.87 API 不符;v185 坏包 dex 考古实锤两边的代码
+// 都没进过任何 APK,本批为全链重写。)
+const TV_KEY_MAP: Record<number, { key: string; keyCode: number }> = {
+  19: { key: 'ArrowUp', keyCode: 38 },
+  20: { key: 'ArrowDown', keyCode: 40 },
+  21: { key: 'ArrowLeft', keyCode: 37 },
+  22: { key: 'ArrowRight', keyCode: 39 },
+  23: { key: 'Enter', keyCode: 13 }, // DPAD_CENTER(小米蓝牙遥控 OK=标准 23,TV logcat 实锤)
+  66: { key: 'Enter', keyCode: 13 }, // KEYCODE_ENTER(部分蓝牙遥控/键盘 OK 映射)
+  160: { key: 'Enter', keyCode: 13 }, // NUMPAD_ENTER
+  96: { key: 'Enter', keyCode: 13 }, // BUTTON_A(手柄 A=TV 语境确认)
+};
+const TV_CONFIRM_KEYCODES = new Set([23, 66, 160, 96]);
 
 // 批14:开 WebView chrome inspect(电视排障——chrome://inspect 看真实 console)
 try { (WebViewBase as unknown as { setWebContentsDebuggingEnabled?: (v: boolean) => void }).setWebContentsDebuggingEnabled?.(true); } catch (e) { /* 旧版本忽略 */ }
@@ -105,6 +114,36 @@ export function WebShell({ entry }: { entry: string }) {
     return () => { activeBack = null; };
   }, []);
 
+  // 批18(1112 老板令 1554):真遥控器按键 → 合成页面 KeyboardEvent。native onTVKey
+  // {keyCode, action(0=down/1=up), repeat} → Chrome 74 兼容注入(keyCode/which defineProperty
+  // 覆写);每次合成 postMessage 'NM_KEY:key:type' 回传,logcat 看端到端全链证据。
+  useEffect(() => {
+    const emitter = new NativeEventEmitter();
+    // RN0.87 NativeEventEmitter 回调签名为宽松 Object[]——参数 any + 运行时守卫
+    const sub = emitter.addListener('onTVKey', (ev: any) => {
+      if (!ev || typeof ev.keyCode !== 'number' || typeof ev.action !== 'number') return;
+      const kc = ev.keyCode as number;
+      const m = TV_KEY_MAP[kc];
+      if (!m) return;
+      const isConfirm = TV_CONFIRM_KEYCODES.has(kc);
+      const type: 'keydown' | 'keyup' = ev.action === 0 ? 'keydown' : 'keyup';
+      if (type === 'keyup' && isConfirm) return; // 确认键只发 keydown(real15 双监听防双击)
+      const rep = ev.repeat === true;
+        const js =
+          "(function(){var K='" + m.key + "',C=" + m.keyCode + ",T='" + type + "',R=" + (rep ? 'true' : 'false') + ';' +
+          "var e;try{e=new KeyboardEvent(T,{key:K,bubbles:true,cancelable:true,composed:true})}catch(x){e=document.createEvent('KeyboardEvent');e.initKeyboardEvent(T,true,true,window,K,0,'',false,'')}" +
+          "try{Object.defineProperty(e,'keyCode',{get:function(){return C}})}catch(x){}" +
+          "try{Object.defineProperty(e,'which',{get:function(){return C}})}catch(x){}" +
+          "try{Object.defineProperty(e,'charCode',{get:function(){return 0}})}catch(x){}" +
+          "try{Object.defineProperty(e,'repeat',{get:function(){return R}})}catch(x){}" +
+          'document.dispatchEvent(e);' +
+          "try{window.ReactNativeWebView&&window.ReactNativeWebView.postMessage('NM_KEY:'+K+':'+T+(R?':rep':''))}catch(x){}" +
+          '})();true;';
+        try { wv.current?.injectJavaScript(js); } catch (err) { /* ignore */ }
+    });
+    return () => sub.remove();
+  }, []);
+
   const onMessage = (e: WebViewMessageEvent) => {
     // 批17:carMode 切换消息
     try {
@@ -115,6 +154,7 @@ export function WebShell({ entry }: { entry: string }) {
       }
     } catch (_) { /* 非 JSON */ }
     const d = e.nativeEvent.data;
+    if (d && d.indexOf('NM_KEY:') === 0) { console.log('[WebShell]', d); return; } // 批18:TV 键端到端回执
     console.log('[WebShell] onMessage:', d);
     if (d !== 'NM_BACK:ROOT') return;
     if (exitArmed.current) { console.log('[WebShell] exitApp'); BackHandler.exitApp(); }
