@@ -29,7 +29,7 @@ const SW48_NORMALIZE = new Set(['podcast', 'ranking', 'library', 'folder-music',
 
 export type IconName =
   | 'home' | 'explore' | 'my' | 'search' | 'play' | 'pause' | 'more' | 'back'
-  | 'chevronright' | 'download' | 'devices' | 'settings' | 'shuffle' | 'repeat'
+  | 'chevronright' | 'download' | 'devices' | 'settings' | 'shuffle' | 'repeat' | 'sun' | 'moon'
   | 'queue' | 'previous' | 'next' | 'sliders' | 'headphones' | 'music' | 'close'
   | 'heart' | 'add' | 'volume' | 'phone' | 'speaker' | 'tv' | 'comments'
   | 'check' | 'status' | 'user' | 'server'

@@ -277,12 +277,17 @@ function QuickCard({ img, title, sub, onPress, busy, heart }: { img?: string; ti
       style={{ width: '31.5%', minHeight: IS_WEB ? 92 : 72, flexDirection: 'row', alignItems: 'center', borderRadius: 10, overflow: 'hidden' }}>
       <View style={{ width: IS_WEB ? 92 : 72, height: IS_WEB ? 92 : 72, backgroundColor: C.surface2, borderTopLeftRadius: 8, borderBottomLeftRadius: 8, alignItems: 'center', justifyContent: 'center' }}>
         {img ? <Image source={{ uri: img }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <Icon name="music" size={22} color={C.text3} />}
+        {/* 批3补:quick-heart 角标覆盖图上(设计 absolute left 24 top 24 → 图区,#FF5A76) */}
+        {heart ? <View style={{ position: 'absolute', top: IS_WEB ? 32 : 24, left: IS_WEB ? 32 : 24 }}><Icon name="heart" size={16} color="#FF5A76" active /></View> : null}
       </View>
       <View style={{ flex: 1, minWidth: 0, paddingHorizontal: IS_WEB ? 16 : 12, gap: 4 }}>
         <Text style={{ color: C.text, fontSize: IS_WEB ? 20 : H.font.xl, fontWeight: '600' }} numberOfLines={1}>{title}</Text>
         <Text style={{ color: C.text2, fontSize: IS_WEB ? 12 : FS.xs }} numberOfLines={1}>{sub}</Text>
       </View>
-      {heart ? <View style={{ marginRight: IS_WEB ? 14 : 10, width: 28, height: 28, alignItems: 'center', justifyContent: 'center' }}><Icon name="heart" size={16} color="#FF5A76" active /></View> : null}
+      {/* 批3补:quick-arrow 尾箭头(设计 #666 18px) */}
+      <View style={{ marginRight: IS_WEB ? 12 : 8, alignItems: 'center', justifyContent: 'center' }}>
+        <Icon name="chevronright" size={IS_WEB ? 18 : 14} color="#666666" />
+      </View>
       {busy ? <ActivityIndicator size="small" color={C.brand} style={{ marginRight: 14 }} /> : null}
     </HDTouch>
   );

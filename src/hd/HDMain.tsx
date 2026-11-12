@@ -300,6 +300,8 @@ export function HDMain() {
   return (
     <View style={[st.screen, { paddingLeft: insets.left, paddingTop: Math.max(insets.top, IS_CAR_DEVICE ? 72 : 0) }]}>
       {/* 1028 星愿安全区:左侧只跟运行时 insets(实车实测固定 96 兑底致无左 bar 车型空一大块——老板实测回退);顶部 72 保留(实锤重叠过) */}
+      {/* [产品包HD 批3] 上层行:侧栏+内容区(播放条全宽拉通,侧栏止于播放条上方——设计 #hdSidebar bottom:var(--bar)) */}
+      <View style={{ flex: 1, flexDirection: 'row' as const }}>
       {/* ===== 侧栏(桌面版结构) ===== */}
       <View style={IS_WEB ? st.sidebarWrapWeb : st.sidebarWrap}>
         {IS_WEB ? (
@@ -381,6 +383,13 @@ export function HDMain() {
             <Text style={{ color: C.text3, fontSize: 13.5, marginLeft: 8, flex: 1 }}>搜索歌曲、歌手、专辑</Text>
             <Text style={{ color: C.text3, fontSize: 10, borderWidth: 1, borderColor: C.border, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>⌘K</Text>
           </HDTouch>
+          {/* [产品包HD 批3补] theme-toggle 主题切换钮(设计 topbar header-actions 实测:语音钮左侧,深色显 sun) */}
+          {IS_WEB ? (
+            <HDTouch style={{ width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginLeft: 10 }} focusStyle={false} hoverBg={false}
+              onPress={() => { const cur = settings.get(); settings.set('light', !cur.light); location.reload(); }}>
+              <Icon name={settings.get().light ? 'moon' : 'sun'} size={18} color={C.text2} />
+            </HDTouch>
+          ) : null}
           <HDTouch style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', marginLeft: 10 }} focusStyle={false} hoverBg={false} onPress={() => toast('语音搜索（即将上线）')}>
             <Icon name="wave" size={18} color={C.text2} />
           </HDTouch>
@@ -455,15 +464,16 @@ export function HDMain() {
           </InnerStack.Navigator>
         </NavigationContainer>
 
-        {/* 1104:非车机恒贴底(insets 误抬修复) */}
-        {innerRoute !== 'Player' ? (
-        <View style={{ position: 'absolute', left: 0, right: 0, bottom: IS_CAR_DEVICE ? botLift : 0, zIndex: 30 }} collapsable={false}>
-          <HDPlayBar onCollect={setPbCollect} />
-        </View>
-        ) : null}
-        {pbCollect ? <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, zIndex: 999 }}><HDCollect song={pbCollect} onClose={() => setPbCollect(null)} /></View> : null}
         </NavigationIndependentTree>
       </View>
+      </View>
+      {/* [产品包HD 批3] 全宽播放条(设计 #hdPlaybar 横贯屏宽)——从 body 提出,流内贴底 */}
+      {innerRoute !== 'Player' ? (
+        <View style={{ zIndex: 30, paddingBottom: IS_CAR_DEVICE ? botLift : 0 }} collapsable={false}>
+          <HDPlayBar onCollect={setPbCollect} />
+        </View>
+      ) : null}
+      {pbCollect ? <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, zIndex: 999 }}><HDCollect song={pbCollect} onClose={() => setPbCollect(null)} /></View> : null}
     </View>
   );
 }
@@ -622,7 +632,7 @@ function HDPlayBar({ onCollect }: { onCollect?: (s: import('../services/server')
 
 const st = StyleSheet.create({
   navItemChild: { paddingLeft: 34 }, // [库族重设计v1 PartA] 子行统一缩进(与第三方现行 34 一致,不发明新值)
-  screen: { flex: 1, flexDirection: 'row', backgroundColor: C.bg },
+  screen: { flex: 1, flexDirection: 'column' as const, backgroundColor: C.bg }, // [产品包HD 批3] 纵向:上层行(侧栏+内容)+全宽播放条(设计 #app flex-col + #hdPlaybar 拉通)
   sidebarWrap: { width: H.sidebar, backgroundColor: C.glass, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border },
   // v1.1.9 web:侧栏常驻最顶层(内页卡片 marginLeft 让位,zIndex 保证转场时侧栏不被卡片盖住)
   sidebarWrapWeb: { position: 'relative', zIndex: 50, width: 238, backgroundColor: C.bg, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border }, // [产品包HD] #hdSidebar 238
@@ -653,12 +663,12 @@ const st = StyleSheet.create({
   tabStack: { flex: 1 },
   tabHost: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   tabOff: { display: 'none' as const, elevation: 0 },
-  // 播放条(桌面式 64dp,玻璃磨砂面)
+  // 播放条(批3:设计 #hdPlaybar——实底非磨砂/100h@web/三段 grid 1fr 1.3fr 1fr → RN flex 比例)
   playbar: {
-    height: H.playbar, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 12,
-    backgroundColor: C.glassBar, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border,
+    height: IS_WEB ? 100 : H.playbar, flexDirection: 'row', alignItems: 'center', paddingHorizontal: IS_WEB ? 24 : 14, gap: IS_WEB ? 24 : 12,
+    backgroundColor: C.surface, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border,
   },
-  pbLeft: { flexDirection: 'row', alignItems: 'center', gap: 9, width: 225 },
+  pbLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 },
   // 中列:控件行与进度行同容器同宽对齐(v1.1.6 修错位——原 alignSelf:stretch+maxWidth 导致两行错切)
   pbCenter: { flex: 1, alignItems: 'center', gap: 4 },
   pbCtrls: { flexDirection: 'row', alignItems: 'center', gap: 14 },
