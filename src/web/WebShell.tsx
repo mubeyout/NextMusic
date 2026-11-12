@@ -7,27 +7,37 @@
 // 音频/封面 http 直连 → mixedContentMode=always 放行;媒体免手势自动播放。
 // 返回键:web 是 SPA 自有 historyStack(非浏览器栈)——evaluateJS 探测(播放页/弹窗/内栈依次出)
 // 经 onMessage 回传,ROOT 才走原生双击退出;恒拦截防根栈 pop 回 Boot。
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, BackHandler, Platform, StyleSheet, Text, View } from 'react-native';
 import { WebView as WebViewBase, type WebViewMessageEvent, type WebViewProps } from 'react-native-webview';
 import { toast } from '../components/Dialog';
 import { C } from '../theme/tokens';
+import { store } from '../services/server';
 
 // RN0.87 新架构 codegen 类型与本包 NativeComponent 声明不合(props 退化 never)——一次性类型级转换,运行时原样
+// 批14:开 WebView chrome inspect(电视排障——chrome://inspect 看真实 console)
+try { (WebViewBase as unknown as { setWebContentsDebuggingEnabled?: (v: boolean) => void }).setWebContentsDebuggingEnabled?.(true); } catch (e) { /* 旧版本忽略 */ }
 type WVHandle = { injectJavaScript: (js: string) => unknown; reload: () => void };
 type WVComponent = React.ComponentType<WebViewProps & { ref?: React.Ref<WVHandle> }>;
 const WV = WebViewBase as unknown as WVComponent;
 
-// 服务器真实 base(1112 定):WebView 壳内 API 一律拼此域
+// 服务器真实 base(1112 定;批14:多候选探测——TV 在内网时公网域名 hairpin 常失败,先通的用)
 export const WEB_REAL_BASE = 'http://op.mubey.top:9527';
+export const WEB_REAL_BASE_FALLBACK = 'http://10.0.0.1:9527';
 
 // 注入脚本(injectedJavaScriptBeforeContentLoaded,页面脚本执行前):
 // localStorage 预置 base + fetch 包装('/api/x' → base+'/api/x';'//host' 与绝对 URL 不动)
 export const WEB_INJECT_JS = [
   '(function(){',
-  "  try{localStorage.setItem('nm.real.base','" + WEB_REAL_BASE + "')}catch(e){}",
   "  var FB='" + WEB_REAL_BASE + "';",
   "  try{var v=localStorage.getItem('nm.real.base');if(v)FB=v}catch(e){}",
+  // 批14:双候选连通探测(公网域名失败自动切内网 10.0.0.1,先通的用并写回 localStorage)
+  "  var C1='" + WEB_REAL_BASE + "',C2='" + WEB_REAL_BASE_FALLBACK + "';",
+  "  try{",
+  "    var pick=function(b){if(FB!==b){FB=b;try{localStorage.setItem('nm.real.base',b)}catch(e){}}};",
+    "    var t1=setTimeout(function(){pick(C2)},2500);",
+  "    fetch(C1+'/health').then(function(r){clearTimeout(t1);if(r.ok)pick(C1)}).catch(function(){clearTimeout(t1);pick(C2)});",
+  "  }catch(e){}",
   '  if(window.fetch&&!window.fetch.__nmw){',
   '    var of=window.fetch;',
   '    var wf=function(input,init){',
@@ -93,6 +103,23 @@ export function WebShell({ entry }: { entry: string }) {
     }
   };
 
+  // 批14:App 原生侧已登录态注入 WebView(TV 遥控器输密码痛苦——原生 store 有 token 直接透传,免二次登录)
+  const injectJs = useMemo(() => {
+    let js = WEB_INJECT_JS;
+    try {
+      if (store.token && store.username) {
+        js =
+          "try{localStorage.setItem('nmk:nextmusic:app',JSON.stringify({mode:'server',base:'',token:'" +
+          String(store.token).replace(/'/g, '') +
+          "',username:'" +
+          String(store.username).replace(/'/g, '') +
+          "'}))}catch(e){};\n" +
+          js;
+      }
+    } catch (e) { /* 未登录则跳过注入 */ }
+    return js;
+  }, []);
+
   return (
     <View style={st.host}>
       <WV
@@ -109,7 +136,7 @@ export function WebShell({ entry }: { entry: string }) {
         mediaPlaybackRequiresUserAction={false}
         allowsInlineMediaPlayback
         textZoom={100}
-        injectedJavaScriptBeforeContentLoaded={WEB_INJECT_JS}
+        injectedJavaScriptBeforeContentLoaded={injectJs}
         onMessage={onMessage}
         onError={(e) => setErr(String(e.nativeEvent.description || '加载失败'))}
         onLoadEnd={() => { setLoading(false); setErr(null); }}
