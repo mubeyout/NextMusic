@@ -35,6 +35,7 @@ import { HDSearch } from './HDSearch';
 import { HDBoards } from './HDBoards';
 import { HDDiscover } from './HDDiscover';
 import { HDPodcast } from './HDPodcast';
+import { HDMy } from './HDMy';
 // lx84:内容区嵌套栈内页(侧栏恒固定,内页只在右侧切换;TV 设置族走根栈,v1.2.5 起 web 也内页化)
 import { HDPlayerSafe } from './HDPlayer';
 import { HDPlaylistDetailScreen } from './HDPlaylistDetail';
@@ -289,6 +290,13 @@ export function HDMain() {
     if (songs.length) railNav('PlaylistDetail', { title: '播放历史', songs, meta: `${songs.length} 首` });
   };
 
+  // [产品包HD 批3] 侧栏「我喜欢的」=纯歌列详情(设计 favorites 页:标题+计数+歌行,对包 PlaylistDetail)
+  const openLoves = () => {
+    const lovePl = library.all().find(p => p.name === '我喜欢的');
+    if (lovePl && lovePl.songs.length) railNav('PlaylistDetail', { localId: lovePl.id, title: '我喜欢的', songs: lovePl.songs, meta: `${lovePl.songs.length} 首` });
+    else toast('还没有收藏 —— 播放页点心即可收藏');
+  };
+
   return (
     <View style={[st.screen, { paddingLeft: insets.left, paddingTop: Math.max(insets.top, IS_CAR_DEVICE ? 72 : 0) }]}>
       {/* 1028 星愿安全区:左侧只跟运行时 insets(实车实测固定 96 兑底致无左 bar 车型空一大块——老板实测回退);顶部 72 保留(实锤重叠过) */}
@@ -329,9 +337,9 @@ export function HDMain() {
           <NavItem icon="ranking" label="榜单" active={innerRoute === 'Tabs' && tab === 3} onPress={() => { setTab(3); hdInnerPop(); }} />
           <NavItem icon="podcast" label="播客" active={innerRoute === 'Tabs' && tab === 1} onPress={() => { setTab(1); hdInnerPop(); }} />
           <Group label="我的音乐" top={8} />
-          <HDTouch style={[st.navItem, innerRoute === 'MyFavorites' && st.navItemOn]} focusStyle={st.navFocus} hoverBg={IS_WEB && innerRoute !== 'MyFavorites' ? C.hover : false} onPress={() => railNav('MyFavorites')}>
-            <Icon name="heart" size={16} color={innerRoute === 'MyFavorites' ? C.text : C.text2} />
-            <Text style={[st.navLabel, innerRoute === 'MyFavorites' && { fontWeight: '700', color: C.text }]} numberOfLines={1}>我喜欢的{loveCount != null ? ` · ${loveCount}` : ''}</Text>
+          <HDTouch style={[st.navItem, innerRoute === 'PlaylistDetail' && (innerP?.title === '我喜欢的' || innerP?.localId === 'loves') && st.navItemOn]} focusStyle={st.navFocus} hoverBg={IS_WEB && !(innerRoute === 'PlaylistDetail' && innerP?.title === '我喜欢的') ? C.hover : false} onPress={openLoves}>
+            <Icon name="heart" size={16} color={innerRoute === 'PlaylistDetail' && innerP?.title === '我喜欢的' ? C.text : C.text2} />
+            <Text style={[st.navLabel, innerRoute === 'PlaylistDetail' && innerP?.title === '我喜欢的' && { fontWeight: '700', color: C.text }]} numberOfLines={1}>我喜欢的{loveCount != null ? ` · ${loveCount}` : ''}</Text>
           </HDTouch>
           <NavItem icon="history" label="最近播放" active={innerRoute === 'PlaylistDetail' && innerP?.title === '播放历史'} onPress={openHistory} />
           <NavItem icon="queue" label="我的音乐" active={innerRoute === 'MyLibrary' || innerRoute === 'PlaylistDetail'} onPress={() => railNav('MyLibrary')} />
@@ -402,7 +410,8 @@ export function HDMain() {
             <InnerStack.Screen name="MediaLibs" component={withPhoneScale(MediaLibsScreen)} />
             {/* [KAI 20261008] 云曲库注册补齐(lx168 红线:注释放 Navigator 内会炸,同独占一行才安全) */}
             <InnerStack.Screen name="CloudLibrary" component={withPhoneScale(CloudLibraryScreen)} />
-            <InnerStack.Screen name="MyLibrary" component={withPhoneScale(MyLibraryScreen)} />
+            {/* [产品包HD 批3] 我的音乐=设计稿 mymusic 布局(HDMy),手机版 MyLibraryScreen 退役于 HD 形态 */}
+            <InnerStack.Screen name="MyLibrary" component={HDMy} />
             <InnerStack.Screen name="MyLibAlbum" component={withPhoneScale(MyLibAlbumRoute)} />
             <InnerStack.Screen name="MyLibArtist" component={withPhoneScale(MyLibArtistRoute)} />
             {/* ④公共曲库三路由(浏览+专辑/歌手详情;phone 桥接缩放同 MyLibrary 族) */}
