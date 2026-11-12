@@ -5,14 +5,13 @@ import { Platform } from 'react-native';
 import { FocusBridge } from './HDMain';
 import { useHoverCard } from './hdweb'; // lx162 补:并行会话漏导入(v1.2.6 播客卡 web hover,缺失=HD 播客页运行时崩溃)
 const IS_WEB = Platform.OS === 'web';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { Icon } from '../theme/Icon';
 import { C, H, shadowStyleOf } from './hdtokens';
 import { HDGrid } from './HDGrid';
 import { HDTouch } from './HDTouch';
-import { HDSongRow } from './HDSongRow';
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
 import { songMenu } from './hdmenubuilders';
@@ -68,64 +67,49 @@ export function HDPodcast() {
     return () => { dead = true; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const openChannel = (ch: PodChannel) => {
-    const songs = feeds[ch.id] || [];
-    if (!songs.length) return;
-    hdNav()?.navigate('PlaylistDetail', { title: ch.name, songs, meta: `${songs.length} 期 · ${ch.sub}` });
-  };
-  const playChannel = (ch: PodChannel) => {
-    const songs = feeds[ch.id] || [];
-    if (songs.length) playSong(songs[0], songs);
-  };
 
-  // 热门节目 = 各频道头条交错混合
-  const hotMix: SongItem[] = [];
-  for (let i = 0; i < 6; i++) {
-    for (const ch of POD_CHANNELS) {
-      const f = feeds[ch.id];
-      if (f && f[i]) hotMix.push(f[i]);
-    }
-  }
+  const [ch, setCh] = useState(0); // [产品包HD 批3] 设计稿 pillbar:选中频道驱动下方 4 卡网格
+  const feed = feeds[POD_CHANNELS[ch].id] || [];
 
   return (
     <ScrollView
       style={st.screen}
-      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 26, paddingBottom: 28, gap: SP.wide }}
+      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: IS_WEB ? 42 : 26, paddingBottom: 28, gap: SP.xl }}
       showsVerticalScrollIndicator={false}
     >
+      {/* page-head(设计: 播客29 + 副句14) */}
       <View style={st.head}>
         <Text style={st.title}>播客</Text>
-        <Text style={st.sub}>8 大主题频道 · 搜索聚合 · 自动连播</Text>
+        <Text style={st.sub}>用声音，打开另一种日常</Text>
       </View>
 
-      {/* 频道卡(桌面同构:自适应网格+彩色投影) */}
-      <HDGrid min={GRID.hdMin * (H.font.sm / 10)}>
-        {POD_CHANNELS.map((ch, ci) => {
-          const f = feeds[ch.id] || [];
-          // lx88(老板反馈):底角也要圆角——卡加底色+全圆角 12(overflow 裁剪封面),环统一 14
-          // v1.2.6:抽 PodCard——web hover 投影/上浮;TV 结构不变
-          return (
-            <PodCard key={ch.id} ch={ch} ci={ci} count={f.length} firstName={f[0]?.name} onOpen={() => openChannel(ch)} onPlay={() => playChannel(ch)} />
-          );
-        })}
-      </HDGrid>
+      {/* [产品包HD 批3 1:1] 频道 pillbar(设计: 52h/r28/17px,on=白底黑字650,off=surface2/text2) */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: IS_WEB ? 10 : SP.md, paddingRight: 26 }}>
+        {POD_CHANNELS.map((c, i) => (
+          <HDTouch key={c.id} style={{ paddingHorizontal: 21, height: IS_WEB ? 52 : 44, borderRadius: 28, backgroundColor: i === ch ? '#F5F5F5' : C.surface2, alignItems: 'center', justifyContent: 'center' }}
+            focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 28 }}
+            onPress={() => setCh(i)}>
+            <Text style={{ color: i === ch ? C.bg : C.text2, fontSize: IS_WEB ? 17 : H.font.lg, fontWeight: i === ch ? '600' : '500' }}>{c.name}</Text>
+          </HDTouch>
+        ))}
+      </ScrollView>
 
-      {/* 热门节目 */}
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: SP.md }}>
-        <Text style={st.secTitle}>热门节目</Text>
-        <Text style={st.secHint}>混合各频道</Text>
+      {/* 当前频道节目 4 列卡网格(设计 .grid: 4列 gap18 / 竖卡 386×446 封面出血+底部信息) */}
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: SP.sm }}>
+        <Text style={st.secTitle}>{POD_CHANNELS[ch].name}</Text>
+        <Text style={st.secHint}>{feed.length ? `${feed.length} 期节目` : POD_CHANNELS[ch].sub}</Text>
       </View>
-      {loading && !hotMix.length ? (
+      {loading && !feed.length ? (
         <View style={st.loading}><ActivityIndicator color={C.brand} /><Text style={st.loadingText}>电台内容加载中…</Text></View>
-      ) : hotMix.length ? (
-        <View style={{ gap: SP.xs }}>
-          {hotMix.slice(0, 14).map((s, i) => (
-            <HDSongRow key={`${s.source}_${s.songmid}_${i}`} song={s} index={i + 1} first={i === 0}
+      ) : feed.length ? (
+        <HDGrid min={310} gap={IS_WEB ? 18 : 12}>
+          {feed.slice(0, 8).map((s, i) => (
+            <PodEpCard key={`${s.source}_${s.songmid}_${i}`} song={s} i={i}
               playing={current?.songmid === s.songmid && current?.source === s.source}
-              onPress={() => playSong(s, hotMix)}
-              buildMenu={sg => songMenu(sg, hotMix, { playSong, appendQueue, playNextUp, connected, token })} />
+              onPress={() => playSong(s, feed)}
+              onMenu={sg => songMenu(sg, feed, { playSong, appendQueue, playNextUp, connected, token })} />
           ))}
-        </View>
+        </HDGrid>
       ) : (
         <Text style={st.loadingText}>频道内容暂时无法加载,稍后再试</Text>
       )}
@@ -134,43 +118,27 @@ export function HDPodcast() {
   );
 }
 
-
-// v1.2.6:播客频道卡抽组件——web hover 投影/上浮+overflow 修渐变圆角;TV 原分支逐字保留
-// v1.2.11(老板):web 与 HD 分流——web 版 icon 居中大号+光晕圆底(HD 保持左上角小 icon+右下播放钮)
-function PodCard({ ch, ci, count, firstName, onOpen, onPlay }: { ch: { id: string; name: string; sub: string }; ci: number; count: number; firstName?: string; onOpen: () => void; onPlay: () => void }) {
-  const hc = useHoverCard(ch.name);
-  const playBtn = (web: boolean) => (
-    <HDTouch style={web ? st.cardPlayWeb : st.cardPlay} onPress={onPlay} focusStyle={{ borderWidth: 2, borderColor: '#FFFFFF', borderRadius: web ? 17 : 15 }} hoverBg={'rgba(255,255,255,.16)'} activeOpacity={0.8}>
-      <Icon name="play" size={13} color="#FFFFFF" />
-    </HDTouch>
-  );
+/** [产品包HD 批3 1:1] 节目卡:竖卡封面出血 r12+底部名称+副文(设计 .grid .card 386×446 实测) */
+function PodEpCard({ song, i, playing, onPress, onMenu }: { song: SongItem; i: number; playing?: boolean; onPress: () => void; onMenu?: (s: SongItem) => unknown }) {
   return (
-    <HDTouch style={[st.card, shadowStyleOf(ch.name), IS_WEB && hc.cardStyle, IS_WEB && { overflow: 'hidden' as const }]} zoom={1.06} onPress={onOpen} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }}
-      ref={IS_WEB ? (hc.elRef as never) : undefined}
-      {...(IS_WEB ? { onHoverIn: hc.onHoverIn, onHoverOut: hc.onHoverOut } : {})}>
-      <LinearGradient colors={POD_GRADS[ci % POD_GRADS.length]} start={{ x: 0, y: 0 }} end={IS_WEB ? { x: 0.4, y: 1 } : { x: 1, y: 1 }} style={IS_WEB ? st.cardCoverWeb : st.cardCover}>
-        {IS_WEB ? (
-          <>
-            <View style={st.coverHaloWeb} pointerEvents="none">
-              <Icon name="podcast" size={38} color="#FFFFFF" />
-            </View>
-            {playBtn(true)}
-          </>
-        ) : (
-          <>
-            <Icon name="podcast" size={30} color="#FFFFFF" />
-            <View style={{ flex: 1 }} />
-            {playBtn(false)}
-          </>
+    <HDTouch style={{ borderRadius: 12, backgroundColor: C.surface, overflow: 'hidden' }} zoom={1.03} onPress={onPress}
+      focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }}
+      onLongPress={onMenu ? () => onMenu(song) : undefined}>
+      <View style={{ width: '100%', aspectRatio: 1, backgroundColor: C.inset }}>
+        {song.img ? <Image source={{ uri: song.img }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : (
+          <LinearGradient colors={POD_GRADS[i % POD_GRADS.length]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="podcast" size={38} color="#FFFFFFB3" />
+          </LinearGradient>
         )}
-      </LinearGradient>
-      <View style={st.cardBody}>
-        <Text style={st.cardName} numberOfLines={1}>{ch.name}</Text>
-        <Text style={st.cardSub} numberOfLines={1}>{count ? `${count} 期 · ${firstName}` : ch.sub}</Text>
+      </View>
+      <View style={{ padding: IS_WEB ? 13 : 10, gap: 4 }}>
+        <Text style={{ color: playing ? C.brand : C.text, fontSize: IS_WEB ? 16 : H.font.lg, fontWeight: FW.semibold }} numberOfLines={1}>{song.name}</Text>
+        <Text style={{ color: '#979797', fontSize: IS_WEB ? 13 : H.font.sm }} numberOfLines={1}>{song.singer}{song.interval ? ` · ${song.interval}` : ''}</Text>
       </View>
     </HDTouch>
   );
 }
+
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },

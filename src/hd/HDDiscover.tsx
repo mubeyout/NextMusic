@@ -1,5 +1,7 @@
-// HD 歌单广场 —— 桌面版风格:五源 pill + 热门标签 pill + 歌单卡网格,点击拉详情进 PlaylistDetail(复用)
-// v2 web 版 /discover 功能对齐:标签筛选 + 广场浏览 + 加载更多
+// HD 探索页 —— [产品包HD 批3 1:1] 对齐设计稿 pgExplore:
+// page-head(探索29+副句+搜索钮) → 热门主题 genre-grid 6渐变卡(150h/3列/题25+英文12) →
+// 按场景听 pillbar(52h/17px) → 本周精选(kg榜真数据3行+更多→榜单)
+// 歌单广场(五源真实功能)保留为二级态:genre 卡点击进 tag 筛选广场
 import React, { useEffect, useRef, useState } from 'react';
 import { FocusBridge, usePbFocusTarget } from './HDMain';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Image } from 'react-native';
@@ -10,6 +12,8 @@ import { C, H, shadowStyleOf, webCardShadow } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { HDGrid } from './HDGrid';
 import { useHoverCard } from './hdweb';
+import { HDSongRow } from './HDSongRow';
+import { usePlayer } from '../state/PlayerProvider';
 import { Platform } from 'react-native';
 const IS_WEB = Platform.OS === 'web';
 import { lxapi } from '../services/lxapi';
@@ -17,7 +21,7 @@ import type { SongItem } from '../services/server';
 import { toast } from '../components/Dialog';
 import { hdNav } from './hdnav';
 import { cacheStale, cacheSet } from './hdcache';
-import {GRID,  FS, FW, SP } from '../theme/tokens';
+import { GRID, FS, FW, SP } from '../theme/tokens';
 
 type PL = { id: string; name: string; author?: string; total?: number | string; img?: string; play_count?: string; source?: string };
 type Tag = { id: string; name: string };
@@ -35,24 +39,127 @@ const ACCENTS: [string, string][] = [
   ['#D67A1F', '#6E3A1F'], ['#871FD6', '#3A1F5E'], ['#1FD6C0', '#1F5E5A'],
 ];
 
+// [产品包HD 批3] 热门主题 6 渐变卡(设计 genreSets 原色板)
+const GENRES: [string, string, string, string][] = [
+  ['流行', 'POP', '#693046', '#39222e'],
+  ['摇滚', 'ROCK', '#733e2d', '#33221e'],
+  ['电子', 'ELECTRONIC', '#245570', '#192e42'],
+  ['嘻哈', 'HIP-HOP', '#523668', '#30233f'],
+  ['爵士', 'JAZZ', '#305346', '#1d332d'],
+  ['古典', 'CLASSICAL', '#66502b', '#352d21'],
+];
+
+const SCENES = ['通勤', '学习', '运动', '派对', '睡眠', '旅行'];
+
 export function HDDiscover() {
+  const [mode, setMode] = useState<'explore' | 'square'>('explore');
+  const [squareTag, setSquareTag] = useState('');
+  return mode === 'explore'
+    ? <ExploreView onSquare={(tagName?: string) => { setSquareTag(tagName ?? ''); setMode('square'); }} />
+    : <SquareView tagName={squareTag} onBack={() => setMode('explore')} />;
+}
+
+// [产品包HD 批3 1:1] 探索首页(设计稿 explore 布局)
+function ExploreView({ onSquare }: { onSquare: (tagName?: string) => void }) {
+  const insets = useSafeAreaInsets();
+  const { playSong } = usePlayer();
+  const [weekly, setWeekly] = useState<SongItem[]>(() => cacheStale<SongItem[]>('explore.weekly') || []);
+  const pbTarget = usePbFocusTarget();
+
+  useEffect(() => { // 本周精选 = kg TOP500 前 3(真数据)
+    lxapi.leaderboardBoards('kg').then(bs => {
+      const top = bs.find(b => /500/i.test(b.name)) || bs[0];
+      return top ? lxapi.leaderboardList(top.bangid, 'kg') : [];
+    }).then((list: SongItem[]) => {
+      const l = (list || []).slice(0, 3);
+      if (l.length) { setWeekly(l); cacheSet('explore.weekly', l); }
+    }).catch(() => {});
+  }, []);
+
+  const playScene = async (scene: string) => {
+    const list = (await lxapi.search(`${scene} 音乐`, 'kw', 1, 30).catch(() => [] as SongItem[])).slice(0, 30);
+    if (list.length) { playSong(list[0], list); toast(`${scene}歌单 · ${list.length} 首`); }
+    else toast('内容获取失败,稍后重试');
+  };
+
+  const openGenre = (name: string) => onSquare(name); // genre→广场同名 tag 筛选
+
+  return (
+    <ScrollView style={st.screen} contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: IS_WEB ? 42 : 26, paddingBottom: 28, gap: SP.xl }} showsVerticalScrollIndicator={false}>
+      {/* page-head(设计: h1 29 + p 副句 + 右搜索钮) */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.lg }}>
+        <View style={{ gap: 6 }}>
+          <Text style={st.h1}>探索</Text>
+          <Text style={st.sub}>找到此刻想听的音乐</Text>
+        </View>
+        <View style={{ flex: 1 }} />
+        <HDTouch style={st.headBtn} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.pill }} onPress={() => hdNav()?.navigate('Search')}>
+          <Icon name="search" size={16} color={C.text} /><Text style={st.headBtnText}>搜索</Text>
+        </HDTouch>
+      </View>
+
+      {/* 热门主题 genre-grid(设计: 3列 gap16 / 150h r14 pad24 / 题25-700 + 英文12-ls1) */}
+      <View style={st.secHead}><Text style={st.secTitle}>热门主题</Text></View>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: IS_WEB ? 16 : SP.md }}>
+        {GENRES.map(([cn, en, a, b]) => (
+          <HDTouch key={cn} activeOpacity={0.9} zoom={1.02} onPress={() => openGenre(cn)}
+            focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }}
+            style={{ width: '31.5%', height: IS_WEB ? 150 : 118, borderRadius: 14, overflow: 'hidden' }}>
+            <LinearGradient colors={[a, b]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, padding: IS_WEB ? 24 : 18, justifyContent: 'center' }}>
+              <Text style={{ color: '#FFFFFF', fontSize: IS_WEB ? 25 : 20, fontWeight: '700' }}>{cn}</Text>
+              <Text style={{ color: '#ffffffa0', fontSize: IS_WEB ? 12 : FS.xs, letterSpacing: 1, marginTop: 8 }}>{en}</Text>
+            </View>
+            <View style={{ position: 'absolute', right: IS_WEB ? 24 : 18, bottom: IS_WEB ? 24 : 18 }}><Icon name="music" size={22} color="#ffffff8c" /></View>
+          </HDTouch>
+        ))}
+      </View>
+
+      {/* 按场景听 pillbar(设计: 52h/r28/17px,off=surface2/text2) */}
+      <View style={st.secHead}><Text style={st.secTitle}>按场景听</Text></View>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: IS_WEB ? 10 : SP.md }}>
+        {SCENES.map(s => (
+          <HDTouch key={s} style={{ paddingHorizontal: 21, height: IS_WEB ? 52 : 44, borderRadius: 28, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }}
+            focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 28 }} onPress={() => playScene(s)}>
+            <Text style={{ color: C.text2, fontSize: IS_WEB ? 17 : H.font.lg }}>{s}</Text>
+          </HDTouch>
+        ))}
+      </View>
+
+      {/* 本周精选(设计: song-list 3 行 + 更多) —— 真数据 kg 榜 */}
+      <View style={st.secHead}>
+        <Text style={st.secTitle}>本周精选</Text>
+        <View style={{ flex: 1 }} />
+        <HDTouch style={{ paddingVertical: 2, paddingHorizontal: 5 }} focusStyle={{ borderWidth: 1.5, borderColor: C.brand, borderRadius: 6 }} onPress={() => hdNav()?.navigate('BoardsSquare')}>
+          <Text style={st.secMore}>更多 ›</Text>
+        </HDTouch>
+      </View>
+      {weekly.length ? weekly.map((s, i) => (
+        <HDSongRow key={`${s.songmid}_${i}`} song={s} index={i} onPress={() => { playSong(s, weekly); }} />
+      )) : <View style={st.tip}><ActivityIndicator color={C.brand} /><Text style={st.tipText}>精选加载中…</Text></View>}
+      <FocusBridge active />
+    </ScrollView>
+  );
+}
+
+// 歌单广场(二级态:五源+tag 筛选——原 HDDiscover 主体,入口=探索页 genre 卡)
+function SquareView({ tagName, onBack }: { tagName: string; onBack: () => void }) {
   const insets = useSafeAreaInsets();
   const [src, setSrc] = useState('wy');
-  const [tag, setTag] = useState<string>('');          // '' = 推荐位
+  const [tag, setTag] = useState<string>(tagName);
   const [tags, setTags] = useState<Tag[]>([]);
   const [pls, setPls] = useState<PL[] | null>(null);
   const [page, setPage] = useState(1);
   const [more, setMore] = useState(true);
-  const [busy, setBusy] = useState(false); // 翻页/切源级
-  const [busyId, setBusyId] = useState<string | null>(null); // #015:per-card 拉详情中(蒙层反馈,静默失败 → 有反馈)
-  const [cols, setCols] = useState(6); // #015:网格列数(末行 nextFocusDown 判定)
+  const [busy, setBusy] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [cols, setCols] = useState(6);
   const pbTarget = usePbFocusTarget();
   const deadRef = useRef(false);
 
-  // 拉标签(wy 返回 tags 分组,mg/kg 返回 hotTag——统一摊平)
   useEffect(() => {
     deadRef.current = false;
-    setTags([]); setTag(''); setPls(null); setPage(1); setMore(true);
+    setTags([]); setTag(tagName); setPls(null); setPage(1); setMore(true);
     const key = `dtags.${src}`;
     const stale = cacheStale<Tag[]>(key);
     if (stale) setTags(stale);
@@ -62,15 +169,18 @@ export function HDDiscover() {
         ...((t.hotTag || []) as Tag[]),
         ...((t.tags || []).flatMap((g: any) => (g.list || []).map((x: any) => ({ id: String(x.id), name: String(x.name) })))),
       ];
-      // 去重(同名标签)
       const seen = new Set<string>();
       const uniq = flat.filter(x => { const k = x.name; if (seen.has(k)) return false; seen.add(k); return true; });
       setTags(uniq.slice(0, 24)); cacheSet(key, uniq.slice(0, 24));
+      // 批3:探索页 genre 卡传入中文名——匹配广场 tag id(名字≠id,直设名字会查空)
+      if (tagName) {
+        const hit = uniq.find(x => x.name === tagName || x.name.includes(tagName));
+        if (hit) setTag(hit.id);
+      }
     }).catch(() => {});
     return () => { deadRef.current = true; };
   }, [src]);
 
-  // 拉歌单列表(SWR 缓存回填)
   const loadPage = (p: number, append: boolean) => {
     if (deadRef.current) return;
     setBusy(true);
@@ -95,7 +205,7 @@ export function HDDiscover() {
   useEffect(() => { loadPage(1, false); return () => { deadRef.current = true; }; }, [src, tag]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const open = async (pl: PL) => {
-    if (busyId) return; // #015:per-card 互斥(替代全局 busy 吞点击)
+    if (busyId) return;
     setBusyId(pl.id);
     try {
       const r = await lxapi.songListDetail(pl.id, 1, src);
@@ -109,10 +219,13 @@ export function HDDiscover() {
   return (
     <ScrollView
       style={st.screen}
-      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 26, paddingBottom: 28, gap: SP.xl }}
+      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: IS_WEB ? 42 : 26, paddingBottom: 28, gap: SP.xl }}
       showsVerticalScrollIndicator={false}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.md }}>
+        <HDTouch style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center' }} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 18 }} onPress={onBack}>
+          <Icon name="back" size={17} color={C.text} />
+        </HDTouch>
         <Text style={st.title}>歌单广场</Text>
         <View style={{ flex: 1 }} />
         {busy ? <ActivityIndicator color={C.brand} size="small" /> : null}
@@ -129,7 +242,6 @@ export function HDDiscover() {
         ))}
       </View>
 
-      {/* 标签横滚(推荐 + 热门标签),滚轮/拖拽滑动,无滚动条 */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: SP.md, paddingRight: 26 }}>
         <HDTouch style={[st.pill, tag === '' && st.pillOn]}
           focusStyle={tag === '' ? { borderWidth: 2, borderColor: C.brandSoft } : st.pillFocus}
@@ -152,7 +264,7 @@ export function HDDiscover() {
           {pls.map((pl, i) => (
             <PLCard key={`${pl.id}_${i}`} pl={pl} i={i} src={src} onOpen={() => open(pl)}
               busy={busyId === pl.id}
-              lastRow={i >= pls.length - (((pls.length - 1) % cols) + 1)} // #015:末行卡显式 nextFocusDown→播放条(焦点逃逸焊死)
+              lastRow={i >= pls.length - (((pls.length - 1) % cols) + 1)}
               nextDown={pbTarget ?? undefined} />
           ))}
         </HDGrid>
@@ -187,7 +299,6 @@ function PLCard({ pl, i, src, onOpen, busy, lastRow, nextDown }: { pl: PL; i: nu
           <Icon name="music" size={42} color="#FFFFFFB3" />
         </LinearGradient>
       )}
-      {/* #015:per-card busy 蒙层(拉详情中)——原先静默失败:卡看着能点,点了没反应 */}
       {busy ? (
         <View style={st.cardBusy} pointerEvents="none">
           <ActivityIndicator color="#FFFFFFE6" size="small" />
@@ -206,6 +317,13 @@ function PLCard({ pl, i, src, onOpen, busy, lastRow, nextDown }: { pl: PL; i: nu
 
 const st = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
+  h1: { color: C.text, fontSize: IS_WEB ? 29 : H.font.hero, fontWeight: FW.heavy },
+  sub: { color: C.text2, fontSize: IS_WEB ? 14 : H.font.md },
+  headBtn: { flexDirection: 'row', alignItems: 'center', gap: SP.sm, height: IS_WEB ? 44 : 38, borderRadius: H.radius.pill, backgroundColor: C.elev, paddingHorizontal: 20 },
+  headBtnText: { color: C.text, fontSize: IS_WEB ? 15 : H.font.lg },
+  secHead: { flexDirection: 'row', alignItems: 'baseline', gap: SP.sm, marginTop: SP.sm },
+  secTitle: { color: C.text, fontSize: IS_WEB ? 22 : H.font.xl, fontWeight: FW.bold },
+  secMore: { color: C.brand, fontSize: IS_WEB ? 14 : H.font.sm },
   title: { color: C.text, fontSize: H.font.hero, fontWeight: FW.heavy },
   count: { color: C.text3, fontSize: H.font.sm },
   pill: { borderRadius: H.radius.pill, paddingHorizontal: 11, height: 26, backgroundColor: C.elev, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
@@ -219,7 +337,7 @@ const st = StyleSheet.create({
   cardChipWrapper: { position: 'absolute', right: 8, bottom: 80 },
   cardChip: { backgroundColor: 'rgba(0,0,0,.55)', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
   cardChipText: { color: C.white, fontSize: FS.xs },
-  cardBody: { padding: SP.md, gap: SP.xs }, // [老板 1011 15:59] 文字区统一档(去 94% 特殊宽;与全站卡同构)
+  cardBody: { padding: SP.md, gap: SP.xs },
   cardName: { color: C.text, fontSize: H.font.md, fontWeight: FW.bold, lineHeight: 16 },
   cardSub: { color: C.text3, fontSize: FS.xs },
   tip: { alignItems: 'center', gap: SP.lg, paddingVertical: 54 },

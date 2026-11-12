@@ -18,6 +18,8 @@ import type { SongItem } from '../services/server';
 import { api } from '../services/server';
 import { hdNav } from './hdnav';
 import { T,  FS, FW, SP } from '../theme/tokens';
+import { Platform } from 'react-native';
+const IS_WEB = Platform.OS === 'web';
 
 const SOURCES: { id: SearchSrc; label: string }[] = [
   { id: 'kw', label: '酷我' },
@@ -47,6 +49,7 @@ const THEME_CARDS = [
 const SCENES = ['通勤', '学习', '运动', '派对', '睡眠', '旅行'];
 const LANGS = ['华语', '欧美', '日韩', '拉丁'];
 const artistImgKv = createMMKV({ id: 'nextmusic-hd-artist-img' });
+const searchHistKv = createMMKV({ id: 'nextmusic-hd-search-history' });
 
 const HOT_WORDS = ['晴天', '后来', '海阔天空', '孤勇者', '起风了', '稻香', '红日', '月半小夜曲', '泡沫', '岁月神偷'];
 
@@ -85,6 +88,15 @@ export function HDSearch() {
   const [busy, setBusy] = useState(false);
   const [weekly, setWeekly] = useState<SongItem[]>([]); // lx164:本周精选(TOP500 前 8)
   const [err, setErr] = useState<string | null>(null);
+
+  // [产品包HD 批3] 最近搜索历史(设计: 空闲态首区,MMKV 持久前 6)
+  const [history, setHistory] = useState<string[]>(() => {
+    try { return JSON.parse(searchHistKv.getString('search.history') || '[]'); } catch { return []; }
+  });
+  const addHistory = (w: string) => {
+    const t = w.trim(); if (!t) return;
+    setHistory(prev => { const next = [t, ...prev.filter(x => x !== t)].slice(0, 6); searchHistKv.set('search.history', JSON.stringify(next)); return next; });
+  };
 
   const search = async (q: string, m = mode) => {
     const query = q.trim();
@@ -135,7 +147,7 @@ export function HDSearch() {
     <View style={st.screen}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 22, paddingBottom: 26, gap: SP.xl }}
+        contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: IS_WEB ? 42 : 22, paddingBottom: 26, gap: SP.xl }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -162,7 +174,7 @@ export function HDSearch() {
             value={kw}
             onChangeText={setKw}
             returnKeyType="search"
-            onSubmitEditing={() => search(kw)}
+            onSubmitEditing={() => { addHistory(kw); search(kw); }}
             onFocus={() => setSfocus(true)}
             onBlur={() => setSfocus(false)}
           />
@@ -173,96 +185,35 @@ export function HDSearch() {
           ) : null}
         </View>
 
-        {/* lx134:空闲态内容(老板:探索页太空)——热门歌手卡 + 风格分类 + 热搜词 */}
+        {/* [产品包HD 批3 1:1] 空闲态=最近搜索+热门搜索 chips(设计 search-history: 44h/r22/#232323/15px);
+            探索类内容(歌手/主题/场景/语言/精选/分类)已归位探索页(HDDiscover),此页只做搜索 */}
         {results == null && !kw.trim() ? (
           <View style={{ gap: SP.section, marginTop: 6 }}>
-            <View style={{ gap: SP.lg }}>
-              <Text style={st.secTitle}>热门歌手</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: SP.xl, paddingLeft: 28, paddingRight: 12, paddingTop: 6, paddingBottom: 16 }}>
-                {HOT_ARTISTS.map(a => (
-                  <HDTouch key={a.n} style={[st.artistCard, shadowStyleOf(a.n)]} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }} onPress={() => { setKw(a.n); search(a.n); }}>
-                    {artistImgs[a.n]
-                      ? <Image source={{ uri: artistImgs[a.n] }} style={st.artistAvatar} />
-                      : <View style={[st.artistAvatar, { backgroundColor: a.c }]}><Text style={[st.artistGlyph, { color: '#FFFFFF' }]}>{a.n[0]}</Text></View>}
-                    <Text style={st.artistName} numberOfLines={1}>{a.n}</Text>
-                  </HDTouch>
-                ))}
-              </ScrollView>
-            </View>
-            {/* lx164:热门主题大卡(渐变,对齐手机探索页)——替原分类发现 pills */}
-            <View style={{ gap: SP.lg }}>
-              <Text style={st.secTitle}>热门主题</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: SP.xl, paddingLeft: 28, paddingRight: 12, paddingTop: 6, paddingBottom: 16 }}>
-                {THEME_CARDS.map(g => (
-                  <HDTouch key={g.zh} style={[st.themeCard, shadowStyleOf(g.zh)]} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }} onPress={() => { setKw(g.zh); search(g.zh); }}>
-                    <LinearGradient colors={[g.from, g.to]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.themeGrad}>
-                      <Text style={[st.themeZh, { color: '#FFFFFF' }]}>{g.zh}</Text>
-                      <Text style={[st.themeEn, { color: '#FFFFFF' }]}>{g.en}</Text>
-                    </LinearGradient>
-                  </HDTouch>
-                ))}
-              </ScrollView>
-            </View>
-            {/* lx164:按场景 */}
-            <View style={{ gap: SP.lg }}>
-              <Text style={st.secTitle}>按场景</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.md }}>
-                {SCENES.map(g => (
-                  <HDTouch key={g} style={st.genrePill} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 15 }} onPress={() => { setKw(g); search(g); }}>
-                    <Text style={st.genreText}>{g}</Text>
-                  </HDTouch>
-                ))}
-              </View>
-            </View>
-            {/* lx164:按语言 */}
-            <View style={{ gap: SP.lg }}>
-              <Text style={st.secTitle}>按语言</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.md }}>
-                {LANGS.map(g => (
-                  <HDTouch key={g} style={st.genrePill} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 15 }} onPress={() => { setKw(g); search(g); }}>
-                    <Text style={st.genreText}>{g}</Text>
-                  </HDTouch>
-                ))}
-              </View>
-            </View>
-            {/* lx164:本周精选(TOP500 前 8,与手机探索页同源) */}
-            {weekly.length ? (
-              <View style={{ gap: SP.xs }}>
-                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: SP.sm }}>
-                  <Text style={st.secTitle}>本周精选</Text>
-                  <Text style={st.secHint}>{weekly.length} 首</Text>
+            {history.length ? (
+              <View style={{ gap: SP.lg }}>
+                <Text style={st.secTitle}>最近搜索</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                  {history.map(w => (
+                    <HDTouch key={w} style={st.histChip} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 22 }} onPress={() => { setKw(w); search(w); }}>
+                      <Text style={st.histText}>{w}</Text>
+                    </HDTouch>
+                  ))}
                 </View>
-                {weekly.map((s, i) => (
-                  <HDSongRow key={`${s.source}_${s.songmid}_${i}`} song={s} index={i + 1}
-                    playing={current?.songmid === s.songmid && current?.source === s.source}
-                    onPress={() => playSong(s, weekly)}
-                    buildMenu={sg => songMenu(sg, weekly, { playSong, appendQueue, playNextUp, connected, token })} />
-                ))}
               </View>
             ) : null}
             <View style={{ gap: SP.lg }}>
-              <Text style={st.secTitle}>分类发现</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.md }}>
-                {GENRES.map(g => (
-                  <HDTouch key={g} style={st.genrePill} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 15 }} onPress={() => { setKw(g); search(g); }}>
-                    <Text style={st.genreText}>{g}</Text>
-                  </HDTouch>
-                ))}
-              </View>
-            </View>
-            <View style={{ gap: SP.lg }}>
-              <Text style={st.secTitle}>大家都在搜</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.md }}>
-                {HOT_WORDS.map((w, i) => (
-                  <HDTouch key={w} style={st.hotPill} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12 }} onPress={() => { setKw(w); search(w); }}>
-                    <Text style={[st.hotIdx, i < 3 && { color: C.brand }]}>{i + 1}</Text>
-                    <Text style={st.hotText} numberOfLines={1}>{w}</Text>
+              <Text style={st.secTitle}>热门搜索</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                {HOT_WORDS.map(w => (
+                  <HDTouch key={w} style={st.histChip} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 22 }} onPress={() => { addHistory(w); setKw(w); search(w); }}>
+                    <Text style={st.histText} numberOfLines={1}>{w}</Text>
                   </HDTouch>
                 ))}
               </View>
             </View>
           </View>
         ) : null}
+
 
         {/* lx163:歌手结果 */}
         {mode === 'singer' && singers != null ? (
@@ -325,6 +276,8 @@ export function HDSearch() {
 }
 
 const st = StyleSheet.create({
+  histChip: { paddingHorizontal: 20, height: IS_WEB ? 44 : 38, borderRadius: 22, backgroundColor: '#232323', alignItems: 'center', justifyContent: 'center' },
+  histText: { color: '#B3B3B3', fontSize: IS_WEB ? 15 : H.font.md },
   screen: { flex: 1, backgroundColor: C.bg },
   pill: { borderRadius: H.radius.pill, paddingHorizontal: 11, height: 26, backgroundColor: C.elev, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
   pillOn: { backgroundColor: C.brand, borderColor: C.brand },

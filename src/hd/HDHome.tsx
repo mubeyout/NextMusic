@@ -90,6 +90,17 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
     toast(`私人雷达 · ${shuffled.length} 首`);
   };
 
+  // 批3:氛围快捷卡(夜深人静/华语经典)=关键词搜索即播 30 首
+  const playMood = async (kw: string, label: string) => {
+    if (dailyBusy) return;
+    setDailyBusy(true);
+    try {
+      const list = (await lxapi.search(kw, 'kw', 1, 30).catch(() => [] as SongItem[])).slice(0, 30);
+      if (list.length) { playSong(list[0], list); toast(`${label} · ${list.length} 首`); }
+      else toast('内容获取失败,稍后重试');
+    } finally { setDailyBusy(false); }
+  };
+
   const openRecPl = async (pl: SongListMeta) => {
     try {
       const r = await lxapi.songListDetail(pl.id, 1, pl.source || 'wy');
@@ -105,47 +116,60 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
   return (
     <ScrollView
       style={st.screen}
-      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: 26, paddingBottom: 28, gap: SP.section }}
+      contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: IS_WEB ? 42 : 26, paddingBottom: 28, gap: SP.section }}
       showsVerticalScrollIndicator={false}
     >
-      {/* [产品包HD 1111 对齐] hero:问候+副句 */}
-      <View>
-        <Text style={st.greet}>{greet}{connected && snap ? ', Mubey' : ''}</Text>
-        <Text style={{ color: C.text2, fontSize: H.font.md, marginTop: 6 }}>从熟悉的旋律，开始今天</Text>
+      {/* [产品包HD 批3 1:1] hero:问候36/700/-1 + 副句14 + 右上 MADE FOR YOU 11px/ls2(设计 home-topline 实测) */}
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <View>
+          <Text style={st.greet}>{greet}{connected && snap ? ', Mubey' : ''}</Text>
+          <Text style={{ color: C.text2, fontSize: IS_WEB ? 14 : H.font.md, marginTop: 6 }}>从熟悉的旋律，开始今天</Text>
+        </View>
+        <Text style={{ color: C.text3, fontSize: IS_WEB ? 11 : FS.xs, letterSpacing: 2, marginTop: IS_WEB ? 34 : 14 }}>MADE FOR YOU</Text>
       </View>
-      {/* MADE FOR YOU 内容筛选 pills(设计:全部/音乐/播客) */}
+      {/* [产品包HD 批3] pills 42h/r24:on=#F5F5F5 白底黑字 600,off=#232323/#B3B3B3(设计 home-filters 实测) */}
       <View style={{ flexDirection: 'row', gap: SP.md, marginTop: -6 }}>
-        {([['全部', true], ['音乐', false], ['播客', false]] as [string, boolean][]).map(([label, on], i) => (
-          <HDTouch key={label} style={{ paddingHorizontal: 22, height: 44, borderRadius: 24, backgroundColor: on ? C.text : C.surface2, alignItems: 'center', justifyContent: 'center' }}
+        {([['全部', true], ['音乐', false], ['播客', false]] as [string, boolean][]).map(([label, on]) => (
+          <HDTouch key={label} style={{ paddingHorizontal: 21, height: IS_WEB ? 42 : 44, borderRadius: 24, backgroundColor: on ? '#F5F5F5' : '#232323', alignItems: 'center', justifyContent: 'center' }}
             focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 24 }}
             onPress={() => { if (label === '播客') hdNav()?.navigate('Tabs' as never) || hdNav()?.navigate('PodcastTab' as never); }}>
-            <Text style={{ color: on ? C.bg : C.text2, fontSize: H.font.md, fontWeight: on ? '700' : '500' }}>{label}</Text>
+            <Text style={{ color: on ? C.bg : C.text2, fontSize: IS_WEB ? 16 : H.font.md, fontWeight: on ? '600' : '500' }}>{label}</Text>
           </HDTouch>
         ))}
       </View>
 
-      {/* 双大卡 */}
-      {/* v3.30(LEO P1):双大卡间距 12→22(GUTTER) */}
-      {/* v3.32(老板 P1 修复):裸注释曾被渲染为匿名 flex 文本节点占 371px 致双大卡不占满行——JSX 子位置注释必须用花括号包裹形式 */}
-      <View style={{ flexDirection: 'row', gap: SP.big }}>
-        <PhotoCard img={recPls[0]?.img} badge="每日精选" title="今日精选" sub="今天的好音乐" busy={dailyBusy} onPress={playDaily} />
-        <PhotoCard img={recPls[1]?.img} badge="MADE FOR YOU" title="私人雷达" sub="发现新的心动" onPress={playRadar} />
+      {/* [产品包HD 批3 1:1] quick-grid:3列×2行 六快捷行卡(设计 quick-card 92h/图92贴角/题20/副12/透明底) */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: IS_WEB ? 12 : SP.md }}>
+        <QuickCard img={recPls[0]?.img} title="每日精选" sub="今天的好音乐" busy={dailyBusy} onPress={playDaily} />
+        <QuickCard img={recPls[1]?.img} title="我的收藏" sub="每一首都很喜欢" heart onPress={() => hdNav()?.navigate('MyFavorites')} />
+        <QuickCard img={recPls[2]?.img} title="私人雷达" sub="发现新的心动" onPress={playRadar} />
+        <QuickCard img={recPls[3]?.img} title="夜深人静" sub="放慢一点节奏" onPress={() => playMood('夜深人静 轻音乐', '夜深人静')} />
+        <QuickCard img={recPls[4]?.img} title="华语经典" sub="熟悉的好声音" onPress={() => playMood('华语经典 金曲', '华语经典')} />
+        <QuickCard img={recPls[5]?.img} title="最近播放" sub="接着上次的旋律" onPress={() => recents.length ? hdNav()?.navigate('PlaylistDetail', { title: '最近播放', songs: recents, meta: `${recents.length} 首` }) : toast('还没有播放记录,先去探索几首吧')} />
       </View>
 
-      {/* [产品包HD] 段序对齐:双大卡→最近播放→推荐歌单→SELECT */}
+      {/* [产品包HD 批3 1:1] 为你打造:mix 双大照片卡 244h/kicker/题29/副14/右下52绿钮(设计 mix-card 实测) */}
+      <Section title="为你打造" hint="每天都有新的好音乐">
+        <View style={{ flexDirection: 'row', gap: IS_WEB ? 18 : SP.big }}>
+          <PhotoCard img={recPls[2]?.img || recPls[0]?.img} badge="NEXTMUSIC SELECT" title="私人雷达" sub="根据你的收听偏好推荐" busy={dailyBusy} onPress={playRadar} />
+          <PhotoCard img={recPls[3]?.img || recPls[1]?.img} badge="NEXTMUSIC SELECT" title="夜深人静" sub="放慢节奏，听见好音乐" onPress={() => playMood('夜深人静 轻音乐', '夜深人静')} />
+        </View>
+      </Section>
+
+      {/* [产品包HD] 段序对齐:为你打造→最近播放→推荐歌单→我的歌单 */}
       {recents.length ? (
         <Section title="最近播放" hint="接着上次的旋律 · 为你打造" more="查看全部" onMore={() => hdNav()?.navigate('PlaylistDetail', { title: '最近播放', songs: recents, meta: `${recents.length} 首` })}>
-          {/* [产品包HD 批2] recent 3 列网格(设计 recent-grid: 横图+信息区) */}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.big }}>
+          {/* [产品包HD 批3 1:1] recent-track 行卡 3 列:74h/图52方r7/题16/副13(设计 recent-rail 实测,替换批2 横图网格) */}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: IS_WEB ? 12 : SP.md }}>
             {recents.slice(0, 6).map((s, i) => (
-              <HDTouch key={`${s.source}_${s.songmid}_${i}`} style={{ width: '31%', borderRadius: 12, overflow: 'hidden', backgroundColor: C.surface }} zoom={1.03}
-                focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12 }} onPress={() => playSong(s, recents)}>
-                <View style={{ height: IS_WEB ? 113 : 88, backgroundColor: C.inset }}>
-                  {s.img ? <Image source={{ uri: s.img }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Icon name="music" size={20} color={C.text3} /></View>}
+              <HDTouch key={`${s.source}_${s.songmid}_${i}`} style={{ width: '31.5%', minHeight: IS_WEB ? 74 : 64, flexDirection: 'row', alignItems: 'center', gap: IS_WEB ? 13 : SP.md, padding: IS_WEB ? 10 : 8, borderRadius: 10, backgroundColor: C.surface }}
+                focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }} onPress={() => playSong(s, recents)}>
+                <View style={{ width: IS_WEB ? 52 : 44, height: IS_WEB ? 52 : 44, borderRadius: 7, overflow: 'hidden', backgroundColor: C.inset }}>
+                  {s.img ? <Image source={{ uri: s.img }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Icon name="music" size={16} color={C.text3} /></View>}
                 </View>
-                <View style={{ padding: 13, minHeight: 60 }}>
-                  <Text style={{ color: C.text, fontSize: IS_WEB ? 17 : H.font.sm, fontWeight: FW.semibold }} numberOfLines={1}>{s.name}</Text>
-                  <Text style={{ color: C.text3, fontSize: IS_WEB ? 13 : H.font.xs, marginTop: 5 }} numberOfLines={1}>{s.singer}</Text>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={{ color: C.text, fontSize: IS_WEB ? 16 : H.font.lg, fontWeight: FW.semibold }} numberOfLines={1}>{s.name}</Text>
+                  <Text style={{ color: '#999999', fontSize: IS_WEB ? 13 : H.font.sm, marginTop: 3 }} numberOfLines={1}>{s.singer}</Text>
                 </View>
               </HDTouch>
             ))}
@@ -181,15 +205,10 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
         )}
       </Section>
 
-      {/* [产品包HD] NEXTMUSIC SELECT:全宽大推荐(私人雷达文案对设计) */}
-      <Section title="NEXTMUSIC SELECT" hint="根据你的收听偏好推荐">
-        <PhotoCard img={recPls[2]?.img || recPls[1]?.img} badge="NEXTMUSIC SELECT" title="夜深人静" sub="放慢一点节奏" wide onPress={playRadar} />
-      </Section>
-
-      {/* 我的歌单 */}
+      {/* 我的歌单(批3:wall 5列@1920/3列@1280——min 251 实测对设计 product-wall 断点) */}
       <Section title="我的歌单" hint={`${playlists.length} 个`} more="更多" onMore={() => hdNav()?.navigate('ImportPlaylist')}>
         {playlists.length ? (
-          <HDGrid min={126 * (H.font.sm / 10)}>
+          <HDGrid min={251}>
             {playlists.slice(0, 10).map(pl => (
               IS_WEB ? (
                 <PlCardWeb key={pl.key} pl={pl} onOpen={() => openPl(pl)} onPlay={() => { if (pl.songs?.length) playSong(pl.songs[0], pl.songs); }} />
@@ -223,13 +242,13 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
 // 桌面 BigCard:渐变 + 左徽标 + 标题/副标题 + 右圆钮
 // v6(老板反馈):选中环圆角要比卡片圆角大(卡片 R=11,环=13)——描边画在卡边界外 2px,圆角同步 +2 才贴着弯过去
 // v1.2.5 桌面:web 加高(104)+彩色弥散投影+hover 上浮(主题/投影跟色系);TV 分支尺寸不变
-/** [产品包HD 批2] PhotoCard: 照片大卡——228 高+亮度滤镜+底部渐变+左上 pill+30px 标题+右下 52 绿播放钮(设计 feature-card 1:1) */
+/** [产品包HD 批3 1:1] PhotoCard=mix 大照片卡:244h/r14/kicker 11px 底部/题29-700/副14/右下52绿钮 right23 bottom25(设计 mix-card 实测) */
 function PhotoCard({ img, badge, title, sub, onPress, busy, wide }: { img?: string; badge: string; title: string; sub: string; onPress: () => void; busy?: boolean; wide?: boolean }) {
   const fallback = ['#3B2F6F', '#24483F'] as [string, string];
   return (
     <HDTouch activeOpacity={0.9} onPress={onPress} zoom={1.02}
-      focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 18 }}
-      style={[{ height: IS_WEB ? 228 : 170, borderRadius: 18, overflow: 'hidden' }, wide ? { width: '100%' as const } : { flex: 1 }]}>
+      focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }}
+      style={[{ height: IS_WEB ? 244 : 170, borderRadius: 14, overflow: 'hidden' }, wide ? { width: '100%' as const } : { flex: 1 }]}>
       {img ? (
         <Image source={{ uri: img }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} resizeMode="cover" />
       ) : (
@@ -237,16 +256,34 @@ function PhotoCard({ img, badge, title, sub, onPress, busy, wide }: { img?: stri
       )}
       <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,.22)' }} />
       <LinearGradient colors={['rgba(0,0,0,0.03)', 'rgba(0,0,0,0.13)', 'rgba(0,0,0,0.79)']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
-      <View style={{ position: 'absolute', top: 20, left: 23, borderWidth: 1, borderColor: 'rgba(255,255,255,.26)', borderRadius: 5, paddingHorizontal: 7, paddingVertical: 4, backgroundColor: 'rgba(0,0,0,.28)' }}>
-        <Text style={{ color: 'rgba(255,255,255,.88)', fontSize: 12 }}>{badge}</Text>
+      <View style={{ position: 'absolute', bottom: 25, left: 25, right: 90, gap: 7 }}>
+        <Text style={{ color: '#FFFFFF', fontSize: 11, letterSpacing: 1, fontWeight: '600' }}>{badge}</Text>
+        <Text style={{ color: '#FFFFFF', fontSize: IS_WEB ? 29 : 22, fontWeight: FW.heavy, lineHeight: IS_WEB ? 38 : 30 }} numberOfLines={1}>{title}</Text>
+        <Text style={{ color: 'rgba(255,255,255,.85)', fontSize: IS_WEB ? 14 : H.font.sm }} numberOfLines={1}>{sub}</Text>
       </View>
-      <View style={{ position: 'absolute', bottom: 25, left: 25, right: 78 }}>
-        <Text style={{ color: '#FFFFFF', fontSize: IS_WEB ? 30 : 22, fontWeight: FW.heavy, lineHeight: 38 }} numberOfLines={1}>{title}</Text>
-        <Text style={{ color: 'rgba(255,255,255,.72)', fontSize: 15, marginTop: 8 }} numberOfLines={1}>{sub}</Text>
-      </View>
-      <View style={{ position: 'absolute', right: 20, bottom: 24, width: 52, height: 52, borderRadius: 26, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ position: 'absolute', right: 23, bottom: 25, width: 52, height: 52, borderRadius: 26, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }}>
         {busy ? <ActivityIndicator size="small" color="#fff" /> : <Icon name="play" size={22} active color={C.onBrand} />}
       </View>
+    </HDTouch>
+  );
+}
+
+/** [产品包HD 批3 1:1] QuickCard:快捷行卡——92h/图92贴左角r8/题20-600/副12/透明底(设计 quick-card 实测);
+ *  heart=「我的收藏」卡心形角标(#FF5A76) */
+function QuickCard({ img, title, sub, onPress, busy, heart }: { img?: string; title: string; sub: string; onPress: () => void; busy?: boolean; heart?: boolean }) {
+  return (
+    <HDTouch activeOpacity={0.9} onPress={onPress} zoom={1.01}
+      focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }}
+      style={{ width: '31.5%', minHeight: IS_WEB ? 92 : 72, flexDirection: 'row', alignItems: 'center', borderRadius: 10, overflow: 'hidden' }}>
+      <View style={{ width: IS_WEB ? 92 : 72, height: IS_WEB ? 92 : 72, backgroundColor: C.surface2, borderTopLeftRadius: 8, borderBottomLeftRadius: 8, alignItems: 'center', justifyContent: 'center' }}>
+        {img ? <Image source={{ uri: img }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <Icon name="music" size={22} color={C.text3} />}
+      </View>
+      <View style={{ flex: 1, minWidth: 0, paddingHorizontal: IS_WEB ? 16 : 12, gap: 4 }}>
+        <Text style={{ color: C.text, fontSize: IS_WEB ? 20 : H.font.xl, fontWeight: '600' }} numberOfLines={1}>{title}</Text>
+        <Text style={{ color: C.text2, fontSize: IS_WEB ? 12 : FS.xs }} numberOfLines={1}>{sub}</Text>
+      </View>
+      {heart ? <View style={{ marginRight: IS_WEB ? 14 : 10, width: 28, height: 28, alignItems: 'center', justifyContent: 'center' }}><Icon name="heart" size={16} color="#FF5A76" active /></View> : null}
+      {busy ? <ActivityIndicator size="small" color={C.brand} style={{ marginRight: 14 }} /> : null}
     </HDTouch>
   );
 }
@@ -301,7 +338,8 @@ const st = StyleSheet.create({
   retryBtn: { marginTop: 10, borderRadius: 999, paddingHorizontal: 20, height: 30, backgroundColor: C.elev, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
   retryText: { color: C.text2, fontSize: H.font.sm },
   screen: { flex: 1, backgroundColor: C.bg },
-  greet: { color: C.text, fontSize: IS_WEB ? 34 : H.font.hero, fontWeight: FW.heavy },
+  // 批3:设计 h1 36/700/-1px
+  greet: { color: C.text, fontSize: IS_WEB ? 36 : H.font.hero, fontWeight: FW.heavy, letterSpacing: -1 },
   bigBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: H.radius.card },
   // v1.2.6:web 圆角真修——react-native-linear-gradient 在 RNW 不吃 borderRadius(实测卡角方形),
   // 卡根 overflow hidden 直接裁(老板:每日推荐/私人雷达圆角没有了);TV 不动(原生正常)
@@ -311,7 +349,8 @@ const st = StyleSheet.create({
   bigTitle: { color: C.white, fontSize: H.font.xl, fontWeight: FW.heavy, letterSpacing: -.3 },
   bigSub: { color: '#ffffffa8', fontSize: H.font.sm, marginTop: 2 }, // [1012 回滚] 同上
   bigPlay: { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,.22)', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(0,0,0,.35)' },
-  secTitle: { color: C.text, fontSize: IS_WEB ? 23 : H.font.xl, fontWeight: FW.bold },
+  // 批3:设计 22/650/-0.5
+  secTitle: { color: C.text, fontSize: IS_WEB ? 22 : H.font.xl, fontWeight: FW.bold, letterSpacing: -0.5 },
   secHint: { color: C.text3, fontSize: H.font.xs },
   secMore: { color: C.brand, fontSize: H.font.sm },
   // v6(老板反馈):环必须贴附卡片几何——环宽=封面宽(去水平 padding),环圆角=封面圆角+2(描边外扩 2px,圆角同步外放才不显小)

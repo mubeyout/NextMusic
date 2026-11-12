@@ -76,7 +76,7 @@ import type { SongItem } from '../services/server';
 
 // 对齐桌面版侧栏:发现 = 为我推荐/播客/探索/榜单
 /* [产品包HD] 顶条面包屑页名映射 */
-const TOPBAR_NAMES: Record<string, string> = { Tabs: '为我推荐', Player: '正在播放', Queue: '播放队列', PlaylistDetail: '歌单', Discover: '歌单广场', MediaLibs: '媒体库', MyFavorites: '我的收藏', Downloads: '下载管理', Settings: '设置', Search: '搜索', ImportPlaylist: '导入歌单', Fx: '音效', Sources: '音源管理', Account: '账号', CloudLibrary: '云曲库', PublicLibrary: '公共曲库', MyLibrary: '我的音乐' };
+const TOPBAR_NAMES: Record<string, string> = { Tabs: '为我推荐', Player: '正在播放', Queue: '播放队列', PlaylistDetail: '歌单', Discover: '探索', MediaLibs: '媒体库', MyFavorites: '我的收藏', Downloads: '下载管理', Settings: '设置', Search: '搜索', ImportPlaylist: '导入歌单', Fx: '音效', Sources: '音源管理', Account: '账号', CloudLibrary: '云曲库', PublicLibrary: '公共曲库', MyLibrary: '我的音乐' };
 const TABS = [
   { key: 'home', icon: 'home', label: '为我推荐' },
   { key: 'podcast', icon: 'podcast', label: '播客' },
