@@ -47,9 +47,10 @@ export const WEB_INJECT_JS = [
 
 // 返回键探测/执行脚本(SPA 栈,非 history.back):播放页全屏→关;弹窗→关;内页栈→pageBack;
 // 首页无栈=ROOT(原生侧双击退出)。结果经 ReactNativeWebView.postMessage 回传 onMessage。
-// 全局桥:activeBack 挂载即注册,navigation.tsx 根层返回键监听顶部让渡(LIFO 先消费实锤见 WebShell 注释)
+// 全局桥:activeBack 挂载即注册,navigation.tsx 根层返回键回调调用(根层 BackHandler LIFO 先消费实锤见上)
 let activeBack: (() => boolean) | null = null;
-export function webBackActive(): boolean { return activeBack !== null; }
+/** navigation.tsx 返回键回调调用:web 壳挂载期由壳消化(SPA 栈出栈/ROOT 双击退出),未挂载 false=原行为 */
+export function popWebBack(): boolean { const f = activeBack; return f ? f() : false; }
 export const WEB_BACK_JS = [
   '(function(){try{',
   "  var r='ROOT';",
