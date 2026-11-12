@@ -42,7 +42,10 @@ export const WEB_INJECT_JS = [
   '    try{wf.__nmw=1}catch(e){}',
   '    window.fetch=wf;',
   '  }',
-  '})();true;',
+  '})();',
+  // 诊断+握手:装好后即回传 onMessage(验证 messaging 桥连通)
+  "  try{window.ReactNativeWebView&&window.ReactNativeWebView.postMessage('NM_BOOT:'+(location&&location.href||''))}catch(e){}",
+  'true;',
 ].join('\n');
 
 // 返回键探测/执行脚本(SPA 栈,非 history.back):播放页全屏→关;弹窗→关;内页栈→pageBack;
@@ -73,14 +76,17 @@ export function WebShell({ entry }: { entry: string }) {
   // 返回键桥:本组件 BackHandler 会被 navigation.tsx 根层监听 LIFO 先消费(实锤 V40:按返回弹根层退出框)——
   // 改注册全局桥,navigation.tsx 顶部让渡(web 壳挂载期返回键全权归壳:SPA 栈出栈/ROOT 双击退出)
   useEffect(() => {
-    activeBack = () => { wv.current?.injectJavaScript(WEB_BACK_JS); return true; };
+    activeBack = () => { console.log('[WebShell] back→injectJS'); wv.current?.injectJavaScript(WEB_BACK_JS); return true; };
     return () => { activeBack = null; };
   }, []);
 
   const onMessage = (e: WebViewMessageEvent) => {
-    if (e.nativeEvent.data !== 'NM_BACK:ROOT') return;
-    if (exitArmed.current) BackHandler.exitApp();
+    const d = e.nativeEvent.data;
+    console.log('[WebShell] onMessage:', d);
+    if (d !== 'NM_BACK:ROOT') return;
+    if (exitArmed.current) { console.log('[WebShell] exitApp'); BackHandler.exitApp(); }
     else {
+      console.log('[WebShell] arm exit');
       exitArmed.current = true;
       toast('再按一次返回键退出');
       setTimeout(() => { exitArmed.current = false; }, 2600);
