@@ -8,6 +8,7 @@ import { Platform } from 'react-native';
 import { HDTouch } from './HDTouch';
 import { WebShell } from '../web/WebShell';
 import { settings, onSettings } from '../services/settings';
+import { IS_TV_DEVICE } from '../services/appversion';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -46,10 +47,16 @@ export const withPhoneScale = (Cmp: React.ComponentType<Record<string, unknown>>
 
 export function HDMain() {
   // 批17:TV/HD 上支持切换 car 模式(老板令 1548)——carModeUi=true 时加载 car.html
-  const [isCar, setIsCar] = useState(true); // 批17:默认 car 模式测试(老板令 MiTV 切 car)
+  // 批18b(1112 老板令 1554):TV 设备恒 HD——「Car 版只针对安卓车机,不需要在 TV 上工作」。
+  // 且 car.html 的 real 层本就不 boot(build-hd.cjs 只对 hd 形态调 realHdBoot,批17 已知
+  // 问题未修)=TV 上的 car 形态只是设计正本 demo 壳(批18 实测 uiautomator 树:demo 假数据,
+  // 无真实 API/焦点导航/切换开关);持久化 carModeUi=true(1548 时代实测遗留)会把 TV 锁进
+  // 这个 demo 壳——电视上无视该设置恒走 index.html(HD),手机/车机上 carModeUi 开关行为不变。
+  const [isCar, setIsCar] = useState(false);
   useEffect(() => {
-    setIsCar(settings.get().carModeUi === true);
-    const unsub = onSettings(() => setIsCar(settings.get().carModeUi === true));
+    const wantCar = () => !IS_TV_DEVICE && settings.get().carModeUi === true;
+    setIsCar(wantCar());
+    const unsub = onSettings(() => setIsCar(wantCar()));
     return unsub;
   }, []);
   return <WebShell entry={isCar ? 'car.html' : 'index.html'} />;

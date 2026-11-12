@@ -100,8 +100,8 @@ android {
         applicationId "com.mubeyworks.nextmusic"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 186
-        versionName "1.4.1" // v1.4.1-vc186(批18:TV 真遥控器 DPAD/OK 全链路——MainActivity 拦键族 19-23/66/96/160 DOWN+UP→onTVKey→WebShell 合成 Chrome74 KeyboardEvent 注入页面;考古实锤 v185 竞态坏包:批14d 两侧坏代码从未进包,真遥控器发的就是标准 DPAD 码)
+        versionCode 187
+        versionName "1.4.1" // v1.4.1-vc187(批18 TV 真遥控器 DPAD/OK 全链路:MainActivity 拦键族→onTVKey→WebShell 合成 Chrome74 KeyboardEvent 注入页面;批18b:TV 恒 HD——1554 号令 Car 只针对车机+car.html real 层不 boot 是 demo 壳,TV 上无视 carModeUi 设置;考古:批14d 两侧坏代码从未进包=v185 竞态坏包,真遥控器发的就是标准 DPAD 码)
     }
     // 多架构分发：GitHub Release 只放编译产物（armeabi-v7a/arm64-v8a/x86/x86_64 + universal 兑底）
     splits {
