@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { HDTouch } from './HDTouch';
 import { WebShell } from '../web/WebShell';
+import { settings, onSettings } from '../services/settings';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -44,5 +45,12 @@ export const withPhoneScale = (Cmp: React.ComponentType<Record<string, unknown>>
 };
 
 export function HDMain() {
-  return <WebShell entry="index.html" />;
+  // 批17:TV/HD 上支持切换 car 模式(老板令 1548)——carModeUi=true 时加载 car.html
+  const [isCar, setIsCar] = useState(true); // 批17:默认 car 模式测试(老板令 MiTV 切 car)
+  useEffect(() => {
+    setIsCar(settings.get().carModeUi === true);
+    const unsub = onSettings(() => setIsCar(settings.get().carModeUi === true));
+    return unsub;
+  }, []);
+  return <WebShell entry={isCar ? 'car.html' : 'index.html'} />;
 }

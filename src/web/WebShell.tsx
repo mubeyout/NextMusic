@@ -13,6 +13,7 @@ import { WebView as WebViewBase, type WebViewMessageEvent, type WebViewProps } f
 import { toast } from '../components/Dialog';
 import { C } from '../theme/tokens';
 import { store } from '../services/server';
+import { settings } from '../services/settings';
 
 // RN0.87 新架构 codegen 类型与本包 NativeComponent 声明不合(props 退化 never)——一次性类型级转换,运行时原样
   // 批14d:TV 遥控器 DPAD_CENTER 确认键——Android Activity 层拦截后经 RN bridge 转发到这里,
@@ -105,6 +106,14 @@ export function WebShell({ entry }: { entry: string }) {
   }, []);
 
   const onMessage = (e: WebViewMessageEvent) => {
+    // 批17:carMode 切换消息
+    try {
+      const msg = JSON.parse(e.nativeEvent.data);
+      if (msg && msg.type === 'carMode') {
+        settings.set('carModeUi', msg.value === true);
+        return;
+      }
+    } catch (_) { /* 非 JSON */ }
     const d = e.nativeEvent.data;
     console.log('[WebShell] onMessage:', d);
     if (d !== 'NM_BACK:ROOT') return;

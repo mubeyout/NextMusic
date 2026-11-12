@@ -5382,6 +5382,20 @@ applyProductTheme(document.body.dataset.theme || document.documentElement.datase
     if (window.__realOnQualityChange) __realOnQualityChange();
     toast('音质 · ' + q);
   };
+  window.toggleCarMode = function () {
+    var cur = localStorage.getItem('nm.real.carMode') === '1';
+    var next = !cur;
+    localStorage.setItem('nm.real.carMode', next ? '1' : '0');
+    if (window.ReactNativeWebView) {
+      window.ReactNativeWebView.postMessage(JSON.stringify({
+        type: 'carMode',
+        value: next
+      }));
+    }
+    ['settings'].forEach(rebuild);
+    render();
+    toast(next ? '已切换到车机模式(重启后生效)' : '已切换到 HD 模式(重启后生效)');
+  };
   window.pgSetq = function () {
     var head = '<div class="ptitle">' + bk("go('settings')") + '音质与下载</div>';
     var mk = function (title, cur, opts, fn) {
@@ -5512,6 +5526,16 @@ applyProductTheme(document.body.dataset.theme || document.documentElement.datase
     var head = '<div class="ptitle">' + bk("go('settings')") + '音源管理</div>';
     var body = R.token ? '<p class="setting-help">服务器音源在管理后台(/admin/)维护;播放器端只读。当前登录账号:' + esc2(R.username) + '</p>' : '<p class="setting-help">登录服务器后,五源搜索(酷我/酷狗/网易/QQ/咪咕)自动可用。</p><div class="form-actions"><button class="btn pri" onclick="go(\'login\')">去登录</button></div>';
     return head + body;
+  };
+  var pgSettings11 = window.pgSettings || function () {
+    return '<div>Settings</div>';
+  };
+  window.pgSettings = function () {
+    var html = pgSettings11();
+    var isCar = localStorage.getItem('nm.real.carMode') === '1';
+    var carRow = '<div class="set"><div class="k">车机模式</div><div class="v"><button class="pill ' + (isCar ? 'on' : '') + '" onclick="toggleCarMode()">' + (isCar ? '已开启(HD侧栏→car大屏)' : '已关闭(HD桌面模式)') + '</button></div></div>';
+    html = html.replace(/(<div class="set">)/, carRow + '$1');
+    return html;
   };
   window.pgTfsrc = function () {
     return '<div class="ptitle">' + bk("go('settings')") + '听风源</div><p class="setting-help">听风音乐源是第三方流媒体接入,需在手机/桌面 App 配置账号后此处显示状态。当前:未配置。</p>';
