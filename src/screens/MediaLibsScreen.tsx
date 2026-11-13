@@ -1375,13 +1375,13 @@ const ml = StyleSheet.create({
   sectionHead: { color: C.text3, fontSize: FS.body, fontWeight: FW.bold, letterSpacing: 1.2, marginTop: 26, marginBottom: 10 },
   sectionHeadHD: { fontSize: FS.lg, letterSpacing: 1.6, marginTop: 30 },
   groupWeb: { width: '100%' }, // [老板 1010] 占满整屏(去 maxWidth 860/1160)——定宽卡 375px 自然铺排;列表区 dv.listWrapWeb 维持 860 可读性不动
-  card: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: SP.xl, paddingVertical: 14, paddingHorizontal: 14, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke, elevation: 1, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, flexBasis: '40%', flexGrow: 1 }, // 1028 老板令(排满优先):48%+gap 溢出=一行一卡右侧 52% 空(实证)——grow 拉伸行行铺满
+  card: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: SP.sm, paddingVertical: 10, paddingHorizontal: 10, borderRadius: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: C.stroke, elevation: 1, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, flexBasis: '30%', flexGrow: 1 }, // 1028 老板令(排满优先):48%+gap 溢出=一行一卡右侧 52% 空(实证)——grow 拉伸行行铺满
   cardHD: { minHeight: 86, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16, flexBasis: '23%', flexGrow: 1 }, // 1028 老板令(排满+一样大):grow 拉伸行行铺满,同排等宽
   cardHover: { borderColor: C.strokeStrong, backgroundColor: C.surface2 }, // hover 细描边提亮,克制不加投影
   iconWrap: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }, // [库族重设计v1 B4] 46→44 对齐 LibBanner kindIcon 现值(规格统一表)
   iconWrapHD: { width: 52, height: 52, borderRadius: 14 }, // [B4] 56→52 同源对齐
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: SP.sm },
-  title: { color: C.text, fontSize: FS.xl, lineHeight: 20, fontWeight: FW.semibold, flexShrink: 1 },
+  title: { color: C.text, fontSize: FS.lg, lineHeight: 18, fontWeight: FW.semibold, flexShrink: 1, minWidth: 0 },
   titleHD: { fontSize: FS.headline, lineHeight: 23 },
   typeChip: { backgroundColor: C.inset2, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1.5, flexShrink: 0 },
   typeChipText: { color: C.text2, fontSize: FS.xs, fontWeight: FW.semibold, letterSpacing: 0.5 },
@@ -1431,7 +1431,7 @@ const dv = StyleSheet.create({
   idx: { width: 26, textAlign: 'center', color: C.text3, fontSize: FS.body, fontVariant: ['tabular-nums'] },
   idxHD: { width: 34, fontSize: FS.md },
   title: { color: C.text, fontSize: FS.lg, lineHeight: 19, fontWeight: FW.medium },
-  sub: { color: C.text2, fontSize: FS.sm, lineHeight: 14, marginTop: 1 },
+  sub: { color: C.text2, fontSize: FS.xs, lineHeight: 13, marginTop: 1, flexShrink: 1, minWidth: 0 },
   subHD: { fontSize: FS.md, lineHeight: 17 },
   dur: { color: C.text3, fontSize: FS.sm, fontVariant: ['tabular-nums'] },
   statsHD: { fontSize: FS.md },
