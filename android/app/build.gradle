@@ -91,8 +91,8 @@ android {
             applicationIdSuffix ".hd"
             versionNameSuffix "-hd"
             // HD 独立版本线:与 phone 共享 default,但可单独越号更新(当前 hd v2)
-            versionCode 183
-            versionName "1.4.1" // v1.4.1-vc183(1107:onBrand 按 accent 亮度派生——深accent白图标,对比≥4.5 构建断言)
+            versionCode 184
+            versionName "1.4.1" // v1.4.1-vc184(1120:批19系+侧栏终稿+图标光学归一+车机缺口包A1-A5——老板令重编译上电视 E2E)
         }
     }
 
