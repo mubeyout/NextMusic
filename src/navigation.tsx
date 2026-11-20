@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Platform, View, StyleSheet, BackHandler, Animated, Easing } from 'react-native';
+import { Platform, Linking, View, StyleSheet, BackHandler, Animated, Easing } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -105,6 +105,16 @@ export function RootNavigator() {
   // 服务端 web 播放器不需要启动向导:直进主界面(本地模式);原生端保留三卡引导
   const initial = !mode ? (Platform.OS === 'web' ? 'Main' : 'Boot') : 'Main';
 
+  // vc186 三合一:深链形态直达 nextmusic://form/<auto|phone|car|hd>——adb/TV 遥控测试杠杆(设置页选择器同效)
+  useEffect(() => {
+    const apply = (u: string | null) => {
+      const m = u && u.match(/^nextmusic:\/\/form\/(auto|phone|car|hd)$/);
+      if (m) settings.set('formForce', m[1] as AppSettings['formForce']);
+    };
+    Linking.getInitialURL().then(apply).catch(() => {});
+    const sub = Linking.addEventListener('url', (e: { url: string }) => apply(e.url));
+    return () => sub.remove();
+  }, []);
   // lx177(老板 0923 08:20 登录非必须):移除 401 自动跳登录页——server.ts 不再广播 nm-auth-required;
   // 监听保留但无人触发(无害),未来如需主动引导应用 toast/按钮而非强制 navigate。
   useEffect(() => {
