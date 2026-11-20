@@ -195,7 +195,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
           <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: SP.sm }}>
             <Text style={st.secTitle}>我的歌单</Text>
             <View style={{ flex: 1 }} />
-            <HDTouch style={{ paddingVertical: 2, paddingHorizontal: 5 }} focusStyle={{ borderWidth: 1.5, borderColor: C.brand, borderRadius: 6 }} onPress={() => hdNav()?.navigate('MyLibrary' as never)}><Text style={st.secMore}>查看全部 ›</Text></HDTouch>
+            <HDTouch style={{ paddingVertical: 2, paddingHorizontal: 5 }} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 8 }} onPress={() => hdNav()?.navigate('MyLibrary' as never)}><Text style={st.secMore}>查看全部 ›</Text></HDTouch>
           </View>
           <View style={{ flexDirection: 'row', gap: IS_WEB ? 12 : 9 }}>
             <MiniPlaylist heart name="我喜欢的" count={favCount} img={localPls.find(p => p.name === '我喜欢的')?.songs[0]?.img} onPress={() => hdNav()?.navigate('MyFavorites')} />
@@ -206,7 +206,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
           <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: SP.sm }}>
             <Text style={st.secTitle}>最近播放</Text>
             <View style={{ flex: 1 }} />
-            <HDTouch style={{ paddingVertical: 2, paddingHorizontal: 5 }} focusStyle={{ borderWidth: 1.5, borderColor: C.brand, borderRadius: 6 }} onPress={() => recents.length && hdNav()?.navigate('PlaylistDetail', { title: '最近播放', songs: recents, meta: recents.length + ' 首' })}><Text style={st.secMore}>全部记录 ›</Text></HDTouch>
+            <HDTouch style={{ paddingVertical: 2, paddingHorizontal: 5 }} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 8 }} onPress={() => recents.length && hdNav()?.navigate('PlaylistDetail', { title: '最近播放', songs: recents, meta: recents.length + ' 首' })}><Text style={st.secMore}>全部记录 ›</Text></HDTouch>
           </View>
           {recents.length ? (
             <View style={{ gap: 4 }}>
@@ -347,7 +347,7 @@ function Section({ title, hint, more, onMore, children }: { title: string; hint?
         <Text style={st.secTitle}>{title}</Text>
         {hint ? <Text style={st.secHint}>{hint}</Text> : null}
         <View style={{ flex: 1 }} />
-        {more ? <HDTouch style={{ paddingVertical: 2, paddingHorizontal: 5 }} focusStyle={{ borderWidth: 1.5, borderColor: C.brand, borderRadius: 6 }} onPress={onMore}><Text style={st.secMore}>{more} ›</Text></HDTouch> : null}
+        {more ? <HDTouch style={{ paddingVertical: 2, paddingHorizontal: 5 }} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 8 }} onPress={onMore}><Text style={st.secMore}>{more} ›</Text></HDTouch> : null}
       </View>
       {children}
     </View>
