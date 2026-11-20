@@ -330,23 +330,11 @@ export function HDMain() {
             </View>
           ) : null}
 
-          {/* 发现 */}
-          {/* [产品包HD 1111·老板令全量对齐] 三组导航+sidebar-bottom——条目安排=NextMusic-HD.html 实测 */}
-          {/* [产品包HD 全量对齐·1111] 侧栏=11 个一级条目,零二级展开——库/歌单/下载全在页面里 */}
-          <Group label="发现" />
-          <NavItem icon="home" label="为我推荐" active={innerRoute === 'Tabs' && tab === 0} first onPress={() => { setTab(0); hdInnerPop(); }} />
-          <NavItem icon="explore" label="探索" active={innerRoute === 'Discover'} onPress={() => railNav('Discover')} />
-          <NavItem icon="ranking" label="榜单" active={innerRoute === 'Tabs' && tab === 3} onPress={() => { setTab(3); hdInnerPop(); }} />
+          {/* [HTML01 1120 app.js] 侧栏=4 项扁平:推荐/音乐馆/播客/我的——榜单入音乐馆 subnav,我喜欢的/最近播放/媒体库全走「我的」页入口 */}
+          <NavItem icon="home" label="推荐" active={(innerRoute === 'Tabs' && tab === 0) || (innerRoute === 'PlaylistDetail' && (innerP?.title === '我喜欢的' || innerP?.localId === 'loves' || innerP?.title === '播放历史'))} first onPress={() => { setTab(0); hdInnerPop(); }} />
+          <NavItem icon="explore" label="音乐馆" active={innerRoute === 'Discover' || innerRoute === 'BoardsSquare' || (innerRoute === 'Tabs' && tab === 3)} onPress={() => railNav('Discover')} />
           <NavItem icon="podcast" label="播客" active={innerRoute === 'Tabs' && tab === 1} onPress={() => { setTab(1); hdInnerPop(); }} />
-          <Group label="我的音乐" top={8} />
-          <HDTouch style={[st.navItem, innerRoute === 'PlaylistDetail' && (innerP?.title === '我喜欢的' || innerP?.localId === 'loves') && st.navItemOn]} focusStyle={st.navFocus} hoverBg={IS_WEB && !(innerRoute === 'PlaylistDetail' && innerP?.title === '我喜欢的') ? C.hover : false} onPress={openLoves}>
-            <Icon name="heart" size={16} color={innerRoute === 'PlaylistDetail' && innerP?.title === '我喜欢的' ? C.text : C.text2} />
-            <Text style={[st.navLabel, innerRoute === 'PlaylistDetail' && innerP?.title === '我喜欢的' && { fontWeight: '700', color: C.text }]} numberOfLines={1}>我喜欢的{loveCount != null ? ` · ${loveCount}` : ''}</Text>
-          </HDTouch>
-          <NavItem icon="history" label="最近播放" active={innerRoute === 'PlaylistDetail' && innerP?.title === '播放历史'} onPress={openHistory} />
-          <NavItem icon="queue" label="我的音乐" active={innerRoute === 'MyLibrary' || innerRoute === 'PlaylistDetail'} onPress={() => railNav('MyLibrary')} />
-          <Group label="曲库" top={8} />
-          <NavItem icon="server" label="媒体库" active={innerRoute === 'MediaLibs' || innerRoute === 'ProviderBrowse' || innerRoute === 'CloudLibrary' || innerRoute === 'PublicLibrary' || innerRoute === 'LocalLibBrowse' || innerRoute === 'ServerLocalLib'} onPress={() => railNav('MediaLibs')} />
+          <NavItem icon="queue" label="我的" active={innerRoute === 'MyLibrary' || innerRoute === 'MediaLibs' || innerRoute === 'ProviderBrowse' || innerRoute === 'CloudLibrary' || innerRoute === 'PublicLibrary' || innerRoute === 'LocalLibBrowse' || innerRoute === 'ServerLocalLib'} onPress={() => railNav('MyLibrary')} />
 
         </ScrollView>
         {/* lx85:设置项不贴底——留出焦点环完整显示空间(老板:太靠底被裁切) */}

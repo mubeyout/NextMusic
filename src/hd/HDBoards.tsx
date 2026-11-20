@@ -67,7 +67,7 @@ export function HDBoards() {
       showsVerticalScrollIndicator={false}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.md }}>
-        <Text style={st.title}>榜单广场</Text>
+        <Text style={st.title}>排行榜</Text>
         <View style={{ flex: 1 }} />
         {busy ? <ActivityIndicator color={C.brand} size="small" /> : null}
         {boards ? <Text style={st.count}>{boards.length} 个榜单</Text> : null}
@@ -173,3 +173,57 @@ const st = StyleSheet.create({
   tip: { alignItems: 'center', gap: SP.lg, paddingVertical: 54 },
   tipText: { color: C.text2, fontSize: H.font.md, textAlign: 'center', paddingVertical: 30 },
 });
+
+/** [HTML01 1120] HDBoardsEmbed:音乐馆「排行榜」sub-tab 内容版(无页面 ScrollView)——数据/交互与页面版一致 */
+export function HDBoardsEmbed() {
+  const [src, setSrc] = useState('kg');
+  const [boards, setBoards] = useState<Board[] | null>(() => cacheStale<Board[]>('boards.kg'));
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    let dead = false;
+    const key = `boards.${src}`;
+    const cachedBoards = cacheStale<Board[]>(key);
+    if (cachedBoards && !boards) setBoards(cachedBoards);
+    lxapi.leaderboardBoards(src)
+      .then(bs => { if (!dead) { setBoards(bs); cacheSet(key, bs); } })
+      .catch(() => { if (!dead) setBoards(prev => prev || []); });
+    return () => { dead = true; };
+  }, [src]); // eslint-disable-line react-hooks/exhaustive-deps
+  const openBoard = async (b: Board) => {
+    if (busy) return;
+    setBusy(true);
+    const list = await lxapi.leaderboardList(b.bangid, src).catch(() => [] as SongItem[]);
+    setBusy(false);
+    if (list.length) hdNav()?.navigate('PlaylistDetail', { title: b.name, songs: list, meta: `${list.length} 首 · 榜单` });
+    else toast('榜单加载失败,稍后重试');
+  };
+  const label = SOURCES.find(x => x.key === src)?.label ?? '';
+  return (
+    <View style={{ paddingHorizontal: IS_WEB ? 42 : 26, paddingBottom: 28, gap: SP.xl, flex: 1 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.md }}>
+        <Text style={st.title}>{label}榜单</Text>
+        <Text style={st.count}>{boards ? `${boards.length} 个` : ''}</Text>
+        <View style={{ flex: 1 }} />
+        {busy ? <ActivityIndicator color={C.brand} size="small" /> : null}
+      </View>
+      <View style={{ flexDirection: 'row', gap: SP.md }}>
+        {SOURCES.map(x => (
+          <HDTouch key={x.key} style={[st.pill, src === x.key && st.pillOn]}
+            focusStyle={src === x.key ? { borderWidth: 2, borderColor: C.brandSoft } : st.pillFocus}
+            onPress={() => setSrc(x.key)}>
+            <Text style={[st.pillLabel, src === x.key && st.pillLabelOn]}>{x.label}</Text>
+          </HDTouch>
+        ))}
+      </View>
+      {boards == null ? (
+        <View style={st.tip}><ActivityIndicator color={C.brand} size="large" /><Text style={st.tipText}>榜单加载中…</Text></View>
+      ) : (
+        <HDGrid min={GRID.hdMin * (H.font.sm / 10)}>
+          {boards.map((b, i) => (
+            <BoardCard key={b.id} b={b} i={i} src={src} busy={busy} onOpen={() => openBoard(b)} />
+          ))}
+        </HDGrid>
+      )}
+    </View>
+  );
+}

@@ -11,6 +11,7 @@ import { Icon } from '../theme/Icon';
 import { C, H, shadowStyleOf, webCardShadow } from './hdtokens';
 import { HDTouch } from './HDTouch';
 import { HDGrid } from './HDGrid';
+import { HDBoardsEmbed } from './HDBoards';
 import { useHoverCard } from './hdweb';
 import { HDSongRow } from './HDSongRow';
 import { usePlayer } from '../state/PlayerProvider';
@@ -83,20 +84,40 @@ function ExploreView({ onSquare }: { onSquare: (tagName?: string) => void }) {
   };
 
   const openGenre = (name: string) => onSquare(name); // genre→广场同名 tag 筛选
+  // [HTML01 1120] 音乐馆 subnav:精选歌单/排行榜/场景音乐(app.js pgExplore)——默认精选歌单
+  const [sub, setSub] = useState<'精选歌单' | '排行榜' | '场景音乐'>('精选歌单');
 
+  if (sub === '精选歌单') {
+    return (
+      <>
+        <SubNav sub={sub} setSub={setSub} />
+        <SquareView tagName="" onBack={() => setSub('场景音乐')} />
+      </>
+    );
+  }
+  if (sub === '排行榜') {
+    return (
+      <>
+        <SubNav sub={sub} setSub={setSub} />
+        <HDBoardsEmbed />
+      </>
+    );
+  }
   return (
     <ScrollView style={st.screen} contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: IS_WEB ? 42 : 26, paddingBottom: 28, gap: SP.xl }} showsVerticalScrollIndicator={false}>
       {/* page-head(设计: h1 29 + p 副句 + 右搜索钮) */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.lg }}>
         <View style={{ gap: 6 }}>
-          <Text style={st.h1}>探索</Text>
-          <Text style={st.sub}>找到此刻想听的音乐</Text>
+          <Text style={st.h1}>音乐馆</Text>
+          <Text style={st.sub}>为每一段旅程，找到合适的声音</Text>
         </View>
         <View style={{ flex: 1 }} />
         <HDTouch style={st.headBtn} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: H.radius.pill }} onPress={() => hdNav()?.navigate('Search')}>
           <Icon name="search" size={16} color={C.text} /><Text style={st.headBtnText}>搜索</Text>
         </HDTouch>
       </View>
+
+      <SubNav sub={sub} setSub={setSub} />
 
       {/* 热门主题 genre-grid(设计: 3列 gap16 / 150h r14 pad24 / 题25-700 + 英文12-ls1) */}
       <View style={st.secHead}><Text style={st.secTitle}>热门主题</Text></View>
@@ -223,9 +244,11 @@ function SquareView({ tagName, onBack }: { tagName: string; onBack: () => void }
       showsVerticalScrollIndicator={false}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.md }}>
+        {tagName ? (
         <HDTouch style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center' }} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 18 }} onPress={onBack}>
           <Icon name="back" size={17} color={C.text} />
         </HDTouch>
+        ) : null}
         <Text style={st.title}>歌单广场</Text>
         <View style={{ flex: 1 }} />
         {busy ? <ActivityIndicator color={C.brand} size="small" /> : null}
@@ -345,3 +368,18 @@ const st = StyleSheet.create({
   moreBtn: { alignSelf: 'center', marginTop: 6, borderRadius: H.radius.pill, paddingHorizontal: 22, height: 32, backgroundColor: C.elev, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
   moreText: { color: C.text2, fontSize: H.font.sm },
 });
+
+/** [HTML01 1120] 音乐馆 subnav:三 pill(hd.css 36h r999 on=brand/#111214) */
+function SubNav({ sub, setSub }: { sub: string; setSub: (v: '精选歌单' | '排行榜' | '场景音乐') => void }) {
+  return (
+    <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: IS_WEB ? 42 : 26, paddingTop: Math.max(Math.min(useSafeAreaInsets().top, 16), 10) }}>
+      {(['精选歌单', '排行榜', '场景音乐'] as const).map(t => (
+        <HDTouch key={t} style={{ paddingHorizontal: 18, height: IS_WEB ? 36 : 30, borderRadius: 999, backgroundColor: sub === t ? C.brand : C.surface, alignItems: 'center', justifyContent: 'center' }}
+          focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 999 }}
+          onPress={() => setSub(t)}>
+          <Text style={{ color: sub === t ? '#111214' : C.text2, fontSize: IS_WEB ? 14 : 11.5, fontWeight: sub === t ? '600' : '500' }}>{t}</Text>
+        </HDTouch>
+      ))}
+    </View>
+  );
+}
