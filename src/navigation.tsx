@@ -97,8 +97,10 @@ function TabBarManual({ tab, setTab }: { tab: number; setTab: (i: number) => voi
 
 export function RootNavigator() {
   useSettings(); // carlink:carModeUi 变更即重渲——导航层 IS_HD|carMode 双分流
-  const HD = isCarUi();
-  const CAR_UI = !IS_HD_UI && settings.get().carModeUi === true; // [1105+1111 三版合一] TV 设备恒 HDMain(IS_HD_UI)——蓝牙误切 carModeUi 也不再劫持电视
+  // vc185 三合一调试:formForce 显式覆盖最终形态(即时生效)——TV 上强制 car 供实测;auto=原环境判定链
+  const FF = settings.get().formForce ?? 'auto';
+  const HD = FF === 'hd' ? true : FF === 'phone' ? false : isCarUi();
+  const CAR_UI = FF === 'car' ? true : (FF === 'phone' || FF === 'hd') ? false : (!IS_HD_UI && settings.get().carModeUi === true); // [1105+1111 三版合一] TV 设备恒 HDMain(IS_HD_UI)——蓝牙误切 carModeUi 也不再劫持电视
   const { mode } = useApp();
   // 服务端 web 播放器不需要启动向导:直进主界面(本地模式);原生端保留三卡引导
   const initial = !mode ? (Platform.OS === 'web' ? 'Main' : 'Boot') : 'Main';

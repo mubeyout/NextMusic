@@ -80,6 +80,7 @@ export function HDSettingsScreen() {
 
   const rows: Record<Tab, RowDef[]> = {
     '外观与界面': [
+      { kind: 'select', icon: 'fullscreen', title: '界面形态', desc: '三合一:强制形态即时生效(默认跟随设备;TV 验 car 用)', value: s.formForce === 'car' ? '车机' : s.formForce === 'hd' ? '大屏HD' : s.formForce === 'phone' ? '手机' : '跟随设备', options: ['跟随设备', '手机', '车机', '大屏HD'], onPick: v => settings.set('formForce', v === '车机' ? 'car' : v === '大屏HD' ? 'hd' : v === '手机' ? 'phone' : 'auto') },
       { kind: 'toggle', icon: 'palette', title: '纯黑背景', desc: 'OLED 友好的纯黑底色(仅深色模式)', value: s.pureBlack, onToggle: () => { settings.set('pureBlack', !s.pureBlack); if (IS_WEB) { hdWebReload(); } else hdRestart(playing); } },
       { kind: 'select', icon: 'palette', title: '界面主题', desc: IS_WEB ? '深色/浅色即时切换' : '深色(车机/TV 默认)或浅色,切换后自动重启生效', value: s.light ? '浅色' : '深色', options: ['深色', '浅色'], onPick: v => { settings.set('light', v === '浅色'); if (IS_WEB) { hdWebReload(); } else hdRestart(playing); } },
       { kind: 'select', icon: 'palette', title: '强调色', desc: IS_WEB ? '全局品牌色(即时生效)' : '全局品牌色(按钮/高亮/选中态),切换后自动重启生效', value: ACCENTS.find(a => a.color === s.accent)?.name ?? 'Next 绿', options: ACCENTS.map(a => a.name), onPick: v => { const hit = ACCENTS.find(a => a.name === v); if (hit) { settings.set('accent', hit.color); if (IS_WEB) { hdWebReload(); } else hdRestart(playing); } } },
