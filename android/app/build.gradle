@@ -91,8 +91,8 @@ android {
             applicationIdSuffix ".hd"
             versionNameSuffix "-hd"
             // HD 独立版本线:与 phone 共享 default,但可单独越号更新(当前 hd v2)
-            versionCode 184
-            versionName "1.4.1" // v1.4.1-vc184(1120:批19系+侧栏终稿+图标光学归一+车机缺口包A1-A5——老板令重编译上电视 E2E)
+            versionCode 185
+            versionName "1.4.2" // v1.4.2-hd(1120:三合一·HTML01正本同步——HD首页新结构+CAR rail+formForce)
         }
     }
 
@@ -100,8 +100,8 @@ android {
         applicationId "com.mubeyworks.nextmusic"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 185
-        versionName "1.4.1" // v1.4.1-vc165(1107:车机模式开关删除·纯环境自动检测双向钳制+图标光学归一+CAR缺口包A1-A5+活态插入裁定)
+        versionCode 186
+        versionName "1.4.2" // v1.4.2-vc186(1120:三合一·HTML01正本同步——HD首页 daily-feature/density-wall/home-panels+CAR rail 重构+formForce 形态强制+批19)
     }
     // 多架构分发：GitHub Release 只放编译产物（armeabi-v7a/arm64-v8a/x86/x86_64 + universal 兑底）
     splits {

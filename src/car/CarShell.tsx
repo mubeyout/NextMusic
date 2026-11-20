@@ -1,5 +1,5 @@
-// CarShell.tsx —— [v8.0 QQ 结构 1110 老板令] QQ 车机布局: 菜单在页面顶部(tab 流,侧栏撤) + 播放信息常驻左侧面板(无 playerbar) + 内容区主体
-// 页面键与覆盖态沿用; CarPlayerBar/fab 撤; 左面板=封面+信息+控件(点击进 CarPlayer 全屏)
+// CarShell.tsx —— [HTML01 car.js 1120 rail 重构] 左侧主导航 rail(brand+6 tab+播放钮) + 面包屑 header + 左播放面板 + 内容区
+// 撤 v8.0 顶 tab 流(QQ 结构)。rail 112px/header 100px ÷1.5;页面键与覆盖态沿用。
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Image, LayoutAnimation } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -28,26 +28,32 @@ import { BackHandler } from 'react-native';
 
 type PageKey = 'home' | 'podcast' | 'explore' | 'boards' | 'search' | 'queue' | 'fx' | 'settings' | 'medialibs';
 
-// [v8.1 LEO spec] 顶 tab 5 组:首页/探索/榜单/播客/我的(队列进面板工具排;乐库进「我的」)
-const NAV: { key: PageKey; icon: string; label: string }[] = [
-  { key: 'home', icon: 'home', label: '首页' },
+// [HTML01 car.js] rail 导航 6 项:home推荐/explore探索/boards榜单/podcast播客/mymusic我的(收藏overlay)/library媒体库
+const NAV: { key: PageKey | 'fav'; icon: string; label: string }[] = [
+  { key: 'home', icon: 'home', label: '推荐' },
   { key: 'explore', icon: 'explore', label: '探索' },
   { key: 'boards', icon: 'ranking', label: '榜单' },
   { key: 'podcast', icon: 'podcast', label: '播客' },
-  { key: 'medialibs', icon: 'server', label: '乐库' },
+  { key: 'fav', icon: 'heart', label: '我的' },
+  { key: 'medialibs', icon: 'server', label: '媒体库' },
 ];
 
-function TabItem({ icon, label, active, onPress }: { icon: string; label: string; active?: boolean; onPress: () => void }) {
+const TITLES: Record<string, string> = {
+  home: '为我推荐', explore: '探索音乐', boards: '排行榜', podcast: '播客', medialibs: '媒体库',
+  search: '搜索', queue: '播放队列', fx: '均衡器与音效', settings: '设置', fav: '我喜欢的',
+};
+
+/** [HTML01 car.css #carRail .tab] 竖排导航项:icon 28/label 18/80h r18 →÷1.5;on=brand 12% 底 */
+function RailTab({ icon, label, active, onPress }: { icon: string; label: string; active?: boolean; onPress: () => void }) {
   return (
-    <CarTouch onPress={onPress} style={[st2.tab, active && st2.tabOn]}>
-      <Text style={[st2.tabLabel, active && { color: C.brand, fontWeight: '800' }]}>{label}</Text>
-      {active ? <View style={st2.tabUnder} /> : null}
+    <CarTouch onPress={onPress} style={[st2.railTab, active && { backgroundColor: 'rgba(30,215,96,.13)' }]}>
+      <Icon name={icon} size={19} color={active ? C.brand : C.text2} />
+      <Text style={{ color: active ? C.text : C.text2, fontSize: 12, fontWeight: '550' as never, lineHeight: 14 }}>{label}</Text>
     </CarTouch>
   );
 }
 
-/** [v8.0] 左侧播放信息面板(QQ 律: 播放信息在左面,替代底部 playerbar) */
-/** [v8.1 LEO spec] 左侧播放面板 300dp 八件套:封面260/歌名/歌手/进度+时间/三控(56绿主钮)/工具排(收藏下载队列音效)/徽标行/队列底锚 */
+/** [v8.1 保留] 左侧播放面板 300dp 八件套(封面/信息/进度/三控/工具排/徽标行/队列底锚)——对应 web #panel 家族 */
 function PlayPanel({ onOpen, onFx, onQueue, onFav, onDownload, onArtistTap }: { onOpen: () => void; onFx: () => void; onQueue: () => void; onFav: () => void; onDownload: () => void; onArtistTap: (singer: string) => void }) {
   const { current, playing, toggle, skipNext, skipPrev, queue } = usePlayer();
   const { position, duration } = usePlayerProgress();
@@ -58,7 +64,6 @@ function PlayPanel({ onOpen, onFx, onQueue, onFav, onDownload, onArtistTap }: { 
   const fmt = (ms: number) => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
   return (
     <View style={st2.panel}>
-      {/* [产品包CAR] nowhead: 正在播放 eyebrow + SQ 无损标 */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: C.brand, marginRight: 5 }} />
@@ -70,7 +75,6 @@ function PlayPanel({ onOpen, onFx, onQueue, onFav, onDownload, onArtistTap }: { 
         {img ? <Image source={{ uri: img }} style={st2.panelArt} /> : <View style={[st2.panelArt, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={44} color={C.text3} /></View>}
       </CarTouch>
       <Text style={st2.panelTitle} numberOfLines={1}>{current?.name ?? '未在播放'}</Text>
-      {/* [老板 1110] 点歌手→跳搜索检出同歌手的歌 */}
       <CarTouch style={{ width: '100%', alignItems: 'center' }} onPress={() => { if (current?.singer) onArtistTap(current.singer); }}>
         <Text style={st2.panelArtist} numberOfLines={1}>{current?.singer ?? '从首页选一首开始'}</Text>
       </CarTouch>
@@ -93,7 +97,6 @@ function PlayPanel({ onOpen, onFx, onQueue, onFav, onDownload, onArtistTap }: { 
       </View>
       <View style={{ flex: 1 }} />
       <CarTouch style={st2.panelQueue} onPress={onQueue}>
-        {/* [产品包CAR] next-up: 接下来 · 下一首 */}
         <Text style={st2.panelQueueText} numberOfLines={1}>接下来 · {nextName} ›</Text>
       </CarTouch>
     </View>
@@ -105,8 +108,8 @@ export function CarShell() {
   const [page, setPage] = useState<PageKey>('home');
   const nav = useNavigation() as { navigate: (s: string) => void };
   const [playerOpen, setPlayerOpen] = useState(false);
-  const [seedQ, setSeedQ] = useState(''); // [老板 1110] 点歌手→种词进 CarSearch
-  const [clock, setClock] = useState(''); // [产品包CAR] 顶栏时钟
+  const [seedQ, setSeedQ] = useState('');
+  const [clock, setClock] = useState('');
   useEffect(() => { const f = () => { const d = new Date(); setClock(String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0')); }; f(); const t = setInterval(f, 30000); return () => clearInterval(t); }, []);
   const [favOpen, setFavOpen] = useState(false);
   const [playlist, setPlaylist] = useState<import('./CarPlaylist').CarPlRef | null>(null);
@@ -123,52 +126,66 @@ export function CarShell() {
   const pub = usePubEntry();
   const hasToken = !!useApp().token;
   const hasLocalLibs = localLib.all().length > 0;
+  const breadcrumb = playlist ? (playlist.name || '歌单') : favOpen ? TITLES.fav : TITLES[page] || 'NextMusic';
 
   return (
-    <View style={{ flex: 1, flexDirection: 'column', backgroundColor: C.bg, paddingTop: Math.max(insets.top, 8) }}
+    <View style={{ flex: 1, flexDirection: 'row', backgroundColor: C.bg, paddingTop: Math.max(insets.top, 6), paddingHorizontal: Math.max(insets.left, 0) }}
       >
-      {/* [v8.0 QQ 律] 顶部: 品牌 + tab 流 + 搜索/收藏/设置图标钮 */}
-      <View style={st2.topBar}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginRight: 18 }}>
-          <Image source={require('../assets/brand/mark.png')} style={{ width: 28, height: 28 }} />
-          <Text style={{ color: C.text, fontSize: 18, fontWeight: '800' }}>Next<Text style={{ color: C.brand }}>Music</Text></Text>
+      {/* [HTML01 car.js] #carRail:brand(36/14) + tabs 竖排 + car-rail-player(70h r16 surface)——rail 112px ÷1.5 */}
+      <View style={st2.rail}>
+        <View style={st2.railBrand}>
+          <Image source={require('../assets/brand/mark.png')} style={{ width: 24, height: 24 }} />
+          <Text style={{ color: C.text, fontSize: 9, letterSpacing: -0.3 }}>NextMusic</Text>
         </View>
-        <View style={{ flexDirection: 'row', gap: 6, flex: 1 }}>
+        <View style={st2.railTabs}>
           {NAV.map(n => (
-            <TabItem key={n.key} icon={n.icon} label={n.label} active={page === n.key && !favOpen && !playlist} onPress={() => goPage(n.key)} />
+            <RailTab key={n.key} icon={n.icon} label={n.label}
+              active={n.key === 'fav' ? favOpen && !playlist : page === n.key && !favOpen && !playlist}
+              onPress={() => n.key === 'fav' ? (setPlaylist(null), setFavOpen(true)) : goPage(n.key as PageKey)} />
           ))}
         </View>
-        <View style={{ flexDirection: 'row', gap: 10 }}>
-          <CarTouch style={st2.iconBtn} onPress={() => { toast('语音搜索（即将上线）'); }}><Icon name="wave" size={20} color={C.text2} /></CarTouch>
-          <CarTouch style={st2.iconBtn} onPress={() => goPage('search')}><Icon name="search" size={20} color={C.text2} /></CarTouch>
-          <CarTouch style={st2.iconBtn} onPress={() => goPage('settings')}><Icon name="settings" size={20} color={C.text2} /></CarTouch>
-          <Text style={{ color: C.text2, fontSize: 10, fontVariant: ['tabular-nums' as never], marginLeft: 4 }}>{clock}</Text>
-        </View>
+        <CarTouch style={st2.railPlayer} onPress={() => setPlayerOpen(true)}>
+          <Icon name="wave" size={17} color={C.brand} />
+          <Text style={{ color: C.text2, fontSize: 11 }}>播放</Text>
+        </CarTouch>
       </View>
 
-      {/* 主区: 左播放信息面板 + 右内容 */}
-      <View style={{ flex: 1, flexDirection: 'row' }}>
-        <View style={st2.panelWrap}>
-          <PlayPanel onOpen={() => setPlayerOpen(true)} onFx={() => goPage('fx')} onQueue={() => goPage('queue')} onFav={() => setFavOpen(true)} onDownload={() => nav.navigate('Downloads')} onArtistTap={(s) => { setSeedQ(s); goPage('search'); }} />
+      {/* 右列:面包屑 header(100px ÷1.5) + 主区(panel+content) */}
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <View style={st2.carHeader}>
+          <Text style={st2.breadcrumb} numberOfLines={1}>{breadcrumb}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <CarTouch style={st2.searchPill} onPress={() => goPage('search')}>
+              <Icon name="search" size={15} color={C.text2} />
+              <Text style={{ color: C.text2, fontSize: 11 }} numberOfLines={1}>搜索歌曲、歌手、专辑</Text>
+            </CarTouch>
+            <CarTouch style={st2.iconBtn} onPress={() => goPage('settings')}><Icon name="settings" size={17} color={C.text2} /></CarTouch>
+            <Text style={{ color: C.text2, fontSize: 10, fontVariant: ['tabular-nums' as never], marginLeft: 2 }}>{clock}</Text>
+          </View>
         </View>
-        <View style={{ flex: 1 }}>
-          {favOpen ? (
-            <CarFavorites onBack={() => setFavOpen(false)} />
-          ) : playlist ? (
-            <CarPlaylist pl={playlist} onBack={() => setPlaylist(null)} />
-          ) : (
-            <>
-              {page === 'home' && <CarHome goExplore={() => setPage('explore')} onOpenPlaylist={setPlaylist} />}
-              {page === 'podcast' && <CarPodcast />}
-              {page === 'explore' && <CarExplore onOpenPlaylist={setPlaylist} />}
-              {page === 'boards' && <CarBoards onOpenPlaylist={setPlaylist} />}
-              {page === 'search' && <CarSearch onBack={() => setPage('home')} seed={seedQ} />}
-              {page === 'queue' && <CarQueue onBack={() => setPage('home')} />}
-              {page === 'fx' && <CarFx onBack={() => setPage('home')} />}
-              {page === 'settings' && <CarSettings onBack={() => setPage('home')} />}
-              {page === 'medialibs' && <CarMediaLibs onBack={() => setPage('home')} onFav={() => setFavOpen(true)} />}
-            </>
-          )}
+        <View style={{ flex: 1, flexDirection: 'row' }}>
+          <View style={st2.panelWrap}>
+            <PlayPanel onOpen={() => setPlayerOpen(true)} onFx={() => goPage('fx')} onQueue={() => goPage('queue')} onFav={() => setFavOpen(true)} onDownload={() => nav.navigate('Downloads')} onArtistTap={(s) => { setSeedQ(s); goPage('search'); }} />
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            {favOpen ? (
+              <CarFavorites onBack={() => setFavOpen(false)} />
+            ) : playlist ? (
+              <CarPlaylist pl={playlist} onBack={() => setPlaylist(null)} />
+            ) : (
+              <>
+                {page === 'home' && <CarHome goExplore={() => setPage('explore')} goPodcast={() => setPage('podcast')} onOpenFav={() => setFavOpen(true)} onOpenPlaylist={setPlaylist} />}
+                {page === 'podcast' && <CarPodcast />}
+                {page === 'explore' && <CarExplore onOpenPlaylist={setPlaylist} />}
+                {page === 'boards' && <CarBoards onOpenPlaylist={setPlaylist} />}
+                {page === 'search' && <CarSearch onBack={() => setPage('home')} seed={seedQ} />}
+                {page === 'queue' && <CarQueue onBack={() => setPage('home')} />}
+                {page === 'fx' && <CarFx onBack={() => setPage('home')} />}
+                {page === 'settings' && <CarSettings onBack={() => setPage('home')} />}
+                {page === 'medialibs' && <CarMediaLibs onBack={() => setPage('home')} onFav={() => setFavOpen(true)} />}
+              </>
+            )}
+          </View>
         </View>
       </View>
       <CarPlayer visible={playerOpen} onClose={() => setPlayerOpen(false)} onArtistTap={(s) => { setPlayerOpen(false); setSeedQ(s); goPage('search'); }} />
@@ -177,13 +194,16 @@ export function CarShell() {
 }
 
 const st2 = {
-  topBar: { flexDirection: 'row' as const, alignItems: 'center' as const, height: 59, paddingHorizontal: 19, backgroundColor: C.bg, borderBottomWidth: 1, borderBottomColor: C.border, gap: 8 }, // [产品包] header 88px ÷1.5
-  tab: { alignItems: 'center' as const, justifyContent: 'center' as const, height: 59, paddingHorizontal: 15 },
-  tabOn: {},
-  tabUnder: { width: 15, height: 3, borderRadius: 2, backgroundColor: C.brand, marginTop: 3 }, // [产品包] 22×4 ÷1.5
-  tabLabel: { color: C.text2, fontSize: 13.5, fontWeight: '600' as const }, // [产品包] 20px ÷1.5
-  iconBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
-  panelWrap: { width: 213, borderRightWidth: 1, borderRightColor: C.border, backgroundColor: '#181818' }, // [产品包] side 320 ÷1.5
+  rail: { width: 75, flexDirection: 'column' as const, alignItems: 'center' as const, gap: 13, paddingTop: 17, paddingBottom: 13, borderRightWidth: 1, borderRightColor: C.border }, // [HTML01] rail 112px ÷1.5
+  railBrand: { alignItems: 'center' as const, gap: 7, marginBottom: 8 },
+  railTabs: { flex: 1, width: '100%' as const, gap: 7, justifyContent: 'flex-start' as const },
+  railTab: { width: '100%' as const, minHeight: 53, alignItems: 'center' as const, justifyContent: 'center' as const, gap: 5, borderRadius: 12 }, // tab 80h r18 ÷1.5
+  railPlayer: { width: '100%' as const, minHeight: 47, borderRadius: 11, backgroundColor: C.surface, alignItems: 'center' as const, justifyContent: 'center' as const, gap: 5 }, // car-rail-player 70h r16 ÷1.5
+  carHeader: { height: 67, flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'space-between' as const, paddingLeft: 16, paddingRight: 10, gap: 12 }, // header 100px ÷1.5
+  breadcrumb: { color: C.text, fontSize: 21, fontWeight: '650' as never, letterSpacing: -0.3, flex: 1, minWidth: 0 },
+  searchPill: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 7, height: 36, paddingHorizontal: 13, borderRadius: 12, backgroundColor: C.surface2 },
+  iconBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
+  panelWrap: { width: 213, borderRightWidth: 1, borderRightColor: C.border, backgroundColor: C.surface },
   panel: { flex: 1, padding: 15, gap: 7, alignItems: 'center' as const },
   panelArt: { width: 173, height: 173, borderRadius: 8 },
   panelTitle: { color: C.text, fontSize: 15, fontWeight: '700' as const, textAlign: 'center' as const, width: '100%' },
@@ -192,10 +212,10 @@ const st2 = {
   panelTimes: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, width: '100%' },
   panelTime: { color: C.text3, fontSize: 11, fontVariant: ['tabular-nums' as never] },
   panelCtrls: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 12, marginTop: 4 },
-  pBtn: { width: 43, height: 43, borderRadius: 22, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const }, // 64 ÷1.5
-  pMain: { width: 51, height: 51, borderRadius: 26, backgroundColor: C.brand, alignItems: 'center' as const, justifyContent: 'center' as const }, // 76 ÷1.5
+  pBtn: { width: 43, height: 43, borderRadius: 22, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
+  pMain: { width: 51, height: 51, borderRadius: 26, backgroundColor: C.brand, alignItems: 'center' as const, justifyContent: 'center' as const },
   panelTools: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 4, marginTop: 6, width: '100%' as const },
-  pTool: { width: 57, height: 41, borderRadius: 8, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const }, // 3列×62 ÷1.5(183=3×57+2×4)
+  pTool: { width: 57, height: 41, borderRadius: 8, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
   panelBadges: { flexDirection: 'row' as const, gap: 8 },
   pBadge: { color: C.text3, fontSize: 11, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10, backgroundColor: C.surface2 },
   panelQueue: { width: '100%', paddingVertical: 8, alignItems: 'center' as const },
