@@ -37,6 +37,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
   const [recSource, setRecSource] = useState(() => cacheStale<string>('home.recSource') || '');
 
   const [recFail, setRecFail] = useState(false);
+  const [homeTab, setHomeTab] = useState<'全部' | '音乐' | '播客'>('全部'); // [HTML01 1120] 首页内容类型筛选(home-cards.js)
   const loadRec = () => {
     setRecFail(false);
     lxapi.songListAuto('', '5', 1, 18).then(r => {
@@ -110,6 +111,7 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
     } catch { toast('歌单内容获取失败'); }
   };
 
+  const favCount = localPls.find(p => p.name === '我喜欢的')?.songs.length ?? 0;
   const hour = new Date().getHours();
   const greet = hour < 6 ? '夜深了' : hour < 12 ? '早上好' : hour < 18 ? '下午好' : '晚上好';
 
@@ -119,121 +121,107 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
       contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: IS_WEB ? 42 : 26, paddingBottom: 28, gap: SP.section }}
       showsVerticalScrollIndicator={false}
     >
-      {/* [产品包HD 批3 1:1] hero:问候36/700/-1 + 副句14 + 右上 MADE FOR YOU 11px/ls2(设计 home-topline 实测) */}
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        <View>
-          <Text style={st.greet}>{greet}{connected && snap ? ', Mubey' : ''}</Text>
-          <Text style={{ color: C.text2, fontSize: IS_WEB ? 14 : H.font.md, marginTop: 6 }}>从熟悉的旋律，开始今天</Text>
+      {/* [HTML01 1120] dense-intro:问候 h1 26/600/-.8 + 全部/音乐/播客 pills(h36 r999 on=brand/#111214 off=surface/text2)——组合层 home-cards.js */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <Text style={{ color: C.text, fontSize: IS_WEB ? 26 : 20, fontWeight: '600', letterSpacing: -0.8 }}>{greet}</Text>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {(['全部', '音乐', '播客'] as const).map(t => (
+            <HDTouch key={t} style={{ paddingHorizontal: 18, height: IS_WEB ? 36 : 30, borderRadius: 999, backgroundColor: homeTab === t ? C.brand : C.surface, alignItems: 'center', justifyContent: 'center' }}
+              focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 999 }}
+              onPress={() => { if (t === '播客') { hdNav()?.navigate('Tabs' as never) || hdNav()?.navigate('PodcastTab' as never); return; } setHomeTab(t); }}>
+              <Text style={{ color: homeTab === t ? '#111214' : C.text2, fontSize: IS_WEB ? 14 : 11.5, fontWeight: homeTab === t ? '600' : '500' }}>{t}</Text>
+            </HDTouch>
+          ))}
         </View>
-        <Text style={{ color: C.text3, fontSize: IS_WEB ? 11 : FS.xs, letterSpacing: 2, marginTop: IS_WEB ? 34 : 14 }}>MADE FOR YOU</Text>
-      </View>
-      {/* [产品包HD 批3] pills 42h/r24:on=#F5F5F5 白底黑字 600,off=#232323/#B3B3B3(设计 home-filters 实测) */}
-      <View style={{ flexDirection: 'row', gap: SP.md, marginTop: -6 }}>
-        {([['全部', true], ['音乐', false], ['播客', false]] as [string, boolean][]).map(([label, on]) => (
-          <HDTouch key={label} style={{ paddingHorizontal: 21, height: IS_WEB ? 42 : 44, borderRadius: 24, backgroundColor: on ? '#F5F5F5' : '#232323', alignItems: 'center', justifyContent: 'center' }}
-            focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 24 }}
-            onPress={() => { if (label === '播客') hdNav()?.navigate('Tabs' as never) || hdNav()?.navigate('PodcastTab' as never); }}>
-            <Text style={{ color: on ? C.bg : C.text2, fontSize: IS_WEB ? 16 : H.font.md, fontWeight: on ? '600' : '500' }}>{label}</Text>
-          </HDTouch>
-        ))}
       </View>
 
-      {/* [产品包HD 批3 1:1] quick-grid:3列×2行 六快捷行卡(设计 quick-card 92h/图92贴角/题20/副12/透明底) */}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: IS_WEB ? 12 : SP.md }}>
-        <QuickCard img={recPls[0]?.img} title="每日精选" sub="今天的好音乐" busy={dailyBusy} onPress={playDaily} />
-        <QuickCard img={recPls[1]?.img} title="我的收藏" sub="每一首都很喜欢" heart onPress={() => hdNav()?.navigate('MyFavorites')} />
-        <QuickCard img={recPls[2]?.img} title="私人雷达" sub="发现新的心动" onPress={playRadar} />
-        <QuickCard img={recPls[3]?.img} title="夜深人静" sub="放慢一点节奏" onPress={() => playMood('夜深人静 轻音乐', '夜深人静')} />
-        <QuickCard img={recPls[4]?.img} title="华语经典" sub="熟悉的好声音" onPress={() => playMood('华语经典 金曲', '华语经典')} />
-        <QuickCard img={recPls[5]?.img} title="最近播放" sub="接着上次的旋律" onPress={() => recents.length ? hdNav()?.navigate('PlaylistDetail', { title: '最近播放', songs: recents, meta: `${recents.length} 首` }) : toast('还没有播放记录,先去探索几首吧')} />
-      </View>
-
-      {/* [产品包HD 批3 1:1] 为你打造:mix 双大照片卡 244h/kicker/题29/副14/右下52绿钮(设计 mix-card 实测) */}
-      <Section title="为你打造" hint="每天都有新的好音乐">
-        <View style={{ flexDirection: 'row', gap: IS_WEB ? 18 : SP.big }}>
-          <PhotoCard img={recPls[2]?.img || recPls[0]?.img} badge="NEXTMUSIC SELECT" title="私人雷达" sub="根据你的收听偏好推荐" busy={dailyBusy} onPress={playRadar} />
-          <PhotoCard img={recPls[3]?.img || recPls[1]?.img} badge="NEXTMUSIC SELECT" title="夜深人静" sub="放慢节奏，听见好音乐" onPress={() => playMood('夜深人静 轻音乐', '夜深人静')} />
+            {/* [HTML01 1120] home-highlights:1.5fr daily-feature(200h r18 bg#142A26/kicker 11/题36-600/副14/左下白丸播放钮) + 1fr listening-picks 2×2 */}
+      {homeTab === '全部' ? (
+      <View style={{ flexDirection: 'row', gap: IS_WEB ? 16 : 12 }}>
+        <HDTouch activeOpacity={0.92} onPress={playDaily} zoom={1.01}
+          focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 18 }}
+          style={{ flex: 1.5, height: IS_WEB ? 200 : 152, borderRadius: 18, overflow: 'hidden', backgroundColor: '#142A26', borderWidth: 1, borderColor: 'rgba(255,255,255,.05)' }}>
+          {recPls[0]?.img ? <Image source={{ uri: recPls[0].img }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} resizeMode="cover" /> : null}
+          <LinearGradient colors={['rgba(16,37,30,0.94)', 'rgba(24,40,32,0.46)', 'rgba(24,40,32,0.03)']} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, paddingTop: IS_WEB ? 25 : 19, paddingLeft: IS_WEB ? 28 : 21, paddingBottom: IS_WEB ? 62 : 48 }}>
+            <Text style={{ color: '#D8E7DE', fontSize: IS_WEB ? 11 : 9, letterSpacing: 1.1 }}>{dailyBusy ? '正在准备今天的音乐…' : '每天更新 · 30 首精选'}</Text>
+            <Text style={{ color: '#FFFFFF', fontSize: IS_WEB ? 36 : 27, fontWeight: '600', letterSpacing: -2, marginTop: IS_WEB ? 10 : 8 }}>每日精选</Text>
+            <Text style={{ color: '#E2E9E3', fontSize: IS_WEB ? 14 : 11, marginTop: 8 }}>让好音乐，成为今天的好心情。</Text>
+          </View>
+          <View style={{ position: 'absolute', left: IS_WEB ? 28 : 21, bottom: IS_WEB ? 24 : 18, flexDirection: 'row', alignItems: 'center', gap: 8, height: IS_WEB ? 34 : 27, paddingHorizontal: 16, borderRadius: 999, backgroundColor: '#F1F5ED' }}>
+            {dailyBusy ? <ActivityIndicator size="small" color="#172B20" /> : <Icon name="play" size={IS_WEB ? 15 : 12} active color="#172B20" />}
+            <Text style={{ color: '#172B20', fontSize: IS_WEB ? 12 : 10, fontWeight: '600' }}>播放精选</Text>
+          </View>
+        </HDTouch>
+        <View style={{ flex: 1, gap: IS_WEB ? 14 : 11 }}>
+          <View style={{ flex: 1, flexDirection: 'row', gap: IS_WEB ? 14 : 11 }}>
+            <ListeningPick img={recPls[2]?.img} title="私人雷达" sub="发现新的喜欢" onPress={playRadar} />
+            <ListeningPick img={recPls[1]?.img} title="我的收藏" sub={favCount + ' 首心动'} onPress={() => hdNav()?.navigate('MyFavorites')} />
+          </View>
+          <View style={{ flex: 1, flexDirection: 'row', gap: IS_WEB ? 14 : 11 }}>
+            <ListeningPick img={recPls[4]?.img} title="华语经典" sub="熟悉的好声音" onPress={() => playMood('华语经典 金曲', '华语经典')} />
+            <ListeningPick img={recPls[5]?.img} title="最近播放" sub={recents.length + ' 首收听记录'} onPress={() => recents.length ? hdNav()?.navigate('PlaylistDetail', { title: '最近播放', songs: recents, meta: recents.length + ' 首' }) : toast('还没有播放记录,先去探索几首吧')} />
+          </View>
         </View>
-      </Section>
+      </View>
+      ) : null}
 
-      {/* [产品包HD] 段序对齐:为你打造→最近播放→推荐歌单→我的歌单 */}
-      {recents.length ? (
-        <Section title="最近播放" hint="接着上次的旋律 · 为你打造" more="查看全部" onMore={() => hdNav()?.navigate('PlaylistDetail', { title: '最近播放', songs: recents, meta: `${recents.length} 首` })}>
-          {/* [产品包HD 批3 1:1] recent-track 行卡 3 列:74h/图52方r7/题16/副13(设计 recent-rail 实测,替换批2 横图网格) */}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: IS_WEB ? 12 : SP.md }}>
-            {recents.slice(0, 6).map((s, i) => (
-              <HDTouch key={`${s.source}_${s.songmid}_${i}`} style={{ width: '31.5%', minHeight: IS_WEB ? 74 : 64, flexDirection: 'row', alignItems: 'center', gap: IS_WEB ? 13 : SP.md, padding: IS_WEB ? 10 : 8, borderRadius: 10, backgroundColor: C.surface }}
-                focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }} onPress={() => playSong(s, recents)}>
-                <View style={{ width: IS_WEB ? 52 : 44, height: IS_WEB ? 52 : 44, borderRadius: 7, overflow: 'hidden', backgroundColor: C.inset }}>
-                  {s.img ? <Image source={{ uri: s.img }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Icon name="music" size={16} color={C.text3} /></View>}
-                </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={{ color: C.text, fontSize: IS_WEB ? 16 : H.font.lg, fontWeight: FW.semibold }} numberOfLines={1}>{s.name}</Text>
-                  <Text style={{ color: '#999999', fontSize: IS_WEB ? 13 : H.font.sm, marginTop: 3 }} numberOfLines={1}>{s.singer}</Text>
-                </View>
-              </HDTouch>
+
+      {/* [HTML01 1120] 为你推荐:density-wall(min145 auto-fit gap12;卡=r15壳/封面aspect1.12 r8/nm14-600/ar10)——home-cards.js recommendations();音乐 tab=每日精选 4 卡 */}
+      <Section title={homeTab === '音乐' ? '每日精选' : '为你推荐'} hint={homeTab === '音乐' ? '熟悉的旋律，每天更新' : (recSource ? '五源聚合 · ' + recSource : '五源聚合')} more="更多" onMore={() => onGotoSearch?.()}>
+        {recPls.length ? (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: IS_WEB ? 12 : 9 }}>
+            {recPls.slice(0, homeTab === '音乐' ? 4 : 6).map(pl => (
+              <View key={pl.source + '_' + pl.id} style={{ flexBasis: '16%', minWidth: IS_WEB ? 145 : 112, flexGrow: 1 }}>
+                <RecommendCard pl={pl} onOpen={() => openRecPl(pl)} onPlay={() => openRecPl(pl)} />
+              </View>
             ))}
           </View>
-        </Section>
-        ) : null}
-      <Section title="推荐歌单" hint={recSource ? `五源聚合 · ${recSource}` : '五源聚合'} more="更多" onMore={() => onGotoSearch?.()}>
-        {recPls.length ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: -24, marginRight: -14 }} contentContainerStyle={{ gap: SP.xl, paddingLeft: 26, paddingRight: 12, paddingTop: IS_WEB ? 10 : 6, paddingBottom: IS_WEB ? 26 : 16 }}>
-            {recPls.slice(0, 10).map(pl => (
-              IS_WEB ? (
-                <PlCardWeb key={`${pl.source}_${pl.id}`} width={148} pl={pl} onOpen={() => openRecPl(pl)} onPlay={() => openRecPl(pl)} />
-              ) : (
-              <HDTouch key={`${pl.source}_${pl.id}`} style={[st.plCard, { width: 148 }, shadowStyleOf(pl.name)]} zoom={1.06} onPress={() => openRecPl(pl)}>
-                {pl.img
-                  ? <Image source={{ uri: pl.img }} style={st.plArt} />
-                  : <View style={[st.plArt, { backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
-                <View style={st.plTexts}>
-                  <Text style={st.plName} numberOfLines={1}>{pl.name}</Text>
-                  <Text style={st.recSub} numberOfLines={1}>{pl.author || (pl.play_count ? `▶ ${pl.play_count}` : '')}</Text>
-                </View>
-              </HDTouch>
-              )
-            ))}
-          </ScrollView>
         ) : (
           <View style={st.empty}>
             <Text style={st.emptyText}>{recFail ? '推荐歌单加载失败 · 音源无响应' : '推荐歌单加载中…'}</Text>
-            {recFail ? <HDTouch style={st.retryBtn} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 999 }} onPress={loadRec}>
-              <Text style={st.retryText}>重试</Text>
-            </HDTouch> : null}
+            {recFail ? <HDTouch style={st.retryBtn} focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 999 }} onPress={loadRec}><Text style={st.retryText}>重试</Text></HDTouch> : null}
           </View>
         )}
       </Section>
 
-      {/* 我的歌单(批3:wall 5列@1920/3列@1280——min 251 实测对设计 product-wall 断点) */}
-      <Section title="我的歌单" hint={`${playlists.length} 个`} more="更多" onMore={() => hdNav()?.navigate('ImportPlaylist')}>
-        {playlists.length ? (
-          <HDGrid min={251}>
-            {playlists.slice(0, 10).map(pl => (
-              IS_WEB ? (
-                <PlCardWeb key={pl.key} pl={pl} onOpen={() => openPl(pl)} onPlay={() => { if (pl.songs?.length) playSong(pl.songs[0], pl.songs); }} />
-              ) : (
-              <HDTouch key={pl.key} style={[st.plCard, shadowStyleOf(pl.name)]} zoom={1.06} onPress={() => openPl(pl)}>
-                <View style={{ position: 'relative' }}>
-                  {pl.img
-                    ? <Image source={{ uri: pl.img }} style={st.plArt} />
-                    : <View style={[st.plArt, { backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={18} color={C.text3} /></View>}
-                  <View style={st.plCount}><Text style={[st.plCountText, { color: '#FFFFFF' }]}>▶ {pl.count}</Text></View>
-                </View>
-                <View style={st.plTexts}>
-                  <Text style={st.plName} numberOfLines={1}>{pl.name}</Text>
-                </View>
-              </HDTouch>
-              )
-            ))}
-          </HDGrid>
-        ) : (
-          <HDTouch style={st.empty} onPress={() => onGotoSearch?.()}>
-            <Icon name="search" size={16} color={C.text3} />
-            <Text style={st.emptyText}>还没有歌单 —— 去「探索」搜索,或连接服务器同步</Text>
-          </HDTouch>
-        )}
-      </Section>
+
+
+
+
+      {/* [HTML01 1120] home-panels:4fr 我的歌单(mini-library:我喜欢的+心形瓦+歌单×3) + 3fr 最近播放(recent-song-grid×3/空态)——personalPanels() */}
+      <View style={{ flexDirection: 'row', gap: IS_WEB ? 28 : 20, marginTop: IS_WEB ? 21 : 16 }}>
+        <View style={{ flex: 4, gap: SP.lg }}>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: SP.sm }}>
+            <Text style={st.secTitle}>我的歌单</Text>
+            <View style={{ flex: 1 }} />
+            <HDTouch style={{ paddingVertical: 2, paddingHorizontal: 5 }} focusStyle={{ borderWidth: 1.5, borderColor: C.brand, borderRadius: 6 }} onPress={() => hdNav()?.navigate('MyLibrary' as never)}><Text style={st.secMore}>查看全部 ›</Text></HDTouch>
+          </View>
+          <View style={{ flexDirection: 'row', gap: IS_WEB ? 12 : 9 }}>
+            <MiniPlaylist heart name="我喜欢的" count={favCount} img={localPls.find(p => p.name === '我喜欢的')?.songs[0]?.img} onPress={() => hdNav()?.navigate('MyFavorites')} />
+            {playlists.slice(0, 3).map(pl => <MiniPlaylist key={pl.key} name={pl.name} count={pl.count} img={pl.img} onPress={() => openPl(pl)} />)}
+          </View>
+        </View>
+        <View style={{ flex: 3, gap: SP.lg }}>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: SP.sm }}>
+            <Text style={st.secTitle}>最近播放</Text>
+            <View style={{ flex: 1 }} />
+            <HDTouch style={{ paddingVertical: 2, paddingHorizontal: 5 }} focusStyle={{ borderWidth: 1.5, borderColor: C.brand, borderRadius: 6 }} onPress={() => recents.length && hdNav()?.navigate('PlaylistDetail', { title: '最近播放', songs: recents, meta: recents.length + ' 首' })}><Text style={st.secMore}>全部记录 ›</Text></HDTouch>
+          </View>
+          {recents.length ? (
+            <View style={{ gap: 4 }}>
+              {recents.slice(0, 3).map((s, i) => <RecentRow key={s.source + '_' + s.songmid + '_' + i} s={s} onPress={() => playSong(s, recents)} />)}
+            </View>
+          ) : (
+            <View style={{ minHeight: IS_WEB ? 110 : 88, borderRadius: 15, backgroundColor: C.surface, borderWidth: 1, borderColor: 'rgba(255,255,255,.05)', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 14 }}>
+              <Icon name="music" size={20} color={C.text3} />
+              <Text style={{ color: C.text, fontSize: IS_WEB ? 15 : 12, fontWeight: '600' }}>从一首喜欢的歌开始</Text>
+              <Text style={{ color: C.text3, fontSize: IS_WEB ? 12 : 10 }}>听过的音乐，会在这里等你</Text>
+            </View>
+          )}
+        </View>
+      </View>
+
                        <FocusBridge active />
       </ScrollView>
   );
@@ -242,56 +230,83 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
 // 桌面 BigCard:渐变 + 左徽标 + 标题/副标题 + 右圆钮
 // v6(老板反馈):选中环圆角要比卡片圆角大(卡片 R=11,环=13)——描边画在卡边界外 2px,圆角同步 +2 才贴着弯过去
 // v1.2.5 桌面:web 加高(104)+彩色弥散投影+hover 上浮(主题/投影跟色系);TV 分支尺寸不变
-/** [产品包HD 批3 1:1] PhotoCard=mix 大照片卡:244h/r14/kicker 11px 底部/题29-700/副14/右下52绿钮 right23 bottom25(设计 mix-card 实测) */
-function PhotoCard({ img, badge, title, sub, onPress, busy, wide }: { img?: string; badge: string; title: string; sub: string; onPress: () => void; busy?: boolean; wide?: boolean }) {
-  const fallback = ['#3B2F6F', '#24483F'] as [string, string];
+/** [HTML01 1120] ListeningPick:listening-pick 竖卡——pad 17/82/17/18 图 58 右侧居中 r10 题 15/600 副 12 text3(home-highlights 右列) */
+function ListeningPick({ img, title, sub, onPress }: { img?: string; title: string; sub: string; onPress: () => void }) {
   return (
-    <HDTouch activeOpacity={0.9} onPress={onPress} zoom={1.02}
-      focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 14 }}
-      style={[{ height: IS_WEB ? 244 : 170, borderRadius: 14, overflow: 'hidden' }, wide ? { width: '100%' as const } : { flex: 1 }]}>
-      {img ? (
-        <Image source={{ uri: img }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} resizeMode="cover" />
-      ) : (
-        <LinearGradient colors={fallback} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
-      )}
-      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,.22)' }} />
-      <LinearGradient colors={['rgba(0,0,0,0.03)', 'rgba(0,0,0,0.13)', 'rgba(0,0,0,0.79)']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
-      <View style={{ position: 'absolute', bottom: 25, left: 25, right: 90, gap: 7 }}>
-        <Text style={{ color: '#FFFFFF', fontSize: 11, letterSpacing: 1, fontWeight: '600' }}>{badge}</Text>
-        <Text style={{ color: '#FFFFFF', fontSize: IS_WEB ? 29 : 22, fontWeight: FW.heavy, lineHeight: IS_WEB ? 38 : 30 }} numberOfLines={1}>{title}</Text>
-        <Text style={{ color: 'rgba(255,255,255,.85)', fontSize: IS_WEB ? 14 : H.font.sm }} numberOfLines={1}>{sub}</Text>
+    <HDTouch activeOpacity={0.92} onPress={onPress} zoom={1.01}
+      focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 15 }}
+      style={{ flex: 1, flexDirection: 'row', alignItems: 'center', paddingLeft: IS_WEB ? 18 : 14, paddingRight: IS_WEB ? 82 : 64, paddingVertical: IS_WEB ? 17 : 13, borderRadius: 15, backgroundColor: C.surface, borderWidth: 1, borderColor: 'rgba(255,255,255,.05)' }}>
+      <View style={{ flex: 1, minWidth: 0, gap: IS_WEB ? 8 : 6 }}>
+        <Text style={{ color: C.text, fontSize: IS_WEB ? 15 : 12, fontWeight: '600' }} numberOfLines={1}>{title}</Text>
+        <Text style={{ color: C.text3, fontSize: IS_WEB ? 12 : 10 }} numberOfLines={1}>{sub}</Text>
       </View>
-      <View style={{ position: 'absolute', right: 23, bottom: 25, width: 52, height: 52, borderRadius: 26, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }}>
-        {busy ? <ActivityIndicator size="small" color="#fff" /> : <Icon name="play" size={22} active color={C.onBrand} />}
+      <View style={{ position: 'absolute', right: IS_WEB ? 13 : 10, top: 0, bottom: 0, justifyContent: 'center' }}>
+        <View style={{ width: IS_WEB ? 58 : 46, height: IS_WEB ? 58 : 46, borderRadius: 10, overflow: 'hidden', backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }}>
+          {img ? <Image source={{ uri: img }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <Icon name="music" size={18} color={C.text3} />}
+        </View>
       </View>
     </HDTouch>
   );
 }
 
-/** [产品包HD 批3 1:1] QuickCard:快捷行卡——92h/图92贴左角r8/题20-600/副12/透明底(设计 quick-card 实测);
- *  heart=「我的收藏」卡心形角标(#FF5A76) */
-function QuickCard({ img, title, sub, onPress, busy, heart }: { img?: string; title: string; sub: string; onPress: () => void; busy?: boolean; heart?: boolean }) {
+/** [HTML01 1120] RecommendCard:density-wall 推荐卡——r15 卡壳/封面 aspect1.12 r8/nm14-600/ar10 text3/右下小绿播放钮(原生恒显,web hover 语义) */
+function RecommendCard({ pl, onOpen, onPlay }: { pl: SongListMeta; onOpen: () => void; onPlay: () => void }) {
   return (
-    <HDTouch activeOpacity={0.9} onPress={onPress} zoom={1.01}
-      focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 10 }}
-      style={{ width: '31.5%', minHeight: IS_WEB ? 92 : 72, flexDirection: 'row', alignItems: 'center', borderRadius: 10, overflow: 'hidden' }}>
-      <View style={{ width: IS_WEB ? 92 : 72, height: IS_WEB ? 92 : 72, backgroundColor: C.surface2, borderTopLeftRadius: 8, borderBottomLeftRadius: 8, alignItems: 'center', justifyContent: 'center' }}>
-        {img ? <Image source={{ uri: img }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <Icon name="music" size={22} color={C.text3} />}
-        {/* 批3补:quick-heart 角标覆盖图上(设计 absolute left 24 top 24 → 图区,#FF5A76) */}
-        {heart ? <View style={{ position: 'absolute', top: IS_WEB ? 32 : 24, left: IS_WEB ? 32 : 24 }}><Icon name="heart" size={16} color="#FF5A76" active /></View> : null}
+    <HDTouch activeOpacity={0.95} onPress={onOpen} zoom={1.02}
+      focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 15 }}
+      style={{ flex: 1, borderRadius: 15, backgroundColor: C.surface, borderWidth: 1, borderColor: 'rgba(255,255,255,.05)', padding: IS_WEB ? 8 : 6, paddingBottom: IS_WEB ? 10 : 8 }}>
+      <View style={{ position: 'relative' }}>
+        <View style={{ width: '100%', aspectRatio: 1.12, borderRadius: 8, overflow: 'hidden', backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }}>
+          {pl.img ? <Image source={{ uri: pl.img }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <Icon name="music" size={20} color={C.text3} />}
+        </View>
+        <HDTouch style={{ position: 'absolute', right: IS_WEB ? 6 : 5, bottom: IS_WEB ? 6 : 5, width: IS_WEB ? 28 : 22, height: IS_WEB ? 28 : 22, borderRadius: 14, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }}
+          focusStyle={{ borderWidth: 2, borderColor: '#FFFFFF', borderRadius: 14 }} onPress={onPlay}>
+          <Icon name="play" size={IS_WEB ? 13 : 10} color={C.onBrand} />
+        </HDTouch>
       </View>
-      <View style={{ flex: 1, minWidth: 0, paddingHorizontal: IS_WEB ? 16 : 12, gap: 4 }}>
-        <Text style={{ color: C.text, fontSize: IS_WEB ? 20 : H.font.xl, fontWeight: '600' }} numberOfLines={1}>{title}</Text>
-        <Text style={{ color: C.text2, fontSize: IS_WEB ? 12 : FS.xs }} numberOfLines={1}>{sub}</Text>
-      </View>
-      {/* 批3补:quick-arrow 尾箭头(设计 #666 18px) */}
-      <View style={{ marginRight: IS_WEB ? 12 : 8, alignItems: 'center', justifyContent: 'center' }}>
-        <Icon name="chevronright" size={IS_WEB ? 18 : 14} color="#666666" />
-      </View>
-      {busy ? <ActivityIndicator size="small" color={C.brand} style={{ marginRight: 14 }} /> : null}
+      <Text style={{ color: C.text, fontSize: IS_WEB ? 14 : 11, fontWeight: '600', marginTop: IS_WEB ? 10 : 8 }} numberOfLines={1}>{pl.name}</Text>
+      <Text style={{ color: C.text3, fontSize: IS_WEB ? 10 : 8.5, marginTop: 5 }} numberOfLines={1}>{pl.author || pl.source || '推荐歌单'}</Text>
     </HDTouch>
   );
 }
+
+/** [HTML01 1120] MiniPlaylist:mini-library 歌单瓦——cover h79 全宽(心形角标)+b14/550+small12「N 首歌曲」 */
+function MiniPlaylist({ img, name, count, heart, onPress }: { img?: string; name: string; count: number; heart?: boolean; onPress: () => void }) {
+  return (
+    <HDTouch activeOpacity={0.95} onPress={onPress} zoom={1.02}
+      focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 15 }}
+      style={{ flex: 1, borderRadius: 15, backgroundColor: C.surface, borderWidth: 1, borderColor: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
+      <View style={{ position: 'relative', height: IS_WEB ? 79 : 62, backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }}>
+        {img ? <Image source={{ uri: img }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <Icon name="music" size={20} color={C.text3} />}
+        {heart ? <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,.25)' }}><Icon name="heart" size={IS_WEB ? 22 : 17} color="#FFFFFF" active /></View> : null}
+      </View>
+      <View style={{ paddingLeft: IS_WEB ? 13 : 10, paddingRight: IS_WEB ? 13 : 10, paddingTop: IS_WEB ? 11 : 8, paddingBottom: IS_WEB ? 13 : 10, gap: 6 }}>
+        <Text style={{ color: C.text, fontSize: IS_WEB ? 14 : 11, fontWeight: '600' }} numberOfLines={1}>{name}</Text>
+        <Text style={{ color: C.text2, fontSize: IS_WEB ? 12 : 10 }} numberOfLines={1}>{count} 首歌曲</Text>
+      </View>
+    </HDTouch>
+  );
+}
+
+/** [HTML01 1120] RecentRow:recent-song 行——h40/img34 r5/b14-600/small12 text2(最近播放列) */
+function RecentRow({ s, onPress }: { s: SongItem; onPress: () => void }) {
+  return (
+    <HDTouch activeOpacity={0.9} onPress={onPress}
+      focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 12 }}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: IS_WEB ? 40 : 34, padding: IS_WEB ? 7 : 5, borderRadius: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: 'rgba(255,255,255,.05)' }}>
+      <View style={{ width: IS_WEB ? 34 : 27, height: IS_WEB ? 34 : 27, borderRadius: 5, overflow: 'hidden', backgroundColor: C.inset, alignItems: 'center', justifyContent: 'center' }}>
+        {s.img ? <Image source={{ uri: s.img }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <Icon name="music" size={12} color={C.text3} />}
+      </View>
+      <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+        <Text style={{ color: C.text, fontSize: IS_WEB ? 14 : 11, fontWeight: '600' }} numberOfLines={1}>{s.name}</Text>
+        <Text style={{ color: C.text2, fontSize: IS_WEB ? 12 : 10 }} numberOfLines={1}>{s.singer}</Text>
+      </View>
+    </HDTouch>
+  );
+}
+
+
+
 
 function BigCard({ colors, badge, title, sub, onPress, busy, wide }: { colors: [string, string]; badge: string; title: string; sub: string; onPress: () => void; busy?: boolean; wide?: boolean }) { // [产品包HD] wide=SELECT 全宽款(批2 起被 PhotoCard 替代调用)
   const [hov, setHov] = useState(false);
