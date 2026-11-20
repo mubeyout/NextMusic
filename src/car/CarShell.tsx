@@ -17,7 +17,7 @@ import { CarSettings } from './CarSettings';
 import { CarMediaLibs } from './CarMediaLibs';
 import { CarTouch } from './CarTouch';
 import { C } from '../theme/tokens';
-import { Icon } from '../theme/Icon';
+import { Icon, type IconName } from '../theme/Icon';
 import { useNavigation, useNavigationState } from '@react-navigation/native';
 import { useApp } from '../state/AppState';
 import { usePubEntry } from '../services/publicLibrary';
@@ -29,7 +29,7 @@ import { BackHandler } from 'react-native';
 type PageKey = 'home' | 'podcast' | 'explore' | 'boards' | 'search' | 'queue' | 'fx' | 'settings' | 'medialibs';
 
 // [HTML01 car.js] rail 导航 6 项:home推荐/explore探索/boards榜单/podcast播客/mymusic我的(收藏overlay)/library媒体库
-const NAV: { key: PageKey | 'fav'; icon: string; label: string }[] = [
+const NAV: { key: PageKey | 'fav'; icon: IconName; label: string }[] = [
   { key: 'home', icon: 'home', label: '推荐' },
   { key: 'explore', icon: 'explore', label: '探索' },
   { key: 'boards', icon: 'ranking', label: '榜单' },
