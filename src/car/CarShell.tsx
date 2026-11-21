@@ -55,7 +55,7 @@ function RailTab({ icon, label, active, onPress }: { icon: string; label: string
 }
 
 /** [v8.1 保留] 左侧播放面板 300dp 八件套(封面/信息/进度/三控/工具排/徽标行/队列底锚)——对应 web #panel 家族 */
-function PlayPanel({ onOpen, onFx, onQueue, onFav, onDownload, onArtistTap }: { onOpen: () => void; onFx: () => void; onQueue: () => void; onFav: () => void; onDownload: () => void; onArtistTap: (singer: string) => void }) {
+function PlayPanel({ onOpen, onFx, onQueue, onFav, onArtistTap }: { onOpen: () => void; onFx: () => void; onQueue: () => void; onFav: () => void; onArtistTap: (singer: string) => void }) {
   const { current, playing, toggle, skipNext, skipPrev, queue } = usePlayer();
   const { position, duration } = usePlayerProgress();
   const pct = duration > 0 ? Math.min(1, Math.max(0, position / duration)) : 0;
@@ -65,15 +65,12 @@ function PlayPanel({ onOpen, onFx, onQueue, onFav, onDownload, onArtistTap }: { 
   const fmt = (ms: number) => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
   return (
     <View style={st2.panel}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: C.brand, marginRight: 5 }} />
-          <Text style={{ color: C.text2, fontSize: 9 }}>正在播放</Text>
-        </View>
-        <Text style={{ color: C.text2, fontSize: 8, borderWidth: 1, borderColor: C.border, borderRadius: 3, paddingHorizontal: 4 }}>SQ 无损</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}>
+        <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: C.brand, marginRight: 5 }} />
+        <Text style={{ color: C.text2, fontSize: 9.5 }}>正在播放</Text>
       </View>
       <CarTouch style={{ width: '100%', alignItems: 'center' }} onPress={onOpen}>
-        {img ? <Image source={{ uri: img }} style={st2.panelArt} /> : <View style={[st2.panelArt, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={44} color={C.text3} /></View>}
+        {img ? <Image source={{ uri: img }} style={[st2.panelArt, { width: '92%' }]} /> : <View style={[st2.panelArt, { width: '92%', backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={44} color={C.text3} /></View>}
       </CarTouch>
       <Text style={st2.panelTitle} numberOfLines={1}>{current?.name ?? '未在播放'}</Text>
       <CarTouch style={{ width: '100%', alignItems: 'center' }} onPress={() => { if (current?.singer) onArtistTap(current.singer); }}>
@@ -86,15 +83,13 @@ function PlayPanel({ onOpen, onFx, onQueue, onFav, onDownload, onArtistTap }: { 
         <CarTouch style={st2.pMain} onPress={toggle}><Icon name={playing ? 'pause' : 'play'} size={26} active color={C.onBrand} /></CarTouch>
         <CarTouch style={st2.pBtn} onPress={skipNext}><Icon name="next" size={20} color={C.text} /></CarTouch>
       </View>
-      <View style={st2.panelTools}>
-        <CarTouch style={st2.pTool} onPress={onFav}><Icon name="heart" size={16} color={C.text2} /></CarTouch>
-        <CarTouch style={st2.pTool} onPress={onDownload}><Icon name="download" size={16} color={C.text2} /></CarTouch>
-        <CarTouch style={st2.pTool} onPress={onQueue}><Icon name="queue" size={16} color={C.text2} /></CarTouch>
-        <CarTouch style={st2.pTool} onPress={onFx}><Icon name="sliders" size={16} color={C.text2} /></CarTouch>
+      <View style={[st2.panelTools, { gap: 6 }]}>
+        <CarTouch style={[st2.pTool, { flex: 1, width: undefined }]} onPress={onFav}><Icon name="heart" size={16} color={C.text2} /></CarTouch>
+        <CarTouch style={[st2.pTool, { flex: 1, width: undefined }]} onPress={onQueue}><Icon name="queue" size={16} color={C.text2} /></CarTouch>
+        <CarTouch style={[st2.pTool, { flex: 1, width: undefined }]} onPress={onFx}><Icon name="sliders" size={16} color={C.text2} /></CarTouch>
       </View>
       <View style={st2.panelBadges}>
-        <Text style={st2.pBadge}>{current?.source || '—'}</Text>
-        <Text style={st2.pBadge}>320k</Text>
+        <Text style={st2.pBadge}>{current?.source || 'NextMusic'}</Text>
       </View>
       <View style={{ flex: 1 }} />
       <CarTouch style={st2.panelQueue} onPress={onQueue}>
@@ -170,7 +165,7 @@ export function CarShell() {
         </View>
         <View style={{ flex: 1, flexDirection: 'row' }}>
           <View style={[st2.panelWrap, { width: panelW }]}>
-            <PlayPanel onOpen={() => setPlayerOpen(true)} onFx={() => goPage('fx')} onQueue={() => goPage('queue')} onFav={() => setFavOpen(true)} onDownload={() => nav.navigate('Downloads')} onArtistTap={(s) => { setSeedQ(s); goPage('search'); }} />
+            <PlayPanel onOpen={() => setPlayerOpen(true)} onFx={() => goPage('fx')} onQueue={() => goPage('queue')} onFav={() => setFavOpen(true)} onArtistTap={(s) => { setSeedQ(s); goPage('search'); }} />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
             {favOpen ? (
@@ -209,8 +204,8 @@ const st2 = {
   searchPill: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 7, height: 36, paddingHorizontal: 13, borderRadius: 12, backgroundColor: C.surface2 },
   iconBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
   panelWrap: { borderRightWidth: 1, borderRightColor: C.border, backgroundColor: C.surface }, // [1121自适应] width 由 JSX 动态设
-  panel: { flex: 1, padding: 15, gap: 7, alignItems: 'center' as const },
-  panelArt: { width: 173, height: 173, borderRadius: 8 },
+  panel: { flex: 1, padding: 14, gap: 6, alignItems: 'center' as const },
+  panelArt: { aspectRatio: 1, maxWidth: 176, borderRadius: 10, backgroundColor: C.surface2 },
   panelTitle: { color: C.text, fontSize: 15, fontWeight: '700' as const, textAlign: 'center' as const, width: '100%' },
   panelArtist: { color: C.text2, fontSize: 11.5, textAlign: 'center' as const, width: '100%' },
   panelProg: { flexDirection: 'row' as const, height: 4, width: '100%', borderRadius: 2, overflow: 'hidden' as const },

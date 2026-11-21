@@ -2,7 +2,7 @@
 import { CarTouch } from './CarTouch';
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity, useWindowDimensions, Linking, ActivityIndicator } from 'react-native';
-import { CAR, carScale, CAR_FS } from './cartokens';
+import { CAR, carScale, CAR_FS, carGrid } from './cartokens';
 import { TrialBar, QuotaBar, PaywallCard } from './commercial';
 import { useLicense } from '../services/license';
 import { GATE_COPY, BUY_LINKS } from '../services/benefits';
@@ -26,10 +26,10 @@ function Section({ title, more, onMore }: { title: string; more?: string; onMore
 }
 
 /** [HTML01] 推荐墙卡(r18 border surface/封面 aspect1.25/题16/副13 →÷1.5)+右下播放钮 */
-function WallCard({ pl, onOpen, onPlay, wide }: { pl: SongListMeta; onOpen: () => void; onPlay: () => void; wide?: boolean }) {
+function WallCard({ pl, onOpen, onPlay, w }: { pl: SongListMeta; onOpen: () => void; onPlay: () => void; w: number }) {
   return (
     <CarTouch activeOpacity={0.95} onPress={onOpen}
-      style={{ flex: 1, borderRadius: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
+      style={{ width: w, borderRadius: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
       <View style={{ position: 'relative' }}>
         <View style={{ width: '100%', aspectRatio: 1.25, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }}>
           {pl.img ? <Image source={{ uri: pl.img }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <Icon name="music" size={20} color={C.text3} />}
@@ -39,8 +39,8 @@ function WallCard({ pl, onOpen, onPlay, wide }: { pl: SongListMeta; onOpen: () =
         </CarTouch>
       </View>
       <View style={{ paddingHorizontal: 8, paddingTop: 7, paddingBottom: 8, gap: 3 }}>
-        <Text style={{ color: C.text, fontSize: 11.5, fontWeight: '550' as never }} numberOfLines={1}>{pl.name}</Text>
-        <Text style={{ color: C.text3, fontSize: 9 }} numberOfLines={1}>{pl.total ? pl.total + ' 首' : (pl.author || '推荐歌单')}</Text>
+        <Text style={{ color: C.text, fontSize: 13, fontWeight: '550' as never }} numberOfLines={1}>{pl.name}</Text>
+        <Text style={{ color: C.text3, fontSize: 10.5 }} numberOfLines={1}>{pl.total ? pl.total + ' 首' : (pl.author || '推荐歌单')}</Text>
       </View>
     </CarTouch>
   );
@@ -50,9 +50,10 @@ export function CarHome({ goExplore, goPodcast, onOpenFav, onOpenPlaylist }: { g
   const player = usePlayer();
   const { height, width: winW } = useWindowDimensions();
   const dense = carScale(height) < 0.9;
-  // [老板令1121] CAR 卡片统一: 固定一行4个,间距缩小,尺寸一致(不分屏宽)
-  const cardBasis = '23.5%'; // 4列×23.5%+3×2%gap ≈ 100%
-  const cardMin = 0;
+  // [老板令1121#2] 统一栅格: carGrid 定宽卡 + 横向滚动,一行4个,右边不留空,第二行不再出现巨卡
+  const G = carGrid(winW);
+  const cardW = G.cardW;
+  const GAP = G.gap;
   const { username } = useApp();
   const lic = useLicense();
   const [tab, setTab] = useState<'全部' | '音乐' | '播客'>('全部');
@@ -133,62 +134,63 @@ export function CarHome({ goExplore, goPodcast, onOpenFav, onOpenPlaylist }: { g
       {/* [HTML01] car-home-highlights:1.7fr car-daily(170h r20) + 我喜欢的/私人雷达 shortcut */}
       <View style={{ flexDirection: 'row', gap: 12 }}>
         <CarTouch activeOpacity={0.92} onPress={playDaily}
-          style={{ flex: 1.7, height: dense ? 99 : 113, borderRadius: 13, overflow: 'hidden', backgroundColor: '#19302B' }}>
+          style={{ flex: 1.35, height: dense ? 128 : 150, borderRadius: 13, borderWidth: 1, borderColor: '#2E5A4E', overflow: 'hidden', backgroundColor: '#19302B' }}>
           {mixes[1]?.img ? <Image source={{ uri: mixes[1].img }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} resizeMode="cover" /> : null}
           <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(16,41,35,.88)' }} />
           <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'flex-start', justifyContent: 'center', paddingLeft: 17, paddingRight: 60, gap: 5 }}>
             <Text style={{ color: '#D0E3DC', fontSize: 11 }}>{dailyBusy ? '正在准备…' : '每日精选'}</Text>
-            <Text style={{ color: '#FFFFFF', fontSize: dense ? 17 : 20, fontWeight: '650' as never, letterSpacing: -0.8 }}>下一程，好音乐</Text>
-            {dense ? null : <Text style={{ color: '#D0E3DC', fontSize: 11 }}>为你选好的熟悉旋律</Text>}
+            <Text style={{ color: '#FFFFFF', fontSize: dense ? 18 : 23, fontWeight: '650' as never, letterSpacing: -0.8 }}>下一程，好音乐</Text>
+            <Text style={{ color: '#D0E3DC', fontSize: 11.5 }}>为你选好的熟悉旋律</Text>
           </View>
           <View style={{ position: 'absolute', right: 15, bottom: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }}>
             {dailyBusy ? <ActivityIndicator size="small" color="#111214" /> : <Icon name="play" size={19} active color="#111214" />}
           </View>
         </CarTouch>
-        <View style={{ flex: 2, gap: 12 }}>
+        <View style={{ flex: 1, gap: 12 }}>
           <CarTouch activeOpacity={0.95} onPress={() => onOpenFav?.()}
-            style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, borderRadius: 13, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border }}>
-            <View style={{ width: 44, height: 44, borderRadius: 13, backgroundColor: 'rgba(255,90,118,.12)', alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name="heart" size={20} color="#FF5A76" active />
+            style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 16, borderRadius: 13, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border }}>
+            <View style={{ width: 50, height: 50, borderRadius: 14, backgroundColor: 'rgba(255,90,118,.12)', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="heart" size={23} color="#FF5A76" active />
             </View>
             <View style={{ minWidth: 0 }}>
-              <Text style={{ color: C.text, fontSize: 16, fontWeight: '600' as never }} numberOfLines={1}>我喜欢的</Text>
-              <Text style={{ color: C.text2, fontSize: 11, marginTop: 3 }} numberOfLines={1}>{favCount} 首收藏</Text>
+              <Text style={{ color: C.text, fontSize: 17, fontWeight: '600' as never }} numberOfLines={1}>我喜欢的</Text>
+              <Text style={{ color: C.text2, fontSize: 11.5, marginTop: 3 }} numberOfLines={1}>{favCount} 首收藏</Text>
             </View>
+            <Icon name="play" size={15} color={C.brand} />
           </CarTouch>
           <CarTouch activeOpacity={0.95} onPress={playRadar}
-            style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, borderRadius: 13, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border }}>
-            <View style={{ width: 44, height: 44, borderRadius: 13, backgroundColor: 'rgba(30,215,96,.12)', alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name="wave" size={20} color={C.brand} />
+            style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 16, borderRadius: 13, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border }}>
+            <View style={{ width: 50, height: 50, borderRadius: 14, backgroundColor: 'rgba(30,215,96,.12)', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="wave" size={23} color={C.brand} />
             </View>
             <View style={{ minWidth: 0 }}>
-              <Text style={{ color: C.text, fontSize: 16, fontWeight: '600' as never }} numberOfLines={1}>私人雷达</Text>
-              <Text style={{ color: C.text2, fontSize: 11, marginTop: 3 }} numberOfLines={1}>发现新的喜欢</Text>
+              <Text style={{ color: C.text, fontSize: 17, fontWeight: '600' as never }} numberOfLines={1}>私人雷达</Text>
+              <Text style={{ color: C.text2, fontSize: 11.5, marginTop: 3 }} numberOfLines={1}>发现新的喜欢</Text>
             </View>
+            <Icon name="play" size={15} color={C.brand} />
           </CarTouch>
         </View>
       </View>
 
       {/* [HTML01] 为你推荐 wall:min190 auto-fill ×6 */}
       <Section title="为你推荐" more="发现更多" onMore={goExplore} />
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-        {mixes.slice(0, 6).map(pl => (
-          <View key={`x${pl.source}_${pl.id}`} style={{ flexBasis: cardBasis, flexGrow: 1, minWidth: cardMin }}>
-            <WallCard pl={pl} onOpen={() => openPl(pl)} onPlay={() => playPl(pl)} />
-          </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={cardW + GAP} decelerationRate="fast"
+        contentContainerStyle={{ gap: GAP, paddingRight: 14 }}>
+        {mixes.map(pl => (
+          <WallCard key={`x${pl.source}_${pl.id}`} w={cardW} pl={pl} onOpen={() => openPl(pl)} onPlay={() => playPl(pl)} />
         ))}
-      </View>
+      </ScrollView>
       </View>
       ) : null}
 
       {/* [HTML01] 最近播放:car-resume 3 列(img64/题21/副17 →÷1.5)或空态 */}
       <Section title="最近播放" />
       {recents.length ? (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-          {recents.slice(0, 6).map((s, i) => (
-            <View key={`r${i}`} style={{ flexBasis: cardBasis, flexGrow: 1, minWidth: cardMin }}>
-              <CarTouch activeOpacity={0.9} onPress={() => void player.playSong(s, recents)}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 9, padding: 8, borderRadius: 11, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={cardW + GAP} decelerationRate="fast"
+          contentContainerStyle={{ gap: GAP, paddingRight: 14 }}>
+          {recents.map((s, i) => (
+              <CarTouch key={`r${i}`} activeOpacity={0.9} onPress={() => void player.playSong(s, recents)}
+                style={{ width: cardW, flexDirection: 'row', alignItems: 'center', gap: 9, padding: 8, borderRadius: 11, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border }}>
                 <View style={{ width: 43, height: 43, borderRadius: 7, overflow: 'hidden', backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }}>
                   {s.img ? <Image source={{ uri: s.img }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <Icon name="music" size={14} color={C.text3} />}
                 </View>
@@ -198,9 +200,8 @@ export function CarHome({ goExplore, goPodcast, onOpenFav, onOpenPlaylist }: { g
                 </View>
                 <Icon name="play" size={13} color={C.brand} />
               </CarTouch>
-            </View>
           ))}
-        </View>
+        </ScrollView>
       ) : (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 15, paddingVertical: 12, borderRadius: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border }}>
           <Icon name="music" size={18} color={C.text3} />
@@ -215,13 +216,12 @@ export function CarHome({ goExplore, goPodcast, onOpenFav, onOpenPlaylist }: { g
       {mine.length ? (
         <View>
           <Section title="我的歌单" />
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={cardW + GAP} decelerationRate="fast"
+            contentContainerStyle={{ gap: GAP, paddingRight: 14 }}>
             {mine.map(pl => (
-              <View key={`m${pl.id}`} style={{ flexBasis: cardBasis, flexGrow: 1, minWidth: cardMin }}>
-                <WallCard pl={pl} onOpen={() => openPl(pl)} onPlay={() => playPl(pl)} />
-              </View>
+              <WallCard key={`m${pl.id}`} w={cardW} pl={pl} onOpen={() => openPl(pl)} onPlay={() => playPl(pl)} />
             ))}
-          </View>
+          </ScrollView>
         </View>
       ) : null}
     </ScrollView>

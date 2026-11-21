@@ -32,6 +32,15 @@ export const CAR_FS = {
   hero: 31, sec: 22, title: 18, body: 16, sub: 15, mini: 13, tiny: 12,
 } as const;
 
+// [老板令1121#2 全面整改] CAR 统一栅格: 内容区等分列定宽卡,横向滚动,禁 wrap+flexGrow 混排
+// 所有 CAR 卡墙一律 carGrid 定宽 → horizontal ScrollView,列数固定 4,右边不留空
+export function carGrid(winW: number, opts?: { cols?: number; railW?: number; panelW?: number; gutter?: number; gap?: number }) {
+  const { cols = 4, railW = 68, panelW = 200, gutter = 14, gap = 12 } = opts || {};
+  const contentW = Math.max(0, winW - railW - panelW - gutter * 2);
+  const cardW = Math.floor((contentW - gap * (cols - 1)) / cols);
+  return { contentW, cardW, gap, gutter, cols };
+}
+
 export const CAR_COMPACT = 0.84;
 export function carScale(h: number): number {
   if (h >= 1000) return 1;      // 1080+ 真车/TV 全档

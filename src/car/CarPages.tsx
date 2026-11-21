@@ -2,7 +2,7 @@
 import { CarTouch } from './CarTouch';
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, useWindowDimensions } from 'react-native';
-import { CAR, carScale, CAR_FS, CAR_ACCENTS } from './cartokens';
+import { CAR, carScale, CAR_FS, CAR_ACCENTS, carGrid } from './cartokens';
 import { CarSongRow } from './cards';
 import { C } from '../theme/tokens';
 import { Icon } from '../theme/Icon';
@@ -23,13 +23,15 @@ const SRC_TABS = ['推荐', '网易', '酷狗', 'QQ', '咪咕'];
 
 /** P3 探索: 源 pills + 推荐歌单封面网格(6 列方形卡) */
 export function CarExplore({ onOpenPlaylist }: { onOpenPlaylist: (pl: import('./CarPlaylist').CarPlRef) => void }) {
+  const { width: winW } = useWindowDimensions();
+  const G = carGrid(winW); // [老板令1121#2] 统一栅格: 4列定宽+横滚,右边不留空
   const [tab, setTab] = useState(0);
   const [mixes, setMixes] = useState<SongListMeta[]>([]);
   useEffect(() => { lxapi.songListAuto('', String(tab + 1), 1, 18, false).then(d => setMixes(d?.list || [])).catch(() => {}); }, [tab]);
   return (
-    <ScrollView contentContainerStyle={{ padding: CAR.gutter, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-      <Text style={{ color: C.text, fontSize: CAR.hero, fontWeight: '800', marginBottom: 18 }}>探索</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: CAR.gutter, marginBottom: 24 }}>
+    <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+      <Text style={{ color: C.text, fontSize: CAR.hero, fontWeight: '800', marginBottom: 16 }}>探索</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingRight: 14, marginBottom: 20 }}>
         {SRC_TABS.map((t, i) => (
           <CarTouch key={t} onPress={() => setTab(i)}
             style={[st.pill, tab === i && { backgroundColor: C.brand }]}>
@@ -37,14 +39,15 @@ export function CarExplore({ onOpenPlaylist }: { onOpenPlaylist: (pl: import('./
           </CarTouch>
         ))}
       </ScrollView>
-      <View style={st.exGrid}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={G.cardW + G.gap} decelerationRate="fast"
+        contentContainerStyle={{ gap: G.gap, paddingRight: 14 }}>
         {mixes.map(pl => (
-          <CarTouch key={pl.id} onPress={() => onOpenPlaylist({ kind: 'pl', id: pl.id, name: pl.name, img: pl.img })} style={st.exCard}>
+          <CarTouch key={pl.id} onPress={() => onOpenPlaylist({ kind: 'pl', id: pl.id, name: pl.name, img: pl.img })} style={[st.exCard, { width: G.cardW }]}>
             {pl.img ? <Image source={{ uri: pl.img }} style={st.exArt} /> : <View style={[st.exArt, { backgroundColor: C.surface2 }]} />}
             <Text style={st.exName} numberOfLines={2}>{pl.name}</Text>
           </CarTouch>
         ))}
-      </View>
+      </ScrollView>
     </ScrollView>
   );
 }
@@ -54,17 +57,18 @@ const BOARD_ACCENTS = [CAR_ACCENTS.b3, CAR_ACCENTS.b7, CAR_ACCENTS.b8, CAR_ACCEN
 
 /** P4 榜单: 4 列卡 210 高(左上源chip+名+副行) */
 export function CarBoards({ onOpenPlaylist }: { onOpenPlaylist: (pl: import('./CarPlaylist').CarPlRef) => void }) {
-  const { height } = useWindowDimensions();
+  const { height, width: winW } = useWindowDimensions();
   const dense = carScale(height) < 0.9; // [720 紧凑档 1106]
+  const G = carGrid(winW); // [老板令1121#2] 统一栅格: 4列满排无右侧空档
   const [boards, setBoards] = useState<{ id: string; name: string; bangid: string; image?: string }[]>([]);
   useEffect(() => { lxapi.leaderboardBoards().then(d => setBoards((d || []).slice(0, 8))).catch(() => {}); }, []);
   return (
-    <ScrollView contentContainerStyle={{ padding: CAR.gutter, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+    <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
       <SecHead title="榜单" hint="每日 12:00 更新" />
-      <View style={st.bGrid}>
+      <View style={[st.bGrid, { gap: G.gap }]}>
         {boards.map((b, i) => (
           <CarTouch key={b.id} onPress={() => onOpenPlaylist({ kind: 'board', id: b.bangid, name: b.name, img: b.image })}
-            style={[st.bCard, dense && st.bCardDense, { backgroundColor: BOARD_ACCENTS[i % BOARD_ACCENTS.length] }]}>
+            style={[st.bCard, dense && st.bCardDense, { width: G.cardW, height: dense ? 168 : 196, backgroundColor: BOARD_ACCENTS[i % BOARD_ACCENTS.length], borderWidth: 1, borderColor: '#FFFFFF22' }]}>
             <Text style={st.bChip}>榜单</Text>
             <Text style={st.bName} numberOfLines={1}>{b.name}</Text>
             <Text style={st.bSub}>酷狗榜</Text>
@@ -89,8 +93,9 @@ const CHANNELS: { name: string; q: string; accent: string }[] = [
 
 export function CarPodcast() {
   const player = usePlayer();
-  const { height } = useWindowDimensions();
+  const { height, width: winW } = useWindowDimensions();
   const dense = carScale(height) < 0.9; // [720 紧凑档 1106]
+  const G = carGrid(winW); // [老板令1121#2] 统一栅格
   const [active, setActive] = useState(0);
   const [songs, setSongs] = useState<SongItem[]>([]);
   useEffect(() => {
@@ -98,13 +103,13 @@ export function CarPodcast() {
     lxapi.search(CHANNELS[active].q, 'kw', 1, 20).then(setSongs).catch(() => {});
   }, [active]);
   return (
-    <ScrollView contentContainerStyle={{ padding: CAR.gutter, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+    <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
       <Text style={{ color: C.text, fontSize: CAR_FS.hero, fontWeight: '800' }}>播客</Text>
       <Text style={{ color: C.text3, fontSize: CAR_FS.sub, marginTop: 4, marginBottom: 18 }}>8 大主题频道 · 搜索聚合 · 自动连播</Text>
-      <View style={st.chGrid}>
+      <View style={[st.chGrid, { gap: G.gap }]}>
         {CHANNELS.map((c, i) => (
           <CarTouch key={c.name} onPress={() => setActive(i)}
-            style={[st.chCard, dense && st.chCardDense, { backgroundColor: c.accent }, active === i && { borderWidth: 3, borderColor: '#FFFFFF66' }]}>
+            style={[st.chCard, dense && st.chCardDense, { width: G.cardW, backgroundColor: c.accent, borderWidth: 1, borderColor: '#FFFFFF26' }, active === i && { borderWidth: 2, borderColor: '#FFFFFFAA' }]}>
             <Text style={st.chName}>{c.name}</Text>
             <Text style={st.chSub}>聚合频道</Text>
           </CarTouch>
@@ -124,17 +129,17 @@ const st = {
   pill: { height: 44, borderRadius: 999, paddingHorizontal: 24, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
   pillText: { color: C.text2, fontSize: CAR_FS.sub },
   exGrid: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: CAR.gap },
-  exCard: { width: '18.6%', gap: 8 }, // [v7.9 1110] 5 列定列(QQ 160.25卡+12.5gap 整除对齐),弃 auto-fill 漂移
+  exCard: { padding: 8, gap: 8, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border }, // [老板令1121#2] 卡底背景+描边,宽由 carGrid 动态传
   exCard6: { width: '18.6%', gap: 6 }, // [v7.9 1110] 6列变体也归 5 列主律
-  exArt: { width: '100%', aspectRatio: 1, borderRadius: 14 },
+  exArt: { width: '100%', aspectRatio: 1, borderRadius: 10 },
   exName: { color: C.text, fontSize: CAR_FS.mini, fontWeight: '600' as const },
-  bGrid: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: CAR.gap },
-  bCard: { width: '23%', height: CAR.bCard.h, borderRadius: CAR.bCard.r, padding: 18, justifyContent: 'flex-end' as const, gap: 4 },
+  bGrid: { flexDirection: 'row' as const, flexWrap: 'wrap' as const },
+  bCard: { borderRadius: CAR.bCard.r, padding: 18, justifyContent: 'flex-end' as const, gap: 4 },
   bChip: { position: 'absolute' as const, top: 14, left: 14, color: '#FFFFFF', fontSize: 12, backgroundColor: '#00000055', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   bName: { color: '#FFFFFF', fontSize: CAR_FS.title, fontWeight: '700' as const },
   bSub: { color: '#FFFFFFB3', fontSize: CAR_FS.mini },
-  chGrid: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: CAR.gap },
-  chCard: { width: '23%', height: CAR.chCard.h, borderRadius: CAR.chCard.r, padding: 16, justifyContent: 'flex-end' as const, gap: 3 },
+  chGrid: { flexDirection: 'row' as const, flexWrap: 'wrap' as const },
+  chCard: { height: CAR.chCard.h, borderRadius: CAR.chCard.r, padding: 16, justifyContent: 'flex-end' as const, gap: 3 },
   chName: { color: '#FFFFFF', fontSize: CAR_FS.title, fontWeight: '700' as const },
   chSub: { color: '#FFFFFFB3', fontSize: CAR_FS.mini },
   chCardDense: { height: 108, padding: 13 },
