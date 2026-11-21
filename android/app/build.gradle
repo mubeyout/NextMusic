@@ -91,8 +91,8 @@ android {
             applicationIdSuffix ".hd"
             versionNameSuffix "-hd"
             // HD 独立版本线:与 phone 共享 default,但可单独越号更新(当前 hd v2)
-            versionCode 187
-            versionName "1.4.4" // v1.4.4-hd(1121:同 phone 基线)
+            versionCode 188
+            versionName "1.4.5" // v1.4.5-hd(1121:同 phone 基线)
         }
     }
 
@@ -100,8 +100,8 @@ android {
         applicationId "com.mubeyworks.nextmusic"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 189
-        versionName "1.4.4" // v1.4.4-vc188(1121:手机端全面排满自适应——GridWall/Public/Explore/Home/MyLibrary/My 七处百分比 cell 加 flexGrow,小屏第三方媒体不再右侧空列)
+        versionCode 190
+        versionName "1.4.5" // v1.4.5-vc189(1121:第三方媒体库配置服务端同步——存/删即推+启动拉平,与 web 共库;web 端第三方区空的鸡生蛋问题根治)
     }
     // 多架构分发：GitHub Release 只放编译产物（armeabi-v7a/arm64-v8a/x86/x86_64 + universal 兑底）
     splits {

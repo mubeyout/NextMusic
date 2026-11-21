@@ -335,6 +335,13 @@ export const api = {
     return r;
   },
   // 创建服务器用户（需服务器 frontend 授权码，对应控制台 x-frontend-auth）
+  // [老板令1121] 第三方媒体库配置服务端同步(与 web 同端点;存/删即推,启动拉平)
+  async providersPull(): Promise<unknown[] | null> {
+    try { return (await req('/api/user/providers', { timeout: 8000 })) as unknown[]; } catch { return null; }
+  },
+  async providersPush(list: unknown[]): Promise<void> {
+    try { await req('/api/user/providers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(list || []) }); } catch { /* 离线静默,下次变更再推 */ }
+  },
   async createUser(name: string, password: string, frontendAuth: string, base?: string): Promise<true> {
     await req('/api/users', {
       method: 'POST',

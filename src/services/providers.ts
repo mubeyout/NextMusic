@@ -896,3 +896,33 @@ export const providerApi = {
     } finally { clearTimeout(t); }
   },
 };
+
+// [老板令1121] 第三方媒体库配置服务端同步——登录后与 web 端共库(/api/user/providers):本机为源推上,空机拉回
+import { api as _nmApi, store as _nmStore } from './server';
+function _provPush() {
+  const stripped = readAll().map(a => {
+    const { token, userId, root, tfRefresh, clientId, ...rest } = a; // 会话态不上行,只同步连接配置(含 pass 供他端连接)
+    return rest;
+  });
+  void _nmApi.providersPush(stripped);
+}
+const _origSave = providers.save.bind(providers);
+providers.save = (a: ProviderAcct) => { const r = _origSave(a); _provPush(); return r; };
+const _origRemove = providers.remove.bind(providers);
+providers.remove = (id: string) => { _origRemove(id); _provPush(); };
+let _provSyncBooted = false;
+(function _provBootSync() {
+  const timer = setInterval(() => {
+    if (_provSyncBooted) return clearInterval(timer);
+    if (_nmStore.base && _nmStore.token) {
+      _provSyncBooted = true; clearInterval(timer);
+      void _nmApi.providersPull().then(serverList => {
+        if (!Array.isArray(serverList)) return;
+        const local = readAll();
+        if (serverList.length && !local.length) { writeAll(serverList as ProviderAcct[]); }
+        else if (local.length) { _provPush(); }
+      }).catch(() => {});
+    }
+  }, 3000);
+  setTimeout(() => clearInterval(timer), 120000);
+})();
