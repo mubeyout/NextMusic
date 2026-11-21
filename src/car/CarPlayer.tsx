@@ -3,7 +3,7 @@
 // 全控件 CarTouch(DPAD 遥控适配: 内描边焦点)
 import { CarTouch } from './CarTouch';
 import React, { useEffect, useState } from 'react';
-import { View, Text, Modal, Image, useWindowDimensions, StyleSheet } from 'react-native';
+import { View, Text, Modal, Image, useWindowDimensions, StyleSheet, Animated, Easing } from 'react-native';
 import { CAR_FS } from './cartokens';
 import { C } from '../theme/tokens';
 import { Icon } from '../theme/Icon';
@@ -24,6 +24,13 @@ const QUALITY_LABEL: Record<string, string> = { flac: '无损', '320k': '320k', 
 
 export function CarPlayer({ visible, onClose, onArtistTap }: { visible: boolean; onClose: () => void; onArtistTap: (singer: string) => void }) {
   const { current, playing, toggle, skipNext, skipPrev, queue, speed, setSpeed, sleepRemain, enableSleep, shuffle, setShuffle, repeat, cycleRepeat, seekTo } = usePlayer();
+  // [老板令 1121#5] 黑胶唱片(web 版一致): 播放时匀速旋转,暂停即停
+  const spin = React.useRef(new Animated.Value(0)).current;
+  React.useEffect(() => {
+    if (playing) Animated.loop(Animated.timing(spin, { toValue: 1, duration: 22000, easing: Easing.linear, useNativeDriver: true })).start();
+    else spin.stopAnimation();
+  }, [playing]);
+  const rot = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] as never });
   const nav = useNavigation() as { navigate: (s: string) => void };
   const [qual, setQual] = useState(settings.get().playQuality || 'flac');
   const { position, duration } = usePlayerProgress();
@@ -50,15 +57,20 @@ export function CarPlayer({ visible, onClose, onArtistTap }: { visible: boolean;
           </CarTouch>
         </View>
 
-        {/* [web focus-grid] 左封面卡 + 右信息列,居中 */}
+        {/* [老板令 1121#5] 左信息列 + 右黑胶唱片(CAR 差异布局) */}
         <View style={st.grid}>
-          {/* 左: product-disc 方形封面卡 r24(web 静态律:无旋转无遮罩) */}
-          <View style={[st.disc, { width: discSize, height: discSize }]}>
-            {img ? <Image source={{ uri: img }} style={{ width: '100%', height: '100%', borderRadius: 24 }} resizeMode="cover" />
-              : <View style={{ width: '100%', height: '100%', borderRadius: 24, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }}><Icon name="music" size={64} color={C.text3} /></View>}
+          {/* 右: 黑胶(圆形盘+封面圆62%+中心孔+旋转) */}
+          <View style={st.discWrap}>
+            <Animated.View style={[st.disc, { width: discSize, height: discSize, borderRadius: discSize / 2, transform: [{ rotate: rot }] }]}>
+              {img
+                ? <Image source={{ uri: img }} style={{ width: discSize * 0.62, height: discSize * 0.62, borderRadius: discSize * 0.31 }} resizeMode="cover" />
+                : <View style={{ width: discSize * 0.62, height: discSize * 0.62, borderRadius: discSize * 0.31, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }}><Icon name="music" size={48} color={C.text3} /></View>}
+              <View style={{ width: discSize * 0.13, height: discSize * 0.13, borderRadius: discSize * 0.065, backgroundColor: '#0a0a0c', borderWidth: 3, borderColor: '#555' }} />
+            </Animated.View>
+            {queue.length > 1 ? <Text style={st.queueHint}>队列 {queue.length} 首</Text> : null}
           </View>
 
-          {/* 右: focus-info */}
+          {/* 左: focus-info */}
           <View style={st.info}>
             <Text style={st.eyebrow}>{current?.source ? current.source.toUpperCase() : 'NEXTMUSIC'}{queue.length ? ` · 队列 ${queue.length} 首` : ''}</Text>
             <Text style={st.title} numberOfLines={2}>{current?.name ?? '未在播放'}</Text>
@@ -134,7 +146,9 @@ const st = StyleSheet.create({
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 52, paddingHorizontal: 20, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.10)' },
   backLabel: { color: C.text, fontSize: 17, fontWeight: '600' as never },
   grid: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Math.max(36, 60), paddingHorizontal: 48, paddingBottom: 32, flexWrap: 'wrap' },
-  disc: { borderRadius: 24, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, overflow: 'hidden', elevation: 12, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 24 },
+  discWrap: { alignItems: 'center', justifyContent: 'center', gap: 14 },
+  disc: { backgroundColor: '#111114', borderWidth: 6, borderColor: '#1c1c22', alignItems: 'center', justifyContent: 'center', elevation: 20, shadowColor: '#000', shadowOpacity: 0.6, shadowRadius: 30 },
+  queueHint: { color: 'rgba(255,255,255,0.55)', fontSize: 12 },
   info: { flex: 1, minWidth: 300, maxWidth: 620, gap: 12 },
   eyebrow: { color: C.text3, fontSize: 13, letterSpacing: 2, fontWeight: '600' as never },
   title: { color: '#FFFFFF', fontSize: 36, lineHeight: 46, fontWeight: '800' as never },
