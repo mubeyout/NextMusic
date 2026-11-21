@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Image, LayoutAnimation } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useWindowDimensions } from 'react-native';
 import { CAR, CAR_FS } from './cartokens';
 import { CarHome } from './CarHome';
 import { CarPlayer } from './CarPlayer';
@@ -105,6 +106,11 @@ function PlayPanel({ onOpen, onFx, onQueue, onFav, onDownload, onArtistTap }: { 
 
 export function CarShell() {
   const insets = useSafeAreaInsets();
+  const { width: winW, height: winH } = useWindowDimensions();
+  // [老板令1121 CAR自适应] 结构元素按屏幕百分比(车屏853dp→TV 960dp→平板等自适应)
+  const railW = Math.round(Math.max(60, Math.min(100, winW * 0.085)));   // rail: 8.5%(60-100dp)
+  const panelW = Math.round(Math.max(170, Math.min(260, winW * 0.24)));  // 播放面板: 24%(170-260dp)
+  const isWide = winW > 900; // TV/大屏: 内容区更宽,卡片可以更大
   const [page, setPage] = useState<PageKey>('home');
   const nav = useNavigation() as { navigate: (s: string) => void };
   const [playerOpen, setPlayerOpen] = useState(false);
@@ -132,7 +138,7 @@ export function CarShell() {
     <View style={{ flex: 1, flexDirection: 'row', backgroundColor: C.bg, paddingTop: Math.max(insets.top, 6), paddingHorizontal: Math.max(insets.left, 0) }}
       >
       {/* [HTML01 car.js] #carRail:brand(36/14) + tabs 竖排 + car-rail-player(70h r16 surface)——rail 112px ÷1.5 */}
-      <View style={st2.rail}>
+      <View style={[st2.rail, { width: railW }]}>
         <View style={st2.railBrand}>
           <Image source={require('../assets/brand/mark.png')} style={{ width: 24, height: 24 }} />
           <Text style={{ color: C.text, fontSize: 9, letterSpacing: -0.3 }}>NextMusic</Text>
@@ -164,7 +170,7 @@ export function CarShell() {
           </View>
         </View>
         <View style={{ flex: 1, flexDirection: 'row' }}>
-          <View style={st2.panelWrap}>
+          <View style={[st2.panelWrap, { width: panelW }]}>
             <PlayPanel onOpen={() => setPlayerOpen(true)} onFx={() => goPage('fx')} onQueue={() => goPage('queue')} onFav={() => setFavOpen(true)} onDownload={() => nav.navigate('Downloads')} onArtistTap={(s) => { setSeedQ(s); goPage('search'); }} />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
@@ -194,7 +200,7 @@ export function CarShell() {
 }
 
 const st2 = {
-  rail: { width: 75, flexDirection: 'column' as const, alignItems: 'center' as const, gap: 13, paddingTop: 17, paddingBottom: 13, borderRightWidth: 1, borderRightColor: C.border }, // [HTML01] rail 112px ÷1.5
+  rail: { flexDirection: 'column' as const, alignItems: 'center' as const, gap: 13, paddingTop: 17, paddingBottom: 13, borderRightWidth: 1, borderRightColor: C.border }, // [1121自适应] width 由 JSX 动态设
   railBrand: { alignItems: 'center' as const, gap: 7, marginBottom: 8 },
   railTabs: { flex: 1, width: '100%' as const, gap: 7, justifyContent: 'flex-start' as const },
   railTab: { width: '100%' as const, minHeight: 53, alignItems: 'center' as const, justifyContent: 'center' as const, gap: 5, borderRadius: 12 }, // tab 80h r18 ÷1.5
@@ -203,7 +209,7 @@ const st2 = {
   breadcrumb: { color: C.text, fontSize: 21, fontWeight: '650' as never, letterSpacing: -0.3, flex: 1, minWidth: 0 },
   searchPill: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 7, height: 36, paddingHorizontal: 13, borderRadius: 12, backgroundColor: C.surface2 },
   iconBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
-  panelWrap: { width: 213, borderRightWidth: 1, borderRightColor: C.border, backgroundColor: C.surface },
+  panelWrap: { borderRightWidth: 1, borderRightColor: C.border, backgroundColor: C.surface }, // [1121自适应] width 由 JSX 动态设
   panel: { flex: 1, padding: 15, gap: 7, alignItems: 'center' as const },
   panelArt: { width: 173, height: 173, borderRadius: 8 },
   panelTitle: { color: C.text, fontSize: 15, fontWeight: '700' as const, textAlign: 'center' as const, width: '100%' },

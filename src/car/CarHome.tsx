@@ -48,8 +48,11 @@ function WallCard({ pl, onOpen, onPlay, wide }: { pl: SongListMeta; onOpen: () =
 
 export function CarHome({ goExplore, goPodcast, onOpenFav, onOpenPlaylist }: { goExplore: () => void; goPodcast?: () => void; onOpenFav?: () => void; onOpenPlaylist: (pl: import('./CarPlaylist').CarPlRef) => void }) {
   const player = usePlayer();
-  const { height } = useWindowDimensions();
+  const { height, width: winW } = useWindowDimensions();
   const dense = carScale(height) < 0.9;
+  // [1121 CAR自适应] 卡片列数按内容区宽度: 窄(车屏)3列 / 宽(TV)4列 / 极宽5列
+  const cardBasis = winW > 1200 ? '19%' : winW > 900 ? '23%' : '30%';
+  const cardMin = winW > 900 ? 140 : 118;
   const { username } = useApp();
   const lic = useLicense();
   const [tab, setTab] = useState<'全部' | '音乐' | '播客'>('全部');
@@ -170,7 +173,7 @@ export function CarHome({ goExplore, goPodcast, onOpenFav, onOpenPlaylist }: { g
       <Section title="为你推荐" more="发现更多" onMore={goExplore} />
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
         {mixes.slice(0, 6).map(pl => (
-          <View key={`x${pl.source}_${pl.id}`} style={{ flexBasis: '30%', flexGrow: 1, minWidth: 118 }}>
+          <View key={`x${pl.source}_${pl.id}`} style={{ flexBasis: cardBasis, flexGrow: 1, minWidth: cardMin }}>
             <WallCard pl={pl} onOpen={() => openPl(pl)} onPlay={() => playPl(pl)} />
           </View>
         ))}
@@ -183,7 +186,7 @@ export function CarHome({ goExplore, goPodcast, onOpenFav, onOpenPlaylist }: { g
       {recents.length ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
           {recents.slice(0, 6).map((s, i) => (
-            <View key={`r${i}`} style={{ flexBasis: '30%', flexGrow: 1, minWidth: 118 }}>
+            <View key={`r${i}`} style={{ flexBasis: cardBasis, flexGrow: 1, minWidth: cardMin }}>
               <CarTouch activeOpacity={0.9} onPress={() => void player.playSong(s, recents)}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 9, padding: 8, borderRadius: 11, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border }}>
                 <View style={{ width: 43, height: 43, borderRadius: 7, overflow: 'hidden', backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }}>
@@ -214,7 +217,7 @@ export function CarHome({ goExplore, goPodcast, onOpenFav, onOpenPlaylist }: { g
           <Section title="我的歌单" />
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
             {mine.map(pl => (
-              <View key={`m${pl.id}`} style={{ flexBasis: '30%', flexGrow: 1, minWidth: 118 }}>
+              <View key={`m${pl.id}`} style={{ flexBasis: cardBasis, flexGrow: 1, minWidth: cardMin }}>
                 <WallCard pl={pl} onOpen={() => openPl(pl)} onPlay={() => playPl(pl)} />
               </View>
             ))}
