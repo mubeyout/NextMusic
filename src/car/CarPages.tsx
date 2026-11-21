@@ -29,9 +29,9 @@ export function CarExplore({ onOpenPlaylist }: { onOpenPlaylist: (pl: import('./
   const [mixes, setMixes] = useState<SongListMeta[]>([]);
   useEffect(() => { lxapi.songListAuto('', String(tab + 1), 1, 18, false).then(d => setMixes(d?.list || [])).catch(() => {}); }, [tab]);
   return (
-    <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+    <ScrollView focusable={false} contentContainerStyle={{ padding: 14, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
       <Text style={{ color: C.text, fontSize: CAR.hero, fontWeight: '800', marginBottom: 16 }}>探索</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingRight: 14, marginBottom: 20 }}>
+      <ScrollView focusable={false} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingRight: 14, marginBottom: 20 }}>
         {SRC_TABS.map((t, i) => (
           <CarTouch key={t} onPress={() => setTab(i)}
             style={[st.pill, tab === i && { backgroundColor: C.brand }]}>
@@ -39,15 +39,14 @@ export function CarExplore({ onOpenPlaylist }: { onOpenPlaylist: (pl: import('./
           </CarTouch>
         ))}
       </ScrollView>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={G.cardW + G.gap} decelerationRate="fast"
-        contentContainerStyle={{ gap: G.gap, paddingRight: 14 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: G.gap }}>
         {mixes.map(pl => (
           <CarTouch key={pl.id} onPress={() => onOpenPlaylist({ kind: 'pl', id: pl.id, name: pl.name, img: pl.img })} style={[st.exCard, { width: G.cardW }]}>
             {pl.img ? <Image source={{ uri: pl.img }} style={st.exArt} /> : <View style={[st.exArt, { backgroundColor: C.surface2 }]} />}
             <Text style={st.exName} numberOfLines={2}>{pl.name}</Text>
           </CarTouch>
         ))}
-      </ScrollView>
+      </View>
     </ScrollView>
   );
 }
@@ -63,7 +62,7 @@ export function CarBoards({ onOpenPlaylist }: { onOpenPlaylist: (pl: import('./C
   const [boards, setBoards] = useState<{ id: string; name: string; bangid: string; image?: string }[]>([]);
   useEffect(() => { lxapi.leaderboardBoards().then(d => setBoards((d || []).slice(0, 8))).catch(() => {}); }, []);
   return (
-    <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+    <ScrollView focusable={false} contentContainerStyle={{ padding: 14, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
       <SecHead title="榜单" hint="每日 12:00 更新" />
       <View style={[st.bGrid, { gap: G.gap }]}>
         {boards.map((b, i) => (
@@ -103,7 +102,7 @@ export function CarPodcast() {
     lxapi.search(CHANNELS[active].q, 'kw', 1, 20).then(setSongs).catch(() => {});
   }, [active]);
   return (
-    <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+    <ScrollView focusable={false} contentContainerStyle={{ padding: 14, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
       <Text style={{ color: C.text, fontSize: CAR_FS.hero, fontWeight: '800' }}>播客</Text>
       <Text style={{ color: C.text3, fontSize: CAR_FS.sub, marginTop: 4, marginBottom: 18 }}>8 大主题频道 · 搜索聚合 · 自动连播</Text>
       <View style={[st.chGrid, { gap: G.gap }]}>

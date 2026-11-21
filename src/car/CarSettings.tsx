@@ -40,20 +40,20 @@ export function CarSettings({ onBack }: { onBack: () => void }) {
   );
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: CAR.gutter, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+    <ScrollView focusable={false} style={{ flex: 1 }} contentContainerStyle={{ padding: CAR.gutter, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 16 }}>
         <CarTouch style={st.backBtn} onPress={onBack}><Icon name="back" size={20} color={C.text2} /></CarTouch>
         <Text style={{ color: C.text, fontSize: CAR_FS.hero, fontWeight: '800' }}>设置</Text>
       </View>
 
-      {/* Hero: 车机模式大开关(LEO:它控制整个形态,置顶) */}
-      <CarTouch style={st.hero} onPress={() => { settings.set('carModeUi', false); }}>
+      {/* Hero: 界面形态切换(老板令1121#3: CAR→HD 一键切换即时生效;HD 侧设置里可切回) */}
+      <CarTouch style={st.hero} onPress={() => { settings.set('carModeUi', false); settings.set('formForce', 'hd'); }}>
         <View style={{ flex: 1, gap: 6 }}>
           <Text style={st.heroTitle}>车机模式</Text>
-          <Text style={st.heroDesc}>当前为车机专属界面 · 点击关闭恢复手机竖版</Text>
+          <Text style={st.heroDesc}>当前为 CAR 车机界面 · 点击切换 HD 大屏版</Text>
         </View>
         <View style={[st.heroPill, carOn && { backgroundColor: C.brand }]}>
-          <Text style={[st.heroPillText, carOn && { color: C.onBrand }]}>已开启</Text>
+          <Text style={[st.heroPillText, carOn && { color: C.onBrand }]}>CAR 版</Text>
         </View>
       </CarTouch>
 

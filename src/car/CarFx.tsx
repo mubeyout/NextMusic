@@ -49,7 +49,7 @@ export function CarFx({ onBack }: { onBack: () => void }) {
   const revLabel = REVERB_CYCLE.find(r => r.id === fx.reverb.id)?.label ?? REVERB_CYCLE[0].label;
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: CAR.gutter, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+    <ScrollView focusable={false} style={{ flex: 1 }} contentContainerStyle={{ padding: CAR.gutter, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 8 }}>
         <CarTouch style={st.backBtn} onPress={onBack}><Icon name="back" size={20} color={C.text2} /></CarTouch>
         <Text style={{ color: C.text, fontSize: CAR_FS.hero, fontWeight: '800', flex: 1 }}>音效</Text>
@@ -112,9 +112,9 @@ const st = {
   backBtn: { width: 46, height: 46, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
   subtitle: { color: C.text3, fontSize: CAR_FS.mini, letterSpacing: 2, marginBottom: 6, paddingLeft: 62 },
   secLabel: { color: C.text3, fontSize: CAR_FS.mini, letterSpacing: 2, marginTop: 22, marginBottom: 12 },
-  presetGrid: { flexDirection: 'row' as const, gap: CAR.gap },
+  presetGrid: { flexDirection: 'row' as const, gap: 12 },
   presetCard: { flex: 1, borderRadius: 17, overflow: 'hidden' as const, borderWidth: 0, borderColor: 'transparent' },
-  presetGrad: { minHeight: 132, justifyContent: 'center' as const, gap: 6 },
+  presetGrad: { minHeight: 132, justifyContent: 'center' as const, gap: 6, paddingHorizontal: 18 },
   presetName: { color: '#FFFFFF', fontSize: CAR_FS.title, fontWeight: '800' as const },
   presetSub: { color: '#FFFFFFB3', fontSize: CAR_FS.mini },
   eqCard: { borderRadius: 17, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, padding: 20, gap: 6 },

@@ -1,5 +1,8 @@
 import React, { useEffect } from 'react';
-import { StatusBar, AppState as RNAppState } from 'react-native';
+import { StatusBar, AppState as RNAppState, TouchableOpacity, TouchableHighlight } from 'react-native';
+// [老板令1121#3] TV/车机 DPAD: 全局 Touchable 默认可聚焦——设置/账号等 phone 内页遥控器可用
+(TouchableOpacity as unknown as { defaultProps?: object }).defaultProps = { ...((TouchableOpacity as unknown as { defaultProps?: object }).defaultProps || {}), focusable: true };
+(TouchableHighlight as unknown as { defaultProps?: object }).defaultProps = { ...((TouchableHighlight as unknown as { defaultProps?: object }).defaultProps || {}), focusable: true };
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 // 主题已在 theme/tokens.ts 模块加载期应用（早于一切组件/StyleSheet 创建）
