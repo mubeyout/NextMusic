@@ -32,7 +32,7 @@ export function CarTouch({ style, focusedStyle, onPress, disabled, children, ...
 
 const st = {
   // 默认焦点态[1120 内描边]:brand 染边+brandDim 底;不含 borderWidth(几何由 reserve 常驻或宿主自带)——零位移
-  foc: { backgroundColor: C.brandDim, borderColor: C.brand } as ViewStyle,
+  foc: { backgroundColor: C.brandDim, borderColor: C.brand, borderWidth: 2 } as ViewStyle,
 };
 
 // hasTVPreferredFocus 兼容垫片:TV/车机环境首焦(非 TV no-op)
