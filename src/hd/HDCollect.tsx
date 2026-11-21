@@ -64,7 +64,7 @@ export function HDCollect({ song, onClose }: { song: SongItem; onClose: () => vo
               <Icon name="close" size={13} color={C.text2} />
             </HDTouch>
           </View>
-          <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: SP.sm, paddingVertical: 2 }}>
+          <ScrollView focusable={false} style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: SP.sm, paddingVertical: 2 }}>
             <HDTouch style={st.row} onPress={toggleLove} hasTVPreferredFocus>
               <Icon name="heart" size={15} active={loved} color={loved ? C.brand : C.text2} />
               <Text style={[st.rowText, loved && { color: C.brand }]} numberOfLines={1}>我喜欢的{loved ? ' · 已收藏' : ''}</Text>

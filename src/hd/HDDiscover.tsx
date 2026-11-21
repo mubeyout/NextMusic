@@ -104,7 +104,7 @@ function ExploreView({ onSquare }: { onSquare: (tagName?: string) => void }) {
     );
   }
   return (
-    <ScrollView style={st.screen} contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: IS_WEB ? 42 : 26, paddingBottom: 28, gap: SP.xl }} showsVerticalScrollIndicator={false}>
+    <ScrollView focusable={false} style={st.screen} contentContainerStyle={{ paddingTop: Math.max(Math.min(insets.top, 16), 14), paddingHorizontal: IS_WEB ? 42 : 26, paddingBottom: 28, gap: SP.xl }} showsVerticalScrollIndicator={false}>
       {/* page-head(设计: h1 29 + p 副句 + 右搜索钮) */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.lg }}>
         <View style={{ gap: 6 }}>
@@ -265,7 +265,7 @@ function SquareView({ tagName, onBack }: { tagName: string; onBack: () => void }
         ))}
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: SP.md, paddingRight: 26 }}>
+      <ScrollView focusable={false} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: SP.md, paddingRight: 26 }}>
         <HDTouch style={[st.pill, tag === '' && st.pillOn]}
           focusStyle={tag === '' ? { borderWidth: 2, borderColor: C.brandSoft } : st.pillFocus}
           onPress={() => setTag('')}>

@@ -84,7 +84,7 @@ export function HDPodcast() {
       </View>
 
       {/* [产品包HD 批3 1:1] 频道 pillbar(设计: 52h/r28/17px,on=白底黑字650,off=surface2/text2) */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: IS_WEB ? 10 : SP.md, paddingRight: 26 }}>
+      <ScrollView focusable={false} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: IS_WEB ? 10 : SP.md, paddingRight: 26 }}>
         {POD_CHANNELS.map((c, i) => (
           <HDTouch key={c.id} style={{ paddingHorizontal: 21, height: IS_WEB ? 52 : 44, borderRadius: 28, backgroundColor: i === ch ? '#F5F5F5' : C.surface2, alignItems: 'center', justifyContent: 'center' }}
             focusStyle={{ borderWidth: 2, borderColor: C.brand, borderRadius: 28 }}

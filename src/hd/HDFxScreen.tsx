@@ -162,7 +162,7 @@ export function HDFxScreen() {
         </HDTouch>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 26, paddingTop: 10, paddingBottom: 40 + H.playbar, gap: SP.wider, width: '100%' }} showsVerticalScrollIndicator={false}>
+      <ScrollView focusable={false} contentContainerStyle={{ paddingHorizontal: 26, paddingTop: 10, paddingBottom: 40 + H.playbar, gap: SP.wider, width: '100%' }} showsVerticalScrollIndicator={false}>
 
         {/* ===== 听感模式 ===== */}
         <SectionTitle icon="wave" title="听感模式" desc="一键组合,手动改高级项自动回落自定义" />
@@ -305,7 +305,7 @@ function AutoeqPicker({ onClose, cur, onPick }: { onClose: () => void; cur: stri
           <HDTouch style={st.pickClose} hoverBg={T.light ? "#1F232914" : "#ffffff1a"} onPress={onClose}><Icon name="close" size={15} color={C.text2} /></HDTouch>
         </View>
         <TextInput style={st.pickInput} placeholder="搜索型号…" placeholderTextColor={C.text3} value={q} onChangeText={setQ} />
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, gap: SP.xs }}>
+        <ScrollView focusable={false} style={{ flex: 1 }} contentContainerStyle={{ padding: 16, gap: SP.xs }}>
           <HDTouch style={[st.pickRow, !cur && st.pickRowOn]} hoverBg={C.hover} onPress={() => onPick('')}>
             <Text style={[st.pickRowText, !cur && { color: C.brand, fontWeight: FW.bold }]}>不使用</Text>
           </HDTouch>
