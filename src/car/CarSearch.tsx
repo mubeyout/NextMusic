@@ -47,7 +47,7 @@ export function CarSearch({ onBack, seed }: { onBack: () => void; seed?: string 
   return (
     <ScrollView focusable={false} style={{ flex: 1 }} contentContainerStyle={{ padding: CAR.gutter, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
       {/* 页头: 返回 + 标题 */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 20 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 14 }}>
         <CarTouch style={st.backBtn} onPress={onBack}><Icon name="back" size={20} color={C.text2} /></CarTouch>
         <Text style={{ color: C.text, fontSize: CAR_FS.hero, fontWeight: '800' }}>搜索</Text>
       </View>
@@ -122,17 +122,17 @@ export function CarSearch({ onBack, seed }: { onBack: () => void; seed?: string 
 
 const st = {
   backBtn: { width: 46, height: 46, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
-  voiceCard: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 26, backgroundColor: C.surface, borderRadius: 17, borderWidth: 1, borderColor: C.border, padding: 26, marginBottom: 26 },
-  micBtn: { width: 88, height: 88, borderRadius: 44, backgroundColor: C.brand, alignItems: 'center' as const, justifyContent: 'center' as const },
+  voiceCard: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 16, backgroundColor: C.surface, borderRadius: 15, borderWidth: 1, borderColor: C.border, padding: 16, marginBottom: 16 },
+  micBtn: { width: 62, height: 62, borderRadius: 31, backgroundColor: C.brand, alignItems: 'center' as const, justifyContent: 'center' as const },
   waves: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 5 },
   waveBar: { width: 5, borderRadius: 3, backgroundColor: C.brand },
   voiceTitle: { color: C.text, fontSize: CAR_FS.title, fontWeight: '700' as const },
   voiceSub: { color: C.text3, fontSize: CAR_FS.sub },
-  secLabel: { color: C.text3, fontSize: CAR_FS.mini, letterSpacing: 2, marginTop: 22, marginBottom: 12 },
+  secLabel: { color: C.text3, fontSize: CAR_FS.mini, letterSpacing: 2, marginTop: 14, marginBottom: 9 },
   pills: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 12 },
-  pill: { height: 44, paddingHorizontal: 22, borderRadius: 22, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
+  pill: { height: 40, paddingHorizontal: 18, borderRadius: 20, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
   pillText: { color: C.text, fontSize: CAR_FS.sub, fontWeight: '600' as const },
-  histRow: { flexDirection: 'row' as const, alignItems: 'center' as const, height: 44, borderBottomWidth: 1, borderBottomColor: C.border },
+  histRow: { flexDirection: 'row' as const, alignItems: 'center' as const, height: 40, borderBottomWidth: 1, borderBottomColor: C.border },
   histText: { color: C.text2, fontSize: CAR_FS.sub },
   histDel: { width: 40, height: 40, alignItems: 'center' as const, justifyContent: 'center' as const },
   kbDegrade: { marginTop: 26, height: 52, borderRadius: 13, borderWidth: 1.5, borderStyle: 'dashed' as const, borderColor: C.border, alignItems: 'center' as const, justifyContent: 'center' as const },

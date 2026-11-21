@@ -180,17 +180,15 @@ export function CarHome({ goExplore, goPodcast, onOpenFav, onOpenPlaylist }: { g
       {recents.length ? (
         <ScrollView focusable={false} horizontal showsHorizontalScrollIndicator={false} snapToInterval={cardW + GAP} decelerationRate="fast"
           contentContainerStyle={{ gap: GAP, paddingRight: 14 }}>
-          {recents.map((s, i) => (
               <CarTouch key={`r${i}`} activeOpacity={0.9} onPress={() => void player.playSong(s, recents)}
-                style={{ width: cardW, flexDirection: 'row', alignItems: 'center', gap: 9, padding: 8, borderRadius: 11, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border }}>
-                <View style={{ width: 43, height: 43, borderRadius: 7, overflow: 'hidden', backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }}>
-                  {s.img ? <Image source={{ uri: s.img }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <Icon name="music" size={14} color={C.text3} />}
+                style={{ width: cardW, borderRadius: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
+                <View style={{ width: '100%', aspectRatio: 1.25, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }}>
+                  {s.img ? <Image source={{ uri: s.img }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <Icon name="music" size={22} color={C.text3} />}
                 </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={{ color: C.text, fontSize: 14, fontWeight: '550' as never }} numberOfLines={1}>{s.name}</Text>
-                  <Text style={{ color: C.text2, fontSize: 11, marginTop: 3 }} numberOfLines={1}>{s.singer}</Text>
+                <View style={{ paddingHorizontal: 10, paddingTop: 8, paddingBottom: 9, gap: 3 }}>
+                  <Text style={{ color: C.text, fontSize: 13, fontWeight: '550' as never }} numberOfLines={1}>{s.name}</Text>
+                  <Text style={{ color: C.text3, fontSize: 10.5 }} numberOfLines={1}>{s.singer}</Text>
                 </View>
-                <Icon name="play" size={13} color={C.brand} />
               </CarTouch>
           ))}
         </ScrollView>

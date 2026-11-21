@@ -45,7 +45,7 @@ export function CarPlaylist({ pl, onBack }: { pl: CarPlRef; onBack: () => void }
             </View>
           </View>
         </View>
-        <View style={{ marginTop: 18 }}>
+        <View style={{ marginTop: 12 }}>
           {songs.map((s, i) => (
             <CarSongRow key={`${i}${s.songmid}`} song={s} onPress={() => void player.playSong(s, songs)} />
           ))}
@@ -56,15 +56,15 @@ export function CarPlaylist({ pl, onBack }: { pl: CarPlRef; onBack: () => void }
 }
 
 const st = {
-  back: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6, paddingHorizontal: CAR.gutter, paddingTop: 20, paddingBottom: 6 },
+  back: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 4 },
   backLabel: { color: C.text2, fontSize: 15 },
-  head: { flexDirection: 'row' as const, gap: 26, alignItems: 'center' as const },
-  cover: { width: 280, height: 280, borderRadius: 22 },
-  title: { color: C.text, fontSize: 38, fontWeight: '800' as const },
-  meta: { color: C.text2, fontSize: 16 },
+  head: { flexDirection: 'row' as const, gap: 18, alignItems: 'center' as const },
+  cover: { width: 168, height: 168, borderRadius: 16 },
+  title: { color: C.text, fontSize: 27, fontWeight: '800' as const },
+  meta: { color: C.text2, fontSize: 14 },
   btnRow: { flexDirection: 'row' as const, gap: 14, marginTop: 8 },
-  playAll: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, height: 56, paddingHorizontal: 28, borderRadius: 999, backgroundColor: C.brand },
+  playAll: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, height: 46, paddingHorizontal: 24, borderRadius: 999, backgroundColor: C.brand },
   playAllText: { color: C.onBrand, fontSize: 16, fontWeight: '700' as const },
-  subBtn: { height: 56, paddingHorizontal: 28, borderRadius: 999, borderWidth: 1.5, borderColor: '#FFFFFF30', alignItems: 'center' as const, justifyContent: 'center' as const },
+  subBtn: { height: 46, paddingHorizontal: 24, borderRadius: 999, borderWidth: 1.5, borderColor: '#FFFFFF30', alignItems: 'center' as const, justifyContent: 'center' as const },
   subText: { color: C.text, fontSize: 16 },
 };

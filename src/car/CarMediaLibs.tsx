@@ -73,8 +73,8 @@ const st = {
   backBtn: { width: 46, height: 46, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
   addBtn: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, height: 48, paddingHorizontal: 22, borderRadius: 24, backgroundColor: C.brand },
   addText: { color: C.onBrand, fontSize: CAR_FS.sub, fontWeight: '700' as const },
-  card: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 18, minHeight: 88, paddingHorizontal: 22, borderRadius: 17, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, marginBottom: 14 },
-  iconWrap: { width: 64, height: 64, borderRadius: 16, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
+  card: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 14, minHeight: 76, paddingHorizontal: 16, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, marginBottom: 10 },
+  iconWrap: { width: 52, height: 52, borderRadius: 13, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
   cardTitle: { color: C.text, fontSize: CAR_FS.body, fontWeight: '700' as const },
   cardSub: { color: C.text3, fontSize: CAR_FS.mini },
 };
