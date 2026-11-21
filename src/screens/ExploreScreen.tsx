@@ -74,7 +74,7 @@ function PlaylistCard({ pl, onPress }: PlaylistCardProps) {
   );
 }
 const p = StyleSheet.create({
-  card: { width: '31%', gap: 4 },
+  card: { width: '31%', flexGrow: 1, gap: 4 },
   art: { width: '100%', aspectRatio: 1, borderRadius: 10 },
   artFallback: { backgroundColor: C.artTint, alignItems: 'center', justifyContent: 'center' },
   glyph: { color: C.text, fontSize: 24, fontWeight: '700' },
@@ -533,7 +533,7 @@ const st = StyleSheet.create({
   sectionMeta: { color: C.text2, fontSize: 11, lineHeight: 16 },
   catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   catCard: {
-    width: '48%', height: 92, borderRadius: 12, overflow: 'hidden',
+    width: '48%', flexGrow: 1, height: 92, borderRadius: 12, overflow: 'hidden',
     flexGrow: 1, justifyContent: 'center', paddingHorizontal: 14,
   },
   catArt: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 },

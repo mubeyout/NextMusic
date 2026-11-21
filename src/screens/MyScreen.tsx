@@ -395,7 +395,7 @@ const st = StyleSheet.create({
   sectionTitle: { flex: 1, color: C.text, fontSize: FS.h2, lineHeight: 22, fontWeight: FW.bold },
   sectionMeta: { color: C.brandSoft, fontSize: FS.xs, lineHeight: 12 },
   plGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xl, marginTop: 4 },
-  plCell: { width: '31%', gap: SP.xs },
+  plCell: { width: '31%', flexGrow: 1, gap: SP.xs },
   plCover: { width: '100%', aspectRatio: 1, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   plGlyph: { color: C.white, fontSize: FS.display, fontWeight: FW.bold }, // [LEO 1011] 26 档外→display(24)
   plName: { color: C.text, fontSize: FS.md, lineHeight: 16, fontWeight: FW.bold },

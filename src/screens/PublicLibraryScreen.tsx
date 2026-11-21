@@ -445,7 +445,7 @@ function SkelWall() {
     <ScrollView>
       <View style={d.skelWall}>
         {[0, 1, 2, 3, 4, 5].map(i => (
-          <View key={i} style={{ width: '31%' } as never}>
+          <View key={i} style={{ width: '31%', flexGrow: 1 } as never}>
             <Animated.View style={[d.skel, { opacity: op }]} />
           </View>
         ))}

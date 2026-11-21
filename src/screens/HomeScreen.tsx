@@ -486,7 +486,7 @@ const st = StyleSheet.create({
   plGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   retryRow: { height: 44, borderRadius: 12, backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center' },
   retryText: { color: C.text2, fontSize: 12 },
-  plCell: { width: '31%', gap: 4 },
+  plCell: { width: '31%', flexGrow: 1, gap: 4 },
   plArt: { width: '100%', aspectRatio: 1, borderRadius: 10, backgroundColor: C.surface2 },
   plFallback: { alignItems: 'center', justifyContent: 'center' },
   plGlyph: { color: C.text2, fontSize: 24, fontWeight: '700' },

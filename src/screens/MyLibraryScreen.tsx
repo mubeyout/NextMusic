@@ -559,7 +559,7 @@ function SkelGrid({ round }: { round?: boolean }) {
     <ScrollView>
       <View style={[d.wall, round && { gap: SP.xxl }]}>
         {[0, 1, 2, 3, 4, 5].map(i => (
-          <View key={i} style={{ width: '31%' } as never}>
+          <View key={i} style={{ width: '31%', flexGrow: 1 } as never}>
             <Animated.View style={[d.skel, round && { borderRadius: 999 }, { opacity: op }]} />
           </View>
         ))}
@@ -700,7 +700,7 @@ const d = StyleSheet.create({
   wallHD: { gap: SP.wide, padding: 30, paddingBottom: 150 },
   wall4: { flexDirection: 'row', flexWrap: 'wrap', gap: SP.xxl, padding: 16, paddingBottom: 130 },
   wall4HD: { gap: SP.wider, padding: 30, paddingBottom: 150 },
-  disc: { width: '31%' as never, gap: SP.sm },
+  disc: { width: '31%' as never, flexGrow: 1, gap: SP.sm },
   discFocus: { borderWidth: 2.5, borderColor: C.brand, borderRadius: 14, transform: [{ scale: 1.05 }] },
   sleeve: { overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2 }, // [老板 1011 15:59] nm-card 化:圆角/影归卡容器,封面顶格
   sleeveRound: { borderRadius: 999 },

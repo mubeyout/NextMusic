@@ -91,8 +91,8 @@ android {
             applicationIdSuffix ".hd"
             versionNameSuffix "-hd"
             // HD 独立版本线:与 phone 共享 default,但可单独越号更新(当前 hd v2)
-            versionCode 186
-            versionName "1.4.3" // v1.4.3-hd(1120晚:侧栏4项+音乐馆subnav+排行榜入馆)
+            versionCode 187
+            versionName "1.4.4" // v1.4.4-hd(1121:同 phone 基线)
         }
     }
 
@@ -100,8 +100,8 @@ android {
         applicationId "com.mubeyworks.nextmusic"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 188
-        versionName "1.4.3" // v1.4.3-vc187(1120晚:侧栏 11→4 项扁平+音乐馆三 subnav(精选歌单/排行榜/场景音乐)+HDBoardsEmbed+排行榜标题对齐——code188 越过设备存量 187)
+        versionCode 189
+        versionName "1.4.4" // v1.4.4-vc188(1121:手机端全面排满自适应——GridWall/Public/Explore/Home/MyLibrary/My 七处百分比 cell 加 flexGrow,小屏第三方媒体不再右侧空列)
     }
     // 多架构分发：GitHub Release 只放编译产物（armeabi-v7a/arm64-v8a/x86/x86_64 + universal 兑底）
     splits {

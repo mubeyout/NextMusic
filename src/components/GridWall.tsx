@@ -15,7 +15,8 @@ export function GridWall({ children, phoneGap = SP.xl }: { children: React.React
   // → 每卡包一层 31% cell(三列,同 plCell 规格)
   return (
     <View style={wallSt.grid}>
-      {React.Children.map(children, ch => (ch == null ? null : <View style={{ width: '31%' }}>{ch}</View>))}
+      {/* [老板令 1121 小屏排满] cell 加 flexGrow——3 列装不下自动 2 列且行内拉伸铺满,右侧不再空一列 */}
+      {React.Children.map(children, ch => (ch == null ? null : <View style={{ width: '31%', flexGrow: 1 }}>{ch}</View>))}
     </View>
   );
 }
