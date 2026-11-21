@@ -807,8 +807,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             onlineRetryUidRef.current = t.uid;
             try { ['flac', '320k', '128k'].forEach(function (q) { localStorage.removeItem('nm-urlc:' + t.source + ':' + t.songmid + ':' + q); }); } catch (e0) { /* ignore */ }
             toast('音源不稳，低码率重试…');
-            const u2 = await resolveNativeUrl(t, '128k');
-            if (u2) { playOrCast(t, u2); break; }
+            resolveNativeUrl(t, '128k').then(function (u2) { if (u2) playOrCast(t, u2); });
+            /* retry via then */
           }
           // 媒体库歌：直流失败自动降级转码流重试一次（外网/弱网下无损直流常握不住，服务端转 mp3 更稳）
           if (t && isProviderSource(t) && tcRetryUidRef.current !== t.uid) {
