@@ -50,9 +50,9 @@ export function CarHome({ goExplore, goPodcast, onOpenFav, onOpenPlaylist }: { g
   const player = usePlayer();
   const { height, width: winW } = useWindowDimensions();
   const dense = carScale(height) < 0.9;
-  // [1121 CAR自适应] 卡片列数按内容区宽度: 窄(车屏)3列 / 宽(TV)4列 / 极宽5列
-  const cardBasis = winW > 1200 ? '19%' : winW > 900 ? '23%' : '30%';
-  const cardMin = winW > 900 ? 140 : 118;
+  // [老板令1121] CAR 卡片统一: 固定一行4个,间距缩小,尺寸一致(不分屏宽)
+  const cardBasis = '23.5%'; // 4列×23.5%+3×2%gap ≈ 100%
+  const cardMin = 0;
   const { username } = useApp();
   const lic = useLicense();
   const [tab, setTab] = useState<'全部' | '音乐' | '播客'>('全部');
@@ -171,7 +171,7 @@ export function CarHome({ goExplore, goPodcast, onOpenFav, onOpenPlaylist }: { g
 
       {/* [HTML01] 为你推荐 wall:min190 auto-fill ×6 */}
       <Section title="为你推荐" more="发现更多" onMore={goExplore} />
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
         {mixes.slice(0, 6).map(pl => (
           <View key={`x${pl.source}_${pl.id}`} style={{ flexBasis: cardBasis, flexGrow: 1, minWidth: cardMin }}>
             <WallCard pl={pl} onOpen={() => openPl(pl)} onPlay={() => playPl(pl)} />
@@ -184,7 +184,7 @@ export function CarHome({ goExplore, goPodcast, onOpenFav, onOpenPlaylist }: { g
       {/* [HTML01] 最近播放:car-resume 3 列(img64/题21/副17 →÷1.5)或空态 */}
       <Section title="最近播放" />
       {recents.length ? (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
           {recents.slice(0, 6).map((s, i) => (
             <View key={`r${i}`} style={{ flexBasis: cardBasis, flexGrow: 1, minWidth: cardMin }}>
               <CarTouch activeOpacity={0.9} onPress={() => void player.playSong(s, recents)}
@@ -215,7 +215,7 @@ export function CarHome({ goExplore, goPodcast, onOpenFav, onOpenPlaylist }: { g
       {mine.length ? (
         <View>
           <Section title="我的歌单" />
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
             {mine.map(pl => (
               <View key={`m${pl.id}`} style={{ flexBasis: cardBasis, flexGrow: 1, minWidth: cardMin }}>
                 <WallCard pl={pl} onOpen={() => openPl(pl)} onPlay={() => playPl(pl)} />

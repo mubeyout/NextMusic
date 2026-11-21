@@ -108,9 +108,8 @@ export function CarShell() {
   const insets = useSafeAreaInsets();
   const { width: winW, height: winH } = useWindowDimensions();
   // [老板令1121 CAR自适应] 结构元素按屏幕百分比(车屏853dp→TV 960dp→平板等自适应)
-  const railW = Math.round(Math.max(60, Math.min(100, winW * 0.085)));   // rail: 8.5%(60-100dp)
-  const panelW = Math.round(Math.max(170, Math.min(260, winW * 0.24)));  // 播放面板: 24%(170-260dp)
-  const isWide = winW > 900; // TV/大屏: 内容区更宽,卡片可以更大
+  const railW = 68; // [老板令1121] rail 固定窄
+  const panelW = 200; // [老板令1121] 播放面板固定
   const [page, setPage] = useState<PageKey>('home');
   const nav = useNavigation() as { navigate: (s: string) => void };
   const [playerOpen, setPlayerOpen] = useState(false);
