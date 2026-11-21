@@ -180,6 +180,7 @@ export function CarHome({ goExplore, goPodcast, onOpenFav, onOpenPlaylist }: { g
       {recents.length ? (
         <ScrollView focusable={false} horizontal showsHorizontalScrollIndicator={false} snapToInterval={cardW + GAP} decelerationRate="fast"
           contentContainerStyle={{ gap: GAP, paddingRight: 14 }}>
+          {recents.map((s, i) => (
               <CarTouch key={`r${i}`} activeOpacity={0.9} onPress={() => void player.playSong(s, recents)}
                 style={{ width: cardW, borderRadius: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
                 <View style={{ width: '100%', aspectRatio: 1.25, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }}>
