@@ -29,7 +29,7 @@ function Section({ title, more, onMore }: { title: string; more?: string; onMore
 function WallCard({ pl, onOpen, onPlay, w }: { pl: SongListMeta; onOpen: () => void; onPlay: () => void; w: number }) {
   return (
     <CarTouch activeOpacity={0.95} onPress={onOpen}
-      style={{ width: w, borderRadius: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
+      style={{ width: w, borderRadius: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
       <View style={{ position: 'relative' }}>
         <View style={{ width: '100%', aspectRatio: 1.25, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }}>
           {pl.img ? <Image source={{ uri: pl.img }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <Icon name="music" size={20} color={C.text3} />}
@@ -147,7 +147,7 @@ export function CarHome({ goExplore, goPodcast, onOpenFav, onOpenPlaylist }: { g
           </View>
         </CarTouch>
         <CarTouch activeOpacity={0.95} onPress={() => onOpenFav?.()}
-          style={{ flex: 1, height: dense ? 116 : 136, borderRadius: 13, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 10 }}>
+          style={{ flex: 1, height: dense ? 116 : 136, borderRadius: 13, backgroundColor: C.surface, borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 10 }}>
           <View style={{ width: 44, height: 44, borderRadius: 13, backgroundColor: 'rgba(255,90,118,.12)', alignItems: 'center', justifyContent: 'center' }}>
             <Icon name="heart" size={21} color="#FF5A76" active />
           </View>
@@ -155,7 +155,7 @@ export function CarHome({ goExplore, goPodcast, onOpenFav, onOpenPlaylist }: { g
           <Text style={{ color: C.text2, fontSize: 11 }} numberOfLines={1}>{favCount} 首收藏</Text>
         </CarTouch>
         <CarTouch activeOpacity={0.95} onPress={playRadar}
-          style={{ flex: 1, height: dense ? 116 : 136, borderRadius: 13, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 10 }}>
+          style={{ flex: 1, height: dense ? 116 : 136, borderRadius: 13, backgroundColor: C.surface, borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 10 }}>
           <View style={{ width: 44, height: 44, borderRadius: 13, backgroundColor: 'rgba(30,215,96,.12)', alignItems: 'center', justifyContent: 'center' }}>
             <Icon name="wave" size={21} color={C.brand} />
           </View>
@@ -182,7 +182,7 @@ export function CarHome({ goExplore, goPodcast, onOpenFav, onOpenPlaylist }: { g
           contentContainerStyle={{ gap: GAP, paddingRight: 14 }}>
           {recents.map((s, i) => (
               <CarTouch key={`r${i}`} activeOpacity={0.9} onPress={() => void player.playSong(s, recents)}
-                style={{ width: cardW, borderRadius: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
+                style={{ width: cardW, borderRadius: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
                 <View style={{ width: '100%', aspectRatio: 1.25, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }}>
                   {s.img ? <Image source={{ uri: s.img }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <Icon name="music" size={22} color={C.text3} />}
                 </View>
@@ -194,7 +194,7 @@ export function CarHome({ goExplore, goPodcast, onOpenFav, onOpenPlaylist }: { g
           ))}
         </ScrollView>
       ) : (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 15, paddingVertical: 12, borderRadius: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 15, paddingVertical: 12, borderRadius: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)' }}>
           <Icon name="music" size={18} color={C.text3} />
           <Text style={{ flex: 1, color: C.text2, fontSize: 12, lineHeight: 19 }}>听过的音乐会留在这里，随时接着听。</Text>
           <CarTouch style={{ height: 30, paddingHorizontal: 12, borderRadius: 15, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }} onPress={playDaily}>

@@ -122,7 +122,7 @@ export function CarSearch({ onBack, seed }: { onBack: () => void; seed?: string 
 
 const st = {
   backBtn: { width: 46, height: 46, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
-  voiceCard: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 16, backgroundColor: C.surface, borderRadius: 15, borderWidth: 1, borderColor: C.border, padding: 16, marginBottom: 16 },
+  voiceCard: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 16, backgroundColor: C.surface, borderRadius: 15, borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', padding: 16, marginBottom: 16 },
   micBtn: { width: 62, height: 62, borderRadius: 31, backgroundColor: C.brand, alignItems: 'center' as const, justifyContent: 'center' as const },
   waves: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 5 },
   waveBar: { width: 5, borderRadius: 3, backgroundColor: C.brand },
@@ -132,10 +132,10 @@ const st = {
   pills: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 12 },
   pill: { height: 40, paddingHorizontal: 18, borderRadius: 20, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
   pillText: { color: C.text, fontSize: CAR_FS.sub, fontWeight: '600' as const },
-  histRow: { flexDirection: 'row' as const, alignItems: 'center' as const, height: 40, borderBottomWidth: 1, borderBottomColor: C.border },
+  histRow: { flexDirection: 'row' as const, alignItems: 'center' as const, height: 40, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.07)' },
   histText: { color: C.text2, fontSize: CAR_FS.sub },
   histDel: { width: 40, height: 40, alignItems: 'center' as const, justifyContent: 'center' as const },
-  kbDegrade: { marginTop: 26, height: 52, borderRadius: 13, borderWidth: 1.5, borderStyle: 'dashed' as const, borderColor: C.border, alignItems: 'center' as const, justifyContent: 'center' as const },
+  kbDegrade: { marginTop: 26, height: 52, borderRadius: 13, borderWidth: 1.5, borderStyle: 'dashed' as const, borderColor: 'rgba(255,255,255,0.07)', alignItems: 'center' as const, justifyContent: 'center' as const },
   kbDegradeText: { color: C.text3, fontSize: CAR_FS.sub },
   kbRow: { marginTop: 26, flexDirection: 'row' as const, gap: 12 },
   kbInput: { flex: 1, height: 52, borderRadius: 13, backgroundColor: C.surface2, paddingHorizontal: 18, color: C.text, fontSize: CAR_FS.body },

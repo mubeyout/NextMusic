@@ -74,7 +74,7 @@ export function PaywallCard({ title, desc, bullets, onPrimary, onTrial, onDismis
 }
 
 const st = {
-  trial: { flexDirection: 'row' as const, alignItems: 'center' as const, height: 44, paddingHorizontal: 18, backgroundColor: C.surface2, borderBottomWidth: 1, borderBottomColor: C.border, borderTopLeftRadius: 12, borderTopRightRadius: 12 },
+  trial: { flexDirection: 'row' as const, alignItems: 'center' as const, height: 44, paddingHorizontal: 18, backgroundColor: C.surface2, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.07)', borderTopLeftRadius: 12, borderTopRightRadius: 12 },
   trialText: { color: C.text2, fontSize: FSZ.mini },
   trialBadge: { height: 22, borderRadius: 11, paddingHorizontal: 10, backgroundColor: C.brandDim, justifyContent: 'center' as const },
   trialBadgeText: { color: C.brandText, fontSize: FSZ.tiny },
@@ -83,7 +83,7 @@ const st = {
   quotaValue: { color: C.text, fontSize: FSZ.sub },
   quotaTrack: { flexDirection: 'row' as const, height: 8, borderRadius: 4, backgroundColor: C.track, overflow: 'hidden' as const },
   quotaHint: { color: C.text3, fontSize: FSZ.mini },
-  pay: { backgroundColor: C.surface2, borderRadius: 17, borderWidth: 1, borderColor: C.border, padding: 22, gap: 18 },
+  pay: { backgroundColor: C.surface2, borderRadius: 17, borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', padding: 22, gap: 18 },
   payTitle: { color: C.text, fontSize: FSZ.title, fontWeight: '700' as const, flex: 1 },
   payDesc: { color: C.text2, fontSize: FSZ.mini },
   check: { width: 18, height: 18, borderRadius: 9, borderWidth: 1.5, borderColor: C.brand, alignItems: 'center' as const, justifyContent: 'center' as const },

@@ -128,7 +128,7 @@ const st = {
   pill: { height: 44, borderRadius: 999, paddingHorizontal: 24, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
   pillText: { color: C.text2, fontSize: CAR_FS.sub },
   exGrid: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: CAR.gap },
-  exCard: { padding: 8, gap: 8, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border }, // [老板令1121#2] 卡底背景+描边,宽由 carGrid 动态传
+  exCard: { padding: 8, gap: 8, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)' }, // [老板令1121#2] 卡底背景+描边,宽由 carGrid 动态传
   exCard6: { width: '18.6%', gap: 6 }, // [v7.9 1110] 6列变体也归 5 列主律
   exArt: { width: '100%', aspectRatio: 1, borderRadius: 10 },
   exName: { color: C.text, fontSize: CAR_FS.mini, fontWeight: '600' as const },

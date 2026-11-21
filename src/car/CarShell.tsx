@@ -197,7 +197,7 @@ export function CarShell() {
 }
 
 const st2 = {
-  rail: { flexDirection: 'column' as const, alignItems: 'center' as const, gap: 13, paddingTop: 17, paddingBottom: 13, borderRightWidth: 1, borderRightColor: C.border }, // [1121自适应] width 由 JSX 动态设
+  rail: { flexDirection: 'column' as const, alignItems: 'center' as const, gap: 13, paddingTop: 17, paddingBottom: 13, borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.07)' }, // [1121自适应] width 由 JSX 动态设
   railBrand: { alignItems: 'center' as const, gap: 7, marginBottom: 8 },
   railTabs: { flex: 1, width: '100%' as const, gap: 7, justifyContent: 'flex-start' as const },
   railTab: { width: '100%' as const, minHeight: 53, alignItems: 'center' as const, justifyContent: 'center' as const, gap: 5, borderRadius: 12 }, // tab 80h r18 ÷1.5
@@ -206,7 +206,7 @@ const st2 = {
   breadcrumb: { color: C.text, fontSize: 21, fontWeight: '650' as never, letterSpacing: -0.3, flex: 1, minWidth: 0 },
   searchPill: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 7, height: 36, paddingHorizontal: 13, borderRadius: 12, backgroundColor: C.surface2 },
   iconBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
-  panelWrap: { borderRightWidth: 1, borderRightColor: C.border, backgroundColor: C.surface }, // [1121自适应] width 由 JSX 动态设
+  panelWrap: { borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.07)', backgroundColor: C.surface }, // [1121自适应] width 由 JSX 动态设
   panel: { flex: 1, padding: 13, gap: 5, alignItems: 'center' as const },
   panelArt: { borderRadius: 10, backgroundColor: C.surface2 },
   panelTitle: { color: C.text, fontSize: 15, fontWeight: '700' as const, textAlign: 'center' as const, width: '100%' },
