@@ -192,6 +192,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const idxRef = useRef(0);
   queueRef.current = queue;
   // 转码重试标记（同一首只降级一次，防止错误循环）；换歌时在 STATE_CHANGED PLAYING 里不清、TRACK_ENDED 推进即可覆盖
+  const onlineRetryUidRef = useRef<string | null>(null); // [1121#7] 在线源重试单次防环
   const tcRetryUidRef = useRef<string | null>(null);
 
   // 投屏状态（lx33 双通道）：castRef 供事件闭包读到最新值；dlna/cast 模式本机 ExoPlayer 暂停挂起
@@ -265,8 +266,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const lastLocalPlayRef = useRef<{ t: QueueTrack; url: string; opts?: { headers: { audio: Record<string, string>; artwork?: Record<string, string> } } } | null>(null);
   /** [AutoNext 1109] 轻量取链:URL缓存→自定义音源→服务器取链(降质)。命中即预下发原生;失败跳过该首(JS 醒着时兜底) */
   const primeIdxRef = useRef<number[]>([]); // 与原生队列同序的队列下标(事件回放时同步 JS 状态)
-  const resolveNativeUrl = useCallback(async (t: QueueTrack): Promise<string | null> => {
-    const quality = pickQuality(t);
+  const resolveNativeUrl = useCallback(async (t: QueueTrack, forceQuality?: '128k' | '320k' | 'flac'): Promise<string | null> => {
+    const quality = forceQuality || pickQuality(t);
     try { const u = await customGetMusicUrl(t, quality); if (u) return u; } catch { /* 下一步 */ }
     const lcKey = `nm-urlc:${t.source}:${t.songmid}:${quality}`;
     try {
@@ -801,6 +802,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           const t = queueRef.current[idxRef.current];
           const errP = (ev as unknown as { payload?: { error?: string; errorCode?: number } }).payload;
           const errDetail = errP?.error ? `（${String(errP.error).slice(0, 70)}${errP.errorCode != null ? ' #' + errP.errorCode : ''}）` : '';
+          // [1121#7 二轮] 在线源: URL 可能 522(音源 CF 源站挂) → 清 URL 缓存+强制 128k 重取重试一次
+          if (t && !isProviderSource(t) && onlineRetryUidRef.current !== t.uid) {
+            onlineRetryUidRef.current = t.uid;
+            try { ['flac', '320k', '128k'].forEach(function (q) { localStorage.removeItem('nm-urlc:' + t.source + ':' + t.songmid + ':' + q); }); } catch (e0) { /* ignore */ }
+            toast('音源不稳，低码率重试…');
+            const u2 = await resolveNativeUrl(t, '128k');
+            if (u2) { playOrCast(t, u2); break; }
+          }
           // 媒体库歌：直流失败自动降级转码流重试一次（外网/弱网下无损直流常握不住，服务端转 mp3 更稳）
           if (t && isProviderSource(t) && tcRetryUidRef.current !== t.uid) {
             const tc = providerApi.transcodeFor(t);
