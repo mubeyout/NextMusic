@@ -100,8 +100,8 @@ android {
         applicationId "com.mubeyworks.nextmusic"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 193
-        versionName "1.4.8" // v1.4.8-vc192(1121#2 老板令: CAR 全面整改——横滚栅格/面板精简/描边统一)
+        versionCode 194
+        versionName "1.4.9" // v1.4.9-vc193(1121#3: 探索折行/音效padding/highlights横排/面板自适应/DPAD全局修复/CAR↔HD切换)
     }
     // 多架构分发：GitHub Release 只放编译产物（armeabi-v7a/arm64-v8a/x86/x86_64 + universal 兑底）
     splits {
