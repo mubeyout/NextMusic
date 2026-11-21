@@ -145,7 +145,7 @@ const st = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingTop: 20, paddingHorizontal: 24 },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 52, paddingHorizontal: 20, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.10)' },
   backLabel: { color: C.text, fontSize: 17, fontWeight: '600' as never },
-  grid: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Math.max(36, 60), paddingHorizontal: 48, paddingBottom: 32, flexWrap: 'wrap' },
+  grid: { flex: 1, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: Math.max(36, 60), paddingHorizontal: 48, paddingBottom: 32, flexWrap: 'wrap' },
   discWrap: { alignItems: 'center', justifyContent: 'center', gap: 14 },
   disc: { backgroundColor: '#111114', borderWidth: 6, borderColor: '#1c1c22', alignItems: 'center', justifyContent: 'center', elevation: 20, shadowColor: '#000', shadowOpacity: 0.6, shadowRadius: 30 },
   queueHint: { color: 'rgba(255,255,255,0.55)', fontSize: 12 },
