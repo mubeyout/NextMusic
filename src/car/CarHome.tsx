@@ -11,6 +11,7 @@ import { Icon } from '../theme/Icon';
 import { lxapi } from '../services/lxapi';
 import { library } from '../state/library';
 import { getRecents } from '../state/recent';
+import { sync, lxToApp } from '../services/sync';
 import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
 import type { SongItem, SongListMeta } from '../services/server';
@@ -76,6 +77,7 @@ export function CarHome({ goExplore, goPodcast, onOpenFav, onOpenPlaylist }: { g
       }
       return out;
     };
+    // [1122#2] mine = server user lists first, lxapi fallback    sync.fetchLists().then(snap => {      const uls = (snap && snap.userList || []).slice(0, 12);      if (uls.length) setMine(uls.map(ul => ({        id: String(ul.id), name: ul.name, source: 'custom',        total: (ul.list || []).length,        img: (ul.list || []).map(x => lxToApp(x).img).find(Boolean),      })));    }).catch(() => {});
     Promise.all([
       lxapi.songListList('', '5', 1, 12, 'wy').catch(() => ({ list: [] as SongListMeta[] })),
       lxapi.songListAuto('', '5', 1, 12, false).catch(() => ({ list: [] as SongListMeta[] })),

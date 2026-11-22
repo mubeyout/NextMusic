@@ -351,7 +351,6 @@ export function HDMain() {
           </View>
         </HDTouch>
 
-          <NavItem icon="settings" label="设置" active={innerRoute === 'Settings'} onPress={() => (IS_WEB ? railNav('Settings') : hdNav()?.navigate('Settings'))} />
         </View>
       </View>
 

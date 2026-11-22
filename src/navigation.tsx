@@ -98,7 +98,9 @@ function TabBarManual({ tab, setTab }: { tab: number; setTab: (i: number) => voi
 export function RootNavigator() {
   useSettings(); // carlink:carModeUi 变更即重渲——导航层 IS_HD|carMode 双分流
   // vc185 三合一调试:formForce 显式覆盖最终形态(即时生效)——TV 上强制 car 供实测;auto=原环境判定链
-  const FF = settings.get().formForce ?? 'auto';
+  let FF = settings.get().formForce ?? 'auto';
+  // [老板令1122] 大屏禁切手机版: TV/HD 设备上 phone 强制落 HD(保遥控可操作)
+  if (FF === 'phone' && IS_HD_UI) FF = 'hd';
   const HD = FF === 'hd' ? true : FF === 'phone' ? false : isCarUi();
   const CAR_UI = FF === 'car' ? true : (FF === 'phone' || FF === 'hd') ? false : (!IS_HD_UI && settings.get().carModeUi === true); // [1105+1111 三版合一] TV 设备恒 HDMain(IS_HD_UI)——蓝牙误切 carModeUi 也不再劫持电视
   const { mode } = useApp();
