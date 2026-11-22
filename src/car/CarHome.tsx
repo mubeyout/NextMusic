@@ -16,6 +16,8 @@ import { usePlayer } from '../state/PlayerProvider';
 import { useApp } from '../state/AppState';
 import type { SongItem, SongListMeta } from '../services/server';
 
+// [1122#4] server playlist songs cache
+const serverPlSongs = new Map<string, import("../services/server").SongItem[]>();
 function Section({ title, more, onMore }: { title: string; more?: string; onMore?: () => void }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 32, marginTop: 16, marginBottom: 9, gap: 9 }}>
@@ -77,13 +79,26 @@ export function CarHome({ goExplore, goPodcast, onOpenFav, onOpenPlaylist }: { g
       }
       return out;
     };
-    // [1122#2] mine = server user lists first, lxapi fallback    sync.fetchLists().then(snap => {      const uls = (snap && snap.userList || []).slice(0, 12);      if (uls.length) setMine(uls.map(ul => ({        id: String(ul.id), name: ul.name, source: 'custom',        total: (ul.list || []).length,        img: (ul.list || []).map(x => lxToApp(x).img).find(Boolean),      })));    }).catch(() => {});
+    // [1122#2+#4] mine = server user lists(真收藏,缓存曲目直连), lxapi 仅匿名兜底
+    let mineFromServer = false;
+    sync.fetchLists().then(snap => {
+      const uls = ((snap && snap.userList) || []).slice(0, 12);
+      if (uls.length) {
+        mineFromServer = true;
+        uls.forEach(ul => { const arr = (ul.list || []).map(x => lxToApp(x)); if (arr.length) serverPlSongs.set(String(ul.id), arr); });
+        setMine(uls.map(ul => ({
+          id: String(ul.id), name: ul.name, source: 'custom',
+          total: (ul.list || []).length,
+          img: (ul.list || []).map(x => lxToApp(x).img).find(Boolean),
+        })));
+      }
+    }).catch(() => {});
     Promise.all([
       lxapi.songListList('', '5', 1, 12, 'wy').catch(() => ({ list: [] as SongListMeta[] })),
       lxapi.songListAuto('', '5', 1, 12, false).catch(() => ({ list: [] as SongListMeta[] })),
     ]).then(([mineRes, mixRes]) => {
       const mineList = (mineRes?.list || []).slice(0, 6);
-      setMine(mineList);
+      if (!mineFromServer) setMine(mineList);
       const mixPool = (mixRes?.list || []).filter((pl: SongListMeta) => {
         const key = `${pl.name}|${pl.id ?? ''}`;
         return !mineList.some(m => `${m.name}|${m.id ?? ''}` === key);
@@ -92,8 +107,10 @@ export function CarHome({ goExplore, goPodcast, onOpenFav, onOpenPlaylist }: { g
     });
   }, []);
 
-  const openPl = (pl: SongListMeta) => onOpenPlaylist({ kind: 'pl', id: pl.id, name: pl.name, img: pl.img });
+  const openPl = (pl: SongListMeta) => onOpenPlaylist({ kind: 'pl', id: pl.id, name: pl.name, img: pl.img, songs: serverPlSongs.get(String(pl.id)) }); // [1122#4] direct songs
   const playPl = (pl: SongListMeta) => {
+    const cached = serverPlSongs.get(String(pl.id)); // [1122#4]
+    if (cached && cached.length) { void player.playSong(cached[0], cached); return; }
     lxapi.songListDetail(pl.id, 1, pl.source || 'wy').then(d => {
       const l = d?.list || [];
       if (l.length) void player.playSong(l[0], l);
