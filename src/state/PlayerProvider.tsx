@@ -273,6 +273,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       try {
         const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 2500);
         const r = await fetch(u, { method: 'HEAD', signal: ctl.signal }); clearTimeout(tm);
+        if (u.indexOf('id=undefined') >= 0 || u.indexOf('undefined&') >= 0) return false; // [1122#6] changqing kg bad-url
         return r.status >= 200 && r.status < 400;
       } catch { return false; }
     };
@@ -817,7 +818,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             onlineRetryUidRef.current = t.uid;
             try { ['flac', '320k', '128k'].forEach(function (q) { localStorage.removeItem('nm-urlc:' + t.source + ':' + t.songmid + ':' + q); }); } catch (e0) { /* ignore */ }
             toast('音源不稳，低码率重试…');
-            resolveNativeUrl(t, '128k').then(function (u2) { if (u2) playOrCast(t, u2); });
+            resolveNativeUrl(t, '128k').then(function (u2) { if (u2) playOrCast(t, u2); else playOnlineFallback(t).catch(function () {}); }); // [1122#6] fallback kw search
             /* retry via then */
           }
           // 媒体库歌：直流失败自动降级转码流重试一次（外网/弱网下无损直流常握不住，服务端转 mp3 更稳）
