@@ -307,6 +307,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     primeTimerRef.current = setTimeout(() => { void primeNativeNext(); }, 1500); // 起播 1.5s 后预取,不抢起播带宽
   }, [primeNativeNext]);
   const playOrCast = useCallback((t: QueueTrack, url: string, opts?: { headers: { audio: Record<string, string>; artwork?: Record<string, string> } }) => {
+    console.log('[nm-diag] playOrCast:', t.source, t.name, String(url).slice(0, 90)); // [1122 diag]
     const cs = castRef.current;
     if (cs && /^https?:\/\//i.test(url)) {
       NativeAudioPro?.setAutoNextQueue?.([]); // [AutoNext] 投屏中连播由 cast 状态机管,清原生队列
@@ -535,6 +536,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       // 1) 自定义音源（免登录;Electron/原生本地引擎 + lx175 web 端 iframe 沙箱 shim 同样可跑）
       let url: string | null = null;
       try { url = await customGetMusicUrl(t, quality); } catch { url = null; }
+      console.log("[nm-diag] lx-url", url ? "OK" : "null", "token=", !!tokenRef.current, "srcs=", activeSources().length, t.source, t.name); // 1122diag
       // 1.8) 链接缓存(原版 enableSongUrlCache): localStorage 存取链结果,TTL 内直接复用
       const lcKey = `nm-urlc:${t.source}:${t.songmid}:${quality}`;
       if (!url) {
