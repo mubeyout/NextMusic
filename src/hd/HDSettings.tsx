@@ -15,7 +15,7 @@ import { useApp } from '../state/AppState';
 import { settings, useSettings, type Quality } from '../services/settings';
 import { createMMKV } from 'react-native-mmkv';
 import { usePlayer } from '../state/PlayerProvider';
-import { APP_VERSION, IS_HD } from '../services/appversion';
+import { APP_VERSION, IS_HD, IS_HD_UI } from '../services/appversion'; // [MOMO P0] IS_HD_UI 未导入→HD设置必崩
 import { toast } from '../components/Dialog'; // v3.28:漏 import(5 处调用裸用)
 import { api } from '../services/server';
 import { hdNav } from './hdnav';
