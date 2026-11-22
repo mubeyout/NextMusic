@@ -111,7 +111,8 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
     } catch { toast('歌单内容获取失败'); }
   };
 
-  const favCount = localPls.find(p => p.name === '我喜欢的')?.songs.length ?? 0;
+  const localFavCount = localPls.find(p => p.name === '我喜欢的')?.songs.length ?? 0;
+  const favCount = snap && snap.loveList ? snap.loveList.length : localFavCount;
   const hour = new Date().getHours();
   const greet = hour < 6 ? '夜深了' : hour < 12 ? '早上好' : hour < 18 ? '下午好' : '晚上好';
 

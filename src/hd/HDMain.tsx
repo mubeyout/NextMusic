@@ -331,10 +331,14 @@ export function HDMain() {
           ) : null}
 
           {/* [HTML01 1120 app.js] 侧栏=4 项扁平:推荐/音乐馆/播客/我的——榜单入音乐馆 subnav,我喜欢的/最近播放/媒体库全走「我的」页入口 */}
-          <NavItem icon="home" label="推荐" active={(innerRoute === 'Tabs' && tab === 0) || (innerRoute === 'PlaylistDetail' && (innerP?.title === '我喜欢的' || innerP?.localId === 'loves' || innerP?.title === '播放历史'))} first onPress={() => { setTab(0); hdInnerPop(); }} />
-          <NavItem icon="explore" label="音乐馆" active={innerRoute === 'Discover' || innerRoute === 'BoardsSquare' || (innerRoute === 'Tabs' && tab === 3)} onPress={() => railNav('Discover')} />
+          <NavItem icon="home" label="为我推荐" active={(innerRoute === 'Tabs' && tab === 0)} first onPress={() => { setTab(0); hdInnerPop(); }} />
+          <NavItem icon="explore" label="探索" active={innerRoute === 'Discover'} onPress={() => railNav('Discover')} />
+          <NavItem icon="ranking" label="榜单" active={innerRoute === 'BoardsSquare'} onPress={() => railNav('BoardsSquare')} />
           <NavItem icon="podcast" label="播客" active={innerRoute === 'Tabs' && tab === 1} onPress={() => { setTab(1); hdInnerPop(); }} />
-          <NavItem icon="queue" label="我的" active={innerRoute === 'MyLibrary' || innerRoute === 'MediaLibs' || innerRoute === 'ProviderBrowse' || innerRoute === 'CloudLibrary' || innerRoute === 'PublicLibrary' || innerRoute === 'LocalLibBrowse' || innerRoute === 'ServerLocalLib'} onPress={() => railNav('MyLibrary')} />
+          <NavItem icon="heart" label="我喜欢的" active={innerRoute === 'PlaylistDetail' && innerP?.localId === 'loves'} onPress={() => railNav('PlaylistDetail', { title: '我喜欢的', localId: 'loves' })} />
+          <NavItem icon="history" label="最近播放" active={innerRoute === 'PlaylistDetail' && innerP?.title === '播放历史'} onPress={() => railNav('PlaylistDetail', { title: '播放历史', history: true })} />
+          <NavItem icon="queue" label="我的音乐" active={innerRoute === 'MyLibrary'} onPress={() => railNav('MyLibrary')} />
+          <NavItem icon="server" label="媒体库" active={innerRoute === 'MediaLibs' || innerRoute === 'ProviderBrowse' || innerRoute === 'CloudLibrary' || innerRoute === 'PublicLibrary' || innerRoute === 'LocalLibBrowse' || innerRoute === 'ServerLocalLib'} onPress={() => railNav('MediaLibs')} />
 
         </ScrollView>
         {/* lx85:设置项不贴底——留出焦点环完整显示空间(老板:太靠底被裁切) */}

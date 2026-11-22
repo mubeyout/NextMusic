@@ -69,7 +69,8 @@ export function HDMy() {
       return { key: u.id, localId: undefined as string | undefined, name: u.name, count: songs.length, img: songs[0]?.img, songs };
     }),
   ];
-  const favCount = localPls.find(p => p.name === '我喜欢的')?.songs.length ?? 0;
+  const localFavCount = localPls.find(p => p.name === '我喜欢的')?.songs.length ?? 0;
+  const favCount = snap && snap.loveList ? snap.loveList.length : localFavCount;
 
   // lx101:歌单长按管理——本机 library / 同步服务器 userList
   const managePl = (pl: typeof playlists[number]) => {

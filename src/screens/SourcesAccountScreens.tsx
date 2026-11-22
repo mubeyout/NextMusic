@@ -4,8 +4,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from '../theme/Icon';
 import { C, FS, FW, SP } from '../theme/tokens';
-import { IS_HD } from '../services/appversion';
+import { IS_HD, IS_HD_UI } from '../services/appversion';
 import { HDTouch } from '../hd/HDTouch';
+import { hdNav } from '../hd/hdnav';
 import { useApp } from '../state/AppState';
 import { SubPage } from '../components/SubPage';
 import { PageHeader } from '../components/PageChrome';
@@ -327,6 +328,13 @@ export function AccountScreen() {
         <TouchableOpacity focusable={true} style={st.linkBtn} onPress={() => nav.navigate('Server')}>
           <Text style={st.linkText}>更换服务器地址</Text>
         </TouchableOpacity>
+
+        {/* HD/TV:设置族走根栈全屏(原生内栈不注册 Settings),账号页补直达入口,否则 TV 无设置可达 */}
+        {IS_HD_UI ? (
+          <TouchableOpacity focusable={true} style={st.linkBtn} onPress={() => hdNav()?.navigate('Settings')}>
+            <Text style={st.linkText}>设置</Text>
+          </TouchableOpacity>
+        ) : null}
 
         {username ? (
           <TouchableOpacity focusable={true} style={[st.linkBtn, st.danger]} onPress={logout}>
