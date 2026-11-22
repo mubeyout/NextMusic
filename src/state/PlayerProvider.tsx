@@ -268,7 +268,15 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const primeIdxRef = useRef<number[]>([]); // 与原生队列同序的队列下标(事件回放时同步 JS 状态)
   const resolveNativeUrl = useCallback(async (t: QueueTrack, forceQuality?: '128k' | '320k' | 'flac'): Promise<string | null> => {
     const quality = forceQuality || pickQuality(t);
-    try { const u = await customGetMusicUrl(t, quality); if (u) return u; } catch { /* 下一步 */ }
+    // [1122#5] LX自定义源健康检查: HEAD 2.5s 非2xx/超时→弃用走服务器源(522源不再挡好源)
+    const healthy = async (u: string): Promise<boolean> => {
+      try {
+        const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 2500);
+        const r = await fetch(u, { method: 'HEAD', signal: ctl.signal }); clearTimeout(tm);
+        return r.status >= 200 && r.status < 400;
+      } catch { return false; }
+    };
+    try { const u = await customGetMusicUrl(t, quality); if (u && (await healthy(u))) return u; } catch { /* 下一步 */ }
     const lcKey = `nm-urlc:${t.source}:${t.songmid}:${quality}`;
     try {
       const raw = localStorage.getItem(lcKey);
