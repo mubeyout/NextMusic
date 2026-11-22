@@ -145,11 +145,11 @@ export function PlayerScreen() {
       <View nativeID="playerContent" style={{ flex: 1 }}>
       {/* Header */}
       <View style={[st.header, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity style={st.hBtn} onPress={() => nav.goBack()} hitSlop={4}>
+        <TouchableOpacity focusable={true} style={st.hBtn} onPress={() => nav.goBack()} hitSlop={4}>
           <Icon name="back" size={24} />
         </TouchableOpacity>
         {/* [老板 1105] 「正在播放」标题删除(与返回按钮太近,播放页自释义) */}
-        <TouchableOpacity style={st.hBtn} hitSlop={4} onPress={() => setMore(true)}>
+        <TouchableOpacity focusable={true} style={st.hBtn} hitSlop={4} onPress={() => setMore(true)}>
           <Icon name="more" size={24} />
         </TouchableOpacity>
       </View>
@@ -165,7 +165,7 @@ export function PlayerScreen() {
         <View style={st.trackHead}>
           <Text style={st.trackName} numberOfLines={1}>{current.name}</Text>
           {/* [老板 1110 补] 歌手行加 user icon 与歌词区分 */}
-          <TouchableOpacity hitSlop={8} activeOpacity={0.7} onPress={() => { if (current.singer) nav.navigate('Search', { q: current.singer }); }}>
+          <TouchableOpacity focusable={true} hitSlop={8} activeOpacity={0.7} onPress={() => { if (current.singer) nav.navigate('Search', { q: current.singer }); }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Icon name="artist" size={16} color={C.text2} />
               <Text style={st.trackArtist} numberOfLines={1}>{current.singer}{current.albumName ? ` · ${current.albumName}` : ''}</Text>
@@ -199,19 +199,19 @@ export function PlayerScreen() {
 
         {/* Secondary tools */}
         <View style={st.tools}>
-          <TouchableOpacity style={st.tool} onPress={() => nav.navigate('Comments')}>
+          <TouchableOpacity focusable={true} style={st.tool} onPress={() => nav.navigate('Comments')}>
             <Icon name="comments" size={20} color={C.text2} />
             <Text style={st.toolLabel}>评论</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={st.tool} onPress={() => nav.navigate('Fx')}>
+          <TouchableOpacity focusable={true} style={st.tool} onPress={() => nav.navigate('Fx')}>
             <Icon name="sliders" size={20} color={C.text2} />
             <Text style={st.toolLabel}>音效</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={st.tool} onPress={() => setDeviceSheet(true)}>
+          <TouchableOpacity focusable={true} style={st.tool} onPress={() => setDeviceSheet(true)}>
             <Icon name="devices" size={20} color={C.text2} />
             <Text style={st.toolLabel}>设备</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={st.tool} onPress={() => nav.navigate('PlayerSettings')}>
+          <TouchableOpacity focusable={true} style={st.tool} onPress={() => nav.navigate('PlayerSettings')}>
             <Icon name="settings" size={20} color={C.text2} />
             <Text style={st.toolLabel}>设置</Text>
           </TouchableOpacity>
@@ -227,7 +227,7 @@ export function PlayerScreen() {
             <Text style={st.pSub} numberOfLines={1}>{sourceLabel(current.source) ? `${sourceLabel(current.source)} · ` : ''}{current.singer}  ·  {current._types?.flac ? 'SQ 无损' : '128k'}</Text>
           </View>
           <View style={st.pActions}>
-            <TouchableOpacity style={st.pIcon} hitSlop={6} onPress={heartPress}>
+            <TouchableOpacity focusable={true} style={st.pIcon} hitSlop={6} onPress={heartPress}>
               <Animated.Text style={{ transform: [{ scale: heartScale }] }}>
                 <Icon name="heart" size={20} active={faved} color={faved ? '#FF5A76' : C.text} />
               </Animated.Text>
@@ -249,7 +249,7 @@ export function PlayerScreen() {
                 <Icon name="download" size={20} />
               )}
             </TouchableOpacity>
-            <TouchableOpacity style={st.pIcon} onPress={() => nav.navigate('Queue')}><Icon name="queue" size={20} /></TouchableOpacity>
+            <TouchableOpacity focusable={true} style={st.pIcon} onPress={() => nav.navigate('Queue')}><Icon name="queue" size={20} /></TouchableOpacity>
           </View>
         </View>
 
@@ -260,15 +260,15 @@ export function PlayerScreen() {
         </View>
 
         <View style={st.controls}>
-          <TouchableOpacity style={st.cBtn} onPress={() => setShuffle(!shuffle)}>
+          <TouchableOpacity focusable={true} style={st.cBtn} onPress={() => setShuffle(!shuffle)}>
             <Icon name="shuffle" size={22} active={shuffle} />
           </TouchableOpacity>
-          <TouchableOpacity style={st.cBtn} onPress={skipPrev}><Icon name="previous" size={24} /></TouchableOpacity>
-          <TouchableOpacity style={st.cMain} onPress={toggle}>
+          <TouchableOpacity focusable={true} style={st.cBtn} onPress={skipPrev}><Icon name="previous" size={24} /></TouchableOpacity>
+          <TouchableOpacity focusable={true} style={st.cMain} onPress={toggle}>
             <Icon name={playing ? 'pause' : 'play'} size={30} color={C.onBrand} />
           </TouchableOpacity>
-          <TouchableOpacity style={st.cBtn} onPress={skipNext}><Icon name="next" size={24} /></TouchableOpacity>
-          <TouchableOpacity style={st.cBtn} onPress={cycleRepeat}>
+          <TouchableOpacity focusable={true} style={st.cBtn} onPress={skipNext}><Icon name="next" size={24} /></TouchableOpacity>
+          <TouchableOpacity focusable={true} style={st.cBtn} onPress={cycleRepeat}>
             <Icon name="repeat" size={22} active={repeat !== 'off'} />
             {repeat === 'one' ? <Text style={st.repeatOne}>1</Text> : null}
           </TouchableOpacity>

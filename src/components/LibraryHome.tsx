@@ -81,7 +81,7 @@ export function LibActions({ actions }: { actions: LibQuickAction[] }) {
           <Text style={[lh.actT, a.primary && lh.actTPrimary]}>{a.label}</Text>
         </HDTouch>
       ) : (
-        <TouchableOpacity key={a.label} style={[lh.actBtn, a.primary && lh.actBtnPrimary, a.disabled && lh.actBtnOff]}
+        <TouchableOpacity focusable={true} key={a.label} style={[lh.actBtn, a.primary && lh.actBtnPrimary, a.disabled && lh.actBtnOff]}
           onPress={a.onPress} disabled={a.disabled} activeOpacity={0.75}>
           <Icon name={a.icon} size={17} color={a.primary ? C.onBrand : C.text2} />
           <Text style={[lh.actT, a.primary && lh.actTPrimary]}>{a.label}</Text>
@@ -149,7 +149,7 @@ export function HeroPair({ heroes, duo }: {
             <HeroCard h={h} />
           </HDTouch>
         ) : (
-          <TouchableOpacity key={h.big} style={hv.cell} activeOpacity={0.85} onPress={h.onPress} disabled={h.disabled}>
+          <TouchableOpacity focusable={true} key={h.big} style={hv.cell} activeOpacity={0.85} onPress={h.onPress} disabled={h.disabled}>
             <HeroCard h={h} />
           </TouchableOpacity>
         ))}
@@ -201,7 +201,7 @@ export function ChipsRow({ chips, active, onChange }: {
             <Text style={[lh.chipT, on && lh.chipTOn]}>{c.label}</Text>
           </HDTouch>
         ) : (
-          <TouchableOpacity key={c.key} style={[lh.chip, on && lh.chipOn]} onPress={() => onChange(c.key)} activeOpacity={0.75}>
+          <TouchableOpacity focusable={true} key={c.key} style={[lh.chip, on && lh.chipOn]} onPress={() => onChange(c.key)} activeOpacity={0.75}>
             <Text style={[lh.chipT, on && lh.chipTOn]}>{c.label}</Text>
           </TouchableOpacity>
         );
@@ -226,7 +226,7 @@ export function HomeSection({ title, count, actionLabel, onAction, children }: {
               <Icon name="chevronright" size={12} color={C.text2} />
             </HDTouch>
           ) : (
-            <TouchableOpacity style={lh.secMore} onPress={onAction} hitSlop={6}>
+            <TouchableOpacity focusable={true} style={lh.secMore} onPress={onAction} hitSlop={6}>
               <Text style={lh.secMoreT}>{actionLabel}</Text>
               <Icon name="chevronright" size={12} color={C.text2} />
             </TouchableOpacity>

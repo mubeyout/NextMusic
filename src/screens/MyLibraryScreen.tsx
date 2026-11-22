@@ -290,7 +290,7 @@ export function MyLibraryScreen() {
         <Text style={[d.tabText, tab === t.key && d.tabTextOn]}>{t.label}</Text>
       </HDTouch>
     ) : (
-      <TouchableOpacity style={[d.tab, tab === t.key && d.tabOn]} onPress={() => setTab(t.key)} activeOpacity={0.75}>
+      <TouchableOpacity focusable={true} style={[d.tab, tab === t.key && d.tabOn]} onPress={() => setTab(t.key)} activeOpacity={0.75}>
         <Text style={[d.tabText, tab === t.key && d.tabTextOn]}>{t.label}</Text>
       </TouchableOpacity>
     )
@@ -303,7 +303,7 @@ export function MyLibraryScreen() {
           <Icon name="cloud" size={30} color={C.text3} />
           <Text style={d.emptyT1}>{scope.name}</Text>
           <Text style={d.emptyT2}>需要管理员授权后可见{(() => { const l = sharedLibs.find(x => x.id === scope.id); return l && l.songCountHint ? `（${l.songCountHint} 首）` : ''; })()}</Text>
-          <TouchableOpacity style={d.retryBtn} onPress={() => setScope({ kind: 'mine' })}><Text style={d.retryText}>返回我的曲库</Text></TouchableOpacity>
+          <TouchableOpacity focusable={true} style={d.retryBtn} onPress={() => setScope({ kind: 'mine' })}><Text style={d.retryText}>返回我的曲库</Text></TouchableOpacity>
         </View>
       );
     }
@@ -322,7 +322,7 @@ export function MyLibraryScreen() {
           <Icon name="cloud" size={30} color="#E8618C" />
           <Text style={d.emptyT1}>曲库加载失败</Text>
           <Text style={d.emptyT2}>{err}</Text>
-          <TouchableOpacity style={d.retryBtn} onPress={() => loadAll()}><Text style={d.retryText}>重试</Text></TouchableOpacity>
+          <TouchableOpacity focusable={true} style={d.retryBtn} onPress={() => loadAll()}><Text style={d.retryText}>重试</Text></TouchableOpacity>
         </View>
       );
     }
@@ -340,7 +340,7 @@ export function MyLibraryScreen() {
           ) : (
             <>
               <Text style={d.emptyT2}>添加一个文件夹,自动按歌手/专辑整理(不上传,离线可播)</Text>
-              <TouchableOpacity style={d.playAll} onPress={addDeviceFolder} activeOpacity={0.85}>
+              <TouchableOpacity focusable={true} style={d.playAll} onPress={addDeviceFolder} activeOpacity={0.85}>
                 <Text style={d.playAllT}>{devScanning ? '扫描中…' : '添加本地目录'}</Text>
               </TouchableOpacity>
             </>
@@ -412,7 +412,7 @@ export function MyLibraryScreen() {
     if (!shuffle) return <View style={{ padding: 20 }}><ActivityIndicator color={C.brand} /></View>;
     return (
       <ScrollView contentContainerStyle={{ paddingBottom: 120 + insets.bottom }}>
-        <TouchableOpacity style={d.shuffleBtn} onPress={() => setSeed(s => s + 1)} activeOpacity={0.8}>
+        <TouchableOpacity focusable={true} style={d.shuffleBtn} onPress={() => setSeed(s => s + 1)} activeOpacity={0.8}>
           <Icon name="refresh" size={16} color="#04120a" />
           <Text style={d.shuffleBtnT}>再来一组</Text>
           <Text style={d.shuffleBtnSub}>{shuffle.length} 首 · 每次刷新</Text>
@@ -448,10 +448,10 @@ export function MyLibraryScreen() {
         </View>
       ) : (
         <View style={d.head}>
-          <TouchableOpacity style={d.headBtn} onPress={() => nav.goBack()}><Icon name="back" size={16} color={C.text2} /></TouchableOpacity>
+          <TouchableOpacity focusable={true} style={d.headBtn} onPress={() => nav.goBack()}><Icon name="back" size={16} color={C.text2} /></TouchableOpacity>
           <Text style={d.headTitle}>我的曲库</Text>
           <Text style={d.headStats} numberOfLines={1}>{statsLine}</Text>
-          <TouchableOpacity style={d.headBtn} onPress={doSync}>
+          <TouchableOpacity focusable={true} style={d.headBtn} onPress={doSync}>
             {syncing ? <ActivityIndicator size="small" color={C.brand} /> : <Icon name="refresh" size={15} color={C.text2} />}
           </TouchableOpacity>
         </View>
@@ -474,30 +474,30 @@ export function MyLibraryScreen() {
           <View style={d.wideSide}>
             {/* spec⑪D:桌面库组置顶(名称+计数,选中同 wtabOn) */}
             <Text style={d.wsideStats}>库</Text>
-            <TouchableOpacity style={[d.wtab, scope.kind === 'mine' && d.wtabOn]} onPress={() => setScope({ kind: 'mine' })}>
+            <TouchableOpacity focusable={true} style={[d.wtab, scope.kind === 'mine' && d.wtabOn]} onPress={() => setScope({ kind: 'mine' })}>
               <Icon name="wave" size={14} color={scope.kind === 'mine' ? C.text : C.text2} />
               <Text style={[d.wtabT, scope.kind === 'mine' && d.wtabTOn]}>我的曲库</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[d.wtab, scope.kind === 'device' && d.wtabOn]} onPress={() => setScope({ kind: 'device' })}>
+            <TouchableOpacity focusable={true} style={[d.wtab, scope.kind === 'device' && d.wtabOn]} onPress={() => setScope({ kind: 'device' })}>
               <Icon name="music" size={14} color={scope.kind === 'device' ? C.text : C.text2} />
               <Text style={[d.wtabT, scope.kind === 'device' && d.wtabTOn]}>本机 · 离线</Text>
             </TouchableOpacity>
             {/* ④库组固定行「公共曲库」(library 图标;未授权/开关关→不渲染) */}
             {pubVisible ? (
-              <TouchableOpacity style={[d.wtab]} onPress={() => nav.navigate('PublicLibrary', {})}>
+              <TouchableOpacity focusable={true} style={[d.wtab]} onPress={() => nav.navigate('PublicLibrary', {})}>
                 <Icon name="library" size={14} color={C.text2} />
                 <Text style={[d.wtabT]} numberOfLines={1}>公共曲库</Text>
               </TouchableOpacity>
             ) : null}
             {sharedLibs.map(l => (
-              <TouchableOpacity key={l.id} style={[d.wtab, scope.kind === 'shared' && scope.id === l.id && d.wtabOn]} onPress={() => setScope({ kind: 'shared', id: l.id, name: l.name, locked: l.locked })}>
+              <TouchableOpacity focusable={true} key={l.id} style={[d.wtab, scope.kind === 'shared' && scope.id === l.id && d.wtabOn]} onPress={() => setScope({ kind: 'shared', id: l.id, name: l.name, locked: l.locked })}>
                 <Icon name="cloud" size={14} color={scope.kind === 'shared' && scope.id === l.id ? C.text : C.text2} />
                 <Text style={[d.wtabT, scope.kind === 'shared' && scope.id === l.id && d.wtabTOn]} numberOfLines={1}>{l.locked ? '🔒 ' : ''}{l.name}</Text>
               </TouchableOpacity>
             ))}
             <View style={{ borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.strokeFaint, marginVertical: 8 }} />
             {TABS.map(t => (
-              <TouchableOpacity key={t.key} style={[d.wtab, tab === t.key && d.wtabOn]} onPress={() => setTab(t.key)}>
+              <TouchableOpacity focusable={true} key={t.key} style={[d.wtab, tab === t.key && d.wtabOn]} onPress={() => setTab(t.key)}>
                 <Icon name={t.icon} size={15} color={tab === t.key ? C.text : C.text2} />
                 <Text style={[d.wtabT, tab === t.key && d.wtabTOn]}>{t.label}</Text>
               </TouchableOpacity>
@@ -514,8 +514,8 @@ export function MyLibraryScreen() {
       {/* 播放全部/播放这组30(绿实心主动作,手机贴底;TV 侧已是头部动作) */}
       {!davWide && (tab === 'albums' || tab === 'shuffle') && (tab !== 'albums' || stats?.songs) ? (
         tab === 'shuffle'
-          ? (shuffle?.length ? <TouchableOpacity style={d.playAll} onPress={playShuffle}><Icon name="play" size={13} color="#04120a" /><Text style={d.playAllT}>播放这组 {shuffle.length} 首</Text></TouchableOpacity> : null)
-          : <TouchableOpacity style={d.playAll} onPress={playAllLib}><Icon name="play" size={13} color="#04120a" /><Text style={d.playAllT}>随机播放全部 · {stats?.songs ?? '--'} 首</Text></TouchableOpacity>
+          ? (shuffle?.length ? <TouchableOpacity focusable={true} style={d.playAll} onPress={playShuffle}><Icon name="play" size={13} color="#04120a" /><Text style={d.playAllT}>播放这组 {shuffle.length} 首</Text></TouchableOpacity> : null)
+          : <TouchableOpacity focusable={true} style={d.playAll} onPress={playAllLib}><Icon name="play" size={13} color="#04120a" /><Text style={d.playAllT}>随机播放全部 · {stats?.songs ?? '--'} 首</Text></TouchableOpacity>
       ) : null}
       <UploadSheet.View />
     </View>
@@ -600,7 +600,7 @@ export function MyLibAlbumRoute(props: Record<string, unknown>) {
             <View style={{ flex: 1, minWidth: 0 } as never}>
               <Text style={d.albName} numberOfLines={2}>{name}</Text>
               <Text style={d.albSub} numberOfLines={1}>{album?.artist}{album?.byDir ? ' · 文件夹分组' : ''} · {songs.length} 首</Text>
-              {songs.length ? <TouchableOpacity style={d.playAll} onPress={() => play(0)}><Icon name="play" size={12} color="#04120a" /><Text style={d.playAllT}>播放全部</Text></TouchableOpacity> : null}
+              {songs.length ? <TouchableOpacity focusable={true} style={d.playAll} onPress={() => play(0)}><Icon name="play" size={12} color="#04120a" /><Text style={d.playAllT}>播放全部</Text></TouchableOpacity> : null}
             </View>
           </View>
           {songs.map((s, i) => <SongRow key={s.id} song={s} idx={i} onPress={() => play(i)} />)}
@@ -643,7 +643,7 @@ export function MyLibArtistRoute(props: Record<string, unknown>) {
             <View style={{ flex: 1, minWidth: 0 } as never}>
               <Text style={d.albName} numberOfLines={2}>{name}</Text>
               <Text style={d.albSub} numberOfLines={1}>{data.songs.length} 首 · {data.albums.length} 专辑</Text>
-              {data.songs.length ? <TouchableOpacity style={d.playAll} onPress={() => play(0)}><Icon name="play" size={12} color="#04120a" /><Text style={d.playAllT}>播放全部</Text></TouchableOpacity> : null}
+              {data.songs.length ? <TouchableOpacity focusable={true} style={d.playAll} onPress={() => play(0)}><Icon name="play" size={12} color="#04120a" /><Text style={d.playAllT}>播放全部</Text></TouchableOpacity> : null}
             </View>
           </View>
           {data.albums.length > 1 && (

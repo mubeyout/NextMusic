@@ -29,7 +29,7 @@ export function ArtistRow({ cover, name, sub, onPress, onLongPress, round = 48 }
     <HDTouch style={st.row} onPress={onPress} onLongPress={onLongPress} disabled={!onPress} focusStyle={focus(12)}>{inner}</HDTouch>
   );
   return (
-    <TouchableOpacity style={st.row} onPress={onPress} onLongPress={onLongPress} disabled={!onPress} activeOpacity={0.75}>{inner}</TouchableOpacity>
+    <TouchableOpacity focusable={true} style={st.row} onPress={onPress} onLongPress={onLongPress} disabled={!onPress} activeOpacity={0.75}>{inner}</TouchableOpacity>
   );
 }
 

@@ -21,7 +21,7 @@ export function PageHeader({ title, right, onBack }: { title: string; right?: Re
           <Icon name="back" size={22} color={C.text} />
         </HDTouch>
       ) : (
-        <TouchableOpacity onPress={back} hitSlop={6} style={h.sideBtn}>
+        <TouchableOpacity focusable={true} onPress={back} hitSlop={6} style={h.sideBtn}>
           <Icon name="back" size={22} />
         </TouchableOpacity>
       )}

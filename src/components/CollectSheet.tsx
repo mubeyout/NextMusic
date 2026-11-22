@@ -85,12 +85,12 @@ export function CollectSheet({ song, visible, onClose }: { song: SongItem | null
 
   return (
     <Modal animationType="slide" transparent visible={visible} onRequestClose={onClose}>
-      <TouchableOpacity style={s.scrim} activeOpacity={1} onPress={onClose}>
+      <TouchableOpacity focusable={true} style={s.scrim} activeOpacity={1} onPress={onClose}>
         <View style={[s.sheet, { paddingBottom: insets.bottom + 16 }]} onStartShouldSetResponder={() => true}>
           <View style={s.handle} />
           <Text style={s.title}>收藏到歌单</Text>
 
-          <TouchableOpacity style={s.loveRow} onPress={toggle}>
+          <TouchableOpacity focusable={true} style={s.loveRow} onPress={toggle}>
             <View style={[s.loveIcon, faved && { backgroundColor: C.heart }]}>
               <Icon name="heart" size={20} active color="#FFFFFF" />
             </View>
@@ -103,7 +103,7 @@ export function CollectSheet({ song, visible, onClose }: { song: SongItem | null
 
           <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
             {remotePls.map(pl => (
-              <TouchableOpacity key={`r-${pl.name}`} style={s.row} onPress={() => toggleRemote(pl.name, pl.has)}>
+              <TouchableOpacity focusable={true} key={`r-${pl.name}`} style={s.row} onPress={() => toggleRemote(pl.name, pl.has)}>
                 <View style={[s.rowIcon, pl.has && { backgroundColor: C.heart + '1A' }]}>
                   <Icon name="music" size={16} color={pl.has ? C.heart : C.text2} /> {/* [审计 1010] ♫ 字形→真矢量 */}
                 </View>
@@ -115,7 +115,7 @@ export function CollectSheet({ song, visible, onClose }: { song: SongItem | null
             {localPls.filter(p => p.name !== '我喜欢的').map(pl => {
               const has = (pl.songs || []).some(x => songKey(x) === k);
               return (
-                <TouchableOpacity key={pl.id} style={s.row} onPress={() => toggleLocal(pl.id, pl.name, has)}>
+                <TouchableOpacity focusable={true} key={pl.id} style={s.row} onPress={() => toggleLocal(pl.id, pl.name, has)}>
                   <View style={[s.rowIcon, has && { backgroundColor: C.heart + '1A' }]}>
                     <Icon name="music" size={16} color={has ? C.heart : C.text2} /> {/* [审计 1010] ♫ 字形→真矢量 */}
                   </View>

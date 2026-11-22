@@ -99,7 +99,7 @@ export function CommentsScreen() {
   return (
     <View style={st.screen}>
       <View style={[st.header, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity style={st.hBtn} onPress={() => nav.goBack()} hitSlop={4}>
+        <TouchableOpacity focusable={true} style={st.hBtn} onPress={() => nav.goBack()} hitSlop={4}>
           <Icon name="back" size={24} />
         </TouchableOpacity>
         <Text style={st.hTitle}>评论</Text>
@@ -112,12 +112,12 @@ export function CommentsScreen() {
           <Text style={st.commentCount}>{total ? total.toLocaleString() + ' 条评论' : '加载中…'}</Text>
         </View>
         <View style={st.sortPills}>
-          <TouchableOpacity onPress={() => setSort('hot')}>
+          <TouchableOpacity focusable={true} onPress={() => setSort('hot')}>
             <View style={[st.pill, sort === 'hot' && st.pillOn]}>
               <Text style={[st.pillText, sort === 'hot' && st.pillTextOn]}>热门</Text>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setSort('new')}>
+          <TouchableOpacity focusable={true} onPress={() => setSort('new')}>
             <View style={[st.pill, sort === 'new' && st.pillOn]}>
               <Text style={[st.pillText, sort === 'new' && st.pillTextOn]}>最新</Text>
             </View>
@@ -141,7 +141,7 @@ export function CommentsScreen() {
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <View style={st.cardTop}>
                       <Text style={st.userName}>{cm.userName || '我'}</Text>
-                      <TouchableOpacity hitSlop={6} onPress={() => {
+                      <TouchableOpacity focusable={true} hitSlop={6} onPress={() => {
                         const next = mine.filter(x => x.id !== cm.id);
                         setMine(next); saveLocal(songKey, next);
                       }}>
@@ -197,7 +197,7 @@ export function CommentsScreen() {
             returnKeyType="send"
           />
         </View>
-        <TouchableOpacity style={st.sendBtn} onPress={send} disabled={!draft.trim()}>
+        <TouchableOpacity focusable={true} style={st.sendBtn} onPress={send} disabled={!draft.trim()}>
           <Text style={st.sendText}>发送</Text>
         </TouchableOpacity>
       </View>

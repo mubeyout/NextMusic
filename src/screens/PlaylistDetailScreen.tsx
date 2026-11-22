@@ -125,12 +125,12 @@ export function PlaylistDetailScreen() {
           right={(
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xxl }}>
               {/* lx116:搜索图标(老板:三个点换搜索) */}
-              <TouchableOpacity hitSlop={6} onPress={() => setSearching(true)}>
+              <TouchableOpacity focusable={true} hitSlop={6} onPress={() => setSearching(true)}>
                 <Icon name="search" size={21} />
               </TouchableOpacity>
               {/* lx116:直观管理按钮 */}
               {(localPl || (p as { plKey?: string }).plKey) ? (
-                <TouchableOpacity hitSlop={6} onPress={() => setPlMenu(true)}>
+                <TouchableOpacity focusable={true} hitSlop={6} onPress={() => setPlMenu(true)}>
                   <Icon name="more" size={22} />
                 </TouchableOpacity>
               ) : null}
@@ -188,7 +188,7 @@ export function PlaylistDetailScreen() {
               onChangeText={setKw}
             />
             {kw ? (
-              <TouchableOpacity hitSlop={6} onPress={() => { setKw(''); setSearching(false); }}>
+              <TouchableOpacity focusable={true} hitSlop={6} onPress={() => { setKw(''); setSearching(false); }}>
                 <Icon name="close" size={16} color={C.text3} />
               </TouchableOpacity>
             ) : null}
@@ -196,18 +196,18 @@ export function PlaylistDetailScreen() {
         ) : null}
 
         <View style={st.actionRow}>
-          <TouchableOpacity style={st.action} onPress={() => { if (songs?.length) { const n = enqueueDownload(songs); toast(n ? `${n} 首加入下载队列` : '歌内歌曲均已下载'); } }}>
+          <TouchableOpacity focusable={true} style={st.action} onPress={() => { if (songs?.length) { const n = enqueueDownload(songs); toast(n ? `${n} 首加入下载队列` : '歌内歌曲均已下载'); } }}>
             <Icon name="download" size={20} color={C.text2} /><Text style={st.actionText}>下载全部</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={st.action} onPress={() => setPlCollect(true)} disabled={!songs?.length}>
+          <TouchableOpacity focusable={true} style={st.action} onPress={() => setPlCollect(true)} disabled={!songs?.length}>
             <Icon name="heart" size={20} color={C.text2} /><Text style={st.actionText}>收藏歌单</Text>
           </TouchableOpacity>
           {p.remoteId && !localPl ? (
-            <TouchableOpacity style={st.action} onPress={importPl} disabled={!songs?.length}>
+            <TouchableOpacity focusable={true} style={st.action} onPress={importPl} disabled={!songs?.length}>
               <Icon name="download" size={20} color={C.brandText} /><Text style={[st.actionText, { color: C.brandText }]}>导入到本地</Text>
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity style={st.action} onPress={() => { if (songs?.length) playSong(songs[Math.floor(Math.random() * songs.length)], songs); }}>
+            <TouchableOpacity focusable={true} style={st.action} onPress={() => { if (songs?.length) playSong(songs[Math.floor(Math.random() * songs.length)], songs); }}>
               <Icon name="shuffle" size={20} color={C.text2} /><Text style={st.actionText}>随机播</Text>
             </TouchableOpacity>
           )}
@@ -424,7 +424,7 @@ export function PlaylistDetailScreen() {
     if (done) return <Icon name="check" size={18} active />;
     if (s.source === 'device') return null;
     return (
-      <TouchableOpacity hitSlop={8} onPress={() => setActSong(s)}>
+      <TouchableOpacity focusable={true} hitSlop={8} onPress={() => setActSong(s)}>
         <Icon name="more" size={20} color={C.text2} />
       </TouchableOpacity>
     );

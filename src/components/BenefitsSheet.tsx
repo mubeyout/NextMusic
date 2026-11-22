@@ -79,12 +79,12 @@ export function BenefitsSheet({ visible, onClose, onTrial }: BenefitsSheetProps)
   return (
     <Modal animationType={centered ? 'fade' : 'slide'} transparent visible onRequestClose={onClose}>
       <View style={[st.scrim, centered && st.scrimCenter]}>
-        <TouchableOpacity style={st.scrimTouch} activeOpacity={1} onPress={onClose} />
+        <TouchableOpacity focusable={true} style={st.scrimTouch} activeOpacity={1} onPress={onClose} />
         <View style={[st.sheet, centered && st.sheetCenter]}>
           <View style={st.head}>
             {owned ? <ProTag variant="owned" size="large" /> : <ProTag size="large" />}
             <Text style={st.headTitle}>{owned ? 'Pro 已生效' : 'Pro ¥19.9 · 一次买断 · 终身有效'}</Text>
-            <TouchableOpacity onPress={onClose} hitSlop={10}><Icon name="close" size={20} color={C.text3} /></TouchableOpacity>
+            <TouchableOpacity focusable={true} onPress={onClose} hitSlop={10}><Icon name="close" size={20} color={C.text3} /></TouchableOpacity>
           </View>
 
           <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: SP.xl, paddingBottom: SP.wider }}>
@@ -147,7 +147,7 @@ export function BenefitsSheet({ visible, onClose, onTrial }: BenefitsSheetProps)
                     autoCapitalize="characters"
                     autoCorrect={false}
                   />
-                  <TouchableOpacity style={[st.activateBtn, (busy || code.trim().length < 10) && { opacity: 0.4 }]} disabled={busy || code.trim().length < 10} activeOpacity={0.85} onPress={() => void activate()}>
+                  <TouchableOpacity focusable={true} style={[st.activateBtn, (busy || code.trim().length < 10) && { opacity: 0.4 }]} disabled={busy || code.trim().length < 10} activeOpacity={0.85} onPress={() => void activate()}>
                     {busy ? <ActivityIndicator size="small" color="#0B0F0D" /> : <Text style={st.activateBtnText}>激活</Text>}
                   </TouchableOpacity>
                 </View>
@@ -156,7 +156,7 @@ export function BenefitsSheet({ visible, onClose, onTrial }: BenefitsSheetProps)
             ) : null}
 
             {/* 家庭版 */}
-            <TouchableOpacity style={st.familyRow} activeOpacity={0.8} onPress={openShop}>
+            <TouchableOpacity focusable={true} style={st.familyRow} activeOpacity={0.8} onPress={openShop}>
               <Text style={st.familyText}>全家一起用?家庭版 ¥88 · ≤6 人共享 · 已购 Pro 补差 ¥68</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -164,18 +164,18 @@ export function BenefitsSheet({ visible, onClose, onTrial }: BenefitsSheetProps)
           {/* 底部 CTA */}
           {!owned ? (
             <View style={st.ctaZone}>
-              <TouchableOpacity style={st.ctaMain} activeOpacity={0.85} onPress={() => setShowInput(true)}>
+              <TouchableOpacity focusable={true} style={st.ctaMain} activeOpacity={0.85} onPress={() => setShowInput(true)}>
                 <Text style={st.ctaMainText}>升级 Pro ¥19.9 · 终身</Text>
               </TouchableOpacity>
               <View style={st.ctaSubRow}>
-                <TouchableOpacity onPress={openShop} hitSlop={8}><Text style={st.ctaLink}>去店铺购买</Text></TouchableOpacity>
-                {onTrial ? <TouchableOpacity onPress={onTrial} hitSlop={8}><Text style={st.ctaLink}>先免费试用 7 天</Text></TouchableOpacity> : null}
-                <TouchableOpacity onPress={onClose} hitSlop={8}><Text style={st.ctaGhost}>稍后再说</Text></TouchableOpacity>
+                <TouchableOpacity focusable={true} onPress={openShop} hitSlop={8}><Text style={st.ctaLink}>去店铺购买</Text></TouchableOpacity>
+                {onTrial ? <TouchableOpacity focusable={true} onPress={onTrial} hitSlop={8}><Text style={st.ctaLink}>先免费试用 7 天</Text></TouchableOpacity> : null}
+                <TouchableOpacity focusable={true} onPress={onClose} hitSlop={8}><Text style={st.ctaGhost}>稍后再说</Text></TouchableOpacity>
               </View>
             </View>
           ) : (
             <View style={st.ctaZone}>
-              <TouchableOpacity style={[st.ctaMain, { backgroundColor: C.surface2 }]} activeOpacity={0.85} onPress={onClose}>
+              <TouchableOpacity focusable={true} style={[st.ctaMain, { backgroundColor: C.surface2 }]} activeOpacity={0.85} onPress={onClose}>
                 <Text style={[st.ctaMainText, { color: C.text }]}>开始使用</Text>
               </TouchableOpacity>
             </View>

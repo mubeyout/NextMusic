@@ -13,7 +13,7 @@ export function PillTabs({ tabs, active, onChange }: {
         {tabs.map((t, i) => {
           const on = i === active;
           return (
-            <TouchableOpacity key={t} onPress={() => onChange(i)} style={st.hit}>
+            <TouchableOpacity focusable={true} key={t} onPress={() => onChange(i)} style={st.hit}>
               <View style={[st.pill, on && st.pillOn]}>
                 <Text style={[st.label, on && st.labelOn]}>{t}</Text>
               </View>

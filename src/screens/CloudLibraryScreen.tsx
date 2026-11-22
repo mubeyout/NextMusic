@@ -73,7 +73,7 @@ function DeleteConfirm({ list, onClose, onConfirm, busy }: { list: LibSong[]; on
           </Text>
           {strong ? <Text style={c.delWarn}>此操作不可撤销，请确认后再继续。</Text> : null}
           <View style={c.delBtns}>
-            <TouchableOpacity style={c.delCancel} onPress={onClose} activeOpacity={0.75}>
+            <TouchableOpacity focusable={true} style={c.delCancel} onPress={onClose} activeOpacity={0.75}>
               <Text style={c.delCancelT}>取消</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -112,7 +112,7 @@ function STouch(props: { style?: StyleProp<ViewStyle>; onPress?: () => void; dis
     </HDTouch>
   );
   return (
-    <TouchableOpacity style={style} onPress={onPress} disabled={disabled} hitSlop={hitSlop} activeOpacity={0.78}>
+    <TouchableOpacity focusable={true} style={style} onPress={onPress} disabled={disabled} hitSlop={hitSlop} activeOpacity={0.78}>
       {children}
     </TouchableOpacity>
   );
@@ -431,7 +431,7 @@ export function CloudLibraryScreen() {
           <Icon name="cloud" size={30} color={C.text3} />
           <Text style={c.emptyT1}>云端还是空的</Text>
           <Text style={c.emptyT2}>上传第一首歌，手机电脑随时听</Text>
-          <TouchableOpacity style={c.emptyBtn} onPress={goLocalLib} activeOpacity={0.85}>
+          <TouchableOpacity focusable={true} style={c.emptyBtn} onPress={goLocalLib} activeOpacity={0.85}>
             <Text style={c.emptyBtnT}>去本机曲库</Text>
           </TouchableOpacity>
         </View>
@@ -476,7 +476,7 @@ export function CloudLibraryScreen() {
           <ScrollView key={`flt:${pFilter}:${filtered.length}`} ref={azScroll} contentContainerStyle={{ paddingBottom: 140 + insets.bottom }}>
             <View style={c.filterBar}>
               <Text style={c.filterT} numberOfLines={1}>{FILTER_TITLE[pFilter]} · {filtered.length} 首</Text>
-              <TouchableOpacity hitSlop={6} onPress={() => setPFilter('all')}><Text style={c.filterClear}>清除筛选</Text></TouchableOpacity>
+              <TouchableOpacity focusable={true} hitSlop={6} onPress={() => setPFilter('all')}><Text style={c.filterClear}>清除筛选</Text></TouchableOpacity>
             </View>
             {filtered.map((s, i) => {
               const it = toSongItem(s);
@@ -537,7 +537,7 @@ export function CloudLibraryScreen() {
     <View style={[c.screen, { paddingTop: insets.top }]}>
       {/* 自绘头部(PageHeader 右槽固定 30px 装不下双按钮;同 MyLibraryScreen 头部模式) */}
       <View style={c.head}>
-        <TouchableOpacity style={c.headBtn} onPress={() => nav.goBack()} hitSlop={6}>
+        <TouchableOpacity focusable={true} style={c.headBtn} onPress={() => nav.goBack()} hitSlop={6}>
           <Icon name="back" size={16} color={C.text2} />
         </TouchableOpacity>
         <Text style={c.headTitle}>云曲库</Text>
@@ -604,7 +604,7 @@ export function CloudLibraryScreen() {
                 <HomeSection title="同步状态">
                   <View style={c.syncRow}>
                     {bothCount > 0 ? (
-                      <TouchableOpacity style={c.syncCard} activeOpacity={0.8} onPress={() => setPFilter('both')}>
+                      <TouchableOpacity focusable={true} style={c.syncCard} activeOpacity={0.8} onPress={() => setPFilter('both')}>
                         <View style={c.syncIcon}><Icon name="cloud-check" size={17} color={C.brand} /></View>
                         <View style={{ flex: 1, minWidth: 0 }}>
                           <Text style={c.syncT}>已同步 {bothCount} 首</Text>
@@ -614,7 +614,7 @@ export function CloudLibraryScreen() {
                       </TouchableOpacity>
                     ) : null}
                     {cloudOnlyCount > 0 ? (
-                      <TouchableOpacity style={c.syncCard} activeOpacity={0.8} onPress={() => setPFilter('cloudonly')}>
+                      <TouchableOpacity focusable={true} style={c.syncCard} activeOpacity={0.8} onPress={() => setPFilter('cloudonly')}>
                         <View style={c.syncIcon}><Icon name="cloud" size={17} color={WARN_YELLOW} /></View>
                         <View style={{ flex: 1, minWidth: 0 }}>
                           <Text style={c.syncT}>仅云端 {cloudOnlyCount} 首</Text>
@@ -653,7 +653,7 @@ export function CloudLibraryScreen() {
                       </View>
                     ))}
                     {arr.length > 6 ? (
-                      <TouchableOpacity style={c.albMore} activeOpacity={0.75} onPress={() => setAlbExpand(v => !v)}>
+                      <TouchableOpacity focusable={true} style={c.albMore} activeOpacity={0.75} onPress={() => setAlbExpand(v => !v)}>
                         <Text style={c.albMoreT}>{albExpand ? '收起' : `全部 ${arr.length} 张专辑`}</Text>
                       </TouchableOpacity>
                     ) : null}
@@ -728,7 +728,7 @@ export function CloudLibCard({ onEnter }: { onEnter: () => void }) {
     return () => { dead = true; };
   }, []);
   return (
-    <TouchableOpacity style={[c.entryCard, IS_HD && c.entryCardHD]} onPress={onEnter} activeOpacity={0.8}>
+    <TouchableOpacity focusable={true} style={[c.entryCard, IS_HD && c.entryCardHD]} onPress={onEnter} activeOpacity={0.8}>
       <View style={[c.entryIcon, IS_HD && c.entryIconHD]}><Icon name="cloud" size={IS_HD ? 32 : 26} color={C.brand} /></View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={[c.entryTitle, IS_HD && c.entryTitleHD]}>云曲库</Text>

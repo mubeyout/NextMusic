@@ -33,7 +33,7 @@ function T(props: { style?: unknown; onPress?: () => void; onLongPress?: () => v
     </HDTouch>
   );
   return (
-    <TouchableOpacity style={style as never} onPress={onPress} onLongPress={onLongPress} disabled={disabled} activeOpacity={0.7} {...(rest as object)}>
+    <TouchableOpacity focusable={true} style={style as never} onPress={onPress} onLongPress={onLongPress} disabled={disabled} activeOpacity={0.7} {...(rest as object)}>
       {children}
     </TouchableOpacity>
   );

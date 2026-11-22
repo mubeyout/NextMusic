@@ -163,19 +163,19 @@ export function LocalLibraryScreen({ route }: { route: { params: { libId: string
     <View style={[st.selBar, { paddingBottom: insets.bottom + 8 }]}>
       <View style={st.selRow1}>
         <Text style={st.selCount}>已选 {sel.size} 首</Text>
-        <TouchableOpacity hitSlop={6} onPress={() => setSel(sel.size >= selList.length && selList.length > 0 ? new Set() : new Set(selList.map(t => t.id)))}>
+        <TouchableOpacity focusable={true} hitSlop={6} onPress={() => setSel(sel.size >= selList.length && selList.length > 0 ? new Set() : new Set(selList.map(t => t.id)))}>
           <Text style={st.selBtnT}>{sel.size >= selList.length && selList.length > 0 ? '全不选' : '全选'}</Text>
         </TouchableOpacity>
-        <TouchableOpacity hitSlop={6} onPress={exitSel}><Text style={st.selBtnT}>取消</Text></TouchableOpacity>
+        <TouchableOpacity focusable={true} hitSlop={6} onPress={exitSel}><Text style={st.selBtnT}>取消</Text></TouchableOpacity>
       </View>
       <View style={st.selRow2}>
-        <TouchableOpacity style={st.selGhost} onPress={() => { const list = selTracks(); exitSel(); void play(list, 0); }}>
+        <TouchableOpacity focusable={true} style={st.selGhost} onPress={() => { const list = selTracks(); exitSel(); void play(list, 0); }}>
           <Text style={st.selGhostT}>播放</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={st.selGhost} onPress={() => { const list = selTracks(); exitSel(); void toPlayable(list, route.params.libId).then(items => { for (let i = items.length - 1; i >= 0; i--) playNextUp(items[i]); }); }}>
+        <TouchableOpacity focusable={true} style={st.selGhost} onPress={() => { const list = selTracks(); exitSel(); void toPlayable(list, route.params.libId).then(items => { for (let i = items.length - 1; i >= 0; i--) playNextUp(items[i]); }); }}>
           <Text style={st.selGhostT}>下一首</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={st.selGhost} onPress={() => { const list = selTracks(); exitSel(); void toPlayable(list, route.params.libId).then(items => { if (items.length) appendQueue(items); }); }}>
+        <TouchableOpacity focusable={true} style={st.selGhost} onPress={() => { const list = selTracks(); exitSel(); void toPlayable(list, route.params.libId).then(items => { if (items.length) appendQueue(items); }); }}>
           <Text style={st.selGhostT}>加入队列</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -213,7 +213,7 @@ export function LocalLibraryScreen({ route }: { route: { params: { libId: string
           <Icon name="folder-music" size={30} color="#D94D45" />
           <Text style={st.emptyT1}>目录不可用</Text>
           <Text style={st.emptyT2}>重新选择目录后恢复，数据未删除（SD 卡拔出 / 目录被移除时会出现此状态）</Text>
-          <TouchableOpacity style={st.retryBtn} onPress={() => nav.navigate('LocalLibEdit', { libId: cfg.id })} activeOpacity={0.8}>
+          <TouchableOpacity focusable={true} style={st.retryBtn} onPress={() => nav.navigate('LocalLibEdit', { libId: cfg.id })} activeOpacity={0.8}>
             <Text style={st.retryText}>重新选择目录</Text>
           </TouchableOpacity>
         </View>
@@ -227,14 +227,14 @@ export function LocalLibraryScreen({ route }: { route: { params: { libId: string
     return (
       <View style={st.screen}>
         <View style={[st.header, { paddingTop: insets.top + 10 }]}>
-          <TouchableOpacity onPress={() => { exitSel(); setDrill(null); }} hitSlop={6} style={{ width: 26 }}>
+          <TouchableOpacity focusable={true} onPress={() => { exitSel(); setDrill(null); }} hitSlop={6} style={{ width: 26 }}>
             <Icon name="back" size={20} />
           </TouchableOpacity>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={st.title} numberOfLines={1}>{drill.name}</Text>
             <Text style={st.subTitle}>{tracks.length} 首</Text>
           </View>
-          <TouchableOpacity style={st.playAllBtn} onPress={() => play(tracks, 0)} activeOpacity={0.75}>
+          <TouchableOpacity focusable={true} style={st.playAllBtn} onPress={() => play(tracks, 0)} activeOpacity={0.75}>
             <Icon name="play" size={13} color={C.onBrand} />
             <Text style={st.playAllText}>播放全部</Text>
           </TouchableOpacity>
@@ -269,7 +269,7 @@ export function LocalLibraryScreen({ route }: { route: { params: { libId: string
       <PageHeader
         title="本机曲库"
         right={(
-          <TouchableOpacity onPress={openMenu} hitSlop={6}>
+          <TouchableOpacity focusable={true} onPress={openMenu} hitSlop={6}>
             <Icon name="more" size={22} />
           </TouchableOpacity>
         )}
@@ -293,7 +293,7 @@ export function LocalLibraryScreen({ route }: { route: { params: { libId: string
           <Text style={st.rescanText} numberOfLines={1}>
             增量扫描 · 已发现 {rescan.found} · 新识别 {rescan.recognized}
           </Text>
-          <TouchableOpacity hitSlop={6} onPress={() => { token.current.cancelled = true; }}>
+          <TouchableOpacity focusable={true} hitSlop={6} onPress={() => { token.current.cancelled = true; }}>
             <Text style={st.cancelText}>取消</Text>
           </TouchableOpacity>
         </View>
@@ -301,7 +301,7 @@ export function LocalLibraryScreen({ route }: { route: { params: { libId: string
       {/* 三视图胶囊 */}
       <View style={st.tabs}>
         {VIEWS.map(v => (
-          <TouchableOpacity key={v.key} style={[st.tab, view === v.key && st.tabOn]} onPress={() => { exitSel(); setView(v.key); }} activeOpacity={0.75}>
+          <TouchableOpacity focusable={true} key={v.key} style={[st.tab, view === v.key && st.tabOn]} onPress={() => { exitSel(); setView(v.key); }} activeOpacity={0.75}>
             <Text style={[st.tabText, view === v.key && st.tabTextOn]}>{v.label}</Text>
           </TouchableOpacity>
         ))}
@@ -349,7 +349,7 @@ export function LocalLibraryScreen({ route }: { route: { params: { libId: string
             <Icon name="folder-music" size={30} color={C.text3} />
             <Text style={st.emptyT1}>这个目录还没有音乐</Text>
             <Text style={st.emptyT2}>支持 FLAC / MP3 / WAV / APE / OGG / M4A；换目录或重新扫描试试</Text>
-            <TouchableOpacity style={st.retryBtn} onPress={() => nav.navigate('LocalLibEdit', { libId: cfg.id })} activeOpacity={0.8}>
+            <TouchableOpacity focusable={true} style={st.retryBtn} onPress={() => nav.navigate('LocalLibEdit', { libId: cfg.id })} activeOpacity={0.8}>
               <Text style={st.retryText}>编辑配置</Text>
             </TouchableOpacity>
           </View>
@@ -422,7 +422,7 @@ function FolderPane({ libId, dirPath, onDir, onPlay, currentHash, selMode, sel, 
     <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 140 }}>
       {/* 面包屑 */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.crumbWrap} contentContainerStyle={{ gap: SP.xs, alignItems: 'center' }}>
-        <TouchableOpacity hitSlop={4} onPress={() => onDir('')}>
+        <TouchableOpacity focusable={true} hitSlop={4} onPress={() => onDir('')}>
           <Text style={[st.crumbItem, !dirPath && st.crumbCur]}>根目录</Text>
         </TouchableOpacity>
         {segs.map((s, i) => {
@@ -431,7 +431,7 @@ function FolderPane({ libId, dirPath, onDir, onPlay, currentHash, selMode, sel, 
           return (
             <React.Fragment key={p}>
               <Icon name="chevronright" size={11} color={C.text3} />
-              <TouchableOpacity hitSlop={4} onPress={() => onDir(p)}>
+              <TouchableOpacity focusable={true} hitSlop={4} onPress={() => onDir(p)}>
                 <Text style={[st.crumbItem, last && st.crumbCur]} numberOfLines={1}>{s}</Text>
               </TouchableOpacity>
             </React.Fragment>
@@ -442,7 +442,7 @@ function FolderPane({ libId, dirPath, onDir, onPlay, currentHash, selMode, sel, 
       {/* 未分类独立分组(v3 A3:icon file-question,不丢弃不隐藏;仅根级) */}
       {fv.unknown.length ? (
         <View style={st.uncWrap}>
-          <TouchableOpacity style={st.uncHead} onPress={() => onPlay(fv.unknown, 0)} activeOpacity={0.75}>
+          <TouchableOpacity focusable={true} style={st.uncHead} onPress={() => onPlay(fv.unknown, 0)} activeOpacity={0.75}>
             <Icon name="file-question" size={18} color={C.text3} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={st.uncTitle}>未分类</Text>
@@ -455,7 +455,7 @@ function FolderPane({ libId, dirPath, onDir, onPlay, currentHash, selMode, sel, 
 
       {/* 子目录行 */}
       {fv.dirs.map(d => (
-        <TouchableOpacity key={d.path} style={st.dirRow} onPress={() => onDir(d.path)} activeOpacity={0.75}>
+        <TouchableOpacity focusable={true} key={d.path} style={st.dirRow} onPress={() => onDir(d.path)} activeOpacity={0.75}>
           <View style={st.dirIcon}><Icon name="folder" size={16} color={C.brandText} /></View>
           <Text style={st.dirName} numberOfLines={1}>{d.name}</Text>
           <Text style={st.dirCount}>{d.count} 首</Text>

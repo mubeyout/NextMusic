@@ -12,13 +12,13 @@ export function ActionSheet({ visible, onClose, title, items, extra }: {
   const insets = useSafeAreaInsets();
   return (
     <Modal animationType="slide" transparent visible={visible} onRequestClose={onClose}>
-      <TouchableOpacity style={s.scrim} activeOpacity={1} onPress={onClose}>
+      <TouchableOpacity focusable={true} style={s.scrim} activeOpacity={1} onPress={onClose}>
         <View style={[s.sheet, { paddingBottom: insets.bottom + 16 }]} onStartShouldSetResponder={() => true}>
           <View style={s.handle} />
           {title ? <Text style={s.title}>{title}</Text> : null}
           <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
             {items.map(it => (
-              <TouchableOpacity key={it.label} style={s.row} activeOpacity={0.7}
+              <TouchableOpacity focusable={true} key={it.label} style={s.row} activeOpacity={0.7}
                 onPress={() => { onClose(); it.onPress?.(); }}>
                 <View style={{ flex: 1 }}>
                   <Text style={[s.label, it.danger && s.danger]}>{it.label}</Text>

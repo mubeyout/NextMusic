@@ -23,7 +23,7 @@ const FORMAT_LABELS: Record<string, string> = { flac: 'FLAC', mp3: 'MP3', wav: '
 // 简易开关(surface2 轨 + brand 滑块;与设置页开关同语义自绘)
 function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
   return (
-    <TouchableOpacity hitSlop={8} onPress={() => onChange(!on)} activeOpacity={0.8}>
+    <TouchableOpacity focusable={true} hitSlop={8} onPress={() => onChange(!on)} activeOpacity={0.8}>
       <View style={[tg.track, on && tg.trackOn]}>
         <Animated.View style={[tg.thumb, on && tg.thumbOn]} />
       </View>
@@ -122,12 +122,12 @@ export function LocalLibraryEditScreen({ route }: { route?: { params?: { libId?:
   return (
     <View style={st.screen}>
       <View style={[st.header, { paddingTop: insets.top + 10 }]}>
-        <TouchableOpacity onPress={() => nav.goBack()} hitSlop={6} style={{ width: 26 }}>
+        <TouchableOpacity focusable={true} onPress={() => nav.goBack()} hitSlop={6} style={{ width: 26 }}>
           <Icon name="back" size={20} />
         </TouchableOpacity>
         <Text style={st.title}>{existing ? '编辑本机曲库' : '连接本机曲库'}</Text>
         {existing ? (
-          <TouchableOpacity onPress={doDelete} hitSlop={6} style={{ width: 26, alignItems: 'flex-end' }}>
+          <TouchableOpacity focusable={true} onPress={doDelete} hitSlop={6} style={{ width: 26, alignItems: 'flex-end' }}>
             <Icon name="trash" size={20} color="#FF6B6B" />
           </TouchableOpacity>
         ) : <View style={{ width: 26 }} />}
@@ -153,10 +153,10 @@ export function LocalLibraryEditScreen({ route }: { route?: { params?: { libId?:
             <View style={st.guideCard}>
               <Icon name="shield" size={32} color={C.brandText} />
               <Text style={st.guideText}>授权后可离线扫描该目录，选择「永久授权」避免每次重扫重新授权</Text>
-              <TouchableOpacity style={st.primaryBtn} onPress={doPick} disabled={picking} activeOpacity={0.75}>
+              <TouchableOpacity focusable={true} style={st.primaryBtn} onPress={doPick} disabled={picking} activeOpacity={0.75}>
                 {picking ? <ActivityIndicator size="small" color={C.onBrand} /> : <Text style={st.primaryBtnText}>去授权</Text>}
               </TouchableOpacity>
-              <TouchableOpacity hitSlop={6} onPress={() => setShowGuide(false)}>
+              <TouchableOpacity focusable={true} hitSlop={6} onPress={() => setShowGuide(false)}>
                 <Text style={st.guideSkip}>我已了解，直接选择</Text>
               </TouchableOpacity>
             </View>
@@ -167,7 +167,7 @@ export function LocalLibraryEditScreen({ route }: { route?: { params?: { libId?:
                 <Text style={st.pickTitle}>选择本机音乐文件夹</Text>
                 <Text style={st.pickSub}>点击后浏览器会弹出授权提示，允许即可离线扫描</Text>
               </View>
-              <TouchableOpacity style={st.primaryBtn} onPress={doPick} disabled={picking} activeOpacity={0.75}>
+              <TouchableOpacity focusable={true} style={st.primaryBtn} onPress={doPick} disabled={picking} activeOpacity={0.75}>
                 {picking ? <ActivityIndicator size="small" color={C.onBrand} /> : <Text style={st.primaryBtnText}>选择目录</Text>}
               </TouchableOpacity>
             </View>
@@ -184,14 +184,14 @@ export function LocalLibraryEditScreen({ route }: { route?: { params?: { libId?:
           <View style={st.rootRow}>
             <Icon name="folder-music" size={20} color={C.brandText} />
             <Text style={st.rootPath} numberOfLines={1}>{cfg.rootLabel}</Text>
-            <TouchableOpacity hitSlop={6} onPress={doPick} disabled={picking}>
+            <TouchableOpacity focusable={true} hitSlop={6} onPress={doPick} disabled={picking}>
               <Text style={st.repick}>{picking ? '选择中…' : '重新选择'}</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {/* ③ 扫描选项(折叠默认) */}
-        <TouchableOpacity style={st.optsHead} onPress={() => setOptsOpen(v => !v)} activeOpacity={0.75}>
+        <TouchableOpacity focusable={true} style={st.optsHead} onPress={() => setOptsOpen(v => !v)} activeOpacity={0.75}>
           <Text style={st.optsTitle}>扫描选项</Text>
           <Text style={st.optsHint}>{cfg.formats.length} 种格式 · {cfg.scanSubdirs ? '含子目录' : '仅顶层'} · {cfg.filterShort ? '过滤短音频' : '不过滤'}</Text>
           <Icon name={optsOpen ? 'chevronright' : 'chevronright'} size={14} color={C.text3} />
@@ -203,7 +203,7 @@ export function LocalLibraryEditScreen({ route }: { route?: { params?: { libId?:
               {ALL_FORMATS.map(f => {
                 const on = cfg.formats.includes(f);
                 return (
-                  <TouchableOpacity key={f} style={[st.chip, on && st.chipOn]} onPress={() => toggleFormat(f)} activeOpacity={0.75}>
+                  <TouchableOpacity focusable={true} key={f} style={[st.chip, on && st.chipOn]} onPress={() => toggleFormat(f)} activeOpacity={0.75}>
                     <Text style={[st.chipText, on && st.chipTextOn]}>{FORMAT_LABELS[f]}</Text>
                   </TouchableOpacity>
                 );
@@ -235,7 +235,7 @@ export function LocalLibraryEditScreen({ route }: { route?: { params?: { libId?:
                 {scanning.phase === 'delta' ? '增量扫描 · ' : ''}
                 已发现 <Text style={st.progNum}>{scanning.found}</Text> 首 · 已识别 <Text style={st.progNum}>{scanning.recognized}</Text> 首
               </Text>
-              <TouchableOpacity hitSlop={8} onPress={() => { token.current.cancelled = true; }}>
+              <TouchableOpacity focusable={true} hitSlop={8} onPress={() => { token.current.cancelled = true; }}>
                 <Text style={st.cancelText}>取消</Text>
               </TouchableOpacity>
             </View>
@@ -247,15 +247,15 @@ export function LocalLibraryEditScreen({ route }: { route?: { params?: { libId?:
           <View style={{ flexDirection: 'row', gap: SP.lg, marginTop: 6 }}>
             {existing && existing.trackCount > 0 ? (
               <>
-                <TouchableOpacity style={[st.ghostBtn, !hasRoot && st.btnOff]} onPress={() => startScan(false)} disabled={!hasRoot} activeOpacity={0.75}>
+                <TouchableOpacity focusable={true} style={[st.ghostBtn, !hasRoot && st.btnOff]} onPress={() => startScan(false)} disabled={!hasRoot} activeOpacity={0.75}>
                   <Text style={st.ghostBtnText}>全部重扫</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[st.primaryBtn, { flex: 1.4, marginTop: 0 }, !hasRoot && st.btnOff]} onPress={() => startScan(true)} disabled={!hasRoot} activeOpacity={0.75}>
+                <TouchableOpacity focusable={true} style={[st.primaryBtn, { flex: 1.4, marginTop: 0 }, !hasRoot && st.btnOff]} onPress={() => startScan(true)} disabled={!hasRoot} activeOpacity={0.75}>
                   <Text style={st.primaryBtnText}>重新扫描（增量）</Text>
                 </TouchableOpacity>
               </>
             ) : (
-              <TouchableOpacity style={[st.primaryBtn, { flex: 1, marginTop: 0 }, !hasRoot && st.btnOff]} onPress={() => startScan(false)} disabled={!hasRoot} activeOpacity={0.75}>
+              <TouchableOpacity focusable={true} style={[st.primaryBtn, { flex: 1, marginTop: 0 }, !hasRoot && st.btnOff]} onPress={() => startScan(false)} disabled={!hasRoot} activeOpacity={0.75}>
                 <Text style={st.primaryBtnText}>开始扫描</Text>
               </TouchableOpacity>
             )}

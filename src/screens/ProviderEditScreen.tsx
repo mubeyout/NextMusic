@@ -256,7 +256,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
     return (
       <View style={[st.screen, { paddingTop: insets.top + 10 }]}>
         <View style={st.header}>
-          <TouchableOpacity onPress={() => nav.goBack()} hitSlop={6} style={{ width: 26 }}>
+          <TouchableOpacity focusable={true} onPress={() => nav.goBack()} hitSlop={6} style={{ width: 26 }}>
             <Icon name="back" size={20} />
           </TouchableOpacity>
           <Text style={st.title}>添加远程音乐库</Text>
@@ -275,7 +275,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
               </View>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: SP.xxl, marginTop: 26, maxWidth: 400, alignSelf: 'center' }}>
                 {/* ②本机曲库(A 原型矩阵同位:首格) */}
-                <TouchableOpacity onPress={() => nav.navigate('LocalLibEdit', {})} activeOpacity={0.7} style={{ width: 80, alignItems: 'center', gap: SP.sm }}>
+                <TouchableOpacity focusable={true} onPress={() => nav.navigate('LocalLibEdit', {})} activeOpacity={0.7} style={{ width: 80, alignItems: 'center', gap: SP.sm }}>
                   <View style={{ width: 74, height: 74, borderRadius: 18, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.stroke }}>
                     <Icon name="folder-music" size={30} color={C.brandText} />
                   </View>
@@ -283,7 +283,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                 </TouchableOpacity>
                 {/* [web] 本地曲库(服务器侧目录绑定,升级稿 §二;浏览器无设备文件→服务器目录语义) */}
                 {Platform.OS === 'web' ? (
-                  <TouchableOpacity onPress={() => nav.navigate('ServerLocalLib', {})} activeOpacity={0.7} style={{ width: 80, alignItems: 'center', gap: SP.sm }}>
+                  <TouchableOpacity focusable={true} onPress={() => nav.navigate('ServerLocalLib', {})} activeOpacity={0.7} style={{ width: 80, alignItems: 'center', gap: SP.sm }}>
                     <View style={{ width: 74, height: 74, borderRadius: 18, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.brand + '55' }}>
                       <Icon name="server" size={28} color={C.brandText} />
                     </View>
@@ -291,7 +291,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                   </TouchableOpacity>
                 ) : null}
                 {TYPE_CARDS.map(c => (
-                  <TouchableOpacity key={c.type} onPress={() => pickType(c.type)} activeOpacity={0.7} style={{ width: 80, alignItems: 'center', gap: SP.sm }}>
+                  <TouchableOpacity focusable={true} key={c.type} onPress={() => pickType(c.type)} activeOpacity={0.7} style={{ width: 80, alignItems: 'center', gap: SP.sm }}>
                     <View style={{ width: 74, height: 74, borderRadius: 18, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }}>
                       {c.logo
                         ? <Image source={c.logo} style={{ width: 46, height: 46, borderRadius: 11 }} resizeMode="contain" />
@@ -313,7 +313,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                 {/* ②本机曲库添加卡(LEO v2.1 §②:与 Emby/听风同卡同流程,iconpark folder-music 同形;HD/车机不渲染) */}
                 <View style={{ marginBottom: 12 }}>
                   <Text style={{ color: C.text3, fontSize: FS.body, fontWeight: FW.bold, letterSpacing: 0.6, marginBottom: 6, paddingLeft: 4 }}>本机</Text>
-                  <TouchableOpacity onPress={() => nav.navigate('LocalLibEdit', {})} activeOpacity={0.75}
+                  <TouchableOpacity focusable={true} onPress={() => nav.navigate('LocalLibEdit', {})} activeOpacity={0.75}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xl, backgroundColor: C.surface2, borderRadius: 13, paddingVertical: 6, paddingHorizontal: 12, borderWidth: 1, borderColor: C.stroke }}>
                     <View style={{ width: 30, height: 30, borderRadius: 7, alignItems: 'center', justifyContent: 'center' }}>
                       <Icon name="folder-music" size={24} color={C.brandText} />
@@ -326,7 +326,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                   </TouchableOpacity>
                   {/* [web] 本地曲库行(服务器侧目录;升级稿 §二) */}
                   {Platform.OS === 'web' ? (
-                    <TouchableOpacity onPress={() => nav.navigate('ServerLocalLib', {})} activeOpacity={0.75}
+                    <TouchableOpacity focusable={true} onPress={() => nav.navigate('ServerLocalLib', {})} activeOpacity={0.75}
                       style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xl, backgroundColor: C.surface2, borderRadius: 13, paddingVertical: 6, paddingHorizontal: 12, borderWidth: 1, borderColor: C.brand + '55', marginTop: 8 }}>
                       <View style={{ width: 30, height: 30, borderRadius: 7, alignItems: 'center', justifyContent: 'center' }}>
                         <Icon name="server" size={22} color={C.brandText} />
@@ -343,7 +343,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                   <View key={g.label} style={{ marginBottom: 12 }}>
                     <Text style={{ color: C.text3, fontSize: FS.body, fontWeight: FW.bold, letterSpacing: 0.6, marginBottom: 6, paddingLeft: 4 }}>{g.label}</Text>
                     {g.items.map(c => (
-                      <TouchableOpacity key={c.type} onPress={() => pickType(c.type)} activeOpacity={0.75}
+                      <TouchableOpacity focusable={true} key={c.type} onPress={() => pickType(c.type)} activeOpacity={0.75}
                         style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xl, backgroundColor: C.surface2, borderRadius: 13, paddingVertical: 6, paddingHorizontal: 12, marginBottom: 6 }}>
                         {c.logo
                           ? <Image source={c.logo} style={{ width: 30, height: 30, borderRadius: 7 }} resizeMode="contain" />
@@ -371,13 +371,13 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
               contentContainerStyle={{ gap: SP.xl, paddingHorizontal: 10, alignItems: 'center' }}
               onScroll={e => setProtoPage(Math.round(e.nativeEvent.contentOffset.x / 218))} scrollEventThrottle={64}>
               {/* ②本机曲库(C 原型大卡首位) */}
-              <TouchableOpacity style={[st.typeRowCard, { width: 206, height: 240 }]} activeOpacity={0.7} onPress={() => nav.navigate('LocalLibEdit', {})}>
+              <TouchableOpacity focusable={true} style={[st.typeRowCard, { width: 206, height: 240 }]} activeOpacity={0.7} onPress={() => nav.navigate('LocalLibEdit', {})}>
                 <Icon name="folder-music" size={52} color={C.brandText} />
                 <Text style={st.typeRowTitle} numberOfLines={1} ellipsizeMode="tail">本机曲库</Text>
                 <Text style={st.typeRowSub} numberOfLines={1} ellipsizeMode="tail">扫描本设备音乐目录，离线可播</Text>
               </TouchableOpacity>
               {TYPE_CARDS.map(c => (
-                <TouchableOpacity key={c.type} style={[st.typeRowCard, { width: 206, height: 240 }]} activeOpacity={0.7} onPress={() => pickType(c.type)}>
+                <TouchableOpacity focusable={true} key={c.type} style={[st.typeRowCard, { width: 206, height: 240 }]} activeOpacity={0.7} onPress={() => pickType(c.type)}>
                   {c.logo
                     ? <Image source={c.logo} style={{ width: 84, height: 84, borderRadius: 20 }} resizeMode="contain" />
                     : <Icon name={c.icon} size={52} color={C.brandText} />}
@@ -460,12 +460,12 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
   return (
     <View style={[st.screen, { paddingTop: insets.top + 10 }]}>
       <View style={st.header}>
-        <TouchableOpacity onPress={() => (existing ? nav.goBack() : setPicked(null))} hitSlop={6} style={{ width: 26 }}>
+        <TouchableOpacity focusable={true} onPress={() => (existing ? nav.goBack() : setPicked(null))} hitSlop={6} style={{ width: 26 }}>
           <Icon name="back" size={20} />
         </TouchableOpacity>
         <Text style={st.title}>连接 {PROVIDER_META[picked].label.split(' / ')[0]}</Text>
         {existing ? (
-          <TouchableOpacity onPress={() => {
+          <TouchableOpacity focusable={true} onPress={() => {
             const nm = existing.name || PROVIDER_META[existing.type].label;
             const n = library.dependentSongCount(existing);
             const doRemove = () => { providers.remove(existing.id); nav.goBack(); };
@@ -499,7 +499,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
               <Text style={[st.inputLabel, { textAlign: 'center' }]}>从历史连接中选择</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.md, justifyContent: 'center' }}>
                 {hist.map(p => (
-                  <TouchableOpacity key={p.id} style={st.histChip} activeOpacity={0.7}
+                  <TouchableOpacity focusable={true} key={p.id} style={st.histChip} activeOpacity={0.7}
                     onPress={() => { setA(prev => ({ ...prev, name: p.name, base: p.base, user: p.user, pass: p.pass })); setTested(false); toast('已填充历史连接，可直接测试或保存'); }}>
                     <Text style={st.histChipText} numberOfLines={1}>{p.name || PROVIDER_META[p.type].label.split(' / ')[0]} · {p.user || '匿名'}</Text>
                   </TouchableOpacity>
@@ -606,7 +606,7 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
                 {busy === 'save' ? <ActivityIndicator color={C.onBrand} size="large" /> : <Text style={hdSt.btnPrimaryText}>打开 Plex 网页授权</Text>}
               </HDTouch>
             ) : (
-              <TouchableOpacity style={[st.btnPrimary, busy && st.btnBusy]} activeOpacity={0.7} onPress={plexWebAuth} disabled={!!busy}>
+              <TouchableOpacity focusable={true} style={[st.btnPrimary, busy && st.btnBusy]} activeOpacity={0.7} onPress={plexWebAuth} disabled={!!busy}>
                 {busy === 'save' ? <ActivityIndicator color={C.onBrand} size="small" /> : <Text style={st.btnPrimaryText}>打开 Plex 网页授权</Text>}
               </TouchableOpacity>
             )}
@@ -624,10 +624,10 @@ export function ProviderEditScreen({ route }: { route?: { params?: { acctId?: st
             </>
           ) : (
             <>
-              <TouchableOpacity style={[st.btnGhost, busy && st.btnBusy]} activeOpacity={0.7} onPress={testConn} disabled={!!busy}>
+              <TouchableOpacity focusable={true} style={[st.btnGhost, busy && st.btnBusy]} activeOpacity={0.7} onPress={testConn} disabled={!!busy}>
                 {busy === 'test' ? <ActivityIndicator color={C.text} size="small" /> : <Text style={st.btnGhostText}>测试连接</Text>}
               </TouchableOpacity>
-              <TouchableOpacity style={[st.btnPrimary, busy && st.btnBusy]} activeOpacity={0.7} onPress={save} disabled={!!busy}>
+              <TouchableOpacity focusable={true} style={[st.btnPrimary, busy && st.btnBusy]} activeOpacity={0.7} onPress={save} disabled={!!busy}>
                 {busy === 'save' ? <ActivityIndicator color={C.onBrand} size="small" /> : <Text style={st.btnPrimaryText}>保存并开始索引</Text>}
               </TouchableOpacity>
             </>

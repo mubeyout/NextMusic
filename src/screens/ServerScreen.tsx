@@ -72,13 +72,13 @@ export function ServerScreen() {
           </View>
           <Text style={st.fieldHint}>支持 http(s)://IP:端口 或域名；连接时检查 /api/music/config</Text>
           {history.length ? history.slice(0, 3).map(h => (
-            <TouchableOpacity key={h} style={st.quickAction} onPress={() => setAddr(h)}>
+            <TouchableOpacity focusable={true} key={h} style={st.quickAction} onPress={() => setAddr(h)}>
               <Text style={st.quickText}>最近 · {h}  ›</Text>
             </TouchableOpacity>
           )) : null}
         </View>
 
-        <TouchableOpacity style={st.btnPrimary} onPress={connect} disabled={busy}>
+        <TouchableOpacity focusable={true} style={st.btnPrimary} onPress={connect} disabled={busy}>
           {busy ? <ActivityIndicator color={C.onBrand} /> : <Text style={st.btnPrimaryText}>连接服务器</Text>}
         </TouchableOpacity>
         {err ? <Text style={st.err}>{err}</Text> : null}
@@ -88,7 +88,7 @@ export function ServerScreen() {
           <Text style={st.capBody}>多源搜索 · 在线歌单 · 本地/缓存音乐 · 账号同步 · 自定义源</Text>
         </View>
 
-        <TouchableOpacity style={st.backLink} onPress={() => nav.goBack()}>
+        <TouchableOpacity focusable={true} style={st.backLink} onPress={() => nav.goBack()}>
           <Text style={st.backText}>← 返回选择使用方式</Text>
         </TouchableOpacity>
       </ScrollView>

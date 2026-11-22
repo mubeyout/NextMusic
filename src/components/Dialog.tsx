@@ -15,7 +15,7 @@ function DTouch(props: { style?: unknown; onPress?: () => void; children?: React
     </HDTouch>
   );
   return (
-    <TouchableOpacity style={style as never} onPress={onPress} activeOpacity={0.75} {...(rest as object)}>
+    <TouchableOpacity focusable={true} style={style as never} onPress={onPress} activeOpacity={0.75} {...(rest as object)}>
       {children}
     </TouchableOpacity>
   );
@@ -133,7 +133,7 @@ export function DialogHost() {
         req.sheet ? (
           // 底部菜单风格
           <Modal animationType="slide" transparent visible onRequestClose={() => setReq(null)}>
-            <TouchableOpacity style={s.scrim} activeOpacity={1} focusable={false} onPress={() => setReq(null)}>
+            <TouchableOpacity focusable={true} style={s.scrim} activeOpacity={1} focusable={false} onPress={() => setReq(null)}>
               <View style={[s.sheet, { paddingBottom: insets.bottom + 16 }]} onStartShouldSetResponder={() => true}>
                 <View style={s.handle} />
                 {req.title ? <Text style={s.sheetTitle} numberOfLines={1}>{req.title}</Text> : null}
@@ -148,7 +148,7 @@ export function DialogHost() {
         ) : (
           // 居中对话框风格
           <Modal animationType="fade" transparent visible onRequestClose={() => setReq(null)}>
-            <TouchableOpacity style={s.center} activeOpacity={1} focusable={false} onPress={() => setReq(null)}>
+            <TouchableOpacity focusable={true} style={s.center} activeOpacity={1} focusable={false} onPress={() => setReq(null)}>
               <View style={s.card} onStartShouldSetResponder={() => true}>
                 <Text style={s.cardTitle}>{req.title}</Text>
                 {req.message ? <Text style={s.cardMsg}>{req.message}</Text> : null}

@@ -101,11 +101,11 @@ function FinishCard({ batch: b, failed, onGo }: { batch: UpBatch; failed: UpItem
           )}
           {b.stats ? <Text style={u.doneStat}>曲库统计已更新：{b.stats.songs} 首 · {b.stats.albums} 专辑</Text> : null}
           {failed.length ? (
-            <TouchableOpacity style={[u.retryAllBtn, (b.summary?.uploaded || 0) === 0 && b.summary?.skipped ? u.retryAllMain : null]} onPress={retryFailed}>
+            <TouchableOpacity focusable={true} style={[u.retryAllBtn, (b.summary?.uploaded || 0) === 0 && b.summary?.skipped ? u.retryAllMain : null]} onPress={retryFailed}>
               <Text style={[u.retryAllT, (b.summary?.uploaded || 0) === 0 && b.summary?.skipped ? u.retryAllMainT : null]}>{(b.summary?.uploaded || 0) === 0 && !(b.summary?.skipped) ? '重试全部' : `重试失败 ${failed.length} 首`}</Text>
             </TouchableOpacity>
           ) : null}
-          <TouchableOpacity style={u.doneGo} onPress={onGo}>
+          <TouchableOpacity focusable={true} style={u.doneGo} onPress={onGo}>
             <Text style={u.doneGoT}>查看专辑墙</Text><Icon name="chevronright" size={12} color={C.brand} />
           </TouchableOpacity>
         </Pressable>
@@ -132,7 +132,7 @@ export function useUploadSheet(onDone?: () => void) {
     // ── 最小化浮条 ──
     if (s.minimized) {
       return (
-        <TouchableOpacity style={u.mini} onPress={openUploadSheet} activeOpacity={0.85}>
+        <TouchableOpacity focusable={true} style={u.mini} onPress={openUploadSheet} activeOpacity={0.85}>
           <ActivityIndicator size="small" color={C.brand} />
           <Text style={u.miniT}>{b.doneAt ? `上传完成 · ${b.summary?.uploaded ?? 0}/${total}` : `上传 ${doneCount}/${total}`}</Text>
           <Icon name="chevronright" size={13} color={C.text3} />
@@ -167,14 +167,14 @@ export function useUploadSheet(onDone?: () => void) {
                       )}
                     </View>
                     {it.st === 'up' ? <Text style={u.qPct}>{Math.round(it.prog * 100)}%</Text>
-                      : it.st === 'fail' ? <TouchableOpacity onPress={() => retryItem(it.key)}><Text style={u.qRetry}>重试</Text></TouchableOpacity>
+                      : it.st === 'fail' ? <TouchableOpacity focusable={true} onPress={() => retryItem(it.key)}><Text style={u.qRetry}>重试</Text></TouchableOpacity>
                       : it.st === 'done' ? <Icon name="play" size={13} color={C.brand} /> : null}
                   </View>
                 ))}
               </View>
             </View>
             <View style={u.sheetFoot}>
-              <TouchableOpacity style={u.minBtn} onPress={minimizeUpload}><Text style={u.minBtnT}>最小化</Text></TouchableOpacity>
+              <TouchableOpacity focusable={true} style={u.minBtn} onPress={minimizeUpload}><Text style={u.minBtnT}>最小化</Text></TouchableOpacity>
             </View>
           </Pressable>
         </Pressable>
@@ -182,7 +182,7 @@ export function useUploadSheet(onDone?: () => void) {
     );
   }, [b, s.minimized, s.finishedOpen]);
   const EmptyAction = useCallback(() => (
-    <TouchableOpacity style={u.emptyBtn} onPress={() => pickAndUpload()} activeOpacity={0.85}>
+    <TouchableOpacity focusable={true} style={u.emptyBtn} onPress={() => pickAndUpload()} activeOpacity={0.85}>
       <Icon name="cloud" size={12} color="#04120a" />
       <Text style={u.emptyBtnT}>上传到曲库</Text>
     </TouchableOpacity>

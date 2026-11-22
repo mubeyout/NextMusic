@@ -220,7 +220,7 @@ export function PublicLibraryScreen() {
           <Icon name="shield" size={30} color={C.text3} />
           <Text style={d.emptyT1}>公共曲库不可用</Text>
           <Text style={d.emptyT2}>管理员未授权或库已停用，入口已自动移除；获得授权后会重新出现</Text>
-          <TouchableOpacity style={d.retryBtn} onPress={() => nav.goBack()}><Text style={d.retryText}>返回</Text></TouchableOpacity>
+          <TouchableOpacity focusable={true} style={d.retryBtn} onPress={() => nav.goBack()}><Text style={d.retryText}>返回</Text></TouchableOpacity>
         </View>
       );
     }
@@ -240,7 +240,7 @@ export function PublicLibraryScreen() {
       return (
         <View style={d.errRow}>
           <Text style={d.errT} numberOfLines={1}>{err}</Text>
-          <TouchableOpacity style={d.retryBtn} onPress={doRefresh}><Text style={d.retryText}>重试</Text></TouchableOpacity>
+          <TouchableOpacity focusable={true} style={d.retryBtn} onPress={doRefresh}><Text style={d.retryText}>重试</Text></TouchableOpacity>
         </View>
       );
     }
@@ -317,7 +317,7 @@ export function PublicLibraryScreen() {
                 returnKeyType="search"
               />
               {q ? (
-                <TouchableOpacity style={d.searchClear} onPress={() => setQ('')} hitSlop={6}>
+                <TouchableOpacity focusable={true} style={d.searchClear} onPress={() => setQ('')} hitSlop={6}>
                   <Icon name="close" size={14} color={C.text3} />
                 </TouchableOpacity>
               ) : null}
@@ -329,11 +329,11 @@ export function PublicLibraryScreen() {
             {songsBusy ? (
               <View style={d.moreWrap}><ActivityIndicator color={C.brand} /></View>
             ) : filtered.length > songShown ? (
-              <TouchableOpacity style={d.moreBtn} activeOpacity={0.8} onPress={() => setSongShown(n => n + 30)}>
+              <TouchableOpacity focusable={true} style={d.moreBtn} activeOpacity={0.8} onPress={() => setSongShown(n => n + 30)}>
                 <Text style={d.moreT}>显示更多 · {songShown}/{filtered.length}</Text>
               </TouchableOpacity>
             ) : songs.length >= songSize && songSize < 200 ? (
-              <TouchableOpacity style={d.moreBtn} activeOpacity={0.8}
+              <TouchableOpacity focusable={true} style={d.moreBtn} activeOpacity={0.8}
                 onPress={() => { const n = Math.min(songSize + PAGE, 200); setSongSize(n); loadSongs(n); }}>
                 <Text style={d.moreT}>加载更多</Text>
               </TouchableOpacity>
@@ -360,9 +360,9 @@ export function PublicLibraryScreen() {
         </View>
       ) : (
         <View style={d.head}>
-          <TouchableOpacity style={d.headBtn} onPress={() => nav.goBack()}><Icon name="back" size={16} color={C.text2} /></TouchableOpacity>
+          <TouchableOpacity focusable={true} style={d.headBtn} onPress={() => nav.goBack()}><Icon name="back" size={16} color={C.text2} /></TouchableOpacity>
           <Text style={d.headTitle}>公共曲库</Text>
-          <TouchableOpacity style={d.headBtn} onPress={doRefresh}>
+          <TouchableOpacity focusable={true} style={d.headBtn} onPress={doRefresh}>
             <Icon name="refresh" size={15} color={C.text2} />
           </TouchableOpacity>
         </View>
@@ -382,7 +382,7 @@ function RandCard({ song, onPress }: { song: LibSong; onPress: () => void }) {
   const [g1] = gradOf(song.album || song.singer);
   const { elRef, onHoverIn, onHoverOut, cardStyle } = useHoverCard(song.name); // [老板 1011 12:34] nm-card 同款
   return (
-    <TouchableOpacity ref={elRef as never}
+    <TouchableOpacity focusable={true} ref={elRef as never}
       style={[{ width: '100%', backgroundColor: C.surface, borderRadius: 12, overflow: 'hidden' }, cardStyle as never]}
       activeOpacity={0.85} onPress={onPress}
       {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}>
@@ -407,7 +407,7 @@ function ArtistCircle({ a, fill, onPress }: { a: LibArtist; fill?: boolean; onPr
   const { elRef, onHoverIn, onHoverOut, cardStyle } = useHoverCard(a.name); // [老板 1011 12:34] nm-card 同款投影
   const wStyle = fill ? { width: '100%' } : { width: IS_HD ? 96 : 76 }; // [LEO 1011 统一令] 72→76 与搜索页歌手圆卡同规格
   return (
-    <TouchableOpacity ref={elRef as never} style={[wStyle, { backgroundColor: C.surface, borderRadius: 12, overflow: 'hidden' }, cardStyle as never]} activeOpacity={0.85} onPress={onPress}
+    <TouchableOpacity focusable={true} ref={elRef as never} style={[wStyle, { backgroundColor: C.surface, borderRadius: 12, overflow: 'hidden' }, cardStyle as never]} activeOpacity={0.85} onPress={onPress}
       {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}>
       <View style={{ padding: SP.sm }}>
         <View style={[fill ? { width: '100%' } : { width: (IS_HD ? 96 : 76) - SP.sm * 2 }, { aspectRatio: 1, borderRadius: 999, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }, !a.coverFile && { backgroundColor: C.artTint2 }]}>
@@ -432,7 +432,7 @@ function LoadMore({ busy, shown, total, onMore, unit }: { busy: boolean; shown: 
   if (busy) return <View style={d.moreWrap}><ActivityIndicator color={C.brand} /></View>;
   if (shown >= total) return shown ? <Text style={d.endT}>共 {total} {unit}</Text> : <Text style={d.endT}>库内还没有内容</Text>;
   return (
-    <TouchableOpacity style={d.moreBtn} onPress={onMore} activeOpacity={0.8}>
+    <TouchableOpacity focusable={true} style={d.moreBtn} onPress={onMore} activeOpacity={0.8}>
       <Text style={d.moreT}>加载更多</Text>
     </TouchableOpacity>
   );
@@ -486,7 +486,7 @@ function ErrBack({ err }: { err: string }) {
       <Icon name="shield" size={28} color={C.text3} />
       <Text style={d.emptyT1}>{err}</Text>
       <Text style={d.emptyT2}>入口已自动移除，获得授权后会重新出现</Text>
-      <TouchableOpacity style={d.retryBtn} onPress={() => nav.goBack()}><Text style={d.retryText}>返回</Text></TouchableOpacity>
+      <TouchableOpacity focusable={true} style={d.retryBtn} onPress={() => nav.goBack()}><Text style={d.retryText}>返回</Text></TouchableOpacity>
     </View>
   );
 }
@@ -582,7 +582,7 @@ export function PublicLibAlbumRoute(props: Record<string, unknown>) {
             <View style={{ flex: 1, minWidth: 0 } as never}>
               <Text style={d.albName} numberOfLines={2}>{name}</Text>
               <Text style={d.albSub} numberOfLines={1}>{album?.artist}{album?.byDir ? ' · 文件夹分组' : ''} · {songs.length} 首 · 公共曲库</Text>
-              {songs.length ? <TouchableOpacity style={d.playAll} onPress={() => play(0)}><Icon name="play" size={12} color="#04120a" /><Text style={d.playAllT}>播放全部</Text></TouchableOpacity> : null}
+              {songs.length ? <TouchableOpacity focusable={true} style={d.playAll} onPress={() => play(0)}><Icon name="play" size={12} color="#04120a" /><Text style={d.playAllT}>播放全部</Text></TouchableOpacity> : null}
             </View>
           </View>
           {songs.map((s, i) => (
@@ -625,7 +625,7 @@ export function PublicLibArtistRoute(props: Record<string, unknown>) {
             <View style={{ flex: 1, minWidth: 0 } as never}>
               <Text style={d.albName} numberOfLines={2}>{name}</Text>
               <Text style={d.albSub} numberOfLines={1}>{data.songs.length} 首 · {data.albums.length} 专辑 · 公共曲库</Text>
-              {data.songs.length ? <TouchableOpacity style={d.playAll} onPress={() => play(0)}><Icon name="play" size={12} color="#04120a" /><Text style={d.playAllT}>播放全部</Text></TouchableOpacity> : null}
+              {data.songs.length ? <TouchableOpacity focusable={true} style={d.playAll} onPress={() => play(0)}><Icon name="play" size={12} color="#04120a" /><Text style={d.playAllT}>播放全部</Text></TouchableOpacity> : null}
             </View>
           </View>
           {data.albums.length > 1 && (

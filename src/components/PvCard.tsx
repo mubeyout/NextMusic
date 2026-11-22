@@ -59,7 +59,7 @@ export function PvCard({ cover, name, meta, round, fill, onPress, onLongPress }:
     </HDTouch>
   );
   return (
-    <TouchableOpacity style={[wrap, cardStyle as never]} ref={elRef as never} activeOpacity={0.85} onPress={onPress} onLongPress={onLongPress} {...hoverProps}>
+    <TouchableOpacity focusable={true} style={[wrap, cardStyle as never]} ref={elRef as never} activeOpacity={0.85} onPress={onPress} onLongPress={onLongPress} {...hoverProps}>
       {body}
     </TouchableOpacity>
   );

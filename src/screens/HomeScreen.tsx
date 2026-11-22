@@ -193,27 +193,27 @@ function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
     <View style={st.body}>
       {/* 快捷入口：大卡 2×3（老板要求大气） */}
       <View style={st.quickGrid}>
-        <TouchableOpacity style={[st.quickCard, { width: cardW }, fetching && st.quickDis]} activeOpacity={0.8} onPress={playHot} disabled={fetching}>
+        <TouchableOpacity focusable={true} style={[st.quickCard, { width: cardW }, fetching && st.quickDis]} activeOpacity={0.8} onPress={playHot} disabled={fetching}>
           <Image source={sky} style={st.quickArt} />
           <Text style={st.quickLabel}>每日精选</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[st.quickCard, { width: cardW }]} activeOpacity={0.8} onPress={openLove}>
+        <TouchableOpacity focusable={true} style={[st.quickCard, { width: cardW }]} activeOpacity={0.8} onPress={openLove}>
           <Image source={vinyl} style={st.quickArt} />
           <Text style={st.quickLabel}>我的收藏</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[st.quickCard, { width: cardW }, fetching && st.quickDis]} activeOpacity={0.8} onPress={playHot} disabled={fetching}>
+        <TouchableOpacity focusable={true} style={[st.quickCard, { width: cardW }, fetching && st.quickDis]} activeOpacity={0.8} onPress={playHot} disabled={fetching}>
           <Image source={warm} style={st.quickArt} />
           <Text style={st.quickLabel}>私人雷达</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[st.quickCard, { width: cardW }, fetching && st.quickDis]} activeOpacity={0.8} onPress={() => openSearch('夜深人静')} disabled={fetching}>
+        <TouchableOpacity focusable={true} style={[st.quickCard, { width: cardW }, fetching && st.quickDis]} activeOpacity={0.8} onPress={() => openSearch('夜深人静')} disabled={fetching}>
           <Image source={night} style={st.quickArt} />
           <Text style={st.quickLabel}>夜深人静</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[st.quickCard, { width: cardW }, fetching && st.quickDis]} activeOpacity={0.8} onPress={() => openSearch('华语经典')} disabled={fetching}>
+        <TouchableOpacity focusable={true} style={[st.quickCard, { width: cardW }, fetching && st.quickDis]} activeOpacity={0.8} onPress={() => openSearch('华语经典')} disabled={fetching}>
           <Image source={portrait} style={st.quickArt} />
           <Text style={st.quickLabel}>华语经典</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[st.quickCard, { width: cardW }]} activeOpacity={0.8} onPress={openRecent}>
+        <TouchableOpacity focusable={true} style={[st.quickCard, { width: cardW }]} activeOpacity={0.8} onPress={openRecent}>
           <Image source={night} style={st.quickArt} />
           <Text style={st.quickLabel}>最近播放</Text>
         </TouchableOpacity>
@@ -229,12 +229,12 @@ function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
             <MixCard key={pl.id} pl={pl} fallbackArt={[warm, city, night, sky][i % 4]} />
           ))
           : mixFail ? (
-            <TouchableOpacity style={[st.mixCard, st.mixPlaceholder]} activeOpacity={0.8} onPress={() => loadMixes(true)}>
+            <TouchableOpacity focusable={true} style={[st.mixCard, st.mixPlaceholder]} activeOpacity={0.8} onPress={() => loadMixes(true)}>
               <Text style={st.mixPhText}>加载失败 · 点击重试</Text>
             </TouchableOpacity>
           ) : [0, 1].map(i => (
             // #012①:占位卡可点(tap=重试)——纯 View 长得像真卡但零反馈(LEO 定性)
-            <TouchableOpacity key={i} style={[st.mixCard, st.mixPlaceholder]} activeOpacity={0.8} onPress={() => loadMixes(true)}>
+            <TouchableOpacity focusable={true} key={i} style={[st.mixCard, st.mixPlaceholder]} activeOpacity={0.8} onPress={() => loadMixes(true)}>
               <Text style={st.mixPhText}>加载中…</Text>
             </TouchableOpacity>
           ))}
@@ -242,12 +242,12 @@ function HomeAll({ setHomeEmpty }: { setHomeEmpty: (v: boolean) => void }) {
 
       <View style={st.sectionRow}>
         <Text style={st.sectionTitle}>最近播放</Text>
-        <TouchableOpacity onPress={openRecent} hitSlop={4}><Text style={st.sectionMeta}>查看全部</Text></TouchableOpacity>
+        <TouchableOpacity focusable={true} onPress={openRecent} hitSlop={4}><Text style={st.sectionMeta}>查看全部</Text></TouchableOpacity>
       </View>
       {recents.length ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.recentRow}>
           {recents.slice(0, 12).map((s, i) => (
-            <TouchableOpacity key={`${s.source}-${s.songmid}-${i}`} style={st.recentCard} activeOpacity={0.85} onPress={() => playSong(s, recents)}>
+            <TouchableOpacity focusable={true} key={`${s.source}-${s.songmid}-${i}`} style={st.recentCard} activeOpacity={0.85} onPress={() => playSong(s, recents)}>
               {s.img ? <Image source={{ uri: s.img }} style={st.recentArt} /> : <View style={[st.recentArt, st.recentFallback]}><Icon name="music" size={26} color={C.text2} /></View>}
               <Text style={st.recentTitle} numberOfLines={1}>{s.name}</Text>
             </TouchableOpacity>
@@ -329,13 +329,13 @@ function HomePodcast() {
         {POD_CHANNELS.map((ch, ci) => {
           const f = feeds[ch.id] || [];
           return (
-            <TouchableOpacity key={ch.id} style={st.podCard} activeOpacity={0.85} onPress={() => openChannel(ch)}>
+            <TouchableOpacity focusable={true} key={ch.id} style={st.podCard} activeOpacity={0.85} onPress={() => openChannel(ch)}>
               <LinearGradient
                 colors={POD_GRADS[ci % POD_GRADS.length] as [string, string]}
                 style={st.podCover}
               >
                 <Text style={st.podGlyph}>📻</Text>
-                <TouchableOpacity style={st.podPlay} hitSlop={4} onPress={() => playChannel(ch)}>
+                <TouchableOpacity focusable={true} style={st.podPlay} hitSlop={4} onPress={() => playChannel(ch)}>
                   <Icon name="play" size={18} active color={C.onBrand} />
                 </TouchableOpacity>
               </LinearGradient>
@@ -424,7 +424,7 @@ function HomeMusic() {
       {/* 榜单快捷大卡：真实榜单 */}
       <View style={st.quickGrid}>
         {boards.length ? boards.map((b, i) => (
-          <TouchableOpacity key={b.id} style={[st.quickCard, { width: cardW }]} activeOpacity={0.8} onPress={() => playBoard(b)}>
+          <TouchableOpacity focusable={true} key={b.id} style={[st.quickCard, { width: cardW }]} activeOpacity={0.8} onPress={() => playBoard(b)}>
             <Image source={arts[i % 5]} style={st.quickArt} />
             <Text style={st.quickLabel}>{b.name}</Text>
           </TouchableOpacity>
@@ -441,7 +441,7 @@ function HomeMusic() {
           {playlists.slice(0, 9).map(pl => <PlCard key={pl.id} pl={pl} />)}
         </View>
       ) : plFail ? (
-        <TouchableOpacity style={st.retryRow} activeOpacity={0.8} onPress={() => loadPls(true)}>
+        <TouchableOpacity focusable={true} style={st.retryRow} activeOpacity={0.8} onPress={() => loadPls(true)}>
           <Text style={st.retryText}>加载失败 · 点击重试</Text>
         </TouchableOpacity>
       ) : null}

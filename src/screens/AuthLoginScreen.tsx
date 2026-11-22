@@ -79,11 +79,11 @@ export function AuthLoginScreen() {
         </View>
       </View>
 
-      <TouchableOpacity style={st.btnPrimary} onPress={login} disabled={busy}>
+      <TouchableOpacity focusable={true} focusable={true} style={st.btnPrimary} onPress={login} disabled={busy}>
         {busy ? <ActivityIndicator color={C.onBrand} /> : <Text style={st.btnPrimaryText}>{connectedHere ? '登录' : '连接并登录'}</Text>}
       </TouchableOpacity>
       {err ? <Text style={st.err}>{err}</Text> : null}
-      <TouchableOpacity style={st.backLink} onPress={() => nav.goBack()}>
+      <TouchableOpacity focusable={true} focusable={true} style={st.backLink} onPress={() => nav.goBack()}>
         <Text style={st.backText}>← 返回</Text>
       </TouchableOpacity>
     </ScrollView>

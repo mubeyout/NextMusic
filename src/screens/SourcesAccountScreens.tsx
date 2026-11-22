@@ -27,7 +27,7 @@ function T(props: { style?: unknown; onPress?: () => void; disabled?: boolean; c
     </HDTouch>
   );
   return (
-    <TouchableOpacity style={style as never} onPress={onPress} disabled={disabled} activeOpacity={0.7} {...(rest as object)}>
+    <TouchableOpacity focusable={true} style={style as never} onPress={onPress} disabled={disabled} activeOpacity={0.7} {...(rest as object)}>
       {children}
     </TouchableOpacity>
   );
@@ -298,7 +298,7 @@ export function AccountScreen() {
   return (
     <View style={[st.screen, { paddingTop: insets.top + 28 }]}>
       <View style={st.header}>
-        <TouchableOpacity onPress={() => nav.goBack()} hitSlop={6} style={{ width: 22 }}>
+        <TouchableOpacity focusable={true} onPress={() => nav.goBack()} hitSlop={6} style={{ width: 22 }}>
           <Icon name="back" size={22} />
         </TouchableOpacity>
         <Text style={st.title}>使用方式与账号</Text>
@@ -319,17 +319,17 @@ export function AccountScreen() {
           </View>
         </View>
 
-        <TouchableOpacity style={st.linkBtn} onPress={() => nav.reset({ index: 0, routes: [{ name: 'Auth' }] })}>
+        <TouchableOpacity focusable={true} style={st.linkBtn} onPress={() => nav.reset({ index: 0, routes: [{ name: 'Auth' }] })}>
           <Text style={st.linkText}>{token && username ? '切换账号' : '登录服务器账号'}</Text>
         </TouchableOpacity>
 
         {/* 更换服务器地址：无需断开重走 Boot 流程，直达连接页（也修复 Server 页入口单一） */}
-        <TouchableOpacity style={st.linkBtn} onPress={() => nav.navigate('Server')}>
+        <TouchableOpacity focusable={true} style={st.linkBtn} onPress={() => nav.navigate('Server')}>
           <Text style={st.linkText}>更换服务器地址</Text>
         </TouchableOpacity>
 
         {username ? (
-          <TouchableOpacity style={[st.linkBtn, st.danger]} onPress={logout}>
+          <TouchableOpacity focusable={true} style={[st.linkBtn, st.danger]} onPress={logout}>
             <Text style={st.dangerText}>退出登录（同步后清除本机凭据）</Text>
           </TouchableOpacity>
         ) : null}

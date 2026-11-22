@@ -59,14 +59,14 @@ export function LicenseActivate({ visible, onClose, onActivated }: LicenseActiva
 
   return (
     <View style={[st.overlay, { paddingTop: insets.top + 60 }]}>
-      <TouchableOpacity style={st.scrim} activeOpacity={1} onPress={onClose} />
+      <TouchableOpacity focusable={true} style={st.scrim} activeOpacity={1} onPress={onClose} />
       <View style={st.sheet}>
         <View style={st.header}>
           <View style={st.titleRow}>
             <ProTag size="standard" />
             <Text style={st.title}>激活授权码</Text>
           </View>
-          <TouchableOpacity onPress={onClose} hitSlop={8}>
+          <TouchableOpacity focusable={true} onPress={onClose} hitSlop={8}>
             <Icon name="close" size={20} color={C.text3} />
           </TouchableOpacity>
         </View>

@@ -10,11 +10,11 @@ export function SelectSheet({ visible, title, value, options, onPick, onClose }:
 }) {
   return (
     <Modal transparent visible={visible} onRequestClose={onClose}>
-      <TouchableOpacity style={st.scrim} activeOpacity={1} onPress={onClose}>
+      <TouchableOpacity focusable={true} style={st.scrim} activeOpacity={1} onPress={onClose}>
         <View style={st.card} onStartShouldSetResponder={() => true}>
           <Text style={st.title}>{title}</Text>
           {options.map(op => (
-            <TouchableOpacity key={op} style={[st.row, op === value && st.rowOn]} activeOpacity={0.7}
+            <TouchableOpacity focusable={true} key={op} style={[st.row, op === value && st.rowOn]} activeOpacity={0.7}
               onPress={() => { onClose(); onPick(op); }}>
               <Text style={[st.label, op === value && { color: C.brandText, fontWeight: FW.bold }]}>{op}</Text>
               {op === value ? <Icon name="check" size={13} color={C.brand} /> : null}

@@ -18,7 +18,7 @@ function T(props: { style?: unknown; onPress?: () => void; disabled?: boolean; c
     </HDTouch>
   );
   return (
-    <TouchableOpacity style={style as never} onPress={onPress} disabled={disabled} activeOpacity={0.7} {...(rest as object)}>
+    <TouchableOpacity focusable={true} style={style as never} onPress={onPress} disabled={disabled} activeOpacity={0.7} {...(rest as object)}>
       {children}
     </TouchableOpacity>
   );

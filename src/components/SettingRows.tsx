@@ -13,7 +13,7 @@ import { ActionSheet } from './ActionSheet';
 
 export function ToggleRow({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
   return (
-    <TouchableOpacity style={[s.row, s.rowDivide]} activeOpacity={0.7} onPress={() => onChange(!value)}>
+    <TouchableOpacity focusable={true} style={[s.row, s.rowDivide]} activeOpacity={0.7} onPress={() => onChange(!value)}>
       <Text style={s.rowLabel}>{label}</Text>
       <View style={[s.switch, value && s.switchOn]}>
         <View style={[s.knob, value && s.knobOn]} />
@@ -31,7 +31,7 @@ export function ValueRow({ label, value, options, onPick }: {
   const cur = options.find(o => o.value === value)?.label || value;
   return (
     <>
-      <TouchableOpacity style={[s.row, s.rowDivide]} activeOpacity={0.7} onPress={() => setOpen(true)}>
+      <TouchableOpacity focusable={true} style={[s.row, s.rowDivide]} activeOpacity={0.7} onPress={() => setOpen(true)}>
         <Text style={s.rowLabel}>{label}</Text>
         <View style={s.rowRight}>
           <Text style={s.rowValue}>{cur}</Text>
@@ -49,7 +49,7 @@ export function ValueRow({ label, value, options, onPick }: {
 // locked：D2 gate 拦截态锁标（LockGlyph 前缀 #595959——LockRow 同视觉语言）
 export function ActionRow({ label, value, destructive, locked, onPress }: { label: string; value?: string; destructive?: boolean; locked?: boolean; onPress: () => void }) {
   return (
-    <TouchableOpacity style={[s.row, s.rowDivide]} activeOpacity={0.7} onPress={onPress}>
+    <TouchableOpacity focusable={true} style={[s.row, s.rowDivide]} activeOpacity={0.7} onPress={onPress}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
         {/* [1012 收敛] gate 位保留,owned 态 locked=false 自动静默(原行注释曾泄漏成可见文本) */}
         {locked ? <ProTag size="compact" /> : null}

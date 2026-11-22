@@ -129,7 +129,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
     >
       <View style={st.headerRow}>
         <Text style={st.title}>我的音乐</Text>
-        <TouchableOpacity style={st.settingsBtn} hitSlop={4} onPress={() => nav.navigate('Settings')}>
+        <TouchableOpacity focusable={true} style={st.settingsBtn} hitSlop={4} onPress={() => nav.navigate('Settings')}>
           <Icon name="settings" size={20} />
         </TouchableOpacity>
       </View>
@@ -145,7 +145,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
               <Text style={st.bannerTitle}>我的收藏</Text>
               <Text style={st.bannerMeta}>{totalPlaylists} 个歌单 · {totalSongs} 首歌曲</Text>
             </View>
-            <TouchableOpacity style={st.newBtn} onPress={() => (IS_HD ? hdActions : dialog).menu('新建歌单', [
+            <TouchableOpacity focusable={true} style={st.newBtn} onPress={() => (IS_HD ? hdActions : dialog).menu('新建歌单', [
               { label: '空白歌单', icon: 'add', onPress: () => { // lx159:补齐 icon(与 HDMain 同款菜单一致)
                 (IS_HD ? hdActions : dialog).prompt('新建歌单', { defaultValue: '', onSubmit: (v) => { const n = (v || '').trim(); if (n) { playlistSync.create(n).then(() => toast('已创建')); } } }); // lx163:同步服务器
               } },
@@ -157,15 +157,15 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
 
           {/* Quick row: 3 text cards */}
           <View style={st.quickRow}>
-            <TouchableOpacity style={st.quickCard} activeOpacity={0.85} onPress={() => openSongs('最近播放', recents)}>
+            <TouchableOpacity focusable={true} style={st.quickCard} activeOpacity={0.85} onPress={() => openSongs('最近播放', recents)}>
               <Text style={st.quickTitle}>最近播放</Text>
               <Text style={st.quickMeta}>{recents.length} 首</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={st.quickCard} activeOpacity={0.85} onPress={() => openSongs('我喜欢的', loveSongs, undefined, { love: true })}>
+            <TouchableOpacity focusable={true} style={st.quickCard} activeOpacity={0.85} onPress={() => openSongs('我喜欢的', loveSongs, undefined, { love: true })}>
               <Text style={st.quickTitle}>我喜欢的</Text>
               <Text style={st.quickMeta}>{loveSongs.length} 首</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={st.quickCard} activeOpacity={0.85} onPress={() => nav.navigate('DeviceMusic')}>
+            <TouchableOpacity focusable={true} style={st.quickCard} activeOpacity={0.85} onPress={() => nav.navigate('DeviceMusic')}>
               <Text style={st.quickTitle}>本地音乐</Text>
               <Text style={st.quickMeta}>{localCount ? `${localCount} 首` : '点此扫描'}</Text>
             </TouchableOpacity>
@@ -174,14 +174,14 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
           {/* 媒体库：已连服务器直接进曲库（amcfy 式入口前置，不再只藏在设置里；听风音乐也在媒体库里添加） */}
           <View style={st.sectionRow}>
             <Text style={st.sectionTitle}>媒体库</Text>
-            <TouchableOpacity onPress={() => nav.navigate('MediaLibs')} hitSlop={4}>
+            <TouchableOpacity focusable={true} onPress={() => nav.navigate('MediaLibs')} hitSlop={4}>
               <Text style={st.sectionMeta}>{providers.all().length ? '管理 ›' : '接入 ›'}</Text>
             </TouchableOpacity>
           </View>
           {(() => {
             const pv = providers.all();
             if (!pv.length) return (
-              <TouchableOpacity style={st.pvAddRow} activeOpacity={0.7} onPress={() => nav.navigate('MediaLibs')}>
+              <TouchableOpacity focusable={true} style={st.pvAddRow} activeOpacity={0.7} onPress={() => nav.navigate('MediaLibs')}>
                 <Icon name="add" size={16} color={C.brandText} />
                 <Text style={st.pvAddText}>接入 Emby / Jellyfin / Navidrome / 道理鱼 / WebDAV</Text>
               </TouchableOpacity>
@@ -209,7 +209,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
           {/* 自建歌单 grid */}
           <View style={st.sectionRow}>
             <Text style={st.sectionTitle}>自建歌单</Text>
-            <TouchableOpacity onPress={() => nav.navigate('ImportPlaylist')} hitSlop={4}>
+            <TouchableOpacity focusable={true} onPress={() => nav.navigate('ImportPlaylist')} hitSlop={4}>
               <Text style={st.sectionMeta}>＋ 导入</Text>
             </TouchableOpacity>
           </View>
@@ -243,14 +243,14 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
           {!loggedIn ? <Text style={st.empty}>登录后从服务器同步收藏的歌手</Text>
             : artists == null ? <View style={st.center}><ActivityIndicator color={C.brand} /></View>
             : artists.length ? artists.map(a => (
-              <TouchableOpacity key={a.id} style={st.row} activeOpacity={0.8} onPress={() => openArtist(a)}>
+              <TouchableOpacity focusable={true} key={a.id} style={st.row} activeOpacity={0.8} onPress={() => openArtist(a)}>
                 {a.img ? <Image source={{ uri: a.img }} style={st.roundArt} /> : <View style={[st.roundArt, st.artFallback]}><Text style={st.rowGlyph}>{a.name.slice(0, 1)}</Text></View>}
                 <View style={{ flex: 1 }}>
                   <Text style={st.rowName} numberOfLines={1}>{a.name}</Text>
                   <Text style={st.rowMeta}>{a.count != null ? `${a.count} 首歌曲` : '点击查看歌曲'}</Text>
                 </View>
                 {/* lx161:取消收藏(服务器同步) */}
-                <TouchableOpacity hitSlop={8} onPress={() => toggleArtistFav(a).then(on => toast(on ? `已收藏 ${a.name}` : `已取消收藏 ${a.name}`)).catch(() => toast('服务器写入失败'))}>
+                <TouchableOpacity focusable={true} hitSlop={8} onPress={() => toggleArtistFav(a).then(on => toast(on ? `已收藏 ${a.name}` : `已取消收藏 ${a.name}`)).catch(() => toast('服务器写入失败'))}>
                   <Icon name="heart" size={20} active={isArtistFav(a)} color={isArtistFav(a) ? '#FF5A76' : C.text2} />
                 </TouchableOpacity>
                 <Icon name="next" size={18} color={C.text2} />
@@ -266,14 +266,14 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
           {!loggedIn ? <Text style={st.empty}>登录后从服务器同步收藏的专辑</Text>
             : albums == null ? <View style={st.center}><ActivityIndicator color={C.brand} /></View>
             : albums.length ? albums.map(a => (
-              <TouchableOpacity key={a.id} style={st.row} activeOpacity={0.8} onPress={() => openAlbum(a)}>
+              <TouchableOpacity focusable={true} key={a.id} style={st.row} activeOpacity={0.8} onPress={() => openAlbum(a)}>
                 {a.img ? <Image source={{ uri: a.img }} style={st.art} /> : <View style={[st.art, st.artFallback]}><Icon name="music" size={20} color={C.text2} /></View>}
                 <View style={{ flex: 1 }}>
                   <Text style={st.rowName} numberOfLines={1}>{a.name}</Text>
                   <Text style={st.rowMeta} numberOfLines={1}>{a.singer || ''}</Text>
                 </View>
                 {/* lx163:取消收藏专辑(服务器同步) */}
-                <TouchableOpacity hitSlop={8} onPress={() => toggleAlbumFav(a).then(on => toast(on ? `已收藏《${a.name}》` : `已取消收藏《${a.name}》`)).catch(() => toast('服务器写入失败'))}>
+                <TouchableOpacity focusable={true} hitSlop={8} onPress={() => toggleAlbumFav(a).then(on => toast(on ? `已收藏《${a.name}》` : `已取消收藏《${a.name}》`)).catch(() => toast('服务器写入失败'))}>
                   <Icon name="heart" size={20} active={isAlbumFav(a)} color={isAlbumFav(a) ? '#FF5A76' : C.text2} />
                 </TouchableOpacity>
                 <Icon name="next" size={18} color={C.text2} />
@@ -287,7 +287,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
         <View style={st.body}>
           <View style={st.sectionRow}>
             <Text style={st.sectionTitle}>已下载</Text>
-            <TouchableOpacity onPress={() => nav.navigate('Downloads')}>
+            <TouchableOpacity focusable={true} onPress={() => nav.navigate('Downloads')}>
               <Text style={st.sectionMeta}>{dlList.length ? `${dlList.length} 首 · ${fmtBytes(dlStore.totalBytes())} · 管理 ›` : '0 首'}</Text>
             </TouchableOpacity>
           </View>
@@ -300,7 +300,7 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
                   playing={currentDl(r.song)}
                   onPress={() => playSong(r.song, dlList.map(x => x.song))}
                   extra={(
-                    <TouchableOpacity hitSlop={8} onPress={() => dlStore.remove(r.song)}>
+                    <TouchableOpacity focusable={true} hitSlop={8} onPress={() => dlStore.remove(r.song)}>
                       <Icon name="trash" size={18} color={C.text3} />
                     </TouchableOpacity>
                   )}

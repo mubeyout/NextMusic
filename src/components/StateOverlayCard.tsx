@@ -29,11 +29,11 @@ export function StateOverlayCard({
       {icon ? <Icon name={icon} size={glyphSize} color={C.text3} /> : <Text style={[s.glyph, { fontSize: glyphSize }]}>{glyph}</Text>}
       <Text style={s.title}>{title}</Text>
       <Text style={s.body}>{body}</Text>
-      <TouchableOpacity style={s.primaryBtn} activeOpacity={0.85} onPress={onPrimary}>
+      <TouchableOpacity focusable={true} style={s.primaryBtn} activeOpacity={0.85} onPress={onPrimary}>
         <Text style={s.primaryText}>{primary}</Text>
       </TouchableOpacity>
       {secondary ? (
-        <TouchableOpacity style={s.secondaryBtn} activeOpacity={0.85} onPress={onSecondary}>
+        <TouchableOpacity focusable={true} style={s.secondaryBtn} activeOpacity={0.85} onPress={onSecondary}>
           <Text style={s.secondaryText}>{secondary}</Text>
         </TouchableOpacity>
       ) : null}

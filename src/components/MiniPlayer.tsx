@@ -50,7 +50,7 @@ export function MiniPlayer({ standalone }: { standalone?: boolean } = {}) {
     // 常驻占位(老板 2026-09-18:miniplayerbar 应常驻页面,不是只有播放时才显示)
     return (
       <View style={[st.wrap, standalone && { paddingBottom: insets.bottom }]}>
-        <TouchableOpacity activeOpacity={0.9} style={st.card} onPress={() => nav.navigate('Main')}>
+        <TouchableOpacity focusable={true} activeOpacity={0.9} style={st.card} onPress={() => nav.navigate('Main')}>
           <View style={st.row}>
             <View style={st.vinylWrap}>
               <LinearGradient colors={['#171717', '#0e0e0e', '#191919', '#060606']} style={st.vinylDisc} />
@@ -69,7 +69,7 @@ export function MiniPlayer({ standalone }: { standalone?: boolean } = {}) {
   const pct = duration > 0 ? Math.min(1, position / duration) : 0;
   return (
     <Animated.View style={[st.wrap, standalone && { paddingBottom: insets.bottom }, { transform: [{ translateY: enterY }], opacity: enterA }]}>
-      <TouchableOpacity activeOpacity={0.9} style={st.card} onPress={() => nav.navigate('Player')}>
+      <TouchableOpacity focusable={true} activeOpacity={0.9} style={st.card} onPress={() => nav.navigate('Player')}>
         <View style={st.row}>
           <Animated.View style={[st.vinylWrap, { transform: [{ rotate: spinDeg }] }]}>
             <LinearGradient colors={['#171717', '#0e0e0e', '#191919', '#060606']} style={st.vinylDisc} />
@@ -79,16 +79,16 @@ export function MiniPlayer({ standalone }: { standalone?: boolean } = {}) {
             <Text style={st.title} numberOfLines={1}>{current.name}</Text>
             <Text style={st.sub} numberOfLines={1}>{current.singer}{current._types?.flac ? ' · 无损' : ''}</Text>
           </View>
-          <TouchableOpacity style={st.iconBtn} hitSlop={6} onPress={() => nav.navigate('Route')}>
+          <TouchableOpacity focusable={true} style={st.iconBtn} hitSlop={6} onPress={() => nav.navigate('Route')}>
             <Icon name="devices" size={20} color={cast ? C.brand : C.text} />
           </TouchableOpacity>
           {/* lx157:未收藏→面板;仅歌单收录→面板里移除;我喜欢的在→一键取消 */}
-          <TouchableOpacity style={st.iconBtn} hitSlop={6} onPress={() => { popHeart(); if (faved && isFav(current)) { toggleFav(); toast('已取消收藏'); } else setCollect(true); }}>
+          <TouchableOpacity focusable={true} style={st.iconBtn} hitSlop={6} onPress={() => { popHeart(); if (faved && isFav(current)) { toggleFav(); toast('已取消收藏'); } else setCollect(true); }}>
             <Animated.Text style={{ transform: [{ scale: pop }] }}>
               <Icon name="heart" size={20} active={faved} color={faved ? C.heart : C.text} />
             </Animated.Text>
           </TouchableOpacity>
-          <TouchableOpacity style={st.playBtn} hitSlop={4} onPress={toggle}>
+          <TouchableOpacity focusable={true} style={st.playBtn} hitSlop={4} onPress={toggle}>
             <Icon name={playing ? 'pause' : 'play'} size={24} color={C.onBrand} />
           </TouchableOpacity>
         </View>

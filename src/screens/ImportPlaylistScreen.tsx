@@ -91,7 +91,7 @@ export function ImportPlaylistScreen() {
   return (
     <View style={[st.screen, { paddingTop: insets.top + 28 }]}>
       <View style={st.header}>
-        <TouchableOpacity onPress={() => (step === 0 ? nav.goBack() : setStep(s => (s - 1) as 0 | 1))} hitSlop={6} style={{ width: 22 }}>
+        <TouchableOpacity focusable={true} onPress={() => (step === 0 ? nav.goBack() : setStep(s => (s - 1) as 0 | 1))} hitSlop={6} style={{ width: 22 }}>
           <Icon name="back" size={22} />
         </TouchableOpacity>
         <Text style={st.title}>导入歌单</Text>
@@ -128,7 +128,7 @@ export function ImportPlaylistScreen() {
             ) : (
               <>
                 {PLATFORMS.map(pf => (
-                  <TouchableOpacity key={pf.id} style={st.platformRow} activeOpacity={0.7} onPress={() => pick(pf.id)}>
+                  <TouchableOpacity focusable={true} key={pf.id} style={st.platformRow} activeOpacity={0.7} onPress={() => pick(pf.id)}>
                     {pf.hasCircleBg ? (
                       <View style={st.platformIconBare}>
                         <BrandIcon name={pf.icon} size={28} />
@@ -152,7 +152,7 @@ export function ImportPlaylistScreen() {
                 <Text style={hdSt.ghostText}>暂不导入</Text>
               </HDTouch>
             ) : (
-              <TouchableOpacity style={st.skipBtn} onPress={() => nav.goBack()}>
+              <TouchableOpacity focusable={true} style={st.skipBtn} onPress={() => nav.goBack()}>
                 <Text style={st.skipText}>暂不导入</Text>
               </TouchableOpacity>
             )}
@@ -185,7 +185,7 @@ export function ImportPlaylistScreen() {
                 {loading ? <ActivityIndicator color={C.onBrand} size="large" /> : <Text style={hdSt.primaryText}>预览歌单</Text>}
               </HDTouch>
             ) : (
-              <TouchableOpacity style={st.primaryBtn} onPress={fetchPreview} disabled={loading}>
+              <TouchableOpacity focusable={true} style={st.primaryBtn} onPress={fetchPreview} disabled={loading}>
                 {loading ? <ActivityIndicator color={C.onBrand} /> : <Text style={st.primaryText}>预览歌单</Text>}
               </TouchableOpacity>
             )}
@@ -211,7 +211,7 @@ export function ImportPlaylistScreen() {
                 <Text style={hdSt.primaryText}>导入到我的音乐</Text>
               </HDTouch>
             ) : (
-              <TouchableOpacity style={st.primaryBtn} onPress={save}>
+              <TouchableOpacity focusable={true} style={st.primaryBtn} onPress={save}>
                 <Text style={st.primaryText}>导入到我的音乐</Text>
               </TouchableOpacity>
             )}

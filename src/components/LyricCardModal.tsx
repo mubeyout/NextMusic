@@ -96,7 +96,7 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
   const pill = (on: boolean) => on ? st.pillOn : null;
   const pillText = (on: boolean) => [st.pillText, on && st.pillTextOn] as { color: string; fontSize: number; fontWeight: typeof FW.semibold | typeof FW.heavy }[];
   const Pill = ({ on, label, onPress, w }: { on?: boolean; label: string; onPress: () => void; w?: number }) => (
-    <TouchableOpacity style={[st.pill, w ? { width: w } : null, pill(!!on)]} activeOpacity={0.72} onPress={onPress}>
+    <TouchableOpacity focusable={true} style={[st.pill, w ? { width: w } : null, pill(!!on)]} activeOpacity={0.72} onPress={onPress}>
       <Text style={pillText(!!on)}>{label}</Text>
     </TouchableOpacity>
   );
@@ -118,7 +118,7 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
   return (
     <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose}>
       <View style={st.scrim}>
-        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
+        <TouchableOpacity focusable={true} style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         <View style={{ alignItems: 'center' }}>
           {/* 卡片本体(截图目标) */}
           <View ref={cardRef} collapsable={false} style={[st.card, { width: cardW, height: cardH }]}>
@@ -243,7 +243,7 @@ export function LyricCardModal({ visible, onClose, song, lyrics, positionSec }: 
               <Text style={st.valPill}>{opt.lineSpacing.toFixed(1)}</Text>
               <Pill label="行+" w={46} onPress={() => setOpt(o => ({ ...o, lineSpacing: Math.min(1.5, +(o.lineSpacing + 0.1).toFixed(1)) }))} />
             </View>
-            <TouchableOpacity style={[st.opMain, saving && { opacity: 0.6 }]} disabled={saving} onPress={save}>
+            <TouchableOpacity focusable={true} style={[st.opMain, saving && { opacity: 0.6 }]} disabled={saving} onPress={save}>
               <Icon name="download" size={17} color="#0b0f0d" />
               <Text style={st.opMainText}>{saving ? '生成中…' : '保存图片'}</Text>
             </TouchableOpacity>

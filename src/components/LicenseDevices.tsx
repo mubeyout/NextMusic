@@ -56,14 +56,14 @@ export function LicenseDevices({ visible, onClose }: LicenseDevicesProps) {
 
   return (
     <View style={[st.overlay, (IS_HD || Platform.OS === 'web') && st.overlayCenter]}>
-      <TouchableOpacity style={st.scrim} activeOpacity={1} onPress={onClose} />
+      <TouchableOpacity focusable={true} style={st.scrim} activeOpacity={1} onPress={onClose} />
       <View style={[st.sheet, { paddingBottom: insets.bottom + SP.lg }]}>
         <View style={st.header}>
           <View style={st.titleRow}>
             <ProTag variant="owned" size="standard" />
             <Text style={st.title}>我的授权 · 设备管理</Text>
           </View>
-          <TouchableOpacity onPress={onClose} hitSlop={8}>
+          <TouchableOpacity focusable={true} onPress={onClose} hitSlop={8}>
             <Icon name="close" size={20} color={C.text3} />
           </TouchableOpacity>
         </View>
@@ -74,7 +74,7 @@ export function LicenseDevices({ visible, onClose }: LicenseDevicesProps) {
           <View style={st.center}>
             <Text style={st.empty}>{msg || '暂无授权——Pro 权益待解锁'}</Text>
             {/* [1014 渠道翻转] 独角数卡→爱发电 */}
-            <TouchableOpacity style={st.shopBtn} activeOpacity={0.85}
+            <TouchableOpacity focusable={true} style={st.shopBtn} activeOpacity={0.85}
               onPress={() => { if (typeof window !== 'undefined') window.open('https://ifdian.net/a/nextmusic', '_blank'); }}>
               <Text style={st.shopBtnText}>去店铺购买 Pro ¥19.9</Text>
             </TouchableOpacity>

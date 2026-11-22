@@ -62,7 +62,7 @@ interface PlaylistCardProps {
 // 3 列自适应歌单卡：宽度随屏幕自适应填满
 function PlaylistCard({ pl, onPress }: PlaylistCardProps) {
   return (
-    <TouchableOpacity style={p.card} activeOpacity={0.8} onPress={onPress}>
+    <TouchableOpacity focusable={true} style={p.card} activeOpacity={0.8} onPress={onPress}>
       {pl.img ? (
         <Image source={{ uri: pl.img }} style={p.art} />
       ) : (
@@ -93,7 +93,7 @@ function TopRow({ rank, song, onPress }: { rank: number; song: SongItem; onPress
   const hot = rank <= 3;
   const tr = trendOf(rank);
   return (
-    <TouchableOpacity style={t.row} activeOpacity={0.75} onPress={onPress}>
+    <TouchableOpacity focusable={true} style={t.row} activeOpacity={0.75} onPress={onPress}>
       <Text style={[t.rank, hot ? t.rankHot : null]}>{rank}</Text>
       <View style={t.coverWrap}>
         {song.img ? <Image source={{ uri: song.img }} style={t.cover} /> : <View style={[t.cover, t.coverFallback]} />}
@@ -349,7 +349,7 @@ export function ExploreScreen() {
             <Text style={st.groupTitle}>按语言</Text>
             <View style={st.langRow}>
               {LANGS.map(l => (
-                <TouchableOpacity key={l} style={st.langBtn} activeOpacity={0.85} onPress={() => selectTag(l)}>
+                <TouchableOpacity focusable={true} key={l} style={st.langBtn} activeOpacity={0.85} onPress={() => selectTag(l)}>
                   <Text style={[st.langLabel, activeTag === l && st.langLabelOn]}>{l}</Text>
                 </TouchableOpacity>
               ))}
@@ -360,7 +360,7 @@ export function ExploreScreen() {
               <>
                 <View style={st.sectionRow}>
                   <Text style={st.sectionTitle}>{activeTag}歌单</Text>
-                  <TouchableOpacity onPress={() => { setActiveTag(''); setPlaylists(null); }}>
+                  <TouchableOpacity focusable={true} onPress={() => { setActiveTag(''); setPlaylists(null); }}>
                     <Text style={st.sectionMeta}>清除筛选</Text>
                   </TouchableOpacity>
                 </View>
@@ -383,7 +383,7 @@ export function ExploreScreen() {
         {tab === 2 && (
           <View style={st.body}>
             {/* TOP50 hero：Figma 2357:1263 */}
-            <TouchableOpacity activeOpacity={0.9} onPress={() => {
+            <TouchableOpacity focusable={true} activeOpacity={0.9} onPress={() => {
               const top = boards.find(b => /TOP/i.test(b.name)) || boards[0];
               if (top) openBoard(top);
             }}>
@@ -399,7 +399,7 @@ export function ExploreScreen() {
             <Text style={st.groupTitle}>热门榜单</Text>
             <View style={st.chartRow}>
               {chartCards.map((c, i) => c.board ? (
-                <TouchableOpacity key={i} style={st.chartCard} activeOpacity={0.85} onPress={() => openBoard(c.board, 'wy')}>
+                <TouchableOpacity focusable={true} key={i} style={st.chartCard} activeOpacity={0.85} onPress={() => openBoard(c.board, 'wy')}>
                   <View style={[st.chartAccent, { backgroundColor: c.accent[0] }]} />
                   <Text style={st.chartName} numberOfLines={1}>{c.board.name}</Text>
                   <Text style={st.chartCaption} numberOfLines={1}>{c.caption}</Text>
@@ -413,7 +413,7 @@ export function ExploreScreen() {
             {/* Top 50 前 5 + 入口：点击进入完整榜 */}
             <View style={st.sectionRow}>
               <Text style={st.sectionTitle}>Top 50</Text>
-              <TouchableOpacity onPress={() => {
+              <TouchableOpacity focusable={true} onPress={() => {
                 const top = boards.find(b => /TOP/i.test(b.name)) || boards[0];
                 if (top) openBoard(top);
               }}>
@@ -432,13 +432,13 @@ export function ExploreScreen() {
             {/* 全部榜单：页内 2列×3行 网格卡 + 查看全部入口（独立榜单广场页） */}
             <View style={st.sectionRow}>
               <Text style={st.sectionTitle}>全部榜单</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('BoardsSquare')}>
+              <TouchableOpacity focusable={true} onPress={() => navigation.navigate('BoardsSquare')}>
                 <Text style={st.sectionMeta}>查看全部 ›</Text>
               </TouchableOpacity>
             </View>
             <View style={st.boardGrid}>
               {boards.slice(0, 6).map((b, i) => (
-                <TouchableOpacity key={b.id} style={st.boardCell} activeOpacity={0.85} onPress={() => openBoard(b)}>
+                <TouchableOpacity focusable={true} key={b.id} style={st.boardCell} activeOpacity={0.85} onPress={() => openBoard(b)}>
                   <View style={[st.boardCard, { backgroundColor: BOARD_ACCENTS[i % BOARD_ACCENTS.length][0] }]}> {/* [老板 1105] 渐变→纯色 */}
                     <Text style={st.boardCardName} numberOfLines={2}>{b.name}</Text>
                     <Text style={st.boardCardSub}>酷狗榜</Text>

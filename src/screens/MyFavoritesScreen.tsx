@@ -97,7 +97,7 @@ export function MyFavoritesScreen() {
                 extra={IS_HD ? (
                   <Icon name="heart" size={20} active color={C.heart} /> /* TV:状态指示器,管理走长按 */
                 ) : (
-                  <TouchableOpacity hitSlop={8} onPress={() => unfav(s)}>
+                  <TouchableOpacity focusable={true} hitSlop={8} onPress={() => unfav(s)}>
                     <Icon name="heart" size={20} active color={C.heart} />
                   </TouchableOpacity>
                 )} />
@@ -125,7 +125,7 @@ export function MyFavoritesScreen() {
                   {IS_HD ? (
                     <Icon name="heart" size={20} active={favd} color={favd ? C.heart : C.text2} /> /* lx167d:TV 指示器 */
                   ) : (
-                    <TouchableOpacity hitSlop={8} onPress={() => toggleArtistFav(a).then(on => toast(on ? `已收藏 ${a.name}` : '已取消收藏')).catch(() => toast('服务器写入失败'))}>
+                    <TouchableOpacity focusable={true} hitSlop={8} onPress={() => toggleArtistFav(a).then(on => toast(on ? `已收藏 ${a.name}` : '已取消收藏')).catch(() => toast('服务器写入失败'))}>
                       <Icon name="heart" size={20} active={favd} color={favd ? C.heart : C.text2} />
                     </TouchableOpacity>
                   )}
@@ -155,7 +155,7 @@ export function MyFavoritesScreen() {
                   {IS_HD ? (
                     <Icon name="heart" size={20} active={favd} color={favd ? C.heart : C.text2} /> /* lx167d:TV 指示器 */
                   ) : (
-                    <TouchableOpacity hitSlop={8} onPress={() => toggleAlbumFav(a).then(on => toast(on ? '已收藏' : '已取消收藏')).catch(() => toast('服务器写入失败'))}>
+                    <TouchableOpacity focusable={true} hitSlop={8} onPress={() => toggleAlbumFav(a).then(on => toast(on ? '已收藏' : '已取消收藏')).catch(() => toast('服务器写入失败'))}>
                       <Icon name="heart" size={20} active={favd} color={favd ? C.heart : C.text2} />
                     </TouchableOpacity>
                   )}

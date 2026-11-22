@@ -131,13 +131,13 @@ export function SearchScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Text style={st.allSecTitle}>搜索历史</Text>
             <View style={{ flex: 1 }} />
-            <TouchableOpacity hitSlop={6} onPress={() => { setHistory([]); histKv.set('h', '[]'); }}>
+            <TouchableOpacity focusable={true} hitSlop={6} onPress={() => { setHistory([]); histKv.set('h', '[]'); }}>
               <Icon name="close" size={14} color={C.text3} />
             </TouchableOpacity>
           </View>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.md }}>
             {history.map(w => (
-              <TouchableOpacity key={w} style={st.chip} onPress={() => { setKw(w); search(w); }}>
+              <TouchableOpacity focusable={true} key={w} style={st.chip} onPress={() => { setKw(w); search(w); }}>
                 <Text style={st.chipText} numberOfLines={1}>{w}</Text>
               </TouchableOpacity>
             ))}
@@ -148,7 +148,7 @@ export function SearchScreen() {
         <Text style={st.allSecTitle}>大家都在搜</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.md }}>
           {HOT_WORDS.map((w, i) => (
-            <TouchableOpacity key={w} style={st.chip} onPress={() => { setKw(w); search(w); }}>
+            <TouchableOpacity focusable={true} key={w} style={st.chip} onPress={() => { setKw(w); search(w); }}>
               <Text style={[st.chipIdx, i < 3 && { color: C.brand }]}>{i + 1}</Text>
               <Text style={st.chipText} numberOfLines={1}>{w}</Text>
             </TouchableOpacity>
@@ -161,7 +161,7 @@ export function SearchScreen() {
   return (
     <View style={st.screen}>
       <View style={[st.searchRow, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => nav.goBack()} hitSlop={6} style={{ width: 24 }}>
+        <TouchableOpacity focusable={true} onPress={() => nav.goBack()} hitSlop={6} style={{ width: 24 }}>
           <Icon name="back" size={22} />
         </TouchableOpacity>
         <View style={st.searchBox}>
@@ -178,7 +178,7 @@ export function SearchScreen() {
             autoCorrect={false}
           />
           {kw ? (
-            <TouchableOpacity hitSlop={8} onPress={() => setKw('')}>
+            <TouchableOpacity focusable={true} hitSlop={8} onPress={() => setKw('')}>
               <Icon name="close" size={16} color={C.text3} />
             </TouchableOpacity>
           ) : null}
@@ -194,7 +194,7 @@ export function SearchScreen() {
             ['album', `专辑 ${(albums || []).length}`],
           ] as const).map(([k, label]) => (
             (k !== 'singer' || (singers || []).length) && (k !== 'album' || (albums || []).length) ? (
-              <TouchableOpacity key={k} style={st.anchorChip} onPress={() => anchor(k)}>
+              <TouchableOpacity focusable={true} key={k} style={st.anchorChip} onPress={() => anchor(k)}>
                 <Text style={st.anchorText}>{label}</Text>
               </TouchableOpacity>
             ) : null
@@ -224,7 +224,7 @@ export function SearchScreen() {
                     onMore={() => setActSong(s)} />
                 ))}
                 {results.length > 6 ? (
-                  <TouchableOpacity style={st.allMore} onPress={() => setShowAllSongs(v => !v)}>
+                  <TouchableOpacity focusable={true} style={st.allMore} onPress={() => setShowAllSongs(v => !v)}>
                     <Text style={st.allMoreText}>{showAllSongs ? '收起' : `查看全部 ${results.length} 首`}</Text>
                     <Icon name="chevronright" size={14} color={C.text2} />
                   </TouchableOpacity>
@@ -312,7 +312,7 @@ function AllArtistCircle({ a, onPress }: { a: { id: string; name: string; img?: 
   const { elRef, onHoverIn, onHoverOut, cardStyle } = useHoverCard(a.name);
   const w = 76;
   return (
-    <TouchableOpacity ref={elRef as never}
+    <TouchableOpacity focusable={true} ref={elRef as never}
       style={[{ width: w, backgroundColor: C.surface, borderRadius: 12, overflow: 'hidden' }, cardStyle as never]}
       activeOpacity={0.85} onPress={onPress}
       {...(Platform.OS === 'web' ? { onHoverIn, onHoverOut } : {}) as Record<string, unknown>}>

@@ -39,7 +39,7 @@ function T(props: { style?: unknown; onPress?: () => void; disabled?: boolean; c
     <HDTouch style={style as never} onPress={onPress} disabled={disabled} focusStyle={focus(12)} {...(rest as object)}>{children}</HDTouch>
   );
   return (
-    <TouchableOpacity style={style as never} onPress={onPress} disabled={disabled} activeOpacity={0.72} {...(rest as object)}>{children}</TouchableOpacity>
+    <TouchableOpacity focusable={true} style={style as never} onPress={onPress} disabled={disabled} activeOpacity={0.72} {...(rest as object)}>{children}</TouchableOpacity>
   );
 }
 
@@ -427,7 +427,7 @@ function BrowseView({ libId }: { libId: string }) {
       ) : (
         <PageHeader
           title={libName}
-          right={<TouchableOpacity onPress={openMenu} hitSlop={6}><Icon name="more" size={21} /></TouchableOpacity>}
+          right={<TouchableOpacity focusable={true} onPress={openMenu} hitSlop={6}><Icon name="more" size={21} /></TouchableOpacity>}
         />
       )}
       <ScrollView

@@ -57,7 +57,7 @@ function T(props: { style?: unknown; onPress?: (e?: unknown) => void; onLongPres
     </HDTouch>
   );
   return (
-    <TouchableOpacity style={style as never} onPress={onPress} onLongPress={onLongPress} disabled={disabled} activeOpacity={0.7} {...(rest as object)}>
+    <TouchableOpacity focusable={true} style={style as never} onPress={onPress} onLongPress={onLongPress} disabled={disabled} activeOpacity={0.7} {...(rest as object)}>
       {children}
     </TouchableOpacity>
   );
@@ -135,7 +135,7 @@ export function MediaLibsScreen() {
         <PageHeader
           title="媒体库"
           right={(
-            <TouchableOpacity onPress={addMenu} hitSlop={6}>
+            <TouchableOpacity focusable={true} onPress={addMenu} hitSlop={6}>
               <Icon name="add" size={22} />
             </TouchableOpacity>
           )}
@@ -752,15 +752,15 @@ export function ProviderBrowseScreen({ route }: { route: { params: { acctId: str
         </View>
       ) : (
         <View style={[st.hWrap, { paddingTop: insets.top + 20 }]}>
-          <TouchableOpacity onPress={() => nav.goBack()} hitSlop={6} style={st.hSide}>
+          <TouchableOpacity focusable={true} onPress={() => nav.goBack()} hitSlop={6} style={st.hSide}>
             <Icon name="back" size={22} />
           </TouchableOpacity>
-          <TouchableOpacity style={st.acctBtn} activeOpacity={0.7} onPress={() => setSwSheet(true)}>
+          <TouchableOpacity focusable={true} style={st.acctBtn} activeOpacity={0.7} onPress={() => setSwSheet(true)}>
             <AcctGlyph type={acct.type} size={18} />
             <Text style={st.acctName} numberOfLines={1}>{acct.name || PROVIDER_META[acct.type].label}</Text>
             <View style={st.acctCaret}><Icon name="chevronright" size={13} color={C.text3} /></View>
           </TouchableOpacity>
-          <TouchableOpacity style={st.hSide} hitSlop={6} onPress={() => nav.navigate('ProviderEdit', {})}>
+          <TouchableOpacity focusable={true} style={st.hSide} hitSlop={6} onPress={() => nav.navigate('ProviderEdit', {})}>
             <Icon name="add" size={22} />
           </TouchableOpacity>
         </View>

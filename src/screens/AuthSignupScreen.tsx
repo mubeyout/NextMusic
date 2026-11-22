@@ -100,11 +100,11 @@ export function AuthSignupScreen() {
           </View>
         </View>
 
-        <TouchableOpacity style={st.btnPrimary} onPress={submit} disabled={busy}>
+        <TouchableOpacity focusable={true} style={st.btnPrimary} onPress={submit} disabled={busy}>
           {busy ? <ActivityIndicator color={C.onBrand} /> : <Text style={st.btnPrimaryText}>创建并登录</Text>}
         </TouchableOpacity>
         {err ? <Text style={st.err}>{err}</Text> : null}
-        <TouchableOpacity style={st.backLink} onPress={() => nav.goBack()}>
+        <TouchableOpacity focusable={true} style={st.backLink} onPress={() => nav.goBack()}>
           <Text style={st.backText}>← 返回</Text>
         </TouchableOpacity>
       </ScrollView>

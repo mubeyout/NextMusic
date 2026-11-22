@@ -48,7 +48,7 @@ export function DownloadsScreen() {
       <PageHeader
         title="下载管理"
         right={(
-          <TouchableOpacity onPress={clear} hitSlop={6}>
+          <TouchableOpacity focusable={true} onPress={clear} hitSlop={6}>
             <Icon name="close" size={20} color={list.length ? C.text : C.text3} />
           </TouchableOpacity>
         )}
@@ -63,10 +63,10 @@ export function DownloadsScreen() {
             <Icon name="shield" size={14} color={C.danger} />
             <Text style={st.failTitle} numberOfLines={1}>{fails.length} 首下载失败 · 最近：{lastFails[0].err}</Text>
             {/* lx179(B):一键重试(带曲目信息的失败项重新入队;web 走服务器缓存路径) */}
-            <TouchableOpacity hitSlop={6} onPress={() => { const r = retryFails(); if (!r.retried) toast('没有可重试的记录（旧记录缺曲目信息，已保留）'); }}>
+            <TouchableOpacity focusable={true} hitSlop={6} onPress={() => { const r = retryFails(); if (!r.retried) toast('没有可重试的记录（旧记录缺曲目信息，已保留）'); }}>
               <Text style={st.failClear}>重试</Text>
             </TouchableOpacity>
-            <TouchableOpacity hitSlop={6} onPress={() => { clearFails(); }}>
+            <TouchableOpacity focusable={true} hitSlop={6} onPress={() => { clearFails(); }}>
               <Text style={st.failClear}>清除</Text>
             </TouchableOpacity>
           </View>
@@ -80,7 +80,7 @@ export function DownloadsScreen() {
                 playing={current?.songmid === r.song.songmid}
                 onPress={() => play(r.song)}
                 extra={(
-                  <TouchableOpacity hitSlop={8} onPress={() => removeSong(r.song)}>
+                  <TouchableOpacity focusable={true} hitSlop={8} onPress={() => removeSong(r.song)}>
                     <Icon name="trash" size={18} color={C.text3} />
                   </TouchableOpacity>
                 )}

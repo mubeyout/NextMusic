@@ -132,18 +132,18 @@ export function DeviceMusicScreen() {
             <Text style={st.scanTitle}>{scanning ? `扫描中… 已发现 ${found} 首` : `${count} 首设备音乐`}</Text>
             <Text style={st.scanSub}>扫描系统媒体库（含时长/专辑信息）</Text>
           </View>
-          <TouchableOpacity style={st.scanBtn} onPress={scan} disabled={scanning}>
+          <TouchableOpacity focusable={true} style={st.scanBtn} onPress={scan} disabled={scanning}>
             {scanning ? <ActivityIndicator size="small" color={C.onBrand} /> : <Icon name="refresh" size={18} color={C.onBrand} />}
             <Text style={st.scanBtnText}>{scanning ? '扫描中' : count ? '重新扫描' : '开始扫描'}</Text>
           </TouchableOpacity>
         </View>
         {count ? (
           <View style={{ flexDirection: 'row', gap: SP.lg, marginTop: 12 }}>
-            <TouchableOpacity style={[st.addAll, { flex: 1, marginTop: 0 }]} onPress={addAllToPlaylist}>
+            <TouchableOpacity focusable={true} style={[st.addAll, { flex: 1, marginTop: 0 }]} onPress={addAllToPlaylist}>
               <Icon name="add" size={16} color={C.onBrand} />
               <Text style={st.addAllText}>全部加入歌单</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[st.addAll, { flex: 1, marginTop: 0, borderWidth: 1, borderColor: 'rgba(30,215,96,.35)' }]} onPress={uploadAllToLibrary}>
+            <TouchableOpacity focusable={true} style={[st.addAll, { flex: 1, marginTop: 0, borderWidth: 1, borderColor: 'rgba(30,215,96,.35)' }]} onPress={uploadAllToLibrary}>
               <Icon name="cloud" size={16} color={C.brand} />
               <Text style={st.addAllText}>上传到曲库</Text>
             </TouchableOpacity>
@@ -157,7 +157,7 @@ export function DeviceMusicScreen() {
               playing={current?.songmid === s.songmid}
               onPress={() => playSong(s, songs)}
               extra={(
-                <TouchableOpacity hitSlop={8} onPress={() => addOne(s)}>
+                <TouchableOpacity focusable={true} hitSlop={8} onPress={() => addOne(s)}>
                   <Icon name="add" size={18} color={C.text2} />
                 </TouchableOpacity>
               )}

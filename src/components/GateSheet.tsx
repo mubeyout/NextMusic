@@ -107,7 +107,7 @@ export function GateSheet({ gate, brandType, onUpgrade, onTrial, onDismiss, scen
           <Text style={st.goldBtnText}>{CTA.main}</Text>
         </HDTouch>
       ) : (
-        <TouchableOpacity style={st.goldBtn} activeOpacity={0.75} onPress={onUpgrade}>
+        <TouchableOpacity focusable={true} style={st.goldBtn} activeOpacity={0.75} onPress={onUpgrade}>
           <Text style={st.goldBtnText}>{CTA.main}</Text>
         </TouchableOpacity>
       )}
@@ -118,7 +118,7 @@ export function GateSheet({ gate, brandType, onUpgrade, onTrial, onDismiss, scen
       </View>
 
       {/* 6. 文字链：先免费试用 7 天 */}
-      <TouchableOpacity onPress={onTrial} hitSlop={8} style={{ paddingVertical: 8 }}>
+      <TouchableOpacity focusable={true} onPress={onTrial} hitSlop={8} style={{ paddingVertical: 8 }}>
         <Text style={st.trialLink}>{CTA.trial}</Text>
       </TouchableOpacity>
 
@@ -128,7 +128,7 @@ export function GateSheet({ gate, brandType, onUpgrade, onTrial, onDismiss, scen
           <Text style={st.ghostText}>{CTA.dismiss}</Text>
         </HDTouch>
       ) : (
-        <TouchableOpacity style={st.ghostBtn} activeOpacity={0.75} onPress={onDismiss}>
+        <TouchableOpacity focusable={true} style={st.ghostBtn} activeOpacity={0.75} onPress={onDismiss}>
           <Text style={st.ghostText}>{CTA.dismiss}</Text>
         </TouchableOpacity>
       )}
@@ -137,7 +137,7 @@ export function GateSheet({ gate, brandType, onUpgrade, onTrial, onDismiss, scen
 
   return (
     <Modal animationType={centered ? 'fade' : 'slide'} transparent visible onRequestClose={onDismiss}>
-      <TouchableOpacity style={st.scrim} activeOpacity={1} onPress={onDismiss}>
+      <TouchableOpacity focusable={true} style={st.scrim} activeOpacity={1} onPress={onDismiss}>
         <View onStartShouldSetResponder={() => true} style={centered ? st.centerWrap : st.drawerWrap}>
           {centered ? (
             <ScrollView style={{ flexGrow: 0 }} contentContainerStyle={{ maxWidth: 560, width: '92%' }} showsVerticalScrollIndicator={false}>

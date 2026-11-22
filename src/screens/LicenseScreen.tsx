@@ -106,7 +106,7 @@ export function LicenseScreen() {
               autoCorrect={false}
               multiline={Platform.OS !== 'web'}
             />
-            <TouchableOpacity style={[st.redeemBtn, busy && { opacity: 0.6 }]} activeOpacity={0.75} onPress={redeem} disabled={busy}>
+            <TouchableOpacity focusable={true} style={[st.redeemBtn, busy && { opacity: 0.6 }]} activeOpacity={0.75} onPress={redeem} disabled={busy}>
               <Text style={st.redeemBtnText}>{LICENSE_PAGE.redeemBtn}</Text>
             </TouchableOpacity>
           </View>
@@ -114,21 +114,21 @@ export function LicenseScreen() {
 
         {/* ── 店铺购买渠道（免费态·绿 CTA 收行动） ── */}
         {!view.licensed ? (
-          <TouchableOpacity style={st.shopBtn} activeOpacity={0.85} onPress={openShop}>
+          <TouchableOpacity focusable={true} style={st.shopBtn} activeOpacity={0.85} onPress={openShop}>
             <Text style={st.shopBtnText}>去店铺购买 Pro ¥19.9 · 终身</Text>
           </TouchableOpacity>
         ) : null}
 
         {/* ── 试用启动链（免费态） ── */}
         {!view.licensed ? (
-          <TouchableOpacity style={st.cardBtn} activeOpacity={0.75} onPress={startTrial}>
+          <TouchableOpacity focusable={true} style={st.cardBtn} activeOpacity={0.75} onPress={startTrial}>
             <Text style={st.cardBtnText}>{LICENSE_PAGE.trialStart}</Text>
           </TouchableOpacity>
         ) : null}
 
         {/* ── Pro 持有者：升级家庭（补差 ¥68）── */}
         {tier === 'pro' ? (
-          <TouchableOpacity style={st.familyCard} activeOpacity={0.75} onPress={openFamily}>
+          <TouchableOpacity focusable={true} style={st.familyCard} activeOpacity={0.75} onPress={openFamily}>
             <View style={{ flex: 1 }}>
               <Text style={st.familyTitle}>{LICENSE_PAGE.familyEntry}</Text>
               <Text style={st.familySub}>{LICENSE_PAGE.familyEntrySub}</Text>

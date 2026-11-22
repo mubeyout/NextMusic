@@ -138,7 +138,7 @@ export function ThemeScreen() {
       <Section title="模式">
         <View style={ts.modeRow}>
           {([{ k: false, label: '深色' }, { k: true, label: '浅色' }] as const).map(m => (
-            <TouchableOpacity key={m.label} style={[ts.modePill, s.light === m.k && ts.modeOn]} onPress={() => { if (s.light !== m.k) { settings.set('light', m.k); applyAndRestart(); } }}>
+            <TouchableOpacity focusable={true} key={m.label} style={[ts.modePill, s.light === m.k && ts.modeOn]} onPress={() => { if (s.light !== m.k) { settings.set('light', m.k); applyAndRestart(); } }}>
               <Text style={[ts.modeText, s.light === m.k && ts.modeTextOn]}>{m.label}</Text>
             </TouchableOpacity>
           ))}
@@ -151,7 +151,7 @@ export function ThemeScreen() {
       <Section title="强调色">
         <View style={ts.swatchRow}>
           {accents.map(a => (
-            <TouchableOpacity key={a.name} style={ts.swatchItem} onPress={() => { if (s.accent !== a.color) { settings.set('accent', a.color); applyAndRestart(); } }}>
+            <TouchableOpacity focusable={true} key={a.name} style={ts.swatchItem} onPress={() => { if (s.accent !== a.color) { settings.set('accent', a.color); applyAndRestart(); } }}>
               <View style={[ts.swatch, { backgroundColor: a.color }, s.accent === a.color && ts.swatchOn]}>
                 {s.accent === a.color ? <Icon name="check" size={16} color={C.onBrand} /> : null}
               </View>

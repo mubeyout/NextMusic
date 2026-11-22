@@ -69,7 +69,7 @@ export function BoardsSquareScreen() {
         ) : boards.length ? (
           <View style={st.grid}>
             {boards.map((b, i) => (
-              <TouchableOpacity key={b.id + b.bangid} style={st.cell} activeOpacity={0.85} onPress={() => openBoard(b)}>
+              <TouchableOpacity focusable={true} key={b.id + b.bangid} style={st.cell} activeOpacity={0.85} onPress={() => openBoard(b)}>
                 <View
                   style={[st.card, { backgroundColor: ACCENTS[i % ACCENTS.length][0] }]} /* [老板 1105] 渐变→首色纯色 */
                 >
