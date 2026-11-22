@@ -13,13 +13,21 @@ class VersionModule(reactContext: ReactApplicationContext) : ReactContextBaseJav
         "versionCode" to BuildConfig.VERSION_CODE.toLong(),
         "flavor" to BuildConfig.FLAVOR, // phone / hd —— JS 层 UI 分流
         // 1028 车机适配:设备形态(tv=电视/car=车机/normal)——车机触摸直点输入框/底部 bar 让位要用
-        // 1029 兕底:Flyme Auto 定制 ROM 常不报 UI_MODE_TYPE_CAR(实车元素小=150% 未触发实锤)——非 TV 且屏宽≥1400dp 判 car
+        // 1122 实锤:小米电视 uiMode=normal 且 1920x1080@320dpi=960dp 横屏,被宽屏兜底误判 car → 进 CarShell 旧车机壳;
+        // 先查系统电视特征(television/leanback)优先判 tv,特征缺失再走宽屏车机兜底。
         "uiMode" to when (reactApplicationContext.resources.configuration.uiMode and Configuration.UI_MODE_TYPE_MASK) {
             Configuration.UI_MODE_TYPE_CAR -> "car"
             Configuration.UI_MODE_TYPE_TELEVISION -> "tv"
             else -> {
-                val cfg = reactApplicationContext.resources.configuration
-                if (cfg.screenWidthDp >= 900 && cfg.orientation == Configuration.ORIENTATION_LANDSCAPE && (cfg.uiMode and Configuration.UI_MODE_TYPE_MASK) == Configuration.UI_MODE_TYPE_NORMAL) "car" else "normal" // [实车实锤 1110] 星愿1920x1080@240density=1280dp<1400漏判→降阈900+横屏(手机横屏≤840dp,车机/平板≥960dp)
+                val pm = reactApplicationContext.packageManager
+                val isTv = pm.hasSystemFeature("android.hardware.type.television") ||
+                    pm.hasSystemFeature("android.software.leanback")
+                if (isTv) {
+                    "tv"
+                } else {
+                    val cfg = reactApplicationContext.resources.configuration
+                    if (cfg.screenWidthDp >= 900 && cfg.orientation == Configuration.ORIENTATION_LANDSCAPE && (cfg.uiMode and Configuration.UI_MODE_TYPE_MASK) == Configuration.UI_MODE_TYPE_NORMAL) "car" else "normal"
+                }
             }
         },
     )

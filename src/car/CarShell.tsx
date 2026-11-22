@@ -60,7 +60,7 @@ function PlayPanel({ onOpen, onFx, onQueue, onFav, onArtistTap }: { onOpen: () =
   const { position, duration } = usePlayerProgress();
   const { height: winH } = useWindowDimensions();
   // [1121#3] 封面按屏高自适应: winH(dp)-面板固定内容~420dp -> 96~176 夹取,矮屏不溢出
-  const art = Math.max(96, Math.min(176, Math.floor(winH - 420)));
+  const art = Math.max(84, Math.min(140, Math.floor((winH - 105) * 0.32))); // [1122#7] tighter
   const pct = duration > 0 ? Math.min(1, Math.max(0, position / duration)) : 0;
   const img = current ? fixCoverUrl(current.img) : undefined;
   const curIdx = queue.findIndex(q => current && q.songmid === current.songmid);
@@ -207,20 +207,20 @@ const st2 = {
   searchPill: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 7, height: 36, paddingHorizontal: 13, borderRadius: 12, backgroundColor: C.surface2 },
   iconBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
   panelWrap: { borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.07)', backgroundColor: C.surface }, // [1121自适应] width 由 JSX 动态设
-  panel: { flex: 1, padding: 13, gap: 5, alignItems: 'center' as const },
+  panel: { flex: 1, padding: 10, gap: 4, alignItems: 'center' as const },
   panelArt: { borderRadius: 10, backgroundColor: C.surface2 },
-  panelTitle: { color: C.text, fontSize: 15, fontWeight: '700' as const, textAlign: 'center' as const, width: '100%' },
+  panelTitle: { color: C.text, fontSize: 14, fontWeight: '700' as const, textAlign: 'center' as const, width: '100%' },
   panelArtist: { color: C.text2, fontSize: 11.5, textAlign: 'center' as const, width: '100%' },
   panelProg: { flexDirection: 'row' as const, height: 4, width: '100%', borderRadius: 2, overflow: 'hidden' as const },
   panelTimes: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, width: '100%' },
   panelTime: { color: C.text3, fontSize: 11, fontVariant: ['tabular-nums' as never] },
-  panelCtrls: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 12, marginTop: 4 },
-  pBtn: { width: 43, height: 43, borderRadius: 22, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
-  pMain: { width: 51, height: 51, borderRadius: 26, backgroundColor: C.brand, alignItems: 'center' as const, justifyContent: 'center' as const },
+  panelCtrls: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 9, marginTop: 2 },
+  pBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
+  pMain: { width: 46, height: 46, borderRadius: 23, backgroundColor: C.brand, alignItems: 'center' as const, justifyContent: 'center' as const },
   panelTools: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 4, marginTop: 6, width: '100%' as const },
-  pTool: { height: 36, borderRadius: 8, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
+  pTool: { height: 32, borderRadius: 8, backgroundColor: C.surface2, alignItems: 'center' as const, justifyContent: 'center' as const },
   panelBadges: { flexDirection: 'row' as const, gap: 8 },
   pBadge: { color: C.text3, fontSize: 11, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10, backgroundColor: C.surface2 },
-  panelQueue: { width: '100%', paddingVertical: 8, alignItems: 'center' as const },
+  panelQueue: { width: '100%', paddingVertical: 6, alignItems: 'center' as const },
   panelQueueText: { color: C.text3, fontSize: 9 },
 };

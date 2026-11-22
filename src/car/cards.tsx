@@ -41,11 +41,11 @@ export function CarRecCard({ img, name, sub, fallback, onPress, dense }: {
 }
 
 /** 车机歌曲行: 88 高/封面 72 r12/名 16/副 13/时长 15 */
-export function CarSongRow({ song, onPress, dense }: { song: SongItem; onPress: () => void; dense?: boolean }) {
+export function CarSongRow({ song, onPress, dense, tight }: { song: SongItem; onPress: () => void; dense?: boolean; tight?: boolean }) {
   return (
-    <CarTouch onPress={onPress} style={dense ? st.songRowDense : st.songRow}>
+    <CarTouch onPress={onPress} style={tight ? st.songRowTight : dense ? st.songRowDense : st.songRow}>
       {song.img
-        ? <Image source={{ uri: song.img }} style={dense ? st.songArtDense : st.songArt} />
+        ? <Image source={{ uri: song.img }} style={tight ? st.songArtTight : dense ? st.songArtDense : st.songArt} />
         : <View style={[dense ? st.songArtDense : st.songArt, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}><Icon name="music" size={20} color={C.text3} /></View>}
       <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
         <Text style={st.songName} numberOfLines={1}>{song.name}</Text>
@@ -76,6 +76,8 @@ const st = {
   // [v7.9 QQ对齐 1110] 紧凑档并入 64 密度行/148 竖卡
   bigCardDense: { height: 132, paddingHorizontal: 20, gap: 13 },
   songRowDense: { height: 60, gap: 12, borderBottomColor: 'rgba(255,255,255,0.07)' },
+  songRowTight: { height: 52, gap: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.07)' },
+  songArtTight: { width: 40, height: 40, borderRadius: 8 },
   songArtDense: { width: 48, height: 48, borderRadius: 8 },
   recArtDense: { width: 148, height: 148, borderRadius: 12 },
   recPlayDense: { position: 'absolute' as const, right: 4, top: 78, width: 34, height: 34, borderRadius: 17, backgroundColor: '#00000066', alignItems: 'center' as const, justifyContent: 'center' as const },

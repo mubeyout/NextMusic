@@ -45,9 +45,9 @@ export function CarPlaylist({ pl, onBack }: { pl: CarPlRef; onBack: () => void }
             </View>
           </View>
         </View>
-        <View style={{ marginTop: 12 }}>
+        <View style={{ marginTop: 8 }}>
           {songs.map((s, i) => (
-            <CarSongRow key={`${i}${s.songmid}`} song={s} onPress={() => void player.playSong(s, songs)} />
+            <CarSongRow tight key={`${i}${s.songmid}`} song={s} onPress={() => void player.playSong(s, songs)} />
           ))}
         </View>
       </ScrollView>
@@ -56,15 +56,15 @@ export function CarPlaylist({ pl, onBack }: { pl: CarPlRef; onBack: () => void }
 }
 
 const st = {
-  back: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 4 },
+  back: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6, paddingHorizontal: 14, paddingTop: 8, paddingBottom: 3 },
   backLabel: { color: C.text2, fontSize: 15 },
-  head: { flexDirection: 'row' as const, gap: 18, alignItems: 'center' as const },
-  cover: { width: 168, height: 168, borderRadius: 16 },
-  title: { color: C.text, fontSize: 27, fontWeight: '800' as const },
-  meta: { color: C.text2, fontSize: 14 },
-  btnRow: { flexDirection: 'row' as const, gap: 14, marginTop: 8 },
-  playAll: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, height: 46, paddingHorizontal: 24, borderRadius: 999, backgroundColor: C.brand },
+  head: { flexDirection: 'row' as const, gap: 13, alignItems: 'center' as const },
+  cover: { width: 128, height: 128, borderRadius: 13 },
+  title: { color: C.text, fontSize: 21, fontWeight: '800' as const },
+  meta: { color: C.text2, fontSize: 12 },
+  btnRow: { flexDirection: 'row' as const, gap: 10, marginTop: 6 },
+  playAll: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 7, height: 38, paddingHorizontal: 20, borderRadius: 999, backgroundColor: C.brand },
   playAllText: { color: C.onBrand, fontSize: 16, fontWeight: '700' as const },
-  subBtn: { height: 46, paddingHorizontal: 24, borderRadius: 999, borderWidth: 1.5, borderColor: '#FFFFFF30', alignItems: 'center' as const, justifyContent: 'center' as const },
+  subBtn: { height: 38, paddingHorizontal: 20, borderRadius: 999, borderWidth: 1.5, borderColor: '#FFFFFF30', alignItems: 'center' as const, justifyContent: 'center' as const },
   subText: { color: C.text, fontSize: 16 },
 };
