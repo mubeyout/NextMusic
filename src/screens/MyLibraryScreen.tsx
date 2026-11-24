@@ -5,7 +5,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, ActivityIndicator, useWindowDimensions, Animated, RefreshControl } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient'; // A1 渐变(质感整改)
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import { HDTouch } from '../hd/HDTouch';
 import { Icon, type IconName } from '../theme/Icon';
 import { C, FS, FW, SP, T } from '../theme/tokens';
@@ -159,7 +159,9 @@ export function MyLibraryScreen() {
   const { width } = useWindowDimensions();
   const davWide = IS_WEB && width >= 900 && !IS_TV; // 走查❌#4 修正:宽屏 HD flavor(桌面 web)也要双区,仅 TV 例外
   // v1.2 三层库:库分区(我的默认;本机=设备库;共享=管理员设的库,锁态可切但内容为锁卡)
-  const [scope, setScope] = useState<LibScope>({ kind: 'mine' });
+  // 老板 1124:本机音乐入口=设置目录制——支持路由参数直达本机分区(initialScope:'device')
+  const route = useRoute() as { params?: { initialScope?: 'device' } };
+  const [scope, setScope] = useState<LibScope>(route.params?.initialScope === 'device' ? { kind: 'device' } : { kind: 'mine' });
   const [sharedLibs, setSharedLibs] = useState<{ id: string; name: string; access: string; locked: boolean; songCountHint: number }[]>([]);
   // ④公共曲库入口态(浏览页库胶囊/桌面库组行;未授权或个人开关关闭→不渲染)
   const pub = usePubEntry();

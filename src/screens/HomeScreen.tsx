@@ -71,11 +71,11 @@ export function HomeScreen({ visible = true }: { visible?: boolean }) {
               icon="music"
               glyphSize={48}
               title="从你的音乐开始"
-              body="当前没有可用音源或本地歌曲。你可以先导入音源，也可以直接扫描设备中的音乐。"
-              primary="导入音源"
-              secondary="从本地导入音乐"
+              body="当前没有可用音源或本地歌曲。你可以先添加音源，也可以设置本机音乐目录直接播放。"
+              primary="添加音源"
+              secondary="设置音乐目录"
               onPrimary={() => nav.navigate('Sources' as never)}
-              onSecondary={() => nav.navigate('DeviceMusic')}
+              onSecondary={() => nav.navigate('MyLibrary', { initialScope: 'device' })}
             />
           </View>
         </View>

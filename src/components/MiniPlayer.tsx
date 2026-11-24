@@ -10,6 +10,7 @@ import { CollectSheet } from './CollectSheet';
 import { useFav } from '../state/useFav'; // lx157:收藏状态统一三源联动
 import { isFav } from '../state/favorites';
 import { toast } from './Dialog';
+import { settings } from '../services/settings';
 import LinearGradient from 'react-native-linear-gradient'; // [老板 1010] 小盘改几何绘制(盘图实测不达标)
 
 // Figma Player/Mini: 350x72 r=8, art 52x52 r=6, meta center-left, right icons
@@ -83,7 +84,7 @@ export function MiniPlayer({ standalone }: { standalone?: boolean } = {}) {
             <Icon name="devices" size={20} color={cast ? C.brand : C.text} />
           </TouchableOpacity>
           {/* lx157:未收藏→面板;仅歌单收录→面板里移除;我喜欢的在→一键取消 */}
-          <TouchableOpacity focusable={true} style={st.iconBtn} hitSlop={6} onPress={() => { popHeart(); if (faved && isFav(current)) { toggleFav(); toast('已取消收藏'); } else setCollect(true); }}>
+          <TouchableOpacity focusable={true} style={st.iconBtn} hitSlop={6} onPress={() => { popHeart(); if (faved && isFav(current)) { toggleFav(); toast('已取消收藏'); } else if (!settings.get().favPickSheet) { toggleFav(); toast('已加入「我喜欢的」'); } else setCollect(true); }}>
             <Animated.Text style={{ transform: [{ scale: pop }] }}>
               <Icon name="heart" size={20} active={faved} color={faved ? C.heart : C.text} />
             </Animated.Text>

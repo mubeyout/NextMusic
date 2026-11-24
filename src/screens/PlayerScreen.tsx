@@ -85,9 +85,11 @@ export function PlayerScreen() {
     Animated.spring(heartScale, { toValue: 1, friction: 4, tension: 40, useNativeDriver: Platform.OS !== 'web' }).start();
   };
   // 心钮总入口:未收藏→面板;仅歌单收录(非我喜欢的)→面板里移除;我喜欢的在→一键移除
+  // favPickSheet=false(老板 1124):红心一键直进「我喜欢的」,不弹面板
   const heartPress = () => {
     if (!current) return;
     popHeart();
+    if (!settings.get().favPickSheet && !faved) { void toggleFav().then(() => toast('已加入「我喜欢的」')); return; }
     if (!faved || (!isFav(current) && hasPlCollect(current))) return openCollect();
     doUnfav();
   };

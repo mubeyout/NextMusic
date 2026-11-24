@@ -1,4 +1,4 @@
-// 设备本地音乐：权限申请 → 扫描 → 列表（播放 / 加入歌单 / 下载入口）
+// 设备本地音乐（目录制,老板 1124）：设置音乐目录(SAF 持久授权) → 路径直读 → 列表（播放 / 加入歌单 / 上传）
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -49,16 +49,12 @@ export function DeviceMusicScreen() {
         );
         return;
       }
-      // ① MediaStore 主路径（系统媒体库，元数据齐全）
-      let r: ScanResult | null = await scanByMediaStore();
-      // ② 已授权 SAF 目录
-      if (!r || r.count === 0) {
-        const tree = getSafTree();
-        if (tree) {
-          const r2 = await scanSafTree(tree, n => setFound(n));
-          if (r2.count > 0) r = r2;
-        }
-      }
+      // 老板 1124:本机音乐=设置目录制——已授权 SAF 目录优先(持久授权,路径直读);未设过则弹目录选择
+      const tree = getSafTree();
+      let r: ScanResult | null = tree ? await scanSafTree(tree, n => setFound(n)) : null;
+      if (!r || r.count === 0) { const rs = await scanBySafFolder(n => setFound(n)); if (rs) r = rs; }
+      // ② MediaStore 兜底（系统媒体库，元数据齐全）
+      if (!r || r.count === 0) r = await scanByMediaStore();
       // ③ 直接路径（旧设备）
       if (!r || r.count === 0) {
         r = await scanByPath(n => setFound(n));
@@ -68,7 +64,7 @@ export function DeviceMusicScreen() {
         setScanning(false);
         dialog.alert(
           '未发现本地音乐',
-          '可以尝试手动选择音乐文件夹（SAF）扫描，或确认设备上有音频文件。',
+          '选择一个音乐文件夹即可——设置后通过路径直接读取，下次自动扫描，无需导入。',
           [
             { text: '取消', style: 'cancel' },
             {
@@ -130,11 +126,11 @@ export function DeviceMusicScreen() {
         <View style={st.scanCard}>
           <View style={{ flex: 1 }}>
             <Text style={st.scanTitle}>{scanning ? `扫描中… 已发现 ${found} 首` : `${count} 首设备音乐`}</Text>
-            <Text style={st.scanSub}>扫描系统媒体库（含时长/专辑信息）</Text>
+            <Text style={st.scanSub}>{getSafTree() ? '已设目录 · 路径直读，自动识别新增' : '设置音乐目录（持久授权，路径直读）'}</Text>
           </View>
           <TouchableOpacity focusable={true} style={st.scanBtn} onPress={scan} disabled={scanning}>
             {scanning ? <ActivityIndicator size="small" color={C.onBrand} /> : <Icon name="refresh" size={18} color={C.onBrand} />}
-            <Text style={st.scanBtnText}>{scanning ? '扫描中' : count ? '重新扫描' : '开始扫描'}</Text>
+            <Text style={st.scanBtnText}>{scanning ? '扫描中' : count ? '重新扫描' : '设置目录'}</Text>
           </TouchableOpacity>
         </View>
         {count ? (
@@ -164,7 +160,7 @@ export function DeviceMusicScreen() {
             />
           ))}
         </View>
-        {!scanning && !count ? <EmptyState icon="music" title="未发现本地音乐" sub="点「开始扫描」导入设备上的音频文件" /> : null}
+        {!scanning && !count ? <EmptyState icon="music" title="未发现本地音乐" sub="点「设置目录」选择音乐文件夹，通过路径直接读取，无需导入" /> : null}
       </ScrollView>
       <View style={st.miniDock} pointerEvents="box-none"></View>
       <UploadSheet.View />

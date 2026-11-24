@@ -165,9 +165,9 @@ export function MyScreen({ visible = true }: { visible?: boolean }) {
               <Text style={st.quickTitle}>我喜欢的</Text>
               <Text style={st.quickMeta}>{loveSongs.length} 首</Text>
             </TouchableOpacity>
-            <TouchableOpacity focusable={true} style={st.quickCard} activeOpacity={0.85} onPress={() => nav.navigate('DeviceMusic')}>
+            <TouchableOpacity focusable={true} style={st.quickCard} activeOpacity={0.85} onPress={() => nav.navigate('MyLibrary', { initialScope: 'device' })}>
               <Text style={st.quickTitle}>本地音乐</Text>
-              <Text style={st.quickMeta}>{localCount ? `${localCount} 首` : '点此扫描'}</Text>
+              <Text style={st.quickMeta}>{localCount ? `${localCount} 首` : '设置目录'}</Text>
             </TouchableOpacity>
           </View>
 

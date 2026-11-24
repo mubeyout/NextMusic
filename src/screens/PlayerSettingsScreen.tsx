@@ -17,6 +17,13 @@ export function PlayerSettingsScreen() {
       <Section title="默认播放">
         <ValueRow label="默认音质" value={s.playQuality} options={QUALITIES} onPick={v => settings.set('playQuality', v as Quality)} />
       </Section>
+      <Section title="收藏">
+        {/* 老板 1124:收藏行为可选——弹面板选歌单 / 一键进我喜欢的 */}
+        <ValueRow label="收藏方式" value={s.favPickSheet ? '选择歌单' : '直接进我喜欢的'} options={[
+          { label: '选择歌单（弹出收藏面板）', value: 'ask' },
+          { label: '直接进「我喜欢的」', value: 'direct' },
+        ]} onPick={v => settings.set('favPickSheet', v === 'ask')} />
+      </Section>
     </PageShell>
   );
 }

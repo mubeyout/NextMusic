@@ -193,6 +193,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   queueRef.current = queue;
   // 转码重试标记（同一首只降级一次，防止错误循环）；换歌时在 STATE_CHANGED PLAYING 里不清、TRACK_ENDED 推进即可覆盖
   const onlineRetryUidRef = useRef<string | null>(null); // [1121#7] 在线源重试单次防环
+  const playOnlineFallbackRef = useRef<((s: QueueTrack) => Promise<void>) | null>(null); // [1122#6] 兜底搜索跨作用域引用(修 TS2304)
   const tcRetryUidRef = useRef<string | null>(null);
 
   // 投屏状态（lx33 双通道）：castRef 供事件闭包读到最新值；dlna/cast 模式本机 ExoPlayer 暂停挂起
@@ -394,7 +395,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       );
     };
     // 在线兕底：同名同歌手去在线音源（kw）搜一条直接替换当前队列位播放
-    const playOnlineFallback = async (song: QueueTrack) => {
+    const playOnlineFallback = async (song: QueueTrack): Promise<void> => {
       try {
         const kw = `${song.name} ${song.singer || ''}`.trim();
         const list = await lxapi.search(kw, 'kw', 1, 10);
@@ -410,6 +411,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         await resolveAndPlay(queueRef.current[idxRef.current]);
       } catch { toast('在线搜索失败，请检查网络'); }
     };
+    playOnlineFallbackRef.current = playOnlineFallback; // 暴露给 AudioPro 错误处理作用域
     try {
       // ① 设备本地文件：直接播（content:// uri、blob:/http(s):/data: URL 原样直出，其余按 file:// 路径）
       // lx②(本机曲库):web FSAPI 文件经 URL.createObjectURL 生成 blob: 地址,须直出不可加 file:// 前缀
@@ -818,7 +820,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             onlineRetryUidRef.current = t.uid;
             try { ['flac', '320k', '128k'].forEach(function (q) { localStorage.removeItem('nm-urlc:' + t.source + ':' + t.songmid + ':' + q); }); } catch (e0) { /* ignore */ }
             toast('音源不稳，低码率重试…');
-            resolveNativeUrl(t, '128k').then(function (u2) { if (u2) playOrCast(t, u2); else playOnlineFallback(t).catch(function () {}); }); // [1122#6] fallback kw search
+            resolveNativeUrl(t, '128k').then(function (u2) { if (u2) playOrCast(t, u2); else playOnlineFallbackRef.current?.(t); }); // [1122#6] fallback kw search
             /* retry via then */
           }
           // 媒体库歌：直流失败自动降级转码流重试一次（外网/弱网下无损直流常握不住，服务端转 mp3 更稳）

@@ -93,6 +93,7 @@ export interface AppSettings {
   enableClientModeSync: boolean;        // 客户端模式同步
   lastRemoteSyncMode: string;           // 上次远程同步模式
   deduplicatePlaylistByQuality: boolean;// 同 ID 歌曲仅最高音质
+  favPickSheet: boolean;               // 收藏行为(老板 1124):true=点收藏弹面板选歌单 / false=直接进「我喜欢的」
 }
 
 // lx34 清理：autoplay/gapless/volumeNormalize/viz*/autoBackup/proxy/wifiOnly 无真实实现，选项与存储键一并移除；
@@ -176,6 +177,7 @@ export const DEFAULTS: AppSettings = {
   enableClientModeSync: false,
   lastRemoteSyncMode: 'merge_remote_local',
   deduplicatePlaylistByQuality: true,
+  favPickSheet: true, // 默认弹面板选歌单(老板 1124);关闭=红心一键进「我喜欢的」
 };
 
 function load(): AppSettings {

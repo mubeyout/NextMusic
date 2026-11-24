@@ -16,7 +16,7 @@ import { settings, useSettings, QUALITY_LABEL, type Quality } from '../services/
 import { providerApi, providers, type ProviderAcct } from '../services/providers';
 import { loadSources, saveSources, type CustomSource } from '../services/customSource';
 import { readKeys as favKeys, writeKeys as writeFavKeys } from '../state/favorites';
-import { load as loadAppPersist, type RunMode } from '../state/AppState';
+import { load as loadAppPersist, type RunMode, useApp } from '../state/AppState';
 import { library } from '../state/library';
 import { downloads as dlStore, fmtBytes, downloadFails, clearFails, subscribeDownloads } from '../services/downloads';
 import { APP_VERSION, IS_HD } from '../services/appversion';
@@ -297,6 +297,13 @@ export function DownloadsSettingsScreen() {
   const s = useSettings();
   const [, force] = useState(0);
   useEffect(() => subscribeDownloads(() => force(n => n + 1)), []); // 下载完成/失败实时刷
+  // 老板 1124:缓存设置区——自动缓存开关+服务器缓存占用/清理(需登录);分端说明下载去向
+  const { token } = useApp();
+  const [srvCache, setSrvCache] = useState<{ totalSize: number; fileCount: number } | null>(null);
+  useEffect(() => {
+    if (!token) { setSrvCache(null); return; }
+    api.cacheStats().then(setSrvCache).catch(() => setSrvCache(null));
+  }, [token]);
   const fails = downloadFails();
   const QUALITIES: { label: string; value: Quality }[] = [
     { label: QUALITY_LABEL['128k'], value: '128k' },
@@ -328,6 +335,28 @@ export function DownloadsSettingsScreen() {
         }} />
         <StaticRow label="存储路径" value={s.downloadDir === 'custom' ? (s.downloadTreeUri || '未选择') : '内部存储/Music/NextMusic(文件管理器可见,卸载 App 不删除)'} />
         <NavRow label="下载管理" value={`${dlStore.all().length} 首 · ${fmtBytes(dlStore.totalBytes())}`} onPress={() => nav.navigate('Downloads')} />
+      </Section>
+      <Section title="播放缓存">
+        {/* 老板 1124:自动缓存/缓存位置/分端去向,原先仅 HD 端有开关 */}
+        <ToggleRow label="播放时自动缓存到服务器" value={s.enableServerCache} onChange={v => {
+          if (v && !token) { dialog.alert('需要登录', '服务器歌曲缓存按账号存放(/server/data/cache/用户名),请先在「使用方式与账号」连接并登录服务器。'); return; }
+          settings.set('enableServerCache', v);
+        }} />
+        <ToggleRow label="优先播放服务器缓存" value={s.preferServerCache} onChange={v => settings.set('preferServerCache', v)} />
+        <ToggleRow label="链接缓存" value={s.enableSongUrlCache} onChange={v => settings.set('enableSongUrlCache', v)} />
+        <ToggleRow label="歌词缓存" value={s.enableLyricCache} onChange={v => settings.set('enableLyricCache', v)} />
+        <StaticRow label="缓存去向" value={IS_HD || Platform.OS === 'web' ? 'Web/桌面:缓存存服务器,不占本机盘' : '本机:缓存存应用 CacheDir,可在基本设置清理'} />
+        {token ? (
+          <>
+            <StaticRow label="服务器缓存占用" value={srvCache ? `${fmtBytes(srvCache.totalSize)} · ${srvCache.fileCount} 首` : '获取中…'} />
+            <ActionRow label="清空服务器缓存" onPress={() => {
+              dialog.alert('清空服务器缓存', '将删除服务器上缓存的所有歌曲(不影响已下载到本机的文件),确定?', [
+                { text: '取消', style: 'cancel' },
+                { text: '清空', style: 'destructive', onPress: () => { api.cacheClear().then(() => { toast('已清空'); return api.cacheStats(); }).then(st => setSrvCache(st)).catch(() => toast('操作失败')); } },
+              ]);
+            }} />
+          </>
+        ) : <StaticRow label="服务器缓存" value="未登录——登录后可查看占用与清理" />}
       </Section>
       {fails.length ? (
         <Section title={`下载失败（${fails.length}）`}>
