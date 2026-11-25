@@ -171,13 +171,11 @@ export function HDHome({ onGotoSearch }: { onGotoSearch?: () => void }) {
       {/* [HTML01 1120] 为你推荐:density-wall(min145 auto-fit gap12;卡=r15壳/封面aspect1.12 r8/nm14-600/ar10)——home-cards.js recommendations();音乐 tab=每日精选 4 卡 */}
       <Section title={homeTab === '音乐' ? '每日精选' : '为你推荐'} hint={homeTab === '音乐' ? '熟悉的旋律，每天更新' : (recSource ? '五源聚合 · ' + recSource : '五源聚合')} more="更多" onMore={() => onGotoSearch?.()}>
         {recPls.length ? (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: IS_WEB ? 12 : 9 }}>
+          <HDGrid min={IS_WEB ? 145 : 112} gap={IS_WEB ? 12 : 9} maxCols={4}>
             {recPls.slice(0, homeTab === '音乐' ? 4 : 6).map(pl => (
-              <View key={pl.source + '_' + pl.id} style={{ flexBasis: '16%', minWidth: IS_WEB ? 145 : 112, flexGrow: 1 }}>
-                <RecommendCard pl={pl} onOpen={() => openRecPl(pl)} onPlay={() => openRecPl(pl)} />
-              </View>
+              <RecommendCard key={pl.source + '_' + pl.id} pl={pl} onOpen={() => openRecPl(pl)} onPlay={() => openRecPl(pl)} />
             ))}
-          </View>
+          </HDGrid>
         ) : (
           <View style={st.empty}>
             <Text style={st.emptyText}>{recFail ? '推荐歌单加载失败 · 音源无响应' : '推荐歌单加载中…'}</Text>

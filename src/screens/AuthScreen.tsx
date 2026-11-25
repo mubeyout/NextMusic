@@ -33,13 +33,13 @@ export function AuthScreen() {
           <Text style={st.readySub}>支持：网易云 / QQ / 酷狗 / 酷我 / 咪咕歌单</Text>
         </View>
 
-        <TouchableOpacity focusable={true} focusable={true} style={st.btnPrimary} onPress={() => nav.navigate('AuthLogin')}>
+        <TouchableOpacity focusable={true} style={st.btnPrimary} onPress={() => nav.navigate('AuthLogin')}>
           <Text style={st.btnPrimaryText}>登录已有账号</Text>
         </TouchableOpacity>
-        <TouchableOpacity focusable={true} focusable={true} style={st.btnGhost} onPress={() => nav.navigate('AuthSignup')}>
+        <TouchableOpacity focusable={true} style={st.btnGhost} onPress={() => nav.navigate('AuthSignup')}>
           <Text style={st.btnGhostText}>创建服务器用户</Text>
         </TouchableOpacity>
-        <TouchableOpacity focusable={true} focusable={true} style={st.btnGhost} onPress={enter}>
+        <TouchableOpacity focusable={true} style={st.btnGhost} onPress={enter}>
           <Text style={st.btnGhostText}>暂不登录，继续使用</Text>
         </TouchableOpacity>
 

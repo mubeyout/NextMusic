@@ -45,7 +45,7 @@ const TITLES: Record<string, string> = {
 };
 
 /** [HTML01 car.css #carRail .tab] 竖排导航项:icon 28/label 18/80h r18 →÷1.5;on=brand 12% 底 */
-function RailTab({ icon, label, active, onPress }: { icon: string; label: string; active?: boolean; onPress: () => void }) {
+function RailTab({ icon, label, active, onPress }: { icon: IconName; label: string; active?: boolean; onPress: () => void }) {
   return (
     <CarTouch onPress={onPress} style={[st2.railTab, active && { backgroundColor: 'rgba(30,215,96,.13)' }]}>
       <Icon name={icon} size={19} color={active ? C.brand : C.text2} />

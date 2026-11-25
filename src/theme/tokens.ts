@@ -17,10 +17,12 @@ export const C: Record<string, string> = {
   elev: '#1C1C1C',        // 弹层/迷你条/浮卡（浅色下为纯白卡）
   text: '#FFFFFF',
   text2: '#B3B3B3',
-  text3: '#595959',
+  text3: '#989898',
   onBrand: '#121212',     // text on green/white pills
   white: '#FFFFFF',
-  stroke: '#FFFFFF14',
+  stroke: '#FFFFFF0E',
+  border: '#FFFFFF0E',     // 卡/面板描边(同 stroke 基线;hdtokens 浅色覆写)
+  track: '#383838',        // 进度槽/轨道(基线 --track;hdtokens 浅色覆写)
   // —— 语义层（浅色适配轮）：深色值 = 原硬编码，浅色在 applyBootTheme 覆写 ——
   inset: '#242424',        // 圆钮底/进度槽/徽标/pill/输入框
   inset2: '#2E2E2E',       // 开关轨道/图标圈/头像底/音量槽
@@ -114,6 +116,8 @@ export function applyBootTheme() {
     C.onBrand = deriveOnBrand(acc || '#1ED760'); // [LEO 1107] 统一亮度派生（绿→#121212，深 accent→#FFFFFF，替换原 mixHex 混黑）
     C.brandSoft = acc ? mixHex(acc, '#000000', 0.22) : '#1DB455';   // 浅色下高亮色加深（桌面同款规则）
     C.stroke = '#1F232914';    // rgba(31,35,41,.08)
+    C.border = '#1F232914';    // 浅色描边(与 hdtokens 同源)
+    C.track = '#1F232924';     // 浅色进度槽 rgba(31,35,41,.14)
     C.inset = '#EDEFF3';
     C.inset2 = '#E4E7EC';
     C.inputBar = '#F0F1F4';

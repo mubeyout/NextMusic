@@ -534,8 +534,7 @@ const st = StyleSheet.create({
   catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   catCard: {
     width: '48%', flexGrow: 1, height: 92, borderRadius: 12, overflow: 'hidden',
-    flexGrow: 1, justifyContent: 'center', paddingHorizontal: 14,
-  },
+    justifyContent: 'center', paddingHorizontal: 14,  },
   catArt: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 },
   catFallback: { backgroundColor: C.elev, alignItems: 'center', justifyContent: 'center' },
   catGlyph: { color: C.white, fontSize: 26, fontWeight: '700' },

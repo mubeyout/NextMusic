@@ -29,7 +29,7 @@ export function LicenseActivate({ visible, onClose, onActivated }: LicenseActiva
   if (!visible) return null;
 
   const activate = async () => {
-    const key = code.trim().toUpperCase();
+    const key = code.trim(); // [1125] 去 toUpperCase——破坏 b64url 大小写致验签失败
     if (!key || key.length < 10 || busy) return;
     setBusy(true); setMsg(null);
     try {
@@ -119,9 +119,9 @@ export function LicenseActivate({ visible, onClose, onActivated }: LicenseActiva
 const st = StyleSheet.create({
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000, justifyContent: 'flex-end', alignItems: 'center' },
   overlayCenter: { justifyContent: 'center' }, // [1012] HD/web 居中模态(老板 ①)
-  scrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' },
+  scrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: C.scrim },
   sheet: {
-    width: '100%', maxWidth: 480, backgroundColor: C.card || '#1A1D1B',
+    width: '100%', maxWidth: 480, backgroundColor: C.elev,
     borderRadius: 20,
     padding: SP.xl, paddingBottom: SP.wider + 20,
     gap: SP.md,

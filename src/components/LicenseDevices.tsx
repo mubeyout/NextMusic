@@ -123,9 +123,9 @@ export function LicenseDevices({ visible, onClose }: LicenseDevicesProps) {
 const st = StyleSheet.create({
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000, justifyContent: 'flex-end', alignItems: 'center' },
   overlayCenter: { justifyContent: 'center' }, // [1012] HD/web 居中模态(老板 ①)
-  scrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' },
+  scrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: C.scrim },
   sheet: {
-    width: '100%', maxWidth: 520, backgroundColor: C.card || '#1A1D1B',
+    width: '100%', maxWidth: 520, backgroundColor: C.elev,
     borderRadius: 20,
     padding: SP.xl, gap: SP.md,
   },

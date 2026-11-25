@@ -56,7 +56,7 @@ export function CarDrawer({ mode, onClose, onOpenPlaylist }: {
 }
 
 const st = {
-  scrim: { position: 'absolute' as const, left: 0, top: 0, right: 0, bottom: 0, backgroundColor: '#00000080', justifyContent: 'flex-end' as const, flexDirection: 'row' as const },
+  scrim: { position: 'absolute' as const, left: 0, top: 0, right: 0, bottom: 0, backgroundColor: C.scrim, justifyContent: 'flex-end' as const, flexDirection: 'row' as const },
   panel: { width: 420, backgroundColor: C.surface, borderLeftWidth: 1, borderLeftColor: C.border, paddingTop: 24, paddingHorizontal: 22 },
   head: { flexDirection: 'row' as const, alignItems: 'center' as const, marginBottom: 18 },
   title: { color: C.text, fontSize: 20, fontWeight: '700' as const, flex: 1 },

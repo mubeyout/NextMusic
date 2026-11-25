@@ -11,7 +11,7 @@ import { C } from './theme/tokens';
 import { TabBar } from './components/TabBar';
 import { MiniPlayer } from './components/MiniPlayer';
 import { useApp } from './state/AppState';
-import { settings, useSettings } from './services/settings';
+import { settings, useSettings, type AppSettings } from './services/settings';
 
 import { BootScreen } from './screens/BootScreen';
 import { ServerScreen } from './screens/ServerScreen';
@@ -109,7 +109,7 @@ export function RootNavigator() {
 
   // vc186 三合一:深链形态直达 nextmusic://form/<auto|phone|car|hd>——adb/TV 遥控测试杠杆(设置页选择器同效)
   useEffect(() => {
-    const apply = (u: string | null) => {
+    const apply = (u: string | null | undefined) => {
       const m = u && u.match(/^nextmusic:\/\/form\/(auto|phone|car|hd)$/);
       if (m) settings.set('formForce', m[1] as AppSettings['formForce']);
     };

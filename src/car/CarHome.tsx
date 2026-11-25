@@ -142,7 +142,7 @@ export function CarHome({ goExplore, goPodcast, onOpenFav, onOpenPlaylist }: { g
         {(['全部', '音乐', '播客'] as const).map(label => (
           <CarTouch key={label} style={{ paddingHorizontal: 16, height: 36, borderRadius: 11, backgroundColor: tab === label ? C.brand : C.surface, borderWidth: 1, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' }}
             onPress={() => { if (label === '播客') { goPodcast?.(); return; } setTab(label); }}>
-            <Text style={{ color: tab === label ? '#111214' : C.text2, fontSize: 13.5, fontWeight: tab === label ? '650' as never : '500' as never }}>{label}</Text>
+            <Text style={{ color: tab === label ? C.onBrand : C.text2, fontSize: 13.5, fontWeight: tab === label ? '650' as never : '500' as never }}>{label}</Text>
           </CarTouch>
         ))}
         <Text style={{ color: C.text3, fontSize: 12, marginLeft: 6 }}>让喜欢的音乐，陪你这一程</Text>
@@ -162,7 +162,7 @@ export function CarHome({ goExplore, goPodcast, onOpenFav, onOpenPlaylist }: { g
             <Text style={{ color: '#D0E3DC', fontSize: 11.5 }}>为你选好的熟悉旋律</Text>
           </View>
           <View style={{ position: 'absolute', right: 15, bottom: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }}>
-            {dailyBusy ? <ActivityIndicator size="small" color="#111214" /> : <Icon name="play" size={19} active color="#111214" />}
+            {dailyBusy ? <ActivityIndicator size="small" color={C.onBrand} /> : <Icon name="play" size={19} active color={C.onBrand} />}
           </View>
         </CarTouch>
         <CarTouch activeOpacity={0.95} onPress={() => onOpenFav?.()}
@@ -217,7 +217,7 @@ export function CarHome({ goExplore, goPodcast, onOpenFav, onOpenPlaylist }: { g
           <Icon name="music" size={18} color={C.text3} />
           <Text style={{ flex: 1, color: C.text2, fontSize: 12, lineHeight: 19 }}>听过的音乐会留在这里，随时接着听。</Text>
           <CarTouch style={{ height: 30, paddingHorizontal: 12, borderRadius: 15, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }} onPress={playDaily}>
-            <Text style={{ color: '#111214', fontSize: 11, fontWeight: '650' as never }}>开始听歌</Text>
+            <Text style={{ color: C.onBrand, fontSize: 11, fontWeight: '650' as never }}>开始听歌</Text>
           </CarTouch>
         </View>
       )}
