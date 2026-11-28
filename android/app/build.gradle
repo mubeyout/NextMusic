@@ -100,8 +100,8 @@ android {
         applicationId "com.mubeyworks.nextmusic"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 212
-        versionName "1.7.0" // v1.5.0-vc194(1121#4: 播放页对齐web版重排/歌单头缩小/搜索密度/最近播放大卡/媒体库紧凑)
+        versionCode 213
+        versionName "1.7.0" // v1.7.0-vc213(1128: TV 放行 car 形态——FF=car 时 HD 壳让位,深链 form/car 直达)
     }
     // 多架构分发：GitHub Release 只放编译产物（armeabi-v7a/arm64-v8a/x86/x86_64 + universal 兑底）
     splits {
