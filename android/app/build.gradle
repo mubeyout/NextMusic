@@ -91,8 +91,8 @@ android {
             applicationIdSuffix ".hd"
             versionNameSuffix "-hd"
             // HD 独立版本线:与 phone 共享 default,但可单独越号更新(当前 hd v2)
-            versionCode 189
-            versionName "1.4.6" // v1.4.6-hd(1121:同 phone 基线)
+            versionCode 190
+            versionName "1.4.7" // v1.4.7-hd(1128:TV 放行 car 形态——FF=car 时 HD 壳让位)
         }
     }
 

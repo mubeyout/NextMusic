@@ -99,9 +99,10 @@ export function RootNavigator() {
   useSettings(); // carlink:carModeUi 变更即重渲——导航层 IS_HD|carMode 双分流
   // vc185 三合一调试:formForce 显式覆盖最终形态(即时生效)——TV 上强制 car 供实测;auto=原环境判定链
   let FF = settings.get().formForce ?? 'auto';
-  // [老板令1122] 大屏禁切手机/车机版: TV/HD 设备上 phone/car 强制落 HD(保遥控可操作;深链 form/car 也拦)
-  if (IS_HD_UI && (FF === 'phone' || FF === 'car')) FF = 'hd';
-  const HD = FF === 'hd' ? true : FF === 'phone' ? false : isCarUi();
+  // [老板令1122→1128修订] 大屏禁切手机版(保遥控);car 版放行——小米电视切 car UI 是明确需求,深链 form/car 直达
+  if (IS_HD_UI && FF === 'phone') FF = 'hd';
+  // TV/HD 设备(IS_HD_UI)恒挂 HDMain 横屏壳;auto 下 isCarUi() 只认 hd flavor/车机开关,漏算 TV 会把电视落到 phone 竖版壳(1128 实测根因)
+  const HD = FF === 'hd' ? true : FF === 'phone' || FF === 'car' ? false : (IS_HD_UI || isCarUi()); // 1128: FF=car 时 HD 壳让位
   const CAR_UI = FF === 'car' ? true : (FF === 'phone' || FF === 'hd') ? false : (!IS_HD_UI && settings.get().carModeUi === true); // [1105+1111 三版合一] TV 设备恒 HDMain(IS_HD_UI)——蓝牙误切 carModeUi 也不再劫持电视
   const { mode } = useApp();
   // 服务端 web 播放器不需要启动向导:直进主界面(本地模式);原生端保留三卡引导
